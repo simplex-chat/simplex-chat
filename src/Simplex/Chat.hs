@@ -5599,6 +5599,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         profileContactRequest invId chatVRange p xContactId_ reqPQSup = do
           withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
+            CORGroup gInfo -> toView $ CRBusinessRequestAlreadyAccepted user gInfo
             CORRequest cReq -> do
               ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
               let (UserContactLink {connReqContact, autoAccept}, groupId_, gLinkMemRole) = ucl

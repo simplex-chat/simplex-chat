@@ -598,7 +598,6 @@ public enum ChatResponse: Decodable, Error {
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
-    case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
     case contactDeletedByContact(user: UserRef, contact: Contact)
     case chatCleared(user: UserRef, chatInfo: ChatInfo)
@@ -776,7 +775,6 @@ public enum ChatResponse: Decodable, Error {
             case .sentInvitation: return "sentInvitation"
             case .sentInvitationToContact: return "sentInvitationToContact"
             case .contactAlreadyExists: return "contactAlreadyExists"
-            case .contactRequestAlreadyAccepted: return "contactRequestAlreadyAccepted"
             case .contactDeleted: return "contactDeleted"
             case .contactDeletedByContact: return "contactDeletedByContact"
             case .chatCleared: return "chatCleared"
@@ -952,7 +950,6 @@ public enum ChatResponse: Decodable, Error {
             case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
-            case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeletedByContact(u, contact): return withUser(u, String(describing: contact))
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))

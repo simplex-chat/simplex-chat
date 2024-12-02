@@ -349,7 +349,7 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
+data ChatOrRequest = CORContact Contact | CORGroup GroupInfo | CORRequest UserContactRequest
 
 type UserName = Text
 

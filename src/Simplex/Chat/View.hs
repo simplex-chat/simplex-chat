@@ -207,6 +207,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
+  CRBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]

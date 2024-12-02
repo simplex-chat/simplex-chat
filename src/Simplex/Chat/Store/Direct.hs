@@ -102,6 +102,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
+import Simplex.Messaging.Util ((<$$>))
 import Simplex.Messaging.Version
 
 getPendingContactConnection :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO PendingContactConnection
@@ -591,13 +592,17 @@ getUserContacts db vr user@User {userId} = do
   contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
-createOrUpdateContactRequest :: DB.Connection -> VersionRangeChat -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ContactOrRequest
-createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ pqSup =
-  liftIO (maybeM getContact' xContactId_) >>= \case
-    Just contact -> pure $ CORContact contact
+createOrUpdateContactRequest :: DB.Connection -> VersionRangeChat -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ChatOrRequest
+createOrUpdateContactRequest db vr user@User {userId, userContactId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ pqSup =
+  liftIO (maybeM getContactOrGroup xContactId_) >>= \case
+    Just cr -> pure cr
     Nothing -> CORRequest <$> createOrUpdate_
   where
     maybeM = maybe (pure Nothing)
+    getContactOrGroup xContactId =
+      getContact' xContactId >>= \case
+        Just ct -> pure $ Just $ CORContact ct
+        Nothing -> CORGroup <$$> getGroupInfo' xContactId
     createOrUpdate_ :: ExceptT StoreError IO UserContactRequest
     createOrUpdate_ = do
       cReqId <-
@@ -651,6 +656,13 @@ createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (V
             LIMIT 1
           |]
           (userId, xContactId)
+    getGroupInfo' :: XContactId -> IO (Maybe GroupInfo)
+    getGroupInfo' xContactId =
+      maybeFirstRow (toGroupInfo vr userContactId) $
+        DB.query
+          db
+          (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+          (xContactId, userId, userContactId)
     getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
     getContactRequestByXContactId xContactId =
       maybeFirstRow toContactRequest $

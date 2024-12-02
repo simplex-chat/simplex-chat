@@ -155,30 +155,7 @@ import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe MemberId, Maybe BusinessChatType, Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
-
-type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
-
 type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences))
-
-toGroupInfo :: VersionRangeChat -> Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt, businessMemberId, businessChatType, uiThemes, customData) :. userMemberRow) =
-  let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
-      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
-      fullGroupPreferences = mergeGroupPreferences groupPreferences
-      groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
-      businessChat = BusinessChatInfo <$> businessMemberId <*> businessChatType
-   in GroupInfo {groupId, localDisplayName, groupProfile, businessChat, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData}
-
-toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
-  let memberProfile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-      memberSettings = GroupMemberSettings {showMessages}
-      blockedByAdmin = maybe False mrsBlocked memberRestriction_
-      invitedBy = toInvitedBy userContactId invitedById
-      activeConn = Nothing
-      memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-   in GroupMember {..}
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
 toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked) :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId, Just profileId, Just displayName, Just fullName, image, contactLink, Just localAlias, contactPreferences)) =
@@ -937,7 +914,7 @@ createBusinessRequestGroup
   vr
   gVar
   user@User {userId, userContactId}
-  UserContactRequest {cReqChatVRange, profile = Profile {displayName, fullName, image, contactLink, preferences}}
+  UserContactRequest {cReqChatVRange, xContactId, profile = Profile {displayName, fullName, image, contactLink, preferences}}
   groupPreferences = do
     currentTs <- liftIO getCurrentTime
     groupInfo <- insertGroup_ currentTs
@@ -959,10 +936,10 @@ createBusinessRequestGroup
               [sql|
                 INSERT INTO groups
                   (group_profile_id, local_display_name, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
-                VALUES (?,?,?,?,?,?,?,?,?)
+                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_xcontact_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
               |]
-              (profileId, localDisplayName, userId, True, currentTs, currentTs, currentTs, currentTs, BCCustomer)
+              (profileId, localDisplayName, userId, True, currentTs, currentTs, currentTs, currentTs, BCCustomer, xContactId)
             insertedRowId db
           memberId <- liftIO $ encodedRandomBytes gVar 12
           void $ createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
@@ -1484,22 +1461,7 @@ getGroupInfo db vr User {userId, userContactId} groupId =
   ExceptT . firstRow (toGroupInfo vr userContactId) (SEGroupNotFound groupId) $
     DB.query
       db
-      [sql|
-        SELECT
-          -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_member_id, g.business_chat, g.ui_themes, g.custom_data,
-          -- GroupMember - membership
-          mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-          mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-          pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
-        FROM groups g
-        JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        JOIN group_members mu ON mu.group_id = g.group_id
-        JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-        WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
-      |]
+      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
       (groupId, userId, userContactId)
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
