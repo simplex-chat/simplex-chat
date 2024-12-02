@@ -1381,4 +1381,9 @@
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Bạn đã ở trong nhóm <b>%1$s</b> rồi.]]></string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Đây là đường dẫn của bạn cho nhóm <b>%1$s</b>!]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Bạn đã tham gia nhóm <b>%1$s</b> rồi.]]></string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Bạn cũng có thể kết nối bằng cách nhấp vào đường dẫn. Nếu nó mở trong trình duyệt, nhấp vào nút<b>Mở trong ứng dụng di động</b>.]]></string>
+    <string name="onboarding_choose_server_operators">Chọn nhà cung cấp</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Bạn có thể <font color="#0088ff">kết nối với các nhà phát triển SimpleX Chat để hỏi bất kỳ câu hỏi nào và nhận thông tin cập nhật</font>.]]></string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Bạn <b>không được</b> sử dụng cùng một cơ sở dữ liệu trên hai thiết .]]></string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Bạn kiểm soát (các) máy chủ nào <b>tiếp nhận</b> tin nhắn, còn các liên hệ của bạn  – các máy chủ mà bạn sử dụng để gửi tin nhắn cho họ.]]></string>
 </resources>
