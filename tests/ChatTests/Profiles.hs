@@ -686,16 +686,26 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     cLink <- getContactLink biz True
     biz ##> "/auto_accept on business"
     biz <## "auto_accept on, business"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: ok to connect"
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
     biz <## "#bob (Bob): accepting business address request..."
-    biz <## "#bob: bob_1 joined the group"
     bob <## "#biz: joining the group..."
+    -- the next command can be prone to race conditions
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business link: connecting to business #biz"
+    biz <## "#bob: bob_1 joined the group"
     bob <## "#biz: you joined the group"
     biz #> "#bob hi"
     bob <# "#biz biz_1> hi"
     bob #> "#biz hello"
     biz <# "#bob bob_1> hello"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business link: known business #biz"
+    bob <## "use #biz <message> to send messages"
     connectUsers biz alice
     biz <##> alice
     biz ##> "/a #bob alice"

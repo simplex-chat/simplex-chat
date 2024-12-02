@@ -3137,6 +3137,7 @@ processChatCommand' vr = \case
                   | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
                   | contactDeleted ct -> pure $ CPContactAddress CAPOk
                   | otherwise -> pure $ CPContactAddress (CAPKnown ct)
+                Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo
                 Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
         -- group link
         Just _ ->
@@ -3152,12 +3153,13 @@ processChatCommand' vr = \case
                   | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | otherwise -> pure $ CPGroupLink GLPOk
                 (Nothing, Just _) -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
-                (Just gInfo@GroupInfo {membership}, _)
-                  | not (memberActive membership) && not (memberRemoved membership) ->
-                      pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
-                  | memberActive membership -> pure $ CPGroupLink (GLPKnown gInfo)
-                  | otherwise -> pure $ CPGroupLink GLPOk
+                (Just gInfo, _) -> groupPlan gInfo
       where
+        groupPlan gInfo@GroupInfo {membership}
+          | not (memberActive membership) && not (memberRemoved membership) =
+              pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
+          | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
+          | otherwise = pure $ CPGroupLink GLPOk
         cReqSchemas :: (ConnReqContact, ConnReqContact)
         cReqSchemas =
           ( CRContactUri crData {crScheme = SSSimplex},
