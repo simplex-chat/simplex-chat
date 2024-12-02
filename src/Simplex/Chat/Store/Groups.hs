@@ -155,7 +155,7 @@ import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe MemberId, Maybe BusinessChatType,  Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe MemberId, Maybe BusinessChatType, Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
 
 type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
 
@@ -936,18 +936,17 @@ createBusinessRequestGroup
   db
   vr
   gVar
-  user@User {userId}
-  ucr@UserContactRequest {profile}
+  user@User {userId, userContactId}
+  UserContactRequest {cReqChatVRange, profile = Profile {displayName, fullName, image, contactLink, preferences}}
   groupPreferences = do
     currentTs <- liftIO getCurrentTime
     groupInfo <- insertGroup_ currentTs
-    (groupMemberId, memberId) <- createAcceptedMember db gVar user groupInfo ucr GRMember
+    (groupMemberId, memberId) <- insertClientMember_ currentTs groupInfo
     liftIO $ setBusinessMemberId groupInfo memberId
     acceptedMember <- getGroupMemberById db vr user groupMemberId
     pure (groupInfo, acceptedMember)
     where
-      insertGroup_ currentTs = ExceptT $ do
-        let Profile {displayName, fullName, image} = profile
+      insertGroup_ currentTs = ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
           groupId <- liftIO $ do
             DB.execute
@@ -968,6 +967,31 @@ createBusinessRequestGroup
           memberId <- liftIO $ encodedRandomBytes gVar 12
           void $ createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
           getGroupInfo db vr user groupId
+      VersionRange minV maxV = cReqChatVRange
+      insertClientMember_ currentTs GroupInfo {groupId, membership} = ExceptT $ do
+        withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+          liftIO $
+            DB.execute
+              db
+              "INSERT INTO contact_profiles (display_name, full_name, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+              (displayName, fullName, image, contactLink, userId, preferences, currentTs, currentTs)
+          profileId <- liftIO $ insertedRowId db
+          createWithRandomId gVar $ \memId -> do
+            DB.execute
+              db
+              [sql|
+                INSERT INTO group_members
+                  ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                    user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+                    peer_chat_min_version, peer_chat_max_version)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              |]
+              ( (groupId, MemberId memId, GRMember, GCInviteeMember, GSMemAccepted, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+                  :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+                  :. (minV, maxV)
+              )
+            groupMemberId <- liftIO $ insertedRowId db
+            pure (groupMemberId, MemberId memId)
       setBusinessMemberId GroupInfo {groupId} businessMemberId = do
         DB.execute db "UPDATE groups SET business_member_id = ? WHERE group_id = ?" (businessMemberId, groupId)
 

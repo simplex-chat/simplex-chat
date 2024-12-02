@@ -688,18 +688,18 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     biz <## "auto_accept on, business"
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
-    biz <## "#bob_1 (Bob): accepting business address request..."
-    biz <## "#bob_1: bob joined the group"
+    biz <## "#bob (Bob): accepting business address request..."
+    biz <## "#bob: bob_1 joined the group"
     bob <## "#biz: joining the group..."
     bob <## "#biz: you joined the group"
-    biz #> "#bob_1 hi"
+    biz #> "#bob hi"
     bob <# "#biz biz_1> hi"
     bob #> "#biz hello"
-    biz <# "#bob_1 bob> hello"
+    biz <# "#bob bob_1> hello"
     connectUsers biz alice
     biz <##> alice
-    biz ##> "/a #bob_1 alice"
-    biz <## "invitation to join the group #bob_1 sent to alice"
+    biz ##> "/a #bob alice"
+    biz <## "invitation to join the group #bob sent to alice"
     alice <## "#bob (Bob): biz invites you to join the group as member"
     alice <## "use /j bob to accept"
     alice ##> "/j bob"
@@ -708,7 +708,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
           alice <## "#bob: you joined the group"
           alice <### [WithTime "#bob biz> hi [>>]", WithTime "#bob bob_1> hello [>>]"]
           alice <## "#bob: member bob_1 (Bob) is connected",
-        biz <## "#bob_1: alice joined the group",
+        biz <## "#bob: alice joined the group",
         do
           bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
           bob <## "#biz: new member alice is connected"
@@ -716,11 +716,11 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     alice #> "#bob hey"
     concurrently_
       (bob <# "#biz alice> hey")
-      (biz <# "#bob_1 alice> hey")
+      (biz <# "#bob alice> hey")
     bob #> "#biz hey there"
     concurrently_
       (alice <# "#bob bob_1> hey there")
-      (biz <# "#bob_1 bob> hey there")
+      (biz <# "#bob bob_1> hey there")
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
 testPlanAddressOkKnown =
