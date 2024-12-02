@@ -926,41 +926,45 @@ createAcceptedMemberConnection
     Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just userContactLinkId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
-createBusinessRequestGroup :: DB.Connection -> TVar ChaChaDRG -> User -> UserContactRequest -> GroupProfile -> BusinessChatType -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createBusinessRequestGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> UserContactRequest -> GroupPreferences -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createBusinessRequestGroup
   db
+  vr
   gVar
   user@User {userId}
-  UserContactRequest {cReqChatVRange, localDisplayName, profileId}
-  groupProfile
-  business = do
+  ucr@UserContactRequest {profile}
+  groupPreferences = do
     currentTs <- liftIO getCurrentTime
-    -- groupId <- insertGroup_ currentTs
-    -- TODO [business] create group
-    -- create group and member with `business` fields
-    -- synthetic profile for group
-    -- possibly reuse createAcceptedMember with additional field
-    undefined
-  -- where
-  --   insertGroup_ currentTs = ExceptT $ do
-  --     let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
-  --     withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
-  --       liftIO $ do
-  --         DB.execute
-  --           db
-  --           "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-  --           (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
-  --         profileId <- insertedRowId db
-  --         DB.execute
-  --           db
-  --           [sql|
-  --             INSERT INTO groups
-  --               (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs,
-  --                 created_at, updated_at, chat_ts, user_member_profile_sent_at)
-  --             VALUES (?,?,?,?,?,?,?,?,?)
-  --           |]
-  --           (profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
-  --         insertedRowId db
+    groupInfo <- insertGroup_ currentTs
+    (groupMemberId, memberId) <- createAcceptedMember db gVar user groupInfo ucr GRMember
+    liftIO $ setBusinessMemberId groupInfo memberId
+    acceptedMember <- getGroupMemberById db vr user groupMemberId
+    pure (groupInfo, acceptedMember)
+    where
+      insertGroup_ currentTs = ExceptT $ do
+        let Profile {displayName, fullName, image} = profile
+        withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+          groupId <- liftIO $ do
+            DB.execute
+              db
+              "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, business_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+              (displayName, fullName, image, userId, groupPreferences, BCCustomer, currentTs, currentTs)
+            profileId <- insertedRowId db
+            DB.execute
+              db
+              [sql|
+              INSERT INTO groups
+                (group_profile_id, local_display_name, user_id, enable_ntfs,
+                  created_at, updated_at, chat_ts, user_member_profile_sent_at)
+              VALUES (?,?,?,?,?,?,?,?,?)
+            |]
+              (profileId, localDisplayName, userId, True, currentTs, currentTs, currentTs, currentTs)
+            insertedRowId db
+          memberId <- liftIO $ encodedRandomBytes gVar 12
+          void $ createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
+          getGroupInfo db vr user groupId
+      setBusinessMemberId GroupInfo {groupId} businessMemberId = do
+        DB.execute db "UPDATE groups SET business_member_id = ? WHERE group_id = ?" (businessMemberId, groupId)
 
 getContactViaMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> ExceptT StoreError IO Contact
 getContactViaMember db vr user@User {userId} GroupMember {groupMemberId} = do

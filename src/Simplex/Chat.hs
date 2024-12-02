@@ -4001,16 +4001,16 @@ acceptGroupJoinRequestAsync
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
-acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> Profile -> VersionRangeChat -> CM (GroupInfo, GroupMember)
+acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM (GroupInfo, GroupMember)
 acceptBusinessJoinRequestAsync
   user
-  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
-  ctProfile
-  chatVRange = do
+  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange} = do
+    vr <- chatVersionRange
     gVar <- asks random
-    (gInfo, clientMember) <- withStore $ \db -> createBusinessRequestGroup db gVar user ucr (businessGroupProfile ctProfile) BCCustomer
-    let userProfile@Profile {displayName} = profileToSendOnAccept user Nothing True
-        GroupInfo {membership, businessChat} = gInfo
+    let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
+        groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
+    (gInfo, clientMember) <- withStore $ \db -> createBusinessRequestGroup db vr gVar user ucr groupPreferences
+    let GroupInfo {membership} = gInfo
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         GroupMember {groupMemberId, memberId} = clientMember
         msg =
@@ -4019,15 +4019,14 @@ acceptBusinessJoinRequestAsync
               { fromMember = MemberIdRole userMemberId userRole,
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId GRMember,
-                groupProfile = businessGroupProfile userProfile,
+                groupProfile = businessGroupProfile userProfile groupPreferences,
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
                 -- but it will be different when inviting somebody else.
                 businessChat = Just $ BusinessChatInfo userMemberId BCBusiness,
                 groupSize = Just 1
-            }
+              }
     subMode <- chatReadVar subscriptionMode
-    vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     clientMember' <- withStore $ \db -> do
@@ -4035,11 +4034,9 @@ acceptBusinessJoinRequestAsync
       getGroupMemberById db vr user groupMemberId
     pure (gInfo, clientMember')
     where
-      -- TODO [business] use user preferences
-      businessGroupProfile :: Profile -> GroupProfile
-      businessGroupProfile Profile {displayName, fullName, image, contactLink, preferences} =
-        let groupPreferences = Just $ maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
-        in GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences}
+      businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
+      businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
+        GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences}
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -5587,7 +5584,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           ct <- acceptContactRequestAsync user cReq Nothing True reqPQSup
                           toView $ CRAcceptingContactRequest user ct
                         else do
-                          (gInfo, member) <- acceptBusinessJoinRequestAsync user cReq p chatVRange
+                          (gInfo, member) <- acceptBusinessJoinRequestAsync user cReq
                           -- TODO [business] CRAcceptingBusinessRequest
                           pure ()
                   | otherwise -> case groupId_ of
