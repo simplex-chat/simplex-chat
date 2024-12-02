@@ -525,6 +525,7 @@ fun deleteChatDatabaseFilesAndState() {
   wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
   appPrefs.newDatabaseInitialized.set(false)
+  chatModel.desktopOnboardingRandomPassword.value = false
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null
 
