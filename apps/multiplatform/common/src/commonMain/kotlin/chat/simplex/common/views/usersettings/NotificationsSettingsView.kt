@@ -68,10 +68,6 @@ fun NotificationsSettingsLayout(
             color = MaterialTheme.colors.secondary
           )
         }
-        if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
-          SectionTextFooter(stringResource(MR.strings.xiaomi_ignore_battery_optimization))
-          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-        }
       }
       SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
         Text(
@@ -80,6 +76,9 @@ fun NotificationsSettingsLayout(
           overflow = TextOverflow.Ellipsis,
           color = MaterialTheme.colors.secondary
         )
+      }
+      if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
+        SectionTextFooter(stringResource(MR.strings.xiaomi_ignore_battery_optimization))
       }
     }
     SectionBottomSpacer()

@@ -497,6 +497,12 @@ class SimplexService: Service() {
               Modifier.padding(bottom = 8.dp)
             )
             Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
+
+            if (platform.androidIsXiaomiDevice() && (mode == NotificationsMode.PERIODIC || mode == NotificationsMode.SERVICE)) {
+              Text(stringResource(MR.strings.xiaomi_ignore_battery_optimization),
+                Modifier.padding(top = 8.dp)
+              )
+            }
           }
         },
         dismissButton = {
