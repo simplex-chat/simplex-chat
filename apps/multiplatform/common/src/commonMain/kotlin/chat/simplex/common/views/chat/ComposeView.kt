@@ -412,6 +412,7 @@ fun ComposeView(
     val cInfo = chat.chatInfo
     val cs = composeState.value
     var sent: List<ChatItem>?
+    var lastMessageFailedToSend: ComposeState? = null
     val msgText = text ?: cs.message
 
     fun sending() {
@@ -459,6 +460,19 @@ fun ComposeView(
 
         else -> MsgContent.MCText(msgText)
       }
+    }
+
+    fun constructFailedMessage(cs: ComposeState): ComposeState {
+      val preview = when (cs.preview) {
+        is ComposePreview.MediaPreview -> {
+          ComposePreview.MediaPreview(
+            if (cs.preview.images.isNotEmpty()) listOf(cs.preview.images.last()) else emptyList(),
+            if (cs.preview.content.isNotEmpty()) listOf(cs.preview.content.last()) else emptyList()
+          )
+        }
+        else -> cs.preview
+      }
+      return cs.copy(inProgress = false, preview = preview)
     }
 
     fun updateMsgContent(msgContent: MsgContent): MsgContent {
@@ -531,6 +545,7 @@ fun ComposeView(
       val ei = cs.contextItem.chatItem
       val updatedMessage = updateMessage(ei, chat, live)
       sent = if (updatedMessage != null) listOf(updatedMessage) else null
+      lastMessageFailedToSend = if (updatedMessage == null) constructFailedMessage(cs) else null
     } else if (liveMessage != null && liveMessage.sent) {
       val updatedMessage = updateMessage(liveMessage.chatItem, chat, live)
       sent = if (updatedMessage != null) listOf(updatedMessage) else null
@@ -631,19 +646,32 @@ fun ComposeView(
           ttl = ttl
         )
         sent = if (sendResult != null) listOf(sendResult) else null
+        if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {
+          constructFailedMessage(cs)
+          // it's the last message in the series so if it fails, restore it in ComposeView for editing
+          lastMessageFailedToSend = constructFailedMessage(cs)
+        }
       }
-      if (sent == null &&
-        (cs.preview is ComposePreview.MediaPreview ||
-            cs.preview is ComposePreview.FilePreview ||
-            cs.preview is ComposePreview.VoicePreview)
-      ) {
-        val sendResult = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
-        sent = if (sendResult != null) listOf(sendResult) else null
-      }
+//      if (sent == null &&
+//        (cs.preview is ComposePreview.MediaPreview ||
+//            cs.preview is ComposePreview.FilePreview ||
+//            cs.preview is ComposePreview.VoicePreview)
+//      ) {
+//        val sendResult = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
+//        sent = if (sendResult != null) listOf(sendResult) else null
+//        if (sent != null) {
+//          lastMessageFailedToSend = null
+//        }
+//      }
     }
     val wasForwarding = cs.forwarding
     val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItems)?.fromChatInfo?.id
-    clearState(live)
+    val lastFailed = lastMessageFailedToSend
+    if (lastFailed == null) {
+      clearState(live)
+    } else {
+      composeState.value = lastFailed
+    }
     val draft = chatModel.draft.value
     if (wasForwarding && chatModel.draftChatId.value == chat.chatInfo.id && forwardingFromChatId != chat.chatInfo.id && draft != null) {
       composeState.value = draft

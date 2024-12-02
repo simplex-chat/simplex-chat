@@ -894,8 +894,20 @@ object ChatController {
 
   private suspend fun processSendMessageCmd(rh: Long?, cmd: CC): List<AChatItem>? {
     val r = sendCmd(rh, cmd)
-    return when (r) {
-      is CR.NewChatItems -> r.chatItems
+    return when {
+      r is CR.NewChatItems -> r.chatItems
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiSendMessages -> {
+        val mc = cmd.composedMessages.last().msgContent
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.error_sending_message),
+          if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
+            generalGetString(MR.strings.maximum_message_size_reached_non_text)
+          } else {
+            generalGetString(MR.strings.maximum_message_size_reached_text)
+          }
+        )
+        null
+      }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("processSendMessageCmd", generalGetString(MR.strings.error_sending_message), r)
@@ -943,7 +955,21 @@ object ChatController {
 
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
-    if (r is CR.ChatItemUpdated) return r.chatItem
+    when {
+      r is CR.ChatItemUpdated -> return r.chatItem
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.error_sending_message),
+          if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
+            generalGetString(MR.strings.maximum_message_size_reached_non_text)
+          } else {
+            generalGetString(MR.strings.maximum_message_size_reached_text)
+          }
+        )
+        return null
+      }
+    }
+
     Log.e(TAG, "apiUpdateChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -6357,6 +6383,7 @@ sealed class StoreError {
       is HostMemberIdNotFound -> "hostMemberIdNotFound"
       is ContactNotFoundByFileId -> "contactNotFoundByFileId"
       is NoGroupSndStatus -> "noGroupSndStatus"
+      is LargeMsg -> "largeMsg"
     }
 
   @Serializable @SerialName("duplicateName") object DuplicateName: StoreError()
@@ -6416,6 +6443,7 @@ sealed class StoreError {
   @Serializable @SerialName("hostMemberIdNotFound") class HostMemberIdNotFound(val groupId: Long): StoreError()
   @Serializable @SerialName("contactNotFoundByFileId") class ContactNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("noGroupSndStatus") class NoGroupSndStatus(val itemId: Long, val groupMemberId: Long): StoreError()
+  @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
 }
 
 @Serializable
