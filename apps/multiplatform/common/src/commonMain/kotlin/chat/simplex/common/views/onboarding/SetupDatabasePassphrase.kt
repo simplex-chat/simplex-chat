@@ -176,11 +176,9 @@ private fun SetupDatabasePassphraseLayout(
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
           SetPassphraseButton(disabled, onClickUpdate)
           SkipButton(progressIndicator.value) {
-            if (!progressIndicator.value) {
-              randomPassphraseAlert {
-                chatModel.desktopOnboardingRandomPassword.value = true
-                nextStep()
-              }
+            randomPassphraseAlert {
+              chatModel.desktopOnboardingRandomPassword.value = true
+              nextStep()
             }
           }
         }
@@ -229,9 +227,10 @@ private suspend fun startChat(key: String?) {
 }
 
 private fun randomPassphraseAlert(onConfirm: () -> Unit) {
-  AlertManager.shared.showAlertMsg(
+  AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.use_random_passphrase),
     text = generalGetString(MR.strings.you_can_change_it_later),
-    onConfirm = onConfirm
+    confirmText = generalGetString(MR.strings.ok),
+    onConfirm = onConfirm,
   )
 }
