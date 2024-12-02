@@ -2294,4 +2294,6 @@
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_on">Die Nutzungsbedingungen wurden akzeptiert am: %s.</string>
     <string name="operator_conditions_failed_to_load">Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:</string>
+    <string name="remote_hosts_section">Ferngesteuerte Mobiltelefone</string>
+    <string name="chat_archive">Oder importieren Sie eine Archiv-Datei</string>
 </resources>
