@@ -5102,7 +5102,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             sendIntroductions members
             when (groupFeatureAllowed SGFHistory gInfo) sendHistory
-            sendBusinessAutoReply members
+            when (connChatVersion < batchSend2Version) $ sendGroupAutoReply members
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -5212,9 +5212,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             GroupMember {memberId} = sender
                             msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
                         pure msgForwardEvents
-              sendBusinessAutoReply members =
-                when (connChatVersion < batchSend2Version) $
-                  businessAutoAcceptMC_ m >>= mapM_ (sendGroupAutoReply members)
           _ -> do
             let memCategory = memberCategory m
             withStore' (\db -> getViaGroupContact db vr user m) >>= \case
@@ -5373,11 +5370,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
           when sqSecured $ do
             members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-            sendBusinessAutoReply members
-        where
-          sendBusinessAutoReply members =
-            when (connChatVersion >= batchSend2Version) $
-              businessAutoAcceptMC_ m >>= mapM_ (sendGroupAutoReply members)
+            when (connChatVersion >= batchSend2Version) $ sendGroupAutoReply members
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -5405,20 +5398,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateGroupItemsErrorStatus db msgId groupMemberId newStatus = do
           itemIds <- getChatItemIdsByAgentMsgId db connId msgId
           forM_ itemIds $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
-        businessAutoAcceptMC_ GroupMember {memberId = joiningMemberId} = do
-          let GroupInfo {businessChat} = gInfo
-          case businessChat of
-            Just BusinessChatInfo {memberId, chatType = BCCustomer}
-              | joiningMemberId == memberId -> businessAutoReply <$> withStore (`getUserAddress` user)
-            _ -> pure Nothing
+        sendGroupAutoReply members = autoReplyMC >>= mapM_ send
           where
-            businessAutoReply UserContactLink {autoAccept} = case autoAccept of
-              Just AutoAccept {businessAddress, autoReply} | businessAddress -> autoReply
-              _ -> Nothing
-        sendGroupAutoReply members mc = do
-          msg <- sendGroupMessage' user gInfo members (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-          ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc)
-          toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
+            autoReplyMC = do
+              let GroupInfo {businessChat} = gInfo
+                  GroupMember {memberId = joiningMemberId} = m
+              case businessChat of
+                Just BusinessChatInfo {memberId, chatType = BCCustomer}
+                  | joiningMemberId == memberId -> useReply <$> withStore (`getUserAddress` user)
+                  where
+                    useReply UserContactLink {autoAccept} = case autoAccept of
+                      Just AutoAccept {businessAddress, autoReply} | businessAddress -> autoReply
+                      _ -> Nothing
+                _ -> pure Nothing
+            send mc = do
+              msg <- sendGroupMessage' user gInfo members (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc)
+              toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
 
     agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
