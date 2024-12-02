@@ -908,6 +908,13 @@ object ChatController {
         )
         null
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiForwardChatItems -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.error_forwarding_messages),
+          generalGetString(MR.strings.maximum_message_size_reached_forwarding)
+        )
+        null
+      }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("processSendMessageCmd", generalGetString(MR.strings.error_sending_message), r)

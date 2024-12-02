@@ -531,6 +531,9 @@ fun ComposeView(
       sent = null
     } else if (cs.contextItem is ComposeContextItem.ForwardingItems) {
       sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItems, cs.contextItem.fromChatInfo, ttl = ttl)
+      if (sent == null) {
+        lastMessageFailedToSend = constructFailedMessage(cs)
+      }
       if (cs.message.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
