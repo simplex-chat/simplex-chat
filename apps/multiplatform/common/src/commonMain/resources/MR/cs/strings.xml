@@ -2043,4 +2043,6 @@
     <string name="xftp_servers_other">Jiné FXTP servery</string>
     <string name="action_button_add_members">Pozvat</string>
     <string name="cant_call_member_send_message_alert_text">Pošlete zprávu pro povolení volání.</string>
+    <string name="accept_conditions">Přijmout podmínky</string>
+    <string name="operator_conditions_accepted">Přijaté podmínky</string>
 </resources>
