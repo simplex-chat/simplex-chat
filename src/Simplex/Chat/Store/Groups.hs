@@ -358,9 +358,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
--- TODO [business] This function should create business group member in case it is different that fromMember
--- the problem is that at this point there is no introduction yet, so it has to be handled later when introduction arrives.
--- Alternatively, it can be done in processGroupInvitation.
+-- TODO [business] save business type
 createGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
 createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, businessChat} incognitoProfileId = do
@@ -504,7 +502,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
           )
         pure $ Right incognitoLdn
 
--- TODO [business] save business group member information
+-- TODO [business] save business type
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink
   db
@@ -933,11 +931,33 @@ createBusinessRequestGroup
   UserContactRequest {cReqChatVRange, localDisplayName, profileId}
   groupProfile
   business = do
-    -- TODO [business]
+    currentTs <- liftIO getCurrentTime
+    -- groupId <- insertGroup_ currentTs
+    -- TODO [business] create group
     -- create group and member with `business` fields
     -- synthetic profile for group
     -- possibly reuse createAcceptedMember with additional field
     undefined
+  -- where
+  --   insertGroup_ currentTs = ExceptT $ do
+  --     let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+  --     withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+  --       liftIO $ do
+  --         DB.execute
+  --           db
+  --           "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+  --           (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
+  --         profileId <- insertedRowId db
+  --         DB.execute
+  --           db
+  --           [sql|
+  --             INSERT INTO groups
+  --               (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs,
+  --                 created_at, updated_at, chat_ts, user_member_profile_sent_at)
+  --             VALUES (?,?,?,?,?,?,?,?,?)
+  --           |]
+  --           (profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
+  --         insertedRowId db
 
 getContactViaMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> ExceptT StoreError IO Contact
 getContactViaMember db vr user@User {userId} GroupMember {groupMemberId} = do

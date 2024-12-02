@@ -2322,7 +2322,6 @@ processChatCommand' vr = \case
         (_, []) -> Nothing
         (ms1, bm : ms2) -> Just (bm, ms1 <> ms2)
   APIRemoveMember groupId memberId -> withUser $ \user -> do
-    -- TODO [business] prevent removal of "title member", also in UI
     Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
     case find ((== memberId) . groupMemberId') members of
       Nothing -> throwChatError CEGroupMemberNotFound
@@ -4036,7 +4035,7 @@ acceptBusinessJoinRequestAsync
       getGroupMemberById db vr user groupMemberId
     pure (gInfo, clientMember')
     where
-      -- TODO [business] welcome message should be sent on connection, not via group profile.
+      -- TODO [business] use user preferences
       businessGroupProfile :: Profile -> GroupProfile
       businessGroupProfile Profile {displayName, fullName, image, contactLink, preferences} =
         let groupPreferences = Just $ maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
@@ -4850,10 +4849,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
               allowAgentConnectionAsync user conn'' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
-            -- TODO [business]
+            -- TODO [business] group from card
             -- on XGrpLinkInv: delete contact, create group.
             -- XGrpLinkInv here means we were connecting via contact "card",
-            -- check it indeed was contact "card" somehow?
             -- allowAgentConnectionAsync
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO pqSupport connInfo -> do
@@ -4889,6 +4887,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 probeMatchingContactsAndMembers ct' (contactConnIncognito ct') doProbeContacts
                 withStore' $ \db -> resetContactConnInitiated db user conn'
               forM_ viaUserContactLink $ \userContactLinkId -> do
+                -- TODO [business] send auto-reply in business groups
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
                 when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
@@ -5013,7 +5012,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 ct <- withStore $ \db -> getContactViaMember db vr user m
                 withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
                 groupLinkId <- withStore' $ \db -> getGroupLinkId db user gInfo
-                -- TODO [business]
+                -- TODO [business] ignore
                 -- ignore? - old group link protocol
                 sendGrpInvitation ct m groupLinkId
                 toView $ CRSentGroupInvitation user gInfo ct m
@@ -5571,7 +5570,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        -- TODO [business] why do we need to create contact request if we know it will be auto-accepted?
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> CM ()
         profileContactRequest invId chatVRange p xContactId_ reqPQSup = do
           withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
@@ -5589,8 +5587,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           ct <- acceptContactRequestAsync user cReq Nothing True reqPQSup
                           toView $ CRAcceptingContactRequest user ct
                         else do
-                          -- why do we need message chatVRange and separately cReqChatVRange?
-                          -- same in acceptGroupJoinRequestAsync?
                           (gInfo, member) <- acceptBusinessJoinRequestAsync user cReq p chatVRange
                           -- TODO [business] CRAcceptingBusinessRequest
                           pure ()
@@ -6314,9 +6310,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     groupMsgToView gInfo ci =
       toView $ CRNewChatItems user [AChatItem SCTGroup (msgDirection @d) (GroupChat gInfo) ci]
 
-    -- TODO [business]
-    -- save businessMember from GroupInvitation
-    -- (same as on processing XGrpLinkInv)
+    -- TODO [business] save businessType
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> CM ()
     processGroupInvitation ct inv msg msgMeta = do
       let Contact {localDisplayName = c, activeConn} = ct
@@ -6433,7 +6427,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    -- TODO [business] update group profile when "title member" profile updated
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems itemTs_
       | redactedMemberProfile (fromLocalProfile p) /= redactedMemberProfile p' =
@@ -6734,7 +6727,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           toView $ CRContactConnecting user ct
           pure conn'
         XGrpLinkInv glInv -> do
-          -- TODO [business]
+          -- TODO [business] save businessMember
           -- save businessMember:
           -- groups.business, groups.business_group_member_id, group_members.business_member
           -- different event from CRGroupLinkConnecting? (seems not necessary)

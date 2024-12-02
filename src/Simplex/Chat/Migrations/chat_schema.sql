@@ -128,8 +128,8 @@ CREATE TABLE groups(
   user_member_profile_sent_at TEXT,
   custom_data BLOB,
   ui_themes TEXT,
-  business TEXT NULL,
-  business_group_member_id INTEGER NULL REFERENCES group_members(group_member_id), -- received
+  business_chat TEXT NULL,
+  business_member_id BLOB NULL, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -162,7 +162,6 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
-  business_member TEXT NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -294,7 +293,6 @@ CREATE TABLE connections(
   pq_snd_enabled INTEGER,
   pq_rcv_enabled INTEGER,
   quota_err_counter INTEGER NOT NULL DEFAULT 0,
-  business INTEGER DEFAULT 0,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -927,7 +925,4 @@ CREATE INDEX idx_chat_items_notes ON chat_items(
   note_folder_id,
   item_status,
   created_at
-);
-CREATE INDEX idx_groups_business_group_member_id ON groups(
-  business_group_member_id
 );
