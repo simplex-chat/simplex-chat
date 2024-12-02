@@ -1909,7 +1909,11 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var image: String? { get { groupProfile.image } }
     public var localAlias: String { "" }
 
-    public var canEdit: Bool {
+    public var canEditProfile: Bool {
+        return membership.memberRole == .owner && membership.memberCurrent && businessType == nil
+    }
+
+    public var canEditPreferences: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
     }
 
@@ -1933,8 +1937,8 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         updatedAt: .now
     )
 
-    public var business: Bool {
-        .business == businessChat?.chatType
+    public var businessType: BusinessChatType? {
+        businessChat?.chatType
     }
 }
 

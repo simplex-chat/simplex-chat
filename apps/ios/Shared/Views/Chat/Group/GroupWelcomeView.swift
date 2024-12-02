@@ -23,7 +23,7 @@ struct GroupWelcomeView: View {
 
     var body: some View {
         VStack {
-            if groupInfo.canEdit {
+            if groupInfo.canEditProfile {
                 editorView()
                     .modifier(BackButton(disabled: Binding.constant(false)) {
                         if welcomeTextUnchanged() {

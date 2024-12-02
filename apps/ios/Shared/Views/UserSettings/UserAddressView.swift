@@ -141,7 +141,7 @@ struct UserAddressView: View {
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
             // }
-            settingsRow("hand.wave", color: theme.colors.secondary) {
+            settingsRow("briefcase", color: theme.colors.secondary) {
                 Toggle("Business address", isOn: $aas.business)
                     .onChange(of: aas.business) { ba in
                         if ba {

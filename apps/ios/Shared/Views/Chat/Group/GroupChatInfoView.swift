@@ -81,10 +81,10 @@ struct GroupChatInfoView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                 Section {
-                    if groupInfo.canEdit {
+                    if groupInfo.canEditProfile {
                         editGroupButton()
                     }
-                    if groupInfo.groupProfile.description != nil || groupInfo.canEdit {
+                    if groupInfo.groupProfile.description != nil || groupInfo.canEditProfile {
                         addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
