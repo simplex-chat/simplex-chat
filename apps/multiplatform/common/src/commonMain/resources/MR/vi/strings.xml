@@ -1386,4 +1386,19 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Bạn có thể <font color="#0088ff">kết nối với các nhà phát triển SimpleX Chat để hỏi bất kỳ câu hỏi nào và nhận thông tin cập nhật</font>.]]></string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Bạn <b>không được</b> sử dụng cùng một cơ sở dữ liệu trên hai thiết .]]></string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Bạn kiểm soát (các) máy chủ nào <b>tiếp nhận</b> tin nhắn, còn các liên hệ của bạn  – các máy chủ mà bạn sử dụng để gửi tin nhắn cho họ.]]></string>
+    <string name="error_accepting_operator_conditions">Lỗi chấp nhận điều kiện</string>
+    <string name="failed_to_save_servers">Lỗi lưu máy chủ</string>
+    <string name="errors_in_servers_configuration">Lỗi trong cấu hình máy chủ.</string>
+    <string name="connection_security">Bảo mật kết nối</string>
+    <string name="create_1_time_link">Tạo đường dẫn dùng một lần</string>
+    <string name="onboarding_network_operators_conditions_will_be_accepted">Các điều kiện sẽ được chấp nhận với các nhà cung cấp được cho phép sau 30 ngày.</string>
+    <string name="onboarding_network_operators_continue">Tiếp tục</string>
+    <string name="operator_conditions_failed_to_load">Không thể tải văn bản về các điều kiện hiện tại, bạn có thể xem xét các điều kiện thông qua đường dẫn này:</string>
+    <string name="operator_conditions_of_use">Các điều kiện sử dụng</string>
+    <string name="v6_2_network_decentralization_enable_flux">Cho phép flux</string>
+    <string name="operator_conditions_will_be_accepted_on">Các điều kiện sẽ được chấp nhận vào: %s.</string>
+    <string name="error_adding_server">Lỗi thêm máy chủ</string>
+    <string name="error_updating_server_title">Lỗi cập nhật máy chủ</string>
+    <string name="operator_conditions_accepted_on">Các điều kiện đã được chấp nhận vào: %s.</string>
+    <string name="operator_conditions_accepted_for_enabled_operators_on">Các điều kiện sẽ được tự động chấp nhận với các nhà cung cấp được cho phép vào: %s.</string>
 </resources>
