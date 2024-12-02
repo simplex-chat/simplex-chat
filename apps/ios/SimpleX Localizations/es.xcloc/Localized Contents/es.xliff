@@ -8086,7 +8086,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can create it in user picker." xml:space="preserve" approved="no">
         <source>You can create it in user picker.</source>
-        <target state="translated">Puedes crearlo desde el selector de usuario.</target>
+        <target state="translated">Pulsa Crear dirección SimpleX en el menú para crearla más tarde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
