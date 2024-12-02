@@ -191,9 +191,9 @@
   <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="service_notifications">Instant notifications!</string>
   <string name="service_notifications_disabled">Instant notifications are disabled!</string>
-  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To preserve your privacy, instead of push notifications the app has a <b>SimpleX background service</b> – it uses a few percent of the battery per day.]]></string>
+  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To improve privacy, <b>SimpleX runs in background</b> instead of using push notifications.]]></string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>It can be disabled via settings</b> – notifications will still be shown while the app is running.]]></string>
-  <string name="turn_off_battery_optimization"><![CDATA[To use it, please <b>allow SimpleX to run in background</b> in the next dialog. Otherwise, the notifications will be disabled.]]></string>
+  <string name="turn_off_battery_optimization"><![CDATA[<b>Allow it</b> in the next dialog to receive notifications instantly.]]></string>
   <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
@@ -210,6 +210,7 @@
   <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
   <string name="database_initialization_error_title">Can\'t initialize the database</string>
   <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
+  <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi devices</b>: please enable Autostart in the system settings for notifications to work.]]></string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title">SimpleX Chat service</string>
