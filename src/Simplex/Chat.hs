@@ -5009,8 +5009,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 ct <- withStore $ \db -> getContactViaMember db vr user m
                 withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
                 groupLinkId <- withStore' $ \db -> getGroupLinkId db user gInfo
-                -- TODO [business] ignore
-                -- ignore? - old group link protocol
                 sendGrpInvitation ct m groupLinkId
                 toView $ CRSentGroupInvitation user gInfo ct m
                 where
@@ -6723,10 +6721,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           toView $ CRContactConnecting user ct
           pure conn'
         XGrpLinkInv glInv -> do
-          -- TODO [business] save businessMember
-          -- save businessMember:
-          -- groups.business, groups.business_group_member_id, group_members.business_member
-          -- different event from CRGroupLinkConnecting? (seems not necessary)
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db vr user conn' glInv
           toView $ CRGroupLinkConnecting user gInfo host
           pure conn'
