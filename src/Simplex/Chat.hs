@@ -5102,7 +5102,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             sendIntroductions members
             when (groupFeatureAllowed SGFHistory gInfo) sendHistory
-            sendGroupAutoReply' members
+            sendBusinessAutoReply members
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -5212,11 +5212,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             GroupMember {memberId} = sender
                             msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
                         pure msgForwardEvents
-              sendGroupAutoReply' members = do
-                let GroupMember {memberId} = m
-                mc_ <- businessAutoAcceptMC_ memberId
-                forM_ mc_ $ \mc ->
-                  when (connChatVersion < batchSend2Version) $ sendGroupAutoReply members mc
+              sendBusinessAutoReply members =
+                when (connChatVersion < batchSend2Version) $
+                  businessAutoAcceptMC_ m >>= mapM_ (sendGroupAutoReply members)
           _ -> do
             let memCategory = memberCategory m
             withStore' (\db -> getViaGroupContact db vr user m) >>= \case
@@ -5375,13 +5373,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
           when sqSecured $ do
             members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-            sendGroupAutoReply' members
+            sendBusinessAutoReply members
         where
-          sendGroupAutoReply' members = do
-            let GroupMember {memberId} = m
-            mc_ <- businessAutoAcceptMC_ memberId
-            forM_ mc_ $ \mc ->
-              when (connChatVersion >= batchSend2Version) $ sendGroupAutoReply members mc
+          sendBusinessAutoReply members =
+            when (connChatVersion >= batchSend2Version) $
+              businessAutoAcceptMC_ m >>= mapM_ (sendGroupAutoReply members)
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -5409,19 +5405,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateGroupItemsErrorStatus db msgId groupMemberId newStatus = do
           itemIds <- getChatItemIdsByAgentMsgId db connId msgId
           forM_ itemIds $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
-        businessAutoAcceptMC_ joiningMemberId = do
+        businessAutoAcceptMC_ GroupMember {memberId = joiningMemberId} = do
           let GroupInfo {businessChat} = gInfo
           case businessChat of
-            Just BusinessChatInfo {memberId, chatType} ->
-              if joiningMemberId == memberId && chatType == BCCustomer
-                then do
-                  UserContactLink {autoAccept} <- withStore $ \db -> getUserAddress db user
-                  pure $ case autoAccept of
-                    Just AutoAccept {autoReply = Just mc} -> Just mc
-                    _ -> Nothing
-                else
-                  pure Nothing
+            Just BusinessChatInfo {memberId, chatType = BCCustomer}
+              | joiningMemberId == memberId -> businessAutoReply <$> withStore (`getUserAddress` user)
             _ -> pure Nothing
+          where
+            businessAutoReply UserContactLink {autoAccept} = case autoAccept of
+              Just AutoAccept {businessAddress, autoReply} | businessAddress -> autoReply
+              _ -> Nothing
         sendGroupAutoReply members mc = do
           msg <- sendGroupMessage' user gInfo members (XMsgNew $ MCSimple (extMsgContent mc Nothing))
           ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc)
