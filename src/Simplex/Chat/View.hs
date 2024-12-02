@@ -204,6 +204,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
   CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
+  CRAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
@@ -1017,6 +1018,9 @@ viewAcceptingContactRequest :: Contact -> [StyledString]
 viewAcceptingContactRequest ct
   | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
   | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
+
+viewAcceptingBusinessRequest :: GroupInfo -> [StyledString]
+viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request"]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =

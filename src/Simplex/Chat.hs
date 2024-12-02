@@ -2066,7 +2066,7 @@ processChatCommand' vr = \case
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
     forM autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} ->
-      when (businessAddress && acceptIncognito) $ throwChatError CECommandError "requests to business address cannot be accepted incognito"
+      when (businessAddress && acceptIncognito) $ throwChatError $ CECommandError "requests to business address cannot be accepted incognito"
     contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
   AddressAutoAccept autoAccept_ -> withUser $ \User {userId} ->
@@ -4002,7 +4002,7 @@ acceptGroupJoinRequestAsync
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
 
-acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM (GroupInfo, GroupMember)
+acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM GroupInfo
 acceptBusinessJoinRequestAsync
   user
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange} = do
@@ -4030,10 +4030,8 @@ acceptBusinessJoinRequestAsync
     subMode <- chatReadVar subscriptionMode
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
-    clientMember' <- withStore $ \db -> do
-      liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
-      getGroupMemberById db vr user groupMemberId
-    pure (gInfo, clientMember')
+    withStore' $ \db -> createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
+    pure gInfo
     where
       businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
       businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
@@ -5588,9 +5586,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           ct <- acceptContactRequestAsync user cReq Nothing True reqPQSup
                           toView $ CRAcceptingContactRequest user ct
                         else do
-                          (gInfo, member) <- acceptBusinessJoinRequestAsync user cReq
-                          -- TODO [business] CRAcceptingBusinessRequest
-                          pure ()
+                          gInfo <- acceptBusinessJoinRequestAsync user cReq
+                          toView $ CRAcceptingBusinessRequest user gInfo
                   | otherwise -> case groupId_ of
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
