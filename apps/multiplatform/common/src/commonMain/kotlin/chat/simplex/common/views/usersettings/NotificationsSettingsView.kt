@@ -1,11 +1,10 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionTextFooter
 import SectionView
 import SectionViewSelectable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,6 +15,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlin.collections.ArrayList
@@ -77,6 +77,9 @@ fun NotificationsSettingsLayout(
           color = MaterialTheme.colors.secondary
         )
       }
+      if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
+        SectionTextFooter(stringResource(MR.strings.xiaomi_ignore_battery_optimization))
+      }
     }
     SectionBottomSpacer()
   }
@@ -91,6 +94,9 @@ fun NotificationsModeView(
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
     SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
+    if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
+      SectionTextFooter(stringResource(MR.strings.xiaomi_ignore_battery_optimization))
+    }
   }
 }
 

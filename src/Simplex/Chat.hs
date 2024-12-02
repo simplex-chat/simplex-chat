@@ -4007,13 +4007,13 @@ acceptGroupJoinRequestAsync
 acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM GroupInfo
 acceptBusinessJoinRequestAsync
   user
-  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange} = do
+  ucr@UserContactRequest {contactRequestId, agentInvitationId = AgentInvId invId, cReqChatVRange} = do
     vr <- chatVersionRange
     gVar <- asks random
     let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
     (gInfo, clientMember) <- withStore $ \db -> do
-      liftIO $ deleteContactRequestRec db user ucr
+      liftIO $ deleteContactRequest db user contactRequestId
       createBusinessRequestGroup db vr gVar user ucr groupPreferences
     let GroupInfo {membership} = gInfo
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
