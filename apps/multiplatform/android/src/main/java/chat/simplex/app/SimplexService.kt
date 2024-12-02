@@ -623,7 +623,7 @@ class SimplexService: Service() {
 
     fun isBackgroundAllowed(): Boolean = isIgnoringBatteryOptimizations() && !isBackgroundRestricted()
 
-    fun isIgnoringBatteryOptimizations(): Boolean {
+    private fun isIgnoringBatteryOptimizations(): Boolean {
       val powerManager = androidAppContext.getSystemService(Application.POWER_SERVICE) as PowerManager
       return powerManager.isIgnoringBatteryOptimizations(androidAppContext.packageName)
     }

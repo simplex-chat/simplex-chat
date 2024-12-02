@@ -210,6 +210,7 @@
   <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
   <string name="database_initialization_error_title">Can\'t initialize the database</string>
   <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
+  <string name="xiaomi_ignore_battery_optimization">Xiaomi users: make sure you have enabled autostart for the app. Otherwise, notifications may not work.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title">SimpleX Chat service</string>
