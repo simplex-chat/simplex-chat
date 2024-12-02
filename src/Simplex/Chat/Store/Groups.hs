@@ -952,18 +952,18 @@ createBusinessRequestGroup
           groupId <- liftIO $ do
             DB.execute
               db
-              "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, business_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-              (displayName, fullName, image, userId, groupPreferences, BCCustomer, currentTs, currentTs)
+              "INSERT INTO group_profiles (display_name, full_name, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+              (displayName, fullName, image, userId, groupPreferences, currentTs, currentTs)
             profileId <- insertedRowId db
             DB.execute
               db
               [sql|
-              INSERT INTO groups
-                (group_profile_id, local_display_name, user_id, enable_ntfs,
-                  created_at, updated_at, chat_ts, user_member_profile_sent_at)
-              VALUES (?,?,?,?,?,?,?,?,?)
-            |]
-              (profileId, localDisplayName, userId, True, currentTs, currentTs, currentTs, currentTs)
+                INSERT INTO groups
+                  (group_profile_id, local_display_name, user_id, enable_ntfs,
+                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
+                VALUES (?,?,?,?,?,?,?,?,?)
+              |]
+              (profileId, localDisplayName, userId, True, currentTs, currentTs, currentTs, currentTs, BCCustomer)
             insertedRowId db
           memberId <- liftIO $ encodedRandomBytes gVar 12
           void $ createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr

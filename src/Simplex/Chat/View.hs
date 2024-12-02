@@ -981,9 +981,14 @@ simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simpl
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
-  Just AutoAccept {acceptIncognito, autoReply} ->
-    ("auto_accept on" <> if acceptIncognito then ", incognito" else "")
+  Just AutoAccept {businessAddress, acceptIncognito, autoReply} ->
+    ("auto_accept on" <> aaInfo)
       : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+    where
+      aaInfo
+        | businessAddress = ", business"
+        | acceptIncognito = ", incognito"
+        | otherwise = ""
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
@@ -1020,7 +1025,7 @@ viewAcceptingContactRequest ct
   | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
 
 viewAcceptingBusinessRequest :: GroupInfo -> [StyledString]
-viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request"]
+viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request..."]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =

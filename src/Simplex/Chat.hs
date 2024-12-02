@@ -2065,7 +2065,7 @@ processChatCommand' vr = \case
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
-    forM autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} ->
+    forM_ autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} ->
       when (businessAddress && acceptIncognito) $ throwChatError $ CECommandError "requests to business address cannot be accepted incognito"
     contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
@@ -6449,9 +6449,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xInfoMember gInfo m p' brokerTs = void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> CM ()
-    xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
+    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
-      if viaGroupLink && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
+      if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
           m' <- processMemberProfileUpdate gInfo m p' False Nothing
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
@@ -8779,11 +8779,11 @@ chatCommandP =
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
-    autoAcceptP =
-      ifM
-        onOffP
-        (Just <$> (AutoAccept False <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
-        (pure Nothing)
+    autoAcceptP = ifM onOffP (Just <$> (businessAA <|> addressAA)) (pure Nothing)
+      where
+        addressAA = AutoAccept False <$> (" incognito=" *> onOffP <|> pure False) <*> autoReply
+        businessAA = AutoAccept True <$> (" business" *> pure False) <*> autoReply
+        autoReply = optional (A.space *> msgContentP)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
