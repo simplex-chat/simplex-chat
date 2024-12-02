@@ -60,7 +60,6 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
-import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
@@ -4849,12 +4848,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
-              let Contact {profile = LocalProfile {profileId}} = ct
               (gInfo, host) <- withStore $ \db -> do
-                liftIO $ do
-                  DB.execute db "UPDATE connections SET contact_id = NULL WHERE connection_id = ?" (Only connId)
-                  DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
-                  DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
+                liftIO $ deleteContactCardKeepConn db connId ct
                 createGroupInvitedViaLink db vr user conn'' glInv
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)

@@ -30,6 +30,7 @@ module Simplex.Chat.Store.Groups
     getGroupAndMember,
     createNewGroup,
     createGroupInvitation,
+    deleteContactCardKeepConn,
     createGroupInvitedViaLink,
     setViaGroupLinkHash,
     setGroupInvitationChatItemId,
@@ -505,6 +506,12 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
               :. (minV, maxV)
           )
         pure $ Right incognitoLdn
+
+deleteContactCardKeepConn :: DB.Connection -> Int64 -> Contact -> IO ()
+deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {profileId}} = do
+  DB.execute db "UPDATE connections SET contact_id = NULL WHERE connection_id = ?" (Only connId)
+  DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
+  DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
 createGroupInvitedViaLink :: DB.Connection -> VersionRangeChat -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink
