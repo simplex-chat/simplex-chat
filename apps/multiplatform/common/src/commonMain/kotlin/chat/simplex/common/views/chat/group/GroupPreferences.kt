@@ -6,12 +6,10 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -20,7 +18,6 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
 
 private val featureRoles: List<Pair<GroupMemberRole?, String>> = listOf(
   null to generalGetString(MR.strings.feature_roles_all_members),
@@ -136,7 +133,7 @@ private fun GroupPreferencesLayout(
     FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
-    if (groupInfo.canEdit) {
+    if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       ResetSaveButtons(
         reset = reset,
@@ -163,7 +160,7 @@ private fun FeatureSection(
     val icon = if (on) feature.iconFilled() else feature.icon
     val iconTint = if (on) SimplexGreen else MaterialTheme.colors.secondary
     val timedOn = feature == GroupFeature.TimedMessages && enableFeature.value == GroupFeatureEnabled.ON
-    if (groupInfo.canEdit) {
+    if (groupInfo.isOwner) {
       PreferenceToggleWithIcon(
         feature.text,
         icon,
@@ -214,7 +211,7 @@ private fun FeatureSection(
       onSelected(enableFeature.value, null)
     }
   }
-  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.canEdit))
+  SectionTextFooter(feature.enableDescription(enableFeature.value, groupInfo.isOwner))
 }
 
 @Composable

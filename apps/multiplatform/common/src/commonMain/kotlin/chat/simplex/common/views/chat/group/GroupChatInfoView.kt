@@ -328,10 +328,10 @@ fun ModalData.GroupChatInfoLayout(
       SectionSpacer()
 
       SectionView {
-        if (groupInfo.canEdit) {
+        if (groupInfo.isOwner && groupInfo.businessType == null) {
           EditGroupProfileButton(editGroupProfile)
         }
-        if (groupInfo.groupProfile.description != null || groupInfo.canEdit) {
+        if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessType == null)) {
           AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
         }
         GroupPreferencesButton(openPreferences)
@@ -356,10 +356,12 @@ fun ModalData.GroupChatInfoLayout(
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
         if (groupInfo.canAddMembers) {
-          if (groupLink == null) {
-            CreateGroupLinkButton(manageGroupLink)
-          } else {
-            GroupLinkButton(manageGroupLink)
+          if (groupInfo.businessChat == null) {
+            if (groupLink == null) {
+              CreateGroupLinkButton(manageGroupLink)
+            } else {
+              GroupLinkButton(manageGroupLink)
+            }
           }
           val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
           val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary

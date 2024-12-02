@@ -196,11 +196,19 @@ private fun UserAddressLayout(
           LearnMoreButton(learnMore)
         }
       } else {
+        val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
+        val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
+
         SectionView(stringResource(MR.strings.for_social_media).uppercase()) {
           SimpleXLinkQRCode(userAddress.connReqContact)
           ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
           // ShareViaEmailButton { sendEmail(userAddress) }
+          BusinessAddressToggle(autoAcceptState, saveAas = { saveAas(autoAcceptState.value, autoAcceptStateSaved) })
           AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAas)
+
+          if (autoAcceptState.value.business) {
+            SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
+          }
         }
 
         SectionDividerSpaced()
@@ -390,12 +398,28 @@ fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAd
 }
 
 @Composable
+private fun BusinessAddressToggle(autoAcceptState: MutableState<AutoAcceptState>, saveAas: (AutoAcceptState) -> Unit) {
+  PreferenceToggleWithIcon(
+    stringResource(MR.strings.business_address),
+    painterResource(MR.images.ic_work),
+    MaterialTheme.colors.secondary,
+    autoAcceptState.value.business,
+  ) {
+    autoAcceptState.value = if (it)
+      AutoAcceptState(enable = true, incognito = false, business = it, autoAcceptState.value.welcomeText)
+    else
+      AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, business = it, autoAcceptState.value.welcomeText)
+    saveAas(autoAcceptState.value)
+  }
+}
+
+@Composable
 private fun AutoAcceptToggle(autoAcceptState: MutableState<AutoAcceptState>, saveAas: (AutoAcceptState) -> Unit) {
   PreferenceToggleWithIcon(stringResource(MR.strings.auto_accept_contact), painterResource(MR.images.ic_check), checked = autoAcceptState.value.enable) {
     autoAcceptState.value = if (!it)
       AutoAcceptState()
     else
-      AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.welcomeText)
+      AutoAcceptState(it, autoAcceptState.value.incognito, autoAcceptState.value.business, autoAcceptState.value.welcomeText)
     saveAas(autoAcceptState.value)
   }
 }
@@ -416,12 +440,15 @@ private class AutoAcceptState {
     private set
   var incognito: Boolean = false
     private set
+  var business: Boolean = false
+    private set
   var welcomeText: String = ""
     private set
 
-  constructor(enable: Boolean = false, incognito: Boolean = false, welcomeText: String = "") {
+  constructor(enable: Boolean = false, incognito: Boolean = false, business: Boolean = false, welcomeText: String = "") {
     this.enable = enable
     this.incognito = incognito
+    this.business = business
     this.welcomeText = welcomeText
   }
 
@@ -429,6 +456,7 @@ private class AutoAcceptState {
     contactLink.autoAccept?.let { aa ->
       enable = true
       incognito = aa.acceptIncognito
+      business = aa.businessAddress
       aa.autoReply?.let { msg ->
         welcomeText = msg.text
       } ?: run {
@@ -445,7 +473,7 @@ private class AutoAcceptState {
         if (s != "") {
           autoReply = MsgContent.MCText(s)
         }
-        return AutoAccept(incognito, autoReply)
+        return AutoAccept(business, incognito, autoReply)
       }
       return null
     }
@@ -470,7 +498,9 @@ private fun AutoAcceptSection(
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit
 ) {
   SectionView(stringResource(MR.strings.auto_accept_contact).uppercase()) {
-    AcceptIncognitoToggle(autoAcceptState)
+    if (!autoAcceptState.value.business) {
+      AcceptIncognitoToggle(autoAcceptState)
+    }
     WelcomeMessageEditor(autoAcceptState)
     SaveAASButton(autoAcceptState.value == savedAutoAcceptState.value) { saveAas(autoAcceptState.value, savedAutoAcceptState) }
   }
@@ -484,7 +514,7 @@ private fun AcceptIncognitoToggle(autoAcceptState: MutableState<AutoAcceptState>
     if (autoAcceptState.value.incognito) Indigo else MaterialTheme.colors.secondary,
     autoAcceptState.value.incognito,
   ) {
-    autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.welcomeText)
+    autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.business, autoAcceptState.value.welcomeText)
   }
 }
 
@@ -494,7 +524,7 @@ private fun WelcomeMessageEditor(autoAcceptState: MutableState<AutoAcceptState>)
   TextEditor(welcomeText, Modifier.height(100.dp), placeholder = stringResource(MR.strings.enter_welcome_message_optional))
   LaunchedEffect(welcomeText.value) {
     if (welcomeText.value != autoAcceptState.value.welcomeText) {
-      autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, welcomeText.value)
+      autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, autoAcceptState.value.business, welcomeText.value)
     }
   }
 }
