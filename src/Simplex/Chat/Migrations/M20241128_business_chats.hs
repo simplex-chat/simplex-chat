@@ -12,16 +12,12 @@ m20241128_business_chats =
 ALTER TABLE user_contact_links ADD business INTEGER DEFAULT 0;
 ALTER TABLE connections ADD COLUMN business INTEGER DEFAULT 0;
 ALTER TABLE groups ADD COLUMN business_chat TEXT NULL;
-ALTER TABLE groups ADD COLUMN business_member_id BLOB NULL REFERENCES group_members(member_id);
-
-CREATE INDEX idx_groups_business_member_id ON groups(business_member_id);
+ALTER TABLE groups ADD COLUMN business_member_id BLOB NULL;
 |]
 
 down_m20241128_business_chats :: Query
 down_m20241128_business_chats =
   [sql|
-DROP INDEX idx_groups_business_member_id;
-
 ALTER TABLE user_contact_links DROP COLUMN business;
 ALTER TABLE connections DROP COLUMN business;
 ALTER TABLE groups DROP COLUMN business_chat;
