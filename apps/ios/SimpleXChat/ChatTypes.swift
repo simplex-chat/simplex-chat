@@ -1909,12 +1909,8 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var image: String? { get { groupProfile.image } }
     public var localAlias: String { "" }
 
-    public var canEditProfile: Bool {
+    public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent && businessType == nil
-    }
-
-    public var canEditPreferences: Bool {
-        return membership.memberRole == .owner && membership.memberCurrent
     }
 
     public var canDelete: Bool {

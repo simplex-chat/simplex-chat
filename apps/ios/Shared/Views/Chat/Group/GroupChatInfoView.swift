@@ -81,10 +81,10 @@ struct GroupChatInfoView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                 Section {
-                    if groupInfo.canEditProfile {
+                    if groupInfo.isOwner && groupInfo.businessChat == nil {
                         editGroupButton()
                     }
-                    if groupInfo.groupProfile.description != nil || groupInfo.canEditProfile {
+                    if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
                         addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
@@ -107,7 +107,9 @@ struct GroupChatInfoView: View {
 
                 Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                     if groupInfo.canAddMembers {
-                        groupLinkButton()
+                        if groupInfo.businessType == nil {
+                            groupLinkButton()
+                        }
                         if (chat.chatInfo.incognito) {
                             Label("Invite members", systemImage: "plus")
                                 .foregroundColor(Color(uiColor: .tertiaryLabel))
@@ -276,10 +278,15 @@ struct GroupChatInfoView: View {
     }
 
     private func addMembersButton() -> some View {
-        NavigationLink {
+        let label: LocalizedStringKey = switch groupInfo.businessChat?.chatType {
+            case .customer: "Add team members"
+            case .business: "Add friends"
+            case .none: "Invite members"
+        }
+        return NavigationLink {
             addMembersDestinationView()
         } label: {
-            Label("Invite members", systemImage: "plus")
+            Label(label, systemImage: "plus")
         }
     }
 
@@ -625,21 +632,22 @@ struct GroupChatInfoView: View {
 }
 
 func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
-    NavigationLink {
+    let label: LocalizedStringKey = groupInfo.wrappedValue.businessChat == nil ? "Group preferences" : "Chat preferences"
+    return NavigationLink {
         GroupPreferencesView(
             groupInfo: groupInfo,
             preferences: groupInfo.wrappedValue.fullGroupPreferences,
             currentPreferences: groupInfo.wrappedValue.fullGroupPreferences,
             creatingGroup: creatingGroup
         )
-        .navigationBarTitle("Group preferences")
+        .navigationBarTitle(label)
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
     } label: {
         if creatingGroup {
             Text("Set group preferences")
         } else {
-            Label("Group preferences", systemImage: "switch.2")
+            Label(label, systemImage: "switch.2")
         }
     }
 }

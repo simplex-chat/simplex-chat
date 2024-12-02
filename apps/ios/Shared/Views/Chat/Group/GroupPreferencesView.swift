@@ -38,7 +38,7 @@ struct GroupPreferencesView: View {
                 featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
                 featureSection(.history, $preferences.history.enable)
 
-                if groupInfo.canEditPreferences {
+                if groupInfo.isOwner {
                     Section {
                         Button("Reset") { preferences = currentPreferences }
                         Button(saveText) { savePreferences() }
@@ -77,7 +77,7 @@ struct GroupPreferencesView: View {
             let color: Color = enableFeature.wrappedValue == .on ? .green : theme.colors.secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
             let timedOn = feature == .timedMessages && enableFeature.wrappedValue == .on
-            if groupInfo.canEditPreferences {
+            if groupInfo.isOwner {
                 let enable = Binding(
                     get: { enableFeature.wrappedValue == .on },
                     set: { on, _ in enableFeature.wrappedValue = on ? .on : .off }
@@ -123,7 +123,7 @@ struct GroupPreferencesView: View {
                 }
             }
         } footer: {
-            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.canEditPreferences))
+            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
                 .foregroundColor(theme.colors.secondary)
         }
         .onChange(of: enableFeature.wrappedValue) { enabled in
