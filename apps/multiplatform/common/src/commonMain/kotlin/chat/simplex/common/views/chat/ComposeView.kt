@@ -655,17 +655,6 @@ fun ComposeView(
           lastMessageFailedToSend = constructFailedMessage(cs)
         }
       }
-//      if (sent == null &&
-//        (cs.preview is ComposePreview.MediaPreview ||
-//            cs.preview is ComposePreview.FilePreview ||
-//            cs.preview is ComposePreview.VoicePreview)
-//      ) {
-//        val sendResult = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
-//        sent = if (sendResult != null) listOf(sendResult) else null
-//        if (sent != null) {
-//          lastMessageFailedToSend = null
-//        }
-//      }
     }
     val wasForwarding = cs.forwarding
     val forwardingFromChatId = (cs.contextItem as? ComposeContextItem.ForwardingItems)?.fromChatInfo?.id
