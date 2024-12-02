@@ -47,6 +47,8 @@ chatProfileTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
+    describe "business address" $ do
+      it "create and connect via business address" testBusinessAddress
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -676,6 +678,49 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
           alice <## "use /i bob to print out this incognito profile again"
       ]
+
+testBusinessAddress :: HasCallStack => FilePath -> IO ()
+testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile $
+  \biz alice bob -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    biz <## "#bob_1 (Bob): accepting business address request..."
+    biz <## "#bob_1: bob joined the group"
+    bob <## "#biz: joining the group..."
+    bob <## "#biz: you joined the group"
+    biz #> "#bob_1 hi"
+    bob <# "#biz biz_1> hi"
+    bob #> "#biz hello"
+    biz <# "#bob_1 bob> hello"
+    connectUsers biz alice
+    biz <##> alice
+    biz ##> "/a #bob_1 alice"
+    biz <## "invitation to join the group #bob_1 sent to alice"
+    alice <## "#bob (Bob): biz invites you to join the group as member"
+    alice <## "use /j bob to accept"
+    alice ##> "/j bob"
+    concurrentlyN_
+      [ do
+          alice <## "#bob: you joined the group"
+          alice <### [WithTime "#bob biz> hi [>>]", WithTime "#bob bob_1> hello [>>]"]
+          alice <## "#bob: member bob_1 (Bob) is connected",
+        biz <## "#bob_1: alice joined the group",
+        do
+          bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
+          bob <## "#biz: new member alice is connected"
+      ]
+    alice #> "#bob hey"
+    concurrently_
+      (bob <# "#biz alice> hey")
+      (biz <# "#bob_1 alice> hey")
+    bob #> "#biz hey there"
+    concurrently_
+      (alice <# "#bob bob_1> hey there")
+      (biz <# "#bob_1 bob> hey there")
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
 testPlanAddressOkKnown =
@@ -2380,7 +2425,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 9)"
+      a <## "peer chat protocol version range: (Version 1, Version 10)"
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

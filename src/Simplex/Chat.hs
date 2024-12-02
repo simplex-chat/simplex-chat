@@ -2065,6 +2065,8 @@ processChatCommand' vr = \case
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
+    forM_ autoAccept_ $ \AutoAccept {businessAddress, acceptIncognito} ->
+      when (businessAddress && acceptIncognito) $ throwChatError $ CECommandError "requests to business address cannot be accepted incognito"
     contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
   AddressAutoAccept autoAccept_ -> withUser $ \User {userId} ->
@@ -3007,7 +3009,7 @@ processChatCommand' vr = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
-    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
       let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
@@ -3016,6 +3018,7 @@ processChatCommand' vr = \case
                 invitedMember = MemberIdRole memberId memRole,
                 connRequest = cReq,
                 groupProfile,
+                businessChat,
                 groupLinkId = Nothing,
                 groupSize = Just currentMemCount
               }
@@ -3972,12 +3975,14 @@ acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = Agen
 acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
-  gInfo@GroupInfo {groupProfile, membership}
+  gInfo@GroupInfo {groupProfile, membership, businessChat}
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
-    (groupMemberId, memberId) <- withStore $ \db -> createAcceptedMember db gVar user gInfo ucr gLinkMemRole
+    (groupMemberId, memberId) <- withStore $ \db -> do
+      liftIO $ deleteContactRequestRec db user ucr
+      createAcceptedMember db gVar user gInfo ucr gLinkMemRole
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -3988,6 +3993,7 @@ acceptGroupJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId gLinkMemRole,
                 groupProfile,
+                businessChat,
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
@@ -3997,6 +4003,43 @@ acceptGroupJoinRequestAsync
     withStore $ \db -> do
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
+
+acceptBusinessJoinRequestAsync :: User -> UserContactRequest -> CM GroupInfo
+acceptBusinessJoinRequestAsync
+  user
+  ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange} = do
+    vr <- chatVersionRange
+    gVar <- asks random
+    let userProfile@Profile {displayName, preferences} = profileToSendOnAccept user Nothing True
+        groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
+    (gInfo, clientMember) <- withStore $ \db -> do
+      liftIO $ deleteContactRequestRec db user ucr
+      createBusinessRequestGroup db vr gVar user ucr groupPreferences
+    let GroupInfo {membership} = gInfo
+        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+        GroupMember {groupMemberId, memberId} = clientMember
+        msg =
+          XGrpLinkInv $
+            GroupLinkInvitation
+              { fromMember = MemberIdRole userMemberId userRole,
+                fromMemberName = displayName,
+                invitedMember = MemberIdRole memberId GRMember,
+                groupProfile = businessGroupProfile userProfile groupPreferences,
+                -- This refers to the "title member" that defines the group name and profile.
+                -- This coincides with fromMember to be current user when accepting the connecting user,
+                -- but it will be different when inviting somebody else.
+                businessChat = Just $ BusinessChatInfo userMemberId BCBusiness,
+                groupSize = Just 1
+              }
+    subMode <- chatReadVar subscriptionMode
+    let chatV = vr `peerConnChatVersion` cReqChatVRange
+    connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
+    withStore' $ \db -> createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
+    pure gInfo
+    where
+      businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
+      businessGroupProfile Profile {displayName, fullName, image} groupPreferences =
+        GroupProfile {displayName, fullName, description = Nothing, image, groupPreferences = Just groupPreferences}
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -4683,15 +4726,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           -- [incognito] send saved profile
+          (conn'', inGroup) <- saveConnInfo conn' connInfo
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing False
-          conn'' <- saveConnInfo conn' connInfo
+          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing inGroup
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
-          _conn' <- saveConnInfo conn connInfo
-          pure ()
+          void $ saveConnInfo conn connInfo
         MSG meta _msgFlags _msgBody ->
           -- We are not saving message (saveDirectRcvMSG) as contact hasn't been created yet,
           -- chat item is also not created here
@@ -4806,6 +4848,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
               allowAgentConnectionAsync user conn'' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
+            XGrpLinkInv glInv -> do
+              -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
+              (gInfo, host) <- withStore $ \db -> do
+                liftIO $ deleteContactCardKeepConn db connId ct
+                createGroupInvitedViaLink db vr user conn'' glInv
+              -- [incognito] send saved profile
+              incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
+              let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing True
+              allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
+              toView $ CRBusinessLinkConnecting user gInfo host ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
@@ -4936,7 +4988,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> pure ()
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -4977,6 +5029,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               invitedMember = MemberIdRole memberId memRole,
                               connRequest = cReq,
                               groupProfile,
+                              businessChat = Nothing,
                               groupLinkId = groupLinkId,
                               groupSize = Just currentMemCount
                             }
@@ -5049,6 +5102,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             sendIntroductions members
             when (groupFeatureAllowed SGFHistory gInfo) sendHistory
+            when (connChatVersion < batchSend2Version) $ sendGroupAutoReply members
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -5311,9 +5365,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-      JOINED _ ->
+      JOINED sqSecured ->
         -- [async agent commands] continuation on receiving JOINED
-        when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
+          when sqSecured $ do
+            members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+            when (connChatVersion >= batchSend2Version) $ sendGroupAutoReply members
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -5341,6 +5398,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateGroupItemsErrorStatus db msgId groupMemberId newStatus = do
           itemIds <- getChatItemIdsByAgentMsgId db connId msgId
           forM_ itemIds $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
+        sendGroupAutoReply members = autoReplyMC >>= mapM_ send
+          where
+            autoReplyMC = do
+              let GroupInfo {businessChat} = gInfo
+                  GroupMember {memberId = joiningMemberId} = m
+              case businessChat of
+                Just BusinessChatInfo {memberId, chatType = BCCustomer}
+                  | joiningMemberId == memberId -> useReply <$> withStore (`getUserAddress` user)
+                  where
+                    useReply UserContactLink {autoAccept} = case autoAccept of
+                      Just AutoAccept {businessAddress, autoReply} | businessAddress -> autoReply
+                      _ -> Nothing
+                _ -> pure Nothing
+            send mc = do
+              msg <- sendGroupMessage' user gInfo members (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc)
+              toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
 
     agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
@@ -5525,26 +5599,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq -> do
               ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-              let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
+              let (UserContactLink {connReqContact, autoAccept}, groupId_, gLinkMemRole) = ucl
+                  isSimplexTeam = sameConnReqContact connReqContact adminContactReq
+                  v = maxVersion chatVRange
               case autoAccept of
-                Just AutoAccept {acceptIncognito} -> case groupId_ of
-                  Nothing -> do
-                    -- [incognito] generate profile to send, create connection with incognito profile
-                    incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-                    ct <- acceptContactRequestAsync user cReq incognitoProfile True reqPQSup
-                    toView $ CRAcceptingContactRequest user ct
-                  Just groupId -> do
-                    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                    let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                    if maxVersion chatVRange >= groupFastLinkJoinVersion
-                      then do
-                        mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
-                        createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                        toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                      else do
-                        -- TODO v5.7 remove old API (or v6.0?)
-                        ct <- acceptContactRequestAsync user cReq profileMode False PQSupportOff
-                        toView $ CRAcceptingGroupJoinRequest user gInfo ct
+                Just AutoAccept {acceptIncognito, businessAddress}
+                  | businessAddress ->
+                      if v < groupFastLinkJoinVersion || (isSimplexTeam && v < businessChatsVersion)
+                        then do
+                          ct <- acceptContactRequestAsync user cReq Nothing True reqPQSup
+                          toView $ CRAcceptingContactRequest user ct
+                        else do
+                          gInfo <- acceptBusinessJoinRequestAsync user cReq
+                          toView $ CRAcceptingBusinessRequest user gInfo
+                  | otherwise -> case groupId_ of
+                      Nothing -> do
+                        -- [incognito] generate profile to send, create connection with incognito profile
+                        incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+                        ct <- acceptContactRequestAsync user cReq incognitoProfile True reqPQSup
+                        toView $ CRAcceptingContactRequest user ct
+                      Just groupId -> do
+                        gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+                        let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                        if v >= groupFastLinkJoinVersion
+                          then do
+                            mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
+                            createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                            toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
+                          else do
+                            -- TODO v5.7 remove old API (or v6.0?)
+                            ct <- acceptContactRequestAsync user cReq profileMode False PQSupportOff
+                            toView $ CRAcceptingGroupJoinRequest user gInfo ct
                 _ -> toView $ CRReceivedContactRequest user cReq
 
     memberCanSend :: GroupMember -> CM () -> CM ()
@@ -6353,9 +6438,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xInfoMember gInfo m p' brokerTs = void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> CM ()
-    xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
+    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
-      if viaGroupLink && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
+      if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
           m' <- processMemberProfileUpdate gInfo m p' False Nothing
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
@@ -6652,7 +6737,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CRContactAndMemberAssociated user c2 g m1 c2'
       pure c2'
 
-    saveConnInfo :: Connection -> ConnInfo -> CM Connection
+    saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Bool)
     saveConnInfo activeConn connInfo = do
       ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
       conn' <- updatePeerChatVRange activeConn chatVRange
@@ -6661,13 +6746,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let contactUsed = connDirect activeConn
           ct <- withStore $ \db -> createDirectContact db user conn' p contactUsed
           toView $ CRContactConnecting user ct
-          pure conn'
+          pure (conn', False)
         XGrpLinkInv glInv -> do
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db vr user conn' glInv
           toView $ CRGroupLinkConnecting user gInfo host
-          pure conn'
+          pure (conn', True)
         -- TODO show/log error, other events in SMP confirmation
-        _ -> pure conn'
+        _ -> pure (conn', False)
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> CM ()
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msg brokerTs = do
@@ -8683,11 +8768,11 @@ chatCommandP =
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
-    autoAcceptP =
-      ifM
-        onOffP
-        (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
-        (pure Nothing)
+    autoAcceptP = ifM onOffP (Just <$> (businessAA <|> addressAA)) (pure Nothing)
+      where
+        addressAA = AutoAccept False <$> (" incognito=" *> onOffP <|> pure False) <*> autoReply
+        businessAA = AutoAccept True <$> (" business" *> pure False) <*> autoReply
+        autoReply = optional (A.space *> msgContentP)
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char

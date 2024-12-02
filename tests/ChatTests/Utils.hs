@@ -64,6 +64,9 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
+businessProfile :: Profile
+businessProfile = Profile {displayName = "biz", fullName = "Biz Inc", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+
 it :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure

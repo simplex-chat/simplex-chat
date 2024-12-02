@@ -639,6 +639,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CRBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
@@ -665,6 +666,7 @@ data ChatResponse
   | CRUserContactLinkDeleted {user :: User}
   | CRReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {user :: User, contact :: Contact}
+  | CRAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CRContactAlreadyExists {user :: User, contact :: Contact}
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}

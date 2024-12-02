@@ -204,12 +204,14 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
   CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
+  CRAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
   CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
+  CRBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
@@ -979,9 +981,14 @@ simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simpl
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
-  Just AutoAccept {acceptIncognito, autoReply} ->
-    ("auto_accept on" <> if acceptIncognito then ", incognito" else "")
+  Just AutoAccept {businessAddress, acceptIncognito, autoReply} ->
+    ("auto_accept on" <> aaInfo)
       : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+    where
+      aaInfo
+        | businessAddress = ", business"
+        | acceptIncognito = ", incognito"
+        | otherwise = ""
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
@@ -1016,6 +1023,9 @@ viewAcceptingContactRequest :: Contact -> [StyledString]
 viewAcceptingContactRequest ct
   | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
   | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
+
+viewAcceptingBusinessRequest :: GroupInfo -> [StyledString]
+viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request..."]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =

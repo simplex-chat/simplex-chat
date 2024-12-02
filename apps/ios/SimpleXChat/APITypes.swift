@@ -2103,10 +2103,12 @@ public struct UserContactLink: Decodable, Hashable {
 }
 
 public struct AutoAccept: Codable, Hashable {
+    public var businessAddress: Bool? // make not nullable
     public var acceptIncognito: Bool
     public var autoReply: MsgContent?
 
-    public init(acceptIncognito: Bool, autoReply: MsgContent? = nil) {
+    public init(businessAddress: Bool, acceptIncognito: Bool, autoReply: MsgContent? = nil) {
+        self.businessAddress = businessAddress
         self.acceptIncognito = acceptIncognito
         self.autoReply = autoReply
     }

@@ -153,6 +153,7 @@ library
       Simplex.Chat.Migrations.M20241023_chat_item_autoincrement_id
       Simplex.Chat.Migrations.M20241027_server_operators
       Simplex.Chat.Migrations.M20241125_indexes
+      Simplex.Chat.Migrations.M20241128_business_chats
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
