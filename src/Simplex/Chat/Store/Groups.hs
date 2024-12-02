@@ -943,8 +943,8 @@ createBusinessRequestGroup
     groupInfo <- insertGroup_ currentTs
     (groupMemberId, memberId) <- insertClientMember_ currentTs groupInfo
     liftIO $ setBusinessMemberId groupInfo memberId
-    acceptedMember <- getGroupMemberById db vr user groupMemberId
-    pure (groupInfo, acceptedMember)
+    clientMember <- getGroupMemberById db vr user groupMemberId
+    pure (groupInfo, clientMember)
     where
       insertGroup_ currentTs = ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
