@@ -1,6 +1,7 @@
 package chat.simplex.common.views.onboarding
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -23,7 +24,7 @@ import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
-  ColumnWithScrollBar(Modifier.padding(DEFAULT_PADDING)) {
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.how_simplex_works), withPadding = false)
     ReadableText(MR.strings.to_protect_privacy_simplex_has_ids_for_queues)
     ReadableText(MR.strings.only_client_devices_store_contacts_groups_e2e_encrypted_messages)
@@ -35,11 +36,12 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
     Spacer(Modifier.fillMaxHeight().weight(1f))
 
     if (onboardingStage != null) {
-      Box(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+      Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.fullscreen.closeModal() })
+        // Reserve space
+        TextButtonBelowOnboardingButton("", null)
       }
     }
-    Spacer(Modifier.height(DEFAULT_PADDING))
   }
 }
 
