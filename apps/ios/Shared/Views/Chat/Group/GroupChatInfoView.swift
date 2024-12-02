@@ -107,7 +107,7 @@ struct GroupChatInfoView: View {
 
                 Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                     if groupInfo.canAddMembers {
-                        if groupInfo.businessType == nil {
+                        if groupInfo.businessChat == nil {
                             groupLinkButton()
                         }
                         if (chat.chatInfo.incognito) {

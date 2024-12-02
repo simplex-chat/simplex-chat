@@ -94,7 +94,7 @@ public func chatIconName(_ cInfo: ChatInfo) -> String {
     switch cInfo {
     case .direct: "person.crop.circle.fill"
     case let .group(groupInfo):
-        switch groupInfo.businessType {
+        switch groupInfo.businessChat?.chatType {
         case .none: "person.2.circle.fill"
         case .business: "briefcase.circle.fill"
         case .customer: "person.crop.circle.fill"

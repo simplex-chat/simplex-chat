@@ -1910,7 +1910,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var localAlias: String { "" }
 
     public var isOwner: Bool {
-        return membership.memberRole == .owner && membership.memberCurrent && businessType == nil
+        return membership.memberRole == .owner && membership.memberCurrent
     }
 
     public var canDelete: Bool {
@@ -1932,10 +1932,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         createdAt: .now,
         updatedAt: .now
     )
-
-    public var businessType: BusinessChatType? {
-        businessChat?.chatType
-    }
 }
 
 public struct GroupRef: Decodable, Hashable {
