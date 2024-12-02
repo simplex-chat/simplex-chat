@@ -440,9 +440,10 @@
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
   <string name="compose_message_placeholder">Message</string>
-  <string name="maximum_message_size_reached_text">Maximum message size is reached. Try to reduce text length and repeat.</string>
-  <string name="maximum_message_size_reached_non_text">Maximum message size is reached. Try to reduce text length or remove a link preview/media, then repeat.</string>
-  <string name="maximum_message_size_reached_forwarding">Size of the forwarding message way too big. It cannot be sent.</string>
+  <string name="maximum_message_size_title">Message is too large!</string>
+  <string name="maximum_message_size_reached_text">Please reduce the message size and send again.</string>
+  <string name="maximum_message_size_reached_non_text">Please reduce the message size or remove media and send again.</string>
+  <string name="maximum_message_size_reached_forwarding">You can copy and reduce the message size to send it.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

@@ -899,7 +899,7 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiSendMessages -> {
         val mc = cmd.composedMessages.last().msgContent
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.error_sending_message),
+          generalGetString(MR.strings.maximum_message_size_title),
           if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
             generalGetString(MR.strings.maximum_message_size_reached_non_text)
           } else {
@@ -910,7 +910,7 @@ object ChatController {
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiForwardChatItems -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.error_forwarding_messages),
+          generalGetString(MR.strings.maximum_message_size_title),
           generalGetString(MR.strings.maximum_message_size_reached_forwarding)
         )
         null
@@ -966,7 +966,7 @@ object ChatController {
       r is CR.ChatItemUpdated -> return r.chatItem
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
         AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.error_sending_message),
+          generalGetString(MR.strings.maximum_message_size_title),
           if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
             generalGetString(MR.strings.maximum_message_size_reached_non_text)
           } else {
