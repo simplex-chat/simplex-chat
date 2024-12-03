@@ -115,7 +115,7 @@
     <string name="icon_descr_audio_off">Tắt âm</string>
     <string name="icon_descr_asked_to_receive">Yêu cầu để nhận hình ảnh</string>
     <string name="network_session_mode_user_description"><![CDATA[Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho mỗi hồ sơ trò chuyện bạn có trong ứng dụng</b>.]]></string>
-    <string name="network_session_mode_entity_description">Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho từng liên hệ và thành viên nhóm</b>. \n<b>Xin lưu ý</b>: nếu bạn có nhiều kết nối, mức tiêu thụ pin và lưu lượng truy cập của bạn có thể cao hơn đáng kể và một số kết nối có thể không thành công.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Một kết nối TCP riêng biệt (và thông tin xác thực SOCKS) sẽ được sử dụng <b>cho từng liên hệ và thành viên nhóm</b>. \n<b>Xin lưu ý</b>: nếu bạn có nhiều kết nối, mức tiêu thụ pin và lưu lượng truy cập của bạn có thể cao hơn đáng kể và một số kết nối có thể không thành công.]]></string>
     <string name="icon_descr_audio_call">cuộc gọi thoại</string>
     <string name="v4_6_audio_video_calls">Các cuộc gọi thoại và video</string>
     <string name="settings_audio_video_calls">Các cuộc gọi thoại và video</string>
@@ -1384,7 +1384,6 @@
     <string name="onboarding_choose_server_operators">Chọn nhà cung cấp</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Bạn có thể <font color="#0088ff">kết nối với các nhà phát triển SimpleX Chat để hỏi bất kỳ câu hỏi nào và nhận thông tin cập nhật</font>.]]></string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Bạn <b>không được</b> sử dụng cùng một cơ sở dữ liệu trên hai thiết .]]></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Bạn kiểm soát (các) máy chủ nào <b>tiếp nhận</b> tin nhắn, còn các liên hệ của bạn  – các máy chủ mà bạn sử dụng để gửi tin nhắn cho họ.]]></string>
     <string name="error_accepting_operator_conditions">Lỗi chấp nhận điều kiện</string>
     <string name="failed_to_save_servers">Lỗi lưu máy chủ</string>
     <string name="errors_in_servers_configuration">Lỗi trong cấu hình máy chủ.</string>

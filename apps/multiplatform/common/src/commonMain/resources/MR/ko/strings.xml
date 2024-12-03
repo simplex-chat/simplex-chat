@@ -1415,14 +1415,13 @@
     <string name="invite_friends">친구 초대</string>
     <string name="v4_3_irreversible_message_deletion">메시지 영구 삭제</string>
     <string name="action_button_add_members">초대</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[메시지를 수신할 서버를 결정할 수 있습니다. 연락처는 자신이 사용할 수신 서버를 결정할 수도 있습니다.]]></string>
     <string name="onboarding_choose_server_operators">운영자 선택</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[운영자(들)의 이용 약관이 수락될 것입니다: <b>%s</b>.]]></string>
     <string name="auth_open_chat_profiles">채팅 프로필 변경</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>SOCKS 프록시가 지원하지 않는 경우</i> .onion 호스트를 No로 사용합니다.]]></string>
     <string name="remote_host_error_missing"><![CDATA[모바일 <b>%s</b> 이 찾을 수 없음]]></string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[백그라운드에서 전화를 걸려면 <b>앱 설정에서 앱 배터리 사용량</b> / <b>제한 없음</b> 을 선택하세요.]]></string>
-    <string name="remote_host_error_disconnected"><![CDATA[모바일 <b><![CDATA[모바일 <b>%s</b> 이 연결 끊김]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[모바일 <b>%s</b> 이 연결 끊김]]></string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[그룹 링크입니다 <b>%1$s</b>!]]></string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[두 기기에서 동일한 데이터베이스를<b> 사용해서는 안 됩니다</b>.]]></string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">사용자 가이드</font>에서 확인하세요.]]></string>
@@ -1454,7 +1453,7 @@
     <string name="remote_host_error_inactive"><![CDATA[모바일 <b>%s</b> 이 현재 비활성화됨]]></string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[<font color="#0088ff">SimpleX Chat 개발자에게 연결하여 질문하고 업데이트를 받을 수 있습니다</font>.]]></string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[모바일 <b>%s</b> 이 연결 끊김]]></string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[모바일 앱 <i>에서 데스크톱에서<i> 사용을 열고 QR 코드를 스캔합니다.]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[모바일 앱 <i>에서 데스크톱에서</i> 사용을 열고 QR 코드를 스캔합니다.]]></string>
     <string name="remote_host_error_timeout"><![CDATA[모바일에 연결하는 동안 시간이 초과했습니다 <b>%s</b>]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[이미 <b>%1$s</b> 그룹에 가입하는 중 입니다.]]></string>
     <string name="remote_host_error_bad_version"><![CDATA[모바일 <b>%s</b> 버전이 지원되지 않습니다. 두 기기에서 동일한 버전을 사용하는지 확인하십시오.]]></string>

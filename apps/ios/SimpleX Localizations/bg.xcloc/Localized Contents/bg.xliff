@@ -618,6 +618,10 @@
         <target>Добавете адрес към вашия профил, така че вашите контакти да могат да го споделят с други хора. Актуализацията на профила ще бъде изпратена до вашите контакти.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add friends" xml:space="preserve">
+        <source>Add friends</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
         <target>Добави профил</target>
@@ -633,6 +637,10 @@
         <target>Добави сървъри чрез сканиране на QR кодове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add team members" xml:space="preserve">
+        <source>Add team members</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
         <source>Add to another device</source>
         <target>Добави към друго устройство</target>
@@ -641,6 +649,10 @@
       <trans-unit id="Add welcome message" xml:space="preserve">
         <source>Add welcome message</source>
         <target>Добави съобщение при посрещане</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+        <source>Add your team members to the conversations.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve">
@@ -1183,6 +1195,10 @@
         <target>Български, финландски, тайландски и украински - благодарение на потребителите и [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Business address" xml:space="preserve">
+        <source>Business address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
         <target>Чрез чат профил (по подразбиране) или [чрез връзка](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).</target>
@@ -1317,6 +1333,14 @@
       <trans-unit id="Change user profiles" xml:space="preserve">
         <source>Change user profiles</source>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Chat already exists" xml:space="preserve">
+        <source>Chat already exists</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat already exists!" xml:space="preserve">
+        <source>Chat already exists!</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
         <source>Chat colors</source>
@@ -7588,6 +7612,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You are already connected to %@." xml:space="preserve">
         <source>You are already connected to %@.</source>
         <target>Вече сте вече свързани с %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You are already connected with %@." xml:space="preserve">
+        <source>You are already connected with %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">

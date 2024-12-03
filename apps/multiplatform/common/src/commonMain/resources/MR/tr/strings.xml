@@ -2123,6 +2123,6 @@
     <string name="address_settings">Adres ayarları</string>
     <string name="appearance_bars_blur_radius">Bulanıklık</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1 kerelik bağlantı <i>sadece bir kişiyle</i> kullanılabilir - yüz yüze veya herhangi bir mesajlaşma programı aracılığıyla paylaşın]]></string>
-    <string name="operator_conditions_accepted_for_some">&lt;![CDATA[Aşağıdaki operatör(ler) için koşullar zaten kabul edilmiştir: &lt;b&gt;</string>
+    <string name="operator_conditions_accepted_for_some"><![CDATA[Aşağıdaki operatör(ler) için koşullar zaten kabul edilmiştir: <b>%s</b>.]]></string>
     <string name="operators_conditions_accepted_for"><![CDATA[Şart(lar) operatör(ler) için kabul edilir: <b>%s</b>.]]></string>
 </resources>

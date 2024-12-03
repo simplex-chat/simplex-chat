@@ -335,7 +335,7 @@
     <string name="app_version_title">Wersja aplikacji</string>
     <string name="app_version_name">Wersja aplikacji: v%s</string>
     <string name="network_session_mode_user_description"><![CDATA[Oddzielne połączenie TCP (i poświadczenia SOCKS) będą używane <b>dla każdego profilu czatu, który masz w aplikacji</b>.]]></string>
-    <string name="network_session_mode_entity_description">Oddzielne połączenie TCP (i poświadczenia SOCKS) będą używane <b>dla każdego kontaktu i członka grupy</b>. \n<b>Uwaga</b>: jeśli masz wiele połączeń, zużycie baterii i ruchu może być znacznie wyższe, a niektóre połączenia mogą się nie udać.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Oddzielne połączenie TCP (i poświadczenia SOCKS) będą używane <b>dla każdego kontaktu i członka grupy</b>. \n<b>Uwaga</b>: jeśli masz wiele połączeń, zużycie baterii i ruchu może być znacznie wyższe, a niektóre połączenia mogą się nie udać.]]></string>
     <string name="network_session_mode_user">Profil czatu</string>
     <string name="network_session_mode_entity">Połączenie</string>
     <string name="core_version">Wersja rdzenia: v%s</string>
