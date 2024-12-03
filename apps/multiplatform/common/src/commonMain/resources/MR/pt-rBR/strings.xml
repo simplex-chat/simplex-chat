@@ -849,8 +849,7 @@
     <string name="to_start_a_new_chat_help_header">Para começar um novo bate-papo</string>
     <string name="la_notice_turn_on">Ligar</string>
     <string name="welcome">Bem-vindo(a)!</string>
-    <string name="next_generation_of_private_messaging">A próxima geração
-\nde mensageiros privados</string>
+    <string name="next_generation_of_private_messaging">A próxima geração \nde mensageiros privados</string>
     <string name="settings_section_title_socks">PROXY SOCKS</string>
     <string name="database_backup_can_be_restored">A tentativa de alterar a senha do banco de dados não foi concluída.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Pare o bate-papo para exportar, importar ou excluir o banco de dados do chat. Você não poderá receber e enviar mensagens enquanto o chat estiver interrompido.</string>
