@@ -18,7 +18,7 @@ revision: 23.04.2024
 - [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
-- [Why invite links use simplex.chat domain?](#why-invite-links-use-simplex.chat-domain)
+- [Why invitation links use simplex.chat domain?](#why-invitation-links-use-simplex.chat-domain)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -122,7 +122,7 @@ It is also important to remember, that even if your contact enabled "Delete for 
 
 When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
 
-### Why invite links use simplex.chat domain?
+### Why invitation links use simplex.chat domain?
 
 You can replace `https://simplex.chat/` with `simplex:/` or with any other domain - the app never connect with it, ignoring it completely. It is only used to make it easier to connect for the new users who did not install the app yet.
 
