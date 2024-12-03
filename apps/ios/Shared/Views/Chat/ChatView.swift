@@ -22,8 +22,7 @@ struct ChatView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
-    @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
-    @StateObject private var floatingButtonModel = FloatingButtonModel()
+    @StateObject private var scrollModel = ReverseListScrollModel()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -43,6 +42,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
+    @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
@@ -76,7 +76,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -99,7 +99,8 @@ struct ChatView: View {
                             if case let .group(groupInfo) = chat.chatInfo {
                                 showModerateSelectedMessagesAlert(groupInfo)
                             }
-                        }
+                        },
+                        forwardItems: forwardSelectedMessages
                     )
                 }
             }
@@ -134,6 +135,30 @@ struct ChatView: View {
                 if case let .group(groupInfo) = chat.chatInfo {
                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                 }
+            }
+        }
+        // it should be presented on top level in order to prevent a bug in SwiftUI on iOS 16 related to .focused() modifier in AddGroupMembersView's search field
+        .appSheet(isPresented: $showAddMembersSheet) {
+            Group {
+                if case let .group(groupInfo) = cInfo {
+                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                }
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { !forwardedChatItems.isEmpty },
+            set: { isPresented in
+                if !isPresented {
+                    forwardedChatItems = []
+                    selectedChatItems = nil
+                }
+            }
+        )) {
+            if #available(iOS 16.0, *) {
+                ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
+                    .presentationDetents([.fraction(0.8)])
+            } else {
+                ChatItemForwardingView(chatItems: forwardedChatItems, fromChatInfo: chat.chatInfo, composeState: $composeState)
             }
         }
         .onAppear {
@@ -287,9 +312,6 @@ struct ChatView: View {
                                         }
                                 } else {
                                     addMembersButton()
-                                        .appSheet(isPresented: $showAddMembersSheet) {
-                                            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                                        }
                                 }
                             }
                             Menu {
@@ -340,6 +362,7 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
+        ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
     }
 
     private func searchToolbar() -> some View {
@@ -411,14 +434,9 @@ struct ChatView: View {
                     composeState: $composeState,
                     selectedMember: $selectedMember,
                     revealedChatItem: $revealedChatItem,
-                    selectedChatItems: $selectedChatItems
+                    selectedChatItems: $selectedChatItems,
+                    forwardedChatItems: $forwardedChatItems
                 )
-                .onAppear {
-                    floatingButtonModel.appeared(viewId: ci.viewId)
-                }
-                .onDisappear {
-                    floatingButtonModel.disappeared(viewId: ci.viewId)
-                }
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
@@ -429,13 +447,10 @@ struct ChatView: View {
             .onChange(of: searchText) { _ in
                 Task { await loadChat(chat: chat, search: searchText) }
             }
-            .onChange(of: im.reversedChatItems) { _ in
-                floatingButtonModel.chatItemsChanged()
-            }
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
-                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                    if FloatingButtonModel.shared.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
                 }
@@ -458,103 +473,169 @@ struct ChatView: View {
     }
 
     class FloatingButtonModel: ObservableObject {
-        private enum Event {
-            case appeared(String)
-            case disappeared(String)
-            case chatItemsChanged
-        }
+        static let shared = FloatingButtonModel()
+        @Published var unreadBelow: Int = 0
+        @Published var isNearBottom: Bool = true
+        @Published var date: Date?
+        @Published var isDateVisible: Bool = false
+        var totalUnread: Int = 0
+        var isReallyNearBottom: Bool = true
+        var hideDateWorkItem: DispatchWorkItem?
 
-        @Published var unreadChatItemCounts: UnreadChatItemCounts
-
-        private let events = PassthroughSubject<Event, Never>()
-        private var bag = Set<AnyCancellable>()
-
-        init() {
-            unreadChatItemCounts = UnreadChatItemCounts(
-                isNearBottom: true,
-                isReallyNearBottom: true,
-                unreadBelow: 0
-            )
-            events
-                .receive(on: DispatchQueue.global(qos: .background))
-                .scan(Set<String>()) { itemsInView, event in
-                    var updated = itemsInView
-                    switch event {
-                    case let .appeared(viewId): updated.insert(viewId)
-                    case let .disappeared(viewId): updated.remove(viewId)
-                    case .chatItemsChanged: ()
-                    }
-                    return updated
+        func updateOnListChange(_ listState: ListState) {
+            let im = ItemsModel.shared
+            let unreadBelow =
+                if let id = listState.bottomItemId,
+                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
+                {
+                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+                     if chatItem.isRcvNew { unread += 1 }
+                 }
+                } else {
+                    0
                 }
-                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
-                .removeDuplicates()
-                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
-                .assign(to: \.unreadChatItemCounts, on: self)
-                .store(in: &bag)
+            let date: Date? =
+                if let topItemDate = listState.topItemDate {
+                    Calendar.current.startOfDay(for: topItemDate)
+                } else {
+                    nil
+                }
+
+            // set the counters and date indicator
+            DispatchQueue.main.async { [weak self] in
+                guard let it = self else { return }
+                it.setDate(visibility: true)
+                it.unreadBelow = unreadBelow
+                it.date = date
+                it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
+            }
+            
+            // set floating button indication mode
+            let nearBottom = listState.scrollOffset < 800
+            if nearBottom != self.isNearBottom {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                    self?.isNearBottom = nearBottom
+                }
+            }
+            
+            // hide Date indicator after 1 second of no scrolling
+            hideDateWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let it = self else { return }
+                it.setDate(visibility: false)
+                it.hideDateWorkItem = nil
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.hideDateWorkItem = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: workItem)
+            }
         }
 
-        func appeared(viewId: String) {
-            events.send(.appeared(viewId))
+        func resetDate() {
+            date = nil
+            isDateVisible = false
         }
 
-        func disappeared(viewId: String) {
-            events.send(.disappeared(viewId))
+        private func setDate(visibility isVisible: Bool) {
+            if isVisible {
+                if !isNearBottom,
+                   !isDateVisible,
+                   let date, !Calendar.current.isDateInToday(date) {
+                    withAnimation { self.isDateVisible = true }
+                }
+            } else if isDateVisible {
+                withAnimation { self.isDateVisible = false }
+            }
         }
 
-        func chatItemsChanged() {
-            events.send(.chatItemsChanged)
-        }
     }
 
-    private func floatingButtons(counts: UnreadChatItemCounts) -> some View {
-        VStack {
-            let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
-            if unreadAbove > 0 {
-                circleButton {
-                    unreadCountText(unreadAbove)
-                        .font(.callout)
-                        .foregroundColor(theme.colors.primary)
+    private struct FloatingButtons: View {
+        let theme: AppTheme
+        let scrollModel: ReverseListScrollModel
+        let chat: Chat
+        @ObservedObject var model = FloatingButtonModel.shared
+
+        var body: some View {
+            ZStack(alignment: .top) {
+                if let date = model.date {
+                     DateSeparator(date: date)
+                         .padding(.vertical, 4).padding(.horizontal, 8)
+                         .background(.thinMaterial)
+                         .clipShape(Capsule())
+                         .opacity(model.isDateVisible ? 1 : 0)
                 }
-                .onTapGesture {
-                    scrollModel.scrollToNextPage()
-                }
-                .contextMenu {
-                    Button {
-                        Task {
-                            await markChatRead(chat)
+                VStack {
+                    let unreadAbove = model.totalUnread - model.unreadBelow
+                    if unreadAbove > 0 {
+                        circleButton {
+                            unreadCountText(unreadAbove)
+                                .font(.callout)
+                                .foregroundColor(theme.colors.primary)
                         }
-                    } label: {
-                        Label("Mark read", systemImage: "checkmark")
+                        .onTapGesture {
+                            scrollModel.scrollToNextPage()
+                        }
+                        .contextMenu {
+                            Button {
+                                Task {
+                                    await markChatRead(chat)
+                                }
+                            } label: {
+                                Label("Mark read", systemImage: "checkmark")
+                            }
+                        }
+                    }
+                    Spacer()
+                    if model.unreadBelow > 0 {
+                        circleButton {
+                            unreadCountText(model.unreadBelow)
+                                .font(.callout)
+                                .foregroundColor(theme.colors.primary)
+                        }
+                        .onTapGesture {
+                            scrollModel.scrollToBottom()
+                        }
+                    } else if !model.isNearBottom {
+                        circleButton {
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(theme.colors.primary)
+                        }
+                        .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            Spacer()
-            if counts.unreadBelow > 0 {
-                circleButton {
-                    unreadCountText(counts.unreadBelow)
-                        .font(.callout)
-                        .foregroundColor(theme.colors.primary)
-                }
-                .onTapGesture {
-                    scrollModel.scrollToBottom()
-                }
-            } else if !counts.isNearBottom {
-                circleButton {
-                    Image(systemName: "chevron.down")
-                        .foregroundColor(theme.colors.primary)
-                }
-                .onTapGesture { scrollModel.scrollToBottom() }
+            .onDisappear(perform: model.resetDate)
+        }
+
+        private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
+            ZStack {
+                Circle()
+                    .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
+                    .frame(width: 44, height: 44)
+                content()
             }
         }
-        .padding()
     }
 
-    private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
-        ZStack {
-            Circle()
-                .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
-                .frame(width: 44, height: 44)
-            content()
+    private struct DateSeparator: View {
+        let date: Date
+
+        var body: some View {
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString("%@, %@", comment: "format for date separator in chat"),
+                date.formatted(.dateTime.weekday(.abbreviated)),
+                date.formatted(
+                    Calendar.current.isDate(date, equalTo: .now, toGranularity: .year)
+                    ? .dateTime.day().month(.abbreviated)
+                    : .dateTime.day().month(.abbreviated).year()
+                )
+            ))
+            .font(.callout)
+            .fontWeight(.medium)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -648,6 +729,116 @@ struct ChatView: View {
         }
     }
 
+    private func forwardSelectedMessages() {
+        Task {
+            do {
+                if let selectedChatItems {
+                    let (validItems, confirmation) = try await apiPlanForwardChatItems(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        itemIds: Array(selectedChatItems)
+                    )
+                    if let confirmation {
+                        if validItems.count > 0 {
+                            showAlert(
+                                String.localizedStringWithFormat(
+                                    NSLocalizedString("Forward %d message(s)?", comment: "alert title"),
+                                    validItems.count
+                                ),
+                                message: forwardConfirmationText(confirmation) + "\n" +
+                                    NSLocalizedString("Forward messages without files?", comment: "alert message")
+                            ) {
+                                switch confirmation {
+                                case let .filesNotAccepted(fileIds):
+                                    [forwardAction(validItems), downloadAction(fileIds), cancelAlertAction]
+                                default:
+                                    [forwardAction(validItems), cancelAlertAction]
+                                }
+                            }
+                        } else {
+                            showAlert(
+                                NSLocalizedString("Nothing to forward!", comment: "alert title"),
+                                message: forwardConfirmationText(confirmation)
+                            ) {
+                                switch confirmation {
+                                case let .filesNotAccepted(fileIds):
+                                    [downloadAction(fileIds), cancelAlertAction]
+                                default:
+                                    [okAlertAction]
+                                }
+                            }
+                        }
+                    } else {
+                        await openForwardingSheet(validItems)
+                    }
+                }
+            } catch {
+                logger.error("Plan forward chat items failed: \(error.localizedDescription)")
+            }
+        }
+
+        func forwardConfirmationText(_ fc: ForwardConfirmation) -> String {
+            switch fc {
+            case let .filesNotAccepted(fileIds):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) were not downloaded.", comment: "forward confirmation reason"),
+                    fileIds.count
+                )
+            case let .filesInProgress(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) are still being downloaded.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            case let .filesMissing(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) were deleted.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            case let .filesFailed(filesCount):
+                String.localizedStringWithFormat(
+                    NSLocalizedString("%d file(s) failed to download.", comment: "forward confirmation reason"),
+                    filesCount
+                )
+            }
+        }
+        
+        func forwardAction(_ items: [Int64]) -> UIAlertAction {
+            UIAlertAction(
+                title: NSLocalizedString("Forward messages", comment: "alert action"),
+                style: .default,
+                handler: { _ in Task { await openForwardingSheet(items) } }
+            )
+        }
+
+        func downloadAction(_ fileIds: [Int64]) -> UIAlertAction {
+            UIAlertAction(
+                title: NSLocalizedString("Download files", comment: "alert action"),
+                style: .default,
+                handler: { _ in
+                    Task {
+                        if let user = ChatModel.shared.currentUser {
+                            await receiveFiles(user: user, fileIds: fileIds)
+                        }
+                    }
+                }
+            )
+        }
+
+        func openForwardingSheet(_ items: [Int64]) async {
+            let im = ItemsModel.shared
+            var items = Set(items)
+            var fci = [ChatItem]()
+            for reversedChatItem in im.reversedChatItems {
+                if items.contains(reversedChatItem.id) {
+                    items.remove(reversedChatItem.id)
+                    fci.insert(reversedChatItem, at: 0)
+                }
+                if items.isEmpty { break }
+            }
+            await MainActor.run { forwardedChatItems = fci }
+        }
+    }
+
     private func loadChatItems(_ cInfo: ChatInfo) {
         Task {
             if loadingItems || firstPage { return }
@@ -696,6 +887,7 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @Binding @ObservedObject var chat: Chat
+        @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
@@ -708,39 +900,66 @@ struct ChatView: View {
         @State private var showDeleteMessages = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
-        @State private var showForwardingSheet: Bool = false
-
+        @State private var msgWidth: CGFloat = 0
+        
         @Binding var selectedChatItems: Set<Int64>?
+        @Binding var forwardedChatItems: [ChatItem]
 
         @State private var allowMenu: Bool = true
+        @State private var markedRead = false
 
         var revealed: Bool { chatItem == revealedChatItem }
 
+        typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
+
+        func getItemSeparation(_ chatItem: ChatItem, at i: Int?) -> ItemSeparation {
+            let im = ItemsModel.shared
+            if let i, i > 0 && im.reversedChatItems.count >= i {
+                let nextItem = im.reversedChatItems[i - 1]
+                let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
+                return (
+                    timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(nextItem.meta.itemTs),
+                    largeGap: largeGap,
+                    date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: nextItem.meta.itemTs) ? nil : nextItem.meta.itemTs
+                )
+            } else {
+                return (timestamp: true, largeGap: true, date: nil)
+            }
+        }
+
         var body: some View {
-            let (currIndex, _) = m.getNextChatItem(chatItem)
+            let currIndex = m.getChatItemIndex(chatItem)
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
+            let timeSeparation = getItemSeparation(chatItem, at: currIndex)
             let im = ItemsModel.shared
             Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
-                    ForEach(items.reversed(), id: \.1.viewId) { (i, ci) in
-                        let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
-                        chatItemView(ci, nil, prev)
-                        .overlay {
-                            if let selected = selectedChatItems, ci.canBeDeletedForSelf {
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        let checked = selected.contains(ci.id)
-                                        selectUnselectChatItem(select: !checked, ci)
+                    VStack(spacing: 0) {
+                        ForEach(items.reversed(), id: \.1.viewId) { (i: Int, ci: ChatItem) in
+                            let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
+                            chatItemView(ci, nil, prev, getItemSeparation(ci, at: i))
+                                .overlay {
+                                    if let selected = selectedChatItems, ci.canBeDeletedForSelf {
+                                        Color.clear
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                let checked = selected.contains(ci.id)
+                                                selectUnselectChatItem(select: !checked, ci)
+                                            }
                                     }
-                            }
+                                }
                         }
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    VStack(spacing: 0) {
+                        chatItemView(chatItem, range, prevItem, timeSeparation)
+                        if let date = timeSeparation.date {
+                            DateSeparator(date: date).padding(8)
+                        }
+                    }
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
@@ -754,12 +973,16 @@ struct ChatView: View {
                 }
             }
             .onAppear {
+                if markedRead {
+                    return
+                } else {
+                    markedRead = true
+                }
                 if let range {
-                    if let items = unreadItems(range) {
+                    let itemIds = unreadItemIds(range)
+                    if !itemIds.isEmpty {
                         waitToMarkRead {
-                            for ci in items {
-                                await apiMarkChatItemRead(chat.chatInfo, ci)
-                            }
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
                         }
                     }
                 } else if chatItem.isRcvNew  {
@@ -769,29 +992,75 @@ struct ChatView: View {
                 }
             }
         }
-        
-        private func unreadItems(_ range: ClosedRange<Int>) -> [ChatItem]? {
+
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
             let im = ItemsModel.shared
-            let items = range.compactMap { i in
+            return range.compactMap { i in
                 if i >= 0 && i < im.reversedChatItems.count {
                     let ci = im.reversedChatItems[i]
-                    return if ci.isRcvNew { ci } else { nil }
+                    return if ci.isRcvNew { ci.id } else { nil }
                 } else {
                     return nil
                 }
             }
-            return if items.isEmpty { nil } else { items }
         }
         
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            Task {
+                _ = try? await Task.sleep(nanoseconds: 600_000000)
                 if m.chatId == chat.chatInfo.id {
-                    Task(operation: op)
+                    await op()
                 }
             }
         }
+        
 
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?) -> some View {
+        @available(iOS 16.0, *)
+        struct MemberLayout: Layout {
+            let spacing: Double
+            let msgWidth: Double
+
+            private func sizes(subviews: Subviews, proposal: ProposedViewSize) -> (CGSize, CGSize) {
+                assert(subviews.count == 2, "member layout must contain exactly two subviews")
+                let roleSize = subviews[1].sizeThatFits(proposal)
+                let memberSize = subviews[0].sizeThatFits(
+                    ProposedViewSize(
+                        width: (proposal.width ?? msgWidth) - roleSize.width,
+                        height: proposal.height
+                    )
+                )
+                return (memberSize, roleSize)
+            }
+
+            func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
+                let (memberSize, roleSize) = sizes(subviews: subviews, proposal: proposal)
+                return CGSize(
+                    width: min(
+                        proposal.width ?? msgWidth,
+                        max(msgWidth, roleSize.width + spacing + memberSize.width)
+                    ),
+                    height: max(memberSize.height, roleSize.height)
+                )
+            }
+
+            func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) {
+                let (memberSize, roleSize) = sizes(subviews: subviews, proposal: proposal)
+                subviews[0].place(
+                    at: CGPoint(x: bounds.minX, y: bounds.midY - memberSize.height / 2),
+                    proposal: ProposedViewSize(memberSize)
+                )
+                subviews[1].place(
+                    at: CGPoint(
+                        x: bounds.minX + max(memberSize.width + spacing, msgWidth - roleSize.width),
+                        y: bounds.midY - roleSize.height / 2
+                    ),
+                    proposal: ProposedViewSize(roleSize)
+                )
+            }
+        }
+
+        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ itemSeparation: ItemSeparation) -> some View {
+            let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
             if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo) = chat.chatInfo {
                 let (prevMember, memCount): (GroupMember?, Int) =
@@ -803,24 +1072,49 @@ struct ChatView: View {
                 if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            let t = if memCount == 1 && member.memberRole > .member {
-                                Text(member.memberRole.text + " ").fontWeight(.semibold) + Text(member.displayName)
-                            } else {
-                                Text(memberNames(member, prevMember, memCount))
+                            Group {
+                                if memCount == 1 && member.memberRole > .member {
+                                    Group {
+                                        if #available(iOS 16.0, *) {
+                                            MemberLayout(spacing: 16, msgWidth: msgWidth) {
+                                                Text(member.chatViewName)
+                                                    .lineLimit(1)
+                                                Text(member.memberRole.text)
+                                                    .fontWeight(.semibold)
+                                                    .lineLimit(1)
+                                                    .padding(.trailing, 8)
+                                            }
+                                        } else {
+                                            HStack(spacing: 16) {
+                                                Text(member.chatViewName)
+                                                    .lineLimit(1)
+                                                Text(member.memberRole.text)
+                                                    .fontWeight(.semibold)
+                                                    .lineLimit(1)
+                                                    .layoutPriority(1)
+                                            }
+                                        }
+                                    }
+                                    .frame(
+                                        maxWidth: maxWidth,
+                                        alignment: chatItem.chatDir.sent ? .trailing : .leading
+                                    )
+                                } else {
+                                    Text(memberNames(member, prevMember, memCount))
+                                        .lineLimit(2)
+                                }
                             }
-                            t
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(2)
                                 .padding(.leading, memberImageSize + 14 + (selectedChatItems != nil && ci.canBeDeletedForSelf ? 12 + 24 : 0))
-                                .padding(.top, 7)
+                                .padding(.top, 3) // this is in addition to message sequence gap
                         }
                         HStack(alignment: .center, spacing: 0) {
                             if selectedChatItems != nil && ci.canBeDeletedForSelf {
                                 SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                     .padding(.trailing, 12)
                             }
-                            HStack(alignment: .top, spacing: 8) {
+                            HStack(alignment: .top, spacing: 10) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
                                         if let member =  m.getGroupMember(member.groupMemberId) {
@@ -833,11 +1127,12 @@ struct ChatView: View {
                                             }
                                         }
                                     }
-                                chatItemWithMenu(ci, range, maxWidth)
+                                chatItemWithMenu(ci, range, maxWidth, itemSeparation)
+                                    .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
                             }
                         }
                     }
-                    .padding(.bottom, 5)
+                    .padding(.bottom, bottomPadding)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
@@ -846,11 +1141,11 @@ struct ChatView: View {
                             SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                 .padding(.leading, 12)
                         }
-                        chatItemWithMenu(ci, range, maxWidth)
+                        chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, memberImageSize + 8 + 12)
+                            .padding(.leading, 10 + memberImageSize + 12)
                     }
-                    .padding(.bottom, 5)
+                    .padding(.bottom, bottomPadding)
                 }
             } else {
                 HStack(alignment: .center, spacing: 0) {
@@ -863,10 +1158,10 @@ struct ChatView: View {
                                 .padding(.leading)
                         }
                     }
-                    chatItemWithMenu(ci, range, maxWidth)
+                    chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                         .padding(.horizontal)
                 }
-                .padding(.bottom, 5)
+                .padding(.bottom, bottomPadding)
             }
         }
 
@@ -881,17 +1176,18 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat) -> some View {
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             VStack(alignment: alignment.horizontal, spacing: 3) {
                 ChatItemView(
                     chat: chat,
                     chatItem: ci,
                     maxWidth: maxWidth,
-                    revealed: .constant(revealed),
                     allowMenu: $allowMenu
                 )
-                .modifier(ChatItemClipped(ci))
+                .environment(\.revealed, revealed)
+                .environment(\.showTimestamp, itemSeparation.timestamp)
+                .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
@@ -920,14 +1216,6 @@ struct ChatView: View {
                     chatItemInfo = nil
                 }) {
                     ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
-                }
-                .sheet(isPresented: $showForwardingSheet) {
-                    if #available(iOS 16.0, *) {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                            .presentationDetents([.fraction(0.8)])
-                    } else {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                    }
                 }
         }
 
@@ -1069,7 +1357,7 @@ struct ChatView: View {
 
         var forwardButton: Button<some View> {
             Button {
-                showForwardingSheet = true
+                forwardedChatItems = [chatItem]
             } label: {
                 Label(
                     NSLocalizedString("Forward", comment: "chat item action"),

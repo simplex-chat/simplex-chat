@@ -49,7 +49,7 @@ class CallManager(val chatModel: ChatModel) {
         contact = invitation.contact,
         callUUID = invitation.callUUID,
         callState = CallState.InvitationAccepted,
-        localMedia = invitation.callType.media,
+        initialCallType = invitation.callType.media,
         sharedKey = invitation.sharedKey,
       )
       showCallView.value = true

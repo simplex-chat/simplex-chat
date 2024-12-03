@@ -7,6 +7,7 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
+import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -65,7 +66,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
     }
     context = this
-    initHaskell()
+    initHaskell(packageName)
     initMultiplatform()
     runMigrations()
     tmpDir.deleteRecursively()
@@ -259,7 +260,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
-
         val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
@@ -272,6 +272,41 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
+      }
+
+      override fun androidSetDrawerStatusAndNavBarColor(
+        isLight: Boolean,
+        drawerShadingColor: Color,
+        toolbarOnTop: Boolean,
+        navBarColor: Color,
+      ) {
+        val window = mainActivity.get()?.window ?: return
+
+        @Suppress("DEPRECATION")
+        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
+        // Blend status bar color to the animated color
+        val colors = CurrentColors.value.colors
+        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
+        var statusBar = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
+        var statusBarLight = isLight
+
+        // SimplexGreen while in call
+        if (window.statusBarColor == SimplexGreen.toArgb()) {
+          statusBarColorAfterCall.intValue = statusBar
+          statusBar = SimplexGreen.toArgb()
+          statusBarLight = false
+        }
+        window.statusBarColor = statusBar
+        val navBar = navBarColor.toArgb()
+        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
+        }
+        if (window.navigationBarColor != navBar) {
+          window.navigationBarColor = navBar
+        }
+        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = isLight
+        }
       }
 
       override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
@@ -288,11 +323,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
             backgroundColor
           }
         }).toArgb()
+        var statusBarLight = isLight
 
         // SimplexGreen while in call
         if (window.statusBarColor == SimplexGreen.toArgb()) {
           statusBarColorAfterCall.intValue = statusBar
           statusBar = SimplexGreen.toArgb()
+          statusBarLight = false
         }
         val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
@@ -302,8 +339,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         if (window.statusBarColor != statusBar) {
           window.statusBarColor = statusBar
         }
-        if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
-          windowInsetController?.isAppearanceLightStatusBars = isLight
+        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
         }
         if (window.navigationBarColor != navBar) {
           window.navigationBarColor = navBar

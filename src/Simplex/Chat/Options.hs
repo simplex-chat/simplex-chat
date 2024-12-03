@@ -170,6 +170,11 @@ coreChatOptsP appDir defaultDbFileName = do
             <> metavar "SMP_PROXY_FALLBACK_MODE"
             <> help "Allow downgrade and connect directly: no, [when IP address is] protected (default), yes"
         )
+  smpWebPort <-
+    switch
+      ( long "smp-web-port"
+          <> help "Use port 443 with SMP servers when not specified"
+      )
   t <-
     option
       auto
@@ -249,6 +254,7 @@ coreChatOptsP appDir defaultDbFileName = do
               requiredHostMode,
               smpProxyMode_,
               smpProxyFallback_,
+              smpWebPort,
               tcpTimeout_ = Just $ useTcpTimeout socksProxy t,
               logTLSErrors
             },

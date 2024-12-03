@@ -49,34 +49,34 @@ struct QRCode: View {
         ZStack {
             if let image = image {
                 qrCodeImage(image)
-            }
-            GeometryReader { geo in
-                ZStack {
-                    if withLogo {
-                        let w = geo.size.width
-                        Image("icon-light")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: w * 0.16, height: w * 0.16)
-                        .frame(width: w * 0.165, height: w * 0.165)
-                        .background(.white)
-                        .clipShape(Circle())
+                GeometryReader { geo in
+                    ZStack {
+                        if withLogo {
+                            let w = geo.size.width
+                            Image("icon-light")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: w * 0.16, height: w * 0.16)
+                            .frame(width: w * 0.165, height: w * 0.165)
+                            .background(.white)
+                            .clipShape(Circle())
+                        }
                     }
-                }
-                .onAppear {
-                    makeScreenshotFunc = {
-                        let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
-                        showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, size)])
-                        onShare?()
+                    .onAppear {
+                        makeScreenshotFunc = {
+                            let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
+                            showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, size)])
+                            onShare?()
+                        }
                     }
+                    .frame(width: geo.size.width, height: geo.size.height)
                 }
-                .frame(width: geo.size.width, height: geo.size.height)
+            } else {
+                Color.clear.aspectRatio(1, contentMode: .fit)
             }
         }
         .onTapGesture(perform: makeScreenshotFunc)
-        .onAppear {
-            image = image ?? generateImage(uri, tintColor: tintColor)
-        }
+        .task { image = await generateImage(uri, tintColor: tintColor) }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -89,7 +89,7 @@ private func qrCodeImage(_ image: UIImage) -> some View {
         .textSelection(.enabled)
 }
 
-private func generateImage(_ uri: String, tintColor: UIColor) -> UIImage? {
+private func generateImage(_ uri: String, tintColor: UIColor) async -> UIImage? {
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(uri.utf8)

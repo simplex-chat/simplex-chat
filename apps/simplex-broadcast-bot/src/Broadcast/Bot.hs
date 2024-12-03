@@ -40,7 +40,7 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
       CRContactConnected _ ct _ -> do
         contactConnected ct
         sendMessage cc ct welcomeMessage
-      CRNewChatItem _ (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc})
+      CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc}) : _}
         | publisher `elem` publishers ->
           if allowContent mc
             then do

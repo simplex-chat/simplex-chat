@@ -39,7 +39,7 @@ fun ContactConnectionInfoView(
 ) {
   LaunchedEffect(connReqInvitation) {
     if (connReqInvitation != null) {
-      chatModel.showingInvitation.value = ShowingInvitation(contactConnection.id, connReqInvitation, false)
+      chatModel.showingInvitation.value = ShowingInvitation(contactConnection.id, connReqInvitation, false, conn = contactConnection)
     }
   }
   /** When [AddContactLearnMore] is open, we don't need to drop [ChatModel.showingInvitation].

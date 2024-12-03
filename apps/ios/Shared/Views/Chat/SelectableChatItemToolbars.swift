@@ -32,13 +32,17 @@ struct SelectedItemsBottomToolbar: View {
     var deleteItems: (Bool) -> Void
     var moderateItems: () -> Void
     //var shareItems: () -> Void
+    var forwardItems: () -> Void
     @State var deleteEnabled: Bool = false
     @State var deleteForEveryoneEnabled: Bool = false
 
     @State var canModerate: Bool = false
     @State var moderateEnabled: Bool = false
 
-    @State var allButtonsDisabled = false
+    @State var forwardEnabled: Bool = false
+
+    @State var deleteCountProhibited = false
+    @State var forwardCountProhibited = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,10 +54,11 @@ struct SelectedItemsBottomToolbar: View {
                 } label: {
                     Image(systemName: "trash")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!deleteEnabled || allButtonsDisabled ? theme.colors.secondary: .red)
+                        .foregroundColor(!deleteEnabled || deleteCountProhibited ? theme.colors.secondary: .red)
                 }
-                .disabled(!deleteEnabled || allButtonsDisabled)
+                .disabled(!deleteEnabled || deleteCountProhibited)
 
                 Spacer()
                 Button {
@@ -61,24 +66,24 @@ struct SelectedItemsBottomToolbar: View {
                 } label: {
                     Image(systemName: "flag")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!moderateEnabled || allButtonsDisabled ? theme.colors.secondary : .red)
+                        .foregroundColor(!moderateEnabled || deleteCountProhibited ? theme.colors.secondary : .red)
                 }
-                .disabled(!moderateEnabled || allButtonsDisabled)
+                .disabled(!moderateEnabled || deleteCountProhibited)
                 .opacity(canModerate ? 1 : 0)
-
 
                 Spacer()
                 Button {
-                    //shareItems()
+                    forwardItems()
                 } label: {
-                    Image(systemName: "square.and.arrow.up")
+                    Image(systemName: "arrowshape.turn.up.forward")
                         .resizable()
+                        .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
+                        .foregroundColor(!forwardEnabled || forwardCountProhibited ? theme.colors.secondary : theme.colors.primary)
                 }
-                .disabled(allButtonsDisabled)
-                .opacity(0)
+                .disabled(!forwardEnabled || forwardCountProhibited)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)
@@ -101,20 +106,22 @@ struct SelectedItemsBottomToolbar: View {
 
     private func recheckItems(_ chatInfo: ChatInfo, _ chatItems: [ChatItem], _ selectedItems: Set<Int64>?) {
         let count = selectedItems?.count ?? 0
-        allButtonsDisabled = count == 0 || count > 20
+        deleteCountProhibited = count == 0 || count > 200
+        forwardCountProhibited = count == 0 || count > 20
         canModerate = possibleToModerate(chatInfo)
         if let selected = selectedItems {
             let me: Bool
             let onlyOwnGroupItems: Bool
-            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, selectedChatItems) = chatItems.reduce((true, true, true, true, [])) { (r, ci) in
+            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
-                    var (de, dee, me, onlyOwnGroupItems, sel) = r
+                    var (de, dee, me, onlyOwnGroupItems, fe, sel) = r
                     de = de && ci.canBeDeletedForSelf
                     dee = dee && ci.meta.deletable && !ci.localNote
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
+                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
-                    return (de, dee, me, onlyOwnGroupItems, sel)
+                    return (de, dee, me, onlyOwnGroupItems, fe, sel)
                 } else {
                     return r
                 }

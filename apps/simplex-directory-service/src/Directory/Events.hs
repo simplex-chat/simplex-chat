@@ -73,7 +73,7 @@ crDirectoryEvent = \case
   CRGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
   CRChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
   CRChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
-  CRNewChatItem {chatItem = AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}} ->
+  CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}) : _} ->
     Just $ case (mc, itemLive) of
       (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.dropWhileEnd isSpace t
       _ -> DEUnsupportedMessage ct ciId
@@ -106,11 +106,13 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCConfirmDuplicateGroup_ :: DirectoryCmdTag 'DRUser
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
+  DCSetRole_ :: DirectoryCmdTag 'DRUser
   DCApproveGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCRejectGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCSuspendGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCResumeGroup_ :: DirectoryCmdTag 'DRSuperUser
   DCListLastGroups_ :: DirectoryCmdTag 'DRSuperUser
+  DCListPendingGroups_ :: DirectoryCmdTag 'DRSuperUser
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -127,11 +129,13 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
+  DCSetRole :: GroupId -> GroupName -> GroupMemberRole -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRSuperUser
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
   DCListLastGroups :: Int -> DirectoryCmd 'DRSuperUser
+  DCListPendingGroups :: Int -> DirectoryCmd 'DRSuperUser
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -163,11 +167,13 @@ directoryCmdP =
         "list" -> u DCListUserGroups_
         "ls" -> u DCListUserGroups_
         "delete" -> u DCDeleteGroup_
+        "role" -> u DCSetRole_
         "approve" -> su DCApproveGroup_
         "reject" -> su DCRejectGroup_
         "suspend" -> su DCSuspendGroup_
         "resume" -> su DCResumeGroup_
         "last" -> su DCListLastGroups_
+        "pending" -> su DCListPendingGroups_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
@@ -184,14 +190,19 @@ directoryCmdP =
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
+      DCSetRole_ -> do
+        (groupId, displayName) <- gc (,)
+        memberRole <- A.space *> ("member" $> GRMember <|> "observer" $> GRObserver)
+        pure $ DCSetRole groupId displayName memberRole
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
-        pure $ DCApproveGroup {groupId, displayName, groupApprovalId}
+        pure DCApproveGroup {groupId, displayName, groupApprovalId}
       DCRejectGroup_ -> gc DCRejectGroup
       DCSuspendGroup_ -> gc DCSuspendGroup
       DCResumeGroup_ -> gc DCResumeGroup
       DCListLastGroups_ -> DCListLastGroups <$> (A.space *> A.decimal <|> pure 10)
+      DCListPendingGroups_ -> DCListPendingGroups <$> (A.space *> A.decimal <|> pure 10)
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
       where
         gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameP
@@ -214,13 +225,15 @@ directoryCmdTag = \case
   DCRecentGroups -> "new"
   DCSubmitGroup _ -> "submit"
   DCConfirmDuplicateGroup {} -> "confirm"
-  DCListUserGroups -> "list"
+  DCListUserGroups -> "list" 
   DCDeleteGroup {} -> "delete"
   DCApproveGroup {} -> "approve"
+  DCSetRole {} -> "role"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"
   DCListLastGroups _ -> "last"
+  DCListPendingGroups _ -> "pending"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"

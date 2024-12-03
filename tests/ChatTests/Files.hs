@@ -36,6 +36,9 @@ chatFileTests = do
     it "send and receive image with text and quote" testSendImageWithTextAndQuote
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
+  describe "batch send messages with files" $ do
+    it "with files folder: send multiple files to contact" testSendMultiFilesDirect
+    it "with files folder: send multiple files to group" testSendMultiFilesGroup
   describe "file transfer over XFTP" $ do
     it "round file description count" $ const testXFTPRoundFDCount
     it "send and receive file" testXFTPFileTransfer
@@ -64,7 +67,7 @@ runTestMessageWithFile :: HasCallStack => FilePath -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
   connectUsers alice bob
 
-  alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
+  alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}]"
   alice <# "@bob hi, sending a file"
   alice <# "/f @bob ./tests/fixtures/test.jpg"
   alice <## "use /fc 1 to cancel sending"
@@ -91,7 +94,7 @@ testSendImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
       connectUsers alice bob
-      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -122,7 +125,7 @@ testSenderMarkItemDeleted =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
       connectUsers alice bob
-      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test_1MB.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test_1MB.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}]"
       alice <# "@bob hi, sending a file"
       alice <# "/f @bob ./tests/fixtures/test_1MB.pdf"
       alice <## "use /fc 1 to cancel sending"
@@ -147,7 +150,7 @@ testFilesFoldersSendImage =
       connectUsers alice bob
       alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
       bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
-      alice ##> "/_send @2 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -180,7 +183,7 @@ testFilesFoldersImageSndDelete =
       alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
       copyFile "./tests/fixtures/test_1MB.pdf" "./tests/tmp/alice_app_files/test_1MB.pdf"
       bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
-      alice ##> "/_send @2 json {\"filePath\": \"test_1MB.pdf\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"test_1MB.pdf\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test_1MB.pdf"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test_1MB.pdf (1017.7 KiB / 1042157 bytes)"
@@ -212,7 +215,7 @@ testFilesFoldersImageRcvDelete =
       connectUsers alice bob
       alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
       bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
-      alice ##> "/_send @2 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -239,7 +242,7 @@ testSendImageWithTextAndQuote =
       connectUsers alice bob
       bob #> "@alice hi alice"
       alice <# "bob> hi alice"
-      alice ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 1 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
+      alice ##> ("/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 1 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]")
       alice <# "@bob > hi alice"
       alice <## "      hey bob"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
@@ -265,7 +268,7 @@ testSendImageWithTextAndQuote =
       bob @@@ [("@alice", "hey bob")]
 
       -- quoting (file + text) with file uses quoted text
-      bob ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.pdf\", \"quotedItemId\": " <> itemId 2 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}")
+      bob ##> ("/_send @2 json [{\"filePath\": \"./tests/fixtures/test.pdf\", \"quotedItemId\": " <> itemId 2 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"file\"}}]")
       bob <# "@alice > hey bob"
       bob <## "      test.pdf"
       bob <# "/f @alice ./tests/fixtures/test.pdf"
@@ -287,7 +290,7 @@ testSendImageWithTextAndQuote =
       B.readFile "./tests/tmp/test.pdf" `shouldReturn` txtSrc
 
       -- quoting (file without text) with file uses file name
-      alice ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 3 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
+      alice ##> ("/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 3 <> ", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]")
       alice <# "@bob > test.pdf"
       alice <## "      test.jpg"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
@@ -313,7 +316,7 @@ testGroupSendImage =
     \alice bob cath -> withXFTPServer $ do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f #team ./tests/fixtures/test.jpg"
       alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
@@ -361,7 +364,7 @@ testGroupSendImageWithTextAndQuote =
         (cath <# "#team bob> hi team")
       threadDelay 1000000
       msgItemId <- lastItemId alice
-      alice ##> ("/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> msgItemId <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
+      alice ##> ("/_send #1 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> msgItemId <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]")
       alice <# "#team > bob hi team"
       alice <## "      hey bob"
       alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -405,6 +408,166 @@ testGroupSendImageWithTextAndQuote =
       bob @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=2", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
       cath @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
+
+testSendMultiFilesDirect :: HasCallStack => FilePath -> IO ()
+testSendMultiFilesDirect =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      connectUsers alice bob
+
+      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+      copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
+      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
+          cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
+          cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
+      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "]")
+
+      alice <# "@bob message without file"
+
+      alice <# "@bob sending file 1"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+
+      alice <# "@bob sending file 2"
+      alice <# "/f @bob test.pdf"
+      alice <## "use /fc 2 to cancel sending"
+
+      bob <# "alice> message without file"
+
+      bob <# "alice> sending file 1"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob <# "alice> sending file 2"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice <## "completed uploading file 1 (test.jpg) for bob"
+      alice <## "completed uploading file 2 (test.pdf) for bob"
+
+      bob ##> "/fr 1"
+      bob
+        <### [ "saving file 1 from alice to test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.jpg) from alice"
+
+      bob ##> "/fr 2"
+      bob
+        <### [ "saving file 2 from alice to test.pdf",
+               "started receiving file 2 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 2 (test.pdf) from alice"
+
+      src1 <- B.readFile "./tests/tmp/alice_app_files/test.jpg"
+      dest1 <- B.readFile "./tests/tmp/bob_app_files/test.jpg"
+      dest1 `shouldBe` src1
+
+      src2 <- B.readFile "./tests/tmp/alice_app_files/test.pdf"
+      dest2 <- B.readFile "./tests/tmp/bob_app_files/test.pdf"
+      dest2 `shouldBe` src2
+
+      alice #$> ("/_get chat @2 count=3", chatF, [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")])
+      bob #$> ("/_get chat @2 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
+
+testSendMultiFilesGroup :: HasCallStack => FilePath -> IO ()
+testSendMultiFilesGroup =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    withXFTPServer $ do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+      copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
+      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+      cath #$> ("/_files_folder ./tests/tmp/cath_app_files", id, "ok")
+
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
+          cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
+          cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
+      alice ##> ("/_send #1 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "]")
+
+      alice <# "#team message without file"
+
+      alice <# "#team sending file 1"
+      alice <# "/f #team test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+
+      alice <# "#team sending file 2"
+      alice <# "/f #team test.pdf"
+      alice <## "use /fc 2 to cancel sending"
+
+      bob <# "#team alice> message without file"
+
+      bob <# "#team alice> sending file 1"
+      bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob <# "#team alice> sending file 2"
+      bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      cath <# "#team alice> message without file"
+
+      cath <# "#team alice> sending file 1"
+      cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath <# "#team alice> sending file 2"
+      cath <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      cath <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice <## "completed uploading file 1 (test.jpg) for #team"
+      alice <## "completed uploading file 2 (test.pdf) for #team"
+
+      bob ##> "/fr 1"
+      bob
+        <### [ "saving file 1 from alice to test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.jpg) from alice"
+
+      bob ##> "/fr 2"
+      bob
+        <### [ "saving file 2 from alice to test.pdf",
+               "started receiving file 2 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 2 (test.pdf) from alice"
+
+      cath ##> "/fr 1"
+      cath
+        <### [ "saving file 1 from alice to test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from alice"
+
+      cath ##> "/fr 2"
+      cath
+        <### [ "saving file 2 from alice to test.pdf",
+               "started receiving file 2 (test.pdf) from alice"
+             ]
+      cath <## "completed receiving file 2 (test.pdf) from alice"
+
+      src1 <- B.readFile "./tests/tmp/alice_app_files/test.jpg"
+      dest1_1 <- B.readFile "./tests/tmp/bob_app_files/test.jpg"
+      dest1_2 <- B.readFile "./tests/tmp/cath_app_files/test.jpg"
+      dest1_1 `shouldBe` src1
+      dest1_2 `shouldBe` src1
+
+      src2 <- B.readFile "./tests/tmp/alice_app_files/test.pdf"
+      dest2_1 <- B.readFile "./tests/tmp/bob_app_files/test.pdf"
+      dest2_2 <- B.readFile "./tests/tmp/cath_app_files/test.pdf"
+      dest2_1 `shouldBe` src2
+      dest2_2 `shouldBe` src2
+
+      alice #$> ("/_get chat #1 count=3", chatF, [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")])
+      bob #$> ("/_get chat #1 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
+      cath #$> ("/_get chat #1 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
 
 testXFTPRoundFDCount :: Expectation
 testXFTPRoundFDCount = do
@@ -460,7 +623,7 @@ testXFTPFileTransferEncrypted =
     let fileJSON = LB.unpack $ J.encode $ CryptoFile srcPath $ Just cfArgs
     withXFTPServer $ do
       connectUsers alice bob
-      alice ##> ("/_send @2 json {\"msgContent\":{\"type\":\"file\", \"text\":\"\"}, \"fileSource\": " <> fileJSON <> "}")
+      alice ##> ("/_send @2 json [{\"msgContent\":{\"type\":\"file\", \"text\":\"\"}, \"fileSource\": " <> fileJSON <> "}]")
       alice <# "/f @bob ./tests/tmp/alice/test.pdf"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"

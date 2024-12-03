@@ -104,7 +104,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
-        if callManager.enableMedia(media: .audio, enable: !action.isMuted, callUUID:  action.callUUID.uuidString.lowercased()) {
+        if callManager.enableMedia(source: .mic, enable: !action.isMuted, callUUID:  action.callUUID.uuidString.lowercased()) {
             action.fulfill()
         } else {
             action.fail()
@@ -121,8 +121,8 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         RTCAudioSession.sharedInstance().audioSessionDidActivate(audioSession)
         RTCAudioSession.sharedInstance().isAudioEnabled = true
         do {
-            let supportsVideo = ChatModel.shared.activeCall?.supportsVideo == true
-            if supportsVideo {
+            let hasVideo = ChatModel.shared.activeCall?.hasVideo == true
+            if hasVideo {
                 try audioSession.setCategory(.playAndRecord, mode: .videoChat, options: [.defaultToSpeaker, .mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
             } else {
                 try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.mixWithOthers, .allowBluetooth, .allowAirPlay, .allowBluetoothA2DP])
@@ -133,7 +133,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                     try? await Task.sleep(nanoseconds: UInt64(i) * 300_000000)
                     if let preferred = audioSession.preferredInputDevice() {
                         await MainActor.run { try? audioSession.setPreferredInput(preferred) }
-                    } else if supportsVideo {
+                    } else if hasVideo {
                         await MainActor.run { try? audioSession.overrideOutputAudioPort(.speaker) }
                     }
                 }
@@ -357,11 +357,9 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 self.provider.reportCall(with: uuid, updated: update)
             }
         } else if callManager.startOutgoingCall(callUUID: callUUID) {
-            if callManager.startOutgoingCall(callUUID: callUUID) {
-                logger.debug("CallController.startCall: call started")
-            } else {
-                logger.error("CallController.startCall: no active call")
-            }
+            logger.debug("CallController.startCall: call started")
+        } else {
+            logger.error("CallController.startCall: no active call")
         }
     }
 

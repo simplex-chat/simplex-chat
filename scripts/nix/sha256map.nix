@@ -1,5 +1,5 @@
 {
-  "https://github.com/simplex-chat/simplexmq.git"."4268b90763c58358809a3ea7dd8bc7d78eeb3077" = "0w444jbxxi5hgipf35xniwmffnpg4qb46sz112hrwxyf5syfi2k5";
+  "https://github.com/simplex-chat/simplexmq.git"."967afaf802d7ea98480eaf280bfc6f35d4d43f05" = "0k8m07hxfgn8h8pqrfchqd8490fvv1jf8slw8qjp0vxdpxa84n3i";
   "https://github.com/simplex-chat/hs-socks.git"."a30cc7a79a08d8108316094f8f2f82a0c5e1ac51" = "0yasvnr7g91k76mjkamvzab2kvlb1g5pspjyjn2fr6v83swjhj38";
   "https://github.com/simplex-chat/direct-sqlcipher.git"."f814ee68b16a9447fbb467ccc8f29bdd3546bfd9" = "1ql13f4kfwkbaq7nygkxgw84213i0zm7c1a8hwvramayxl38dq5d";
   "https://github.com/simplex-chat/sqlcipher-simple.git"."a46bd361a19376c5211f1058908fc0ae6bf42446" = "1z0r78d8f0812kxbgsm735qf6xx8lvaz27k1a0b4a2m0sshpd5gl";
@@ -7,4 +7,6 @@
   "https://github.com/simplex-chat/haskell-terminal.git"."f708b00009b54890172068f168bf98508ffcd495" = "0zmq7lmfsk8m340g47g5963yba7i88n4afa6z93sg9px5jv1mijj";
   "https://github.com/simplex-chat/android-support.git"."9aa09f148089d6752ce563b14c2df1895718d806" = "0pbf2pf13v2kjzi397nr13f1h3jv0imvsq8rpiyy2qyx5vd50pqn";
   "https://github.com/simplex-chat/zip.git"."bd421c6b19cc4c465cd7af1f6f26169fb8ee1ebc" = "1csqfjhvc8wb5h4kxxndmb6iw7b4ib9ff2n81hrizsmnf45a6gg0";
+  "https://github.com/yesodweb/wai.git"."ec5e017d896a78e787a5acea62b37a4e677dec2e" = "1ckcpmpjfy9jiqrb52q20lj7ln4hmq9v2jk6kpkf3m68c1m9c2bx";
+  "https://github.com/simplex-chat/wai.git"."2f6e5aa5f05ba9140ac99e195ee647b4f7d926b0" = "199g4rjdf1zp1fcw8nqdsyr1h36hmg424qqx03071jk7j00z7ay4";
 }

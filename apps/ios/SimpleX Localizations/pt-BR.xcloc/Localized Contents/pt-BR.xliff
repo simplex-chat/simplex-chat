@@ -5502,6 +5502,74 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Archived contacts</source>
         <target state="translated">Contatos arquivados</target>
       </trans-unit>
+      <trans-unit id="Cellular" xml:space="preserve" approved="no">
+        <source>Cellular</source>
+        <target state="translated">Rede móvel</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
+        <source>%d file(s) failed to download.</source>
+        <target state="translated">%d arquivo(s) falharam ao ser baixados.</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
+        <source>%d file(s) were deleted.</source>
+        <target state="translated">%d arquivo(s) foram apagados.</target>
+      </trans-unit>
+      <trans-unit id="%d messages not forwarded" xml:space="preserve" approved="no">
+        <source>%d messages not forwarded</source>
+        <target state="translated">%d mensagens não encaminhadas</target>
+      </trans-unit>
+      <trans-unit id="Bad desktop address" xml:space="preserve" approved="no">
+        <source>Bad desktop address</source>
+        <target state="translated">Endereço de desktop incorreto</target>
+      </trans-unit>
+      <trans-unit id="Blur for better privacy." xml:space="preserve" approved="no">
+        <source>Blur for better privacy.</source>
+        <target state="translated">Borrar para melhor privacidade.</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
+        <source>%d file(s) are still being downloaded.</source>
+        <target state="translated">%d arquivo(s) ainda estão sendo baixados.</target>
+      </trans-unit>
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve" approved="no">
+        <source>%d file(s) were not downloaded.</source>
+        <target state="translated">%d arquivo(s) não foram baixados.</target>
+      </trans-unit>
+      <trans-unit id="Chat colors" xml:space="preserve" approved="no">
+        <source>Chat colors</source>
+        <target state="translated">Cores do chat</target>
+      </trans-unit>
+      <trans-unit id="%lld group events" xml:space="preserve" approved="no">
+        <source>%lld group events</source>
+        <target state="translated">%lld eventos do grupo</target>
+      </trans-unit>
+      <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
+        <source>%lld messages moderated by %@</source>
+        <target state="translated">%lld mensagens moderadas por %@</target>
+      </trans-unit>
+      <trans-unit id="%@, %@" xml:space="preserve" approved="no">
+        <source>%1$@, %2$@</source>
+        <target state="translated">%1$@, %2$@</target>
+      </trans-unit>
+      <trans-unit id="%lld new interface languages" xml:space="preserve" approved="no">
+        <source>%lld new interface languages</source>
+        <target state="translated">%lld novos idiomas de interface</target>
+      </trans-unit>
+      <trans-unit id="Better networking" xml:space="preserve" approved="no">
+        <source>Better networking</source>
+        <target state="translated">Melhores redes</target>
+      </trans-unit>
+      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve" approved="no">
+        <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target state="translated">Búlgaro, Finlandês, Tailandês e Ucraniano - obrigado aos usuários e [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
+      </trans-unit>
+      <trans-unit id="Better groups" xml:space="preserve" approved="no">
+        <source>Better groups</source>
+        <target state="translated">Melhores grupos</target>
+      </trans-unit>
+      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve" approved="no">
+        <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
+        <target state="translated">Capacidade excedida - o destinatário não recebeu as mensagens enviadas anteriormente.</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pt-BR" datatype="plaintext">

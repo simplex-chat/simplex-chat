@@ -36,11 +36,10 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 @Composable
-fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, drawerState: DrawerState) {
+fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>) {
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
-  val scope = rememberCoroutineScope()
   UserProfilesLayout(
     users = users,
     filteredUsers = filteredUsers,
@@ -51,12 +50,6 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     addUser = {
       ModalManager.center.showModalCloseable { close ->
         CreateProfile(m, close)
-        if (appPlatform.isDesktop) {
-          // Hide settings to allow clicks to pass through to CreateProfile view
-          DisposableEffectOnGone(always = { scope.launch { drawerState.close() } }) {
-            // Show settings again to allow intercept clicks to close modals after profile creation finishes
-            scope.launch(NonCancellable) { drawerState.open() } }
-        }
       }
     },
     activateUser = { user ->
@@ -303,7 +296,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
   }
 }
 
-private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
+fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
@@ -317,7 +310,7 @@ private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User
 
 private fun visibleUsersCount(m: ChatModel): Int = m.users.filter { u -> !u.user.hidden }.size
 
-private fun correctPassword(user: User, pwd: String): Boolean {
+fun correctPassword(user: User, pwd: String): Boolean {
   val ph = user.viewPwdHash
   return ph != null && pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
 }

@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ChatTests.Profiles where
 
@@ -13,11 +14,17 @@ import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
+import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Options
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
+import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
@@ -30,6 +37,7 @@ chatProfileTests = do
     it "use multiword profile names" testMultiWordProfileNames
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
+    it "retry accepting connection via contact link" testRetryAcceptingViaContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -249,6 +257,66 @@ testUserContactLink =
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
       alice <##> cath
+
+testRetryAcceptingViaContactLink :: HasCallStack => FilePath -> IO ()
+testRetryAcceptingViaContactLink tmp = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test tmp
+  where
+    test alice bob = do
+      cLink <- withSmpServer' serverCfg' $ do
+        alice ##> "/ad"
+        getContactLink alice True
+      alice <## "server disconnected localhost ()"
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: ok to connect"
+      bob ##> ("/_connect 1 " <> cLink)
+      bob <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        bob ##> ("/_connect plan 1 " <> cLink)
+        bob <## "contact address: ok to connect"
+        bob ##> ("/_connect 1 " <> cLink)
+        alice <#? bob
+      alice <## "server disconnected localhost ()"
+      bob <## "server disconnected localhost ()"
+      alice ##> "/ac bob"
+      alice <##. "smp agent error: BROKER"
+      withSmpServer' serverCfg' $ do
+        alice <## "server connected localhost ()"
+        bob <## "server connected localhost ()"
+        alice ##> "/ac bob"
+        alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+        concurrently_
+          (bob <## "alice (Alice): contact is connected")
+          (alice <## "bob (Bob): contact is connected")
+        alice #> "@bob message 1"
+        bob <# "alice> message 1"
+        bob #> "@alice message 2"
+        alice <# "bob> message 2"
+      alice <## "server disconnected localhost (@bob)"
+      bob <## "server disconnected localhost (@alice)"
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
 
 testProfileLink :: HasCallStack => FilePath -> IO ()
 testProfileLink =
@@ -1653,34 +1721,42 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
       ]
 
 testChangePCCUserDiffSrv :: HasCallStack => FilePath -> IO ()
-testChangePCCUserDiffSrv = testChat2 aliceProfile bobProfile $
-  \alice bob -> do
-    -- Create a new invite
-    alice ##> "/connect"
-    _ <- getInvitation alice
-    alice ##> "/_set incognito :1 on"
-    alice <## "connection 1 changed to incognito"
-    -- Create new user with different servers
-    alice ##> "/create user alisa"
-    showActiveUser alice "alisa"
-    alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
-    alice ##> "/user alice"
-    showActiveUser alice "alice (Alice)"
-    -- Change connection to newly created user and use the newly created connection
-    alice ##> "/_set conn user :1 2"
-    alice <## "connection 1 changed from user alice to user alisa, new link:"
-    alice <## ""
-    inv <- getTermLine alice
-    alice <## ""
-    alice `hasContactProfiles` ["alice"]
-    alice ##> "/user alisa"
-    showActiveUser alice "alisa"
-    -- Connect
-    bob ##> ("/connect " <> inv)
-    bob <## "confirmation sent!"
-    concurrently_
-      (alice <## "bob (Bob): contact is connected")
-      (bob <## "alisa: contact is connected")
+testChangePCCUserDiffSrv tmp = do
+  withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts tmp testCfg testOpts "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfgOpts tmp testCfg testOpts "bob" bobProfile $ \bob -> do
+        -- Create a new invite
+        alice ##> "/connect"
+        _ <- getInvitation alice
+        alice ##> "/_set incognito :1 on"
+        alice <## "connection 1 changed to incognito"
+        -- Create new user with different servers
+        alice ##> "/create user alisa"
+        showActiveUser alice "alisa"
+        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003", id, "ok")
+        alice ##> "/user alice"
+        showActiveUser alice "alice (Alice)"
+        -- Change connection to newly created user and use the newly created connection
+        alice ##> "/_set conn user :1 2"
+        alice <## "connection 1 changed from user alice to user alisa, new link:"
+        alice <## ""
+        inv <- getTermLine alice
+        alice <## ""
+        alice `hasContactProfiles` ["alice"]
+        alice ##> "/user alisa"
+        showActiveUser alice "alisa"
+        -- Connect
+        bob ##> ("/connect " <> inv)
+        bob <## "confirmation sent!"
+        concurrently_
+          (alice <## "bob (Bob): contact is connected")
+          (bob <## "alisa: contact is connected")
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False), ("7002", transport @TLS, False)],
+          msgQueueQuota = 2
+        }
 
 testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $
@@ -1721,7 +1797,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     let startFeatures = [(0, e2eeInfoPQStr), (0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
-    let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
+    let sendVoice = "/_send @2 json [{\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}]"
         voiceNotAllowed = "bad chat command: feature not allowed Voice messages"
     alice ##> sendVoice
     alice <## voiceNotAllowed
@@ -2227,7 +2303,7 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     inv <- getInvitation bob
     bob ##> ("#team \"" <> inv <> "\\ntest\"")
     bob <## "bad chat command: feature not allowed SimpleX links"
-    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
+    bob ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}]")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)

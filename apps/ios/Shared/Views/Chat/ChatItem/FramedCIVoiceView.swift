@@ -92,12 +92,13 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         Group {
-            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWithQuote, revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage)
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."))
+            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWithQuote)
         }
+        .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))
     }
 }

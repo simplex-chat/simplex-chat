@@ -357,17 +357,23 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
-func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?) async -> ChatItem? {
-    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId, ttl: ttl)
+func apiPlanForwardChatItems(type: ChatType, id: Int64, itemIds: [Int64]) async throws -> ([Int64], ForwardConfirmation?) {
+    let r = await chatSendCmd(.apiPlanForwardChatItems(toChatType: type, toChatId: id, itemIds: itemIds))
+    if case let .forwardPlan(_, chatItemIds, forwardConfimation) = r { return (chatItemIds, forwardConfimation) }
+    throw r
+}
+
+func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool = false, ttl: Int? = nil) async -> ChatItem? {
-    let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg, live: live, ttl: ttl)
+func apiSendMessages(type: ChatType, id: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let cmd: ChatCommand = .apiSendMessages(type: type, id: id, live: live, ttl: ttl, composedMessages: composedMessages)
     return await processSendMessageCmd(toChatType: type, cmd: cmd)
 }
 
-private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async -> ChatItem? {
+private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async -> [ChatItem]? {
     let chatModel = ChatModel.shared
     let r: ChatResponse
     if toChatType == .direct {
@@ -380,10 +386,13 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
             }
         })
         r = await chatSendCmd(cmd, bgTask: false)
-        if case let .newChatItem(_, aChatItem) = r {
-            cItem = aChatItem.chatItem
-            chatModel.messageDelivery[aChatItem.chatItem.id] = endTask
-            return cItem
+        if case let .newChatItems(_, aChatItems) = r {
+            let cItems = aChatItems.map { $0.chatItem }
+            if let cItemLast = cItems.last {
+                cItem = cItemLast
+                chatModel.messageDelivery[cItemLast.id] = endTask
+            }
+            return cItems
         }
         if let networkErrorAlert = networkErrorAlert(r) {
             AlertManager.shared.showAlert(networkErrorAlert)
@@ -394,18 +403,18 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
         return nil
     } else {
         r = await chatSendCmd(cmd, bgDelay: msgDelay)
-        if case let .newChatItem(_, aChatItem) = r {
-            return aChatItem.chatItem
+        if case let .newChatItems(_, aChatItems) = r {
+            return aChatItems.map { $0.chatItem }
         }
         sendMessageErrorAlert(r)
         return nil
     }
 }
 
-func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) async -> ChatItem? {
-    let r = await chatSendCmd(.apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg))
-    if case let .newChatItem(_, aChatItem) = r { return aChatItem.chatItem }
-    createChatItemErrorAlert(r)
+func apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
+    let r = await chatSendCmd(.apiCreateChatItems(noteFolderId: noteFolderId, composedMessages: composedMessages))
+    if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
+    createChatItemsErrorAlert(r)
     return nil
 }
 
@@ -417,8 +426,8 @@ private func sendMessageErrorAlert(_ r: ChatResponse) {
     )
 }
 
-private func createChatItemErrorAlert(_ r: ChatResponse) {
-    logger.error("apiCreateChatItem error: \(String(describing: r))")
+private func createChatItemsErrorAlert(_ r: ChatResponse) {
+    logger.error("apiCreateChatItems error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error creating message",
         message: "Error: \(responseError(r))"
@@ -453,7 +462,7 @@ func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode, String
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
     case let .ntfToken(token, status, ntfMode, ntfServer): return (token, status, ntfMode, ntfServer)
-    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off, nil)
+    case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED, _))): return (nil, nil, .off, nil)
     default:
         logger.debug("apiGetNtfToken response: \(String(describing: r))")
         return (nil, nil, .off, nil)
@@ -576,8 +585,14 @@ func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profi
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, ConnectionStats?) {
+func apiGroupMemberInfoSync(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, ConnectionStats?) {
     let r = chatSendCmdSync(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberInfo(_, _, member, connStats_) = r { return (member, connStats_) }
+    throw r
+}
+
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (GroupMember, ConnectionStats?) {
+    let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberInfo(_, _, member, connStats_) = r { return (member, connStats_) }
     throw r
 }
@@ -636,8 +651,8 @@ func apiGetContactCode(_ contactId: Int64) async throws -> (Contact, String) {
     throw r
 }
 
-func apiGetGroupMemberCode(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, String) {
-    let r = chatSendCmdSync(.apiGetGroupMemberCode(groupId: groupId, groupMemberId: groupMemberId))
+func apiGetGroupMemberCode(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (GroupMember, String) {
+    let r = await chatSendCmd(.apiGetGroupMemberCode(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberCode(_, _, member, connectionCode) = r { return (member, connectionCode) }
     throw r
 }
@@ -670,6 +685,13 @@ func apiAddContact(incognito: Bool) async -> ((String, PendingContactConnection)
 func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
     let r = await chatSendCmd(.apiSetConnectionIncognito(connId: connId, incognito: incognito))
     if case let .connectionIncognitoUpdated(_, toConnection) = r { return toConnection }
+    throw r
+}
+
+func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection? {
+    let r = await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
+    
+    if case let .connectionUserChanged(_, _, toConnection, _) = r {return toConnection}
     throw r
 }
 
@@ -719,6 +741,12 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         let alert = mkAlert(
             title: "Connection error (AUTH)",
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
+        )
+        return (nil, alert)
+    case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
+        let alert = mkAlert(
+            title: "Undelivered messages",
+            message: "The connection reached the limit of undelivered messages, your contact may be offline."
         )
         return (nil, alert)
     case let .chatCmdError(_, .errorAgent(.INTERNAL(internalErr))):
@@ -990,6 +1018,10 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
+func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiChatItemsRead(type: type, id: id, itemIds: itemIds))
+}
+
 func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
@@ -1025,77 +1057,122 @@ func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationF
 }
 
 func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = false, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(
-        fileId: fileId,
-        userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
-        encrypted: privacyEncryptLocalFilesGroupDefault.get(),
+    await receiveFiles(
+        user: user,
+        fileIds: [fileId],
+        userApprovedRelays: userApprovedRelays,
         auto: auto
-    ) {
-        await chatItemSimpleUpdate(user, chatItem)
-    }
+    )
 }
 
-func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
-    let r = await chatSendCmd(.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
-    let am = AlertManager.shared
-    if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
-    if case .rcvFileAcceptedSndCancelled = r {
-        logger.debug("apiReceiveFile error: sender cancelled file transfer")
-        if !auto {
-            am.showAlertMsg(
-                title: "Cannot receive file",
-                message: "Sender cancelled file transfer."
+func receiveFiles(user: any UserLike, fileIds: [Int64], userApprovedRelays: Bool = false, auto: Bool = false) async {
+    var fileIdsToApprove = [Int64]()
+    var srvsToApprove = Set<String>()
+    var otherFileErrs = [ChatResponse]()
+
+    for fileId in fileIds {
+        let r = await chatSendCmd(
+            .receiveFile(
+                fileId: fileId,
+                userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
+                encrypted: privacyEncryptLocalFilesGroupDefault.get(),
+                inline: nil
             )
+        )
+        switch r {
+        case let .rcvFileAccepted(_, chatItem):
+            await chatItemSimpleUpdate(user, chatItem)
+        default:
+            if let chatError = chatError(r) {
+                switch chatError {
+                case let .fileNotApproved(fileId, unknownServers):
+                    fileIdsToApprove.append(fileId)
+                    srvsToApprove.formUnion(unknownServers)
+                default:
+                    otherFileErrs.append(r)
+                }
+            }
         }
-    } else if let networkErrorAlert = networkErrorAlert(r) {
-        logger.error("apiReceiveFile network error: \(String(describing: r))")
-        if !auto {
-            am.showAlert(networkErrorAlert)
+    }
+
+    if !auto {
+        let otherErrsStr = if otherFileErrs.isEmpty {
+            ""
+        } else if otherFileErrs.count == 1 {
+            "\(otherFileErrs[0])"
+        } else if otherFileErrs.count == 2 {
+            "\(otherFileErrs[0])\n\(otherFileErrs[1])"
+        } else {
+            "\(otherFileErrs[0])\n\(otherFileErrs[1])\nand \(otherFileErrs.count - 2) other error(s)"
         }
-    } else {
-        switch chatError(r) {
-        case .fileCancelled:
-            logger.debug("apiReceiveFile ignoring fileCancelled error")
-        case .fileAlreadyReceiving:
-            logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
-        case let .fileNotApproved(fileId, unknownServers):
-            logger.debug("apiReceiveFile fileNotApproved error")
-            if !auto {
-                let srvs = unknownServers.map { s in
+
+        // If there are not approved files, alert is shown the same way both in case of singular and plural files reception
+        if !fileIdsToApprove.isEmpty {
+            let srvs = srvsToApprove
+                .map { s in
                     if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
                         srv.hostnames[0]
                     } else {
                         serverHost(s)
                     }
                 }
-                am.showAlert(Alert(
-                    title: Text("Unknown servers!"),
-                    message: Text("Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs.sorted().joined(separator: ", "))."),
-                    primaryButton: .default(
-                        Text("Download"),
-                        action: {
-                            Task {
-                                logger.debug("apiReceiveFile fileNotApproved alert - in Task")
-                                if let user = ChatModel.shared.currentUser {
-                                    await receiveFile(user: user, fileId: fileId, userApprovedRelays: true)
-                                }
+                .sorted()
+                .joined(separator: ", ")
+            let fIds = fileIdsToApprove
+            await MainActor.run {
+                showAlert(
+                    title: NSLocalizedString("Unknown servers!", comment: "alert title"),
+                    message: (
+                        String.localizedStringWithFormat(NSLocalizedString("Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.", comment: "alert message"), srvs) +
+                        (otherErrsStr != "" ? "\n\n" + String.localizedStringWithFormat(NSLocalizedString("Other file errors:\n%@", comment: "alert message"), otherErrsStr) : "")
+                    ),
+                    buttonTitle: NSLocalizedString("Download", comment: "alert button"),
+                    buttonAction: {
+                        Task {
+                            logger.debug("apiReceiveFile fileNotApproved alert - in Task")
+                            if let user = ChatModel.shared.currentUser {
+                                await receiveFiles(user: user, fileIds: fIds, userApprovedRelays: true)
                             }
                         }
-                    ),
-                    secondaryButton: .cancel()
-                ))
+                    },
+                    cancelButton: true
+                )
             }
-        default:
-            logger.error("apiReceiveFile error: \(String(describing: r))")
-            if !auto {
-                am.showAlertMsg(
-                    title: "Error receiving file",
-                    message: "Error: \(responseError(r))"
+        } else if otherFileErrs.count == 1 { // If there is a single other error, we differentiate on it
+            let errorResponse = otherFileErrs.first!
+            switch errorResponse {
+            case let .rcvFileAcceptedSndCancelled(_, rcvFileTransfer):
+                logger.debug("receiveFiles error: sender cancelled file transfer \(rcvFileTransfer.fileId)")
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Cannot receive file", comment: "alert title"),
+                        message: NSLocalizedString("Sender cancelled file transfer.", comment: "alert message")
+                    )
+                }
+            default:
+                if let chatError = chatError(errorResponse) {
+                    switch chatError {
+                    case .fileCancelled, .fileAlreadyReceiving:
+                        logger.debug("receiveFiles ignoring FileCancelled or FileAlreadyReceiving error")
+                    default:
+                        await MainActor.run {
+                            showAlert(
+                                NSLocalizedString("Error receiving file", comment: "alert title"),
+                                message: responseError(errorResponse)
+                            )
+                        }
+                    }
+                }
+            }
+        } else if otherFileErrs.count > 1 { // If there are multiple other errors, we show general alert
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error receiving file", comment: "alert title"),
+                    message: String.localizedStringWithFormat(NSLocalizedString("File errors:\n%@", comment: "alert message"), otherErrsStr)
                 )
             }
         }
     }
-    return nil
 }
 
 func cancelFile(user: User, fileId: Int64) async {
@@ -1277,11 +1354,23 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
 
 func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
-        logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        await ChatModel.shared.markChatItemRead(cInfo, cItem)
+        DispatchQueue.main.async {
+            ChatModel.shared.markChatItemsRead(cInfo, [cItem.id])
+        }
     } catch {
-        logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
+        logger.error("apiChatRead error: \(responseError(error))")
+    }
+}
+
+func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID]) async {
+    do {
+        try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
+        DispatchQueue.main.async {
+            ChatModel.shared.markChatItemsRead(cInfo, itemIds)
+        }
+    } catch {
+        logger.error("apiChatItemsRead error: \(responseError(error))")
     }
 }
 
@@ -1775,36 +1864,45 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 n.networkStatuses = ns
             }
         }
-    case let .newChatItem(user, aChatItem):
-        let cInfo = aChatItem.chatInfo
-        let cItem = aChatItem.chatItem
-        await MainActor.run {
-            if active(user) {
-                m.addChatItem(cInfo, cItem)
-            } else if cItem.isRcvNew && cInfo.ntfsEnabled {
-                m.increaseUnreadCounter(user: user)
+    case let .newChatItems(user, chatItems):
+        for chatItem in chatItems {
+            let cInfo = chatItem.chatInfo
+            let cItem = chatItem.chatItem
+            await MainActor.run {
+                if active(user) {
+                    m.addChatItem(cInfo, cItem)
+                } else if cItem.isRcvNew && cInfo.ntfsEnabled {
+                    m.increaseUnreadCounter(user: user)
+                }
+            }
+            if let file = cItem.autoReceiveFile() {
+                Task {
+                    await receiveFile(user: user, fileId: file.fileId, auto: true)
+                }
+            }
+            if cItem.showNotification {
+                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
         }
-        if let file = cItem.autoReceiveFile() {
-            Task {
-                await receiveFile(user: user, fileId: file.fileId, auto: true)
+    case let .chatItemsStatusesUpdated(user, chatItems):
+        for chatItem in chatItems {
+            let cInfo = chatItem.chatInfo
+            let cItem = chatItem.chatItem
+            if !cItem.isDeletedContent && active(user) {
+                await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
             }
-        }
-        if cItem.showNotification {
-            NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-        }
-    case let .chatItemStatusUpdated(user, aChatItem):
-        let cInfo = aChatItem.chatInfo
-        let cItem = aChatItem.chatItem
-        if !cItem.isDeletedContent && active(user) {
-            await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
-        }
-        if let endTask = m.messageDelivery[cItem.id] {
-            switch cItem.meta.itemStatus {
-            case .sndSent: endTask()
-            case .sndErrorAuth: endTask()
-            case .sndError: endTask()
-            default: ()
+            if let endTask = m.messageDelivery[cItem.id] {
+                switch cItem.meta.itemStatus {
+                case .sndNew: ()
+                case .sndSent: endTask()
+                case .sndRcvd: endTask()
+                case .sndErrorAuth: endTask()
+                case .sndError: endTask()
+                case .sndWarning: endTask()
+                case .rcvNew: ()
+                case .rcvRead: ()
+                case .invalid: ()
+                }
             }
         }
     case let .chatItemUpdated(user, aChatItem):
@@ -1998,7 +2096,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await withCall(contact) { call in
             await MainActor.run {
                 call.callState = .offerReceived
-                call.peerMedia = callType.media
                 call.sharedKey = sharedKey
             }
             let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
