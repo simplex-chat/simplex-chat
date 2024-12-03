@@ -36,6 +36,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.launch
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
@@ -328,13 +329,14 @@ fun ModalData.GroupChatInfoLayout(
       SectionSpacer()
 
       SectionView {
-        if (groupInfo.canEdit) {
+        if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
           EditGroupProfileButton(editGroupProfile)
         }
-        if (groupInfo.groupProfile.description != null || groupInfo.canEdit) {
+        if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
           AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
         }
-        GroupPreferencesButton(openPreferences)
+        val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
+        GroupPreferencesButton(prefsTitleId, openPreferences)
         if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
@@ -356,14 +358,21 @@ fun ModalData.GroupChatInfoLayout(
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
         if (groupInfo.canAddMembers) {
-          if (groupLink == null) {
-            CreateGroupLinkButton(manageGroupLink)
-          } else {
-            GroupLinkButton(manageGroupLink)
+          if (groupInfo.businessChat == null) {
+            if (groupLink == null) {
+              CreateGroupLinkButton(manageGroupLink)
+            } else {
+              GroupLinkButton(manageGroupLink)
+            }
           }
           val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
           val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-          AddMembersButton(tint, onAddMembersClick)
+          val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
+            BusinessChatType.Customer -> MR.strings.button_add_team_members
+            BusinessChatType.Business -> MR.strings.button_add_friends
+            null -> MR.strings.button_add_members
+          }
+          AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
         }
         if (members.size > 8) {
           SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
@@ -439,10 +448,10 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
-private fun GroupPreferencesButton(onClick: () -> Unit) {
+private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
-    stringResource(MR.strings.group_preferences),
+    stringResource(titleId),
     click = onClick
   )
 }
@@ -479,10 +488,10 @@ fun SendReceiptsOptionDisabled() {
 }
 
 @Composable
-private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
+private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_add),
-    stringResource(MR.strings.button_add_members),
+    stringResource(titleId),
     onClick,
     iconColor = tint,
     textColor = tint

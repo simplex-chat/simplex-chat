@@ -408,6 +408,7 @@ fun PreferenceToggleWithIcon(
   text: String,
   icon: Painter? = null,
   iconColor: Color? = MaterialTheme.colors.secondary,
+  disabled: Boolean = false,
   checked: Boolean,
   extraPadding: Boolean = false,
   onChange: (Boolean) -> Unit = {},
@@ -418,6 +419,7 @@ fun PreferenceToggleWithIcon(
       onCheckedChange = {
         onChange(it)
       },
+      enabled = !disabled
     )
   }
 }

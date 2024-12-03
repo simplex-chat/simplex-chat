@@ -936,6 +936,8 @@
   <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
   <string name="create_1_time_link">Create 1-time link</string>
   <string name="address_settings">Address settings</string>
+  <string name="business_address">Business address</string>
+  <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>
@@ -1551,6 +1553,8 @@
 
   <!-- GroupChatInfoView.kt -->
   <string name="button_add_members">Invite members</string>
+  <string name="button_add_team_members">Add team members</string>
+  <string name="button_add_friends">Add friends</string>
   <string name="group_info_section_title_num_members">%1$s MEMBERS</string>
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
@@ -2275,10 +2279,12 @@
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
+  <string name="connect_plan_chat_already_exists">Chat already exists!</string>
   <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[You are already joining the group <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
   <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
+  <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[You are already connected with <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
 
   <!-- Errors -->

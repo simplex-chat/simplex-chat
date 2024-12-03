@@ -2526,6 +2526,14 @@ object ChatController {
           }
         }
       }
+      is CR.BusinessLinkConnecting -> {
+        if (!active(r.user)) return
+
+        withChats {
+          updateGroup(rhId, r.groupInfo)
+          removeChat(rhId, r.fromContact.id)
+        }
+      }
       is CR.JoinedGroupMemberConnecting ->
         if (active(r.user)) {
           withChats {
@@ -5484,6 +5492,7 @@ sealed class CR {
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
+  @Serializable @SerialName("businessLinkConnecting") class BusinessLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val fromContact: Contact): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
@@ -5664,6 +5673,7 @@ sealed class CR {
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
     is GroupLinkConnecting -> "groupLinkConnecting"
+    is BusinessLinkConnecting -> "businessLinkConnecting"
     is UserDeletedMember -> "userDeletedMember"
     is LeftMemberUser -> "leftMemberUser"
     is GroupMembers -> "groupMembers"
@@ -5837,6 +5847,7 @@ sealed class CR {
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")
+    is BusinessLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nfromContact: $fromContact")
     is UserDeletedMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is LeftMemberUser -> withUser(user, json.encodeToString(groupInfo))
     is GroupMembers -> withUser(user, json.encodeToString(group))
@@ -6108,11 +6119,16 @@ class UserContactLinkRec(val connReqContact: String, val autoAccept: AutoAccept?
 }
 
 @Serializable
-class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
+class AutoAccept(val businessAddress: Boolean, val acceptIncognito: Boolean, val autoReply: MsgContent?) {
   companion object {
     fun cmdString(autoAccept: AutoAccept?): String {
       if (autoAccept == null) return "off"
-      val s = "on" + if (autoAccept.acceptIncognito) " incognito=on" else ""
+      var s = "on"
+      if (autoAccept.acceptIncognito) {
+        s += " incognito=on"
+      } else if (autoAccept.businessAddress) {
+        s += " business"
+      }
       val msg = autoAccept.autoReply ?: return s
       return s + " " + msg.cmdString
     }
