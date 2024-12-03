@@ -1507,9 +1507,6 @@ data class GroupInfo (
   val canAddMembers: Boolean
     get() = membership.memberRole >= GroupMemberRole.Admin && membership.memberActive
 
-  val businessType: BusinessChatType?
-    get() = businessChat?.chatType
-
   companion object {
     val sampleData = GroupInfo(
       groupId = 1,

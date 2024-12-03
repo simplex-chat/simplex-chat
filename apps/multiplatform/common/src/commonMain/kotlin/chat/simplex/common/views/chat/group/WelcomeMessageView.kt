@@ -96,7 +96,7 @@ private fun GroupWelcomeLayout(
     val editMode = remember { mutableStateOf(true) }
     AppBarTitle(stringResource(MR.strings.group_welcome_title))
     val wt = rememberSaveable { welcomeText }
-    if (groupInfo.isOwner && groupInfo.businessType == null) {
+    if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
       if (editMode.value) {
         val focusRequester = remember { FocusRequester() }
         TextEditor(

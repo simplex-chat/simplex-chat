@@ -328,10 +328,10 @@ fun ModalData.GroupChatInfoLayout(
       SectionSpacer()
 
       SectionView {
-        if (groupInfo.isOwner && groupInfo.businessType == null) {
+        if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
           EditGroupProfileButton(editGroupProfile)
         }
-        if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessType == null)) {
+        if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
           AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
         }
         GroupPreferencesButton(openPreferences)
