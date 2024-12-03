@@ -1154,6 +1154,10 @@
         <source>Business address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Business chats" xml:space="preserve">
+        <source>Business chats</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
         <target>Chat-profiilin mukaan (oletus) tai [yhteyden mukaan](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
@@ -1286,6 +1290,10 @@
         <source>Change user profiles</source>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Chat" xml:space="preserve">
+        <source>Chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat already exists" xml:space="preserve">
         <source>Chat already exists</source>
         <note>No comment provided by engineer.</note>
@@ -1360,6 +1368,14 @@
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for all members - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for you - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -2044,6 +2060,10 @@ This is your own one-time link!</source>
         <source>Delete and notify contact</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete chat" xml:space="preserve">
+        <source>Delete chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
         <source>Delete chat profile</source>
         <target>Poista keskusteluprofiili</target>
@@ -2052,6 +2072,10 @@ This is your own one-time link!</source>
       <trans-unit id="Delete chat profile?" xml:space="preserve">
         <source>Delete chat profile?</source>
         <target>Poista keskusteluprofiili?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete chat?" xml:space="preserve">
+        <source>Delete chat?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2301,6 +2325,10 @@ This is your own one-time link!</source>
         <source>Direct messages</source>
         <target>Yksityisviestit</target>
         <note>chat feature</note>
+      </trans-unit>
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
+        <source>Direct messages between members are prohibited in this chat.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
         <source>Direct messages between members are prohibited.</source>
@@ -3379,40 +3407,6 @@ Error: %2$@</source>
         <target>Ryhmälinkit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can add message reactions." xml:space="preserve">
-        <source>Members can add message reactions.</source>
-        <target>Ryhmän jäsenet voivat lisätä viestireaktioita.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
-        <source>Members can irreversibly delete sent messages. (24 hours)</source>
-        <target>Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
-        <source>Members can send SimpleX links.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Members can send direct messages." xml:space="preserve">
-        <source>Members can send direct messages.</source>
-        <target>Ryhmän jäsenet voivat lähettää suoraviestejä.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
-        <source>Members can send disappearing messages.</source>
-        <target>Ryhmän jäsenet voivat lähettää katoavia viestejä.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Members can send files and media." xml:space="preserve">
-        <source>Members can send files and media.</source>
-        <target>Ryhmän jäsenet voivat lähettää tiedostoja ja mediaa.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Members can send voice messages." xml:space="preserve">
-        <source>Members can send voice messages.</source>
-        <target>Ryhmän jäsenet voivat lähettää ääniviestejä.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
         <source>Group message:</source>
         <target>Ryhmäviesti:</target>
@@ -3790,6 +3784,10 @@ More improvements are coming soon!</source>
         <target>Kutsu jäseniä</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invite to chat" xml:space="preserve">
+        <source>Invite to chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
         <source>Invite to group</source>
         <target>Kutsu ryhmään</target>
@@ -3938,6 +3936,14 @@ This is your link for group %@!</source>
         <target>Poistu</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Leave chat" xml:space="preserve">
+        <source>Leave chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Leave chat?" xml:space="preserve">
+        <source>Leave chat?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
         <source>Leave group</source>
         <target>Poistu ryhmästä</target>
@@ -4062,6 +4068,10 @@ This is your link for group %@!</source>
         <source>Member inactive</source>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+        <source>Member role will be changed to "%@". All chat members will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
         <target>Jäsenen rooli muuttuu muotoon "%@". Kaikille ryhmän jäsenille ilmoitetaan asiasta.</target>
@@ -4072,9 +4082,47 @@ This is your link for group %@!</source>
         <target>Jäsenen rooli muutetaan muotoon "%@". Jäsen saa uuden kutsun.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+        <source>Member will be removed from chat - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
         <target>Jäsen poistetaan ryhmästä - tätä ei voi perua!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can add message reactions." xml:space="preserve">
+        <source>Members can add message reactions.</source>
+        <target>Ryhmän jäsenet voivat lisätä viestireaktioita.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Members can irreversibly delete sent messages. (24 hours)</source>
+        <target>Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
+        <source>Members can send SimpleX links.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send direct messages." xml:space="preserve">
+        <source>Members can send direct messages.</source>
+        <target>Ryhmän jäsenet voivat lähettää suoraviestejä.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+        <source>Members can send disappearing messages.</source>
+        <target>Ryhmän jäsenet voivat lähettää katoavia viestejä.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send files and media." xml:space="preserve">
+        <source>Members can send files and media.</source>
+        <target>Ryhmän jäsenet voivat lähettää tiedostoja ja mediaa.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send voice messages." xml:space="preserve">
+        <source>Members can send voice messages.</source>
+        <target>Ryhmän jäsenet voivat lähettää ääniviestejä.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
@@ -4594,6 +4642,10 @@ Edellyttää VPN:n sallimista.</target>
         <target>Onion-isäntiä ei käytetä.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+        <source>Only chat owners can change preferences.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages.</source>
         <target>Vain asiakaslaitteet tallentavat käyttäjäprofiileja, yhteystietoja, ryhmiä ja viestejä, jotka on lähetetty **kaksinkertaisella päästä päähän -salauksella**.</target>
@@ -4953,6 +5005,10 @@ Error: %@</source>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
         <source>Privacy &amp; security</source>
         <target>Yksityisyys ja turvallisuus</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Privacy for your customers." xml:space="preserve">
+        <source>Privacy for your customers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -7597,6 +7653,10 @@ Repeat connection request?</source>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
         <source>You will still receive calls and notifications from muted profiles when they are active.</source>
         <target>Saat edelleen puheluita ja ilmoituksia mykistetyiltä profiileilta, kun ne ovat aktiivisia.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
+        <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
