@@ -1386,8 +1386,8 @@ Available in v5.1</source>
         <target state="translated">הודעות ישירות</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve" approved="no">
+        <source>Direct messages between members are prohibited.</source>
         <target state="translated">הודעות ישירות בין חברי קבוצה אסורות בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1406,8 +1406,8 @@ Available in v5.1</source>
         <target state="translated">הודעות נעלמות אסורות בצ׳אט זה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve" approved="no">
+        <source>Disappearing messages are prohibited.</source>
         <target state="translated">הודעות נעלמות אסורות בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1951,18 +1951,18 @@ Available in v5.1</source>
         <target state="translated">חברי הקבוצה יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve" approved="no">
-        <source>Group members can send direct messages.</source>
+      <trans-unit id="Members can send direct messages." xml:space="preserve" approved="no">
+        <source>Members can send direct messages.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח הודעות ישירות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve" approved="no">
-        <source>Group members can send disappearing messages.</source>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve" approved="no">
+        <source>Members can send disappearing messages.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח הודעות נעלמות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve" approved="no">
-        <source>Group members can send voice messages.</source>
+      <trans-unit id="Members can send voice messages." xml:space="preserve" approved="no">
+        <source>Members can send voice messages.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח הודעות קוליות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2252,8 +2252,8 @@ Available in v5.1</source>
         <target state="translated">מחיקה בלתי הפיכה של הודעות אסורה בצ׳אט זה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve" approved="no">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve" approved="no">
+        <source>Irreversible message deletion is prohibited.</source>
         <target state="translated">מחיקה בלתי הפיכה של הודעות אסורה בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3859,8 +3859,8 @@ To connect, please ask your contact to create another connection link and check 
         <source>Voice messages are prohibited in this chat.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages prohibited!" xml:space="preserve">
@@ -4958,8 +4958,8 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">נמחק</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Files and media are prohibited in this group.</source>
+      <trans-unit id="Files and media are prohibited." xml:space="preserve" approved="no">
+        <source>Files and media are prohibited.</source>
         <target state="translated">קבצים ומדיה אסורים בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5018,13 +5018,13 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">הזמן חברים</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
-        <source>Group members can add message reactions.</source>
+      <trans-unit id="Members can add message reactions." xml:space="preserve" approved="no">
+        <source>Members can add message reactions.</source>
         <target state="translated">חברי הקבוצה יכולים להוסיף תגובות אמוג׳י להודעות.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve" approved="no">
-        <source>Group members can send files and media.</source>
+      <trans-unit id="Members can send files and media." xml:space="preserve" approved="no">
+        <source>Members can send files and media.</source>
         <target state="translated">חברי הקבוצה יכולים לשלוח קבצים ומדיה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5222,8 +5222,8 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">תגובות אמוג׳י להודעות אסורות בצ׳אט זה.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Message reactions are prohibited in this group.</source>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve" approved="no">
+        <source>Message reactions are prohibited.</source>
         <target state="translated">תגובות אמוג׳י להודעות אסורות בקבוצה זו.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

@@ -1656,7 +1656,7 @@
 "Direct messages" = "Közvetlen üzenetek";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "A közvetlen üzenetek küldése a tagok között le van tiltva ebben a csoportban.";
+"Direct messages between members are prohibited." = "A közvetlen üzenetek küldése a tagok között le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Letiltás (felülírások megtartásával)";
@@ -1683,7 +1683,7 @@
 "Disappearing messages are prohibited in this chat." = "Az eltűnő üzenetek küldése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Az eltűnő üzenetek küldése le van tiltva ebben a csoportban.";
+"Disappearing messages are prohibited." = "Az eltűnő üzenetek küldése le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Eltűnik ekkor:";
@@ -2254,7 +2254,7 @@
 "Files and media" = "Fájlok és médiatartalmak";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "A fájlok- és a médiatartalmak le vannak tiltva ebben a csoportban.";
+"Files and media are prohibited." = "A fájlok- és a médiatartalmak le vannak tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "Files and media not allowed" = "A fájlok- és médiatartalmak nincsenek engedélyezve";
@@ -2425,25 +2425,25 @@
 "Group links" = "Csoporthivatkozások";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "Csoporttagok üzenetreakciókat adhatnak hozzá.";
+"Members can add message reactions." = "Csoporttagok üzenetreakciókat adhatnak hozzá.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "A csoport tagjai véglegesen törölhetik az elküldött üzeneteiket. (24 óra)";
+"Members can irreversibly delete sent messages. (24 hours)" = "A csoport tagjai véglegesen törölhetik az elküldött üzeneteiket. (24 óra)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "A csoport tagjai küldhetnek egymásnak közvetlen üzeneteket.";
+"Members can send direct messages." = "A csoport tagjai küldhetnek egymásnak közvetlen üzeneteket.";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "A csoport tagjai küldhetnek eltűnő üzeneteket.";
+"Members can send disappearing messages." = "A csoport tagjai küldhetnek eltűnő üzeneteket.";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "A csoport tagjai küldhetnek fájlokat és médiatartalmakat.";
+"Members can send files and media." = "A csoport tagjai küldhetnek fájlokat és médiatartalmakat.";
 
 /* No comment provided by engineer. */
-"Group members can send SimpleX links." = "A csoport tagjai küldhetnek SimpleX-hivatkozásokat.";
+"Members can send SimpleX links." = "A csoport tagjai küldhetnek SimpleX-hivatkozásokat.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "A csoport tagjai küldhetnek hangüzeneteket.";
+"Members can send voice messages." = "A csoport tagjai küldhetnek hangüzeneteket.";
 
 /* notification */
 "Group message:" = "Csoport üzenet:";
@@ -2746,7 +2746,7 @@
 "Irreversible message deletion is prohibited in this chat." = "Az üzenetek végleges törlése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Az üzenetek végleges törlése le van tiltva ebben a csoportban.";
+"Irreversible message deletion is prohibited." = "Az üzenetek végleges törlése le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Lehetővé teszi, hogy egyetlen csevegőprofilon belül több névtelen kapcsolat legyen, anélkül, hogy megosztott adatok lennének közöttük.";
@@ -2968,7 +2968,7 @@
 "Message reactions are prohibited in this chat." = "Az üzenetreakciók küldése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Az üzenetreakciók küldése le van tiltva ebben a csoportban.";
+"Message reactions are prohibited." = "Az üzenetreakciók küldése le van tiltva ebben a csoportban.";
 
 /* notification */
 "message received" = "üzenet érkezett";
@@ -4416,7 +4416,7 @@
 "SimpleX links" = "SimpleX-hivatkozások";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "A SimpleX-hivatkozások küldése le van tiltva ebben a csoportban.";
+"SimpleX links are prohibited." = "A SimpleX-hivatkozások küldése le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "A SimpleX-hivatkozások küldése le van tiltva";
@@ -5148,7 +5148,7 @@
 "Voice messages are prohibited in this chat." = "A hangüzenetek küldése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "A hangüzenetek küldése le van tiltva ebben a csoportban.";
+"Voice messages are prohibited." = "A hangüzenetek küldése le van tiltva ebben a csoportban.";
 
 /* No comment provided by engineer. */
 "Voice messages not allowed" = "A hangüzenetek küldése le van tiltva";

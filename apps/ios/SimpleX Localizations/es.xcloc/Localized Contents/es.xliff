@@ -2500,8 +2500,8 @@ This is your own one-time link!</source>
         <target>Mensajes directos</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+        <source>Direct messages between members are prohibited.</source>
         <target>Los mensajes directos entre miembros del grupo no están permitidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2540,8 +2540,8 @@ This is your own one-time link!</source>
         <target>Los mensajes temporales no están permitidos en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+        <source>Disappearing messages are prohibited.</source>
         <target>Los mensajes temporales no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3398,8 +3398,8 @@ This is your own one-time link!</source>
         <target>Archivos y multimedia</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
-        <source>Files and media are prohibited in this group.</source>
+      <trans-unit id="Files and media are prohibited." xml:space="preserve">
+        <source>Files and media are prohibited.</source>
         <target>Los archivos y multimedia no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3672,38 +3672,38 @@ Error: %2$@</target>
         <target>Enlaces de grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve">
-        <source>Group members can add message reactions.</source>
+      <trans-unit id="Members can add message reactions." xml:space="preserve">
+        <source>Members can add message reactions.</source>
         <target>Los miembros pueden añadir reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
-        <source>Group members can irreversibly delete sent messages. (24 hours)</source>
+      <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Members can irreversibly delete sent messages. (24 hours)</source>
         <target>Los miembros del grupo pueden eliminar mensajes de forma irreversible. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
-        <source>Group members can send SimpleX links.</source>
+      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
+        <source>Members can send SimpleX links.</source>
         <target>Los miembros del grupo pueden enviar enlaces SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve">
-        <source>Group members can send direct messages.</source>
+      <trans-unit id="Members can send direct messages." xml:space="preserve">
+        <source>Members can send direct messages.</source>
         <target>Los miembros del grupo pueden enviar mensajes directos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
-        <source>Group members can send disappearing messages.</source>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+        <source>Members can send disappearing messages.</source>
         <target>Los miembros del grupo pueden enviar mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve">
-        <source>Group members can send files and media.</source>
+      <trans-unit id="Members can send files and media." xml:space="preserve">
+        <source>Members can send files and media.</source>
         <target>Los miembros del grupo pueden enviar archivos y multimedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve">
-        <source>Group members can send voice messages.</source>
+      <trans-unit id="Members can send voice messages." xml:space="preserve">
+        <source>Members can send voice messages.</source>
         <target>Los miembros del grupo pueden enviar mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4121,8 +4121,8 @@ More improvements are coming soon!</source>
         <target>La eliminación irreversible de mensajes no está permitida en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited.</source>
         <target>La eliminación irreversible de mensajes no está permitida en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4459,8 +4459,8 @@ This is your link for group %@!</source>
         <target>Las reacciones a los mensajes no están permitidas en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
-        <source>Message reactions are prohibited in this group.</source>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve">
+        <source>Message reactions are prohibited.</source>
         <target>Las reacciones a los mensajes no están permitidas en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6707,8 +6707,8 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Enlaces SimpleX</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
-        <source>SimpleX links are prohibited in this group.</source>
+      <trans-unit id="SimpleX links are prohibited." xml:space="preserve">
+        <source>SimpleX links are prohibited.</source>
         <target>Los enlaces SimpleX no se permiten en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -7804,8 +7804,8 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Los mensajes de voz no están permitidos en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
         <target>Los mensajes de voz no están permitidos en este grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

@@ -1656,7 +1656,7 @@
 "Direct messages" = "Прямі повідомлення";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "У цій групі заборонені прямі повідомлення між учасниками.";
+"Direct messages between members are prohibited." = "У цій групі заборонені прямі повідомлення між учасниками.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Вимкнути (зберегти перевизначення)";
@@ -1683,7 +1683,7 @@
 "Disappearing messages are prohibited in this chat." = "Зникаючі повідомлення в цьому чаті заборонені.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "У цій групі заборонено зникаючі повідомлення.";
+"Disappearing messages are prohibited." = "У цій групі заборонено зникаючі повідомлення.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Зникає за";
@@ -2254,7 +2254,7 @@
 "Files and media" = "Файли і медіа";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Файли та медіа в цій групі заборонені.";
+"Files and media are prohibited." = "Файли та медіа в цій групі заборонені.";
 
 /* No comment provided by engineer. */
 "Files and media not allowed" = "Файли та медіафайли заборонені";
@@ -2425,25 +2425,25 @@
 "Group links" = "Групові посилання";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "Учасники групи можуть додавати реакції на повідомлення.";
+"Members can add message reactions." = "Учасники групи можуть додавати реакції на повідомлення.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
+"Members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";
+"Members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Учасники групи можуть надсилати зникаючі повідомлення.";
+"Members can send disappearing messages." = "Учасники групи можуть надсилати зникаючі повідомлення.";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "Учасники групи можуть надсилати файли та медіа.";
+"Members can send files and media." = "Учасники групи можуть надсилати файли та медіа.";
 
 /* No comment provided by engineer. */
-"Group members can send SimpleX links." = "Учасники групи можуть надсилати посилання SimpleX.";
+"Members can send SimpleX links." = "Учасники групи можуть надсилати посилання SimpleX.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "Учасники групи можуть надсилати голосові повідомлення.";
+"Members can send voice messages." = "Учасники групи можуть надсилати голосові повідомлення.";
 
 /* notification */
 "Group message:" = "Групове повідомлення:";
@@ -2746,7 +2746,7 @@
 "Irreversible message deletion is prohibited in this chat." = "У цьому чаті заборонено безповоротне видалення повідомлень.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "У цій групі заборонено безповоротне видалення повідомлень.";
+"Irreversible message deletion is prohibited." = "У цій групі заборонено безповоротне видалення повідомлень.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Це дозволяє мати багато анонімних з'єднань без будь-яких спільних даних між ними в одному профілі чату.";
@@ -2968,7 +2968,7 @@
 "Message reactions are prohibited in this chat." = "Реакції на повідомлення в цьому чаті заборонені.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Реакції на повідомлення в цій групі заборонені.";
+"Message reactions are prohibited." = "Реакції на повідомлення в цій групі заборонені.";
 
 /* notification */
 "message received" = "повідомлення отримано";
@@ -4416,7 +4416,7 @@
 "SimpleX links" = "Посилання SimpleX";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "У цій групі заборонені посилання на SimpleX.";
+"SimpleX links are prohibited." = "У цій групі заборонені посилання на SimpleX.";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "Посилання SimpleX заборонені";
@@ -5148,7 +5148,7 @@
 "Voice messages are prohibited in this chat." = "Голосові повідомлення в цьому чаті заборонені.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Голосові повідомлення в цій групі заборонені.";
+"Voice messages are prohibited." = "Голосові повідомлення в цій групі заборонені.";
 
 /* No comment provided by engineer. */
 "Voice messages not allowed" = "Голосові повідомлення заборонені";
