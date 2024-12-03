@@ -165,7 +165,7 @@ private fun FeatureSection(
         feature.text,
         icon,
         iconTint,
-        enableFeature.value == GroupFeatureEnabled.ON,
+        checked = enableFeature.value == GroupFeatureEnabled.ON,
       ) { checked ->
         onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF, enableForRole?.value)
       }

@@ -414,7 +414,12 @@ private fun BusinessAddressToggle(autoAcceptState: MutableState<AutoAcceptState>
 
 @Composable
 private fun AutoAcceptToggle(autoAcceptState: MutableState<AutoAcceptState>, saveAas: (AutoAcceptState) -> Unit) {
-  PreferenceToggleWithIcon(stringResource(MR.strings.auto_accept_contact), painterResource(MR.images.ic_check), checked = autoAcceptState.value.enable) {
+  PreferenceToggleWithIcon(
+    stringResource(MR.strings.auto_accept_contact),
+    painterResource(MR.images.ic_check),
+    disabled = autoAcceptState.value.business,
+    checked = autoAcceptState.value.enable
+  ) {
     autoAcceptState.value = if (!it)
       AutoAcceptState()
     else
@@ -512,7 +517,7 @@ private fun AcceptIncognitoToggle(autoAcceptState: MutableState<AutoAcceptState>
     stringResource(MR.strings.accept_contact_incognito_button),
     if (autoAcceptState.value.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_theater_comedy),
     if (autoAcceptState.value.incognito) Indigo else MaterialTheme.colors.secondary,
-    autoAcceptState.value.incognito,
+    checked = autoAcceptState.value.incognito,
   ) {
     autoAcceptState.value = AutoAcceptState(autoAcceptState.value.enable, it, autoAcceptState.value.business, autoAcceptState.value.welcomeText)
   }
