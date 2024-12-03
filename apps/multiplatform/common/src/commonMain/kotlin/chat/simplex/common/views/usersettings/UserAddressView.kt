@@ -211,7 +211,7 @@ private fun UserAddressLayout(
           }
         }
 
-        SectionDividerSpaced()
+        SectionDividerSpaced(maxTopPadding = autoAcceptState.value.business)
         SectionView(generalGetString(MR.strings.or_to_share_privately).uppercase()) {
           CreateOneTimeLinkButton()
         }
