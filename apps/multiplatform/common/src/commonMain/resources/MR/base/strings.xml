@@ -2275,10 +2275,12 @@
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
+  <string name="connect_plan_chat_already_exists">Chat already exists!</string>
   <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[You are already joining the group <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
   <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
+  <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[You are already connected with <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
 
   <!-- Errors -->
