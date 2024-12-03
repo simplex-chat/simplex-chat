@@ -875,7 +875,7 @@
     <string name="allow_to_send_voice">Das Senden von Sprachnachrichten erlauben.</string>
     <string name="prohibit_sending_voice">Das Senden von Sprachnachrichten nicht erlauben.</string>
     <string name="group_members_can_send_dms">Gruppenmitglieder können Direktnachrichten versenden.</string>
-    <string name="direct_messages_are_prohibited_in_chat">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
+    <string name="direct_messages_are_prohibited_in_group">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
     <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen (bis zu 24 Stunden).</string>
     <string name="message_deletion_prohibited_in_chat">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
     <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten versenden.</string>

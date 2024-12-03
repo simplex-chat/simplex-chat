@@ -622,7 +622,7 @@
     <string name="ttl_week">%d أسبوع</string>
     <string name="display_name_cannot_contain_whitespace">لا يمكن أن يحتوي اسم العرض على مسافة فارغة.</string>
     <string name="encrypted_video_call">مكالمة فيديو مُعمّاة بين الطريفين</string>
-    <string name="direct_messages_are_prohibited_in_chat">الرسائل المباشرة بين الأعضاء ممنوعة في هذه المجموعة.</string>
+    <string name="direct_messages_are_prohibited_in_group">الرسائل المباشرة بين الأعضاء ممنوعة في هذه المجموعة.</string>
     <string name="ttl_hour">%d ساعة</string>
     <string name="ttl_h">%d ساعة</string>
     <string name="ttl_hours">%d ساعات</string>

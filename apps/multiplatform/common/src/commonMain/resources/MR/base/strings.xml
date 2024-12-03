@@ -1973,7 +1973,7 @@
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
-  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
+  <string name="direct_messages_are_prohibited_in_group">Direct messages between members are prohibited in this group.</string>
   <string name="group_members_can_delete">Group members can irreversibly delete sent messages. (24 hours)</string>
   <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>

@@ -404,7 +404,7 @@
     <string name="num_contacts_selected">%d ismerős kiválasztva</string>
     <string name="enable_receipts_all">Engedélyezés</string>
     <string name="ttl_mth">%dhónap</string>
-    <string name="direct_messages_are_prohibited_in_chat">A közvetlen üzenetek küldése a tagok között le van tiltva ebben a csoportban.</string>
+    <string name="direct_messages_are_prohibited_in_group">A közvetlen üzenetek küldése a tagok között le van tiltva ebben a csoportban.</string>
     <string name="ttl_min">%d perc</string>
     <string name="set_password_to_export_desc">Az adatbázis egy véletlenszerű jelmondattal van titkosítva. Exportálás előtt változtassa meg a jelmondatot.</string>
     <string name="receipts_groups_title_disable">Kézbesítés jelentések letiltása a csoportok számára?</string>

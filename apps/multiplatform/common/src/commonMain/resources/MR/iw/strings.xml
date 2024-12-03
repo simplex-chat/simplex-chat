@@ -383,7 +383,7 @@
     <string name="ttl_weeks">%d שבועות</string>
     <string name="v4_5_multiple_chat_profiles_descr">שמות שונים, אווטארים ובידוד תעבורה.</string>
     <string name="conn_level_desc_direct">ישיר</string>
-    <string name="direct_messages_are_prohibited_in_chat">הודעות ישירות בין חברי קבוצה אסורות בקבוצה זו.</string>
+    <string name="direct_messages_are_prohibited_in_group">הודעות ישירות בין חברי קבוצה אסורות בקבוצה זו.</string>
     <string name="display_name">הזן את שמך:</string>
     <string name="display_name_cannot_contain_whitespace">שם תצוגה אינו יכול להכיל רווחים.</string>
     <string name="ttl_months">%d חודשים</string>

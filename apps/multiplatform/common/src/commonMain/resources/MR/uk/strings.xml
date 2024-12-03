@@ -749,7 +749,7 @@
     <string name="prohibit_message_reactions_group">Заборонити реакції на повідомлення.</string>
     <string name="disappearing_messages_are_prohibited">Самознищувальні повідомлення заборонені в цій групі.</string>
     <string name="group_members_can_send_dms">Учасники групи можуть надсилати приватні повідомлення.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Приватні повідомлення між учасниками заборонені в цій групі.</string>
+    <string name="direct_messages_are_prohibited_in_group">Приватні повідомлення між учасниками заборонені в цій групі.</string>
     <string name="group_members_can_delete">Учасники групи можуть назавжди видаляти відправлені повідомлення. (24 години)</string>
     <string name="message_deletion_prohibited_in_chat">Назавжди видалення повідомлень заборонене в цій групі.</string>
     <string name="voice_messages_are_prohibited">Голосові повідомлення заборонені в цій групі.</string>

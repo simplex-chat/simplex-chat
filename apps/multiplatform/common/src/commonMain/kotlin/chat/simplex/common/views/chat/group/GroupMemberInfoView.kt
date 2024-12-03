@@ -478,7 +478,7 @@ private fun showSendMessageToEnableCallsAlert() {
 private fun showDirectMessagesProhibitedAlert(title: String) {
   AlertManager.shared.showAlertMsg(
     title = title,
-    text = generalGetString(MR.strings.direct_messages_are_prohibited_in_chat)
+    text = generalGetString(MR.strings.direct_messages_are_prohibited_in_group)
   )
 }
 

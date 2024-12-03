@@ -251,7 +251,7 @@
     <string name="alert_title_group_invitation_expired">招待が期限切れました！</string>
     <string name="smp_servers_delete_server">サーバを削除</string>
     <string name="auth_device_authentication_is_disabled_turning_off">端末認証がオフです。SimpleXロックを解除します。</string>
-    <string name="direct_messages_are_prohibited_in_chat">このグループではメンバー間のダイレクトメッセージが無効です。</string>
+    <string name="direct_messages_are_prohibited_in_group">このグループではメンバー間のダイレクトメッセージが無効です。</string>
     <string name="disappearing_messages_are_prohibited">このグループでは消えるメッセージが無効です。</string>
     <string name="ttl_min">%d 分</string>
     <string name="ttl_weeks">%d 週</string>

@@ -856,7 +856,7 @@
     <string name="prohibit_sending_disappearing">Interdire l’envoi de messages éphémères.</string>
     <string name="prohibit_message_deletion">Interdire la suppression irréversible des messages.</string>
     <string name="group_members_can_send_dms">Les membres du groupe peuvent envoyer des messages directs.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Les messages directs entre membres sont interdits dans ce groupe.</string>
+    <string name="direct_messages_are_prohibited_in_group">Les messages directs entre membres sont interdits dans ce groupe.</string>
     <string name="v4_4_live_messages_desc">Les destinataires voient les mises à jour au fur et à mesure que vous les tapez.</string>
     <string name="v4_4_verify_connection_security">Vérifier la sécurité de la connexion</string>
     <string name="v4_4_verify_connection_security_desc">Comparez les codes de sécurité avec vos contacts.</string>

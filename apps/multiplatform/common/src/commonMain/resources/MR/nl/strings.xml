@@ -255,7 +255,7 @@
     <string name="auth_device_authentication_is_disabled_turning_off">Apparaatverificatie is uitgeschakeld. SimpleX Vergrendelen uitschakelen.</string>
     <string name="display_name">Vul uw naam in:</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Vergrendelen inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Directe berichten tussen leden zijn verboden in deze groep.</string>
+    <string name="direct_messages_are_prohibited_in_group">Directe berichten tussen leden zijn verboden in deze groep.</string>
     <string name="total_files_count_and_size">%d bestand(en) met een totale grootte van %s</string>
     <string name="ttl_hour">%d uur</string>
     <string name="no_call_on_lock_screen">Uitzetten</string>

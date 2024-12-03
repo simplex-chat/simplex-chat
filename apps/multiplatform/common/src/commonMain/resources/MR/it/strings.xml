@@ -289,7 +289,7 @@
     <string name="encrypted_with_random_passphrase">Il database è crittografato con una password casuale, puoi cambiarla.</string>
     <string name="database_passphrase_is_required">La password del database è necessaria per aprire la chat.</string>
     <string name="delete_group_menu_action">Elimina</string>
-    <string name="direct_messages_are_prohibited_in_chat">I messaggi diretti tra i membri sono vietati in questo gruppo.</string>
+    <string name="direct_messages_are_prohibited_in_group">I messaggi diretti tra i membri sono vietati in questo gruppo.</string>
     <string name="display_name">Inserisci il tuo nome:</string>
     <string name="choose_file">File</string>
     <string name="clear_chat_button">Svuota chat</string>

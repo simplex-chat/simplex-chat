@@ -82,7 +82,7 @@
     <string name="create_group">Crea grupo secreto</string>
     <string name="database_passphrase_will_be_updated">La contraseña de cifrado de la base de datos será actualizada.</string>
     <string name="info_row_database_id">ID base de datos</string>
-    <string name="direct_messages_are_prohibited_in_chat">Los mensajes directos entre miembros del grupo no están permitidos.</string>
+    <string name="direct_messages_are_prohibited_in_group">Los mensajes directos entre miembros del grupo no están permitidos.</string>
     <string name="passphrase_is_different">La contraseña de la base de datos es diferente a la almacenada en Keystore.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">La base de datos será cifrada y la contraseña se guardará en Keystore.</string>
     <string name="delete_contact_question">¿Eliminar contacto\?</string>

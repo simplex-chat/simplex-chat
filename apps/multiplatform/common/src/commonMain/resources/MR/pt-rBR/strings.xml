@@ -333,7 +333,7 @@
     <string name="settings_experimental_features">Funcionalidades experimentais</string>
     <string name="error_creating_link_for_group">Erro ao criar o link de grupo</string>
     <string name="error_deleting_link_for_group">Erro ao excluir o link de grupo</string>
-    <string name="direct_messages_are_prohibited_in_chat">Mensagens diretas entre membros são proibidas neste grupo.</string>
+    <string name="direct_messages_are_prohibited_in_group">Mensagens diretas entre membros são proibidas neste grupo.</string>
     <string name="ttl_h">%dh</string>
     <string name="ttl_hours">%d horas</string>
     <string name="description_via_contact_address_link_incognito">anônimo via link de endereço de contato</string>

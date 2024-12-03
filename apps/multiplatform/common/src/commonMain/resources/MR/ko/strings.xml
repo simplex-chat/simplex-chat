@@ -290,7 +290,7 @@
     <string name="downgrade_and_open_chat">다운그레이드하고 채팅 열기</string>
     <string name="direct_messages">다이렉트 메시지</string>
     <string name="timed_messages">사라지는 메시지</string>
-    <string name="direct_messages_are_prohibited_in_chat">이 그룹에서는 멤버들의 다이렉트 메시지가 금지되어 있어요.</string>
+    <string name="direct_messages_are_prohibited_in_group">이 그룹에서는 멤버들의 다이렉트 메시지가 금지되어 있어요.</string>
     <string name="ttl_s">%d초</string>
     <string name="ttl_sec">%d 초</string>
     <string name="ttl_h">%d시</string>
