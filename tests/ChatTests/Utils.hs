@@ -281,19 +281,25 @@ lastChatFeature :: String
 lastChatFeature = snd $ last chatFeatures
 
 groupFeatures :: [(Int, String)]
-groupFeatures = map (\(a, _, _) -> a) groupFeatures''
+groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 
-groupFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' =
-  [ ((0, e2eeInfoNoPQStr), Nothing, Nothing),
-    ((0, "Disappearing messages: off"), Nothing, Nothing),
-    ((0, "Direct messages: on"), Nothing, Nothing),
-    ((0, "Full deletion: off"), Nothing, Nothing),
-    ((0, "Message reactions: on"), Nothing, Nothing),
-    ((0, "Voice messages: on"), Nothing, Nothing),
-    ((0, "Files and media: on"), Nothing, Nothing),
-    ((0, "SimpleX links: on"), Nothing, Nothing),
-    ((0, "Recent history: on"), Nothing, Nothing)
+sndGroupFeatures :: [(Int, String)]
+sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
+
+groupFeatureStrs :: [String]
+groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
+
+groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+groupFeatures'' dir =
+  [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
+    ((dir, "Disappearing messages: off"), Nothing, Nothing),
+    ((dir, "Direct messages: on"), Nothing, Nothing),
+    ((dir, "Full deletion: off"), Nothing, Nothing),
+    ((dir, "Message reactions: on"), Nothing, Nothing),
+    ((dir, "Voice messages: on"), Nothing, Nothing),
+    ((dir, "Files and media: on"), Nothing, Nothing),
+    ((dir, "SimpleX links: on"), Nothing, Nothing),
+    ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String

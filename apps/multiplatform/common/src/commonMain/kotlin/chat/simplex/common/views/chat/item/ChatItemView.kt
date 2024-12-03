@@ -121,9 +121,33 @@ fun ChatItemView(
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
           val reactionMembers = remember { mutableStateOf(emptyList<MemberReaction>()) }
+          val interactionSource = remember { MutableInteractionSource() }
+          val enterInteraction = remember { HoverInteraction.Enter() }
+          KeyChangeEffect(highlighted.value) {
+            if (highlighted.value) {
+              interactionSource.emit(enterInteraction)
+            } else {
+              interactionSource.emit(HoverInteraction.Exit(enterInteraction))
+            }
+          }
 
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
+            fun showReactionsMenu() {
+              if (cInfo is ChatInfo.Group) {
+                withBGApi {
+                  try {
+                    val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
+                    if (members != null) {
+                      showReactionMenu.value = true
+                      reactionMembers.value = members
+                    }
+                  } catch (e: Exception) {
+                    Log.d(TAG, "hatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
+                  }
+                }
+              }
+            }
             modifier = modifier
               .combinedClickable(
                 onClick = {
@@ -132,21 +156,12 @@ fun ChatItemView(
                   }
                 },
                 onLongClick = {
-                  if (cInfo is ChatInfo.Group) {
-                    withBGApi {
-                      try {
-                        val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
-                        if (members != null) {
-                          showReactionMenu.value = true
-                          reactionMembers.value = members
-                        }
-                      } catch (e: Exception) {
-                        Log.d(TAG, "hatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
-                      }
-                    }
-                  }
-                }
+                  showReactionsMenu()
+                },
+                interactionSource = interactionSource,
+                indication = LocalIndication.current
               )
+              .onRightClick { showReactionsMenu() }
           }
           Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)

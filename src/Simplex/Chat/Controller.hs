@@ -669,6 +669,7 @@ data ChatResponse
   | CRAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CRContactAlreadyExists {user :: User, contact :: Contact}
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
+  | CRBusinessRequestAlreadyAccepted {user :: User, groupInfo :: GroupInfo}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}

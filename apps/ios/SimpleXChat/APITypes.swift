@@ -598,7 +598,6 @@ public enum ChatResponse: Decodable, Error {
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
-    case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
     case contactDeletedByContact(user: UserRef, contact: Contact)
     case chatCleared(user: UserRef, chatInfo: ChatInfo)
@@ -640,6 +639,7 @@ public enum ChatResponse: Decodable, Error {
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
     case groupLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
+    case businessLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, fromContact: Contact)
     case userDeletedMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(user: UserRef, groupInfo: GroupInfo)
     case groupMembers(user: UserRef, group: Group)
@@ -775,7 +775,6 @@ public enum ChatResponse: Decodable, Error {
             case .sentInvitation: return "sentInvitation"
             case .sentInvitationToContact: return "sentInvitationToContact"
             case .contactAlreadyExists: return "contactAlreadyExists"
-            case .contactRequestAlreadyAccepted: return "contactRequestAlreadyAccepted"
             case .contactDeleted: return "contactDeleted"
             case .contactDeletedByContact: return "contactDeletedByContact"
             case .chatCleared: return "chatCleared"
@@ -816,6 +815,7 @@ public enum ChatResponse: Decodable, Error {
             case .sentGroupInvitation: return "sentGroupInvitation"
             case .userAcceptedGroupSent: return "userAcceptedGroupSent"
             case .groupLinkConnecting: return "groupLinkConnecting"
+            case .businessLinkConnecting: return "businessLinkConnecting"
             case .userDeletedMember: return "userDeletedMember"
             case .leftMemberUser: return "leftMemberUser"
             case .groupMembers: return "groupMembers"
@@ -950,7 +950,6 @@ public enum ChatResponse: Decodable, Error {
             case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
-            case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeletedByContact(u, contact): return withUser(u, String(describing: contact))
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
@@ -998,6 +997,7 @@ public enum ChatResponse: Decodable, Error {
             case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
             case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
             case let .groupLinkConnecting(u, groupInfo, hostMember): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))")
+            case let .businessLinkConnecting(u, groupInfo, hostMember, fromContact): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))\nfromContact: \(String(describing: fromContact))")
             case let .userDeletedMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
             case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupMembers(u, group): return withUser(u, String(describing: group))
@@ -2103,7 +2103,7 @@ public struct UserContactLink: Decodable, Hashable {
 }
 
 public struct AutoAccept: Codable, Hashable {
-    public var businessAddress: Bool? // make not nullable
+    public var businessAddress: Bool
     public var acceptIncognito: Bool
     public var autoReply: MsgContent?
 
@@ -2115,7 +2115,12 @@ public struct AutoAccept: Codable, Hashable {
 
     static func cmdString(_ autoAccept: AutoAccept?) -> String {
         guard let autoAccept = autoAccept else { return "off" }
-        let s = "on" + (autoAccept.acceptIncognito ? " incognito=on" : "")
+        var s = "on"
+        if autoAccept.acceptIncognito {
+            s += " incognito=on"
+        } else if autoAccept.businessAddress {
+            s += " business"
+        }
         guard let msg = autoAccept.autoReply else { return s }
         return s + " " + msg.cmdString
     }

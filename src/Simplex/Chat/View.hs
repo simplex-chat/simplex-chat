@@ -207,6 +207,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
+  CRBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
@@ -1670,13 +1671,16 @@ viewConnectionPlan = \case
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
-    GLPConnectingProhibit (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPConnectingProhibit (Just g) -> [grpOrBiz g <> " link: connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
     GLPKnown g ->
-      [ grpLink ("known group " <> ttyGroup' g),
+      [ grpOrBiz g <> " link: known " <> grpOrBiz g <> " " <> ttyGroup' g,
         "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
       ]
     where
       grpLink = ("group link: " <>)
+      grpOrBiz GroupInfo {businessChat} = case businessChat of
+        Just _ -> "business"
+        Nothing -> "group"
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

@@ -894,8 +894,27 @@ object ChatController {
 
   private suspend fun processSendMessageCmd(rh: Long?, cmd: CC): List<AChatItem>? {
     val r = sendCmd(rh, cmd)
-    return when (r) {
-      is CR.NewChatItems -> r.chatItems
+    return when {
+      r is CR.NewChatItems -> r.chatItems
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiSendMessages -> {
+        val mc = cmd.composedMessages.last().msgContent
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.maximum_message_size_title),
+          if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
+            generalGetString(MR.strings.maximum_message_size_reached_non_text)
+          } else {
+            generalGetString(MR.strings.maximum_message_size_reached_text)
+          }
+        )
+        null
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiForwardChatItems -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.maximum_message_size_title),
+          generalGetString(MR.strings.maximum_message_size_reached_forwarding)
+        )
+        null
+      }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("processSendMessageCmd", generalGetString(MR.strings.error_sending_message), r)
@@ -943,7 +962,21 @@ object ChatController {
 
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
-    if (r is CR.ChatItemUpdated) return r.chatItem
+    when {
+      r is CR.ChatItemUpdated -> return r.chatItem
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.maximum_message_size_title),
+          if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
+            generalGetString(MR.strings.maximum_message_size_reached_non_text)
+          } else {
+            generalGetString(MR.strings.maximum_message_size_reached_text)
+          }
+        )
+        return null
+      }
+    }
+
     Log.e(TAG, "apiUpdateChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -5414,7 +5447,6 @@ sealed class CR {
   @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("sentInvitationToContact") class SentInvitationToContact(val user: UserRef, val contact: Contact, val customUserProfile: Profile?): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
-  @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeletedByContact") class ContactDeletedByContact(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: UserRef, val chatInfo: ChatInfo): CR()
@@ -5599,7 +5631,6 @@ sealed class CR {
     is SentInvitation -> "sentInvitation"
     is SentInvitationToContact -> "sentInvitationToContact"
     is ContactAlreadyExists -> "contactAlreadyExists"
-    is ContactRequestAlreadyAccepted -> "contactRequestAlreadyAccepted"
     is ContactDeleted -> "contactDeleted"
     is ContactDeletedByContact -> "contactDeletedByContact"
     is ChatCleared -> "chatCleared"
@@ -5774,7 +5805,6 @@ sealed class CR {
     is SentInvitation -> withUser(user, json.encodeToString(connection))
     is SentInvitationToContact -> withUser(user, json.encodeToString(contact))
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
-    is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
     is ContactDeletedByContact -> withUser(user, json.encodeToString(contact))
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
@@ -6373,6 +6403,7 @@ sealed class StoreError {
       is HostMemberIdNotFound -> "hostMemberIdNotFound"
       is ContactNotFoundByFileId -> "contactNotFoundByFileId"
       is NoGroupSndStatus -> "noGroupSndStatus"
+      is LargeMsg -> "largeMsg"
     }
 
   @Serializable @SerialName("duplicateName") object DuplicateName: StoreError()
@@ -6432,6 +6463,7 @@ sealed class StoreError {
   @Serializable @SerialName("hostMemberIdNotFound") class HostMemberIdNotFound(val groupId: Long): StoreError()
   @Serializable @SerialName("contactNotFoundByFileId") class ContactNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("noGroupSndStatus") class NoGroupSndStatus(val itemId: Long, val groupMemberId: Long): StoreError()
+  @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
 }
 
 @Serializable

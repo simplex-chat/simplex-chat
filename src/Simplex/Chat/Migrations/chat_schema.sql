@@ -129,7 +129,8 @@ CREATE TABLE groups(
   custom_data BLOB,
   ui_themes TEXT,
   business_member_id BLOB NULL,
-  business_chat TEXT NULL, -- received
+  business_chat TEXT NULL,
+  business_xcontact_id BLOB NULL, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -926,3 +927,4 @@ CREATE INDEX idx_chat_items_notes ON chat_items(
   item_status,
   created_at
 );
+CREATE INDEX idx_groups_business_xcontact_id ON groups(business_xcontact_id);
