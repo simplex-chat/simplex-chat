@@ -660,8 +660,7 @@
     <string name="read_more_in_github_with_link"><![CDATA[Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.]]></string>
     <string name="reject">Rifiuta</string>
     <string name="first_platform_without_user_ids">Nessun identificatore utente.</string>
-    <string name="next_generation_of_private_messaging">La nuova generazione
-\ndi messaggistica privata</string>
+    <string name="next_generation_of_private_messaging">La nuova generazione \ndi messaggistica privata</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Per proteggere la privacy, invece degli ID utente usati da tutte le altre piattaforme, SimpleX dispone di identificatori per le code dei messaggi, separati per ciascuno dei tuoi contatti.</string>
     <string name="use_chat">Usa la chat</string>
     <string name="icon_descr_video_call">videochiamata</string>
