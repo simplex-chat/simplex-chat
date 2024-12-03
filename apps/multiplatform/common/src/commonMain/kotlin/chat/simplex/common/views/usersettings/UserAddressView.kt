@@ -393,7 +393,7 @@ fun ShareWithContactsButton(shareViaProfile: MutableState<Boolean>, setProfileAd
         onDismissRequest = {
           shareViaProfile.value = !on
         })
-  }
+    }
   }
 }
 
