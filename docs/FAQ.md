@@ -128,7 +128,7 @@ You can replace `https://simplex.chat/` with `simplex:/` or with any other domai
 
 The invitation links will soon move to servers' domains. The servers already can host the pages that will be used to show QR codes.
 
-The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (`#`) is not sent over the internet - the server can only see https://simplex.chat/contact/ and the rest is processed on user's device in the browser, if you open it as a page.
+The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (`#`) is not sent over the internet - the server can only see `https://simplex.chat/contact/` and the rest is processed on user's device in the browser, if you open it as a page.
 
 ## Troubleshooting
 
