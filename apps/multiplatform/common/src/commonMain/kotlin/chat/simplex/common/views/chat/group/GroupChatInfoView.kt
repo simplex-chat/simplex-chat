@@ -367,7 +367,12 @@ fun ModalData.GroupChatInfoLayout(
           }
           val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
           val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-          AddMembersButton(tint, onAddMembersClick)
+          val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
+            BusinessChatType.Customer -> MR.strings.button_add_team_members
+            BusinessChatType.Business -> MR.strings.button_add_friends
+            null -> MR.strings.button_add_members
+          }
+          AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
         }
         if (members.size > 8) {
           SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
@@ -483,10 +488,10 @@ fun SendReceiptsOptionDisabled() {
 }
 
 @Composable
-private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
+private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_add),
-    stringResource(MR.strings.button_add_members),
+    stringResource(titleId),
     onClick,
     iconColor = tint,
     textColor = tint

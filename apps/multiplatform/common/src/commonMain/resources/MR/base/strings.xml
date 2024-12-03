@@ -1549,6 +1549,8 @@
 
   <!-- GroupChatInfoView.kt -->
   <string name="button_add_members">Invite members</string>
+  <string name="button_add_team_members">Add team members</string>
+  <string name="button_add_friends">Add friends</string>
   <string name="group_info_section_title_num_members">%1$s MEMBERS</string>
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
