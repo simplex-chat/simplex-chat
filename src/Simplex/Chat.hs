@@ -2208,9 +2208,11 @@ processChatCommand' vr = \case
     gVar <- asks random
     -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    groupInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
-    createInternalChatItem user (CDGroupSnd groupInfo) (CISndGroupE2EEInfo $ E2EInfo {pqEnabled = PQEncOff}) Nothing
-    pure $ CRGroupCreated user groupInfo
+    gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
+    let cd = CDGroupSnd gInfo
+    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+    createGroupFeatureItems user cd CISndGroupFeature gInfo
+    pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand $ APINewGroup userId incognito gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
@@ -4037,6 +4039,9 @@ acceptBusinessJoinRequestAsync
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
     withStore' $ \db -> createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
+    let cd = CDGroupSnd gInfo
+    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+    createGroupFeatureItems user cd CISndGroupFeature gInfo
     pure gInfo
     where
       businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
@@ -5088,8 +5093,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case memberCategory m of
           GCHostMember -> do
             toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
-            createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvGroupE2EEInfo $ E2EInfo {pqEnabled = PQEncOff}) Nothing
-            createGroupFeatureItems gInfo m
+            let cd = CDGroupRcv gInfo m
+            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
+            createGroupFeatureItems user cd CIRcvGroupFeature gInfo
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
             unless expectHistory $ forM_ description $ groupDescriptionChatItem gInfo m
@@ -6489,13 +6495,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       forM_ allChatFeatures $ \(ACF f) -> do
         let state = featureState $ getContactUserPreference f mergedPreferences
         createInternalChatItem user (CDDirectRcv ct) (uncurry (CIRcvChatFeature $ chatFeature f) state) Nothing
-
-    createGroupFeatureItems :: GroupInfo -> GroupMember -> CM ()
-    createGroupFeatureItems g@GroupInfo {fullGroupPreferences} m =
-      forM_ allGroupFeatures $ \(AGF f) -> do
-        let p = getGroupPreference f fullGroupPreferences
-            (_, param, role) = groupFeatureState p
-        createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) param role) Nothing
 
     xInfoProbe :: ContactOrMember -> Probe -> CM ()
     xInfoProbe cgm2 probe = do
@@ -8181,6 +8180,13 @@ createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences
 
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
+
+createGroupFeatureItems :: MsgDirectionI d => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> Maybe GroupMemberRole -> CIContent d) -> GroupInfo -> CM ()
+createGroupFeatureItems user cd ciContent GroupInfo {fullGroupPreferences} =
+  forM_ allGroupFeatures $ \(AGF f) -> do
+    let p = getGroupPreference f fullGroupPreferences
+        (_, param, role) = groupFeatureState p
+    createInternalChatItem user cd (ciContent (toGroupFeature f) (toGroupPreference p) param role) Nothing
 
 createInternalChatItem :: (ChatTypeI c, MsgDirectionI d) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> CM ()
 createInternalChatItem user cd content itemTs_ =
