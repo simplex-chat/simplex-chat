@@ -16,7 +16,7 @@ permalink: "/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.h
 This is a placeholder page for the upcoming v6.2 release announcement!
 
 - Preset servers are now operated by two companies - SimpleX Chat and Flux. Read [this post](./20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.md).
-- Business chats to provide business support from your business to users of SimpleX network. Read [this page](../docs/BUSINESS.md).
+- Business chats to provide support from your business to users of SimpleX network. Read [this page](../docs/BUSINESS.md).
 - and more!
 
 ## SimpleX network
