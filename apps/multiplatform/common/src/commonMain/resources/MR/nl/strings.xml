@@ -710,8 +710,7 @@
     <string name="you_can_use_markdown_to_format_messages__prompt">U kunt markdown gebruiken voor opmaak in berichten:</string>
     <string name="callstatus_rejected">geweigerde oproep</string>
     <string name="secret_text">geheim</string>
-    <string name="next_generation_of_private_messaging">De volgende generatie
-\nprivéberichten</string>
+    <string name="next_generation_of_private_messaging">De volgende generatie \nprivéberichten</string>
     <string name="callstate_waiting_for_answer">wachten op antwoord…</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID\'s die door alle andere platforms worden gebruikt, ID\'s voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</string>
     <string name="use_chat">Gebruik chat</string>
