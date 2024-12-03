@@ -47,7 +47,7 @@ With all advantages in privacy and security of e2e encryption in SimpleX Chat, t
 - **protecting your data from loss is your responsibility**. This is the price of privacy - if you lose your device, or database passphrase, there is absolutely no way we would be able to support you to recover access. There are ways to work around these limitations.
 - **you cannot access the same profile from multiple devices**. For all communication products it's a basic expectation, and yet there is not a single one that delivered it without some very serious privacy and security compromises. Better solutions are possible, and we will be implementing it, but reasonably secure approach is much more complex to implement than what is affordable at the current stage. You can access mobile or CLI profile from desktop, and the latter allows to use one profile by multiple people in turns, as we explain below.
 - **your owner role in the groups cannot be restored if you lose the device**. The solution is to create owner profiles on multiple devices for all your important groups. This way if you lose device or data for one of profiles, you won't lose control of the group, and you can add a new one. Think about it as about keys to your cryptowallet.
-- **current groups are highly experimental**. Message delivery can be delayed of fail in some cases, lists of members can be out of sync. There are approaches to make them more stable we use for our groups.
+- **current groups are highly experimental**. Message delivery can be delayed or fail in some cases, lists of members can be out of sync. There are approaches to make them more stable we use for our groups.
 
 ## Technical advice
 
