@@ -52,9 +52,3 @@ Thank you,
 Evgeny
 
 SimpleX Chat founder
-
-[1] You can also to self-host your own SimpleX servers on [Flux decentralized cloud](https://home.runonflux.io/apps/marketplace?q=simplex).
-
-[2] The probability of connection being de-anonymized and the number of random server choices follow this equation: `(1 - s ^ 2) ^ n = 1 - p`, where `s` is the share of attacker-controlled servers in the network, `n` is the number of random choices of entry and exit nodes for the circuit, and `p` is the probability of both entry and exit nodes, and the connection privacy being compromised. Substituting `0.02` (2%) for `s`, `0.5` (50%) for `p`, and solving this equation for `n` we obtain that `1733` random circuits have 50% probability of privacy being compromised.
-
-Also see [this presentation about Tor](https://ritter.vg/p/tor-v1.6.pdf), specifically the approximate calculations on page 76, and also [Tor project post](https://blog.torproject.org/announcing-vanguards-add-onion-services/) about the changes that made attack on hidden service anonymity harder, but still viable in case the it is used for a long time.
