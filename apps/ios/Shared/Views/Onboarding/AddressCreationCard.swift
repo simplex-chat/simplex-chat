@@ -62,7 +62,7 @@ struct AddressCreationCard: View {
         .alert(isPresented: $showAddressCreationAlert) {
             Alert(
                 title: Text("SimpleX address"),
-                message: Text("You can create it in user picker."),
+                message: Text("Tap Create SimpleX address in the menu to create it later."),
                 dismissButton: .default(Text("Ok")) {
                     withAnimation {
                         addressCreationCardShown = true

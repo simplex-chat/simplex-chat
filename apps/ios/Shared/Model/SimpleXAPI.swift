@@ -2014,6 +2014,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(hostConn.id)
             }
         }
+    case let .businessLinkConnecting(user, groupInfo, hostMember, fromContact):
+        if !active(user) { return }
+
+        await MainActor.run {
+            m.updateGroup(groupInfo)
+            m.removeChat(fromContact.id)
+        }
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
         if active(user) {
             await MainActor.run {

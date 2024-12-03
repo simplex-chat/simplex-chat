@@ -589,9 +589,6 @@
 "changing address…" = "muuttamassa osoitetta…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Chat-arkisto";
-
-/* No comment provided by engineer. */
 "Chat console" = "Chat-konsoli";
 
 /* No comment provided by engineer. */
@@ -805,9 +802,6 @@
 "Create your profile" = "Luo profiilisi";
 
 /* No comment provided by engineer. */
-"Created on %@" = "Luotu %@";
-
-/* No comment provided by engineer. */
 "creator" = "luoja";
 
 /* No comment provided by engineer. */
@@ -919,12 +913,6 @@
 
 /* No comment provided by engineer. */
 "Delete all files" = "Poista kaikki tiedostot";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Poista arkisto";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "Poista keskusteluarkisto?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Poista keskusteluprofiili";
@@ -1267,9 +1255,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Virhe kontaktipyynnön hyväksymisessä";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "Virhe tietokantatiedoston käyttämisessä";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Virhe lisättäessä jäseniä";
@@ -2031,9 +2016,6 @@
 "New contact:" = "Uusi kontakti:";
 
 /* No comment provided by engineer. */
-"New database archive" = "Uusi tietokanta-arkisto";
-
-/* No comment provided by engineer. */
 "New display name" = "Uusi näyttönimi";
 
 /* No comment provided by engineer. */
@@ -2133,9 +2115,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Vanha tietokanta";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Vanha tietokanta-arkisto";
 
 /* group pref value */
 "on" = "päällä";
@@ -2539,9 +2518,6 @@
 "Save and update group profile" = "Tallenna ja päivitä ryhmäprofiili";
 
 /* No comment provided by engineer. */
-"Save archive" = "Tallenna arkisto";
-
-/* No comment provided by engineer. */
 "Save group profile" = "Tallenna ryhmäprofiili";
 
 /* No comment provided by engineer. */
@@ -2829,9 +2805,6 @@
 
 /* No comment provided by engineer. */
 "Stop" = "Lopeta";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Pysäytä keskustelu tietokantatoimien mahdollistamiseksi";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Pysäytä keskustelut viedäksesi, tuodaksesi tai poistaaksesi keskustelujen tietokannan. Et voi vastaanottaa ja lähettää viestejä, kun keskustelut on pysäytetty.";

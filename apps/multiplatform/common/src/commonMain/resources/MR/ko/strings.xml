@@ -660,7 +660,6 @@
     <string name="network_option_enable_tcp_keep_alive">TCP 연결 유지 활성화</string>
     <string name="new_in_version">%s의 새로운 기능</string>
     <string name="markdown_help">마크다운 도움말</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[많은 사람들의 질문 : <i>SimpleX에는 사용자 식별자가 없는데도 어떻게 메시지를 전달할 수 있어요\?</i>]]></string>
     <string name="leave_group_question">그룹에서 나갈까요\?</string>
     <string name="mtr_error_no_down_migration">앱 버전보다 최신 버전의 데이터베이스를 사용하고 있지만 데이터베이스를 다운그레이드할 수 없습니다: %s</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">멤버가 그룹에서 제거됩니다. 이 결정은 되돌릴 수 없습니다!</string>
@@ -683,7 +682,6 @@
     <string name="reject_contact_button">거절</string>
     <string name="password_to_show">비밀번호 표시</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[사용자 디바이스에만 <b>2계층 종단 간 암호화</b> 로 전송된 사용자 프로필, 연락처, 그룹 및 메시지를 저장되어요.]]></string>
-    <string name="read_more_in_github">자세한 내용은 GitHub에서 확인해 주세요.</string>
     <string name="privacy_and_security">개인 정보 보호 및 보안</string>
     <string name="notifications_will_be_hidden">알림은 앱이 중지되기 전까지만 전달될 거예요!</string>
     <string name="only_you_can_send_disappearing">당신만 사라지는 메시지를 보낼 수 있습니다.</string>

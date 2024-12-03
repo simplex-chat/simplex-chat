@@ -217,8 +217,6 @@ testAddContact = versionTestMatrix2 runTestAddContact
           -- search
           alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
           -- read messages
-          alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
-          bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
           alice #$> ("/_read chat @2", id, "ok")
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
@@ -1249,9 +1247,9 @@ testOperators =
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
       alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: accepted ("
       -- update operators
-      alice ##> "/operators 2:on:smp=proxy"
+      alice ##> "/operators 2:on:smp=proxy:xftp=off"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
-      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP disabled (servers known), conditions: accepted ("
   where
     opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 
@@ -2622,7 +2620,7 @@ testSwitchGroupMember =
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
@@ -2654,7 +2652,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
       bob <# "#team alice> hey"

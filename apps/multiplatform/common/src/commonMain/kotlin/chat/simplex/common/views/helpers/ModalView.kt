@@ -14,6 +14,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.StatusBarBackground
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
@@ -36,7 +37,7 @@ fun ModalView(
   if (showClose && showAppBar) {
     BackHandler(enabled = enableClose, onBack = close)
   }
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Box(if (background != Color.Unspecified) Modifier.background(background) else Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
       Box(modifier = modifier) {

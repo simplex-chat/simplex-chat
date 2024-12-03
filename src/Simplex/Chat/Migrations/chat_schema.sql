@@ -127,7 +127,10 @@ CREATE TABLE groups(
   via_group_link_uri_hash BLOB,
   user_member_profile_sent_at TEXT,
   custom_data BLOB,
-  ui_themes TEXT, -- received
+  ui_themes TEXT,
+  business_member_id BLOB NULL,
+  business_chat TEXT NULL,
+  business_xcontact_id BLOB NULL, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -309,6 +312,7 @@ CREATE TABLE user_contact_links(
   auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   group_link_id BLOB,
   group_link_member_role TEXT NULL,
+  business_address INTEGER DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -923,3 +927,4 @@ CREATE INDEX idx_chat_items_notes ON chat_items(
   item_status,
   created_at
 );
+CREATE INDEX idx_groups_business_xcontact_id ON groups(business_xcontact_id);

@@ -1359,11 +1359,6 @@
         <source>Change user profiles</source>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Chat archive" xml:space="preserve">
-        <source>Chat archive</source>
-        <target>Archives du chat</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
         <source>Chat colors</source>
         <target>Couleurs de chat</target>
@@ -1965,11 +1960,6 @@ Il s'agit de votre propre lien unique !</target>
         <target>Créé à : %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Created on %@" xml:space="preserve">
-        <source>Created on %@</source>
-        <target>Créé le %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Creating archive link" xml:space="preserve">
         <source>Creating archive link</source>
         <target>Création d'un lien d'archive</target>
@@ -2182,16 +2172,6 @@ Il s'agit de votre propre lien unique !</target>
       <trans-unit id="Delete and notify contact" xml:space="preserve">
         <source>Delete and notify contact</source>
         <target>Supprimer et en informer le contact</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete archive" xml:space="preserve">
-        <source>Delete archive</source>
-        <target>Supprimer l'archive</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete chat archive?" xml:space="preserve">
-        <source>Delete chat archive?</source>
-        <target>Supprimer l'archive du chat ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2889,11 +2869,6 @@ Il s'agit de votre propre lien unique !</target>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
         <source>Error accepting contact request</source>
         <target>Erreur de validation de la demande de contact</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error accessing database file" xml:space="preserve">
-        <source>Error accessing database file</source>
-        <target>Erreur d'accès au fichier de la base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -4690,11 +4665,6 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Nouveau contact :</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New database archive" xml:space="preserve">
-        <source>New database archive</source>
-        <target>Nouvelle archive de base de données</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="New desktop app!" xml:space="preserve">
         <source>New desktop app!</source>
         <target>Nouvelle application de bureau !</target>
@@ -4910,11 +4880,6 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Ancienne base de données</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
-        <source>Old database archive</source>
-        <target>Archives de l'ancienne base de données</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
         <source>One-time invitation link</source>
         <target>Lien d'invitation unique</target>
@@ -5064,6 +5029,10 @@ Nécessite l'activation d'un VPN.</target>
       <trans-unit id="Operator server" xml:space="preserve">
         <source>Operator server</source>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Or import archive file" xml:space="preserve">
+        <source>Or import archive file</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve">
         <source>Or paste archive link</source>
@@ -5948,11 +5917,6 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Enregistrer et mettre à jour le profil du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
-        <source>Save archive</source>
-        <target>Enregistrer l'archive</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
         <source>Save group profile</source>
         <target>Enregistrer le profil du groupe</target>
@@ -6770,11 +6734,6 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Arrêter le chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
-        <source>Stop chat to enable database actions</source>
-        <target>Arrêter le chat pour permettre des actions sur la base de données</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
         <target>Arrêtez le chat pour exporter, importer ou supprimer la base de données du chat. Vous ne pourrez pas recevoir et envoyer de messages pendant que le chat est arrêté.</target>
@@ -6898,6 +6857,10 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Prendre une photo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
+        <source>Tap Create SimpleX address in the menu to create it later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -7987,10 +7950,6 @@ Répéter la demande d'adhésion ?</target>
       </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">
         <source>You can configure servers via settings.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can create it in user picker." xml:space="preserve">
-        <source>You can create it in user picker.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">

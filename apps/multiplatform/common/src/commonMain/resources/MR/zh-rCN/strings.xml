@@ -627,7 +627,6 @@
     <string name="ttl_sec">%d 秒</string>
     <string name="how_simplex_works">SimpleX 是如何工作的</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[许多人问：<i>如果SimpleX没有用户标识符，它是怎样传递信息的？</i>]]></string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">确保 SMP 服务器地址格式正确、每行分开且不重复。</string>
     <string name="markdown_help">Markdown 帮助</string>
     <string name="mark_code_verified">标记为已验证</string>
@@ -693,7 +692,6 @@
     <string name="network_use_onion_hosts_required">必须</string>
     <string name="save_and_notify_contact">保存并通知联系人</string>
     <string name="save_and_notify_contacts">保存并通知联系人</string>
-    <string name="read_more_in_github">在我们的 GitHub 仓库中阅读更多内容。</string>
     <string name="reject">拒绝</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">为了保护隐私，而不是所有其他平台使用的用户 ID，SimpleX 具有消息队列的标识符，每个联系人都是分开的。</string>
     <string name="network_option_tcp_connection_timeout">TCP 连接超时</string>
@@ -864,7 +862,6 @@
     <string name="icon_descr_simplex_team">SimpleX 团队</string>
     <string name="group_info_section_title_num_members">%1$s 成员</string>
     <string name="chat_preferences_yes">是</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[您可以控制通过哪些服务器<b>接收</b>消息，您的联系人 - 您用来向他们发送消息的服务器。]]></string>
     <string name="you_will_be_connected_when_group_host_device_is_online">您将在组主设备上线时连接到该群组，请稍等或稍后再检查！</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[您可以 <font color="#0088ff"> 连接到  SimpleX Chat  开发者提出任何问题并接收更新 </font>。]]></string>

@@ -871,9 +871,6 @@
 "changing address…" = "cím megváltoztatása…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Csevegési archívum";
-
-/* No comment provided by engineer. */
 "Chat colors" = "Csevegés színei";
 
 /* No comment provided by engineer. */
@@ -1252,9 +1249,6 @@
 "Created at: %@" = "Létrehozva ekkor: %@";
 
 /* No comment provided by engineer. */
-"Created on %@" = "Létrehozva %@";
-
-/* No comment provided by engineer. */
 "Creating archive link" = "Archívum hivatkozás létrehozása";
 
 /* No comment provided by engineer. */
@@ -1399,12 +1393,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "Törlés, és az ismerős értesítése";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Archívum törlése";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "Csevegési archívum törlése?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Csevegési profil törlése";
@@ -1883,9 +1871,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Hiba történt a kapcsolatkérés elfogadásakor";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "Hiba az adatbázisfájl elérésekor";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Hiba a tag(ok) hozzáadásakor";
@@ -3025,9 +3010,6 @@
 "New contact:" = "Új kapcsolat:";
 
 /* No comment provided by engineer. */
-"New database archive" = "Új adatbázis-archívum";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "Új számítógép-alkalmazás!";
 
 /* No comment provided by engineer. */
@@ -3166,9 +3148,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Régi adatbázis";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Régi adatbázis-archívum";
 
 /* group pref value */
 "on" = "bekapcsolva";
@@ -3797,9 +3776,6 @@
 "Save and update group profile" = "Mentés és a csoportprofil frissítése";
 
 /* No comment provided by engineer. */
-"Save archive" = "Archívum mentése";
-
-/* No comment provided by engineer. */
 "Save group profile" = "Csoportprofil mentése";
 
 /* No comment provided by engineer. */
@@ -4306,9 +4282,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "Csevegési szolgáltatás megállítása";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Csevegés megállítása az adatbázis-műveletek engedélyezéséhez";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállításakor nem tud üzeneteket fogadni és küldeni.";

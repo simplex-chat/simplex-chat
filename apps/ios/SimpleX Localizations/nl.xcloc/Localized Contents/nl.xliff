@@ -1372,11 +1372,6 @@
         <target state="translated">Gebruikersprofielen wijzigen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Chat archive" xml:space="preserve">
-        <source>Chat archive</source>
-        <target>Gesprek archief</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
         <source>Chat colors</source>
         <target>Chat kleuren</target>
@@ -1991,11 +1986,6 @@ Dit is uw eigen eenmalige link!</target>
         <target>Aangemaakt op: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Created on %@" xml:space="preserve">
-        <source>Created on %@</source>
-        <target>Gemaakt op %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Creating archive link" xml:space="preserve">
         <source>Creating archive link</source>
         <target>Archief link maken</target>
@@ -2209,16 +2199,6 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Delete and notify contact" xml:space="preserve">
         <source>Delete and notify contact</source>
         <target>Verwijderen en contact op de hoogte stellen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete archive" xml:space="preserve">
-        <source>Delete archive</source>
-        <target>Archief verwijderen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete chat archive?" xml:space="preserve">
-        <source>Delete chat archive?</source>
-        <target>Chat archief verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2920,11 +2900,6 @@ Dit is uw eigen eenmalige link!</target>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
         <source>Error accepting contact request</source>
         <target>Fout bij het accepteren van een contactverzoek</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error accessing database file" xml:space="preserve">
-        <source>Error accessing database file</source>
-        <target>Fout bij toegang tot database bestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -4735,11 +4710,6 @@ Dit is jouw link voor groep %@!</target>
         <target>Nieuw contact:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New database archive" xml:space="preserve">
-        <source>New database archive</source>
-        <target>Nieuw database archief</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="New desktop app!" xml:space="preserve">
         <source>New desktop app!</source>
         <target>Nieuwe desktop app!</target>
@@ -4964,11 +4934,6 @@ Dit is jouw link voor groep %@!</target>
         <target>Oude database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
-        <source>Old database archive</source>
-        <target>Oud database archief</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
         <source>One-time invitation link</source>
         <target>Eenmalige uitnodiging link</target>
@@ -5122,6 +5087,10 @@ Vereist het inschakelen van VPN.</target>
         <source>Operator server</source>
         <target state="translated">Operatorserver</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Or import archive file" xml:space="preserve">
+        <source>Or import archive file</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve">
         <source>Or paste archive link</source>
@@ -6013,11 +5982,6 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Groep profiel opslaan en bijwerken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
-        <source>Save archive</source>
-        <target>Bewaar archief</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
         <source>Save group profile</source>
         <target>Groep profiel opslaan</target>
@@ -6846,11 +6810,6 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Stop chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
-        <source>Stop chat to enable database actions</source>
-        <target>Stop de chat om database acties mogelijk te maken</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
         <target>Stop de chat om de chat database te exporteren, importeren of verwijderen. U kunt geen berichten ontvangen en verzenden terwijl de chat is gestopt.</target>
@@ -6974,6 +6933,10 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Foto nemen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
+        <source>Tap Create SimpleX address in the menu to create it later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -8082,11 +8045,6 @@ Deelnameverzoek herhalen?</target>
       <trans-unit id="You can configure servers via settings." xml:space="preserve" approved="no">
         <source>You can configure servers via settings.</source>
         <target state="translated">U kunt servers configureren via instellingen.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can create it in user picker." xml:space="preserve" approved="no">
-        <source>You can create it in user picker.</source>
-        <target state="translated">U kunt dit aanmaken in de gebruikerskiezer.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">

@@ -409,7 +409,6 @@
     <string name="privacy_redefined">Приватність перевизначена</string>
     <string name="people_can_connect_only_via_links_you_share">Ви вирішуєте, хто може під\'єднатися.</string>
     <string name="how_simplex_works">Як працює SimpleX</string>
-    <string name="read_more_in_github">Докладніше читайте в нашому репозиторії на GitHub.</string>
     <string name="encrypted_audio_call">зашифрований e2e аудіовиклик</string>
     <string name="open_simplex_chat_to_accept_call">Відкрийте SimpleX Chat для прийняття виклику</string>
     <string name="status_e2e_encrypted">e2e зашифровано</string>
@@ -650,8 +649,6 @@
     <string name="you_can_use_markdown_to_format_messages__prompt">Ви можете використовувати markdown для форматування повідомлень:</string>
     <string name="create_your_profile">Створіть свій профіль</string>
     <string name="make_private_connection">Створіть приватне підключення</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Багато людей питають: <i>як в SimpleX можливо доставляти повідомлення, якщо він не має ідентифікаторів користувачів?</i>]]></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Ви контролюєте, через які сервери <b>отримувати</b> повідомлення, ваші контакти – сервери, які ви використовуєте для надсилання повідомлень їм.]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Тільки пристрої клієнта зберігають профілі користувачів, контакти, групи та повідомлення, відправлені за допомогою <b>шифрування на двох рівнях</b>.]]></string>
     <string name="onboarding_notifications_mode_title">Приватні сповіщення</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Споживає більше акумулятора</b>! Додаток завжди працює у фоновому режимі – сповіщення відображаються миттєво.]]></string>

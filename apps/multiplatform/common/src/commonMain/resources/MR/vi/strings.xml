@@ -1019,7 +1019,6 @@
     <string name="make_private_connection">Tạo kết nối riêng tư</string>
     <string name="make_profile_private">Tạo hồ sơ riêng tư!</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ WebRTC ICE ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Nhiều người hỏi rằng: <i>nếu SimpleX không có thông tin định danh người dùng, thì làm thế nào mà nó có thể chuyển tin nhắn đi được?</i>]]></string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Nó có thể xảy ra khi bạn hoặc liên hệ của bạn sử dụng bản sao lưu cơ sở dữ liệu cũ.</string>
     <string name="lock_mode">Chế độ khóa</string>
     <string name="v4_5_italian_interface">Giao diện tiếng Ý</string>

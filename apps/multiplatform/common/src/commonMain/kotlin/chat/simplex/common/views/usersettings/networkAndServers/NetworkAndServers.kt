@@ -734,7 +734,7 @@ fun UsageConditionsView(
   }
 
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false)
+    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
     when (val conditionsAction = chatModel.conditions.value.conditionsAction) {
       is UsageConditionsAction.Review -> {
         if (conditionsAction.operators.isNotEmpty()) {

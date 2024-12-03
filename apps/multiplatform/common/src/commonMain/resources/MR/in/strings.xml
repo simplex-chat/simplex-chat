@@ -618,7 +618,6 @@
     <string name="decentralized">Terdesentralisasi</string>
     <string name="error_initializing_web_view_wrong_arch">Kesalahan saat menginisialisasi WebView. Pastikan Anda telah menginstal WebView dan arsitektur yang didukung adalah arm64.\nKesalahan: %s</string>
     <string name="use_chat">Gunakan obrolan</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Banyak orang bertanya: <i>Jika SimpleX tidak memiliki pengenal pengguna, bagaimana ia dapat menyampaikan pesan?</i>]]></string>
     <string name="how_it_works">Bagaimana caranya</string>
     <string name="how_simplex_works">Cara kerja SimpleX</string>
     <string name="onboarding_notifications_mode_periodic">Berkala</string>
@@ -1093,7 +1092,6 @@
     <string name="v5_6_app_data_migration_descr">Pindah ke perangkat lain melalui kode QR.</string>
     <string name="v6_0_delete_many_messages_descr">Hapus hingga 20 pesan sekaligus.</string>
     <string name="app_check_for_updates">Periksa pembaruan</string>
-    <string name="read_more_in_github">Baca selengkapnya di repositori GitHub kami.</string>
     <string name="app_check_for_updates_button_download">Unduh %s (%s)</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="network_smp_proxy_mode_unknown_description">Gunakan routing pribadi dengan server yang tak dikenal.</string>

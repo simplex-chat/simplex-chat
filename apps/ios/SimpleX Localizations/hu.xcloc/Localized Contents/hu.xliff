@@ -1372,11 +1372,6 @@
         <target state="translated">Felhasználói profilok megváltoztatása</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Chat archive" xml:space="preserve">
-        <source>Chat archive</source>
-        <target>Csevegési archívum</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
         <source>Chat colors</source>
         <target>Csevegés színei</target>
@@ -1991,11 +1986,6 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Létrehozva ekkor: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Created on %@" xml:space="preserve">
-        <source>Created on %@</source>
-        <target>Létrehozva %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Creating archive link" xml:space="preserve">
         <source>Creating archive link</source>
         <target>Archívum hivatkozás létrehozása</target>
@@ -2209,16 +2199,6 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
       <trans-unit id="Delete and notify contact" xml:space="preserve">
         <source>Delete and notify contact</source>
         <target>Törlés, és az ismerős értesítése</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete archive" xml:space="preserve">
-        <source>Delete archive</source>
-        <target>Archívum törlése</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete chat archive?" xml:space="preserve">
-        <source>Delete chat archive?</source>
-        <target>Csevegési archívum törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2920,11 +2900,6 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
         <source>Error accepting contact request</source>
         <target>Hiba történt a kapcsolatkérés elfogadásakor</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error accessing database file" xml:space="preserve">
-        <source>Error accessing database file</source>
-        <target>Hiba az adatbázisfájl elérésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -4735,11 +4710,6 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Új kapcsolat:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New database archive" xml:space="preserve">
-        <source>New database archive</source>
-        <target>Új adatbázis-archívum</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="New desktop app!" xml:space="preserve">
         <source>New desktop app!</source>
         <target>Új számítógép-alkalmazás!</target>
@@ -4964,11 +4934,6 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Régi adatbázis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
-        <source>Old database archive</source>
-        <target>Régi adatbázis-archívum</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
         <source>One-time invitation link</source>
         <target>Egyszer használható meghívó-hivatkozás</target>
@@ -5122,6 +5087,10 @@ VPN engedélyezése szükséges.</target>
         <source>Operator server</source>
         <target state="translated">Kiszolgáló üzemeltető</target>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Or import archive file" xml:space="preserve">
+        <source>Or import archive file</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve">
         <source>Or paste archive link</source>
@@ -6013,11 +5982,6 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Mentés és a csoportprofil frissítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
-        <source>Save archive</source>
-        <target>Archívum mentése</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
         <source>Save group profile</source>
         <target>Csoportprofil mentése</target>
@@ -6846,11 +6810,6 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Csevegési szolgáltatás megállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
-        <source>Stop chat to enable database actions</source>
-        <target>Csevegés megállítása az adatbázis-műveletek engedélyezéséhez</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
         <target>A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállításakor nem tud üzeneteket fogadni és küldeni.</target>
@@ -6974,6 +6933,10 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Kép készítése</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
+        <source>Tap Create SimpleX address in the menu to create it later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -8082,11 +8045,6 @@ Csatlakozáskérés megismétlése?</target>
       <trans-unit id="You can configure servers via settings." xml:space="preserve" approved="no">
         <source>You can configure servers via settings.</source>
         <target state="translated">A kiszolgálókat a beállításokon keresztül konfigurálhatja.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can create it in user picker." xml:space="preserve" approved="no">
-        <source>You can create it in user picker.</source>
-        <target state="translated">Ezt a felhasználó-választóban hozhatja létre.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">

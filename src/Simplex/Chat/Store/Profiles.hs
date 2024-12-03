@@ -445,7 +445,8 @@ data UserContactLink = UserContactLink
   deriving (Show)
 
 data AutoAccept = AutoAccept
-  { acceptIncognito :: IncognitoEnabled,
+  { businessAddress :: Bool, -- possibly, it can be wrapped together with acceptIncognito, or AutoAccept made sum type
+    acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
   deriving (Show)
@@ -454,10 +455,10 @@ $(J.deriveJSON defaultJSON ''AutoAccept)
 
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (ConnReqContact, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
-toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
+toUserContactLink :: (ConnReqContact, Bool, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
+toUserContactLink (connReq, autoAccept, businessAddress, acceptIncognito, autoReply) =
   UserContactLink connReq $
-    if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
+    if autoAccept then Just AutoAccept {businessAddress, acceptIncognito, autoReply} else Nothing
 
 getUserAddress :: DB.Connection -> User -> ExceptT StoreError IO UserContactLink
 getUserAddress db User {userId} =
@@ -465,7 +466,7 @@ getUserAddress db User {userId} =
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
         FROM user_contact_links
         WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
       |]
@@ -477,7 +478,7 @@ getUserContactLinkById db userId userContactLinkId =
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
@@ -490,7 +491,7 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content
         FROM user_contact_links
         WHERE user_id = ? AND conn_req_contact IN (?,?)
       |]
@@ -522,13 +523,13 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
         db
         [sql|
           UPDATE user_contact_links
-          SET auto_accept = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
+          SET auto_accept = ?, business_address = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
           WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
         |]
         (ucl :. Only userId)
     ucl = case autoAccept of
-      Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
-      _ -> (False, False, Nothing)
+      Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (True, businessAddress, acceptIncognito, autoReply)
+      _ -> (False, False, False, Nothing)
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> IO [UserServer p]
 getProtocolServers db p User {userId} =
@@ -589,7 +590,7 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
 getUserServers db user =
   (,,)
     <$> (map Just . serverOperators <$> getServerOperators db)
@@ -620,7 +621,8 @@ getUpdateServerOperators db presetOps newUser = do
   mapM_ insertConditions condsToAdd
   latestAcceptedConds_ <- getLatestAcceptedConditions db
   ops <- updatedServerOperators presetOps <$> getServerOperators_ db
-  forM ops $ traverse $ mapM $ \(ASO _ op) -> -- traverse for tuple, mapM for Maybe
+  forM ops $ traverse $ mapM $ \(ASO _ op) ->
+    -- traverse for tuple, mapM for Maybe
     case operatorId op of
       DBNewEntity -> do
         op' <- insertOperator op
@@ -765,8 +767,9 @@ acceptConditions db condId opIds acceptedAt = do
   liftIO $ forM_ operators $ \op -> acceptConditions_ db op conditionsCommit ts
   where
     getServerOperator_ opId =
-      ExceptT $ firstRow toServerOperator (SEOperatorNotFound opId) $
-        DB.query db (serverOperatorQuery <> " WHERE server_operator_id = ?") (Only opId)
+      ExceptT $
+        firstRow toServerOperator (SEOperatorNotFound opId) $
+          DB.query db (serverOperatorQuery <> " WHERE server_operator_id = ?") (Only opId)
 
 acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> Maybe UTCTime -> IO ()
 acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt =

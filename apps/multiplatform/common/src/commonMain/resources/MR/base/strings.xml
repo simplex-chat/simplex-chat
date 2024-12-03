@@ -191,9 +191,9 @@
   <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="service_notifications">Instant notifications!</string>
   <string name="service_notifications_disabled">Instant notifications are disabled!</string>
-  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To preserve your privacy, instead of push notifications the app has a <b>SimpleX background service</b> – it uses a few percent of the battery per day.]]></string>
+  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To improve privacy, <b>SimpleX runs in background</b> instead of using push notifications.]]></string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>It can be disabled via settings</b> – notifications will still be shown while the app is running.]]></string>
-  <string name="turn_off_battery_optimization"><![CDATA[To use it, please <b>allow SimpleX to run in background</b> in the next dialog. Otherwise, the notifications will be disabled.]]></string>
+  <string name="turn_off_battery_optimization"><![CDATA[<b>Allow it</b> in the next dialog to receive notifications instantly.]]></string>
   <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
@@ -210,6 +210,7 @@
   <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
   <string name="database_initialization_error_title">Can\'t initialize the database</string>
   <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
+  <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi devices</b>: please enable Autostart in the system settings for notifications to work.]]></string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title">SimpleX Chat service</string>
@@ -440,6 +441,10 @@
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
   <string name="compose_message_placeholder">Message</string>
+  <string name="maximum_message_size_title">Message is too large!</string>
+  <string name="maximum_message_size_reached_text">Please reduce the message size and send again.</string>
+  <string name="maximum_message_size_reached_non_text">Please reduce the message size or remove media and send again.</string>
+  <string name="maximum_message_size_reached_forwarding">You can copy and reduce the message size to send it.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -1026,7 +1031,7 @@
   <string name="error_initializing_web_view_wrong_arch">Error initializing WebView. Make sure you have WebView installed and it\'s supported architecture is arm64.\nError: %s</string>
 
   <!-- SimpleXInfo -->
-  <string name="next_generation_of_private_messaging">The next generation\nof private messaging</string>
+  <string name="next_generation_of_private_messaging">The future of messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
   <string name="first_platform_without_user_ids">No user identifiers.</string>
   <string name="immune_to_spam_and_abuse">Immune to spam</string>
@@ -1040,23 +1045,25 @@
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">How SimpleX works</string>
-  <string name="many_people_asked_how_can_it_deliver"><![CDATA[Many people asked: <i>if SimpleX has no user identifiers, how can it deliver messages?</i>]]></string>
-  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</string>
-  <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.]]></string>
-  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.]]></string>
-  <string name="read_more_in_github">Read more in our GitHub repository.</string>
+  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
+  <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>
   <string name="read_more_in_github_with_link"><![CDATA[Read more in our <font color="#0088ff">GitHub repository</font>.]]></string>
 
   <!-- SetNotificationsMode.kt -->
   <string name="use_chat">Use chat</string>
   <string name="onboarding_notifications_mode_title">Private notifications</string>
-  <string name="onboarding_notifications_mode_subtitle">It can be changed later via settings.</string>
+  <string name="onboarding_notifications_mode_subtitle">How it affects battery</string>
   <string name="onboarding_notifications_mode_off">When app is running</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
   <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
+  <string name="onboarding_notifications_mode_off_desc_short">No background service</string>
   <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. App checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
+  <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 10 minutes</string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
+  <string name="onboarding_notifications_mode_service_desc_short">App always runs in background</string>
+  <string name="onboarding_notifications_mode_battery">Notifications and battery</string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
@@ -1064,11 +1071,12 @@
   <string name="use_random_passphrase">Use random passphrase</string>
 
   <!-- ChooseServerOperators.kt -->
-  <string name="onboarding_choose_server_operators">Choose operators</string>
+  <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
   <string name="onboarding_network_operators_app_will_use_different_operators">When more than one network operator is enabled, the app will use the servers of different operators for each conversation.</string>
   <string name="onboarding_network_operators_app_will_use_for_routing">For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.</string>
   <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
+  <string name="how_it_helps_privacy">How it helps privacy</string>
   <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
   <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
   <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>

@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
@@ -615,7 +616,6 @@ fun ConditionsTextView(
   val failedToLoad = remember { mutableStateOf(false) }
   val defaultConditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md"
   val scope = rememberCoroutineScope()
-
   // can show conditions when animation between modals finishes to prevent glitches
   val canShowConditionsAt = remember { System.currentTimeMillis() + 300 }
   LaunchedEffect(Unit) {
@@ -645,18 +645,18 @@ fun ConditionsTextView(
 
     if (conditionsText != null) {
       val scrollState = rememberScrollState()
-        Box(
-          modifier = Modifier
-            .fillMaxSize()
-            .border(border = BorderStroke(1.dp, CurrentColors.value.colors.secondary.copy(alpha = 0.6f)), shape = RoundedCornerShape(12.dp))
-            .verticalScroll(scrollState)
-            .padding(8.dp)
-        ) {
-          val parentUriHandler = LocalUriHandler.current
-          CompositionLocalProvider(LocalUriHandler provides remember { internalUriHandler(parentUriHandler) }) {
-            ConditionsMarkdown(conditionsText)
-          }
+      ConditionsBox(
+        Modifier
+          .fillMaxSize()
+          .border(border = BorderStroke(1.dp, CurrentColors.value.colors.secondary.copy(alpha = 0.6f)), shape = RoundedCornerShape(12.dp))
+          .clip(shape = RoundedCornerShape(12.dp)),
+        scrollState
+      ) {
+        val parentUriHandler = LocalUriHandler.current
+        CompositionLocalProvider(LocalUriHandler provides remember { internalUriHandler(parentUriHandler) }) {
+          ConditionsMarkdown(conditionsText)
         }
+      }
     } else {
       val conditionsLink = "https://github.com/simplex-chat/simplex-chat/blob/${usageConditions.conditionsCommit}/PRIVACY.md"
       ConditionsLinkView(conditionsLink)
@@ -667,6 +667,9 @@ fun ConditionsTextView(
     DefaultProgressView(null)
   }
 }
+
+@Composable
+expect fun ConditionsBox(modifier: Modifier, scrollState: ScrollState, content: @Composable() (BoxScope.() -> Unit))
 
 @Composable
 private fun ConditionsMarkdown(text: String) {

@@ -425,7 +425,6 @@
     <string name="how_it_works">Hoe het werkt</string>
     <string name="callstatus_missed">gemiste oproep</string>
     <string name="how_simplex_works">Hoe SimpleX werkt</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Veel mensen vroegen: <i>als SimpleX geen gebruikers-ID\'s heeft, hoe kan het dan berichten bezorgen\?</i>]]></string>
     <string name="incoming_audio_call">Inkomende audio oproep</string>
     <string name="incoming_video_call">Inkomend video gesprek</string>
     <string name="ignore">Negeren</string>
@@ -611,7 +610,6 @@
     <string name="you_control_your_chat">Jij beheert je gesprek!</string>
     <string name="your_profile_is_stored_on_your_device">Uw profiel, contacten en afgeleverde berichten worden op uw apparaat opgeslagen.</string>
     <string name="callstate_starting">beginnen…</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[U bepaalt via welke server(s) je de berichten <b>ontvangt</b>, uw contacten de servers die u gebruikt om ze berichten te sturen.]]></string>
     <string name="icon_descr_video_on">Video aan</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
     <string name="messages_section_description">Deze instelling is van toepassing op berichten in uw huidige chatprofiel</string>
@@ -930,7 +928,6 @@
     <string name="description_you_shared_one_time_link_incognito">je hebt een eenmalige link incognito gedeeld</string>
     <string name="chat_help_tap_button">Tik op de knop</string>
     <string name="read_more_in_github_with_link"><![CDATA[Lees meer in onze <font color="#0088ff">GitHub repository</font>.]]></string>
-    <string name="read_more_in_github">Lees meer in onze GitHub repository.</string>
     <string name="integrity_msg_skipped">%1$d bericht(en) overgeslagen</string>
     <string name="moderated_description">gemodereerd</string>
     <string name="moderated_item_description">gemodereerd door %s</string>

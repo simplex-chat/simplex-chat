@@ -10,6 +10,8 @@ import android.os.*
 import android.os.SystemClock
 import android.provider.Settings
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -462,7 +464,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
@@ -497,6 +500,12 @@ class SimplexService: Service() {
               Modifier.padding(bottom = 8.dp)
             )
             Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
+
+            if (platform.androidIsXiaomiDevice() && (mode == NotificationsMode.PERIODIC || mode == NotificationsMode.SERVICE)) {
+              Text(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization),
+                Modifier.padding(top = 8.dp)
+              )
+            }
           }
         },
         dismissButton = {
@@ -504,7 +513,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.turn_off_battery_optimization_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
@@ -546,7 +556,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
@@ -573,7 +584,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
       val scope = rememberCoroutineScope()
       DisposableEffect(Unit) {
@@ -617,13 +629,14 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
     fun isBackgroundAllowed(): Boolean = isIgnoringBatteryOptimizations() && !isBackgroundRestricted()
 
-    fun isIgnoringBatteryOptimizations(): Boolean {
+    private fun isIgnoringBatteryOptimizations(): Boolean {
       val powerManager = androidAppContext.getSystemService(Application.POWER_SERVICE) as PowerManager
       return powerManager.isIgnoringBatteryOptimizations(androidAppContext.packageName)
     }
