@@ -28,6 +28,7 @@ interface PlatformInterface {
   fun androidCallEnded() {}
   fun androidRestartNetworkObserver() {}
   fun androidCreateActiveCallState(): Closeable = Closeable { }
+  fun androidIsXiaomiDevice(): Boolean = false
   val androidApiLevel: Int? get() = null
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true

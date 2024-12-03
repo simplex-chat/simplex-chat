@@ -174,7 +174,7 @@ private fun ModalData.NewChatSheetLayout(
   val actionButtonsOriginal = listOf(
     Triple(
       painterResource(MR.images.ic_add_link),
-      stringResource(MR.strings.add_contact_tab),
+      stringResource(MR.strings.create_1_time_link),
       addContact,
     ),
     Triple(

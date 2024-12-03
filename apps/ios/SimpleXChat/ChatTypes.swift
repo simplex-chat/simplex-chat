@@ -1890,6 +1890,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
+    public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
     public var membership: GroupMember
     public var hostConnCustomUserProfileId: Int64?
@@ -1908,7 +1909,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var image: String? { get { groupProfile.image } }
     public var localAlias: String { "" }
 
-    public var canEdit: Bool {
+    public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
     }
 
@@ -1958,6 +1959,16 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         displayName: "team",
         fullName: "My Team"
     )
+}
+
+public struct BusinessChatInfo: Decodable, Hashable {
+    public var memberId: String
+    public var chatType: BusinessChatType
+}
+
+public enum BusinessChatType: String, Codable, Hashable {
+    case business
+    case customer
 }
 
 public struct GroupMember: Identifiable, Decodable, Hashable {
@@ -2309,6 +2320,11 @@ public struct AChatItem: Decodable, Hashable {
 public struct ACIReaction: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatReaction: CIReaction
+}
+
+public struct MemberReaction: Decodable, Hashable {
+    public var groupMember: GroupMember
+    public var reactionTs: Date
 }
 
 public struct CIReaction: Decodable, Hashable {

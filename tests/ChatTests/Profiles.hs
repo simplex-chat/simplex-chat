@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatTests.Profiles where
 
@@ -46,6 +47,8 @@ chatProfileTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
+    describe "business address" $ do
+      it "create and connect via business address" testBusinessAddress
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -272,6 +275,7 @@ testRetryAcceptingViaContactLink tmp = testChatCfgOpts2 cfg' opts' aliceProfile 
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         alice <## "server connected localhost ()"
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
         bob ##> ("/_connect 1 " <> cLink)
@@ -674,6 +678,59 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
           alice <## "use /i bob to print out this incognito profile again"
       ]
+
+testBusinessAddress :: HasCallStack => FilePath -> IO ()
+testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile $
+  \biz alice bob -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: ok to connect"
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
+    biz <## "#bob (Bob): accepting business address request..."
+    bob <## "#biz: joining the group..."
+    -- the next command can be prone to race conditions
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business link: connecting to business #biz"
+    biz <## "#bob: bob_1 joined the group"
+    bob <## "#biz: you joined the group"
+    biz #> "#bob hi"
+    bob <# "#biz biz_1> hi"
+    bob #> "#biz hello"
+    biz <# "#bob bob_1> hello"
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "business link: known business #biz"
+    bob <## "use #biz <message> to send messages"
+    connectUsers biz alice
+    biz <##> alice
+    biz ##> "/a #bob alice"
+    biz <## "invitation to join the group #bob sent to alice"
+    alice <## "#bob (Bob): biz invites you to join the group as member"
+    alice <## "use /j bob to accept"
+    alice ##> "/j bob"
+    concurrentlyN_
+      [ do
+          alice <## "#bob: you joined the group"
+          alice <### [WithTime "#bob biz> hi [>>]", WithTime "#bob bob_1> hello [>>]"]
+          alice <## "#bob: member bob_1 (Bob) is connected",
+        biz <## "#bob: alice joined the group",
+        do
+          bob <## "#biz: biz_1 added alice (Alice @ Biz) to the group (connecting...)"
+          bob <## "#biz: new member alice is connected"
+      ]
+    alice #> "#bob hey"
+    concurrently_
+      (bob <# "#biz alice> hey")
+      (biz <# "#bob alice> hey")
+    bob #> "#biz hey there"
+    concurrently_
+      (alice <# "#bob bob_1> hey there")
+      (biz <# "#bob bob_1> hey there")
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
 testPlanAddressOkKnown =
@@ -1733,7 +1790,15 @@ testChangePCCUserDiffSrv tmp = do
         -- Create new user with different servers
         alice ##> "/create user alisa"
         showActiveUser alice "alisa"
-        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003", id, "ok")
+        alice ##> "/smp"
+        alice <## "Your servers"
+        alice <## "  SMP servers"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003", id, "ok")
+        alice ##> "/smp"
+        alice <## "Your servers"
+        alice <## "  SMP servers"
+        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"
         alice ##> "/user alice"
         showActiveUser alice "alice (Alice)"
         -- Change connection to newly created user and use the newly created connection
@@ -1893,13 +1958,13 @@ testUpdateGroupPrefs =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected")])
       threadDelay 500000
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected")])
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
       alice <## "updated group preferences:"
       alice <## "Full deletion: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
@@ -1909,7 +1974,7 @@ testUpdateGroupPrefs =
       alice <## "updated group preferences:"
       alice <## "Full deletion: off"
       alice <## "Voice messages: off"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: off"
@@ -1919,7 +1984,7 @@ testUpdateGroupPrefs =
       alice ##> "/set voice #team on"
       alice <## "updated group preferences:"
       alice <## "Voice messages: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Voice messages: on"
@@ -1929,14 +1994,14 @@ testUpdateGroupPrefs =
       alice ##> "/_group_profile #1 {\"displayName\": \"team\", \"fullName\": \"\", \"groupPreferences\": {\"fullDelete\": {\"enable\": \"off\"}, \"voice\": {\"enable\": \"on\"}, \"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
       -- no update
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on")])
       alice #> "#team hey"
       bob <# "#team alice> hey"
       threadDelay 1000000
       bob #> "#team hi"
       alice <# "#team bob> hi"
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Full deletion: on"), (1, "Full deletion: off"), (1, "Voice messages: off"), (1, "Voice messages: on"), (1, "hey"), (0, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Full deletion: on"), (0, "Full deletion: off"), (0, "Voice messages: off"), (0, "Voice messages: on"), (0, "hey"), (1, "hi")])
 
 testAllowFullDeletionContact :: HasCallStack => FilePath -> IO ()
@@ -1976,11 +2041,11 @@ testAllowFullDeletionGroup =
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "hi"), (0, "hey"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (1, "hey"), (0, "Full deletion: on")])
       bob #$> ("/_delete item #1 " <> msgItemId <> " broadcast", id, "message deleted")
       alice <# "#team bob> [deleted] hey"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "hi"), (1, "Full deletion: on")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "hi"), (1, "Full deletion: on")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hi"), (0, "Full deletion: on")])
 
 testProhibitDirectMessages :: HasCallStack => FilePath -> IO ()
@@ -2102,12 +2167,12 @@ testEnableTimedMessagesGroup =
       alice #> "#team hi"
       bob <# "#team alice> hi"
       threadDelay 500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "hi")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "hi")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       bob <## "timed message deleted: hi"
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Disappearing messages: on (1 sec)")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)")])
       -- turn off, messages are not disappearing
       alice ##> "/set disappear #team off"
@@ -2120,7 +2185,7 @@ testEnableTimedMessagesGroup =
       alice #> "#team hey"
       bob <# "#team alice> hey"
       threadDelay 1500000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "Disappearing messages: off"), (1, "hey")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (1, "Disappearing messages: on (1 sec)"), (1, "Disappearing messages: off"), (1, "hey")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "Disappearing messages: on (1 sec)"), (0, "Disappearing messages: off"), (0, "hey")])
       -- test api
       alice ##> "/set disappear #team on 30s"
@@ -2370,7 +2435,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 9)"
+      a <## "peer chat protocol version range: (Version 1, Version 10)"
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

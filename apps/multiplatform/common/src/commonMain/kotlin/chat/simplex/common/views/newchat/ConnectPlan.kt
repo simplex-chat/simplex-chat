@@ -275,10 +275,17 @@ suspend fun planAndConnect(
           Log.d(TAG, "planAndConnect, .GroupLink, .ConnectingProhibit, incognito=$incognito")
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo_
           if (groupInfo != null) {
-            AlertManager.privacySensitive.showAlertMsg(
-              generalGetString(MR.strings.connect_plan_group_already_exists),
-              String.format(generalGetString(MR.strings.connect_plan_you_are_already_joining_the_group_vName), groupInfo.displayName) + linkText
-            )
+            if (groupInfo.businessChat == null) {
+              AlertManager.privacySensitive.showAlertMsg(
+                generalGetString(MR.strings.connect_plan_group_already_exists),
+                String.format(generalGetString(MR.strings.connect_plan_you_are_already_joining_the_group_vName), groupInfo.displayName) + linkText
+              )
+            } else {
+              AlertManager.privacySensitive.showAlertMsg(
+                generalGetString(MR.strings.connect_plan_chat_already_exists),
+                String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), groupInfo.displayName) + linkText
+              )
+            }
           } else {
             AlertManager.privacySensitive.showAlertMsg(
               generalGetString(MR.strings.connect_plan_already_joining_the_group),
@@ -295,11 +302,19 @@ suspend fun planAndConnect(
             filterKnownGroup(groupInfo)
           } else {
             openKnownGroup(chatModel, rhId, close, groupInfo)
-            AlertManager.privacySensitive.showAlertMsg(
-              generalGetString(MR.strings.connect_plan_group_already_exists),
-              String.format(generalGetString(MR.strings.connect_plan_you_are_already_in_group_vName), groupInfo.displayName) + linkText,
-              hostDevice = hostDevice(rhId),
-            )
+            if (groupInfo.businessChat == null) {
+              AlertManager.privacySensitive.showAlertMsg(
+                generalGetString(MR.strings.connect_plan_group_already_exists),
+                String.format(generalGetString(MR.strings.connect_plan_you_are_already_in_group_vName), groupInfo.displayName) + linkText,
+                hostDevice = hostDevice(rhId),
+              )
+            } else {
+              AlertManager.privacySensitive.showAlertMsg(
+                generalGetString(MR.strings.connect_plan_chat_already_exists),
+                String.format(generalGetString(MR.strings.connect_plan_you_are_already_connected_with_vName), groupInfo.displayName) + linkText,
+                hostDevice = hostDevice(rhId),
+              )
+            }
             cleanup?.invoke()
           }
         }
@@ -409,7 +424,7 @@ fun openKnownContact(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, co
     val c = chatModel.getContactChat(contact.contactId)
     if (c != null) {
       close?.invoke()
-      openDirectChat(rhId, contact.contactId, chatModel)
+      openDirectChat(rhId, contact.contactId)
     }
   }
 }
@@ -490,7 +505,7 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
     val g = chatModel.getGroupChat(groupInfo.groupId)
     if (g != null) {
       close?.invoke()
-      openGroupChat(rhId, groupInfo.groupId, chatModel)
+      openGroupChat(rhId, groupInfo.groupId)
     }
   }
 }

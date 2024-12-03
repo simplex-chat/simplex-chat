@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import kotlin.math.*
@@ -206,7 +207,7 @@ actual fun ColumnWithScrollBar(
   }
   val modifier = if (fillMaxSize) Modifier.fillMaxSize().then(modifier) else modifier
   Box(Modifier.nestedScroll(connection)) {
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
     val padding = if (oneHandUI.value) PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier) else PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier)
     Column(
       if (maxIntrinsicSize) {

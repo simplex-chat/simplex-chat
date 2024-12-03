@@ -191,7 +191,6 @@
     <string name="callstate_connecting">conectando…</string>
     <string name="decentralized">Descentralizada</string>
     <string name="database_will_be_encrypted">La base de datos será cifrada.</string>
-    <string name="delete_chat_archive_question">¿Eliminar archivo del chat\?</string>
     <string name="create_group_link">Crear enlace de grupo</string>
     <string name="delete_link">Eliminar enlace</string>
     <string name="users_delete_question">¿Eliminar perfil?</string>
@@ -215,8 +214,6 @@
     <string name="ttl_d">%dd</string>
     <string name="ttl_days">%d días</string>
     <string name="delete_files_and_media_question">¿Eliminar archivos y multimedia\?</string>
-    <string name="archive_created_on_ts">Creado: %1$s</string>
-    <string name="delete_archive">Eliminar archivo</string>
     <string name="group_member_status_connected">conectado</string>
     <string name="conn_level_desc_direct">directa</string>
     <string name="chat_preferences_contact_allows">El contacto permite</string>
@@ -289,8 +286,6 @@
     <string name="icon_descr_call_progress">Llamada en curso</string>
     <string name="change_database_passphrase_question">¿Cambiar contraseña de la base de datos\?</string>
     <string name="cannot_access_keychain">No se puede acceder a Keystore para guardar la base de datos de contraseñas</string>
-    <string name="chat_archive_header">Archivo del chat</string>
-    <string name="chat_archive_section">ARCHIVOS DE CHAT</string>
     <string name="cancel_verb">Cancelar</string>
     <string name="icon_descr_cancel_live_message">Cancelar mensaje en directo</string>
     <string name="confirm_verb">Confirmar</string>
@@ -447,7 +442,7 @@
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor SMP tienen el formato correcto, están separadas por líneas y no están duplicadas.</string>
     <string name="icon_descr_instant_notifications">Notificación instantánea</string>
     <string name="network_settings_title">Configuración avanzada</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes enviados con <b>cifrado de extremo a extremo de 2 capas</b> .]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes.</string>
     <string name="onboarding_notifications_mode_subtitle">Puedes cambiar estos ajustes más tarde en Configuración.</string>
     <string name="onboarding_notifications_mode_service">Instantánea</string>
     <string name="join_group_button">Unirte</string>
@@ -510,7 +505,6 @@
     <string name="network_use_onion_hosts_required_desc">Se requieren hosts .onion para la conexión
 \nRecuerda: no podrás conectarte a servidores que no tengan dirección .onion.</string>
     <string name="immune_to_spam_and_abuse">Inmune al spam</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Muchos se preguntarán: <i>si SimpleX no tiene identificadores de usuario, ¿cómo puede entregar los mensajes\?</i>]]></string>
     <string name="incoming_video_call">Videollamada entrante</string>
     <string name="snd_group_event_user_left">has salido</string>
     <string name="snd_conn_event_switch_queue_phase_completed">has cambiado de servidor</string>
@@ -656,13 +650,11 @@
     <string name="callstate_received_confirmation">confirmación recibida…</string>
     <string name="onboarding_notifications_mode_periodic">Periódico</string>
     <string name="privacy_redefined">Privacidad redefinida</string>
-    <string name="read_more_in_github">Conoce más en nuestro repositorio GitHub.</string>
     <string name="reject">Rechazar</string>
     <string name="open_verb">Abrir</string>
     <string name="icon_descr_call_pending_sent">Llamada pendiente</string>
     <string name="privacy_and_security">Privacidad y Seguridad</string>
     <string name="store_passphrase_securely_without_recover">Guarda la contraseña de forma segura, NO podrás acceder al chat si la pierdes.</string>
-    <string name="save_archive">Guardar archivo</string>
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
     <string name="rcv_group_event_user_deleted">te ha expulsado</string>
     <string name="receiving_via">Recibiendo vía</string>
@@ -757,7 +749,7 @@
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Para exportar, importar o eliminar la base de datos debes parar SimpleX. Mientra tanto no podrás recibir o enviar mensajes.</string>
     <string name="thank_you_for_installing_simplex">Gracias por instalar SimpleX Chat!</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger tu privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger tu privacidad, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa el Bloqueo SimpleX.
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Al actualizar la configuración el cliente se reconectará a todos los servidores.</string>
@@ -849,7 +841,6 @@
     <string name="you_are_invited_to_group">Has sido invitado al grupo</string>
     <string name="v4_3_voice_messages">Mensajes de voz</string>
     <string name="v4_3_irreversible_message_deletion_desc">Tus contactos pueden permitir la eliminación completa de mensajes.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Tú controlas a través de qué servidor(es) <b>recibes</b> los mensajes. Tus contactos controlan a través de qué servidor(es) <b>envías</b> tus mensajes.]]></string>
     <string name="voice_messages">Mensajes de voz</string>
     <string name="voice_messages_are_prohibited">Los mensajes de voz no están permitidos en este grupo.</string>
     <string name="v4_4_verify_connection_security">Comprobar la seguridad de la conexión</string>

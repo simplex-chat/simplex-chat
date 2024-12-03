@@ -268,7 +268,7 @@ struct ConnectDesktopView: View {
     private func ctrlDeviceNameText(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> Text {
         var t = Text(rc?.deviceViewName ?? session.ctrlAppInfo?.deviceName ?? "")
         if (rc == nil) {
-            t = t + Text(" ") + Text("(new)").italic()
+            t = t + textSpace + Text("(new)").italic()
         }
         return t
     }
@@ -277,7 +277,7 @@ struct ConnectDesktopView: View {
         let v = session.ctrlAppInfo?.appVersionRange.maxVersion
         var t = Text("v\(v ?? "")")
         if v != session.appVersion {
-            t = t + Text(" ") + Text("(this device v\(session.appVersion))").italic()
+            t = t + textSpace + Text("(this device v\(session.appVersion))").italic()
         }
         return t
     }

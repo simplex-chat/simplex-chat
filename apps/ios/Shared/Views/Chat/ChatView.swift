@@ -901,7 +901,7 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var msgWidth: CGFloat = 0
-        
+
         @Binding var selectedChatItems: Set<Int64>?
         @Binding var forwardedChatItems: [ChatItem]
 
@@ -987,7 +987,7 @@ struct ChatView: View {
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
+                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id])
                     }
                 }
             }
@@ -1117,14 +1117,12 @@ struct ChatView: View {
                             HStack(alignment: .top, spacing: 10) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
-                                        if let member =  m.getGroupMember(member.groupMemberId) {
-                                            selectedMember = member
+                                        if let mem = m.getGroupMember(member.groupMemberId) {
+                                            selectedMember = mem
                                         } else {
-                                            Task {
-                                                await m.loadGroupMembers(groupInfo) {
-                                                    selectedMember = m.getGroupMember(member.groupMemberId)
-                                                }
-                                            }
+                                            let mem = GMember.init(member)
+                                            m.groupMembers.append(mem)
+                                            selectedMember = mem
                                         }
                                     }
                                 chatItemWithMenu(ci, range, maxWidth, itemSeparation)
@@ -1244,10 +1242,19 @@ struct ChatView: View {
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 4)
-
-                    if chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted) {
+                    .if(chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted)) { v in
                         v.onTapGesture {
                             setReaction(ci, add: !r.userReacted, reaction: r.reaction)
+                        }
+                    }
+                    if case let .group(groupInfo) = chat.chatInfo {
+                        v.contextMenu {
+                            ReactionContextMenu(
+                                groupInfo: groupInfo,
+                                itemId: ci.id,
+                                reactionCount: r,
+                                selectedMember: $selectedMember
+                            )
                         }
                     } else {
                         v
@@ -1835,6 +1842,108 @@ private func buildTheme() -> AppTheme {
         return AppTheme(name: theme.name, base: theme.base, colors: theme.colors, appColors: theme.appColors, wallpaper: theme.wallpaper)
     } else {
         return AppTheme.shared
+    }
+}
+
+struct ReactionContextMenu: View {
+    @EnvironmentObject var m: ChatModel
+    let groupInfo: GroupInfo
+    var itemId: Int64
+    var reactionCount: CIReactionCount
+    @Binding var selectedMember: GMember?
+    @State private var memberReactions: [MemberReaction] = []
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
+
+    var body: some View {
+        groupMemberReactionList()
+            .task {
+                logger.debug("ReactionContextMenu task \(radius)")
+                await loadChatItemReaction()
+            }
+    }
+
+    @ViewBuilder private func groupMemberReactionList() -> some View {
+        if memberReactions.isEmpty {
+            ForEach(Array(repeating: 0, count: reactionCount.totalReacted), id: \.self) { _ in
+                Text(verbatim: " ")
+            }
+        } else {
+            ForEach(memberReactions, id: \.groupMember.groupMemberId) { mr in
+                let mem = mr.groupMember
+                let userMember = mem.groupMemberId == groupInfo.membership.groupMemberId
+                Button {
+                    if let member = m.getGroupMember(mem.groupMemberId) {
+                        selectedMember = member
+                    } else {
+                        let member = GMember.init(mem)
+                        m.groupMembers.append(member)
+                        selectedMember = member
+                    }
+                } label: {
+                    HStack {
+                        Text(mem.displayName)
+                        if let img = cropImage(mem.image) {
+                            Image(uiImage: img)
+                        } else {
+                            Image(systemName: "person.crop.circle")
+                        }
+                    }
+                }
+                .disabled(userMember)
+            }
+        }
+    }
+        
+    private func cropImage(_ img: String?) -> UIImage? {
+        return if let originalImage = imageFromBase64(img) {
+            maskToCustomShape(originalImage, size: 30, radius: radius)
+        } else {
+            nil
+        }
+    }
+
+    private func loadChatItemReaction() async {
+        do {
+            let memberReactions = try await apiGetReactionMembers(
+                groupId: groupInfo.groupId,
+                itemId: itemId,
+                reaction: reactionCount.reaction
+            )
+            await MainActor.run {
+                self.memberReactions = memberReactions
+            }
+        } catch let error {
+            logger.error("apiGetReactionMembers error: \(responseError(error))")
+        }
+    }
+}
+
+func maskToCustomShape(_ image: UIImage, size: CGFloat, radius: CGFloat) -> UIImage {
+    let path = Path { path in
+        if radius >= 50 {
+            path.addEllipse(in: CGRect(x: 0, y: 0, width: size, height: size))
+        } else if radius <= 0 {
+            path.addRect(CGRect(x: 0, y: 0, width: size, height: size))
+        } else {
+            let cornerRadius = size * CGFloat(radius) / 100
+            path.addRoundedRect(
+                in: CGRect(x: 0, y: 0, width: size, height: size),
+                cornerSize: CGSize(width: cornerRadius, height: cornerRadius),
+                style: .continuous
+            )
+        }
+    }
+
+    return UIGraphicsImageRenderer(size: CGSize(width: size, height: size)).image { context in
+        context.cgContext.addPath(path.cgPath)
+        context.cgContext.clip()
+        let scale = size / max(image.size.width, image.size.height)
+        let imageSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let imageOrigin = CGPoint(
+            x: (size - imageSize.width) / 2,
+            y: (size - imageSize.height) / 2
+        )
+        image.draw(in: CGRect(origin: imageOrigin, size: imageSize))
     }
 }
 

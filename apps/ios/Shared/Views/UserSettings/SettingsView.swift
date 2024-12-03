@@ -39,6 +39,7 @@ let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
+let DEFAULT_SHOULD_IMPORT_APP_SETTINGS = "shouldImportAppSettings"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
 let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
@@ -50,6 +51,7 @@ let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
+let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -107,6 +109,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
     DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
+    DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -135,6 +138,7 @@ let appDefaults: [String: Any] = [
 let hintDefaults = [
     DEFAULT_LA_NOTICE_SHOWN,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN,
+    DEFAULT_ADDRESS_CREATION_CARD_SHOWN,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT,
@@ -189,6 +193,8 @@ let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.sta
 let showDeleteConversationNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE)
 let showDeleteContactNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONTACT_NOTICE)
 
+/// after importing new database, this flag will be set and unset only after importing app settings in `initializeChat` */
+let shouldImportAppSettingsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_IMPORT_APP_SETTINGS)
 let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME, withDefault: DefaultTheme.SYSTEM_THEME_NAME)
 let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME, withDefault: DefaultTheme.DARK.themeName)
 let currentThemeIdsDefault = CodableDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:] )
@@ -356,7 +362,7 @@ struct SettingsView: View {
                         }
                     }
                     NavigationLink {
-                        WhatsNewView(viaSettings: true)
+                        WhatsNewView(viaSettings: true, updatedConditions: false)
                             .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {

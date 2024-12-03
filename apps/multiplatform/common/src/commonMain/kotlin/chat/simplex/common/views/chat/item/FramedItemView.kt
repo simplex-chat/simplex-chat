@@ -23,7 +23,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-import kotlin.math.min
+import kotlin.math.ceil
 
 @Composable
 fun FramedItemView(
@@ -39,6 +39,7 @@ fun FramedItemView(
   receiveFile: (Long) -> Unit,
   onLinkLongClick: (link: String) -> Unit = {},
   scrollToItem: (Long) -> Unit = {},
+  scrollToQuotedItemFromItem: (Long) -> Unit = {},
 ) {
   val sent = ci.chatDir.sent
   val chatTTL = chatInfo.timedMessagesTTL
@@ -129,7 +130,13 @@ fun FramedItemView(
         .fillMaxWidth()
         .combinedClickable(
           onLongClick = { showMenu.value = true },
-          onClick = { scrollToItem(qi.itemId?: return@combinedClickable) }
+          onClick = {
+            if (qi.itemId != null) {
+              scrollToItem(qi.itemId)
+            } else {
+              scrollToQuotedItemFromItem(ci.id)
+            }
+          }
         )
         .onRightClick { showMenu.value = true }
     ) {
@@ -323,23 +330,16 @@ const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
 const val CHAT_BUBBLE_LAYOUT_ID = "chatBubble"
 const val CHAT_COMPOSE_LAYOUT_ID = "chatCompose"
 const val CONSOLE_COMPOSE_LAYOUT_ID = "consoleCompose"
-/**
- * Equal to [androidx.compose.ui.unit.Constraints.MaxFocusMask], which is 0x3FFFF - 1
- * Other values make a crash `java.lang.IllegalArgumentException: Can't represent a width of 123456 and height of 9909 in Constraints`
- * See [androidx.compose.ui.unit.Constraints.createConstraints]
- * */
-const val MAX_SAFE_WIDTH = 0x3FFFF - 1
 
 /**
- * Limiting max value for height + width in order to not crash the app, see [androidx.compose.ui.unit.Constraints.createConstraints]
- * */
-private fun maxSafeHeight(width: Int) = when { // width bits + height bits should be <= 31
-  width < 0x1FFF /*MaxNonFocusMask*/ -> 0x3FFFF - 1 /* MaxFocusMask */ // 13 bits width + 18 bits height
-  width < 0x7FFF /*MinNonFocusMask*/ -> 0xFFFF - 1 /* MinFocusMask */ // 15 bits width + 16 bits height
-  width < 0xFFFF /*MinFocusMask*/ -> 0x7FFF - 1 /* MinFocusMask */ // 16 bits width + 15 bits height
-  width < 0x3FFFF /*MaxFocusMask*/ -> 0x1FFF - 1 /* MaxNonFocusMask */ // 18 bits width + 13 bits height
-  else -> 0x1FFF // shouldn't happen since width is limited already
-}
+ * Compose shows "Can't represent a width of ... and height ... in Constraints" even when using built-in method for measuring max
+ * available size. It seems like padding around such layout prevents showing them in parent layout when such child layouts are placed.
+ * So calculating the expected padding here based on the values Compose printed in the exception (removing some pixels from
+ * [Constraints.fitPrioritizingHeight] result makes it working well)
+*/
+private fun horizontalPaddingAroundCustomLayouts(density: Float): Int =
+  // currently, it's 18. Doubling it just to cover possible changes in the future
+  36 * ceil(density).toInt()
 
 @Composable
 fun PriorityLayout(
@@ -358,11 +358,15 @@ fun PriorityLayout(
       if (it.layoutId == priorityLayoutId)
         imagePlaceable!!
       else
-        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: min(MAX_SAFE_WIDTH, constraints.maxWidth))) }
+        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: constraints.maxWidth)) }
     // Limit width for every other element to width of important element and height for a sum of all elements.
-    val width = imagePlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
-    val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
-    layout(width, height) {
+    val width = imagePlaceable?.measuredWidth ?: placeables.maxOf { it.width }
+    val height = placeables.sumOf { it.height }
+    val adjustedConstraints = Constraints.fitPrioritizingHeight(constraints.minWidth, width, constraints.minHeight, height)
+    layout(
+      if (width > adjustedConstraints.maxWidth) adjustedConstraints.maxWidth - horizontalPaddingAroundCustomLayouts(density) else adjustedConstraints.maxWidth,
+      adjustedConstraints.maxHeight
+    ) {
       var y = 0
       placeables.forEach {
         it.place(0, y)
@@ -389,10 +393,14 @@ fun DependentLayout(
       if (it.layoutId == mainLayoutId)
         mainPlaceable!!
       else
-        it.measure(constraints.copy(minWidth = mainPlaceable?.width ?: 0, maxWidth = min(MAX_SAFE_WIDTH, constraints.maxWidth))) }
-    val width = mainPlaceable?.measuredWidth ?: min(MAX_SAFE_WIDTH, placeables.maxOf { it.width })
-    val height = minOf(maxSafeHeight(width), placeables.sumOf { it.height })
-    layout(width, height) {
+        it.measure(constraints.copy(minWidth = mainPlaceable?.width ?: 0, maxWidth = constraints.maxWidth)) }
+    val width = mainPlaceable?.measuredWidth ?: placeables.maxOf { it.width }
+    val height = placeables.sumOf { it.height }
+    val adjustedConstraints = Constraints.fitPrioritizingHeight(constraints.minWidth, width, constraints.minHeight, height)
+    layout(
+      if (width > adjustedConstraints.maxWidth) adjustedConstraints.maxWidth - horizontalPaddingAroundCustomLayouts(density) else adjustedConstraints.maxWidth,
+      adjustedConstraints.maxHeight
+    ) {
       var y = 0
       placeables.forEach {
         it.place(0, y)
@@ -463,6 +471,13 @@ fun CenteredRowLayout(
       third.place(constraints.maxWidth - third.measuredWidth, ((constraints.maxHeight - third.measuredHeight) / 2).coerceAtLeast(0))
     }
   }
+}
+
+fun showQuotedItemDoesNotExistAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.message_deleted_or_not_received_error_title),
+    text = generalGetString(MR.strings.message_deleted_or_not_received_error_desc)
+  )
 }
 
 /*

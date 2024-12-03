@@ -1,6 +1,5 @@
 package chat.simplex.common.views.onboarding
 
-import SectionTextFooter
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
@@ -12,12 +11,10 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
-import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.*
@@ -36,7 +33,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
   fun nextStep() {
     if (appPlatform.isAndroid || chatModel.currentUser.value != null) {
-      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_ChooseServerOperators)
     } else {
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.LinkAMobile)
     }
@@ -107,14 +104,31 @@ private fun SetupDatabasePassphraseLayout(
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({}, showClose = false) {
       ColumnWithScrollBar(
-        Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer).padding(bottom = DEFAULT_PADDING * 2),
+        Modifier.themedBackground(bgLayerSize = LocalAppBarHandler.current?.backgroundGraphicsLayerSize, bgLayer = LocalAppBarHandler.current?.backgroundGraphicsLayer).padding(horizontal = DEFAULT_PADDING),
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
         AppBarTitle(stringResource(MR.strings.setup_database_passphrase))
 
-        Spacer(Modifier.weight(1f))
+        val onClickUpdate = {
+          // Don't do things concurrently. Shouldn't be here concurrently, just in case
+          if (!progressIndicator.value) {
+            encryptDatabaseAlert(onConfirmEncrypt)
+          }
+        }
+        val disabled = currentKey.value == newKey.value ||
+            newKey.value != confirmNewKey.value ||
+            newKey.value.isEmpty() ||
+            !validKey(currentKey.value) ||
+            !validKey(newKey.value) ||
+            progressIndicator.value
 
-        Column(Modifier.width(600.dp)) {
+        Column(Modifier.width(600.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+          val textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary)
+          ReadableText(MR.strings.you_have_to_enter_passphrase_every_time, TextAlign.Center, padding = PaddingValues(), style = textStyle )
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ReadableText(MR.strings.impossible_to_recover_passphrase, TextAlign.Center, padding = PaddingValues(), style = textStyle)
+          Spacer(Modifier.height(DEFAULT_PADDING))
+
           val focusRequester = remember { FocusRequester() }
           val focusManager = LocalFocusManager.current
           LaunchedEffect(Unit) {
@@ -139,18 +153,6 @@ private fun SetupDatabasePassphraseLayout(
             isValid = ::validKey,
             keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
           )
-          val onClickUpdate = {
-            // Don't do things concurrently. Shouldn't be here concurrently, just in case
-            if (!progressIndicator.value) {
-              encryptDatabaseAlert(onConfirmEncrypt)
-            }
-          }
-          val disabled = currentKey.value == newKey.value ||
-              newKey.value != confirmNewKey.value ||
-              newKey.value.isEmpty() ||
-              !validKey(currentKey.value) ||
-              !validKey(newKey.value) ||
-              progressIndicator.value
 
           PassphraseField(
             confirmNewKey,
@@ -168,21 +170,17 @@ private fun SetupDatabasePassphraseLayout(
             isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
             keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
           )
-
-          Box(Modifier.align(Alignment.CenterHorizontally).padding(vertical = DEFAULT_PADDING)) {
-            SetPassphraseButton(disabled, onClickUpdate)
-          }
-
-          Column {
-            SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
-            SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
-          }
         }
-
         Spacer(Modifier.weight(1f))
-        SkipButton(progressIndicator.value) {
-          chatModel.desktopOnboardingRandomPassword.value = true
-          nextStep()
+
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+          SetPassphraseButton(disabled, onClickUpdate)
+          SkipButton(progressIndicator.value) {
+            randomPassphraseAlert {
+              chatModel.desktopOnboardingRandomPassword.value = true
+              nextStep()
+            }
+          }
         }
       }
     }
@@ -191,30 +189,18 @@ private fun SetupDatabasePassphraseLayout(
 
 @Composable
 private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
-  SimpleButtonIconEnded(
-    stringResource(MR.strings.set_database_passphrase),
-    painterResource(MR.images.ic_check),
-    style = MaterialTheme.typography.h2,
-    color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
-    disabled = disabled,
-    click = onClick
+  OnboardingActionButton(
+    if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    labelId = MR.strings.set_database_passphrase,
+    onboarding = null,
+    onclick = onClick,
+    enabled =  !disabled
   )
 }
 
 @Composable
 private fun SkipButton(disabled: Boolean, onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.use_random_passphrase), painterResource(MR.images.ic_chevron_right), color =
-  if (disabled) MaterialTheme.colors.secondary else WarningOrange, disabled = disabled, click = onClick)
-  Text(
-    stringResource(MR.strings.you_can_change_it_later),
-    Modifier
-      .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING * 3)
-      .padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING - 5.dp),
-    style = MaterialTheme.typography.subtitle1,
-    color = MaterialTheme.colors.secondary,
-    textAlign = TextAlign.Center,
-  )
+  TextButtonBelowOnboardingButton(stringResource(MR.strings.use_random_passphrase), onClick = if (disabled) null else onClick)
 }
 
 @Composable
@@ -238,4 +224,13 @@ private suspend fun startChat(key: String?) {
   initChatController(key)
   m.chatDbChanged.value = false
   m.chatRunning.value = true
+}
+
+private fun randomPassphraseAlert(onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.use_random_passphrase),
+    text = generalGetString(MR.strings.you_can_change_it_later),
+    confirmText = generalGetString(MR.strings.ok),
+    onConfirm = onConfirm,
+  )
 }

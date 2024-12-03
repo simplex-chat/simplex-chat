@@ -106,7 +106,6 @@
     <string name="restore_database_alert_title">Veri tabanı yedeğini geri yükle\?</string>
     <string name="database_restore_error">Veri tabanını geri yüklerken hata</string>
     <string name="database_downgrade">Veritabanı sürüm düşürme</string>
-    <string name="save_archive">Arşivi kaydet</string>
     <string name="current_version_timestamp">%s (mevcut)</string>
     <string name="save_and_update_group_profile">Kaydet ve grup profilini güncelle</string>
     <string name="save_welcome_message_question">Karşılama mesajı kaydedilsin mi?</string>
@@ -429,9 +428,6 @@
     <string name="set_password_to_export_desc">Veri tabanı, rastgele bir parola ile şifrelendi. Dışa aktarmadan önce lütfen değiştir.</string>
     <string name="delete_files_and_media_question">Dosyaları ve medyayı sil\?</string>
     <string name="database_will_be_encrypted">Veri tabanı şifrelenecektir.</string>
-    <string name="archive_created_on_ts">%1$s tarihinde oluşturuldu</string>
-    <string name="delete_archive">Belgeliği sil</string>
-    <string name="delete_chat_archive_question">Konuşma belgeliğini sil\?</string>
     <string name="rcv_group_event_changed_member_role">%s üyesinin yetkisi %s olarak değiştirildi</string>
     <string name="rcv_group_event_group_deleted">silinmiş grup</string>
     <string name="snd_group_event_changed_role_for_yourself">kendi yetkini, %s olarak değiştirdin</string>
@@ -740,8 +736,6 @@
     <string name="status_contact_has_no_e2e_encryption">kişi uçtan uca şifrelemeye sahip değildir</string>
     <string name="chat_is_stopped">Sohbet durduruldu</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Aklınızda bulunsun</b>: kaybederseniz, parolayı kurtaramaz veya değiştiremezsiniz.]]></string>
-    <string name="chat_archive_header">Sohbet arşivi</string>
-    <string name="chat_archive_section">SOHBET ARŞİVİ</string>
     <string name="group_invitation_item_description">%1$s grubuna davet</string>
     <string name="join_group_question">Gruba katıl\?</string>
     <string name="rcv_group_event_member_added">%1$s davet edildi</string>
@@ -857,7 +851,6 @@
     <string name="your_ICE_servers">ICE sunucularınız</string>
     <string name="how_to">Nasıl</string>
     <string name="your_current_profile">Mevcut profiliniz</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Mesajların hangi sunucu(lar)dan <b>alınacağını</b> siz kontrol edersiniz, kişileriniz - onlara mesaj göndermek için kullandığınız sunucular.]]></string>
     <string name="video_call_no_encryption">video arama (uçtan uca şifreli değil)</string>
     <string name="your_ice_servers">ICE sunucularınız</string>
     <string name="icon_descr_video_off">Video kapalı</string>
@@ -991,7 +984,6 @@
     <string name="to_start_a_new_chat_help_header">Yeni bir sohbet başlatmak için</string>
     <string name="people_can_connect_only_via_links_you_share">Kimin bağlanabileceğine siz karar verirsiniz.</string>
     <string name="privacy_redefined">Gizlilik yeniden tanımlanıyor</string>
-    <string name="read_more_in_github">GitHub repomuzda daha fazlasını okuyun.</string>
     <string name="onboarding_notifications_mode_periodic">Periyodik</string>
     <string name="onboarding_notifications_mode_title">Gizli bildirimler</string>
     <string name="paste_the_link_you_received">Aldığın bağlantıyı yapıştır</string>
@@ -1468,7 +1460,6 @@
     <string name="alert_text_msg_bad_id">Bir sonraki mesajın kimliği yanlış (bir öncekinden az veya aynı).
 \nBazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.</string>
     <string name="notification_preview_somebody">Kişi gizlendi:</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Bir sürü kişi sordu: <i> eğer SimpleX’in hiç kullanıcı tanımlayıcısı yok, nasıl mesajları gönderiyor? </i>]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Şu durumlarda gerçekleşebilir:
 \n1. Mesajların süresi, gönderen istemcide 2 gün sonra veya sunucuda 30 gün sonra sona erdi.
 \n2. Siz veya kişiniz eski veritabanı yedeğini kullandığınız için mesajın şifresini çözme işlemi başarısız oldu.

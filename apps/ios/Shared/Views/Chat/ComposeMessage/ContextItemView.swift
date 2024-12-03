@@ -85,7 +85,7 @@ struct ContextItemView: View {
         }
 
         func image(_ s: String) -> Text {
-            Text(Image(systemName: s)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ")
+            Text(Image(systemName: s)).foregroundColor(Color(uiColor: .tertiaryLabel)) + textSpace
         }
     }
 }

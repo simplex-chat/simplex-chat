@@ -48,6 +48,10 @@ kotlin {
         // Resources
         api("dev.icerock.moko:resources:0.23.0")
         api("dev.icerock.moko:resources-compose:0.23.0")
+
+        // Markdown
+        implementation("com.mikepenz:multiplatform-markdown-renderer:0.27.0")
+        implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.27.0")
       }
     }
     val commonTest by getting {
@@ -262,7 +266,9 @@ afterEvaluate {
               if (isBase) {
                 baseFormatting[lineId] = fixedLine.formatting(file.absolutePath)
               } else if (baseFormatting[lineId] != fixedLine.formatting(file.absolutePath)) {
-                errors.add("Incorrect formatting in string: $fixedLine \nin ${file.absolutePath}")
+                errors.add("Incorrect formatting in string: $fixedLine \nin ${file.absolutePath}.\n" +
+                    "If you want to remove non-base translation, search this Regex and replace with empty value in IDE:\n" +
+                    "[ ]*<.*\"${line.substringAfter("\"").substringBefore("\"")}\"[^/]*\\n*.*string>\\n")
               }
               finalLines.add(fixedLine)
             } else if (multiline.isEmpty() && startStringRegex.containsMatchIn(line)) {

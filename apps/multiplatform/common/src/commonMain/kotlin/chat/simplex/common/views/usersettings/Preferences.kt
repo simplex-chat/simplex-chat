@@ -123,9 +123,9 @@ private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onS
       ChatFeature.TimedMessages.text,
       ChatFeature.TimedMessages.icon,
       MaterialTheme.colors.secondary,
-      allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
+      checked = allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES,
       extraPadding = false,
-      onSelected
+      onChange = onSelected
     )
   }
   SectionTextFooter(ChatFeature.TimedMessages.allowDescription(allowFeature.value))

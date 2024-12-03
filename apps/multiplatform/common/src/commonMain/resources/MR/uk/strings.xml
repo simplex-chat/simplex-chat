@@ -294,8 +294,6 @@
     <string name="encrypt_database_question">Зашифрувати базу даних\?</string>
     <string name="wrong_passphrase_title">Неправильна ключова фраза!</string>
     <string name="enter_correct_passphrase">Введіть правильну ключову фразу.</string>
-    <string name="chat_archive_header">Архів чату</string>
-    <string name="chat_archive_section">АРХІВ ЧАТУ</string>
     <string name="rcv_group_event_member_connected">підключив(лась)</string>
     <string name="rcv_group_event_changed_your_role">змінив(ла) вашу роль на %s</string>
     <string name="snd_group_event_changed_role_for_yourself">ви змінили свою роль на %s</string>
@@ -375,7 +373,6 @@
     <string name="call_on_lock_screen">Виклики на екрані блокування:</string>
     <string name="call_connection_peer_to_peer">від абонента до абонента</string>
     <string name="icon_descr_hang_up">Завершити дзвінок</string>
-    <string name="archive_created_on_ts">Створено %1$s</string>
     <string name="icon_descr_expand_role">Розгорнути вибір ролі</string>
     <string name="chat_preferences_yes">так</string>
     <string name="contact_preferences">Налаштування контакту</string>
@@ -413,7 +410,6 @@
     <string name="privacy_redefined">Приватність перевизначена</string>
     <string name="people_can_connect_only_via_links_you_share">Ви вирішуєте, хто може під\'єднатися.</string>
     <string name="how_simplex_works">Як працює SimpleX</string>
-    <string name="read_more_in_github">Докладніше читайте в нашому репозиторії на GitHub.</string>
     <string name="encrypted_audio_call">зашифрований e2e аудіовиклик</string>
     <string name="open_simplex_chat_to_accept_call">Відкрийте SimpleX Chat для прийняття виклику</string>
     <string name="status_e2e_encrypted">e2e зашифровано</string>
@@ -528,7 +524,6 @@
     <string name="icon_descr_video_on">Відео увімкнено</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Це може трапитися, якщо ви або ваше з\'єднання використовували застарілу резервну копію бази даних.</string>
     <string name="restore_database">Відновити резервну копію бази даних</string>
-    <string name="save_archive">Зберегти архів</string>
     <string name="group_invitation_item_description">запрошення до групи %1$s</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вас запрошено в групу. Приєднуйтесь, щоб спілкуватися з учасниками групи.</string>
     <string name="message_reactions">Реакції на повідомлення</string>
@@ -655,8 +650,6 @@
     <string name="you_can_use_markdown_to_format_messages__prompt">Ви можете використовувати markdown для форматування повідомлень:</string>
     <string name="create_your_profile">Створіть свій профіль</string>
     <string name="make_private_connection">Створіть приватне підключення</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Багато людей питають: <i>як в SimpleX можливо доставляти повідомлення, якщо він не має ідентифікаторів користувачів?</i>]]></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Ви контролюєте, через які сервери <b>отримувати</b> повідомлення, ваші контакти – сервери, які ви використовуєте для надсилання повідомлень їм.]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Тільки пристрої клієнта зберігають профілі користувачів, контакти, групи та повідомлення, відправлені за допомогою <b>шифрування на двох рівнях</b>.]]></string>
     <string name="onboarding_notifications_mode_title">Приватні сповіщення</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Споживає більше акумулятора</b>! Додаток завжди працює у фоновому режимі – сповіщення відображаються миттєво.]]></string>
@@ -1070,8 +1063,6 @@
     <string name="database_passphrase_is_required">Для відкриття чату потрібна ключова фраза бази даних.</string>
     <string name="join_group_question">Приєднатися до групи\?</string>
     <string name="database_upgrade">Оновлення бази даних</string>
-    <string name="delete_archive">Видалити архів</string>
-    <string name="delete_chat_archive_question">Видалити архів чату\?</string>
     <string name="leave_group_question">Вийти з групи?</string>
     <string name="alert_title_no_group">Групу не знайдено!</string>
     <string name="alert_message_no_group">Ця група більше не існує.</string>
@@ -2115,4 +2106,14 @@
     <string name="call_desktop_permission_denied_chrome">Натисніть кнопку інформації поруч із полем адреси, щоб дозволити використання мікрофона.</string>
     <string name="call_desktop_permission_denied_safari">Відкрийте Налаштування Safari / Сайти / Мікрофон, а потім виберіть \"Дозволити для localhost\".</string>
     <string name="call_desktop_permission_denied_title">Щоб здійснювати дзвінки, дозволіть використовувати ваш мікрофон. Завершіть дзвінок і спробуйте зателефонувати знову.</string>
+    <string name="v6_1_better_calls">Кращі дзвінки</string>
+    <string name="v6_1_better_security">Краща безпека ✅</string>
+    <string name="v6_1_customizable_message_descr">Налаштовувана форма повідомлень.</string>
+    <string name="v6_1_better_security_descr">Протоколи SimpleX перевірені компанією Trail of Bits.</string>
+    <string name="v6_1_better_calls_descr">Переключити аудіо та відео під час дзвінка.</string>
+    <string name="v6_1_message_dates_descr">Кращі дати повідомлень.</string>
+    <string name="v6_1_better_user_experience">Кращий користувацький досвід</string>
+    <string name="v6_1_delete_many_messages_descr">Видалити або модерувати до 200 повідомлень.</string>
+    <string name="v6_1_forward_many_messages_descr">Переслати до 20 повідомлень одночасно.</string>
+    <string name="v6_1_switch_chat_profile_descr">Переключити профіль чату для одноразових запрошень.</string>
 </resources>

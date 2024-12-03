@@ -12,6 +12,7 @@ import Control.Concurrent.STM
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
@@ -31,10 +32,10 @@ chatBotRepl welcome answer _user cc = do
     case resp of
       CRContactConnected _ contact _ -> do
         contactConnected contact
-        void $ sendMessage cc contact welcome
+        void $ sendMessage cc contact $ T.pack welcome
       CRNewChatItems {chatItems = (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content = mc@CIRcvMsgContent {}}) : _} -> do
         let msg = T.unpack $ ciContentToText mc
-        void $ sendMessage cc contact =<< answer contact msg
+        void $ sendMessage cc contact . T.pack =<< answer contact msg
       _ -> pure ()
   where
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
@@ -55,13 +56,13 @@ initializeBotAddress' logAddress cc = do
   where
     showBotAddress uri = do
       when logAddress $ putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
-      void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {acceptIncognito = False, autoReply = Nothing}
+      void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {businessAddress = False, acceptIncognito = False, autoReply = Nothing}
 
-sendMessage :: ChatController -> Contact -> String -> IO ()
-sendMessage cc ct = sendComposedMessage cc ct Nothing . textMsgContent
+sendMessage :: ChatController -> Contact -> Text -> IO ()
+sendMessage cc ct = sendComposedMessage cc ct Nothing . MCText
 
-sendMessage' :: ChatController -> ContactId -> String -> IO ()
-sendMessage' cc ctId = sendComposedMessage' cc ctId Nothing . textMsgContent
+sendMessage' :: ChatController -> ContactId -> Text -> IO ()
+sendMessage' cc ctId = sendComposedMessage' cc ctId Nothing . MCText
 
 sendComposedMessage :: ChatController -> Contact -> Maybe ChatItemId -> MsgContent -> IO ()
 sendComposedMessage cc = sendComposedMessage' cc . contactId'
@@ -82,9 +83,6 @@ deleteMessage cc ct chatItemId = do
 
 contactRef :: Contact -> ChatRef
 contactRef = ChatRef CTDirect . contactId'
-
-textMsgContent :: String -> MsgContent
-textMsgContent = MCText . T.pack
 
 printLog :: ChatController -> ChatLogLevel -> String -> IO ()
 printLog cc level s

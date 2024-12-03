@@ -432,15 +432,12 @@
     <string name="onboarding_notifications_mode_service">Natychmiastowy</string>
     <string name="onboarding_notifications_mode_subtitle">Można to później zmienić w ustawieniach.</string>
     <string name="make_private_connection">Nawiąż prywatne połączenie</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Wiele osób pytało: <i>jeśli SimpleX nie ma identyfikatora użytkownika, jak może dostarczać wiadomości\?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Tylko urządzenia klienckie przechowują profile użytkowników, kontakty, grupy i wiadomości wysyłane za pomocą <b>dwuwarstwowego szyfrowania end-to-end</b>.]]></string>
     <string name="onboarding_notifications_mode_periodic">Okresowo</string>
     <string name="onboarding_notifications_mode_title">Prywatne powiadomienia</string>
     <string name="read_more_in_github_with_link"><![CDATA[Przeczytaj więcej na naszym <font color="#0088ff">repozytorium GitHub</font>.]]></string>
-    <string name="read_more_in_github">Przeczytaj więcej na naszym repozytorium GitHub.</string>
     <string name="use_chat">Użyj czatu</string>
     <string name="onboarding_notifications_mode_off">Gdy aplikacja jest uruchomiona</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Kontrolujesz przez który serwer(y) <b>odbierać</b> wiadomości, Twoje kontakty - serwery, których używasz do wysyłania im wiadomości.]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Zużywa więcej baterii</b>! Aplikacja zawsze działa w tle - powiadomienia są wyświetlane natychmiastowo.]]></string>
     <string name="incoming_audio_call">Przychodzące połączenie audio</string>
     <string name="incoming_video_call">Przychodzące połączenie wideo</string>
@@ -601,14 +598,11 @@
     <string name="wrong_passphrase">Nieprawidłowe hasło bazy danych</string>
     <string name="wrong_passphrase_title">Nieprawidłowe hasło!</string>
     <string name="you_have_to_enter_passphrase_every_time">Musisz wprowadzić hasło przy każdym uruchomieniu aplikacji - nie jest one przechowywane na urządzeniu.</string>
-    <string name="chat_archive_header">Archiwum czatu</string>
-    <string name="chat_archive_section">ARCHIWUM CZATU</string>
     <string name="chat_is_stopped_indication">Czat jest zatrzymany</string>
     <string name="confirm_database_upgrades">Potwierdź aktualizacje bazy danych</string>
     <string name="database_downgrade">Obniż wersję bazy danych</string>
     <string name="database_upgrade">Aktualizacja bazy danych</string>
     <string name="mtr_error_no_down_migration">wersja bazy danych jest nowsza od aplikacji, ale nie ma migracji w dół dla: %s</string>
-    <string name="delete_archive">Usuń archiwum</string>
     <string name="mtr_error_different">różne migracje w aplikacji/bazy danych: %s / %s</string>
     <string name="downgrade_and_open_chat">Obniż wersję i otwórz czat</string>
     <string name="icon_descr_group_inactive">Grupa nieaktywna</string>
@@ -630,7 +624,6 @@
     <string name="restore_database">Przywróć kopię zapasową bazy danych</string>
     <string name="restore_database_alert_title">Przywrócić kopię zapasową bazy danych\?</string>
     <string name="database_restore_error">Błąd przywracania bazy danych</string>
-    <string name="save_archive">Zapisz archiwum</string>
     <string name="database_backup_can_be_restored">Próba zmiany hasła bazy danych nie została zakończona.</string>
     <string name="alert_message_no_group">Ta grupa już nie istnieje.</string>
     <string name="upgrade_and_open_chat">Zaktualizuj i otwórz czat</string>
@@ -925,13 +918,11 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Kontakt i wszystkie wiadomości zostaną usunięte - nie można tego cofnąć!</string>
     <string name="connection_error_auth">Błąd połączenia (UWIERZYTELNIANIE)</string>
     <string name="connect_via_link_or_qr">Połącz się przez link / kod QR</string>
-    <string name="archive_created_on_ts">Utworzony na %1$s</string>
     <string name="create_group">Utwórz tajną grupę</string>
     <string name="create_secret_group_title">Utwórz tajną grupę</string>
     <string name="set_password_to_export_desc">Baza danych jest zaszyfrowana przy użyciu losowego hasła. Proszę zmienić je przed eksportem.</string>
     <string name="ttl_days">%d dni</string>
     <string name="delete_group_menu_action">Usuń</string>
-    <string name="delete_chat_archive_question">Usunąć archiwum czatu\?</string>
     <string name="delete_messages_after">Usuń wiadomości po</string>
     <string name="disappearing_messages_are_prohibited">Znikające wiadomości są zabronione w tej grupie.</string>
     <string name="error_deleting_contact_request">Błąd usuwania prośby o kontakt</string>

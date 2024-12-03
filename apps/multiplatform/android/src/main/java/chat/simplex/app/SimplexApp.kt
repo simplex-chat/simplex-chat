@@ -28,6 +28,7 @@ import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -72,6 +73,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
+    deleteOldChatArchive()
 
     // Present screen for continue migration if it wasn't finished yet
     if (chatModel.migrationState.value != null) {
@@ -329,6 +331,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidRestartNetworkObserver() {
         NetworkObserver.shared.restartNetworkObserver()
       }
+
+      override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
 
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
