@@ -685,6 +685,9 @@
 "Chat profile" = "ユーザープロフィール";
 
 /* No comment provided by engineer. */
+"Chat theme" = "チャットテーマ";
+
+/* No comment provided by engineer. */
 "Chats" = "チャット";
 
 /* alert title */
@@ -699,6 +702,12 @@
 /* No comment provided by engineer. */
 "Choose from library" = "ライブラリから選択";
 
+/* No comment provided by engineer. */
+"Chunks deleted" = "チャンクが削除されました";
+
+/* No comment provided by engineer. */
+"Chunks downloaded" = "チャンクがダウンロードされました";
+
 /* swipe action */
 "Clear" = "消す";
 
@@ -709,7 +718,13 @@
 "Clear conversation?" = "ダイアログのクリアしますか？";
 
 /* No comment provided by engineer. */
+"Clear private notes?" = "プライベートノートを消しますか？";
+
+/* No comment provided by engineer. */
 "Clear verification" = "検証を消す";
+
+/* No comment provided by engineer. */
+"Color mode" = "色設定";
 
 /* No comment provided by engineer. */
 "colored" = "色付き";
@@ -722,6 +737,9 @@
 
 /* No comment provided by engineer. */
 "complete" = "完了";
+
+/* No comment provided by engineer. */
+"Completed" = "完了";
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICEサーバを設定";
@@ -748,7 +766,13 @@
 "Connect incognito" = "シークレットモードで接続";
 
 /* No comment provided by engineer. */
+"Connect to desktop" = "デスクトップに接続";
+
+/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "SimpleX Chat 開発者に接続します。";
+
+/* No comment provided by engineer. */
+"Connect to your friends faster." = "友達ともっと速くつながりましょう。";
 
 /* No comment provided by engineer. */
 "Connect via link" = "リンク経由で接続";
@@ -760,7 +784,22 @@
 "connected" = "接続中";
 
 /* No comment provided by engineer. */
+"Connected" = "接続中";
+
+/* No comment provided by engineer. */
+"Connected desktop" = "デスクトップに接続済";
+
+/* No comment provided by engineer. */
+"Connected servers" = "接続中のサーバ";
+
+/* No comment provided by engineer. */
+"Connected to desktop" = "デスクトップに接続済";
+
+/* No comment provided by engineer. */
 "connecting" = "接続待ち";
+
+/* No comment provided by engineer. */
+"Connecting" = "接続待ち";
 
 /* No comment provided by engineer. */
 "connecting (accepted)" = "接続待ち (承諾済み)";
@@ -783,11 +822,20 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "サーバーに接続中… (エラー: %@)";
 
+/* No comment provided by engineer. */
+"Connecting to contact, please wait or check later!" = "連絡先に接続中です。しばらくお待ちいただくか、後で確認してください！";
+
+/* No comment provided by engineer. */
+"Connecting to desktop" = "デスクトップに接続中";
+
 /* chat list item title */
 "connecting…" = "接続待ち…";
 
 /* No comment provided by engineer. */
 "Connection" = "接続";
+
+/* No comment provided by engineer. */
+"Connection and servers status." = "接続とサーバーのステータス";
 
 /* No comment provided by engineer. */
 "Connection error" = "接続エラー";
@@ -800,6 +848,9 @@
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "接続リクエストを送信しました！";
+
+/* No comment provided by engineer. */
+"Connection terminated" = "接続停止";
 
 /* No comment provided by engineer. */
 "Connection timeout" = "接続タイムアウト";
@@ -892,7 +943,13 @@
 "Custom time" = "カスタム時間";
 
 /* No comment provided by engineer. */
+"Customize theme" = "カスタムテーマ";
+
+/* No comment provided by engineer. */
 "Dark" = "ダークモード";
+
+/* No comment provided by engineer. */
+"Dark mode colors" = "ダークモードカラー";
 
 /* No comment provided by engineer. */
 "Database downgrade" = "データーベースのダウングレード";
@@ -953,6 +1010,9 @@
 
 /* time unit */
 "days" = "日";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "配信のデバッグ";
 
 /* No comment provided by engineer. */
 "Decentralized" = "分散型";
@@ -1086,7 +1146,13 @@
 "Description" = "説明";
 
 /* No comment provided by engineer. */
+"Desktop devices" = "デスクトップ機器";
+
+/* No comment provided by engineer. */
 "Develop" = "開発";
+
+/* No comment provided by engineer. */
+"Developer options" = "開発者向けの設定";
 
 /* No comment provided by engineer. */
 "Developer tools" = "開発ツール";
@@ -1113,7 +1179,7 @@
 "Direct messages" = "ダイレクトメッセージ";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "このグループではメンバー間のダイレクトメッセージが使用禁止です。";
+"Direct messages between members are prohibited." = "このグループではメンバー間のダイレクトメッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "無効にする（設定の優先を維持）";
@@ -1137,7 +1203,7 @@
 "Disappearing messages are prohibited in this chat." = "このチャットでは消えるメッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "このグループでは消えるメッセージが使用禁止です。";
+"Disappearing messages are prohibited." = "このグループでは消えるメッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
 "Disappears at" = "に消えます";
@@ -1512,7 +1578,7 @@
 "Files and media" = "ファイルとメディア";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "このグループでは、ファイルとメディアは禁止されています。";
+"Files and media are prohibited." = "このグループでは、ファイルとメディアは禁止されています。";
 
 /* No comment provided by engineer. */
 "Files and media prohibited!" = "ファイルとメディアは禁止されています!";
@@ -1596,22 +1662,22 @@
 "Group links" = "グループのリンク";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "グループメンバーはメッセージへのリアクションを追加できます。";
+"Members can add message reactions." = "グループメンバーはメッセージへのリアクションを追加できます。";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。(24時間)";
+"Members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。(24時間)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "グループのメンバーがダイレクトメッセージを送信できます。";
+"Members can send direct messages." = "グループのメンバーがダイレクトメッセージを送信できます。";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "グループのメンバーが消えるメッセージを送信できます。";
+"Members can send disappearing messages." = "グループのメンバーが消えるメッセージを送信できます。";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "グループメンバーはファイルやメディアを送信できます。";
+"Members can send files and media." = "グループメンバーはファイルやメディアを送信できます。";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "グループのメンバーが音声メッセージを送信できます。";
+"Members can send voice messages." = "グループのメンバーが音声メッセージを送信できます。";
 
 /* notification */
 "Group message:" = "グループメッセージ:";
@@ -1845,7 +1911,7 @@
 "Irreversible message deletion is prohibited in this chat." = "このチャットではメッセージの完全削除が使用禁止です。";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "このグループではメッセージの完全削除が使用禁止です。";
+"Irreversible message deletion is prohibited." = "このグループではメッセージの完全削除が使用禁止です。";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "これにより単一のチャット プロファイル内で、データを共有せずに多数の匿名の接続をすることができます。";
@@ -1998,7 +2064,7 @@
 "Message reactions are prohibited in this chat." = "このチャットではメッセージへのリアクションは禁止されています。";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "このグループではメッセージへのリアクションは禁止されています。";
+"Message reactions are prohibited." = "このグループではメッセージへのリアクションは禁止されています。";
 
 /* notification */
 "message received" = "メッセージを受信";
@@ -3224,7 +3290,7 @@
 "Voice messages are prohibited in this chat." = "このチャットでは音声メッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "このグループでは音声メッセージが使用禁止です。";
+"Voice messages are prohibited." = "このグループでは音声メッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "音声メッセージは使用禁止です！";

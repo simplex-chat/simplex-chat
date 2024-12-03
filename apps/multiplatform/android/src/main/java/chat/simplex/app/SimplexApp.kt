@@ -332,6 +332,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         NetworkObserver.shared.restartNetworkObserver()
       }
 
+      override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {

@@ -507,7 +507,7 @@
     <string name="leave_group_question">Išeiti iš grupės\?</string>
     <string name="unknown_database_error_with_info">Nežinoma duomenų bazės klaida: %s</string>
     <string name="users_delete_with_connections">Profilis ir ryšiai su serveriu</string>
-    <string name="direct_messages_are_prohibited_in_chat">Tiesioginės žinutės tarp narių šioje grupėje yra uždraustos.</string>
+    <string name="direct_messages_are_prohibited_in_group">Tiesioginės žinutės tarp narių šioje grupėje yra uždraustos.</string>
     <string name="audio_video_calls">Garso/vaizdo skambučiai</string>
     <string name="available_in_v51">"
 \nPrieinama versijoje v5.1"</string>

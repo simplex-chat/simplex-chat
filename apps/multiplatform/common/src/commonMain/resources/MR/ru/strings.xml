@@ -879,7 +879,7 @@
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
     <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
     <string name="group_members_can_send_dms">Члены группы могут посылать прямые сообщения.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между членами группы запрещены.</string>
+    <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между членами группы запрещены.</string>
     <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="group_members_can_send_voice">Члены группы могут отправлять голосовые сообщения.</string>
@@ -987,8 +987,7 @@
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
     <string name="app_version_name">Версия приложения: v%s</string>
-    <string name="network_session_mode_entity_description">Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>.
-\n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>. \n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.]]></string>
     <string name="network_session_mode_user_description"><![CDATA[Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого профиля чата, который Вы имеете в приложении</b>.]]></string>
     <string name="core_version">Версия ядра: v%s</string>
     <string name="users_delete_question">Удалить профиль чата\?</string>

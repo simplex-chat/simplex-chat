@@ -16,6 +16,8 @@ struct UserAddressView: View {
     @EnvironmentObject var theme: AppTheme
     @State var shareViaProfile = false
     @State var autoCreate = false
+    @State private var aas = AutoAcceptState()
+    @State private var savedAAS = AutoAcceptState()
     @State private var showMailView = false
     @State private var mailViewResult: Result<MFMailComposeResult, Error>? = nil
     @State private var alert: UserAddressAlert?
@@ -62,6 +64,10 @@ struct UserAddressView: View {
         List {
             if let userAddress = chatModel.userAddress {
                 existingAddressView(userAddress)
+                    .onAppear {
+                        aas = AutoAcceptState(userAddress: userAddress)
+                        savedAAS = aas
+                    }
             } else {
                 Section {
                     createAddressButton()
@@ -135,10 +141,25 @@ struct UserAddressView: View {
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
             // }
+            settingsRow("briefcase", color: theme.colors.secondary) {
+                Toggle("Business address", isOn: $aas.business)
+                    .onChange(of: aas.business) { ba in
+                        if ba {
+                            aas.enable = true
+                            aas.incognito = false
+                        }
+                        saveAAS($aas, $savedAAS)
+                    }
+            }
             addressSettingsButton(userAddress)
         } header: {
             Text("For social media")
                 .foregroundColor(theme.colors.secondary)
+        } footer: {
+            if aas.business {
+                Text("Add your team members to the conversations.")
+                    .foregroundColor(theme.colors.secondary)
+            }
         }
 
         Section {
@@ -276,11 +297,13 @@ struct UserAddressView: View {
 private struct AutoAcceptState: Equatable {
     var enable = false
     var incognito = false
+    var business = false
     var welcomeText = ""
 
-    init(enable: Bool = false, incognito: Bool = false, welcomeText: String = "") {
+    init(enable: Bool = false, incognito: Bool = false, business: Bool = false, welcomeText: String = "") {
         self.enable = enable
         self.incognito = incognito
+        self.business = business
         self.welcomeText = welcomeText
     }
 
@@ -288,6 +311,7 @@ private struct AutoAcceptState: Equatable {
         if let aa = userAddress.autoAccept {
             enable = true
             incognito = aa.acceptIncognito
+            business = aa.businessAddress
             if let msg = aa.autoReply {
                 welcomeText = msg.text
             } else {
@@ -296,6 +320,7 @@ private struct AutoAcceptState: Equatable {
         } else {
             enable = false
             incognito = false
+            business = false
             welcomeText = ""
         }
     }
@@ -305,7 +330,7 @@ private struct AutoAcceptState: Equatable {
             var autoReply: MsgContent? = nil
             let s = welcomeText.trimmingCharacters(in: .whitespacesAndNewlines)
             if s != "" { autoReply = .text(s) }
-            return AutoAccept(acceptIncognito: incognito, autoReply: autoReply)
+            return AutoAccept(businessAddress: business, acceptIncognito: incognito, autoReply: autoReply)
         }
         return nil
     }
@@ -355,7 +380,7 @@ struct UserAddressSettingsView: View {
                                 title: NSLocalizedString("Auto-accept settings", comment: "alert title"),
                                 message: NSLocalizedString("Settings were changed.", comment: "alert message"),
                                 buttonTitle: NSLocalizedString("Save", comment: "alert button"),
-                                buttonAction: saveAAS,
+                                buttonAction: { saveAAS($aas, $savedAAS) },
                                 cancelButton: true
                             )
                         }
@@ -373,7 +398,7 @@ struct UserAddressSettingsView: View {
         List {
             Section {
                 shareWithContactsButton()
-                autoAcceptToggle()
+                autoAcceptToggle().disabled(aas.business)
             }
 
             if aas.enable {
@@ -443,14 +468,16 @@ struct UserAddressSettingsView: View {
         settingsRow("checkmark", color: theme.colors.secondary) {
             Toggle("Auto-accept", isOn: $aas.enable)
                 .onChange(of: aas.enable) { _ in
-                    saveAAS()
+                    saveAAS($aas, $savedAAS)
                 }
         }
     }
 
     private func autoAcceptSection() -> some View {
         Section {
-            acceptIncognitoToggle()
+            if !aas.business {
+                acceptIncognitoToggle()
+            }
             welcomeMessageEditor()
             saveAASButton()
                 .disabled(aas == savedAAS)
@@ -490,22 +517,24 @@ struct UserAddressSettingsView: View {
     private func saveAASButton() -> some View {
         Button {
             keyboardVisible = false
-            saveAAS()
+            saveAAS($aas, $savedAAS)
         } label: {
             Text("Save")
         }
     }
+}
 
-    private func saveAAS() {
-        Task {
-            do {
-                if let address = try await userAddressAutoAccept(aas.autoAccept) {
+private func saveAAS(_ aas: Binding<AutoAcceptState>, _ savedAAS: Binding<AutoAcceptState>) {
+    Task {
+        do {
+            if let address = try await userAddressAutoAccept(aas.wrappedValue.autoAccept) {
+                await MainActor.run {
                     ChatModel.shared.userAddress = address
-                    savedAAS = aas
+                    savedAAS.wrappedValue = aas.wrappedValue
                 }
-            } catch let error {
-                logger.error("userAddressAutoAccept error: \(responseError(error))")
             }
+        } catch let error {
+            logger.error("userAddressAutoAccept error: \(responseError(error))")
         }
     }
 }

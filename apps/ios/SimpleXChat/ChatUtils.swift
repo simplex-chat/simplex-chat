@@ -93,7 +93,12 @@ private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
 public func chatIconName(_ cInfo: ChatInfo) -> String {
     switch cInfo {
     case .direct: "person.crop.circle.fill"
-    case .group: "person.2.circle.fill"
+    case let .group(groupInfo):
+        switch groupInfo.businessChat?.chatType {
+        case .none: "person.2.circle.fill"
+        case .business: "briefcase.circle.fill"
+        case .customer: "person.crop.circle.fill"
+        }
     case .local: "folder.circle.fill"
     case .contactRequest: "person.crop.circle.fill"
     default:  "circle.fill"

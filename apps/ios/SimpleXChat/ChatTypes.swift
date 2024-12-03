@@ -821,38 +821,38 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
             switch self {
             case .timedMessages:
                 switch enabled {
-                case .on: return "Group members can send disappearing messages."
-                case .off: return "Disappearing messages are prohibited in this group."
+                case .on: return "Members can send disappearing messages."
+                case .off: return "Disappearing messages are prohibited."
                 }
             case .directMessages:
                 switch enabled {
-                case .on: return "Group members can send direct messages."
-                case .off: return "Direct messages between members are prohibited in this group."
+                case .on: return "Members can send direct messages."
+                case .off: return "Direct messages between members are prohibited."
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Group members can irreversibly delete sent messages. (24 hours)"
-                case .off: return "Irreversible message deletion is prohibited in this group."
+                case .on: return "Members can irreversibly delete sent messages. (24 hours)"
+                case .off: return "Irreversible message deletion is prohibited."
                 }
             case .reactions:
                 switch enabled {
-                case .on: return "Group members can add message reactions."
-                case .off: return "Message reactions are prohibited in this group."
+                case .on: return "Members can add message reactions."
+                case .off: return "Message reactions are prohibited."
                 }
             case .voice:
                 switch enabled {
-                case .on: return "Group members can send voice messages."
-                case .off: return "Voice messages are prohibited in this group."
+                case .on: return "Members can send voice messages."
+                case .off: return "Voice messages are prohibited."
                 }
             case .files:
                 switch enabled {
-                case .on: return "Group members can send files and media."
-                case .off: return "Files and media are prohibited in this group."
+                case .on: return "Members can send files and media."
+                case .off: return "Files and media are prohibited."
                 }
             case .simplexLinks:
                 switch enabled {
-                case .on: return "Group members can send SimpleX links."
-                case .off: return "SimpleX links are prohibited in this group."
+                case .on: return "Members can send SimpleX links."
+                case .off: return "SimpleX links are prohibited."
                 }
             case .history:
                 switch enabled {
@@ -1890,6 +1890,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
+    public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
     public var membership: GroupMember
     public var hostConnCustomUserProfileId: Int64?
@@ -1908,7 +1909,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var image: String? { get { groupProfile.image } }
     public var localAlias: String { "" }
 
-    public var canEdit: Bool {
+    public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
     }
 
@@ -1958,6 +1959,16 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         displayName: "team",
         fullName: "My Team"
     )
+}
+
+public struct BusinessChatInfo: Decodable, Hashable {
+    public var memberId: String
+    public var chatType: BusinessChatType
+}
+
+public enum BusinessChatType: String, Codable, Hashable {
+    case business
+    case customer
 }
 
 public struct GroupMember: Identifiable, Decodable, Hashable {

@@ -140,12 +140,13 @@ struct AddGroupMembersViewCommon: View {
         return dummy
     }()
 
-    private func inviteMembersButton() -> some View {
+    @ViewBuilder private func inviteMembersButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Invite to group" : "Invite to chat"
         Button {
             inviteMembers()
         } label: {
             HStack {
-                Text("Invite to group")
+                Text(label)
                 Image(systemName: "checkmark")
             }
         }
@@ -231,6 +232,7 @@ func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding, 
             .focused(focussed)
             .foregroundColor(onBackgroundColor)
             .frame(maxWidth: .infinity)
+            .autocorrectionDisabled(true)
         Image(systemName: "xmark.circle.fill")
             .resizable()
             .scaledToFit()

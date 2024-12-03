@@ -916,9 +916,15 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool, cleanup: (
         )
     case let .groupLinkConnecting(_, groupInfo):
         if let groupInfo = groupInfo {
-            return Alert(
+            return groupInfo.businessChat == nil
+            ? Alert(
                 title: Text("Group already exists!"),
                 message: Text("You are already joining the group \(groupInfo.displayName)."),
+                dismissButton: .default(Text("OK")) { cleanup?() }
+            )
+            : Alert(
+                title: Text("Chat already exists!"),
+                message: Text("You are already connecting to \(groupInfo.displayName)."),
                 dismissButton: .default(Text("OK")) { cleanup?() }
             )
         } else {
@@ -1237,9 +1243,14 @@ func contactAlreadyConnectingAlert(_ contact: Contact) -> Alert {
 }
 
 func groupAlreadyExistsAlert(_ groupInfo: GroupInfo) -> Alert {
-    mkAlert(
+    groupInfo.businessChat == nil
+    ? mkAlert(
         title: "Group already exists",
         message: "You are already in group \(groupInfo.displayName)."
+    )
+    : mkAlert(
+        title: "Chat already exists",
+        message: "You are already connected with \(groupInfo.displayName)."
     )
 }
 

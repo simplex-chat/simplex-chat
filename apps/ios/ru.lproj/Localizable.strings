@@ -1575,7 +1575,7 @@
 "Direct messages" = "Прямые сообщения";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Прямые сообщения между членами группы запрещены.";
+"Direct messages between members are prohibited." = "Прямые сообщения между членами группы запрещены.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Выключить (кроме исключений)";
@@ -1602,7 +1602,7 @@
 "Disappearing messages are prohibited in this chat." = "Исчезающие сообщения запрещены в этом чате.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Исчезающие сообщения запрещены в этой группе.";
+"Disappearing messages are prohibited." = "Исчезающие сообщения запрещены в этой группе.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Исчезает";
@@ -2149,7 +2149,7 @@
 "Files and media" = "Файлы и медиа";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Файлы и медиа запрещены в этой группе.";
+"Files and media are prohibited." = "Файлы и медиа запрещены в этой группе.";
 
 /* No comment provided by engineer. */
 "Files and media not allowed" = "Файлы и медиа не разрешены";
@@ -2305,25 +2305,25 @@
 "Group links" = "Ссылки групп";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "Члены группы могут добавлять реакции на сообщения.";
+"Members can add message reactions." = "Члены группы могут добавлять реакции на сообщения.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Члены группы могут необратимо удалять отправленные сообщения. (24 часа)";
+"Members can irreversibly delete sent messages. (24 hours)" = "Члены группы могут необратимо удалять отправленные сообщения. (24 часа)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "Члены группы могут посылать прямые сообщения.";
+"Members can send direct messages." = "Члены группы могут посылать прямые сообщения.";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Члены группы могут посылать исчезающие сообщения.";
+"Members can send disappearing messages." = "Члены группы могут посылать исчезающие сообщения.";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "Члены группы могут слать файлы и медиа.";
+"Members can send files and media." = "Члены группы могут слать файлы и медиа.";
 
 /* No comment provided by engineer. */
-"Group members can send SimpleX links." = "Члены группы могут отправлять ссылки SimpleX.";
+"Members can send SimpleX links." = "Члены группы могут отправлять ссылки SimpleX.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "Члены группы могут отправлять голосовые сообщения.";
+"Members can send voice messages." = "Члены группы могут отправлять голосовые сообщения.";
 
 /* notification */
 "Group message:" = "Групповое сообщение:";
@@ -2620,7 +2620,7 @@
 "Irreversible message deletion is prohibited in this chat." = "Необратимое удаление сообщений запрещено в этом чате.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Необратимое удаление сообщений запрещено в этой группе.";
+"Irreversible message deletion is prohibited." = "Необратимое удаление сообщений запрещено в этой группе.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.";
@@ -2842,7 +2842,7 @@
 "Message reactions are prohibited in this chat." = "Реакции на сообщения в этом чате запрещены.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Реакции на сообщения запрещены в этой группе.";
+"Message reactions are prohibited." = "Реакции на сообщения запрещены в этой группе.";
 
 /* notification */
 "message received" = "получено сообщение";
@@ -4194,7 +4194,7 @@
 "SimpleX links" = "SimpleX ссылки";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "Ссылки SimpleX запрещены в этой группе.";
+"SimpleX links are prohibited." = "Ссылки SimpleX запрещены в этой группе.";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "Ссылки SimpleX не разрешены";
@@ -4875,7 +4875,7 @@
 "Voice messages are prohibited in this chat." = "Голосовые сообщения запрещены в этом чате.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Голосовые сообщения запрещены в этой группе.";
+"Voice messages are prohibited." = "Голосовые сообщения запрещены в этой группе.";
 
 /* No comment provided by engineer. */
 "Voice messages not allowed" = "Голосовые сообщения не разрешены";

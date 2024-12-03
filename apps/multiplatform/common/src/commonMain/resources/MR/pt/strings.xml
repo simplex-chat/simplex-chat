@@ -194,8 +194,7 @@
     <string name="v4_5_message_draft_descr">Preservar o último rascunho da mensagem, com anexos.</string>
     <string name="icon_descr_video_asked_to_receive">Solicitada a recepção do vídeo</string>
     <string name="network_session_mode_user_description"><![CDATA[Uma conexão TCP separada (e credencial SOCKS) será usada <b> para cada perfil de conversa que você tiver na aplicação </b>.]]></string>
-    <string name="network_session_mode_entity_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b> para cada contato e membro do grupo</b>.
-\n<b> Por favor note</b>: se você tiver muitas conexões, o seu consumo de bateria e consumo de tráfego pode ser substancialmente maior e algumas conexões podem falhar.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Uma conexão TCP separada (e credencial SOCKS) será usada <b> para cada contato e membro do grupo</b>. \n<b> Por favor note</b>: se você tiver muitas conexões, o seu consumo de bateria e consumo de tráfego pode ser substancialmente maior e algumas conexões podem falhar.]]></string>
     <string name="icon_descr_asked_to_receive">Solicitada a recepção da imagem</string>
     <string name="auth_unavailable">Autenticação indisponível</string>
     <string name="bold_text">negrito</string>
@@ -487,7 +486,7 @@
     <string name="database_upgrade">Atualização da base de dados</string>
     <string name="ttl_week">%d semana</string>
     <string name="ttl_weeks">%d semanas</string>
-    <string name="direct_messages_are_prohibited_in_chat">Mensagens diretas entre membros são proibidas neste grupo.</string>
+    <string name="direct_messages_are_prohibited_in_group">Mensagens diretas entre membros são proibidas neste grupo.</string>
     <string name="smp_server_test_delete_queue">Eliminar fila</string>
     <string name="smp_server_test_download_file">Transferir ficheiro</string>
     <string name="icon_descr_file">Ficheiro</string>

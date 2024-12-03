@@ -26,6 +26,7 @@ interface PlatformInterface {
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}
   fun androidRestartNetworkObserver() {}
+  fun androidIsXiaomiDevice(): Boolean = false
   val androidApiLevel: Int? get() = null
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true

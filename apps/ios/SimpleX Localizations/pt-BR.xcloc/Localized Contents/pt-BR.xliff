@@ -1204,8 +1204,8 @@
         <target state="translated">Mensagens diretas</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve" approved="no">
+        <source>Direct messages between members are prohibited.</source>
         <target state="translated">Mensagens diretas entre membros são proibidas neste grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1224,8 +1224,8 @@
         <target state="translated">Mensagens temporárias são proibidas nesse chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve" approved="no">
+        <source>Disappearing messages are prohibited.</source>
         <target state="translated">Mensagens que temporárias são proibidas neste grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1638,18 +1638,18 @@
         <target state="translated">Os membros do grupo podem excluir mensagens enviadas de forma irreversível.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve" approved="no">
-        <source>Group members can send direct messages.</source>
+      <trans-unit id="Members can send direct messages." xml:space="preserve" approved="no">
+        <source>Members can send direct messages.</source>
         <target state="translated">Os membros do grupo podem enviar DMs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve" approved="no">
-        <source>Group members can send disappearing messages.</source>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve" approved="no">
+        <source>Members can send disappearing messages.</source>
         <target state="translated">Os membros do grupo podem enviar mensagens que desaparecem.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve" approved="no">
-        <source>Group members can send voice messages.</source>
+      <trans-unit id="Members can send voice messages." xml:space="preserve" approved="no">
+        <source>Members can send voice messages.</source>
         <target state="translated">Os membros do grupo podem enviar mensagens de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1873,8 +1873,8 @@
         <target state="translated">A exclusão irreversível de mensagens é proibida neste chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve" approved="no">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve" approved="no">
+        <source>Irreversible message deletion is prohibited.</source>
         <target state="translated">A exclusão irreversível de mensagens é proibida neste grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3269,8 +3269,8 @@ Para se conectar, peça ao seu contato para criar outro link de conexão e verif
         <target state="translated">Mensagens de voz são proibidas neste chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve" approved="no">
+        <source>Voice messages are prohibited.</source>
         <target state="translated">Mensagens de voz são proibidas neste grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

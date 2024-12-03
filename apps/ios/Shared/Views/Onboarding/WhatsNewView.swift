@@ -520,13 +520,18 @@ private let versionDescriptions: [VersionDescription] = [
         ]
     ),
     VersionDescription(
-        version: "v6.2 (beta.1)",
-        post: URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html"),
+        version: "v6.2",
+        post: URL(string: "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html"),
         features: [
             .view(FeatureView(
                 icon: nil,
                 title: "Network decentralization",
                 view: { NewOperatorsView() }
+            )),
+            .feature(Description(
+                icon: "briefcase",
+                title: "Business chats",
+                description: "Privacy for your customers."
             )),
             .feature(Description(
                 icon: "bolt",

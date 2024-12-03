@@ -525,6 +525,7 @@ fun deleteChatDatabaseFilesAndState() {
   wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
   appPrefs.newDatabaseInitialized.set(false)
+  chatModel.desktopOnboardingRandomPassword.value = false
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null
 
@@ -719,13 +720,16 @@ private fun deleteChatAlert(onConfirm: () -> Unit) {
 }
 
 private suspend fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
+  if (!DatabaseUtils.hasAtLeastOneDatabase(dataDir.absolutePath)) {
+    return
+  }
   progressIndicator.value = true
   try {
     deleteChatAsync(m)
     operationEnded(m, progressIndicator) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_deleted), generalGetString(MR.strings.restart_the_app_to_create_a_new_chat_profile))
     }
-  } catch (e: Error) {
+  } catch (e: Throwable) {
     operationEnded(m, progressIndicator) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
     }
