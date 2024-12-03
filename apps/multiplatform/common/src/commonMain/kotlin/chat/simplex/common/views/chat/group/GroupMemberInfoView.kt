@@ -211,9 +211,13 @@ fun GroupMemberInfoView(
 }
 
 fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.member_will_be_removed_from_group_cannot_be_undone
+  else
+    MR.strings.member_will_be_removed_from_chat_cannot_be_undone
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_remove_member),
-    text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withBGApi {
@@ -394,7 +398,8 @@ fun GroupMemberInfoLayout(
     }
 
     SectionView(title = stringResource(MR.strings.member_info_section_title_member)) {
-      InfoRow(stringResource(MR.strings.info_row_group), groupInfo.displayName)
+      val titleId = if (groupInfo.businessChat == null) MR.strings.info_row_group else MR.strings.info_row_chat
+      InfoRow(stringResource(titleId), groupInfo.displayName)
       val roles = remember { member.canChangeRoleTo(groupInfo) }
       if (roles != null) {
         RoleSelectionRow(roles, newRole, onRoleSelected)
