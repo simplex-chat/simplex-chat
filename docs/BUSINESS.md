@@ -29,7 +29,7 @@ But the business conversation works as a group - once the customer is connected,
 SimpleX Chat profile with the business address can be used in one of these ways:
 - for small teams it can be managed by one person running the app on their desktop computer, who would respond to customer questions and manually add to the conversation other people in the business, as required.
 - if you have multiple support agents, you can run business profile in CLI client running in cloud VM or on any machine with high speed Internet (see Technical advice below), and they can connect to this client from desktop client, in turns. This is how we use our business profile ourselves, even though it requires some configuration. You can manage 100s of thousands of connected customers in this way.
-- For larger teams, it would be appropriate to have this profile managed by chat bot that can reply to some simple questions, and to add support agents, based on their availability and the questions asked. These scenarios would require programming a chat bot, and we are currently working simplify it.
+- For larger teams, it would be appropriate to have this profile managed by chat bot that can reply to some simple questions, and to add support agents, based on their availability and the questions asked. These scenarios would require programming a chat bot, and we are currently working to simplify it.
 
 In any case, it is important that the client application remains running and connected to the Internet for you to receive support requests.
 
