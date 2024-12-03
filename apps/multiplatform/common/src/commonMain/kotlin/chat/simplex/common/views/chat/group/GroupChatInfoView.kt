@@ -36,6 +36,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.launch
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
@@ -334,7 +335,8 @@ fun ModalData.GroupChatInfoLayout(
         if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
           AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
         }
-        GroupPreferencesButton(openPreferences)
+        val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
+        GroupPreferencesButton(prefsTitleId, openPreferences)
         if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
@@ -441,10 +443,10 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
-private fun GroupPreferencesButton(onClick: () -> Unit) {
+private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
-    stringResource(MR.strings.group_preferences),
+    stringResource(titleId),
     click = onClick
   )
 }

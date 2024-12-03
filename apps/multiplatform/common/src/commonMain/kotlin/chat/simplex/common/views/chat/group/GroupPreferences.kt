@@ -80,7 +80,8 @@ private fun GroupPreferencesLayout(
   savePrefs: () -> Unit,
 ) {
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.group_preferences))
+    val titleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
+    AppBarTitle(stringResource(titleId))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
     val onTTLUpdated = { ttl: Int? ->
       applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
