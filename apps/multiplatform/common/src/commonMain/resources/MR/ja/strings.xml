@@ -41,8 +41,7 @@
     <string name="app_version_title">アプリのバージョン</string>
     <string name="app_version_name">アプリのバージョン: v%s</string>
     <string name="network_session_mode_user_description"><![CDATA[<b>アプリ内の各チャットプロフィールに、</b>.連絡先毎にそれぞれのTCP接続(とSOCKS資格情報)が使われます。]]></string>
-    <string name="network_session_mode_entity_description"><b>各連絡先とグループに、</b>それぞれのTCP接続(とSOCKS資格情報)が使われます。
-\n<b>※注意※</b> 接続が多かったら、電池とデータの使用量が増えて、切断する可能性もあります。</string>
+    <string name="network_session_mode_entity_description"><![CDATA[<b>各連絡先とグループに、</b>それぞれのTCP接続(とSOCKS資格情報)が使われます。 \n<b>※注意※</b> 接続が多かったら、電池とデータの使用量が増えて、切断する可能性もあります。]]></string>
     <string name="bold_text">太文字</string>
     <string name="icon_descr_audio_call">音声通話</string>
     <string name="settings_audio_video_calls">音声とビデオ通話</string>

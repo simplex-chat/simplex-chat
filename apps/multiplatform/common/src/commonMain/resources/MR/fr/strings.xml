@@ -907,8 +907,7 @@
     <string name="users_delete_with_connections">Profil et connexions au serveur</string>
     <string name="network_session_mode_transport_isolation">Transport isolé</string>
     <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolement du transport \?</string>
-    <string name="network_session_mode_entity_description">Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>.
-\n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>. \n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.]]></string>
     <string name="network_session_mode_user">Profil de chat</string>
     <string name="users_add">Ajouter un profil</string>
     <string name="users_delete_data_only">Données de profil local uniquement</string>

@@ -60,8 +60,7 @@
     <string name="v5_0_app_passcode">קוד גישה לאפליקציה</string>
     <string name="app_version_title">גרסת האפליקציה</string>
     <string name="network_session_mode_user_description"><![CDATA[חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל פרופיל צ׳אט שיש ברשותך באפליקציה</b>.]]></string>
-    <string name="network_session_mode_entity_description">חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל איש קשר וחבר קבוצה</b>.
-\n<b>שימו לב</b>: אם ברשותכם חיבורים רבים, צריכת הסוללה ותעבורת האינטרנט עשויה להיות גבוהה משמעותית וחלק מהחיבורים עלולים להיכשל.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[חיבור TCP נפרד (ואישור SOCKS) ייווצר <b>לכל איש קשר וחבר קבוצה</b>. \n<b>שימו לב</b>: אם ברשותכם חיבורים רבים, צריכת הסוללה ותעבורת האינטרנט עשויה להיות גבוהה משמעותית וחלק מהחיבורים עלולים להיכשל.]]></string>
     <string name="icon_descr_video_asked_to_receive">הנמען התבקש לקבל את הסרטון</string>
     <string name="icon_descr_asked_to_receive">הנמען התבקש לקבל את התמונה</string>
     <string name="attach">צרף</string>

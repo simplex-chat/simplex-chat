@@ -29,12 +29,12 @@
     "hero-p-1": "Más alkalmazások felhasználói azonosítókkal rendelkeznek: Signal, Matrix, Session, Briar, Jami, Cwtch, stb.<br> A SimpleX nem, <strong>még véletlenszerű számokkal sem</strong>.<br> Ez radikálisan javítja az adatvédelmet.",
     "hero-overlay-1-textlink": "Miért ártanak a felhasználói azonosítók az adatvédelemnek?",
     "hero-overlay-2-textlink": "Hogyan működik a SimpleX?",
-    "hero-overlay-3-textlink": "A biztonság értékelése",
+    "hero-overlay-3-textlink": "Biztonsági felmérések",
     "hero-2-header": "Privát kapcsolat létrehozása",
     "hero-2-header-desc": "A videó bemutatja, hogyan kapcsolódhat az ismerőséhez egy egyszer használható QR-kód segítségével, személyesen vagy videokapcsolaton keresztül. Ugyanakkor egy meghívó-hivatkozás megosztásával is kapcsolódhat.",
     "hero-overlay-1-title": "Hogyan működik a SimpleX?",
     "hero-overlay-2-title": "Miért ártanak a felhasználói azonosítók az adatvédelemnek?",
-    "hero-overlay-3-title": "A biztonság értékelése",
+    "hero-overlay-3-title": "Biztonsági felmérések",
     "feature-1-title": "E2E-titkosított üzenetek markdown formázással és szerkesztéssel",
     "feature-2-title": "E2E-titkosított<br>képek, videók és fájlok",
     "feature-3-title": "E2E-titkosított decentralizált csoportok &mdash; csak a felhasználók tudják, hogy ezek léteznek",
@@ -254,5 +254,6 @@
     "glossary": "Fogalomtár",
     "simplex-chat-via-f-droid": "SimpleX Chat az F-Droidon keresztül",
     "simplex-chat-repo": "SimpleX Chat tároló",
-    "stable-and-beta-versions-built-by-developers": "A fejlesztők által készített stabil és béta verziók"
+    "stable-and-beta-versions-built-by-developers": "A fejlesztők által készített stabil és béta verziók",
+    "hero-overlay-card-3-p-3": "A Trail of Bits 2024 júliusában felülvizsgálta a SimpleX hálózati protokollok kriptográfiai felépítését. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Tudjon meg többet</a>."
 }

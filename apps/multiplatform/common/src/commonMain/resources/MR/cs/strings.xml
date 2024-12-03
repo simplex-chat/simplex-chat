@@ -631,8 +631,7 @@
     <string name="network_use_onion_hosts_no_desc">Onion hostitelé nebudou použiti.</string>
     <string name="network_session_mode_transport_isolation">Izolace přenosu</string>
     <string name="network_session_mode_user_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each chat profile you have in the app</b>.]]></string>
-    <string name="network_session_mode_entity_description">Oddělit TCP připojení (a SOCKS pověření) bude použito <b>pro všechny kontakty a členy skupin</b>.
-\n<b>Upozornění</b>: Pokud máte mnoho připojení, může být spotřeba baterie a provoz podstatně vyšší a některá připojení mohou selhat.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Oddělit TCP připojení (a SOCKS pověření) bude použito <b>pro všechny kontakty a členy skupin</b>. \n<b>Upozornění</b>: Pokud máte mnoho připojení, může být spotřeba baterie a provoz podstatně vyšší a některá připojení mohou selhat.]]></string>
     <string name="appearance_settings">Vzhled</string>
     <string name="app_version_title">Verze aplikace</string>
     <string name="app_version_name">Verze aplikace: v%s</string>
@@ -2041,4 +2040,6 @@
     <string name="xftp_servers_other">Jiné FXTP servery</string>
     <string name="action_button_add_members">Pozvat</string>
     <string name="cant_call_member_send_message_alert_text">Pošlete zprávu pro povolení volání.</string>
+    <string name="accept_conditions">Přijmout podmínky</string>
+    <string name="operator_conditions_accepted">Přijaté podmínky</string>
 </resources>
