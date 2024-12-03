@@ -1425,7 +1425,9 @@
   <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">You joined this group. Connecting to inviting group member.</string>
   <string name="leave_group_button">Leave</string>
   <string name="leave_group_question">Leave group?</string>
+  <string name="leave_chat_question">Leave chat?</string>
   <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">You will stop receiving messages from this group. Chat history will be preserved.</string>
+  <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">You will stop receiving messages from this chat. Chat history will be preserved.</string>
   <string name="icon_descr_add_members">Invite members</string>
   <string name="icon_descr_group_inactive">Group inactive</string>
   <string name="alert_title_group_invitation_expired">Invitation expired!</string>
@@ -1542,6 +1544,7 @@
   <string name="initial_member_role">Initial role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
+  <string name="invite_to_chat_button">Invite to chat</string>
   <string name="skip_inviting_button">Skip inviting members</string>
   <string name="select_contacts">Select contacts</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
@@ -1558,10 +1561,15 @@
   <string name="group_info_section_title_num_members">%1$s MEMBERS</string>
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
+  <string name="button_delete_chat">Delete chat</string>
   <string name="delete_group_question">Delete group?</string>
+  <string name="delete_chat_question">Delete chat?</string>
   <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
+  <string name="delete_chat_for_all_members_cannot_undo_warning">Chat will be deleted for all members - this cannot be undone!</string>
   <string name="delete_group_for_self_cannot_undo_warning">Group will be deleted for you - this cannot be undone!</string>
+  <string name="delete_chat_for_self_cannot_undo_warning">Chat will be deleted for you - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
+  <string name="button_leave_chat">Leave chat</string>
   <string name="button_edit_group_profile">Edit group profile</string>
   <string name="button_add_welcome_message">Add welcome message</string>
   <string name="button_welcome_message">Welcome message</string>
@@ -1578,6 +1586,7 @@
   <string name="error_creating_member_contact">Error creating member contact</string>
   <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="only_chat_owners_can_change_prefs">Only chat owners can change preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
@@ -1624,6 +1633,7 @@
 
   <string name="button_send_direct_message">Send direct message</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="member_will_be_removed_from_chat_cannot_be_undone">Member will be removed from chat - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
   <string name="remove_member_button">Remove member</string>
   <string name="block_member_question">Block member?</string>
@@ -1649,6 +1659,7 @@
   <string name="switch_verb">Switch</string>
   <string name="change_member_role_question">Change group role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to "%s". Everyone in the group will be notified.</string>
+  <string name="member_role_will_be_changed_with_notification_chat">The role will be changed to "%s". Everyone in the chat will be notified.</string>
   <string name="member_role_will_be_changed_with_invitation">The role will be changed to "%s". The member will receive a new invitation.</string>
   <string name="connect_via_member_address_alert_title">Connect directly?</string>
   <string name="connect_via_member_address_alert_desc">Сonnection request will be sent to this group member.</string>
@@ -1656,6 +1667,7 @@
   <string name="error_changing_role">Error changing role</string>
   <string name="error_blocking_member_for_all">Error blocking member for all</string>
   <string name="info_row_group">Group</string>
+  <string name="info_row_chat">Chat</string>
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (%1$s)</string>
@@ -1703,6 +1715,7 @@
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
+  <string name="chat_main_profile_sent">Your chat profile will be sent to chat members</string>
   <string name="create_group_button">Create group</string>
 
   <!-- GroupProfileView.kt -->
@@ -1957,20 +1970,22 @@
   <string name="prohibit_sending_simplex_links">Prohibit sending SimpleX links</string>
   <string name="enable_sending_recent_history">Send up to 100 last messages to new members.</string>
   <string name="disable_sending_recent_history">Do not send history to new members.</string>
-  <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
-  <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
-  <string name="group_members_can_send_dms">Group members can send direct messages.</string>
-  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
-  <string name="group_members_can_delete">Group members can irreversibly delete sent messages. (24 hours)</string>
-  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
-  <string name="group_members_can_send_voice">Group members can send voice messages.</string>
-  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
-  <string name="group_members_can_add_message_reactions">Group members can add message reactions.</string>
-  <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
-  <string name="group_members_can_send_files">Group members can send files and media.</string>
-  <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
-  <string name="group_members_can_send_simplex_links">Group members can send SimpleX links.</string>
-  <string name="simplex_links_are_prohibited_in_group">SimpleX links are prohibited in this group.</string>
+  <string name="group_members_can_send_disappearing">Members can send disappearing messages.</string>
+  <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited.</string>
+  <string name="group_members_can_send_dms">Members can send direct messages.</string>
+  <string name="direct_messages_are_prohibited">Direct messages between members are prohibited.</string>
+  <string name="direct_messages_are_prohibited_in_group">Direct messages between members are prohibited in this group.</string>
+  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this chat.</string>
+  <string name="group_members_can_delete">Members can irreversibly delete sent messages. (24 hours)</string>
+  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited.</string>
+  <string name="group_members_can_send_voice">Members can send voice messages.</string>
+  <string name="voice_messages_are_prohibited">Voice messages are prohibited.</string>
+  <string name="group_members_can_add_message_reactions">Members can add message reactions.</string>
+  <string name="message_reactions_are_prohibited">Message reactions are prohibited.</string>
+  <string name="group_members_can_send_files">Members can send files and media.</string>
+  <string name="files_are_prohibited_in_group">Files and media are prohibited.</string>
+  <string name="group_members_can_send_simplex_links">Members can send SimpleX links.</string>
+  <string name="simplex_links_are_prohibited_in_group">SimpleX links are prohibited.</string>
   <string name="recent_history_is_sent_to_new_members">Up to 100 last messages are sent to new members.</string>
   <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="delete_after">Delete after</string>

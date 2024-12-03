@@ -308,7 +308,7 @@ struct GroupMemberInfoView: View {
     func showDirectMessagesProhibitedAlert(_ title: LocalizedStringKey) {
         let messageLabel: LocalizedStringKey = (
             groupInfo.businessChat == nil
-            ? "Direct messages between members are prohibited in this group."
+            ? "Direct messages between members are prohibited."
             : "Direct messages between members are prohibited in this chat."
         )
         alert = .someAlert(alert: SomeAlert(

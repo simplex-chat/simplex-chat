@@ -2506,9 +2506,9 @@ This is your own one-time link!</target>
         <target>Direct messages</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
-        <source>Direct messages between members are prohibited in this group.</source>
-        <target>Direct messages between members are prohibited in this group.</target>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+        <source>Direct messages between members are prohibited.</source>
+        <target>Direct messages between members are prohibited.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable (keep overrides)" xml:space="preserve">
@@ -2546,9 +2546,9 @@ This is your own one-time link!</target>
         <target>Disappearing messages are prohibited in this chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
-        <source>Disappearing messages are prohibited in this group.</source>
-        <target>Disappearing messages are prohibited in this group.</target>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+        <source>Disappearing messages are prohibited.</source>
+        <target>Disappearing messages are prohibited.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappears at" xml:space="preserve">
@@ -3404,9 +3404,9 @@ This is your own one-time link!</target>
         <target>Files and media</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
-        <source>Files and media are prohibited in this group.</source>
-        <target>Files and media are prohibited in this group.</target>
+      <trans-unit id="Files and media are prohibited." xml:space="preserve">
+        <source>Files and media are prohibited.</source>
+        <target>Files and media are prohibited.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files and media not allowed" xml:space="preserve">
@@ -3678,39 +3678,39 @@ Error: %2$@</target>
         <target>Group links</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve">
-        <source>Group members can add message reactions.</source>
-        <target>Group members can add message reactions.</target>
+      <trans-unit id="Members can add message reactions." xml:space="preserve">
+        <source>Members can add message reactions.</source>
+        <target>Members can add message reactions.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
-        <source>Group members can irreversibly delete sent messages. (24 hours)</source>
-        <target>Group members can irreversibly delete sent messages. (24 hours)</target>
+      <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Members can irreversibly delete sent messages. (24 hours)</source>
+        <target>Members can irreversibly delete sent messages. (24 hours)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
-        <source>Group members can send SimpleX links.</source>
-        <target>Group members can send SimpleX links.</target>
+      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
+        <source>Members can send SimpleX links.</source>
+        <target>Members can send SimpleX links.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve">
-        <source>Group members can send direct messages.</source>
-        <target>Group members can send direct messages.</target>
+      <trans-unit id="Members can send direct messages." xml:space="preserve">
+        <source>Members can send direct messages.</source>
+        <target>Members can send direct messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
-        <source>Group members can send disappearing messages.</source>
-        <target>Group members can send disappearing messages.</target>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+        <source>Members can send disappearing messages.</source>
+        <target>Members can send disappearing messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve">
-        <source>Group members can send files and media.</source>
-        <target>Group members can send files and media.</target>
+      <trans-unit id="Members can send files and media." xml:space="preserve">
+        <source>Members can send files and media.</source>
+        <target>Members can send files and media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve">
-        <source>Group members can send voice messages.</source>
-        <target>Group members can send voice messages.</target>
+      <trans-unit id="Members can send voice messages." xml:space="preserve">
+        <source>Members can send voice messages.</source>
+        <target>Members can send voice messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -4127,9 +4127,9 @@ More improvements are coming soon!</target>
         <target>Irreversible message deletion is prohibited in this chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
-        <source>Irreversible message deletion is prohibited in this group.</source>
-        <target>Irreversible message deletion is prohibited in this group.</target>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited.</source>
+        <target>Irreversible message deletion is prohibited.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -4465,9 +4465,9 @@ This is your link for group %@!</target>
         <target>Message reactions are prohibited in this chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
-        <source>Message reactions are prohibited in this group.</source>
-        <target>Message reactions are prohibited in this group.</target>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve">
+        <source>Message reactions are prohibited.</source>
+        <target>Message reactions are prohibited.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reception" xml:space="preserve">
@@ -6714,9 +6714,9 @@ Enable in *Network &amp; servers* settings.</target>
         <target>SimpleX links</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
-        <source>SimpleX links are prohibited in this group.</source>
-        <target>SimpleX links are prohibited in this group.</target>
+      <trans-unit id="SimpleX links are prohibited." xml:space="preserve">
+        <source>SimpleX links are prohibited.</source>
+        <target>SimpleX links are prohibited.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX links not allowed" xml:space="preserve">
@@ -7812,9 +7812,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Voice messages are prohibited in this chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
-        <target>Voice messages are prohibited in this group.</target>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
+        <target>Voice messages are prohibited.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages not allowed" xml:space="preserve">

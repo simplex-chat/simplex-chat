@@ -339,7 +339,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">Sekä sinä että kontaktisi voivat käyttää viestireaktioita.</string>
     <string name="both_you_and_your_contacts_can_delete">Sekä sinä että kontaktisi voitte peruuttamattomasti poistaa lähetetyt viestit.</string>
     <string name="both_you_and_your_contact_can_make_calls">Sekä sinä että kontaktisi voitte soittaa puheluita.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.</string>
+    <string name="direct_messages_are_prohibited_in_group">Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.</string>
     <string name="v4_5_transport_isolation_descr">Chat-profiilin (oletus) tai yhteyden (BETA) perusteella.</string>
     <string name="feature_cancelled_item">peruttu %s</string>
     <string name="ttl_day">%d päivä</string>

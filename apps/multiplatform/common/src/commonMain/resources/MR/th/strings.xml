@@ -480,7 +480,7 @@
     <string name="group_members_can_send_disappearing">สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้</string>
     <string name="group_members_can_send_dms">สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้</string>
     <string name="group_members_can_send_voice">สมาชิกกลุ่มสามารถส่งข้อความเสียง</string>
-    <string name="direct_messages_are_prohibited_in_chat">ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้</string>
+    <string name="direct_messages_are_prohibited_in_group">ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้</string>
     <string name="disappearing_messages_are_prohibited">ข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) เป็นสิ่งต้องห้ามในกลุ่มนี้</string>
     <string name="group_members_can_add_message_reactions">สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้</string>
     <string name="delete_after">ลบหลังจาก</string>
