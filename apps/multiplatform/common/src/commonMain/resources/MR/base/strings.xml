@@ -1659,6 +1659,7 @@
   <string name="switch_verb">Switch</string>
   <string name="change_member_role_question">Change group role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to "%s". Everyone in the group will be notified.</string>
+  <string name="member_role_will_be_changed_with_notification_chat">The role will be changed to "%s". Everyone in the chat will be notified.</string>
   <string name="member_role_will_be_changed_with_invitation">The role will be changed to "%s". The member will receive a new invitation.</string>
   <string name="connect_via_member_address_alert_title">Connect directly?</string>
   <string name="connect_via_member_address_alert_desc">Сonnection request will be sent to this group member.</string>
@@ -1974,6 +1975,7 @@
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
   <string name="direct_messages_are_prohibited_in_group">Direct messages between members are prohibited in this group.</string>
+  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this chat.</string>
   <string name="group_members_can_delete">Group members can irreversibly delete sent messages. (24 hours)</string>
   <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
