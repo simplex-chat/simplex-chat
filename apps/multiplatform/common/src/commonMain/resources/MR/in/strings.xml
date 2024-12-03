@@ -1277,4 +1277,21 @@
     <string name="remove_member_confirmation">Hapus</string>
     <string name="share_text_created_at">Dibuat pada: %s</string>
     <string name="member_info_member_blocked">diblokir</string>
+    <string name="switch_verb">Ganti</string>
+    <string name="unblock_member_confirmation">Buka blokir</string>
+    <string name="unblock_for_all_question">Buka blokir anggota untuk semua?</string>
+    <string name="unblock_for_all">Buka untuk semua</string>
+    <string name="member_blocked_by_admin">Diblokir oleh admin</string>
+    <string name="member_info_section_title_member">ANGGOTA</string>
+    <string name="remove_member_button">Hapus anggota</string>
+    <string name="share_text_message_status">Status pesan: %s</string>
+    <string name="share_text_file_status">Status berkas: %s</string>
+    <string name="info_row_group">Grup</string>
+    <string name="member_info_member_disabled">dimatikan</string>
+    <string name="unblock_member_question">Buka blokir anggota?</string>
+    <string name="unblock_member_button">Buka blokir anggota</string>
+    <string name="member_info_member_inactive">tidak aktif</string>
+    <string name="button_remove_member_question">Hapus anggota?</string>
+    <string name="button_remove_member">Hapus anggota</string>
+    <string name="saved_message_title">Pesan tersimpan</string>
 </resources>
