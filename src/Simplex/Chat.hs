@@ -3140,7 +3140,7 @@ processChatCommand' vr = \case
                   | contactDeleted ct -> pure $ CPContactAddress CAPOk
                   | otherwise -> pure $ CPContactAddress (CAPKnown ct)
                 Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo
-                Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+                Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection or RcvGroupMsgConnection"
         -- group link
         Just _ ->
           withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db vr user cReqSchemas) >>= \case
