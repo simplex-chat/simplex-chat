@@ -404,18 +404,15 @@ struct ChatListNavLink: View {
     }
 
     private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
-        Alert(
-            title: Text("Delete group?"),
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
+        return Alert(
+            title: Text(label),
             message: deleteGroupAlertMessage(groupInfo),
             primaryButton: .destructive(Text("Delete")) {
                 Task { await deleteChat(chat) }
             },
             secondaryButton: .cancel()
         )
-    }
-
-    private func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
-        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
     }
 
     private func clearChatAlert() -> Alert {
@@ -441,9 +438,15 @@ struct ChatListNavLink: View {
     }
 
     private func leaveGroupAlert(_ groupInfo: GroupInfo) -> Alert {
-        Alert(
-            title: Text("Leave group?"),
-            message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
+        let titleLabel: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
+        let messageLabel: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "You will stop receiving messages from this group. Chat history will be preserved."
+            : "You will stop receiving messages from this chat. Chat history will be preserved."
+        )
+        return Alert(
+            title: Text(titleLabel),
+            message: Text(messageLabel),
             primaryButton: .destructive(Text("Leave")) {
                 Task { await leaveGroup(groupInfo.groupId) }
             },
