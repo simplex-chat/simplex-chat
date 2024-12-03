@@ -2160,6 +2160,8 @@
   <string name="v6_2_network_decentralization_enable_flux_reason">for better metadata privacy.</string>
   <string name="v6_2_improved_chat_navigation">Improved chat navigation</string>
   <string name="v6_2_improved_chat_navigation_descr">- Open chat on the first unread message.\n- Jump to quoted messages.</string>
+  <string name="v6_2_business_chats">Business chats</string>
+  <string name="v6_2_business_chats_descr">Privacy for your customers.</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
