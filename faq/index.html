@@ -857,6 +857,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#i-want-to-see-when-my-contacts-read-my-messages">I want to see when my contacts read my messages</a></li>
 <li><a href="#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform">Can I use the same profile on desktop? Do messages sync cross-platform?</a></li>
 <li><a href="#why-cannot-i-delete-messages-i-sent-from-my-contacts-device">Why cannot I delete messages I sent from my contact's device?</a></li>
+<li><a href="#why-invitation-links-use-simplex.chat-domain">Why invitation links use simplex.chat domain?</a></li>
 </ul>
 <p><a href="#troubleshooting">Troubleshooting</a></p>
 <ul>
@@ -867,6 +868,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#audio-or-video-calls-do-not-connect">Audio or video calls do not connect</a></li>
 <li><a href="#audio-or-video-calls-without-e2e-encryption">Audio or video calls without e2e encryption</a></li>
 <li><a href="#i-clicked-the-link-to-connect-but-could-not-connect">I clicked the link to connect, but could not connect</a></li>
+<li><a href="#i-do-not-know-my-database-passphrase">I do not know my database passphrase</a></li>
 </ul>
 <p><a href="#privacy-and-security">Privacy and security</a></p>
 <ul>
@@ -934,6 +936,10 @@ If interested, please read more: <a href="/docs/guide/making-connections.html">A
 </ol>
 <p>It is also important to remember, that even if your contact enabled &quot;Delete for everyone&quot;, you cannot really see it as a strong guarantee that the message will be deleted. Your contact's app can have a very simple modification (a one-line code change), that would prevent this deletion from happening when you request it. So you cannot see it as something that guarantees your security from your contacts.</p>
 <p>When &quot;Delete for everyone&quot; is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as &quot;deleted message&quot;, and will be able to reveal the original message.</p>
+<h3 id="why-invitation-links-use-simplexchat-domain" tabindex="-1">Why invitation links use simplex.chat domain?</h3>
+<p>You can replace <code>https://simplex.chat/</code> with <code>simplex:/</code> or with any other domain - the app never connect with it, ignoring it completely. It is only used to make it easier to connect for the new users who did not install the app yet.</p>
+<p>The invitation links will soon move to servers' domains. The servers already can host the pages that will be used to show QR codes.</p>
+<p>The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (<code>#</code>) is not sent over the internet - the server can only see <code>https://simplex.chat/contact/</code> and the rest is processed on user's device in the browser, if you open it as a page.</p>
 <h2 id="troubleshooting" tabindex="-1">Troubleshooting</h2>
 <h3 id="i-do-not-receive-messages-or-message-notifications" tabindex="-1">I do not receive messages or message notifications</h3>
 <p>There may be several reasons messages are not delivered to you from your contact:</p>
@@ -1009,6 +1015,20 @@ If interested, please read more: <a href="/docs/guide/making-connections.html">A
 <p>If you confirmed the connection in the app, pending connection will be shown in the list of chats - you can assign the name to it, so you know who it was when your contact is connected (e.g., if they choose some name you don't recognize).</p>
 <p>For connection to complete, your contact has to be online and have the app running - please ask them to open the app, and try to have the app open at the same time - it will help to complete the connection faster.</p>
 <p>Once the connection is established you don't need to be online at the same time to send messages.</p>
+<h3 id="i-do-not-know-my-database-passphrase" tabindex="-1">I do not know my database passphrase</h3>
+<p>If you are prompted to enter database passphrase and you do not know it, this could have happened due to:</p>
+<ul>
+<li>You may have forgotten the passphrase. (There is no other way to access your data).</li>
+<li>Migration of app data from one device to another while using unsupported migration process, e.g. via iCloud backup. Use SimpleX Chat's own migration process in the app Settings.</li>
+</ul>
+<p>In the previous desktop app versions it could also happen in case of error during SimpleX Chat installation.</p>
+<p>You can resolve it by deleting the app's database: (WARNING: this results in deletion of all profiles, contacts and messages)</p>
+<ul>
+<li>on Android/iOS, uninstall the app and install it again.</li>
+<li>on Windows, delete folder <code>C:\AppData\Roaming\SimpleX</code>, you can find it by pressing Windows key + R and entering <code>%appdata%</code>.</li>
+<li>on Linux/Mac, delete directories <code>~/.local/share/simplex</code> and <code>~/.config/simplex</code>, where <code>~</code> represents your home directory (/home/user)</li>
+<li>on Flatpak, delete directory <code>~/.var/app/chat.simplex.simplex</code>.</li>
+</ul>
 <h2 id="privacy-and-security" tabindex="-1">Privacy and security</h2>
 <h3 id="does-simplex-support-post-quantum-cryptography" tabindex="-1">Does SimpleX support post quantum cryptography?</h3>
 <p>Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in <a href="/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html">this post</a>.</p>
