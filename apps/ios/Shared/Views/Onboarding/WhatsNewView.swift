@@ -529,7 +529,7 @@ private let versionDescriptions: [VersionDescription] = [
                 view: { NewOperatorsView() }
             )),
             .feature(Description(
-                icon: "case",
+                icon: "briefcase",
                 title: "Business chats",
                 description: "Privacy for your customers."
             )),
