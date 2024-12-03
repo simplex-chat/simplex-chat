@@ -304,6 +304,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
+  | APIGetReactionMembers UserId GroupId ChatItemId MsgReaction
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
@@ -621,6 +622,7 @@ data ChatResponse
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
+  | CRReactionMembers {user :: User, memberReactions :: [MemberReaction]}
   | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}

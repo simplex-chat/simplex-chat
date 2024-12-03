@@ -229,7 +229,6 @@
     <string name="smp_save_servers_question">Salvezi servere?</string>
     <string name="icon_descr_call_rejected">Apel respins</string>
     <string name="saved_message_title">Mesaj salvat</string>
-    <string name="save_archive">Salvează arhiva</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Repornește aplicația pentru a crea un nou profil</string>
     <string name="save_passphrase_in_keychain">Salvează fraza de acces în Keystore</string>
     <string name="save_group_profile">Salvează profilul grupului</string>
@@ -441,7 +440,6 @@
     <string name="your_chat_database">Baza ta de date a conversațiilor</string>
     <string name="database_is_not_encrypted">Baza ta de date a conversațiilor nu este criptată - setează frază de acces pentru a o proteja.</string>
     <string name="database_encryption_will_be_updated_in_settings">Fraza de acces de criptare a bazei de date va fi actualizată și stocată în setări.</string>
-    <string name="archive_created_on_ts">Creat pe %1$s</string>
     <string name="snd_group_event_changed_member_role">ai schimbat rolul %s la %s</string>
     <string name="alert_title_cant_invite_contacts">Nu se pot invita contactele!</string>
     <string name="you_joined_this_group">Te-ai alăturat grupului</string>
@@ -594,7 +592,6 @@
     <string name="chat_console">Consolă conversație</string>
     <string name="confirm_password">Confirmați parola</string>
     <string name="colored_text">colorat</string>
-    <string name="chat_archive_header">Arhivă conversație</string>
     <string name="migrate_from_device_all_data_will_be_uploaded">Toate contactele, conversațiile și fișierele dumneavoastră vor fi encriptate într-un mod sigur și încărcate pe bucăți pe releurile XFTP configurate.</string>
     <string name="icon_descr_video_asked_to_receive">Rugat să primească videoclipul</string>
     <string name="smp_server_test_compare_file">Comparați fișierul</string>
@@ -615,7 +612,6 @@
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Vă rugăm să rețineți</b>: folosind aceeași bază de date pe două dispozitive, va intrerupe decripția mesajelor de la conexiunile dumneavoastră, ca protecție de securitate.]]></string>
     <string name="migrate_from_device_confirm_upload">Confirmați încărcarea</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Confirmați că țineți minte parola de la baza de date pentru a o migra.</string>
-    <string name="chat_archive_section">ARHIVĂ CONVERSAȚIE</string>
     <string name="info_row_connection">Conexiune</string>
     <string name="delete_chat_profile_question">Ștergi profilul de conversație?</string>
     <string name="for_me_only">Șterge pentru mine</string>
@@ -625,7 +621,6 @@
     <string name="info_row_deleted_at">Șters la</string>
     <string name="desktop_app_version_is_incompatible">Versiunea aplicației desktop %s nu este compatibilă cu această aplicație.</string>
     <string name="delete_member_message__question">Ștergi mesajul membrului?</string>
-    <string name="delete_archive">Șterge arhiva</string>
     <string name="button_delete_group">Șterge grup</string>
     <string name="delete_and_notify_contact">Șterge și notifică contactele</string>
     <string name="decentralized">Decentralizat</string>
@@ -651,7 +646,6 @@
     <string name="delete_contact_menu_action">Șterge</string>
     <string name="delete_group_menu_action">Șterge</string>
     <string name="delete_files_and_media_question">Ștergi fișiere și media?</string>
-    <string name="delete_chat_archive_question">Ștergi arhiva conversației?</string>
     <string name="ttl_days">%d zile</string>
     <string name="ttl_day">%d zi</string>
     <string name="delete_address">Șterge adresa</string>

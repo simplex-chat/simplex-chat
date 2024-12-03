@@ -481,7 +481,7 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
     try {
       getMigrationTempFilesDirectory().mkdir()
-      val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
+      val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""))
       if (archiveErrors.isEmpty()) {
         uploadArchive(archivePath)
       } else {

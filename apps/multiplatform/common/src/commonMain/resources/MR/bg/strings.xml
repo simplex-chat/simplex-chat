@@ -227,7 +227,6 @@
     <string name="chat_database_imported">Базата данни на чат е импортирана</string>
     <string name="confirm_new_passphrase">Потвърди новата парола…</string>
     <string name="confirm_database_upgrades">Потвърди актуализаациите на базата данни</string>
-    <string name="chat_archive_header">Архив на чата</string>
     <string name="rcv_group_event_member_connected">свързан</string>
     <string name="snd_conn_event_switch_queue_phase_changing">промяна на адреса…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">промяна на адреса за %s…</string>
@@ -316,7 +315,6 @@
     <string name="change_self_destruct_mode">Промени режима на самоунищожение</string>
     <string name="change_self_destruct_passcode">Промени кода за достъп за самоунищожение</string>
     <string name="settings_section_title_chats">ЧАТОВЕ</string>
-    <string name="chat_archive_section">АРХИВ НА ЧАТА</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">промяна на адреса…</string>
     <string name="maximum_supported_file_size">В момента максималният поддържан размер на файла е %1$s.</string>
     <string name="info_row_database_id">ID в базата данни</string>
@@ -340,9 +338,6 @@
     <string name="database_downgrade">Понижаване на версията на базата данни</string>
     <string name="database_upgrade">Актуализация на базата данни</string>
     <string name="mtr_error_no_down_migration">версията на базата данни е по-нова от приложението, но няма миграция надолу за: %s</string>
-    <string name="archive_created_on_ts">Създаден на %1$s</string>
-    <string name="delete_archive">Изтрий архив</string>
-    <string name="delete_chat_archive_question">Изтриване на архива на чата\?</string>
     <string name="rcv_group_event_group_deleted">групата изтрита</string>
     <string name="icon_descr_contact_checked">Контактът е проверен</string>
     <string name="group_member_status_creator">създател</string>
@@ -995,7 +990,6 @@
     <string name="lock_mode">Режим на заключване</string>
     <string name="alert_text_fragment_please_report_to_developers">Моля, докладвайте го на разработчиците.</string>
     <string name="protect_app_screen">Защити екрана на приложението</string>
-    <string name="save_archive">Запази архив</string>
     <string name="member_info_section_title_member">ЧЛЕН</string>
     <string name="remove_member_confirmation">Премахване</string>
     <string name="network_option_ping_count">PING бройка</string>

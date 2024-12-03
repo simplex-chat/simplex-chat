@@ -450,7 +450,6 @@
     <string name="la_app_passcode">Kode sandi aplikasi</string>
     <string name="la_mode_passcode">Kode sandi</string>
     <string name="chat_item_ttl_seconds">%s detik</string>
-    <string name="save_archive">Simpan arsip</string>
     <string name="group_invitation_tap_to_join">Ketuk untuk gabung</string>
     <string name="rcv_group_event_member_blocked">diblokir %s</string>
     <string name="rcv_group_event_open_chat">Buka</string>
@@ -548,7 +547,6 @@
     <string name="info_view_message_button">pesan</string>
     <string name="info_view_open_button">buka</string>
     <string name="la_mode_system">Sistem</string>
-    <string name="chat_archive_header">Arsip obrolan</string>
     <string name="profile_update_event_set_new_address">setel alamat kontak baru</string>
     <string name="dark_theme">Tema gelap</string>
     <string name="theme">Tema</string>
@@ -862,7 +860,6 @@
     <string name="voice_messages_not_allowed">Pesan suara tidak diizinkan</string>
     <string name="delete_address__question">Hapus alamat?</string>
     <string name="leave_group_question">Keluar dari grup?</string>
-    <string name="chat_archive_section">ARSIP OBROLAN</string>
     <string name="this_string_is_not_a_connection_link">Rangkaian ini bukan tautan koneksi!</string>
     <string name="paste_the_link_you_received">Tempel tautan yang Anda terima</string>
     <string name="share_with_contacts">Bagikan dengan kontak</string>
@@ -890,7 +887,6 @@
     <string name="integrity_msg_duplicate">gandakan pesan</string>
     <string name="integrity_msg_bad_hash">hash pesan buruk</string>
     <string name="start_chat_question">Mulai obrolan?</string>
-    <string name="delete_archive">Hapus arsip</string>
     <string name="v5_3_discover_join_groups">Jelajah dan gabung ke grup</string>
     <string name="v5_8_private_routing">Perutean pesan pribadi 🚀</string>
     <string name="v5_8_private_routing_descr">Lindungi alamat IP Anda dari relai pesan yang dipilih oleh kontak Anda.\nAktifkan di pengaturan *Jaringan &amp; server*.</string>
@@ -1283,4 +1279,21 @@
     <string name="remove_member_confirmation">Hapus</string>
     <string name="share_text_created_at">Dibuat pada: %s</string>
     <string name="member_info_member_blocked">diblokir</string>
+    <string name="switch_verb">Ganti</string>
+    <string name="unblock_member_confirmation">Buka blokir</string>
+    <string name="unblock_for_all_question">Buka blokir anggota untuk semua?</string>
+    <string name="unblock_for_all">Buka untuk semua</string>
+    <string name="member_blocked_by_admin">Diblokir oleh admin</string>
+    <string name="member_info_section_title_member">ANGGOTA</string>
+    <string name="remove_member_button">Hapus anggota</string>
+    <string name="share_text_message_status">Status pesan: %s</string>
+    <string name="share_text_file_status">Status berkas: %s</string>
+    <string name="info_row_group">Grup</string>
+    <string name="member_info_member_disabled">dimatikan</string>
+    <string name="unblock_member_question">Buka blokir anggota?</string>
+    <string name="unblock_member_button">Buka blokir anggota</string>
+    <string name="member_info_member_inactive">tidak aktif</string>
+    <string name="button_remove_member_question">Hapus anggota?</string>
+    <string name="button_remove_member">Hapus anggota</string>
+    <string name="saved_message_title">Pesan tersimpan</string>
 </resources>

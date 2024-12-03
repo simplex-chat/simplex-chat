@@ -474,6 +474,12 @@ deriving instance Show ACIReaction
 
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
 
+data MemberReaction = MemberReaction
+  { groupMember :: GroupMember,
+    reactionTs :: UTCTime
+  }
+  deriving (Show)
+
 type family ChatTypeQuotable (a :: ChatType) :: Constraint where
   ChatTypeQuotable 'CTDirect = ()
   ChatTypeQuotable 'CTGroup = ()
@@ -1464,6 +1470,8 @@ instance FromJSON ACIReaction where
 instance ToJSON ACIReaction where
   toJSON (ACIReaction _ _ cInfo reaction) = J.toJSON $ JSONCIReaction cInfo reaction
   toEncoding (ACIReaction _ _ cInfo reaction) = J.toEncoding $ JSONCIReaction cInfo reaction
+
+$(JQ.deriveJSON defaultJSON ''MemberReaction)
 
 $(JQ.deriveJSON defaultJSON ''MsgMetaJSON)
 

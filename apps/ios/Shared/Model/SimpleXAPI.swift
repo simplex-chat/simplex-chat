@@ -446,6 +446,13 @@ func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, re
     throw r
 }
 
+func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction) async throws -> [MemberReaction] {
+    let userId = try currentUserId("apiGetReactionMemebers")
+    let r = await chatSendCmd(.apiGetReactionMembers(userId: userId, groupId: groupId, itemId: itemId, reaction: reaction ))
+    if case let .reactionMembers(_, memberReactions) = r { return memberReactions }
+    throw r
+}
+
 func apiDeleteChatItems(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
     if case let .chatItemsDeleted(_, items, _) = r { return items }
@@ -1593,6 +1600,15 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     m.conditions = try getServerOperators()
+    if shouldImportAppSettingsDefault.get() {
+        do {
+            let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
+            appSettings.importIntoApp()
+            shouldImportAppSettingsDefault.set(false)
+        } catch {
+            logger.error("Error while importing app settings: \(error)")
+        }
+    }
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)

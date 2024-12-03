@@ -125,8 +125,6 @@
     <string name="files_and_media_section">Failai ir medija</string>
     <string name="delete_files_and_media_all">Ištrinti visus failus</string>
     <string name="delete_files_and_media_question">Ištrinti failus ir mediją\?</string>
-    <string name="delete_archive">Ištrinti archyvą</string>
-    <string name="delete_chat_archive_question">Ištrinti pokalbio archyvą\?</string>
     <string name="snd_group_event_group_profile_updated">grupės profilis atnaujintas</string>
     <string name="info_row_group">Grupė</string>
     <string name="users_delete_question">Ištrinti pokalbio profilį\?</string>
@@ -393,7 +391,6 @@
     <string name="mark_code_verified">Žymėti kaip patvirtintą</string>
     <string name="chat_lock">SimpleX užraktas</string>
     <string name="saved_ICE_servers_will_be_removed">Įrašyti WebRTC ICE serveriai bus pašalinti.</string>
-    <string name="save_archive">Įrašyti archyvą</string>
     <string name="button_send_direct_message">Siųsti tiesioginę žinutę</string>
     <string name="button_remove_member">Šalinti narį</string>
     <string name="theme_light">Šviesus</string>
@@ -834,7 +831,6 @@
     <string name="restore_database_alert_desc">Prašome įvesti praeitą slaptažodį po duomenų bazės atsarginės kopijos atstatymo. Šis veiksmas negali būti atšauktas.</string>
     <string name="mtr_error_no_down_migration">duomenų bazė naujesnė nei programėlė, bet nėra perkėlimo į senesnę versiją: %s</string>
     <string name="mtr_error_different">skirtinga migracija programėlėje/duomenų bazėje: %s / %s</string>
-    <string name="chat_archive_header">Pokalbio archyvas</string>
     <string name="icon_descr_group_inactive">Grupė neaktyvi</string>
     <string name="info_row_received_at">Gauta</string>
     <string name="member_blocked_by_admin">Užblokuota administratoriaus</string>
@@ -903,7 +899,6 @@
     <string name="you_can_change_it_later">Atsitiktinė slaptafrazė yra saugoma nustatymuose kaip paprastas tekstas.
 \nJūs galite tai pakeisti vėliau.</string>
     <string name="chat_is_running">Pokalbiai veikia</string>
-    <string name="chat_archive_section">POKALBIO ARCHYVAS</string>
     <string name="chat_is_stopped_you_should_transfer_database">Pokalbiai sustabdyti. Jei jau naudojote šią duomenų bazę kitame įrenginyje, turėtumėte perkelti ją atgal prieš pradedant pokalbius.</string>
     <string name="rcv_group_event_member_blocked">užblokavo %s</string>
     <string name="switch_receiving_address">Keisti gavimo adresą</string>
@@ -1061,7 +1056,6 @@
     <string name="chat_is_stopped_indication">Pokalbiai sustabdyti</string>
     <string name="group_member_status_accepted">jungiamasi (priimtas)</string>
     <string name="icon_descr_contact_checked">Kontaktas patikrintas</string>
-    <string name="archive_created_on_ts">Sukurta %1$s</string>
     <string name="passphrase_is_different">Duomenų bazės slaptafrazė yra kitokia nei išsaugota raktų saugykloje.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Duomenų bazė bus užšifruota ir slaptafrazė bus saugoma nustatymuose.</string>
     <string name="alert_message_group_invitation_expired">Grupės pakvietimas nebegalioja, siuntėjas jį pašalino.</string>

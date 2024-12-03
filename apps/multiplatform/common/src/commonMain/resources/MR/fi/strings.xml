@@ -108,7 +108,6 @@
     <string name="about_simplex">Tietoja SimpleX:stä</string>
     <string name="decentralized">Hajautettu</string>
     <string name="icon_descr_audio_off">Ääni pois päältä</string>
-    <string name="chat_archive_section">ARKISTO</string>
     <string name="change_role">Vaihda rooli</string>
     <string name="full_deletion">Poista kaikilta</string>
     <string name="empty_chat_profile_is_created">Luodaan tyhjä chat-profiili annetulla nimellä, ja sovellus avautuu normaalisti.</string>
@@ -168,9 +167,6 @@
     <string name="theme_dark">Tumma</string>
     <string name="la_auth_failed">Tunnistautuminen epäonnistui</string>
     <string name="smp_servers_preset_add">Lisää esiasetettuja palvelimia</string>
-    <string name="chat_archive_header">Arkisto</string>
-    <string name="delete_chat_archive_question">Poista keskusteluarkisto\?</string>
-    <string name="archive_created_on_ts">Luotu %1$s</string>
     <string name="rcv_group_event_group_deleted">poistettu ryhmä</string>
     <string name="group_member_status_connecting">yhdistää</string>
     <string name="group_member_status_accepted">yhdistäminen (hyväksytty)</string>
@@ -325,7 +321,6 @@
     <string name="database_downgrade">Tietokannan alentaminen</string>
     <string name="database_upgrade">Tietokannan päivitys</string>
     <string name="database_will_be_encrypted">Tietokanta salataan.</string>
-    <string name="delete_archive">Poista arkisto</string>
     <string name="group_member_status_intro_invitation">yhdistäminen (esittelykutsu)</string>
     <string name="info_row_deleted_at">Poistettu klo</string>
     <string name="change_verb">Muuta</string>
@@ -968,7 +963,6 @@
     <string name="smp_server_test_secure_queue">Turvallinen jono</string>
     <string name="restore_passphrase_not_found_desc">Tunnuslausetta ei löydy Keystoresta, kirjoita se manuaalisesti. Tämä on saattanut tapahtua, jos olet palauttanut sovelluksen tiedot varmuuskopiointityökalulla. Jos näin ei ole, ota yhteyttä kehittäjiin.</string>
     <string name="restore_database_alert_desc">Anna edellinen salasana tietokannan varmuuskopion palauttamisen jälkeen. Tätä toimintoa ei voi kumota.</string>
-    <string name="save_archive">Tallenna arkisto</string>
     <string name="non_fatal_errors_occured_during_import">Tuonnin aikana tapahtui joitakin ei-vakavia virheitä – saatat nähdä Chat-konsolissa lisätietoja.</string>
     <string name="info_row_updated_at">Tietue päivitetty klo</string>
     <string name="info_row_moderated_at">Moderoitu klo</string>

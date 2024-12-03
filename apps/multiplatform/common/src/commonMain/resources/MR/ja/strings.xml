@@ -76,8 +76,6 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます（バックグラウンドサービス無し）。]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>設定メニューにてオフにできます。</b> アプリがアクティブ時に通知が出ます。]]></string>
     <string name="both_you_and_your_contacts_can_delete">あなたと連絡相手が送信済みメッセージを永久削除できます。（24時間）</string>
-    <string name="chat_archive_section">チャットのアーカイブ</string>
-    <string name="delete_chat_archive_question">チャットのアーカイブを削除しますか？</string>
     <string name="join_group_incognito_button">シークレットモードで参加</string>
     <string name="group_member_status_intro_invitation">接続待ち (招待)</string>
     <string name="group_member_status_accepted">接続待ち (承諾済み)</string>
@@ -368,8 +366,6 @@
     <string name="database_passphrase_will_be_updated">データベース暗号化のパスフレーズが更新されます。</string>
     <string name="database_passphrase_is_required">チャットを開くにはデータベースパスフレーズが必要です。</string>
     <string name="file_with_path">ファイル： %s</string>
-    <string name="archive_created_on_ts">作成日時 %1$s</string>
-    <string name="delete_archive">アーカイブを削除</string>
     <string name="join_group_button">参加</string>
     <string name="join_group_question">グループに参加しますか？</string>
     <string name="joining_group">グループに参加</string>
@@ -550,7 +546,6 @@
     <string name="settings_section_title_device">端末</string>
     <string name="no_received_app_files">送受信済みのファイルがありません</string>
     <string name="delete_messages">メッセージを削除</string>
-    <string name="chat_archive_header">チャットのアーカイブ</string>
     <string name="rcv_group_event_member_connected">接続中</string>
     <string name="rcv_group_event_user_deleted">あなたを除名しました。</string>
     <string name="group_link">グループのリンク</string>
@@ -920,7 +915,6 @@
     <string name="stop_chat_to_export_import_or_delete_chat_database">データベースのエクスポート、読み込み、削除するにはチャット機能を停止する必要があります。チャット機能を停止すると送受信ができなくなります。</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">あなたのプロフィール、連絡先、メッセージ、ファイルが完全削除されます (※元に戻せません※)。</string>
     <string name="update_database_passphrase">データベースパスフレーズを更新</string>
-    <string name="save_archive">アーカイブを保存</string>
     <string name="snd_group_event_changed_role_for_yourself">あなたが自分の役割を次に変えました：%s</string>
     <string name="snd_conn_event_switch_queue_phase_completed">アドレスを変えました</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">%sのアドレスを変えました</string>

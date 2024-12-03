@@ -90,7 +90,6 @@
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>주의</b>: 암호를 분실하면 복구하거나 비밀번호 변경을 할 수 없어요.]]></string>
     <string name="change_database_passphrase_question">데이터베이스 암호를 바꾸시겠습니까?</string>
     <string name="confirm_new_passphrase">새로운 암호 확인…</string>
-    <string name="chat_archive_section">채팅 기록 보관함</string>
     <string name="rcv_group_event_changed_your_role">내 역할이 %s 역할로 변경됨</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">주소 바꾸는 중…</string>
     <string name="snd_conn_event_switch_queue_phase_changing">주소 바꾸는 중…</string>
@@ -179,7 +178,6 @@
     <string name="chat_database_section">채팅 데이터베이스</string>
     <string name="alert_title_cant_invite_contacts">대화 상대를 초대할 수 없습니다!</string>
     <string name="change_verb">변경</string>
-    <string name="chat_archive_header">채팅 기록 보관함</string>
     <string name="change_role">역할 변경</string>
     <string name="chat_database_deleted">채팅 데이터베이스가 삭제됨</string>
     <string name="chat_is_stopped">채팅이 멈춤</string>
@@ -197,7 +195,6 @@
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">대화 상대와 모든 메시지가 삭제됩니다. 이 결정은 되돌릴 수 없습니다!</string>
     <string name="status_contact_has_e2e_encryption">대화 상대와 종단 간 암호화됨</string>
     <string name="alert_title_contact_connection_pending">대화 상대와 아직 연결되지 않았습니다!</string>
-    <string name="archive_created_on_ts">%1$s에 생성 완료</string>
     <string name="create_secret_group_title">비밀 그룹 생성</string>
     <string name="accept_contact_incognito_button">익명 수락</string>
     <string name="chat_item_ttl_month">1개월</string>
@@ -232,8 +229,6 @@
     <string name="database_error">데이터베이스 에러</string>
     <string name="passphrase_is_different">데이터베이스 암호가 암호 저장소에 저장된 것과 일치하지 않습니다.</string>
     <string name="database_passphrase_is_required">채팅을 열려면 데이터베이스 암호가 필요합니다.</string>
-    <string name="delete_archive">보관함 삭제</string>
-    <string name="delete_chat_archive_question">보관된 채팅을 삭제할까요\?</string>
     <string name="num_contacts_selected">%d 개의 대화 상대가 선택되었습니다.</string>
     <string name="info_row_database_id">데이터베이스 ID</string>
     <string name="users_delete_profile_for">다음 채팅 프로필 삭제</string>
@@ -356,12 +351,7 @@
     <string name="allow_accepting_calls_from_lock_screen">설정에서 잠금 화면에서 바로 전화를 받을 수 있도록 설정할 수 있어요.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">연결을 완료하려면 대화 상대가 온라인 상태여야 해요.
 \n연결 요청을 취소하고 대화 상대를 삭제할 수 있어요 (그리고 새 링크로 재시도).</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">다음과 같은 경우에 발생할 수 있어요.
-\n1. 대화 상대가 메시지를 보낸 지 30일 지나서 서버에서 삭제된 경우
-\n2. 메시지를 수신하는 데 사용된 서버가 업데이트되고 재부팅된 경우
-\n3. 침해된 연결의 경우
-\n서버 업데이트를 받으려면 설정에서 개발자에게 연락해 주세요.
-\n저희 개발팀은 메시지 손실을 방지하기 위해 중복된 서버를 추가할 예정이에요.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">다음과 같은 경우에 발생할 수 있습니다. \n1. 대화 상대가 메시지를 보낸 지 30일 지나서 서버에서 삭제된 경우 \n2. 메시지를 수신하는 데 사용된 서버가 업데이트되고 재부팅된 경우 \n3. 침해된 연결의 경우</string>
     <string name="auth_simplex_lock_turned_on">SimpleX 잠금 켜짐</string>
     <string name="callstate_received_answer">응답됨…</string>
     <string name="callstate_received_confirmation">확인 받음…</string>
@@ -751,7 +741,6 @@
     <string name="save_and_notify_group_members">저장하고 그룹 멤버들에게 알리기</string>
     <string name="save_and_notify_contact">저장하고 대화 상대에게 알리기</string>
     <string name="remove_passphrase">지우기</string>
-    <string name="save_archive">보관함 저장하기</string>
     <string name="save_passphrase_in_keychain">암호 저장소에 암호 저장하기</string>
     <string name="restore_database">데이터베이스 백업 복원하기</string>
     <string name="restore_database_alert_desc">데이터베이스 백업을 복원한 후 이전 비밀번호를 입력해 주십시오. 이 결정은 되돌릴 수 없습니다.</string>
@@ -1296,7 +1285,7 @@
     <string name="info_row_created_at">보낸 날짜</string>
     <string name="info_row_debug_delivery">전송 디버그</string>
     <string name="files_are_prohibited_in_group">파일 및 미디어는 이 그룹에서 금지됩니다.</string>
-    <string name="enter_this_device_name">이 장치의 이름을 입력하십시오…</string>
+    <string name="enter_this_device_name">이 기기의 이름을 입력하십시오…</string>
     <string name="found_desktop">데스크톱을 찾음</string>
     <string name="snd_error_proxy_relay">전달 서버: %1$s\n대상 서버 오류: %2$s</string>
     <string name="snd_error_proxy">전달 서버: %1$s\n오류: %2$s</string>
@@ -1428,4 +1417,48 @@
     <string name="invite_friends">친구 초대</string>
     <string name="v4_3_irreversible_message_deletion">메시지 영구 삭제</string>
     <string name="action_button_add_members">초대</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[메시지를 수신할 서버를 결정할 수 있습니다. 연락처는 자신이 사용할 수신 서버를 결정할 수도 있습니다.]]></string>
+    <string name="onboarding_choose_server_operators">운영자 선택</string>
+    <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[운영자(들)의 이용 약관이 수락될 것입니다: <b>%s</b>.]]></string>
+    <string name="auth_open_chat_profiles">채팅 프로필 변경</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>SOCKS 프록시가 지원하지 않는 경우</i> .onion 호스트를 No로 사용합니다.]]></string>
+    <string name="remote_host_error_missing"><![CDATA[모바일 <b>%s</b> 이 찾을 수 없음]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[백그라운드에서 전화를 걸려면 <b>앱 설정에서 앱 배터리 사용량</b> / <b>제한 없음</b> 을 선택하세요.]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[모바일 <b><![CDATA[모바일 <b>%s</b> 이 연결 끊김]]></string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[그룹 링크입니다 <b>%1$s</b>!]]></string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[두 기기에서 동일한 데이터베이스를<b> 사용해서는 안 됩니다</b>.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">사용자 가이드</font>에서 확인하세요.]]></string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[링크를 클릭하여 연결할 수도 있습니다. 브라우저에서 열리면<b> 모바일 앱에서 열기 </b>버튼을 클릭합니다.]]></string>
+    <string name="operator">운영자</string>
+    <string name="operators_conditions_will_be_accepted_for"><![CDATA[운영자(들)의 이용 약관이 수락될 것입니다: <b>%s</b>.]]></string>
+    <string name="operator_conditions_accepted_on">약관 수락 날짜: %s.</string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[운영자에게도 동일한 약관이 적용됩니다 <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[운영자(들)에게도 동일한 약관이 적용됩니다: <b>%s</b>.]]></string>
+    <string name="operator_conditions_will_be_applied"><![CDATA[이러한 약관은 다음에도 적용됩니다: <b>%s</b>.]]></string>
+    <string name="operator_added_xftp_servers">추가된 미디어 및 파일 서버</string>
+    <string name="appearance_app_toolbars">앱 툴바</string>
+    <string name="appearance_bars_blur_radius">흐리기</string>
+    <string name="accept_conditions">약관 수락</string>
+    <string name="operator_conditions_accepted">약관을 수락함</string>
+    <string name="operator_added_message_servers">추가된 메시지 서버</string>
+    <string name="address_or_1_time_link">주소 또는 일회용 링크?</string>
+    <string name="address_settings">주소 설정</string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[일회용 링크는 <i>한 명의 연락처에만 사용할 수 있으며</i> - 직접 또는 메신저를 통해 공유하십시오.]]></string>
+    <string name="operators_conditions_accepted_for"><![CDATA[운영자(들)의 이용 약관이 수락됩니다(s): <b>%s</b>.]]></string>
+    <string name="operator_conditions_accepted_for_some"><![CDATA[다음 운영자(들)의 이용 약관이 이미 수락되었습니다: <b>%s</b>.]]></string>
+    <string name="remote_host_error_busy"><![CDATA[모바일 <b>%s</b> 이 현재 사용 중]]></string>
+    <string name="operators_conditions_will_also_apply"><![CDATA[이러한 약관은 다음에도 적용됩니다: <b>%s</b>.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[개인 정보를 보호하기 위해 앱에서는 푸시 알림 대신 <b>SimpleX 백그라운드 서비스</b>를 제공합니다. - 이 기능은 하루에 몇 퍼센트의 배터리를 소모합니다.]]></string>
+    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[<b>%s</b> 의 서버를 사용하려면 사용 약관에 동의하십시오.]]></string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[이미 <b>%1$s</b> 에 연결 중입니다.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[SimpleX가 <b>SimpleX의 백그라운드에서 실행되도록</b> 허용하십시오. 그렇지 않으면 알림을 사용할 수 없습니다.]]></string>
+    <string name="system_restricted_background_warn"><![CDATA[알림을 활성화하려면 <b>앱 설정에서 앱 배터리 사용량</b> / <b>제한 없음</b> 을 선택하십시오.]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[모바일 <b>%s</b> 이 현재 비활성화됨]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[<font color="#0088ff">SimpleX Chat 개발자에게 연결하여 질문하고 업데이트를 받을 수 있습니다</font>.]]></string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[모바일 <b>%s</b> 이 연결 끊김]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[모바일 앱 <i>에서 데스크톱에서<i> 사용을 열고 QR 코드를 스캔합니다.]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[모바일에 연결하는 동안 시간이 초과했습니다 <b>%s</b>]]></string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[이미 <b>%1$s</b> 그룹에 가입하는 중 입니다.]]></string>
+    <string name="remote_host_error_bad_version"><![CDATA[모바일 <b>%s</b> 버전이 지원되지 않습니다. 두 기기에서 동일한 버전을 사용하는지 확인하십시오.]]></string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[이미 <b>%1$s</b> 그룹에 속해 있습니다.]]></string>
 </resources>

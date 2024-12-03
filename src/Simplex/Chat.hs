@@ -316,7 +316,7 @@ newChatController
     randomPresetServers <- chooseRandomServers presetServers'
     let rndSrvs = L.toList randomPresetServers
         operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op
-        opDomains = operatorDomains $ mapMaybe operatorWithId $ zip [1..] rndSrvs
+        opDomains = operatorDomains $ mapMaybe operatorWithId $ zip [1 ..] rndSrvs
     agentSMP <- randomServerCfgs "agent SMP servers" SPSMP opDomains rndSrvs
     agentXFTP <- randomServerCfgs "agent XFTP servers" SPXFTP opDomains rndSrvs
     let randomAgentServers = RandomAgentServers {smpServers = agentSMP, xftpServers = agentXFTP}
@@ -1078,6 +1078,11 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
+  APIGetReactionMembers userId groupId itemId reaction -> withUserId userId $ \user -> do
+    memberReactions <- withStore $ \db -> do
+      CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} <- getGroupChatItem db user groupId itemId
+      liftIO $ getReactionMembers db vr user groupId itemSharedMId reaction
+    pure $ CRReactionMembers user memberReactions
   APIPlanForwardChatItems (ChatRef fromCType fromChatId) itemIds -> withUser $ \user -> case fromCType of
     CTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds
     CTGroup -> planForward user . snd =<< getCommandGroupChatItems user fromChatId itemIds
@@ -1631,7 +1636,7 @@ processChatCommand' vr = \case
       liftIO $ fmap (opsConds,) . mapM (getServers db as ops' opDomains) =<< getUsers db
     lift $ withAgent' $ \a -> forM_ srvs $ \(auId, (smp', xftp')) -> do
       setProtocolServers a auId smp'
-      setProtocolServers a auId xftp'      
+      setProtocolServers a auId xftp'
     pure $ CRServerOperatorConditions opsConds
     where
       getServers :: DB.Connection -> RandomAgentServers -> [Maybe ServerOperator] -> [(Text, ServerOperator)] -> User -> IO (UserId, (NonEmpty (ServerCfg 'PSMP), NonEmpty (ServerCfg 'PXFTP)))
@@ -1940,7 +1945,7 @@ processChatCommand' vr = \case
       canKeepLink (CRInvitationUri crData _) newUser = do
         let ConnReqUriData {crSmpQueues = q :| _} = crData
             SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-        newUserServers <- 
+        newUserServers <-
           map protoServer' . L.filter (\ServerCfg {enabled} -> enabled)
             <$> getKnownAgentServers SPSMP newUser
         pure $ smpServer `elem` newUserServers
@@ -3428,7 +3433,7 @@ processChatCommand' vr = \case
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
-protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP],  [UserServer 'PXFTP])
+protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
 protocolServers p (operators, smpServers, xftpServers) = case p of
   SPSMP -> (operators, smpServers, [])
   SPXFTP -> (operators, [], xftpServers)
@@ -8267,6 +8272,7 @@ chatCommandP =
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
+      "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_read user " *> (APIUserRead <$> A.decimal),

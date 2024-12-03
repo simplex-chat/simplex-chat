@@ -475,7 +475,6 @@
     <string name="restore_passphrase_not_found_desc">La phrase secrète n\'a pas été trouvée dans le Keystore, veuillez la saisir manuellement. Cela a pu se produire si vous avez restauré les données de l\'app à l\'aide d\'un outil de sauvegarde. Si ce n\'est pas le cas, veuillez contacter les développeurs.</string>
     <string name="restore_database_alert_desc">Veuillez entrer le mot de passe précédent après avoir restauré la sauvegarde de la base de données. Cette action ne peut pas être annulée.</string>
     <string name="database_restore_error">Erreur de restauration de la base de données</string>
-    <string name="archive_created_on_ts">Créé le %1$s</string>
     <string name="encrypted_video_call">appel vidéo (chiffrement de bout en bout)</string>
     <string name="audio_call_no_encryption">appel audio (sans chiffrement)</string>
     <string name="encrypted_audio_call">appel audio (chiffrement de bout en bout)</string>
@@ -653,11 +652,6 @@
     <string name="restore_database_alert_confirm">Restaurer</string>
     <string name="chat_is_stopped_indication">Le chat est arrêté</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Vous pouvez lancer le chat via les Paramètres / la Base de données de l\'app ou en la redémarrant.</string>
-    <string name="chat_archive_header">Archives du chat</string>
-    <string name="chat_archive_section">ARCHIVE DU CHAT</string>
-    <string name="save_archive">Enregistrer l\'archive</string>
-    <string name="delete_archive">Supprimer l\'archive</string>
-    <string name="delete_chat_archive_question">Supprimer l\'archive du chat \?</string>
     <string name="group_invitation_item_description">Invitation au groupe %1$s</string>
     <string name="join_group_question">Rejoindre le groupe \?</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Vous êtes invité·e dans un groupe. Rejoignez le pour vous connecter avec ses membres.</string>
