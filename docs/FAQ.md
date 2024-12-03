@@ -124,10 +124,11 @@ When "Delete for everyone" is not enabled, you can still mark the sent message a
 
 ### Why invite links use simplex.chat domain?
 
-You can replace https://simplex.chat with simplex:/ or with any other domain - the app does not connect with simplex.chat domain, and generally ignores it completely. It is only used to make onboarding easier for users who do not have installed the app yet.
-The default link domain will soon move to server’s domain, servers already can host the pages that will be used to render QR codes too.
+You can replace `https://simplex.chat/` with `simplex:/` or with any other domain - the app never connect with it, ignoring it completely. It is only used to make it easier to connect for the new users who did not install the app yet.
 
-The link exchange isn’t really hosted anywhere, it’s just the page to render QR code, and the server that hosts this page doesn’t observe the actual connection link as it’s in the hash fragment - it is not sent over the internet - all that the server can see is https://simplex.chat/contact/ and the rest is processed locally in the browse, if you open it as a page.
+The invitation links will soon move to servers' domains. The servers already can host the pages that will be used to show QR codes.
+
+The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (`#`) is not sent over the internet - the server can only see https://simplex.chat/contact/ and the rest is processed on user's device in the browser, if you open it as a page.
 
 ## Troubleshooting
 
@@ -238,15 +239,16 @@ Once the connection is established you don't need to be online at the same time 
 ### I do not know my database passphrase
 
 If you are prompted to enter database passphrase and you do not know it, this could have happened due to:
-- Error during SimpleX Chat installation on desktop.
-- Migration of app data from one device to another while using unsupported migration tool (Use SimpleX Chat's own migration tool only)
-- You may have forgotten the passphrase. (There is no other way to access your data)
+- You may have forgotten the passphrase. (There is no other way to access your data).
+- Migration of app data from one device to another while using unsupported migration process, e.g. via iCloud backup. Use SimpleX Chat's own migration process in the app Settings.
 
-You can resolve it by deleting the app's database: (WARNING: this results in deletion of all profiles, contacts)
+In the previous desktop app versions it could also happen in case of error during SimpleX Chat installation.
+
+You can resolve it by deleting the app's database: (WARNING: this results in deletion of all profiles, contacts and messages)
 - on Android/iOS, uninstall the app and install it again.
-- on Windows, delete folder C:\AppData\Roaming\SimpleX, you can find it by pressing Windows key + R and entering %appdata%
-- on Linux/Mac, delete directories ~/.local/share/simplex and ~/.config/simplex, where ~ represents your home directory (/home/user)
-- on Flatpak, delete directory ~/.var/app/chat.simplex.simplex
+- on Windows, delete folder `C:\AppData\Roaming\SimpleX`, you can find it by pressing Windows key + R and entering `%appdata%`.
+- on Linux/Mac, delete directories `~/.local/share/simplex` and `~/.config/simplex`, where `~` represents your home directory (/home/user)
+- on Flatpak, delete directory `~/.var/app/chat.simplex.simplex`.
 
 ## Privacy and security
 
