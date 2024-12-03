@@ -1572,7 +1572,7 @@
 "Direct messages" = "Doğrudan mesajlar";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Bu grupta üyeler arasında direkt mesajlaşma yasaktır.";
+"Direct messages between members are prohibited." = "Bu grupta üyeler arasında direkt mesajlaşma yasaktır.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Devre dışı bırak (geçersiz kılmaları koru)";
@@ -1599,7 +1599,7 @@
 "Disappearing messages are prohibited in this chat." = "Kaybolan mesajlar bu sohbette yasaklanmış.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Kaybolan mesajlar bu grupta yasaklanmış.";
+"Disappearing messages are prohibited." = "Kaybolan mesajlar bu grupta yasaklanmış.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "da kaybolur";
@@ -2146,7 +2146,7 @@
 "Files and media" = "Dosyalar ve medya";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Dosyalar ve medya bu grupta yasaklandı.";
+"Files and media are prohibited." = "Dosyalar ve medya bu grupta yasaklandı.";
 
 /* No comment provided by engineer. */
 "Files and media not allowed" = "Dosyalar ve medyaya izin verilmiyor";
@@ -2302,25 +2302,25 @@
 "Group links" = "Grup bağlantıları";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "Grup üyeleri mesaj tepkileri ekleyebilir.";
+"Members can add message reactions." = "Grup üyeleri mesaj tepkileri ekleyebilir.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)";
+"Members can irreversibly delete sent messages. (24 hours)" = "Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "Grup üyeleri doğrudan mesajlar gönderebilir.";
+"Members can send direct messages." = "Grup üyeleri doğrudan mesajlar gönderebilir.";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Grup üyeleri kaybolan mesajlar gönderebilir.";
+"Members can send disappearing messages." = "Grup üyeleri kaybolan mesajlar gönderebilir.";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "Grup üyeleri dosyalar ve medya gönderebilir.";
+"Members can send files and media." = "Grup üyeleri dosyalar ve medya gönderebilir.";
 
 /* No comment provided by engineer. */
-"Group members can send SimpleX links." = "Grup üyeleri SimpleX bağlantıları gönderebilir.";
+"Members can send SimpleX links." = "Grup üyeleri SimpleX bağlantıları gönderebilir.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "Grup üyeleri sesli mesajlar gönderebilir.";
+"Members can send voice messages." = "Grup üyeleri sesli mesajlar gönderebilir.";
 
 /* notification */
 "Group message:" = "Grup mesajı:";
@@ -2617,7 +2617,7 @@
 "Irreversible message deletion is prohibited in this chat." = "Bu sohbette geri döndürülemez mesaj silme yasaktır.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Bu grupta geri döndürülemez mesaj silme yasaktır.";
+"Irreversible message deletion is prohibited." = "Bu grupta geri döndürülemez mesaj silme yasaktır.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Tek bir sohbet profilinde aralarında herhangi bir veri paylaşımı olmadan birçok anonim bağlantıya sahip olmaya izin verir.";
@@ -2839,7 +2839,7 @@
 "Message reactions are prohibited in this chat." = "Mesaj tepkileri bu sohbette yasaklandı.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Mesaj tepkileri bu grupta yasaklandı.";
+"Message reactions are prohibited." = "Mesaj tepkileri bu grupta yasaklandı.";
 
 /* notification */
 "message received" = "mesaj alındı";
@@ -4191,7 +4191,7 @@
 "SimpleX links" = "SimpleX bağlantıları";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "SimpleX bağlantıları bu grupta yasaklandı.";
+"SimpleX links are prohibited." = "SimpleX bağlantıları bu grupta yasaklandı.";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "SimpleX bağlantılarına izin verilmiyor";
@@ -4872,7 +4872,7 @@
 "Voice messages are prohibited in this chat." = "Bu sohbette sesli mesajlar yasaktır.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Bu grupta sesli mesajlar yasaktır.";
+"Voice messages are prohibited." = "Bu grupta sesli mesajlar yasaktır.";
 
 /* No comment provided by engineer. */
 "Voice messages not allowed" = "Sesli mesajlara izin verilmiyor";

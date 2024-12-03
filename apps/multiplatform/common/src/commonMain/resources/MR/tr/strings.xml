@@ -524,7 +524,7 @@
     <string name="snd_conn_event_ratchet_sync_agreed">%s üyesi için şifreleme kabul edildi</string>
     <string name="conn_level_desc_direct">doğrudan</string>
     <string name="dont_show_again">Yeniden gösterme</string>
-    <string name="direct_messages_are_prohibited_in_chat">Bu grupta üyeler arası doğrudan mesajlaşma yasaklıdır.</string>
+    <string name="direct_messages_are_prohibited_in_group">Bu grupta üyeler arası doğrudan mesajlaşma yasaklıdır.</string>
     <string name="feature_enabled_for_contact">konuşulan kişi için etkinleşti</string>
     <string name="feature_enabled_for_you">senin için etkinleştirildi</string>
     <string name="ttl_sec">%d sn</string>

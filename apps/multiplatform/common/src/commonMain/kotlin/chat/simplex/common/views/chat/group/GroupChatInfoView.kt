@@ -123,12 +123,18 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
 
 fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   val chatInfo = chat.chatInfo
-  val alertTextKey =
-    if (groupInfo.membership.memberCurrent) MR.strings.delete_group_for_all_members_cannot_undo_warning
-    else MR.strings.delete_group_for_self_cannot_undo_warning
+  val titleId = if (groupInfo.businessChat == null) MR.strings.delete_group_question else MR.strings.delete_chat_question
+  val messageId =
+    if (groupInfo.businessChat == null) {
+      if (groupInfo.membership.memberCurrent) MR.strings.delete_group_for_all_members_cannot_undo_warning
+      else MR.strings.delete_group_for_self_cannot_undo_warning
+    } else {
+      if (groupInfo.membership.memberCurrent) MR.strings.delete_chat_for_all_members_cannot_undo_warning
+      else MR.strings.delete_chat_for_self_cannot_undo_warning
+    }
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.delete_group_question),
-    text = generalGetString(alertTextKey),
+    title = generalGetString(titleId),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {
@@ -151,9 +157,14 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
 }
 
 fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val titleId = if (groupInfo.businessChat == null) MR.strings.leave_group_question else MR.strings.leave_chat_question
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved
+  else
+    MR.strings.you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.leave_group_question),
-    text = generalGetString(MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
+    title = generalGetString(titleId),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
       withLongRunningApi(60_000) {
@@ -166,9 +177,13 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
 }
 
 private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.member_will_be_removed_from_group_cannot_be_undone
+  else
+    MR.strings.member_will_be_removed_from_chat_cannot_be_undone
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_remove_member_question),
-    text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withBGApi {
@@ -353,7 +368,8 @@ fun ModalData.GroupChatInfoLayout(
           }
         }
       }
-      SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
+      val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
+      SectionTextFooter(stringResource(footerId))
       SectionDividerSpaced(maxTopPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
@@ -397,10 +413,12 @@ fun ModalData.GroupChatInfoLayout(
       SectionView {
         ClearChatButton(clearChat)
         if (groupInfo.canDelete) {
-          DeleteGroupButton(deleteGroup)
+          val titleId = if (groupInfo.businessChat == null) MR.strings.button_delete_group else MR.strings.button_delete_chat
+          DeleteGroupButton(titleId, deleteGroup)
         }
         if (groupInfo.membership.memberCurrent) {
-          LeaveGroupButton(leaveGroup)
+          val titleId = if (groupInfo.businessChat == null) MR.strings.button_leave_group else MR.strings.button_leave_chat
+          LeaveGroupButton(titleId, leaveGroup)
         }
       }
 
@@ -655,10 +673,10 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
 }
 
 @Composable
-private fun LeaveGroupButton(onClick: () -> Unit) {
+private fun LeaveGroupButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_logout),
-    stringResource(MR.strings.button_leave_group),
+    stringResource(titleId),
     onClick,
     iconColor = Color.Red,
     textColor = Color.Red
@@ -666,10 +684,10 @@ private fun LeaveGroupButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun DeleteGroupButton(onClick: () -> Unit) {
+private fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_delete),
-    stringResource(MR.strings.button_delete_group),
+    stringResource(titleId),
     onClick,
     iconColor = Color.Red,
     textColor = Color.Red

@@ -879,7 +879,7 @@
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
     <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
     <string name="group_members_can_send_dms">Члены группы могут посылать прямые сообщения.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между членами группы запрещены.</string>
+    <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между членами группы запрещены.</string>
     <string name="group_members_can_delete">Члены группы могут необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено в этой группе.</string>
     <string name="group_members_can_send_voice">Члены группы могут отправлять голосовые сообщения.</string>

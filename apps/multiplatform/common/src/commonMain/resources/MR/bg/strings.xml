@@ -460,7 +460,7 @@
     <string name="timed_messages">Изчезващи съобщения</string>
     <string name="feature_enabled">активирано</string>
     <string name="feature_enabled_for_contact">активирано за контакт</string>
-    <string name="direct_messages_are_prohibited_in_chat">Личните съобщения между членовете са забранени в тази група.</string>
+    <string name="direct_messages_are_prohibited_in_group">Личните съобщения между членовете са забранени в тази група.</string>
     <string name="v4_5_multiple_chat_profiles_descr">Различни имена, аватари и транспортна изолация.</string>
     <string name="v5_2_fix_encryption_descr">Оправяне на криптирането след възстановяване от резервни копия.</string>
     <string name="delivery_receipts_title">Потвърждениe за доставка!</string>

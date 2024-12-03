@@ -5001,7 +5001,7 @@ enum class GroupFeature: Feature {
         }
         DirectMessages -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_dms)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.direct_messages_are_prohibited_in_chat)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.direct_messages_are_prohibited)
         }
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_delete)

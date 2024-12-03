@@ -503,7 +503,7 @@
     <string name="deleted">Đã xóa</string>
     <string name="deletion_errors">Lỗi xóa</string>
     <string name="rcv_group_events_count">%d sự kiện nhóm</string>
-    <string name="direct_messages_are_prohibited_in_chat">Tin nhắn trực tiếp giữa các thành viên bị cấm trong nhóm này.</string>
+    <string name="direct_messages_are_prohibited_in_group">Tin nhắn trực tiếp giữa các thành viên bị cấm trong nhóm này.</string>
     <string name="total_files_count_and_size">%d tệp với tổng kích thước là %s</string>
     <string name="mtr_error_different">phần di dời khác nhau trong ứng dụng/cơ sở dữ liệu: %s / %s</string>
     <string name="direct_messages">Tin nhắn trực tiếp</string>

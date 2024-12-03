@@ -807,7 +807,7 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Zarówno Ty, jak i Twój kontakt możecie wysyłać znikające wiadomości.</string>
     <string name="contacts_can_mark_messages_for_deletion">Kontakty mogą oznaczać wiadomości do usunięcia; będziesz mógł je zobaczyć.</string>
     <string name="delete_after">Usuń po</string>
-    <string name="direct_messages_are_prohibited_in_chat">Bezpośrednie wiadomości między członkami są zabronione w tej grupie.</string>
+    <string name="direct_messages_are_prohibited_in_group">Bezpośrednie wiadomości między członkami są zabronione w tej grupie.</string>
     <string name="disappearing_prohibited_in_this_chat">Znikające wiadomości są zabronione na tym czacie.</string>
     <string name="ttl_m">%dm</string>
     <string name="ttl_min">%d min</string>

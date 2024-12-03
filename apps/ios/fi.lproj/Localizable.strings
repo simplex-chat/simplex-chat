@@ -1041,7 +1041,7 @@
 "Direct messages" = "Yksityisviestit";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.";
+"Direct messages between members are prohibited." = "Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Poista käytöstä (pidä ohitukset)";
@@ -1065,7 +1065,7 @@
 "Disappearing messages are prohibited in this chat." = "Katoavat viestit ovat kiellettyjä tässä keskustelussa.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Katoavat viestit ovat kiellettyjä tässä ryhmässä.";
+"Disappearing messages are prohibited." = "Katoavat viestit ovat kiellettyjä tässä ryhmässä.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Katoaa klo";
@@ -1437,7 +1437,7 @@
 "Files and media" = "Tiedostot ja media";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Tiedostot ja media ovat tässä ryhmässä kiellettyjä.";
+"Files and media are prohibited." = "Tiedostot ja media ovat tässä ryhmässä kiellettyjä.";
 
 /* No comment provided by engineer. */
 "Files and media prohibited!" = "Tiedostot ja media kielletty!";
@@ -1521,22 +1521,22 @@
 "Group links" = "Ryhmälinkit";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "Ryhmän jäsenet voivat lisätä viestireaktioita.";
+"Members can add message reactions." = "Ryhmän jäsenet voivat lisätä viestireaktioita.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
+"Members can irreversibly delete sent messages. (24 hours)" = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "Ryhmän jäsenet voivat lähettää suoraviestejä.";
+"Members can send direct messages." = "Ryhmän jäsenet voivat lähettää suoraviestejä.";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Ryhmän jäsenet voivat lähettää katoavia viestejä.";
+"Members can send disappearing messages." = "Ryhmän jäsenet voivat lähettää katoavia viestejä.";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "Ryhmän jäsenet voivat lähettää tiedostoja ja mediaa.";
+"Members can send files and media." = "Ryhmän jäsenet voivat lähettää tiedostoja ja mediaa.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "Ryhmän jäsenet voivat lähettää ääniviestejä.";
+"Members can send voice messages." = "Ryhmän jäsenet voivat lähettää ääniviestejä.";
 
 /* notification */
 "Group message:" = "Ryhmäviesti:";
@@ -1770,7 +1770,7 @@
 "Irreversible message deletion is prohibited in this chat." = "Viestien peruuttamaton poisto on kielletty tässä keskustelussa.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Viestien peruuttamaton poisto on kielletty tässä ryhmässä.";
+"Irreversible message deletion is prohibited." = "Viestien peruuttamaton poisto on kielletty tässä ryhmässä.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Se mahdollistaa useiden nimettömien yhteyksien muodostamisen yhdessä keskusteluprofiilissa ilman, että niiden välillä on jaettuja tietoja.";
@@ -1926,7 +1926,7 @@
 "Message reactions are prohibited in this chat." = "Viestireaktiot ovat kiellettyjä tässä keskustelussa.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Viestireaktiot ovat kiellettyjä tässä ryhmässä.";
+"Message reactions are prohibited." = "Viestireaktiot ovat kiellettyjä tässä ryhmässä.";
 
 /* notification */
 "message received" = "viesti vastaanotettu";
@@ -3164,7 +3164,7 @@
 "Voice messages are prohibited in this chat." = "Ääniviestit ovat kiellettyjä tässä keskustelussa.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Ääniviestit ovat kiellettyjä tässä ryhmässä.";
+"Voice messages are prohibited." = "Ääniviestit ovat kiellettyjä tässä ryhmässä.";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "Ääniviestit kielletty!";

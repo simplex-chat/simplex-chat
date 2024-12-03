@@ -1179,7 +1179,7 @@
 "Direct messages" = "ダイレクトメッセージ";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "このグループではメンバー間のダイレクトメッセージが使用禁止です。";
+"Direct messages between members are prohibited." = "このグループではメンバー間のダイレクトメッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "無効にする（設定の優先を維持）";
@@ -1203,7 +1203,7 @@
 "Disappearing messages are prohibited in this chat." = "このチャットでは消えるメッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "このグループでは消えるメッセージが使用禁止です。";
+"Disappearing messages are prohibited." = "このグループでは消えるメッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
 "Disappears at" = "に消えます";
@@ -1578,7 +1578,7 @@
 "Files and media" = "ファイルとメディア";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "このグループでは、ファイルとメディアは禁止されています。";
+"Files and media are prohibited." = "このグループでは、ファイルとメディアは禁止されています。";
 
 /* No comment provided by engineer. */
 "Files and media prohibited!" = "ファイルとメディアは禁止されています!";
@@ -1662,22 +1662,22 @@
 "Group links" = "グループのリンク";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "グループメンバーはメッセージへのリアクションを追加できます。";
+"Members can add message reactions." = "グループメンバーはメッセージへのリアクションを追加できます。";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。(24時間)";
+"Members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。(24時間)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "グループのメンバーがダイレクトメッセージを送信できます。";
+"Members can send direct messages." = "グループのメンバーがダイレクトメッセージを送信できます。";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "グループのメンバーが消えるメッセージを送信できます。";
+"Members can send disappearing messages." = "グループのメンバーが消えるメッセージを送信できます。";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "グループメンバーはファイルやメディアを送信できます。";
+"Members can send files and media." = "グループメンバーはファイルやメディアを送信できます。";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "グループのメンバーが音声メッセージを送信できます。";
+"Members can send voice messages." = "グループのメンバーが音声メッセージを送信できます。";
 
 /* notification */
 "Group message:" = "グループメッセージ:";
@@ -1911,7 +1911,7 @@
 "Irreversible message deletion is prohibited in this chat." = "このチャットではメッセージの完全削除が使用禁止です。";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "このグループではメッセージの完全削除が使用禁止です。";
+"Irreversible message deletion is prohibited." = "このグループではメッセージの完全削除が使用禁止です。";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "これにより単一のチャット プロファイル内で、データを共有せずに多数の匿名の接続をすることができます。";
@@ -2064,7 +2064,7 @@
 "Message reactions are prohibited in this chat." = "このチャットではメッセージへのリアクションは禁止されています。";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "このグループではメッセージへのリアクションは禁止されています。";
+"Message reactions are prohibited." = "このグループではメッセージへのリアクションは禁止されています。";
 
 /* notification */
 "message received" = "メッセージを受信";
@@ -3290,7 +3290,7 @@
 "Voice messages are prohibited in this chat." = "このチャットでは音声メッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "このグループでは音声メッセージが使用禁止です。";
+"Voice messages are prohibited." = "このグループでは音声メッセージが使用禁止です。";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "音声メッセージは使用禁止です！";

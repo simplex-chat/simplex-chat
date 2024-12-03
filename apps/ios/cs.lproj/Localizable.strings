@@ -1059,7 +1059,7 @@
 "Direct messages" = "Přímé zprávy";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Přímé zprávy mezi členy jsou v této skupině zakázány.";
+"Direct messages between members are prohibited." = "Přímé zprávy mezi členy jsou v této skupině zakázány.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Vypnout (zachovat přepsání)";
@@ -1083,7 +1083,7 @@
 "Disappearing messages are prohibited in this chat." = "Mizící zprávy jsou v tomto chatu zakázány.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Mizící zprávy jsou v této skupině zakázány.";
+"Disappearing messages are prohibited." = "Mizící zprávy jsou v této skupině zakázány.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Zmizí v";
@@ -1461,7 +1461,7 @@
 "Files and media" = "Soubory a média";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Soubory a média jsou zakázány v této skupině.";
+"Files and media are prohibited." = "Soubory a média jsou zakázány v této skupině.";
 
 /* No comment provided by engineer. */
 "Files and media prohibited!" = "Soubory a média jsou zakázány!";
@@ -1545,22 +1545,22 @@
 "Group links" = "Odkazy na skupiny";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
+"Members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
 
 /* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
+"Members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
 
 /* No comment provided by engineer. */
-"Group members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
+"Members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
 
 /* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Členové skupiny mohou posílat mizící zprávy.";
+"Members can send disappearing messages." = "Členové skupiny mohou posílat mizící zprávy.";
 
 /* No comment provided by engineer. */
-"Group members can send files and media." = "Členové skupiny mohou posílat soubory a média.";
+"Members can send files and media." = "Členové skupiny mohou posílat soubory a média.";
 
 /* No comment provided by engineer. */
-"Group members can send voice messages." = "Členové skupiny mohou posílat hlasové zprávy.";
+"Members can send voice messages." = "Členové skupiny mohou posílat hlasové zprávy.";
 
 /* notification */
 "Group message:" = "Skupinová zpráva:";
@@ -1794,7 +1794,7 @@
 "Irreversible message deletion is prohibited in this chat." = "Nevratné mazání zpráv je v tomto chatu zakázáno.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Nevratné mazání zpráv je v této skupině zakázáno.";
+"Irreversible message deletion is prohibited." = "Nevratné mazání zpráv je v této skupině zakázáno.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Umožňuje mít v jednom profilu chatu mnoho anonymních spojení bez jakýchkoli sdílených údajů mezi nimi.";
@@ -1950,7 +1950,7 @@
 "Message reactions are prohibited in this chat." = "Reakce na zprávy jsou v tomto chatu zakázány.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Reakce na zprávy jsou v této skupině zakázány.";
+"Message reactions are prohibited." = "Reakce na zprávy jsou v této skupině zakázány.";
 
 /* notification */
 "message received" = "zpráva přijata";
@@ -3206,7 +3206,7 @@
 "Voice messages are prohibited in this chat." = "Hlasové zprávy jsou v tomto chatu zakázány.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Hlasové zprávy jsou v této skupině zakázány.";
+"Voice messages are prohibited." = "Hlasové zprávy jsou v této skupině zakázány.";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "Hlasové zprávy jsou zakázány!";

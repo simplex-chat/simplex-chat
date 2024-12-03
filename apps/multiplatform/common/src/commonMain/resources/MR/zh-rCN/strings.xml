@@ -423,7 +423,7 @@
     <string name="icon_descr_flip_camera">翻转相机</string>
     <string name="enable_automatic_deletion_question">启用自动删除消息？</string>
     <string name="section_title_for_console">用于控制台</string>
-    <string name="direct_messages_are_prohibited_in_chat">此群中禁止成员之间私信。</string>
+    <string name="direct_messages_are_prohibited_in_group">此群中禁止成员之间私信。</string>
     <string name="disappearing_messages_are_prohibited">该组禁止限时消息。</string>
     <string name="group_members_can_delete">群组成员可以不可逆地删除已发送的消息。（24小时）</string>
     <string name="group_members_can_send_dms">群组成员可以私信。</string>

@@ -564,7 +564,7 @@
     <string name="group_members_can_delete">Anggota grup dapat hapus pesan terkirim secara permanen. (24 jam)</string>
     <string name="group_members_can_send_voice">Anggota grup dapat mengirim pesan suara.</string>
     <string name="message_deletion_prohibited_in_chat">Hapus pesan yang tidak dapat dibatalkan dilarang di grup ini.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Pesan pribadi antar anggota dilarang di grup ini.</string>
+    <string name="direct_messages_are_prohibited_in_group">Pesan pribadi antar anggota dilarang di grup ini.</string>
     <string name="group_members_can_send_simplex_links">Anggota grup dapat kirim tautan SimpleX.</string>
     <string name="ttl_hours">%d jam</string>
     <string name="ttl_hour">%d jam</string>

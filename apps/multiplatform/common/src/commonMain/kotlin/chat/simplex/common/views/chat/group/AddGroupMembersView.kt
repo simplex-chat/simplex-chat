@@ -33,6 +33,7 @@ import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
@@ -126,7 +127,8 @@ fun AddGroupMembersLayout(
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
-      Text(generalGetString(MR.strings.group_main_profile_sent), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2)
+      val textId = if (groupInfo.businessChat == null) MR.strings.group_main_profile_sent else MR.strings.chat_main_profile_sent
+      Text(generalGetString(textId), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2)
     }
   }
 
@@ -168,7 +170,8 @@ fun AddGroupMembersLayout(
         if (creatingGroup && selectedContacts.isEmpty()) {
           SkipInvitingButton(close)
         } else {
-          InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
+          val titleId = if (groupInfo.businessChat == null) MR.strings.invite_to_group_button else MR.strings.invite_to_chat_button
+          InviteMembersButton(titleId, inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
         }
       }
       SectionCustomFooter {
@@ -220,10 +223,10 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
 }
 
 @Composable
-fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
+fun InviteMembersButton(titleId: StringResource, onClick: () -> Unit, disabled: Boolean) {
   SettingsActionItem(
     painterResource(MR.images.ic_check),
-    stringResource(MR.strings.invite_to_group_button),
+    stringResource(titleId),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
