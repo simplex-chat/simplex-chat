@@ -203,7 +203,7 @@ private fun UserAddressLayout(
           SimpleXLinkQRCode(userAddress.connReqContact)
           ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
           // ShareViaEmailButton { sendEmail(userAddress) }
-          BusinessAddressToggle(autoAcceptState, saveAas = { saveAas(autoAcceptState.value, autoAcceptStateSaved) })
+          BusinessAddressToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }
           AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAas)
 
           if (autoAcceptState.value.business) {
@@ -402,13 +402,12 @@ private fun BusinessAddressToggle(autoAcceptState: MutableState<AutoAcceptState>
   PreferenceToggleWithIcon(
     stringResource(MR.strings.business_address),
     painterResource(MR.images.ic_work),
-    MaterialTheme.colors.secondary,
-    autoAcceptState.value.business,
-  ) {
-    autoAcceptState.value = if (it)
-      AutoAcceptState(enable = true, incognito = false, business = it, autoAcceptState.value.welcomeText)
+    checked = autoAcceptState.value.business,
+  ) { ba ->
+    autoAcceptState.value = if (ba)
+      AutoAcceptState(enable = true, incognito = false, business = true, autoAcceptState.value.welcomeText)
     else
-      AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, business = it, autoAcceptState.value.welcomeText)
+      AutoAcceptState(autoAcceptState.value.enable, autoAcceptState.value.incognito, business = false, autoAcceptState.value.welcomeText)
     saveAas(autoAcceptState.value)
   }
 }
@@ -480,12 +479,13 @@ private class AutoAcceptState {
 
   override fun equals(other: Any?): Boolean {
     if (other !is AutoAcceptState) return false
-    return this.enable == other.enable && this.incognito == other.incognito && this.welcomeText == other.welcomeText
+    return this.enable == other.enable && this.incognito == other.incognito && this.business == other.business && this.welcomeText == other.welcomeText
   }
 
   override fun hashCode(): Int {
     var result = enable.hashCode()
     result = 31 * result + incognito.hashCode()
+    result = 31 * result + business.hashCode()
     result = 31 * result + welcomeText.hashCode()
     return result
   }

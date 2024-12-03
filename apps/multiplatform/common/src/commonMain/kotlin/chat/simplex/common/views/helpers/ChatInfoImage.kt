@@ -33,7 +33,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
     when (chatInfo) {
       is ChatInfo.Group ->
         when (chatInfo.groupInfo.businessChat?.chatType) {
-          BusinessChatType.Business -> MR.images.ic_work
+          BusinessChatType.Business -> MR.images.ic_business_filled
           BusinessChatType.Customer -> MR.images.ic_account_circle_filled
           null -> MR.images.ic_supervised_user_circle_filled
         }
