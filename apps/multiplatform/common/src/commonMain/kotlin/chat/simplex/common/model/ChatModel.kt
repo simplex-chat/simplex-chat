@@ -1467,6 +1467,7 @@ data class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val businessChat: BusinessChatInfo? = null,
   val fullGroupPreferences: FullGroupPreferences,
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
@@ -1497,7 +1498,7 @@ data class GroupInfo (
   override val image get() = groupProfile.image
   override val localAlias get() = ""
 
-  val canEdit: Boolean
+  val isOwner: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
 
   val canDelete: Boolean
@@ -1541,6 +1542,18 @@ data class GroupProfile (
       fullName = "My Team"
     )
   }
+}
+
+@Serializable
+data class BusinessChatInfo (
+  val memberId: String,
+  val chatType: BusinessChatType
+)
+
+@Serializable
+enum class BusinessChatType {
+  @SerialName("business") Business,
+  @SerialName("customer") Customer,
 }
 
 @Serializable
