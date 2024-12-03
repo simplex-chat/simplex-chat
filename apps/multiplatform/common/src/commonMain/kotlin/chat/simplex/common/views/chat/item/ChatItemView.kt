@@ -121,6 +121,15 @@ fun ChatItemView(
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
           val reactionMembers = remember { mutableStateOf(emptyList<MemberReaction>()) }
+          val interactionSource = remember { MutableInteractionSource() }
+          val enterInteraction = remember { HoverInteraction.Enter() }
+          KeyChangeEffect(highlighted.value) {
+            if (highlighted.value) {
+              interactionSource.emit(enterInteraction)
+            } else {
+              interactionSource.emit(HoverInteraction.Exit(enterInteraction))
+            }
+          }
 
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
@@ -149,6 +158,8 @@ fun ChatItemView(
                 onLongClick = {
                   showReactionsMenu()
                 },
+                interactionSource = interactionSource,
+                indication = LocalIndication.current
               )
               .onRightClick { showReactionsMenu() }
           }
