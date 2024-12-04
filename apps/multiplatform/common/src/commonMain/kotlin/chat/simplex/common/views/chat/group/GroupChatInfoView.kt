@@ -306,7 +306,7 @@ fun ModalData.GroupChatInfoLayout(
     contentPadding = if (oneHandUI.value) {
       PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
     } else {
-      PaddingValues(top = topPaddingToContent())
+      PaddingValues(top = topPaddingToContent(false))
     },
     state = listState
   ) {

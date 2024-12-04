@@ -257,6 +257,7 @@ class AppPreferences {
   val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
 
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
+  val chatBottomAppBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_APP_BAR, true)
 
   val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
     laNoticeShown to false,
@@ -431,6 +432,7 @@ class AppPreferences {
     private const val SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS = "ShouldImportAppSettings"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_ONE_HAND_UI = "OneHandUI"
+    private const val SHARED_PREFS_CHAT_BOTTOM_APP_BAR = "ChatBottomAppBar"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
@@ -438,7 +440,6 @@ class AppPreferences {
     private const val SHARED_PREFS_CURRENT_THEME_IDs = "CurrentThemeIds"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES_OLD = "Themes"
-    private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
     private const val SHARED_PREFS_CHAT_ITEM_ROUNDNESS = "ChatItemRoundness"
     private const val SHARED_PREFS_CHAT_ITEM_TAIL = "ChatItemTail"
@@ -6882,7 +6883,8 @@ data class AppSettings(
   var uiDarkColorScheme: String? = null,
   var uiCurrentThemeIds: Map<String, String>? = null,
   var uiThemes: List<ThemeOverrides>? = null,
-  var oneHandUI: Boolean? = null
+  var oneHandUI: Boolean? = null,
+  var chatBottomAppBar: Boolean? = null
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -6917,6 +6919,7 @@ data class AppSettings(
     if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     if (oneHandUI != def.oneHandUI) { empty.oneHandUI = oneHandUI }
+    if (chatBottomAppBar != def.chatBottomAppBar) { empty.chatBottomAppBar = chatBottomAppBar }
     return empty
   }
 
@@ -6962,6 +6965,7 @@ data class AppSettings(
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
     oneHandUI?.let { def.oneHandUI.set(it) }
+    chatBottomAppBar?.let { if (appPlatform.isAndroid) def.chatBottomAppBar.set(it) else def.chatBottomAppBar.set(true) }
   }
 
   companion object {
@@ -6996,7 +7000,8 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
-        oneHandUI = true
+        oneHandUI = true,
+        chatBottomAppBar = true,
       )
 
     val current: AppSettings
@@ -7032,7 +7037,8 @@ data class AppSettings(
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
-          oneHandUI = def.oneHandUI.get()
+          oneHandUI = def.oneHandUI.get(),
+          chatBottomAppBar = def.chatBottomAppBar.get()
         )
     }
   }
