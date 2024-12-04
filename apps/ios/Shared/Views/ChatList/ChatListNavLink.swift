@@ -477,7 +477,6 @@ struct ChatListNavLink: View {
         Task {
             let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
             if ok {
-                ItemsModel.shared.loadOpenChat(contact.id)
                 AlertManager.shared.showAlert(connReqSentAlert(.contact))
             }
         }
