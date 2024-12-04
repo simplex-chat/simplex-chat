@@ -23,6 +23,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
+import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -2532,6 +2533,11 @@ object ChatController {
 
         withChats {
           updateGroup(rhId, r.groupInfo)
+        }
+        if (chatModel.chatId.value == r.fromContact.id) {
+          openGroupChat(rhId, r.groupInfo.groupId)
+        }
+        withChats {
           removeChat(rhId, r.fromContact.id)
         }
       }
