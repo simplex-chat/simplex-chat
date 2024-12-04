@@ -113,14 +113,14 @@ To use CLI from Desktop app, follow this:
    /crc LINK
    ```
 
-   CLI should print verification codes:
+   CLI will print verification code:
 
    ```sh
    Compare session code with controller and use:
-   /verify remote ctrl 76949 31475 60317 22434 35187 76344 18832 59024 33538 38255 46475 98383 11220 39598 13534 18
+   /verify remote ctrl ...
    ```
   
-   Simply copy the whole line starting with `/verify ...` and paste it. Now you can control the CLI from your Desktop app.
+   Simply copy the whole line starting with `/verify ...` from the terminal and paste it. Now you can control the CLI from your Desktop app.
 
 ## Organizations using SimpleX Chat for customer service, support and sales
 
