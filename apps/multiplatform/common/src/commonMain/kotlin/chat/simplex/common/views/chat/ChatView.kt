@@ -659,7 +659,7 @@ fun ChatLayout(
         val remoteHostId = remember { remoteHostId }.value
         val chatInfo = remember { chatInfo }.value
         val oneHandUI = remember { appPrefs.oneHandUI.state }
-        val chatBottomAppBar = remember { appPrefs.chatBottomAppBar.state }
+        val chatBottomBar = remember { appPrefs.chatBottomBar.state }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chatInfo != null) {
             Box(Modifier.fillMaxSize()) {
@@ -678,17 +678,17 @@ fun ChatLayout(
               .align(Alignment.BottomCenter)
               .imePadding()
               .navigationBarsPadding()
-              .then(if (oneHandUI.value && chatBottomAppBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
+              .then(if (oneHandUI.value && chatBottomBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
           ) {
             composeView()
           }
         }
-        if (oneHandUI.value && chatBottomAppBar.value) {
+        if (oneHandUI.value && chatBottomBar.value) {
           StatusBarBackground()
         } else {
           NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
         }
-        Box(if (oneHandUI.value && chatBottomAppBar.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
+        Box(if (oneHandUI.value && chatBottomBar.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
           if (selectedChatItems.value == null) {
             if (chatInfo != null) {
               ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
@@ -856,13 +856,13 @@ fun BoxScope.ChatInfoToolbar(
     }
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val chatBottomAppBar = remember { appPrefs.chatBottomAppBar.state }
+  val chatBottomBar = remember { appPrefs.chatBottomBar.state }
   DefaultAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch.value,
-    onTop = !oneHandUI.value || !chatBottomAppBar.value,
+    onTop = !oneHandUI.value || !chatBottomBar.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = { barButtons.forEach { it() } }
   )
@@ -874,11 +874,11 @@ fun BoxScope.ChatInfoToolbar(
       showMenu,
       modifier = Modifier.onSizeChanged { with(density) {
         width.value = it.width.toDp().coerceAtLeast(250.dp)
-        if (oneHandUI.value && chatBottomAppBar.value && (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 30)) height.value = it.height.toDp()
+        if (oneHandUI.value && chatBottomBar.value && (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 30)) height.value = it.height.toDp()
       } },
-      offset = DpOffset(-width.value, if (oneHandUI.value && chatBottomAppBar.value) -height.value else AppBarHeight)
+      offset = DpOffset(-width.value, if (oneHandUI.value && chatBottomBar.value) -height.value else AppBarHeight)
     ) {
-      if (oneHandUI.value && chatBottomAppBar.value) {
+      if (oneHandUI.value && chatBottomBar.value) {
         menuItems.asReversed().forEach { it() }
       } else {
         menuItems.forEach { it() }
@@ -1269,7 +1269,7 @@ fun BoxScope.ChatItemsList(
       bottom = composeViewHeight.value
     ),
     additionalBarOffset = composeViewHeight,
-    chatBottomAppBar = remember { appPrefs.chatBottomAppBar.state }
+    chatBottomBar = remember { appPrefs.chatBottomBar.state }
   ) {
     val mergedItemsValue = mergedItems.value
     itemsIndexed(mergedItemsValue.items, key = { _, merged -> keyForItem(merged.newest().item) }) { index, merged ->
@@ -1617,8 +1617,8 @@ private fun TopEndFloatingButton(
 @Composable
 fun topPaddingToContent(chatView: Boolean): Dp {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val chatBottomAppBar = remember { appPrefs.chatBottomAppBar.state }
-  return if (oneHandUI.value && (!chatView || chatBottomAppBar.value)) {
+  val chatBottomBar = remember { appPrefs.chatBottomBar.state }
+  return if (oneHandUI.value && (!chatView || chatBottomBar.value)) {
     WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
   } else {
     AppBarHeight * fontSizeSqrtMultiplier + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()

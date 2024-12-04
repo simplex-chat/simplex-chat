@@ -23,7 +23,7 @@ expect fun LazyColumnWithScrollBar(
   flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
   userScrollEnabled: Boolean = true,
   additionalBarOffset: State<Dp>? = null,
-  chatBottomAppBar: State<Boolean> = remember { mutableStateOf(true) },
+  chatBottomBar: State<Boolean> = remember { mutableStateOf(true) },
   // by default, this function will include .fillMaxSize() without you doing anything. If you don't need it, pass `false` here
   // maxSize (at least maxHeight) is needed for blur on appBars to work correctly
   fillMaxSize: Boolean = true,
@@ -42,7 +42,7 @@ expect fun LazyColumnWithScrollBarNoAppBar(
   flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
   userScrollEnabled: Boolean = true,
   additionalBarOffset: State<Dp>? = null,
-  chatBottomAppBar: State<Boolean> = remember { mutableStateOf(true) },
+  chatBottomBar: State<Boolean> = remember { mutableStateOf(true) },
   content: LazyListScope.() -> Unit
 )
 
