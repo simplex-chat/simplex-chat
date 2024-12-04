@@ -919,9 +919,9 @@ createBusinessRequestGroup
     currentTs <- liftIO getCurrentTime
     groupInfo <- insertGroup_ currentTs
     (groupMemberId, memberId) <- insertClientMember_ currentTs groupInfo
-    liftIO $ setBusinessMemberId groupInfo memberId
+    groupInfo' <- liftIO $ setBusinessMemberId groupInfo memberId
     clientMember <- getGroupMemberById db vr user groupMemberId
-    pure (groupInfo, clientMember)
+    pure (groupInfo', clientMember)
     where
       insertGroup_ currentTs = ExceptT $
         withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
@@ -969,8 +969,9 @@ createBusinessRequestGroup
               )
             groupMemberId <- liftIO $ insertedRowId db
             pure (groupMemberId, MemberId memId)
-      setBusinessMemberId GroupInfo {groupId} businessMemberId = do
-        DB.execute db "UPDATE groups SET business_member_id = ? WHERE group_id = ?" (businessMemberId, groupId)
+      setBusinessMemberId groupInfo@GroupInfo {groupId} memberId = do
+        DB.execute db "UPDATE groups SET business_member_id = ? WHERE group_id = ?" (memberId, groupId)
+        pure (groupInfo {businessChat = Just BusinessChatInfo {memberId, chatType = BCCustomer}} :: GroupInfo)
 
 getContactViaMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> ExceptT StoreError IO Contact
 getContactViaMember db vr user@User {userId} GroupMember {groupMemberId} = do
