@@ -39,6 +39,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByUserContactLinkConnReq,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
+    updateGroupProfileFromMember,
     getGroupIdByName,
     getGroupMemberIdByName,
     getActiveMembersByName,
@@ -1456,6 +1457,27 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
+
+updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
+updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, image = img} = do
+  p <- getGroupProfile -- to avoid any race conditions with UI
+  let g' = g {groupProfile = p} :: GroupInfo
+      p' = p {displayName = n, fullName = fn, image = img} :: GroupProfile
+  updateGroupProfile db user g' p'
+  where
+    getGroupProfile =
+      ExceptT $ firstRow toGroupProfile (SEGroupNotFound groupId) $
+        DB.query
+          db
+          [sql|
+            SELECT gp.display_name, gp.full_name, gp.description, gp.image, gp.preferences,
+            FROM group_profiles gp
+            JOIN groups g ON gp.group_profile_id = g.group_profile_id
+            WHERE g.group_id = ?
+          |]
+          (Only groupId)
+    toGroupProfile (displayName, fullName, description, image, groupPreferences) =
+      GroupProfile {displayName, fullName, description, image, groupPreferences}
 
 getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db vr User {userId, userContactId} groupId =
