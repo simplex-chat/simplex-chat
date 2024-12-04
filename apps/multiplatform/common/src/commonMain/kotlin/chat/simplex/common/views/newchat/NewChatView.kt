@@ -400,7 +400,7 @@ fun ActiveProfilePicker(
         .fillMaxSize()
         .alpha(if (progressByTimeout) 0.6f else 1f)
     ) {
-      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent()), userScrollEnabled = !switchingProfile.value) {
+      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent(false)), userScrollEnabled = !switchingProfile.value) {
         item {
           val oneHandUI = remember { appPrefs.oneHandUI.state }
           if (oneHandUI.value) {

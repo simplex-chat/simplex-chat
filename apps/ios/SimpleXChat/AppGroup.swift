@@ -57,6 +57,7 @@ public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
 public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
 public let GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED = "pqExperimentalEnabled" // no longer used
 public let GROUP_DEFAULT_ONE_HAND_UI = "oneHandUI"
+public let GROUP_DEFAULT_CHAT_BOTTOM_BAR = "chatBottomBar"
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -94,7 +95,8 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true,
         GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED: false,
-        GROUP_DEFAULT_ONE_HAND_UI: true
+        GROUP_DEFAULT_ONE_HAND_UI: true,
+        GROUP_DEFAULT_CHAT_BOTTOM_BAR: true
     ])
 }
 
