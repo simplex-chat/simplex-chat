@@ -781,7 +781,63 @@ window.addEventListener('scroll',changeHeaderBg);
 </ul>
 <h2 id="technical-advice" tabindex="-1">Technical advice</h2>
 <h3 id="running-simplex-chat-in-the-cloud" tabindex="-1">Running SimpleX Chat in the cloud</h3>
+<p>To install SimpleX Chat CLI in the cloud, follow this:</p>
+<ol>
+<li>
+<p>Create dedicated user for CLI:</p>
+<pre><code class="language-sh">useradd -m -s /bin/bash simplex-cli
+</code></pre>
+</li>
+<li>
+<p>Create new tmux session</p>
+<pre><code class="language-sh">tmux new -s simplex-cli
+</code></pre>
+</li>
+<li>
+<p>Login to dedicated user:</p>
+<pre><code class="language-sh">su - simplex-cli
+</code></pre>
+</li>
+<li>
+<p>Install CLI:</p>
+<pre><code class="language-sh">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
+</code></pre>
+</li>
+<li>
+<p>Run the CLI:</p>
+<pre><code class="language-sh">simplex-chat
+</code></pre>
+</li>
+</ol>
+<p>To deattach from running CLI simply press <code>Ctrl+B</code> and then <code>D</code>.</p>
+<p>To reattach back to CLI, run: <code>tmux attach -t simplex-cli</code>.</p>
 <h3 id="using-remote-profiles-via-desktop-app" tabindex="-1">Using remote profiles via Desktop app</h3>
+<p>To use CLI from Desktop app, follow this:</p>
+<ol>
+<li>
+<p>Enable Developer tools in desktop app.</p>
+</li>
+<li>
+<p>In the Desktop app, click - <code>Linked mobile</code> -&gt; <code>+ Link a mobile</code>, choose local address <code>127.0.0.1</code>, enter some fixed port (can be any free port, e.g. 12345), and copy the link.</p>
+</li>
+<li>
+<p>In the same machine where Desktop app is running, execute:</p>
+<p>Change <code>PORT</code> to port, chosen in the previous step in Desktop app and <code>SERVER_IP</code> to your server.</p>
+<pre><code class="language-sh">ssh -R PORT:127.0.0.1:PORT -N root@SERVER_IP
+</code></pre>
+</li>
+<li>
+<p>In the CLI on the server:</p>
+<p>Change <code>LINK</code> to link, copied in the first step and enter the following:</p>
+<pre><code class="language-sh">/crc LINK
+</code></pre>
+<p>CLI will print verification code:</p>
+<pre><code class="language-sh">Compare session code with controller and use:
+/verify remote ctrl ...
+</code></pre>
+<p>Simply copy the whole line starting with <code>/verify ...</code> from the terminal and paste it. Now you can control the CLI from your Desktop app.</p>
+</li>
+</ol>
 <h2 id="organizations-using-simplex-chat-for-customer-service-support-and-sales" tabindex="-1">Organizations using SimpleX Chat for customer service, support and sales</h2>
 <p>Please let us know if you use SimpleX Chat to communicate with your customers and want to be included in this list.</p>
 </div>
