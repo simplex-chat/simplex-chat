@@ -331,6 +331,8 @@ const processCommand = (function () {
                     console.log("starting incoming call - create webrtc session");
                     if (activeCall)
                         endCall();
+                    // It can be already defined on Android when switching calls (if the previous call was outgoing)
+                    notConnectedCall = undefined;
                     inactiveCallMediaSources.mic = true;
                     inactiveCallMediaSources.camera = command.media == CallMediaType.Video;
                     inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
@@ -549,13 +551,13 @@ const processCommand = (function () {
     }
     function endCall() {
         var _a;
+        shutdownCameraAndMic();
         try {
             (_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection) === null || _a === void 0 ? void 0 : _a.close();
         }
         catch (e) {
             console.log(e);
         }
-        shutdownCameraAndMic();
         activeCall = undefined;
         resetVideoElements();
     }
@@ -1124,8 +1126,9 @@ const processCommand = (function () {
             (!!useWorker && "RTCRtpScriptTransform" in window));
     }
     function shutdownCameraAndMic() {
-        if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localStream) {
+        if (activeCall) {
             activeCall.localStream.getTracks().forEach((track) => track.stop());
+            activeCall.localScreenStream.getTracks().forEach((track) => track.stop());
         }
     }
     function resetVideoElements() {

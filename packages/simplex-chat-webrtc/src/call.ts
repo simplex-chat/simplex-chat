@@ -622,6 +622,8 @@ const processCommand = (function () {
           console.log("starting incoming call - create webrtc session")
           if (activeCall) endCall()
 
+          // It can be already defined on Android when switching calls (if the previous call was outgoing)
+          notConnectedCall = undefined
           inactiveCallMediaSources.mic = true
           inactiveCallMediaSources.camera = command.media == CallMediaType.Video
           inactiveCallMediaSourcesChanged(inactiveCallMediaSources)
@@ -829,12 +831,12 @@ const processCommand = (function () {
   }
 
   function endCall() {
+    shutdownCameraAndMic()
     try {
       activeCall?.connection?.close()
     } catch (e) {
       console.log(e)
     }
-    shutdownCameraAndMic()
     activeCall = undefined
     resetVideoElements()
   }
@@ -1436,8 +1438,9 @@ const processCommand = (function () {
   }
 
   function shutdownCameraAndMic() {
-    if (activeCall?.localStream) {
+    if (activeCall) {
       activeCall.localStream.getTracks().forEach((track) => track.stop())
+      activeCall.localScreenStream.getTracks().forEach((track) => track.stop())
     }
   }
 

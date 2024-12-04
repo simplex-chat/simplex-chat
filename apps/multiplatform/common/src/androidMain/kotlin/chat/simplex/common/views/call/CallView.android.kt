@@ -75,6 +75,7 @@ class ActiveCallState: Closeable {
   val proximityLock: WakeLock? = screenOffWakeLock()
   var wasConnected = false
   val callAudioDeviceManager = CallAudioDeviceManagerInterface.new()
+  private var closed = false
 
   init {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -83,6 +84,8 @@ class ActiveCallState: Closeable {
   }
 
   override fun close() {
+    if (closed) return
+    closed = true
     CallSoundsPlayer.stop()
     if (wasConnected) {
       CallSoundsPlayer.vibrate()
@@ -117,7 +120,7 @@ actual fun ActiveCallView() {
       callState.wasConnected = true
     }
   }
-  LaunchedEffect(chatModel.activeCallViewIsCollapsed.value) {
+  LaunchedEffect(callState, chatModel.activeCallViewIsCollapsed.value) {
     callState ?: return@LaunchedEffect
     if (chatModel.activeCallViewIsCollapsed.value) {
       if (callState.proximityLock?.isHeld == true) callState.proximityLock.release()
@@ -242,7 +245,7 @@ actual fun ActiveCallView() {
       ActiveCallOverlay(call, chatModel, callState.callAudioDeviceManager)
     }
   }
-  KeyChangeEffect(call?.localMediaSources?.hasVideo) {
+  KeyChangeEffect(callState, call?.localMediaSources?.hasVideo) {
     if (call != null && call.hasVideo && callState != null && callState.callAudioDeviceManager.currentDevice.value?.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE) {
       // enabling speaker on user action (peer action ignored) and not disabling it again
       callState.callAudioDeviceManager.selectLastExternalDeviceOrDefault(call.hasVideo, true)
@@ -270,8 +273,8 @@ actual fun ActiveCallView() {
 private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, callAudioDeviceManager: CallAudioDeviceManagerInterface) {
   ActiveCallOverlayLayout(
     call = call,
-    devices = remember { callAudioDeviceManager.devices }.value,
-    currentDevice = remember { callAudioDeviceManager.currentDevice },
+    devices = remember(callAudioDeviceManager) { callAudioDeviceManager.devices }.value,
+    currentDevice = remember(callAudioDeviceManager) { callAudioDeviceManager.currentDevice },
     dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = !call.localMediaSources.mic)) },
     selectDevice = { callAudioDeviceManager.selectDevice(it.id) },
