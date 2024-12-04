@@ -93,17 +93,19 @@ To reattach back to CLI, run: `tmux attach -t simplex-cli`.
 
 To use CLI from Desktop app, follow this:
 
-1. In the Desktop app, click - `Linked mobile` -> `+ Link a mobile`, choose local address `127.0.0.1` and copy the link.
+1. Enable Developer tools in desktop app.
 
-2. In the same machine where Desktop app is running, execute:
+2. In the Desktop app, click - `Linked mobile` -> `+ Link a mobile`, choose local address `127.0.0.1`, enter some fixed port (can be any free port, e.g. 12345), and copy the link.
 
-   Change `PORT` to port, displayed in Desktop app and `SERVER_IP` to your server.
+3. In the same machine where Desktop app is running, execute:
+
+   Change `PORT` to port, chosen in the previous step in Desktop app and `SERVER_IP` to your server.
 
    ```sh
    ssh -R PORT:127.0.0.1:PORT -N root@SERVER_IP
    ```
 
-3. In the CLI on the server:
+4. In the CLI on the server:
 
    Change `LINK` to link, copied in the first step and enter the following:
 
@@ -118,7 +120,7 @@ To use CLI from Desktop app, follow this:
    /verify remote ctrl 76949 31475 60317 22434 35187 76344 18832 59024 33538 38255 46475 98383 11220 39598 13534 18
    ```
   
-   Simply copy the whole line starting with `/verify ...` and paste it. Now you can control the CLI with your Desktop app.
+   Simply copy the whole line starting with `/verify ...` and paste it. Now you can control the CLI from your Desktop app.
 
 ## Organizations using SimpleX Chat for customer service, support and sales
 
