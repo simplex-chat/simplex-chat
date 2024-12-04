@@ -6458,9 +6458,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember
-    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberId, memberContactId} p' createItems itemTs_
+    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems itemTs_
       | redactedMemberProfile (fromLocalProfile p) /= redactedMemberProfile p' = do
-          updateBusinessChatProfile gInfo
+          updateBusinessChatProfile gInfo m
           case memberContactId of
             Nothing -> do
               m' <- withStore $ \db -> updateMemberProfile db user m p'
@@ -6486,7 +6486,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise =
           pure m
       where
-        updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
+        updateBusinessChatProfile g@GroupInfo {businessChat} GroupMember {memberId} = case businessChat of
           Just BusinessChatInfo {memberId = mId} | mId == memberId -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
             toView $ CRGroupUpdated user g g' (Just m)

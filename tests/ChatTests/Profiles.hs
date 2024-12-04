@@ -734,17 +734,22 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => FilePath -> IO ()
-testBusinessUpdateProfiles = testChat2 businessProfile aliceProfile $
-  \biz alice -> do
+testBusinessUpdateProfiles = testChat3 businessProfile aliceProfile bobProfile $
+  \biz alice bob -> do
     biz ##> "/ad"
     cLink <- getContactLink biz True
     biz ##> "/auto_accept on business"
+    -- biz ##> "/auto_accept on business text Welcome"
     biz <## "auto_accept on, business"
+    -- biz <## "auto reply:"
+    -- biz <## "Welcome"
     alice ##> ("/c " <> cLink)
     alice <## "connection request sent!"
     biz <## "#alice (Alice): accepting business address request..."
     alice <## "#biz: joining the group..."
+    -- biz <# "#alice Welcome" -- auto reply
     biz <## "#alice: alice_1 joined the group"
+    -- alice <# "#biz biz_1> Welcome"
     alice <## "#biz: you joined the group"
     biz #> "#alice hi"
     alice <# "#biz biz_1> hi"
@@ -756,12 +761,53 @@ testBusinessUpdateProfiles = testChat2 businessProfile aliceProfile $
     biz <## "alice_1 updated group #alice:"
     biz <## "changed to #alisa"
     biz <# "#alisa alisa_1> hello again"
+    -- customer can invite members too, if business allows
+    biz ##> "/mr alisa alisa_1 admin"
+    biz <## "#alisa: you changed the role of alisa_1 from member to admin"
+    alice <## "#biz: biz_1 changed your role from member to admin"
+    connectUsers alice bob
+    alice ##> "/a #biz bob"
+    alice <## "invitation to join the group #biz sent to bob"
+    bob <## "#biz (Biz Inc): alisa invites you to join the group as member"
+    bob <## "use /j biz to accept"
+    bob ##> "/j biz"
+    concurrentlyN_
+      [ do
+          bob <## "#biz: you joined the group"
+          bob
+            <###
+              [ WithTime "#biz biz_1> hi [>>]",
+                WithTime "#biz alisa> hello [>>]",
+                WithTime "#biz alisa> hello again [>>]"
+              ]
+          bob <## "#biz: member biz_1 (Biz Inc) is connected",
+        alice <## "#biz: bob joined the group",
+        do
+          biz <## "#alisa: alisa_1 added bob (Bob) to the group (connecting...)"
+          biz <## "#alisa: new member bob is connected"
+      ]
+    -- changing other member profiles does not change group profile
+    bob ##> "/p robert"
+    bob <## "user profile is changed to robert (your 1 contacts are notified)"
+    alice <## "contact bob changed to robert" -- only alice receives profile update
+    alice <## "use @robert <message> to send messages"
+    bob #> "#biz hi there" -- profile update is sent to group with message
+    alice <# "#biz robert> hi there"
+    biz <# "#alisa robert> hi there"
+    -- both customers receive business profile change
     biz ##> "/p business"
     biz <## "user profile is changed to business (your 0 contacts are notified)"
     biz #> "#alisa hey"
-    alice <## "biz_1 updated group #biz:"
-    alice <## "changed to #business"
-    alice <# "#business business_1> hey"
+    concurrentlyN_
+      [ do
+          alice <## "biz_1 updated group #biz:"
+          alice <## "changed to #business"
+          alice <# "#business business_1> hey",
+        do
+          bob <## "biz_1 updated group #biz:"
+          bob <## "changed to #business"
+          bob <# "#business business_1> hey"
+      ]
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
 testPlanAddressOkKnown =
