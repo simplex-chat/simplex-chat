@@ -1173,8 +1173,8 @@
         <target state="translated">私訊</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve" approved="no">
+        <source>Direct messages between members are prohibited.</source>
         <target state="translated">私訊群組內的成員於這個群組內是禁用的。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1193,8 +1193,8 @@
         <target state="translated">自動銷毀訊息已被禁止於此聊天室。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve" approved="no">
+        <source>Disappearing messages are prohibited.</source>
         <target state="translated">自動銷毀訊息於這個群組內是禁用的。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1618,18 +1618,18 @@
         <target state="translated">群組內的成員可以不可逆地刪除訊息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve" approved="no">
-        <source>Group members can send direct messages.</source>
+      <trans-unit id="Members can send direct messages." xml:space="preserve" approved="no">
+        <source>Members can send direct messages.</source>
         <target state="translated">群組內的成員可以私訊群組內的成員。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve" approved="no">
-        <source>Group members can send disappearing messages.</source>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve" approved="no">
+        <source>Members can send disappearing messages.</source>
         <target state="translated">群組內的成員可以傳送自動銷毀的訊息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve" approved="no">
-        <source>Group members can send voice messages.</source>
+      <trans-unit id="Members can send voice messages." xml:space="preserve" approved="no">
+        <source>Members can send voice messages.</source>
         <target state="translated">群組內的成員可以傳送語音訊息。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1864,8 +1864,8 @@
         <target state="translated">不可逆地刪除訊息於這個聊天室內是禁用的。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve" approved="no">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve" approved="no">
+        <source>Irreversible message deletion is prohibited.</source>
         <target state="translated">不可逆地刪除訊息於這個群組內是禁用的。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3316,8 +3316,8 @@ To connect, please ask your contact to create another connection link and check 
         <target state="translated">語音訊息於這個聊天窒是禁用的。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve" approved="no">
+        <source>Voice messages are prohibited.</source>
         <target state="translated">語音訊息於這個群組內是禁用的。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5513,8 +5513,8 @@ It can happen because of some bug or when the connection is compromised.</source
         <target state="translated">啟用自毀密碼</target>
         <note>set passcode view</note>
       </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
-        <source>Group members can add message reactions.</source>
+      <trans-unit id="Members can add message reactions." xml:space="preserve" approved="no">
+        <source>Members can add message reactions.</source>
         <target state="translated">群組內的成員可以新增訊息互動。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5689,8 +5689,8 @@ It can happen because of some bug or when the connection is compromised.</source
         <target state="translated">已移除在</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve" approved="no">
-        <source>Message reactions are prohibited in this group.</source>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve" approved="no">
+        <source>Message reactions are prohibited.</source>
         <target state="translated">訊息互動於這個群組內是禁用的。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>

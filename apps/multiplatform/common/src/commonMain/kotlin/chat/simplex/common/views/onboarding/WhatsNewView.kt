@@ -724,8 +724,8 @@ private val versionDescriptions: List<VersionDescription> = listOf(
     ),
   ),
   VersionDescription(
-    version = "v6.2-beta.1",
-    post = "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html",
+    version = "v6.2",
+    post = "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html",
     features = listOf(
       VersionFeature.FeatureView(
         icon = null,
@@ -748,6 +748,11 @@ private val versionDescriptions: List<VersionDescription> = listOf(
             }
           }
         }
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_work,
+        titleId = MR.strings.v6_2_business_chats,
+        descrId = MR.strings.v6_2_business_chats_descr
       ),
       VersionFeature.FeatureDescription(
         icon = MR.images.ic_chat,

@@ -101,7 +101,12 @@ struct GroupChatInfoView: View {
                 } header: {
                     Text("")
                 } footer: {
-                    Text("Only group owners can change group preferences.")
+                    let label: LocalizedStringKey = (
+                        groupInfo.businessChat == nil
+                        ? "Only group owners can change group preferences."
+                        : "Only chat owners can change preferences."
+                    )
+                    Text(label)
                         .foregroundColor(theme.colors.secondary)
                 }
 
@@ -494,11 +499,12 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func deleteGroupButton() -> some View {
+    @ViewBuilder private func deleteGroupButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group" : "Delete chat"
         Button(role: .destructive) {
             alert = .deleteGroupAlert
         } label: {
-            Label("Delete group", systemImage: "trash")
+            Label(label, systemImage: "trash")
                 .foregroundColor(Color.red)
         }
     }
@@ -512,20 +518,22 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func leaveGroupButton() -> some View {
+    @ViewBuilder private func leaveGroupButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
         Button(role: .destructive) {
             alert = .leaveGroupAlert
         } label: {
-            Label("Leave group", systemImage: "rectangle.portrait.and.arrow.right")
+            Label(label, systemImage: "rectangle.portrait.and.arrow.right")
                 .foregroundColor(Color.red)
         }
     }
 
     // TODO reuse this and clearChatAlert with ChatInfoView
     private func deleteGroupAlert() -> Alert {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
         return Alert(
-            title: Text("Delete group?"),
-            message: deleteGroupAlertMessage(),
+            title: Text(label),
+            message: deleteGroupAlertMessage(groupInfo),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
@@ -544,10 +552,6 @@ struct GroupChatInfoView: View {
         )
     }
 
-    private func deleteGroupAlertMessage() -> Text {
-        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
-    }
-
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
@@ -563,9 +567,15 @@ struct GroupChatInfoView: View {
     }
 
     private func leaveGroupAlert() -> Alert {
-        Alert(
-            title: Text("Leave group?"),
-            message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
+        let titleLabel: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
+        let messageLabel: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "You will stop receiving messages from this group. Chat history will be preserved."
+            : "You will stop receiving messages from this chat. Chat history will be preserved."
+        )
+        return Alert(
+            title: Text(titleLabel),
+            message: Text(messageLabel),
             primaryButton: .destructive(Text("Leave")) {
                 Task {
                     await leaveGroup(chat.chatInfo.apiId)
@@ -609,9 +619,14 @@ struct GroupChatInfoView: View {
     }
 
     private func removeMemberAlert(_ mem: GroupMember) -> Alert {
-        Alert(
+        let messageLabel: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "Member will be removed from group - this cannot be undone!"
+            : "Member will be removed from chat - this cannot be undone!"
+        )
+        return Alert(
             title: Text("Remove member?"),
-            message: Text("Member will be removed from group - this cannot be undone!"),
+            message: Text(messageLabel),
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
@@ -629,6 +644,14 @@ struct GroupChatInfoView: View {
             secondaryButton: .cancel()
         )
     }
+}
+
+func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
+    groupInfo.businessChat == nil ? (
+        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
+    ) : (
+        groupInfo.membership.memberCurrent ? Text("Chat will be deleted for all members - this cannot be undone!") : Text("Chat will be deleted for you - this cannot be undone!")
+    )
 }
 
 func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {

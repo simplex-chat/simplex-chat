@@ -636,8 +636,7 @@
     <string name="all_your_contacts_will_remain_connected_update_sent">تمام مخاطبانتان متصل باقی خواهند ماند. به‌روزرسانی نمایه به مخاطبانتان ارسال خواهد شد.</string>
     <string name="network_disable_socks_info">اگر تایید کنید، سرورهای پیام‌رسانی خواهند توانست نشانی‌ IP، و فراهم‌کننده شما را ببینند - و این که به چه سرورهایی متصل می‌شوید.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور WebRTC ICE صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
-    <string name="network_session_mode_entity_description">یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد.
-\n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد. \n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.]]></string>
     <string name="update_network_session_mode_question">حالت انزوای ترابری به روز شود؟</string>
     <string name="edit_image">ویرایش تصویر</string>
     <string name="create_simplex_address">ایجاد نشانی‌ SimpleX</string>
@@ -1416,7 +1415,7 @@
     <string name="disable_sending_recent_history">عدم ارسال تاریخچه به اعضای جدید.</string>
     <string name="group_members_can_send_disappearing">اعضای گروه می‌توانند پیام‌های ناپدید شونده ارسال کنند.</string>
     <string name="group_members_can_send_dms">اعضای گروه می‌توانند پیام‌های مستقیم ارسال کنند.</string>
-    <string name="direct_messages_are_prohibited_in_chat">پیام‌های مستقیم بین اعضا در این گروه ممنوع هستند.</string>
+    <string name="direct_messages_are_prohibited_in_group">پیام‌های مستقیم بین اعضا در این گروه ممنوع هستند.</string>
     <string name="message_deletion_prohibited_in_chat">حذف غیرقابل برگشت در این گروه ممنوع است.</string>
     <string name="voice_messages_are_prohibited">پیام‌های صوتی در این گروه ممنوع هستند.</string>
     <string name="message_reactions_are_prohibited">واکنش‌های پیام در این گروه ممنوع هستند.</string>

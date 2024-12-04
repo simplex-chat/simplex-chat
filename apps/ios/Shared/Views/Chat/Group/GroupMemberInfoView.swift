@@ -135,7 +135,8 @@ struct GroupMemberInfoView: View {
                     }
 
                     Section(header: Text("Member").foregroundColor(theme.colors.secondary)) {
-                        infoRow("Group", groupInfo.displayName)
+                        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Group" : "Chat"
+                        infoRow(label, groupInfo.displayName)
 
                         if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
@@ -305,10 +306,15 @@ struct GroupMemberInfoView: View {
     }
 
     func showDirectMessagesProhibitedAlert(_ title: LocalizedStringKey) {
+        let messageLabel: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "Direct messages between members are prohibited."
+            : "Direct messages between members are prohibited in this chat."
+        )
         alert = .someAlert(alert: SomeAlert(
             alert: mkAlert(
                 title: title,
-                message: "Direct messages between members are prohibited in this group."
+                message: messageLabel
             ),
             id: "can't message member, direct messages prohibited"
         ))
@@ -537,9 +543,14 @@ struct GroupMemberInfoView: View {
     }
 
     private func removeMemberAlert(_ mem: GroupMember) -> Alert {
-        Alert(
+        let label: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "Member will be removed from group - this cannot be undone!"
+            : "Member will be removed from chat - this cannot be undone!"
+        )
+        return Alert(
             title: Text("Remove member?"),
-            message: Text("Member will be removed from group - this cannot be undone!"),
+            message: Text(label),
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
@@ -562,7 +573,15 @@ struct GroupMemberInfoView: View {
     private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
         Alert(
             title: Text("Change member role?"),
-            message: mem.memberCurrent ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.") : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation."),
+            message: (
+                mem.memberCurrent
+                ? (
+                    groupInfo.businessChat == nil
+                    ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.")
+                    : Text("Member role will be changed to \"\(newRole.text)\". All chat members will be notified.")
+                )
+                : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation.")
+            ),
             primaryButton: .default(Text("Change")) {
                 Task {
                     do {
@@ -570,7 +589,7 @@ struct GroupMemberInfoView: View {
                         await MainActor.run {
                             _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
                         }
-                        
+
                     } catch let error {
                         newRole = mem.memberRole
                         logger.error("apiMemberRole error: \(responseError(error))")

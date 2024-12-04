@@ -418,7 +418,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(MR.images.ic_arrow_drop_down) else painterResource(MR.images.ic_arrow_drop_up),
-          generalGetString(MR.strings.invite_to_group_button),
+          contentDescription = null,
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -478,7 +478,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(MR.images.ic_arrow_drop_down) else painterResource(MR.images.ic_arrow_drop_up),
-          generalGetString(MR.strings.invite_to_group_button),
+          contentDescription = null,
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )

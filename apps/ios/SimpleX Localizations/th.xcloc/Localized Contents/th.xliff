@@ -587,6 +587,10 @@
         <target>เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add friends" xml:space="preserve">
+        <source>Add friends</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
         <target>เพิ่มโปรไฟล์</target>
@@ -602,6 +606,10 @@
         <target>เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัสคิวอาร์โค้ด</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add team members" xml:space="preserve">
+        <source>Add team members</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
         <source>Add to another device</source>
         <target>เพิ่มเข้าไปในอุปกรณ์อื่น</target>
@@ -610,6 +618,10 @@
       <trans-unit id="Add welcome message" xml:space="preserve">
         <source>Add welcome message</source>
         <target>เพิ่มข้อความต้อนรับ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+        <source>Add your team members to the conversations.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve">
@@ -1130,6 +1142,14 @@
         <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Business address" xml:space="preserve">
+        <source>Business address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Business chats" xml:space="preserve">
+        <source>Business chats</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
         <target>ตามโปรไฟล์แชท (ค่าเริ่มต้น) หรือ [โดยการเชื่อมต่อ](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (เบต้า)</target>
@@ -1262,6 +1282,18 @@
         <source>Change user profiles</source>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Chat" xml:space="preserve">
+        <source>Chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat already exists" xml:space="preserve">
+        <source>Chat already exists</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat already exists!" xml:space="preserve">
+        <source>Chat already exists!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
         <source>Chat colors</source>
         <note>No comment provided by engineer.</note>
@@ -1328,6 +1360,14 @@
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for all members - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for you - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -2009,6 +2049,10 @@ This is your own one-time link!</source>
         <source>Delete and notify contact</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete chat" xml:space="preserve">
+        <source>Delete chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
         <source>Delete chat profile</source>
         <target>ลบโปรไฟล์แชท</target>
@@ -2017,6 +2061,10 @@ This is your own one-time link!</source>
       <trans-unit id="Delete chat profile?" xml:space="preserve">
         <source>Delete chat profile?</source>
         <target>ลบโปรไฟล์แชทไหม?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete chat?" xml:space="preserve">
+        <source>Delete chat?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2266,8 +2314,12 @@ This is your own one-time link!</source>
         <target>ข้อความโดยตรง</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
+        <source>Direct messages between members are prohibited in this chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+        <source>Direct messages between members are prohibited.</source>
         <target>ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2305,8 +2357,8 @@ This is your own one-time link!</source>
         <target>ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในแชทนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+        <source>Disappearing messages are prohibited.</source>
         <target>ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3095,8 +3147,8 @@ This is your own one-time link!</source>
         <target>ไฟล์และสื่อ</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
-        <source>Files and media are prohibited in this group.</source>
+      <trans-unit id="Files and media are prohibited." xml:space="preserve">
+        <source>Files and media are prohibited.</source>
         <target>ไฟล์และสื่อเป็นสิ่งต้องห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3338,40 +3390,6 @@ Error: %2$@</source>
       <trans-unit id="Group links" xml:space="preserve">
         <source>Group links</source>
         <target>ลิงค์กลุ่ม</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve">
-        <source>Group members can add message reactions.</source>
-        <target>สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
-        <source>Group members can irreversibly delete sent messages. (24 hours)</source>
-        <target>สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
-        <source>Group members can send SimpleX links.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve">
-        <source>Group members can send direct messages.</source>
-        <target>สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
-        <source>Group members can send disappearing messages.</source>
-        <target>สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve">
-        <source>Group members can send files and media.</source>
-        <target>สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve">
-        <source>Group members can send voice messages.</source>
-        <target>สมาชิกกลุ่มสามารถส่งข้อความเสียง</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -3749,6 +3767,10 @@ More improvements are coming soon!</source>
         <target>เชิญสมาชิก</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invite to chat" xml:space="preserve">
+        <source>Invite to chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
         <source>Invite to group</source>
         <target>เชิญเข้าร่วมกลุ่ม</target>
@@ -3764,8 +3786,8 @@ More improvements are coming soon!</source>
         <target>ไม่สามารถลบข้อความแบบแก้ไขไม่ได้ในแชทนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited.</source>
         <target>การลบข้อความแบบแก้ไขไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3897,6 +3919,14 @@ This is your link for group %@!</source>
         <target>ออกจาก</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Leave chat" xml:space="preserve">
+        <source>Leave chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Leave chat?" xml:space="preserve">
+        <source>Leave chat?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
         <source>Leave group</source>
         <target>ออกจากกลุ่ม</target>
@@ -4021,6 +4051,10 @@ This is your link for group %@!</source>
         <source>Member inactive</source>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+        <source>Member role will be changed to "%@". All chat members will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
         <target>บทบาทของสมาชิกจะถูกเปลี่ยนเป็น "%@" สมาชิกกลุ่มทั้งหมดจะได้รับแจ้ง</target>
@@ -4031,9 +4065,47 @@ This is your link for group %@!</source>
         <target>บทบาทของสมาชิกจะถูกเปลี่ยนเป็น "%@" สมาชิกจะได้รับคำเชิญใหม่</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+        <source>Member will be removed from chat - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
         <target>สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can add message reactions." xml:space="preserve">
+        <source>Members can add message reactions.</source>
+        <target>สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Members can irreversibly delete sent messages. (24 hours)</source>
+        <target>สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
+        <source>Members can send SimpleX links.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send direct messages." xml:space="preserve">
+        <source>Members can send direct messages.</source>
+        <target>สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+        <source>Members can send disappearing messages.</source>
+        <target>สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send files and media." xml:space="preserve">
+        <source>Members can send files and media.</source>
+        <target>สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send voice messages." xml:space="preserve">
+        <source>Members can send voice messages.</source>
+        <target>สมาชิกกลุ่มสามารถส่งข้อความเสียง</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
@@ -4081,8 +4153,8 @@ This is your link for group %@!</source>
         <target>ห้ามแสดงปฏิกิริยาบนข้อความในแชทนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
-        <source>Message reactions are prohibited in this group.</source>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve">
+        <source>Message reactions are prohibited.</source>
         <target>ปฏิกิริยาบนข้อความเป็นสิ่งต้องห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4549,6 +4621,10 @@ Requires compatible VPN.</source>
         <target>โฮสต์หัวหอมจะไม่ถูกใช้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+        <source>Only chat owners can change preferences.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages.</source>
         <target>เฉพาะอุปกรณ์ไคลเอนต์เท่านั้นที่จัดเก็บโปรไฟล์ผู้ใช้ ผู้ติดต่อ กลุ่ม และข้อความที่ส่งด้วย **การเข้ารหัส encrypt แบบ 2 ชั้น**</target>
@@ -4908,6 +4984,10 @@ Error: %@</source>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
         <source>Privacy &amp; security</source>
         <target>ความเป็นส่วนตัวและความปลอดภัย</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Privacy for your customers." xml:space="preserve">
+        <source>Privacy for your customers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -6125,8 +6205,8 @@ Enable in *Network &amp; servers* settings.</source>
         <target>ลิงก์ SimpleX</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
-        <source>SimpleX links are prohibited in this group.</source>
+      <trans-unit id="SimpleX links are prohibited." xml:space="preserve">
+        <source>SimpleX links are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX links not allowed" xml:space="preserve">
@@ -7117,8 +7197,8 @@ To connect, please ask your contact to create another connection link and check 
         <target>ห้ามส่งข้อความเสียงในแชทนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
         <target>ข้อความเสียงเป็นสิ่งต้องห้ามในกลุ่มนี้</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -7291,6 +7371,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You are already connected to %@." xml:space="preserve">
         <source>You are already connected to %@.</source>
         <target>คุณได้เชื่อมต่อกับ %@ แล้ว</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You are already connected with %@." xml:space="preserve">
+        <source>You are already connected with %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
@@ -7538,6 +7622,10 @@ Repeat connection request?</source>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
         <source>You will still receive calls and notifications from muted profiles when they are active.</source>
         <target>คุณจะยังได้รับสายเรียกเข้าและการแจ้งเตือนจากโปรไฟล์ที่ปิดเสียงเมื่อโปรไฟล์ของเขามีการใช้งาน</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
+        <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">

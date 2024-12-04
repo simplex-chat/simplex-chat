@@ -143,8 +143,7 @@
     <string name="icon_descr_cancel_file_preview">取消檔案預覽</string>
     <string name="cannot_receive_file">無法接收檔案</string>
     <string name="failed_to_create_user_duplicate_title">重複的顯示名稱！</string>
-    <string name="network_session_mode_entity_description">一個單獨的 TCP 連接（和 SOCKS 憑證）將用於<b>每個聯絡人和群組內的成員</b>。
-\n<b>請注意</b>：如果你有很多連接，你的電話電量和數據流量的消耗率會大大增加，一些連接有機會會連接失敗。</string>
+    <string name="network_session_mode_entity_description"><![CDATA[一個單獨的 TCP 連接（和 SOCKS 憑證）將用於<b>每個聯絡人和群組內的成員</b>。 \n<b>請注意</b>：如果你有很多連接，你的電話電量和數據流量的消耗率會大大增加，一些連接有機會會連接失敗。]]></string>
     <string name="network_session_mode_user_description"><![CDATA[一個單獨的 TCP 連接（和 SOCKS 憑證）將用於 <b>每個聊天室的設定</b>。]]></string>
     <string name="back">返回</string>
     <string name="turning_off_service_and_periodic">省電模式運行中，關閉了背景通知服務和定期更新接收訊息。你可以在通知設定內重新啟用。</string>
@@ -753,7 +752,7 @@
     <string name="disappearing_prohibited_in_this_chat">自動銷毀訊息於這個聊天室內是禁用的。</string>
     <string name="message_deletion_prohibited">不可逆地刪除訊息於這個聊天室內是禁用的。</string>
     <string name="only_you_can_send_voice">只有你可以傳送語音訊息。</string>
-    <string name="direct_messages_are_prohibited_in_chat">私訊群組內的成員於這個群組內是禁用的。</string>
+    <string name="direct_messages_are_prohibited_in_group">私訊群組內的成員於這個群組內是禁用的。</string>
     <string name="group_members_can_delete">群組內的成員可以不可逆地刪除訊息。（24小時）</string>
     <string name="v4_3_voice_messages">語音訊息</string>
     <string name="v4_3_improved_server_configuration">改善伺服器配置</string>

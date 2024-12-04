@@ -251,8 +251,7 @@
     <string name="button_delete_contact">Poista kontakti</string>
     <string name="above_then_preposition_continuation">Yllä, sitten:</string>
     <string name="network_session_mode_user">Keskustelujen profiili</string>
-    <string name="network_session_mode_entity_description"><b>Jokaiselle kontaktille ja ryhmän jäsenelle</b> käytetään erillistä TCP-yhteyttä (ja SOCKS-tunnistetietoja).
-\n<b>Huomaa</b>: jos sinulla on useita yhteyksiä, akun ja data-liikenteen määrä voi olla huomattavasti korkeampi ja jotkin yhteydet voivat epäonnistua.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[<b>Jokaiselle kontaktille ja ryhmän jäsenelle</b> käytetään erillistä TCP-yhteyttä (ja SOCKS-tunnistetietoja). \n<b>Huomaa</b>: jos sinulla on useita yhteyksiä, akun ja data-liikenteen määrä voi olla huomattavasti korkeampi ja jotkin yhteydet voivat epäonnistua.]]></string>
     <string name="icon_descr_audio_call">Äänipuhelu</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Paras akulle</b>. Saat ilmoituksia vain, kun sovellus on käynnissä (EI taustapalvelua).]]></string>
     <string name="ttl_hours">%d tuntia</string>
@@ -340,7 +339,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">Sekä sinä että kontaktisi voivat käyttää viestireaktioita.</string>
     <string name="both_you_and_your_contacts_can_delete">Sekä sinä että kontaktisi voitte peruuttamattomasti poistaa lähetetyt viestit.</string>
     <string name="both_you_and_your_contact_can_make_calls">Sekä sinä että kontaktisi voitte soittaa puheluita.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.</string>
+    <string name="direct_messages_are_prohibited_in_group">Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.</string>
     <string name="v4_5_transport_isolation_descr">Chat-profiilin (oletus) tai yhteyden (BETA) perusteella.</string>
     <string name="feature_cancelled_item">peruttu %s</string>
     <string name="ttl_day">%d päivä</string>
