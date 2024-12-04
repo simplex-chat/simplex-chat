@@ -6458,14 +6458,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember
-    processMemberProfileUpdate g m@GroupMember {memberProfile = p, memberId, memberContactId} p' createItems itemTs_
+    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberId, memberContactId} p' createItems itemTs_
       | redactedMemberProfile (fromLocalProfile p) /= redactedMemberProfile p' = do
-          updateBusinessChatProfile g
+          updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
               m' <- withStore $ \db -> updateMemberProfile db user m p'
               createProfileUpdatedItem m'
-              toView $ CRGroupMemberUpdated user g m m'
+              toView $ CRGroupMemberUpdated user gInfo m m'
               pure m'
             Just mContactId -> do
               mCt <- withStore $ \db -> getContact db vr user mContactId
@@ -6473,7 +6473,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 then do
                   (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
                   createProfileUpdatedItem m'
-                  toView $ CRGroupMemberUpdated user g m m'
+                  toView $ CRGroupMemberUpdated user gInfo m m'
                   toView $ CRContactUpdated user mCt ct'
                   pure m'
                 else pure m
@@ -6486,7 +6486,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise =
           pure m
       where
-        updateBusinessChatProfile GroupInfo {businessChat} = case businessChat of
+        updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just BusinessChatInfo {memberId = mId} | mId == memberId -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
             toView $ CRGroupUpdated user g g' (Just m)
@@ -6494,7 +6494,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         createProfileUpdatedItem m' =
           when createItems $ do
             let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
-            createInternalChatItem user (CDGroupRcv g m') ciContent itemTs_
+            createInternalChatItem user (CDGroupRcv gInfo m') ciContent itemTs_
 
     createFeatureEnabledItems :: Contact -> CM ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
