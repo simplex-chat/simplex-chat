@@ -5110,7 +5110,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             sendIntroductions members
             when (groupFeatureAllowed SGFHistory gInfo) sendHistory
-            when (connChatVersion < batchSend2Version) $ sendGroupAutoReply members
+            when (connChatVersion < batchSend2Version) sendGroupAutoReply
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -5145,7 +5145,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
               sendHistory =
                 when (m `supportsVersion` batchSendVersion) $ do
-                  (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo 100)
+                  (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
                   (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
                   let errors = map ChatErrorStore errs <> errs'
                   unless (null errors) $ toView $ CRChatErrors (Just user) errors
@@ -5376,9 +5376,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       JOINED sqSecured ->
         -- [async agent commands] continuation on receiving JOINED
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
-          when sqSecured $ do
-            members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-            when (connChatVersion >= batchSend2Version) $ sendGroupAutoReply members
+          when (sqSecured && connChatVersion >= batchSend2Version) sendGroupAutoReply
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -5406,7 +5404,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateGroupItemsErrorStatus db msgId groupMemberId newStatus = do
           itemIds <- getChatItemIdsByAgentMsgId db connId msgId
           forM_ itemIds $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
-        sendGroupAutoReply members = autoReplyMC >>= mapM_ send
+        sendGroupAutoReply = autoReplyMC >>= mapM_ send
           where
             autoReplyMC = do
               let GroupInfo {businessChat} = gInfo
@@ -5420,8 +5418,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       _ -> Nothing
                 _ -> pure Nothing
             send mc = do
-              msg <- sendGroupMessage' user gInfo members (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+              msg <- sendGroupMessage' user gInfo [m] (XMsgNew $ MCSimple (extMsgContent mc Nothing))
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc)
+              withStore' $ \db -> createGroupSndStatus db (chatItemId' ci) (groupMemberId' m) GSSNew
               toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
 
     agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)

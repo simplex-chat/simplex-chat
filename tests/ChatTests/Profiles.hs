@@ -738,18 +738,17 @@ testBusinessUpdateProfiles = testChat3 businessProfile aliceProfile bobProfile $
   \biz alice bob -> do
     biz ##> "/ad"
     cLink <- getContactLink biz True
-    biz ##> "/auto_accept on business"
-    -- biz ##> "/auto_accept on business text Welcome"
+    biz ##> "/auto_accept on business text Welcome"
     biz <## "auto_accept on, business"
-    -- biz <## "auto reply:"
-    -- biz <## "Welcome"
+    biz <## "auto reply:"
+    biz <## "Welcome"
     alice ##> ("/c " <> cLink)
     alice <## "connection request sent!"
     biz <## "#alice (Alice): accepting business address request..."
     alice <## "#biz: joining the group..."
-    -- biz <# "#alice Welcome" -- auto reply
+    biz <# "#alice Welcome" -- auto reply
     biz <## "#alice: alice_1 joined the group"
-    -- alice <# "#biz biz_1> Welcome"
+    alice <# "#biz biz_1> Welcome"
     alice <## "#biz: you joined the group"
     biz #> "#alice hi"
     alice <# "#biz biz_1> hi"
@@ -776,7 +775,8 @@ testBusinessUpdateProfiles = testChat3 businessProfile aliceProfile bobProfile $
           bob <## "#biz: you joined the group"
           bob
             <###
-              [ WithTime "#biz biz_1> hi [>>]",
+              [ WithTime "#biz biz_1> Welcome [>>]",
+                WithTime "#biz biz_1> hi [>>]",
                 WithTime "#biz alisa> hello [>>]",
                 WithTime "#biz alisa> hello again [>>]"
               ]
