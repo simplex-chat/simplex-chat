@@ -2199,4 +2199,6 @@
     <string name="network_proxy_auth_mode_username_password">Ваши учетные данные могут быть отправлены в незашифрованном виде.</string>
     <string name="migrate_from_device_remove_archive_question">Удалить архив?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Загруженный архив базы данных будет навсегда удален с серверов.</string>
+    <string name="operator_conditions_accepted">Принятые условия</string>
+    <string name="accept_conditions">Принять условия</string>
 </resources>
