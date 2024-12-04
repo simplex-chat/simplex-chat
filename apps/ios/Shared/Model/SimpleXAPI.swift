@@ -2014,11 +2014,16 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(hostConn.id)
             }
         }
-    case let .businessLinkConnecting(user, groupInfo, hostMember, fromContact):
+    case let .businessLinkConnecting(user, groupInfo, _, fromContact):
         if !active(user) { return }
 
         await MainActor.run {
             m.updateGroup(groupInfo)
+        }
+        if m.chatId == fromContact.id {
+            ItemsModel.shared.loadOpenChat(groupInfo.id)
+        }
+        await MainActor.run {
             m.removeChat(fromContact.id)
         }
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
