@@ -49,6 +49,7 @@ chatProfileTests = do
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
+      it "update profiles with business address" testBusinessUpdateProfiles
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -731,6 +732,36 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     concurrently_
       (alice <# "#bob bob_1> hey there")
       (biz <# "#bob bob_1> hey there")
+
+testBusinessUpdateProfiles :: HasCallStack => FilePath -> IO ()
+testBusinessUpdateProfiles = testChat2 businessProfile aliceProfile $
+  \biz alice -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    alice ##> ("/c " <> cLink)
+    alice <## "connection request sent!"
+    biz <## "#alice (Alice): accepting business address request..."
+    alice <## "#biz: joining the group..."
+    biz <## "#alice: alice_1 joined the group"
+    alice <## "#biz: you joined the group"
+    biz #> "#alice hi"
+    alice <# "#biz biz_1> hi"
+    alice #> "#biz hello"
+    biz <# "#alice alice_1> hello"
+    alice ##> "/p alisa"
+    alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+    alice #> "#biz hello again" -- profile update is sent with message
+    biz <## "alice_1 updated group #alice:"
+    biz <## "changed to #alisa"
+    biz <# "#alisa alisa_1> hello again"
+    biz ##> "/p business"
+    biz <## "user profile is changed to business (your 0 contacts are notified)"
+    biz #> "#alisa hey"
+    alice <## "biz_1 updated group #biz:"
+    alice <## "changed to #business"
+    alice <# "#business business_1> hey"
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
 testPlanAddressOkKnown =

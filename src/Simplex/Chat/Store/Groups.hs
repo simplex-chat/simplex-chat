@@ -1470,7 +1470,7 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
         DB.query
           db
           [sql|
-            SELECT gp.display_name, gp.full_name, gp.description, gp.image, gp.preferences,
+            SELECT gp.display_name, gp.full_name, gp.description, gp.image, gp.preferences
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
             WHERE g.group_id = ?
