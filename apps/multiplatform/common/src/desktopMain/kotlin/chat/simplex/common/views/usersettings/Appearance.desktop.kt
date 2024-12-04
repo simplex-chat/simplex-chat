@@ -58,6 +58,9 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
       SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI)
+      if (remember { appPrefs.oneHandUI.state }.value && !remember { appPrefs.chatBottomBar.state }.value) {
+        SettingsPreferenceItem(icon = null, stringResource(MR.strings.chat_bottom_bar), ChatModel.controller.appPrefs.chatBottomBar)
+      }
     }
     SectionDividerSpaced()
     ThemesSection(systemDarkTheme)

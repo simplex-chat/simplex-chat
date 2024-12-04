@@ -3034,8 +3034,8 @@ getGroupSndStatusCounts db itemId =
     |]
     (Only itemId)
 
-getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
-getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
+getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
+getGroupHistoryItems db user@User {userId} GroupInfo {groupId} m count = do
   ciIds <- getLastItemIds_
   -- use getGroupCIWithReactions to read reactions data
   reverse <$> mapM (runExceptT . getGroupChatItem db user groupId) ciIds
@@ -3046,12 +3046,14 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
         <$> DB.query
           db
           [sql|
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ?
-              AND item_content_tag IN (?,?)
-              AND item_deleted = 0
-            ORDER BY item_ts DESC, chat_item_id DESC
+            SELECT i.chat_item_id
+            FROM chat_items i
+            LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
+            WHERE i.user_id = ? AND i.group_id = ?
+              AND i.item_content_tag IN (?,?)
+              AND i.item_deleted = 0
+              AND s.group_snd_item_status_id IS NULL
+            ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
-          (userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)
+          (groupMemberId' m, userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)

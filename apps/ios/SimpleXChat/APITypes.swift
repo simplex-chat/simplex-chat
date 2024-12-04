@@ -2655,6 +2655,7 @@ public struct AppSettings: Codable, Equatable {
     public var uiCurrentThemeIds: [String: String]? = nil
     public var uiThemes: [ThemeOverrides]? = nil
     public var oneHandUI: Bool? = nil
+    public var chatBottomBar: Bool? = nil
     
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -2689,6 +2690,7 @@ public struct AppSettings: Codable, Equatable {
         if uiCurrentThemeIds != def.uiCurrentThemeIds { empty.uiCurrentThemeIds = uiCurrentThemeIds }
         if uiThemes != def.uiThemes { empty.uiThemes = uiThemes }
         if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
+        if chatBottomBar != def.chatBottomBar { empty.chatBottomBar = chatBottomBar }
         return empty
     }
 
@@ -2723,7 +2725,8 @@ public struct AppSettings: Codable, Equatable {
             uiDarkColorScheme: DefaultTheme.SIMPLEX.themeName,
             uiCurrentThemeIds: nil as [String: String]?,
             uiThemes: nil as [ThemeOverrides]?,
-            oneHandUI: false
+            oneHandUI: false,
+            chatBottomBar: true
         )
     }
 }
