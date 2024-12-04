@@ -53,7 +53,74 @@ With all advantages in privacy and security of e2e encryption in SimpleX Chat, t
 
 ### Running SimpleX Chat in the cloud
 
+To install SimpleX Chat CLI in the cloud, follow this:
+
+1. Create dedicated user for CLI:
+
+   ```sh
+   useradd -m -s /bin/bash simplex-cli
+   ```
+
+2. Create new tmux session
+
+   ```sh
+   tmux new -s simplex-cli
+   ```
+
+3. Login to dedicated user:
+
+   ```sh
+   su - simplex-cli
+   ```
+
+4. Install CLI:
+
+   ```sh
+   curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
+   ```
+
+5. Run the CLI:
+
+   ```sh
+   simplex-chat
+   ```
+
+To deattach from running CLI simply press `Ctrl+B` and then `D`.
+
+To reattach back to CLI, run: `tmux attach -t simplex-cli`.
+
 ### Using remote profiles via Desktop app
+
+To use CLI from Desktop app, follow this:
+
+1. Enable Developer tools in desktop app.
+
+2. In the Desktop app, click - `Linked mobile` -> `+ Link a mobile`, choose local address `127.0.0.1`, enter some fixed port (can be any free port, e.g. 12345), and copy the link.
+
+3. In the same machine where Desktop app is running, execute:
+
+   Change `PORT` to port, chosen in the previous step in Desktop app and `SERVER_IP` to your server.
+
+   ```sh
+   ssh -R PORT:127.0.0.1:PORT -N root@SERVER_IP
+   ```
+
+4. In the CLI on the server:
+
+   Change `LINK` to link, copied in the first step and enter the following:
+
+   ```sh
+   /crc LINK
+   ```
+
+   CLI will print verification code:
+
+   ```sh
+   Compare session code with controller and use:
+   /verify remote ctrl ...
+   ```
+  
+   Simply copy the whole line starting with `/verify ...` from the terminal and paste it. Now you can control the CLI from your Desktop app.
 
 ## Organizations using SimpleX Chat for customer service, support and sales
 
