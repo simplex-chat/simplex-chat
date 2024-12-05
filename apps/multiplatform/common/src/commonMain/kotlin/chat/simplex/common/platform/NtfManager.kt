@@ -37,7 +37,14 @@ abstract class NtfManager {
   )
 
   fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
-    if (cItem.showNotification && cInfo.ntfsEnabled  && (allowedToShowNotification() || ChatController.chatModel.chatId.value != cInfo.id || ChatController.chatModel.remoteHostId() != rhId)) {
+    if (
+      cItem.showNotification &&
+      cInfo.ntfsEnabled &&
+      (
+          allowedToShowNotification() ||
+              ChatController.chatModel.chatId.value != cInfo.id ||
+              ChatController.chatModel.remoteHostId() != rhId)
+    ) {
       displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
     }
   }
