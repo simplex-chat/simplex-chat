@@ -12,6 +12,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 import java.net.URI
 
 enum class ConnectionLinkType {
@@ -26,8 +27,18 @@ suspend fun planAndConnect(
   cleanup: (() -> Unit)? = null,
   filterKnownContact: ((Contact) -> Unit)? = null,
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
-) {
-  val connectionPlan = chatModel.controller.apiConnectPlan(rhId, uri.toString())
+): CompletableDeferred<Boolean> {
+  val completable = CompletableDeferred<Boolean>()
+  val close: (() -> Unit)? = {
+    close?.invoke()
+    // if close was called, it means the connection was created
+    completable.complete(true)
+  }
+  val cleanup: (() -> Unit)? = {
+    cleanup?.invoke()
+    completable.complete(!completable.isActive)
+  }
+  val connectionPlan = chatModel.controller.apiConnectPlan(rhId, uri)
   if (connectionPlan != null) {
     val link = strHasSingleSimplexLink(uri.trim())
     val linkText = if (link?.format is Format.SimplexLink)
@@ -333,6 +344,7 @@ suspend fun planAndConnect(
       )
     }
   }
+  return completable
 }
 
 suspend fun connectViaUri(
@@ -343,7 +355,7 @@ suspend fun connectViaUri(
   connectionPlan: ConnectionPlan?,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?,
-) {
+): Boolean {
   val pcc = chatModel.controller.apiConnect(rhId, incognito, uri)
   val connLinkType = if (connectionPlan != null) planToConnectionLinkType(connectionPlan) else ConnectionLinkType.INVITATION
   if (pcc != null) {
@@ -363,6 +375,7 @@ suspend fun connectViaUri(
     )
   }
   cleanup?.invoke()
+  return pcc != null
 }
 
 fun planToConnectionLinkType(connectionPlan: ConnectionPlan): ConnectionLinkType {

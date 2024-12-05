@@ -2436,9 +2436,7 @@ object ChatController {
           ) {
             receiveFile(rhId, r.user, file.fileId, auto = true)
           }
-          if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
-            ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
-          }
+          ntfManager.notifyMessageReceived(rhId, r.user, cInfo, cItem)
         }
       }
       is CR.ChatItemsStatusesUpdated ->
@@ -2452,7 +2450,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
+        chatItemUpdateNotify(rhId, r.user, r.chatItem)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withChats {
@@ -2950,9 +2948,17 @@ object ChatController {
   }
 
   private suspend fun chatItemSimpleUpdate(rh: Long?, user: UserLike, aChatItem: AChatItem) {
+    if (activeUser(rh, user)) {
+      val cInfo = aChatItem.chatInfo
+      val cItem = aChatItem.chatItem
+      withChats { upsertChatItem(rh, cInfo, cItem) }
+    }
+  }
+
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
-    val notify = { ntfManager.notifyMessageReceived(user, cInfo, cItem) }
+    val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       notify()
     } else if (withChats { upsertChatItem(rh, cInfo, cItem) }) {
@@ -6498,7 +6504,7 @@ sealed class SQLiteError {
 @Serializable
 sealed class AgentErrorType {
   val string: String get() = when (this) {
-    is CMD -> "CMD ${cmdErr.string}"
+    is CMD -> "CMD ${cmdErr.string} $errContext"
     is CONN -> "CONN ${connErr.string}"
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
@@ -6511,7 +6517,7 @@ sealed class AgentErrorType {
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
   }
-  @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val serverAddress: String, val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()

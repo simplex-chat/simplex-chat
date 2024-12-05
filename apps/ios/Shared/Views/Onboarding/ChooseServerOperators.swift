@@ -323,7 +323,7 @@ struct ChooseServerOperators: View {
         VStack(alignment: .leading, spacing: 20) {
             if !operatorsWithConditionsAccepted.isEmpty {
                 Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
-                Text("Same conditions will apply to operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
+                Text("The same conditions will apply to operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
             } else {
                 Text("Conditions will be accepted for operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
             }

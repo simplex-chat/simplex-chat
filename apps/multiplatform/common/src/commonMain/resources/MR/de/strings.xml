@@ -462,8 +462,7 @@
     <string name="callstate_connected">Verbunden</string>
     <string name="callstate_ended">Beendet</string>
     <!-- SimpleXInfo -->
-    <string name="next_generation_of_private_messaging">Die nächste Generation
-\ndes privaten Messagings</string>
+    <string name="next_generation_of_private_messaging">Die nächste Generation \ndes privaten Messagings</string>
     <string name="privacy_redefined">Datenschutz neu definiert</string>
     <string name="first_platform_without_user_ids">Keine Benutzerkennungen.</string>
     <string name="immune_to_spam_and_abuse">Immun gegen Spam</string>

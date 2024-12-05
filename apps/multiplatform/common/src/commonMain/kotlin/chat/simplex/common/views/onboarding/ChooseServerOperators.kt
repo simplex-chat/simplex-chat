@@ -342,6 +342,7 @@ private fun ChooseServerOperatorsInfoView() {
   ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.onboarding_network_operators), withPadding = false)
     ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_different_operators))
+    ReadableText(stringResource(MR.strings.onboarding_network_operators_cant_see_who_talks_to_whom))
     ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_for_routing))
     SectionBottomSpacer()
   }

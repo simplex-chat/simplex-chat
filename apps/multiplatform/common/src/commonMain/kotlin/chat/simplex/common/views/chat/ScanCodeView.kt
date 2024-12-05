@@ -13,19 +13,19 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
+fun ScanCodeView(verifyCode: suspend (String?) -> Boolean, close: () -> Unit) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.scan_code))
     QRCodeScanner { text ->
-      verifyCode(text) {
-        if (it) {
-          close()
-        } else {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.incorrect_code)
-          )
-        }
+      val success  = verifyCode(text)
+      if (success) {
+        close()
+      } else {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.incorrect_code)
+        )
       }
+      success
     }
     Text(stringResource(MR.strings.scan_code_from_contacts_app), Modifier.padding(horizontal = DEFAULT_PADDING))
     SectionBottomSpacer()
