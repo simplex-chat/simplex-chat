@@ -203,7 +203,7 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
       if (appPlatform.isAndroid) {
         SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
           QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
-            withBGApi { checkUserLink(text) }
+            checkUserLink(text)
           }
         }
         SectionSpacer()
@@ -518,8 +518,8 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String) {
-  if (strHasSimplexFileLink(link.trim())) {
+private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
+  return if (strHasSimplexFileLink(link.trim())) {
     val data = MigrationFileLinkData.readFromLink(link)
     val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
     val networkConfig = data?.networkConfig?.transformToPlatformSupported()
@@ -537,11 +537,13 @@ private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String) 
         networkProxy = null
       )
     }
+    true
   } else {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.invalid_file_link),
       text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
     )
+    false
   }
 }
 
