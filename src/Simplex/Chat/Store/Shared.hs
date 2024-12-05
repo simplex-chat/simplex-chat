@@ -546,17 +546,19 @@ safeDeleteLDN db User {userId} localDisplayName = do
     |]
     (userId, localDisplayName, userId)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe MemberId, Maybe BusinessChatType, Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
+type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
+
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
 
 type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
 
 toGroupInfo :: VersionRangeChat -> Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt, businessMemberId, businessChatType, uiThemes, customData) :. userMemberRow) =
+toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. businessRow :. (uiThemes, customData) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
-      businessChat = BusinessChatInfo <$> businessMemberId <*> businessChatType
+      businessChat = toBusinessChatInfo businessRow
    in GroupInfo {groupId, localDisplayName, groupProfile, businessChat, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
@@ -569,6 +571,10 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
       memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in GroupMember {..}
 
+toBusinessChatInfo :: BusinessChatInfoRow -> Maybe BusinessChatInfo
+toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId}
+toBusinessChatInfo _ = Nothing
+
 groupInfoQuery :: Query
 groupInfoQuery =
   [sql|
@@ -576,7 +582,7 @@ groupInfoQuery =
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
       g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_member_id, g.business_chat, g.ui_themes, g.custom_data,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,

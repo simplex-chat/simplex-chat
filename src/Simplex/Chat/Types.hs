@@ -617,7 +617,7 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
-    businessChat :: Maybe BusinessChatInfo,
+    business :: Maybe BusinessChatInfo,
     groupLinkId :: Maybe GroupLinkId,
     groupSize :: Maybe Int
   }
@@ -628,7 +628,7 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
-    businessChat :: Maybe BusinessChatInfo,
+    business :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
   deriving (Eq, Show)
@@ -654,8 +654,9 @@ data MemberInfo = MemberInfo
   deriving (Eq, Show)
 
 data BusinessChatInfo = BusinessChatInfo
-  { memberId :: MemberId,
-    chatType :: BusinessChatType
+  { chatType :: BusinessChatType,
+    businessId :: MemberId,
+    customerId :: MemberId
   }
   deriving (Eq, Show)
 

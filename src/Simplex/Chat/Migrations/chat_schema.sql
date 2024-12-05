@@ -130,7 +130,8 @@ CREATE TABLE groups(
   ui_themes TEXT,
   business_member_id BLOB NULL,
   business_chat TEXT NULL,
-  business_xcontact_id BLOB NULL, -- received
+  business_xcontact_id BLOB NULL,
+  customer_member_id BLOB NULL, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

@@ -734,8 +734,8 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => FilePath -> IO ()
-testBusinessUpdateProfiles = testChat3 businessProfile aliceProfile bobProfile $
-  \biz alice bob -> do
+testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
+  \biz alice bob cath -> do
     biz ##> "/ad"
     cLink <- getContactLink biz True
     biz ##> "/auto_accept on business text Welcome"
@@ -794,9 +794,37 @@ testBusinessUpdateProfiles = testChat3 businessProfile aliceProfile bobProfile $
     bob #> "#biz hi there" -- profile update is sent to group with message
     alice <# "#biz robert> hi there"
     biz <# "#alisa robert> hi there"
+    -- add business team member
+    connectUsers biz cath
+    biz ##> "/a #alisa cath"
+    biz <## "invitation to join the group #alisa sent to cath"
+    cath <## "#alisa: biz invites you to join the group as member"
+    cath <## "use /j alisa to accept"
+    cath ##> "/j alisa"
+    concurrentlyN_
+      [ do
+          cath <## "#alisa: you joined the group"
+          cath
+            <###
+              [ WithTime "#alisa biz> Welcome [>>]",
+                WithTime "#alisa biz> hi [>>]",
+                WithTime "#alisa alisa_1> hello [>>]",
+                WithTime "#alisa alisa_1> hello again [>>]",
+                WithTime "#alisa robert> hi there [>>]"
+              ]
+          cath <## "#alisa: member alisa_1 is connected"
+          cath <## "#alisa: member robert is connected",
+        biz <## "#alisa: cath joined the group",
+        do
+          alice <## "#biz: biz_1 added cath (Catherine) to the group (connecting...)"
+          alice <## "#biz: new member cath is connected",
+        do
+          bob <## "#biz: biz_1 added cath (Catherine) to the group (connecting...)"
+          bob <## "#biz: new member cath is connected"
+      ]
     -- both customers receive business profile change
     biz ##> "/p business"
-    biz <## "user profile is changed to business (your 0 contacts are notified)"
+    biz <## "user profile is changed to business (your 1 contacts are notified)"
     biz #> "#alisa hey"
     concurrentlyN_
       [ do
@@ -806,7 +834,28 @@ testBusinessUpdateProfiles = testChat3 businessProfile aliceProfile bobProfile $
         do
           bob <## "biz_1 updated group #biz:"
           bob <## "changed to #business"
-          bob <# "#business business_1> hey"
+          bob <# "#business business_1> hey",
+        do
+          cath <## "contact biz changed to business"
+          cath <## "use @business <message> to send messages"
+          cath <# "#alisa business> hey"
+      ]
+    biz ##> "/set voice #alisa on"
+    biz <## "updated group preferences:"
+    biz <## "Voice messages: on"
+    concurrentlyN_
+      [ do
+          alice <## "business_1 updated group #business:"
+          alice <## "updated group preferences:"
+          alice <## "Voice messages: on",
+        do
+          bob <## "business_1 updated group #business:"
+          bob <## "updated group preferences:"
+          bob <## "Voice messages: on",
+        do
+          cath <## "business updated group #alisa:"
+          cath <## "updated group preferences:"
+          cath <## "Voice messages: on"
       ]
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
@@ -2512,7 +2561,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 10)"
+      a <## "peer chat protocol version range: (Version 1, Version 11)"
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"
