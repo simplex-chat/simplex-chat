@@ -660,8 +660,8 @@
     <string name="read_more_in_github_with_link"><![CDATA[Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.]]></string>
     <string name="reject">Rifiuta</string>
     <string name="first_platform_without_user_ids">Nessun identificatore utente.</string>
-    <string name="next_generation_of_private_messaging">La nuova generazione \ndi messaggistica privata</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Per proteggere la privacy, invece degli ID utente usati da tutte le altre piattaforme, SimpleX dispone di identificatori per le code dei messaggi, separati per ciascuno dei tuoi contatti.</string>
+    <string name="next_generation_of_private_messaging">Il futuro dei messaggi</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Per proteggere la tua privacy, SimpleX usa ID separati per ciascuno dei tuoi contatti.</string>
     <string name="use_chat">Usa la chat</string>
     <string name="icon_descr_video_call">videochiamata</string>
     <string name="video_call_no_encryption">videochiamata (non crittografata e2e)</string>
@@ -855,7 +855,7 @@
     <string name="v4_2_security_assessment_desc">La sicurezza di SimpleX Chat è stata verificata da Trail of Bits.</string>
     <string name="v4_3_voice_messages">Messaggi vocali</string>
     <string name="voice_prohibited_in_this_chat">I messaggi vocali sono vietati in questa chat.</string>
-    <string name="voice_messages_are_prohibited">I messaggi vocali sono vietati in questo gruppo.</string>
+    <string name="voice_messages_are_prohibited">I messaggi vocali sono vietati.</string>
     <string name="whats_new">Novità</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Con messaggio di benvenuto facoltativo.</string>
     <string name="v4_3_irreversible_message_deletion_desc">I tuoi contatti possono consentire l\'eliminazione completa dei messaggi.</string>
@@ -1726,7 +1726,7 @@
     <string name="feature_roles_owners">proprietari</string>
     <string name="feature_roles_admins">amministratori</string>
     <string name="feature_roles_all_members">tutti i membri</string>
-    <string name="simplex_links_are_prohibited_in_group">I link di SimpleX sono vietati in questo gruppo.</string>
+    <string name="simplex_links_are_prohibited_in_group">I link di SimpleX sono vietati.</string>
     <string name="saved_description">salvato</string>
     <string name="saved_from_chat_item_info_title">Salvato da</string>
     <string name="forward_message">Inoltra messaggio…</string>
@@ -2134,7 +2134,7 @@
     <string name="onboarding_network_operators">Operatori di rete</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Quando più di un operatore di rete è attivato, l\'app userà i server di diversi operatori per ogni conversazione.</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">Puoi configurare gli operatori nelle impostazioni di rete e server.</string>
-    <string name="onboarding_choose_server_operators">Scegli gli operatori</string>
+    <string name="onboarding_choose_server_operators">Operatori del server</string>
     <string name="onboarding_select_network_operators_to_use">Seleziona gli operatori di rete da usare.</string>
     <string name="onboarding_network_operators_continue">Continua</string>
     <string name="onboarding_network_operators_update">Aggiorna</string>
@@ -2243,4 +2243,8 @@
     <string name="chat_bottom_bar">Barra degli strumenti di chat accessibile</string>
     <string name="only_chat_owners_can_change_prefs">Solo i proprietari della chat possono modificarne le preferenze.</string>
     <string name="onboarding_notifications_mode_battery">Notifiche e batteria</string>
+    <string name="maximum_message_size_reached_forwarding">Puoi copiare e ridurre la dimensione del messaggio per inviarlo.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in %s. Verrà notificato a tutti nella chat.</string>
+    <string name="chat_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri della chat</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Non riceverai più messaggi da questa chat. La cronologia della chat verrà conservata.</string>
 </resources>
