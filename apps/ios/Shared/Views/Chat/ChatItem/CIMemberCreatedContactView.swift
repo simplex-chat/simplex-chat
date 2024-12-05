@@ -23,7 +23,7 @@ struct CIMemberCreatedContactView: View {
                         .onTapGesture {
                             dismissAllSheets(animated: true)
                             DispatchQueue.main.async {
-                                m.chatId = "@\(contactId)"
+                                ItemsModel.shared.loadOpenChat("@\(contactId)")
                             }
                         }
                 } else {
