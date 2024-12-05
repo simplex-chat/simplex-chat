@@ -2213,7 +2213,7 @@
     <string name="chat_archive">O importa file archivio</string>
     <string name="remote_hosts_section">Telefoni remoti</string>
     <string name="direct_messages_are_prohibited_in_chat">I messaggi diretti tra i membri sono vietati in questa chat.</string>
-    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Dispositivi Xiaomi</b>: attiva l'avvio automatico nelle impostazioni di sistema per fare funzionare le notifiche.]]></string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Dispositivi Xiaomi</b>: attiva l\'avvio automatico nelle impostazioni di sistema per fare funzionare le notifiche.]]></string>
     <string name="add_your_team_members_to_conversations">Aggiungi i membri del tuo team alle conversazioni.</string>
     <string name="business_address">Indirizzo di lavoro</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tutti i messaggi e i file sono <b>cifrati end-to-end</b>, con sicurezza quantistica nei messaggi diretti.]]></string>

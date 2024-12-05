@@ -476,7 +476,7 @@
     <!-- How SimpleX Works -->
     <string name="how_simplex_works">Как SimpleX работает</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить Вашу конфиденциальность, SimpleX использует разные ID для всех ваших контактов.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Только пользовательские устройства хранят контакты, группы и сообщения.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Только пользовательские устройства хранят контакты, группы и сообщения.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.]]></string>
     <!-- SetNotificationsMode.kt -->
     <string name="use_chat">Использовать чат</string>

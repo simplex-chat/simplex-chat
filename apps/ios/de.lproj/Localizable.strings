@@ -2424,27 +2424,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Gruppen-Links";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Gruppenmitglieder können eine Reaktion auf Nachrichten geben.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Gruppenmitglieder können Direktnachrichten versenden.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten senden.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Gruppenmitglieder können Dateien und Medien senden.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "Gruppenmitglieder können SimpleX-Links senden.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
-
 /* notification */
 "Group message:" = "Grppennachricht:";
 
@@ -2933,6 +2912,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Gruppenmitglieder können eine Reaktion auf Nachrichten geben.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Gruppenmitglieder können Direktnachrichten versenden.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten senden.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Gruppenmitglieder können Dateien und Medien senden.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Gruppenmitglieder können SimpleX-Links senden.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
 
 /* No comment provided by engineer. */
 "Menus" = "Menüs";

@@ -389,6 +389,9 @@
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Aggiungi l'indirizzo al tuo profilo, in modo che i tuoi contatti possano condividerlo con altre persone. L'aggiornamento del profilo verrà inviato ai tuoi contatti.";
 
 /* No comment provided by engineer. */
+"Add friends" = "Aggiungi amici";
+
+/* No comment provided by engineer. */
 "Add profile" = "Aggiungi profilo";
 
 /* No comment provided by engineer. */
@@ -398,10 +401,16 @@
 "Add servers by scanning QR codes." = "Aggiungi server scansionando codici QR.";
 
 /* No comment provided by engineer. */
+"Add team members" = "Aggiungi membri del team";
+
+/* No comment provided by engineer. */
 "Add to another device" = "Aggiungi ad un altro dispositivo";
 
 /* No comment provided by engineer. */
 "Add welcome message" = "Aggiungi messaggio di benvenuto";
+
+/* No comment provided by engineer. */
+"Add your team members to the conversations." = "Aggiungi i membri del tuo team alle conversazioni.";
 
 /* No comment provided by engineer. */
 "Added media & file servers" = "Server di multimediali e file aggiunti";
@@ -794,6 +803,12 @@
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgaro, finlandese, tailandese e ucraino - grazie agli utenti e a [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
+"Business address" = "Indirizzo di lavoro";
+
+/* No comment provided by engineer. */
+"Business chats" = "Chat di lavoro";
+
+/* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Per profilo di chat (predefinito) o [per connessione](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
@@ -910,6 +925,15 @@
 "changing address…" = "cambio indirizzo…";
 
 /* No comment provided by engineer. */
+"Chat" = "Chat";
+
+/* No comment provided by engineer. */
+"Chat already exists" = "La chat esiste già";
+
+/* No comment provided by engineer. */
+"Chat already exists!" = "La chat esiste già!";
+
+/* No comment provided by engineer. */
 "Chat colors" = "Colori della chat";
 
 /* No comment provided by engineer. */
@@ -953,6 +977,12 @@
 
 /* No comment provided by engineer. */
 "Chat theme" = "Tema della chat";
+
+/* No comment provided by engineer. */
+"Chat will be deleted for all members - this cannot be undone!" = "La chat verrà eliminata per tutti i membri, non è reversibile!";
+
+/* No comment provided by engineer. */
+"Chat will be deleted for you - this cannot be undone!" = "La chat verrà eliminata solo per te, non è reversibile!";
 
 /* No comment provided by engineer. */
 "Chats" = "Chat";
@@ -1476,10 +1506,16 @@
 "Delete and notify contact" = "Elimina e avvisa il contatto";
 
 /* No comment provided by engineer. */
+"Delete chat" = "Elimina chat";
+
+/* No comment provided by engineer. */
 "Delete chat profile" = "Elimina il profilo di chat";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "Eliminare il profilo di chat?";
+
+/* No comment provided by engineer. */
+"Delete chat?" = "Eliminare la chat?";
 
 /* No comment provided by engineer. */
 "Delete connection" = "Elimina connessione";
@@ -1654,6 +1690,9 @@
 
 /* chat feature */
 "Direct messages" = "Messaggi diretti";
+
+/* No comment provided by engineer. */
+"Direct messages between members are prohibited in this chat." = "I messaggi diretti tra i membri sono vietati in questa chat.";
 
 /* No comment provided by engineer. */
 "Direct messages between members are prohibited." = "I messaggi diretti tra i membri sono vietati in questo gruppo.";
@@ -2424,27 +2463,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Link del gruppo";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "I membri del gruppo possono aggiungere reazioni ai messaggi.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "I membri del gruppo possono eliminare irreversibilmente i messaggi inviati. (24 ore)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "I membri del gruppo possono inviare messaggi diretti.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "I membri del gruppo possono inviare messaggi a tempo.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "I membri del gruppo possono inviare file e contenuti multimediali.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "I membri del gruppo possono inviare link di Simplex.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "I membri del gruppo possono inviare messaggi vocali.";
-
 /* notification */
 "Group message:" = "Messaggio del gruppo:";
 
@@ -2716,6 +2734,9 @@
 "Invite members" = "Invita membri";
 
 /* No comment provided by engineer. */
+"Invite to chat" = "Invita in chat";
+
+/* No comment provided by engineer. */
 "Invite to group" = "Invita al gruppo";
 
 /* No comment provided by engineer. */
@@ -2830,6 +2851,12 @@
 "Leave" = "Esci";
 
 /* No comment provided by engineer. */
+"Leave chat" = "Esci dalla chat";
+
+/* No comment provided by engineer. */
+"Leave chat?" = "Uscire dalla chat?";
+
+/* No comment provided by engineer. */
 "Leave group" = "Esci dal gruppo";
 
 /* No comment provided by engineer. */
@@ -2926,13 +2953,40 @@
 "Member inactive" = "Membro inattivo";
 
 /* No comment provided by engineer. */
+"Member role will be changed to \"%@\". All chat members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Verranno notificati tutti i membri della chat.";
+
+/* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Tutti i membri del gruppo verranno avvisati.";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Il ruolo del membro verrà cambiato in \"%@\". Il membro riceverà un invito nuovo.";
 
 /* No comment provided by engineer. */
+"Member will be removed from chat - this cannot be undone!" = "Il membro verrà rimosso dalla chat, non è reversibile!";
+
+/* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Il membro verrà rimosso dal gruppo, non è reversibile!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "I membri del gruppo possono aggiungere reazioni ai messaggi.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "I membri del gruppo possono eliminare irreversibilmente i messaggi inviati. (24 ore)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "I membri del gruppo possono inviare messaggi diretti.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "I membri del gruppo possono inviare messaggi a tempo.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "I membri del gruppo possono inviare file e contenuti multimediali.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "I membri del gruppo possono inviare link di Simplex.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "I membri del gruppo possono inviare messaggi vocali.";
 
 /* No comment provided by engineer. */
 "Menus" = "Menu";
@@ -3330,6 +3384,9 @@
 "Onion hosts will not be used." = "Gli host Onion non verranno usati.";
 
 /* No comment provided by engineer. */
+"Only chat owners can change preferences." = "Solo i proprietari della chat possono modificarne le preferenze.";
+
+/* No comment provided by engineer. */
 "Only client devices store user profiles, contacts, groups, and messages." = "Solo i dispositivi client archiviano profili utente, i contatti, i gruppi e i messaggi inviati con la **crittografia end-to-end a 2 livelli**.";
 
 /* No comment provided by engineer. */
@@ -3406,6 +3463,9 @@
 
 /* alert title */
 "Operator server" = "Server dell'operatore";
+
+/* No comment provided by engineer. */
+"Or import archive file" = "O importa file archivio";
 
 /* No comment provided by engineer. */
 "Or paste archive link" = "O incolla il link dell'archivio";
@@ -3574,6 +3634,9 @@
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Privacy e sicurezza";
+
+/* No comment provided by engineer. */
+"Privacy for your customers." = "Privacy per i tuoi clienti.";
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Privacy ridefinita";
@@ -4581,6 +4644,9 @@
 "Tap button " = "Tocca il pulsante ";
 
 /* No comment provided by engineer. */
+"Tap Create SimpleX address in the menu to create it later." = "Tocca \"Crea indirizzo SimpleX\" nel menu per crearlo più tardi.";
+
+/* No comment provided by engineer. */
 "Tap to activate profile." = "Tocca per attivare il profilo.";
 
 /* No comment provided by engineer. */
@@ -5283,6 +5349,9 @@
 "You are already connected to %@." = "Sei già connesso/a a %@.";
 
 /* No comment provided by engineer. */
+"You are already connected with %@." = "Sei già connesso/a con %@.";
+
+/* No comment provided by engineer. */
 "You are already connecting to %@." = "Ti stai già connettendo a %@.";
 
 /* No comment provided by engineer. */
@@ -5479,6 +5548,9 @@
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Continuerai a ricevere chiamate e notifiche da profili silenziati quando sono attivi.";
+
+/* No comment provided by engineer. */
+"You will stop receiving messages from this chat. Chat history will be preserved." = "Non riceverai più messaggi da questa chat. La cronologia della chat verrà conservata.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Non riceverai più messaggi da questo gruppo. La cronologia della chat verrà conservata.";

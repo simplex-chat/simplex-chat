@@ -2424,27 +2424,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Групові посилання";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Учасники групи можуть додавати реакції на повідомлення.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Учасники групи можуть надсилати зникаючі повідомлення.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Учасники групи можуть надсилати файли та медіа.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "Учасники групи можуть надсилати посилання SimpleX.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Учасники групи можуть надсилати голосові повідомлення.";
-
 /* notification */
 "Group message:" = "Групове повідомлення:";
 
@@ -2933,6 +2912,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Учасник буде видалений з групи - це неможливо скасувати!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Учасники групи можуть додавати реакції на повідомлення.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Учасники групи можуть надсилати зникаючі повідомлення.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Учасники групи можуть надсилати файли та медіа.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Учасники групи можуть надсилати посилання SimpleX.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Учасники групи можуть надсилати голосові повідомлення.";
 
 /* No comment provided by engineer. */
 "Menus" = "Меню";
