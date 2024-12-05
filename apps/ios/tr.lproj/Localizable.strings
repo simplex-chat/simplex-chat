@@ -2301,27 +2301,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Grup bağlantıları";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Grup üyeleri mesaj tepkileri ekleyebilir.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Grup üyeleri doğrudan mesajlar gönderebilir.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Grup üyeleri kaybolan mesajlar gönderebilir.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Grup üyeleri dosyalar ve medya gönderebilir.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "Grup üyeleri SimpleX bağlantıları gönderebilir.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Grup üyeleri sesli mesajlar gönderebilir.";
-
 /* notification */
 "Group message:" = "Grup mesajı:";
 
@@ -2804,6 +2783,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Üye gruptan çıkarılacaktır - bu geri alınamaz!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Grup üyeleri mesaj tepkileri ekleyebilir.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Grup üyeleri doğrudan mesajlar gönderebilir.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Grup üyeleri kaybolan mesajlar gönderebilir.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Grup üyeleri dosyalar ve medya gönderebilir.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Grup üyeleri SimpleX bağlantıları gönderebilir.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Grup üyeleri sesli mesajlar gönderebilir.";
 
 /* No comment provided by engineer. */
 "Menus" = "Menüler";

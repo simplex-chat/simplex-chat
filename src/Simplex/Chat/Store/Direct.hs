@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Direct
     setQuotaErrCounter,
     getUserContacts,
     createOrUpdateContactRequest,
+    getUserContactLinkIdByCReq,
     getContactRequest',
     getContactRequest,
     getContactRequestIdByName,
@@ -726,6 +727,11 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
               )
             |]
             (displayName, fullName, image, contactLink, currentTs, userId, cReqId)
+
+getUserContactLinkIdByCReq :: DB.Connection -> Int64 -> ExceptT StoreError IO Int64
+getUserContactLinkIdByCReq db contactRequestId =
+  ExceptT . firstRow fromOnly (SEContactRequestNotFound contactRequestId) $
+    DB.query db "SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?" (Only contactRequestId)
 
 getContactRequest' :: DB.Connection -> Int64 -> ExceptT StoreError IO (User, UserContactRequest)
 getContactRequest' db contactRequestId = do

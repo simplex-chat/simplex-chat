@@ -2214,27 +2214,6 @@
 /* No comment provided by engineer. */
 "Group links" = "群组链接";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "群组成员可以添加信息回应。";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "群组成员可以不可撤回地删除已发送的消息";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "群组成员可以私信。";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "群组成员可以发送限时消息。";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "群组成员可以发送文件和媒体。";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "群成员可发送 SimpleX 链接。";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "群组成员可以发送语音消息。";
-
 /* notification */
 "Group message:" = "群组消息：";
 
@@ -2711,6 +2690,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "成员将被移出群组——此操作无法撤消！";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "群组成员可以添加信息回应。";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "群组成员可以不可撤回地删除已发送的消息";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "群组成员可以私信。";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "群组成员可以发送限时消息。";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "群组成员可以发送文件和媒体。";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "群成员可发送 SimpleX 链接。";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "群组成员可以发送语音消息。";
 
 /* No comment provided by engineer. */
 "Menus" = "菜单";
