@@ -2933,8 +2933,8 @@ processChatCommand' vr = \case
       g' <- withStore $ \db -> updateGroupProfile db user g p'
       msg <- case businessChat of
         Just BusinessChatInfo {businessId} -> do
-          let (newMs, oldMs) = partition (\m -> maxVersion (memberChatVRange m) >= businessChatsVersion) ms
-          -- this is a fallback to send the members witht the old version correct profile of the business when preferences change
+          let (newMs, oldMs) = partition (\m -> maxVersion (memberChatVRange m) >= businessChatPrefsVersion) ms
+          -- this is a fallback to send the members with the old version correct profile of the business when preferences change
           unless (null oldMs) $ do
             GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} <-
               withStore $ \db -> getGroupMemberByMemberId db vr user g businessId
