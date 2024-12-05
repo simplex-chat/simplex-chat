@@ -2264,7 +2264,7 @@
     <string name="onboarding_notifications_mode_off_desc_short">Без фонового сервиса</string>
     <string name="onboarding_notifications_mode_battery">Нотификации и батарейка</string>
     <string name="how_it_helps_privacy">Как это улучшает конфиденциальность</string>
-    <string name="onboarding_network_operators">Операторы сети</string>
+    <string name="onboarding_network_operators">Операторы серверов</string>
     <string name="onboarding_select_network_operators_to_use">Выберите операторов сети.</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">Вы можете настроить операторов в настройках Сеть и серверы.</string>
     <string name="onboarding_network_operators_continue">Продолжить</string>
@@ -2320,8 +2320,9 @@
     <string name="connect_plan_chat_already_exists">Разговор уже существует!</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Одноразовая ссылка может быть использована <i>только с одним контактом</i> - поделитесь при встрече или через любой мессенджер.]]></string>
     <string name="no_message_servers_configured_for_private_routing">Нет серверов для доставки сообщений.</string>
-    <string name="onboarding_network_operators_configure_via_settings">Вы можете сконфигурировать серверы через настройки.</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">Когда больше чем один оператор сети включен, приложение использует серверы разных операторов в каждом разговоре.</string>
+    <string name="onboarding_network_operators_configure_via_settings">Вы можете настроить серверы позже.</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">Приложение улучшает конфиденциальность используя разных операторов в каждом разговоре.</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Когда больше чем один оператор включен, ни один из них не видит метаданные, чтобы определить, кто соединен с кем.</string>
     <string name="failed_to_save_servers">Ошибка сохранения серверов</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Условия будут приняты для включенных операторов через 30 дней.</string>
     <string name="error_accepting_operator_conditions">Ошибка приема условий</string>
