@@ -892,7 +892,7 @@
 "Change self-destruct passcode" = "Cambiar código autodestrucción";
 
 /* authentication reason */
-"Change user profiles" = "Cambiar perfil de usuario";
+"Change chat profiles" = "Cambiar perfil de usuario";
 
 /* chat item text */
 "changed address for you" = "ha cambiado tu servidor de envío";
@@ -3669,10 +3669,7 @@
 "Proxy requires password" = "El proxy requiere contraseña";
 
 /* No comment provided by engineer. */
-"Push notifications" = "Notificaciones automáticas";
-
-/* No comment provided by engineer. */
-"Push Notifications" = "Notificaciones push";
+"Push notifications" = "Notificaciones push";
 
 /* No comment provided by engineer. */
 "Push server" = "Servidor push";
@@ -3949,10 +3946,10 @@
 "Safer groups" = "Grupos más seguros";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator **%@**." = "Las mismas condiciones se aplicarán al operador **%@**.";
+"The same conditions will apply to operator **%@**." = "Las mismas condiciones se aplicarán al operador **%@**.";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator(s): **%@**." = "Las mismas condiciones se aplicarán a el/los operador(es) **%@**.";
+"The same conditions will apply to operator(s): **%@**." = "Las mismas condiciones se aplicarán a el/los operador(es) **%@**.";
 
 /* alert button
    chat item action */

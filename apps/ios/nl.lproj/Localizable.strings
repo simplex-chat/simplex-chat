@@ -907,7 +907,7 @@
 "Change self-destruct passcode" = "Zelfvernietigings code wijzigen";
 
 /* authentication reason */
-"Change user profiles" = "Gebruikersprofielen wijzigen";
+"Change chat profiles" = "Gebruikersprofielen wijzigen";
 
 /* chat item text */
 "changed address for you" = "adres voor u gewijzigd";
@@ -3735,9 +3735,6 @@
 "Push notifications" = "Push meldingen";
 
 /* No comment provided by engineer. */
-"Push Notifications" = "Pushmeldingen";
-
-/* No comment provided by engineer. */
 "Push server" = "Push server";
 
 /* chat item text */
@@ -4012,10 +4009,10 @@
 "Safer groups" = "Veiligere groepen";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator **%@**." = "Dezelfde voorwaarden gelden voor operator **%@**.";
+"The same conditions will apply to operator **%@**." = "Dezelfde voorwaarden gelden voor operator **%@**.";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator(s): **%@**." = "Dezelfde voorwaarden gelden voor operator(s): **%@**.";
+"The same conditions will apply to operator(s): **%@**." = "Dezelfde voorwaarden gelden voor operator(s): **%@**.";
 
 /* alert button
    chat item action */

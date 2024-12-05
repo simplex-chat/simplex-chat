@@ -1346,6 +1346,11 @@
         <target>Поменять</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change chat profiles" xml:space="preserve">
+        <source>Change chat profiles</source>
+        <target>Поменять профили</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
         <target>Поменять пароль базы данных?</target>
@@ -1391,11 +1396,6 @@
         <target>Изменить код самоуничтожения</target>
         <note>authentication reason
    set passcode view</note>
-      </trans-unit>
-      <trans-unit id="Change user profiles" xml:space="preserve">
-        <source>Change user profiles</source>
-        <target>Поменять профили</target>
-        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
@@ -3810,7 +3810,7 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="How it affects privacy" xml:space="preserve">
         <source>How it affects privacy</source>
-        <target>Как это улучшает конфиденциальность</target>
+        <target>Как это влияет на конфиденциальность</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How it helps privacy" xml:space="preserve">
@@ -5610,11 +5610,6 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Прокси требует пароль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push Notifications" xml:space="preserve">
-        <source>Push Notifications</source>
-        <target>Push уведомления</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>Доставка уведомлений</target>
@@ -6039,16 +6034,6 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Safer groups" xml:space="preserve">
         <source>Safer groups</source>
         <target>Более безопасные группы</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Same conditions will apply to operator **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator **%@**.</source>
-        <target>Те же самые условия будут приняты для оператора **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Same conditions will apply to operator(s): **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator(s): **%@**.</source>
-        <target>Те же самые условия будут приняты для оператора(ов): **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -7210,6 +7195,16 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
         <source>The profile is only shared with your contacts.</source>
         <target>Профиль отправляется только Вашим контактам.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator **%@**.</source>
+        <target>Те же самые условия будут приняты для оператора **%@**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator(s): **%@**.</source>
+        <target>Те же самые условия будут приняты для оператора(ов): **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The second preset operator in the app!" xml:space="preserve">

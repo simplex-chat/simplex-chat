@@ -1346,6 +1346,11 @@
         <target>Változtatás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change chat profiles" xml:space="preserve">
+        <source>Change chat profiles</source>
+        <target>Felhasználói profilok megváltoztatása</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
         <target>Adatbázis-jelmondat megváltoztatása?</target>
@@ -1391,11 +1396,6 @@
         <target>Önmegsemmisító jelkód megváltoztatása</target>
         <note>authentication reason
    set passcode view</note>
-      </trans-unit>
-      <trans-unit id="Change user profiles" xml:space="preserve">
-        <source>Change user profiles</source>
-        <target>Felhasználói profilok megváltoztatása</target>
-        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
@@ -5611,11 +5611,6 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>A proxy jelszót igényel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push Notifications" xml:space="preserve">
-        <source>Push Notifications</source>
-        <target>Push értesítések</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>Push-értesítések</target>
@@ -6040,16 +6035,6 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
       <trans-unit id="Safer groups" xml:space="preserve">
         <source>Safer groups</source>
         <target>Biztonságosabb csoportok</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Same conditions will apply to operator **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator **%@**.</source>
-        <target>Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Same conditions will apply to operator(s): **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator(s): **%@**.</source>
-        <target>Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k)re is: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -7211,6 +7196,16 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
         <source>The profile is only shared with your contacts.</source>
         <target>A profilja csak az ismerőseivel kerül megosztásra.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator **%@**.</source>
+        <target>Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: **%@**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator(s): **%@**.</source>
+        <target>Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k)re is: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The second preset operator in the app!" xml:space="preserve">

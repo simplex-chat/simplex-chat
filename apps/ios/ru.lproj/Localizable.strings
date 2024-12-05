@@ -907,7 +907,7 @@
 "Change self-destruct passcode" = "Изменить код самоуничтожения";
 
 /* authentication reason */
-"Change user profiles" = "Поменять профили";
+"Change chat profiles" = "Поменять профили";
 
 /* chat item text */
 "changed address for you" = "поменял(а) адрес для Вас";
@@ -2524,7 +2524,7 @@
 "hours" = "часов";
 
 /* No comment provided by engineer. */
-"How it affects privacy" = "Как это улучшает конфиденциальность";
+"How it affects privacy" = "Как это влияет на конфиденциальность";
 
 /* No comment provided by engineer. */
 "How it helps privacy" = "Как это улучшает конфиденциальность";
@@ -3735,9 +3735,6 @@
 "Push notifications" = "Доставка уведомлений";
 
 /* No comment provided by engineer. */
-"Push Notifications" = "Push уведомления";
-
-/* No comment provided by engineer. */
 "Push server" = "Сервер уведомлений";
 
 /* chat item text */
@@ -4012,10 +4009,10 @@
 "Safer groups" = "Более безопасные группы";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator **%@**." = "Те же самые условия будут приняты для оператора **%@**.";
+"The same conditions will apply to operator **%@**." = "Те же самые условия будут приняты для оператора **%@**.";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator(s): **%@**." = "Те же самые условия будут приняты для оператора(ов): **%@**.";
+"The same conditions will apply to operator(s): **%@**." = "Те же самые условия будут приняты для оператора(ов): **%@**.";
 
 /* alert button
    chat item action */

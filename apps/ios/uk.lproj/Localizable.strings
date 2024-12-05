@@ -892,7 +892,7 @@
 "Change self-destruct passcode" = "Змінити пароль самознищення";
 
 /* authentication reason */
-"Change user profiles" = "Зміна профілів користувачів";
+"Change chat profiles" = "Зміна профілів користувачів";
 
 /* chat item text */
 "changed address for you" = "змінили для вас адресу";
@@ -3672,7 +3672,7 @@
 "Push notifications" = "Push-повідомлення";
 
 /* No comment provided by engineer. */
-"Push Notifications" = "Push-сповіщення";
+"Push notifications" = "Push-сповіщення";
 
 /* No comment provided by engineer. */
 "Push server" = "Push-сервер";
@@ -3949,10 +3949,10 @@
 "Safer groups" = "Безпечніші групи";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
+"The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
+"The same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
 
 /* alert button
    chat item action */

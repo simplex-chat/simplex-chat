@@ -907,7 +907,7 @@
 "Change self-destruct passcode" = "Önmegsemmisító jelkód megváltoztatása";
 
 /* authentication reason */
-"Change user profiles" = "Felhasználói profilok megváltoztatása";
+"Change chat profiles" = "Felhasználói profilok megváltoztatása";
 
 /* chat item text */
 "changed address for you" = "cím megváltoztatva";
@@ -3735,9 +3735,6 @@
 "Push notifications" = "Push-értesítések";
 
 /* No comment provided by engineer. */
-"Push Notifications" = "Push értesítések";
-
-/* No comment provided by engineer. */
 "Push server" = "Push-kiszolgáló";
 
 /* chat item text */
@@ -4012,10 +4009,10 @@
 "Safer groups" = "Biztonságosabb csoportok";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator **%@**." = "Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: **%@**.";
+"The same conditions will apply to operator **%@**." = "Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: **%@**.";
 
 /* No comment provided by engineer. */
-"Same conditions will apply to operator(s): **%@**." = "Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k)re is: **%@**.";
+"The same conditions will apply to operator(s): **%@**." = "Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k)re is: **%@**.";
 
 /* alert button
    chat item action */
