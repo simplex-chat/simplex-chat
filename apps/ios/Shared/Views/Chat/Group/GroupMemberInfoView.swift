@@ -13,7 +13,7 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    @State var groupInfo: GroupInfo
+    @Binding var groupInfo: GroupInfo
     @ObservedObject var groupMember: GMember
     var navigation: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
@@ -757,7 +757,7 @@ func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Boo
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupMemberInfoView(
-            groupInfo: GroupInfo.sampleData,
+            groupInfo: Binding.constant(GroupInfo.sampleData),
             groupMember: GMember.sampleData
         )
     }
