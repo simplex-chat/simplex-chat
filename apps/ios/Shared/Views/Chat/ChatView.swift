@@ -246,7 +246,8 @@ struct ChatView: View {
                                     chat.created = Date.now
                                 }
                             ),
-                            onSearch: { focusSearch() }
+                            onSearch: { focusSearch() },
+                            preferences: groupInfo.fullGroupPreferences
                         )
                     }
                 } else if case .local = cInfo {

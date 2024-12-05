@@ -20,8 +20,8 @@ struct GroupPreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var groupInfo: GroupInfo
-    @State var preferences: FullGroupPreferences
-    @State var currentPreferences: FullGroupPreferences
+    @Binding var preferences: FullGroupPreferences
+    @Binding var currentPreferences: FullGroupPreferences
     let creatingGroup: Bool
     @State private var showSaveDialogue = false
 
@@ -41,7 +41,7 @@ struct GroupPreferencesView: View {
                 if groupInfo.isOwner {
                     Section {
                         Button("Reset") { preferences = currentPreferences }
-                        Button(saveText) { savePreferences() }
+                        Button(saveText) { savePreferences(groupInfo: $groupInfo, preferences: $preferences, currentPreferences: $currentPreferences) }
                     }
                     .disabled(currentPreferences == preferences)
                 }
@@ -65,7 +65,7 @@ struct GroupPreferencesView: View {
         })
         .confirmationDialog("Save preferences?", isPresented: $showSaveDialogue) {
             Button(saveText) {
-                savePreferences()
+                savePreferences(groupInfo: $groupInfo, preferences: $preferences, currentPreferences: $currentPreferences)
                 dismiss()
             }
             Button("Exit without saving") { dismiss() }
@@ -132,21 +132,25 @@ struct GroupPreferencesView: View {
             }
         }
     }
+}
 
-    private func savePreferences() {
-        Task {
-            do {
-                var gp = groupInfo.groupProfile
-                gp.groupPreferences = toGroupPreferences(preferences)
-                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
-                await MainActor.run {
-                    groupInfo = gInfo
-                    chatModel.updateGroup(gInfo)
-                    currentPreferences = preferences
-                }
-            } catch {
-                logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")
+func savePreferences(
+    groupInfo: Binding<GroupInfo>,
+    preferences: Binding<FullGroupPreferences>,
+    currentPreferences: Binding<FullGroupPreferences>
+) {
+    Task {
+        do {
+            var gp = groupInfo.groupProfile.wrappedValue
+            gp.groupPreferences = toGroupPreferences(preferences.wrappedValue)
+            let gInfo = try await apiUpdateGroup(groupInfo.groupId.wrappedValue, gp)
+            await MainActor.run {
+                groupInfo.wrappedValue = gInfo
+                ChatModel.shared.updateGroup(gInfo)
+                currentPreferences.wrappedValue = preferences.wrappedValue
             }
+        } catch {
+            logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")
         }
     }
 }
@@ -155,8 +159,8 @@ struct GroupPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         GroupPreferencesView(
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            preferences: FullGroupPreferences.sampleData,
-            currentPreferences: FullGroupPreferences.sampleData,
+            preferences: Binding.constant(FullGroupPreferences.sampleData),
+            currentPreferences: Binding.constant(FullGroupPreferences.sampleData),
             creatingGroup: false
         )
     }

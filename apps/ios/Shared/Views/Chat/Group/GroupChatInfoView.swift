@@ -19,6 +19,7 @@ struct GroupChatInfoView: View {
     @Binding var groupInfo: GroupInfo
     var onSearch: () -> Void
     @State private var alert: GroupChatInfoViewAlert? = nil
+    @State var preferences: FullGroupPreferences
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var groupLinkNavLinkActive: Bool = false
@@ -87,7 +88,7 @@ struct GroupChatInfoView: View {
                     if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
                         addOrEditWelcomeMessage()
                     }
-                    groupPreferencesButton($groupInfo)
+                    groupPreferencesButton($groupInfo, $preferences)
                     if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                         sendReceiptsOption()
                     } else {
@@ -654,18 +655,37 @@ func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
     )
 }
 
-func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
+func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ preferences: Binding<FullGroupPreferences>,  _ creatingGroup: Bool = false) -> some View {
     let label: LocalizedStringKey = groupInfo.wrappedValue.businessChat == nil ? "Group preferences" : "Chat preferences"
     return NavigationLink {
         GroupPreferencesView(
             groupInfo: groupInfo,
-            preferences: groupInfo.wrappedValue.fullGroupPreferences,
-            currentPreferences: groupInfo.wrappedValue.fullGroupPreferences,
+            preferences: preferences,
+            currentPreferences: groupInfo.fullGroupPreferences,
             creatingGroup: creatingGroup
         )
         .navigationBarTitle(label)
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
+        .onDisappear {
+            if !creatingGroup {
+                let saveText = NSLocalizedString(creatingGroup ? "Save" : "Save and notify group members", comment: "alert button")
+                
+                if groupInfo.fullGroupPreferences.wrappedValue != preferences.wrappedValue {
+                    showAlert(
+                        title: NSLocalizedString("Save preferences?", comment: "alert title"),
+                        buttonTitle: saveText,
+                        buttonAction: {
+                            savePreferences(groupInfo: groupInfo, preferences: preferences, currentPreferences: groupInfo.fullGroupPreferences)
+                        },
+                        cancelButton: true
+                    )
+                }
+            } else {
+                var gp = groupInfo.groupProfile.wrappedValue
+                gp.groupPreferences = toGroupPreferences(preferences.wrappedValue)
+            }
+        }
     } label: {
         if creatingGroup {
             Text("Set group preferences")
@@ -694,7 +714,8 @@ struct GroupChatInfoView_Previews: PreviewProvider {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            onSearch: {}
+            onSearch: {},
+            preferences: GroupInfo.sampleData.fullGroupPreferences
         )
     }
 }
