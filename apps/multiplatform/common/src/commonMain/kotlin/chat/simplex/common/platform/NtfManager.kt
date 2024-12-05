@@ -42,8 +42,8 @@ abstract class NtfManager {
       cInfo.ntfsEnabled &&
       (
           allowedToShowNotification() ||
-              ChatController.chatModel.chatId.value != cInfo.id ||
-              ChatController.chatModel.remoteHostId() != rhId)
+              chatModel.chatId.value != cInfo.id ||
+              chatModel.remoteHostId() != rhId)
     ) {
       displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
     }
