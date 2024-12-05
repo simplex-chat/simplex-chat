@@ -6498,7 +6498,7 @@ sealed class SQLiteError {
 @Serializable
 sealed class AgentErrorType {
   val string: String get() = when (this) {
-    is CMD -> "CMD ${cmdErr.string}"
+    is CMD -> "CMD ${cmdErr.string} $errContext"
     is CONN -> "CONN ${connErr.string}"
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
@@ -6511,7 +6511,7 @@ sealed class AgentErrorType {
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
   }
-  @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val serverAddress: String, val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
