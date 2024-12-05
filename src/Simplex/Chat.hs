@@ -2932,15 +2932,13 @@ processChatCommand' vr = \case
       when (n /= n') $ checkValidName n'
       g' <- withStore $ \db -> updateGroupProfile db user g p'
       msg <- case businessChat of
-        Just BusinessChatInfo {memberId, chatType} -> do
+        Just BusinessChatInfo {businessId} -> do
           let (newMs, oldMs) = partition (\m -> maxVersion (memberChatVRange m) >= businessChatsVersion) ms
+          -- this is a fallback to send the members witht the old version correct profile of the business when preferences change
           unless (null oldMs) $ do
-            p'' <- case chatType of
-              BCBusiness -> pure p'
-              BCCustomer -> do
-                m <- withStore $ \db -> getGroupMemberByMemberId db vr user g memberId
-                let GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} = m
-                pure (p' :: GroupProfile) {displayName, fullName, image}
+            GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} <-
+              withStore $ \db -> getGroupMemberByMemberId db vr user g businessId
+            let p'' = p' {displayName, fullName, image} :: GroupProfile
             void $ sendGroupMessage user g' oldMs (XGrpInfo p'')
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           sendGroupMessage user g' newMs $ XGrpPrefs ps'
@@ -3037,7 +3035,7 @@ processChatCommand' vr = \case
                 invitedMember = MemberIdRole memberId memRole,
                 connRequest = cReq,
                 groupProfile,
-                businessChat,
+                business = businessChat,
                 groupLinkId = Nothing,
                 groupSize = Just currentMemCount
               }
@@ -4014,7 +4012,7 @@ acceptGroupJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId gLinkMemRole,
                 groupProfile,
-                businessChat,
+                business = businessChat,
                 groupSize = Just currentMemCount
               }
     subMode <- chatReadVar subscriptionMode
@@ -4049,7 +4047,7 @@ acceptBusinessJoinRequestAsync
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
                 -- but it will be different when inviting somebody else.
-                businessChat = Just $ BusinessChatInfo userMemberId BCBusiness,
+                business = Just $ BusinessChatInfo {chatType = BCBusiness, businessId = userMemberId, customerId = memberId},
                 groupSize = Just 1
               }
     subMode <- chatReadVar subscriptionMode
@@ -5053,7 +5051,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                               invitedMember = MemberIdRole memberId memRole,
                               connRequest = cReq,
                               groupProfile,
-                              businessChat = Nothing,
+                              business = Nothing,
                               groupLinkId = groupLinkId,
                               groupSize = Just currentMemCount
                             }
@@ -5428,8 +5426,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               let GroupInfo {businessChat} = gInfo
                   GroupMember {memberId = joiningMemberId} = m
               case businessChat of
-                Just BusinessChatInfo {memberId, chatType = BCCustomer}
-                  | joiningMemberId == memberId -> useReply <$> withStore (`getUserAddress` user)
+                Just BusinessChatInfo {customerId, chatType = BCCustomer}
+                  | joiningMemberId == customerId -> useReply <$> withStore (`getUserAddress` user)
                   where
                     useReply UserContactLink {autoAccept} = case autoAccept of
                       Just AutoAccept {businessAddress, autoReply} | businessAddress -> autoReply
@@ -6477,7 +6475,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems itemTs_
       | redactedMemberProfile (fromLocalProfile p) /= redactedMemberProfile p' = do
-          updateBusinessChatProfile gInfo m
+          updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
               m' <- withStore $ \db -> updateMemberProfile db user m p'
@@ -6503,11 +6501,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise =
           pure m
       where
-        updateBusinessChatProfile g@GroupInfo {businessChat} GroupMember {memberId} = case businessChat of
-          Just BusinessChatInfo {memberId = mId} | mId == memberId -> do
+        updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
+          Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
             toView $ CRGroupUpdated user g g' (Just m)
           _ -> pure ()
+        isMainBusinessMember BusinessChatInfo {chatType, businessId, customerId} GroupMember {memberId} = case chatType of
+          BCBusiness -> businessId == memberId
+          BCCustomer -> customerId == memberId
         createProfileUpdatedItem m' =
           when createItems $ do
             let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'

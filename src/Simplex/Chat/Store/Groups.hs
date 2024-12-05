@@ -258,7 +258,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr =
           -- GroupInfo
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
           g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_member_id, g.business_chat, g.ui_themes, g.custom_data,
+          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
           mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -340,7 +340,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, businessChat} incognitoProfileId = do
+createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, business} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
@@ -378,10 +378,10 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               [sql|
                 INSERT INTO groups
                   (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_member_id, business_chat)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ((profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs) :. businessChatTuple businessChat)
+              ((profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange vr peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
@@ -407,10 +407,10 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               groupMemberId
             )
 
-businessChatTuple :: Maybe BusinessChatInfo -> (Maybe MemberId, Maybe BusinessChatType)
-businessChatTuple = \case
-  Just BusinessChatInfo {memberId, chatType} -> (Just memberId, Just chatType)
-  Nothing -> (Nothing, Nothing)
+businessChatInfoRow :: Maybe BusinessChatInfo -> BusinessChatInfoRow
+businessChatInfoRow = \case
+  Just BusinessChatInfo {chatType, businessId, customerId} -> (Just chatType, Just businessId, Just customerId)
+  Nothing -> (Nothing, Nothing, Nothing)
 
 adjustedMemberVRange :: VersionRangeChat -> VersionRangeChat -> VersionRangeChat
 adjustedMemberVRange chatVR vr@(VersionRange minV maxV) =
@@ -498,7 +498,7 @@ createGroupInvitedViaLink
   vr
   user@User {userId, userContactId}
   Connection {connId, customUserProfileId}
-  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, businessChat} = do
+  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile, business} = do
     currentTs <- liftIO getCurrentTime
     groupId <- insertGroup_ currentTs
     hostMemberId <- insertHost_ currentTs groupId
@@ -522,10 +522,10 @@ createGroupInvitedViaLink
               [sql|
                 INSERT INTO groups
                   (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_member_id, business_chat)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ((profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs) :. businessChatTuple businessChat)
+              ((profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
       insertHost_ currentTs groupId = do
         let fromMemberProfile = profileFromName fromMemberName
@@ -632,7 +632,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
         SELECT
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
           g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_member_id, g.business_chat, g.ui_themes, g.custom_data,
+          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
           mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
           mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
         FROM groups g
@@ -919,9 +919,9 @@ createBusinessRequestGroup
   UserContactRequest {cReqChatVRange, xContactId, profile = Profile {displayName, fullName, image, contactLink, preferences}}
   groupPreferences = do
     currentTs <- liftIO getCurrentTime
-    (groupId, membership) <- insertGroup_ currentTs
+    (groupId, membership@GroupMember {memberId = userMemberId}) <- insertGroup_ currentTs
     (groupMemberId, memberId) <- insertClientMember_ currentTs groupId membership
-    liftIO $ DB.execute db "UPDATE groups SET business_member_id = ? WHERE group_id = ?" (memberId, groupId)
+    liftIO $ DB.execute db "UPDATE groups SET business_member_id = ?, customer_member_id = ? WHERE group_id = ?" (userMemberId, memberId, groupId)
     groupInfo <- getGroupInfo db vr user groupId
     clientMember <- getGroupMemberById db vr user groupMemberId
     pure (groupInfo, clientMember)
@@ -1371,7 +1371,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
           -- GroupInfo
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
           g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_member_id, g.business_chat, g.ui_themes, g.custom_data,
+          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
           mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
