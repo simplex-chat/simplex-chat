@@ -1423,7 +1423,7 @@ processChatCommand' vr = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
-    withUserContactLock "acceptContact" userContactLinkId $ do
+    withUserContactLock "acceptContact" connReqId $ do
       (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withFastStore $ \db -> getContactRequest' db connReqId
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
@@ -1438,7 +1438,7 @@ processChatCommand' vr = \case
         pure ct {contactUsed, activeConn = Just conn'}
       pure $ CRAcceptingContactRequest user ct'
   APIRejectContact connReqId -> withUser $ \user ->
-    withUserContactLock "rejectContact" userContactLinkId $ do
+    withUserContactLock "rejectContact" connReqId $ do
       cReq@UserContactRequest {userContactLinkId, agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
         withFastStore $ \db ->
           getContactRequest db user connReqId
