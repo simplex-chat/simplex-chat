@@ -6707,7 +6707,7 @@ sealed class XFTPErrorType {
   }
   @Serializable @SerialName("BLOCK") object BLOCK: XFTPErrorType()
   @Serializable @SerialName("SESSION") object SESSION: XFTPErrorType()
-  @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): XFTPErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError, val errContext: String): XFTPErrorType()
   @Serializable @SerialName("AUTH") object AUTH: XFTPErrorType()
   @Serializable @SerialName("SIZE") object SIZE: XFTPErrorType()
   @Serializable @SerialName("QUOTA") object QUOTA: XFTPErrorType()
