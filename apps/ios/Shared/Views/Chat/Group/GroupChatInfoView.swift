@@ -668,22 +668,17 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ preferences: Bind
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
         .onDisappear {
-            if !creatingGroup {
-                let saveText = NSLocalizedString(creatingGroup ? "Save" : "Save and notify group members", comment: "alert button")
-                
-                if groupInfo.fullGroupPreferences.wrappedValue != preferences.wrappedValue {
-                    showAlert(
-                        title: NSLocalizedString("Save preferences?", comment: "alert title"),
-                        buttonTitle: saveText,
-                        buttonAction: {
-                            savePreferences(groupInfo: groupInfo, preferences: preferences, currentPreferences: groupInfo.fullGroupPreferences)
-                        },
-                        cancelButton: true
-                    )
-                }
-            } else {
-                var gp = groupInfo.groupProfile.wrappedValue
-                gp.groupPreferences = toGroupPreferences(preferences.wrappedValue)
+            let saveText = NSLocalizedString(creatingGroup ? "Save" : "Save and notify group members", comment: "alert button")
+            
+            if groupInfo.fullGroupPreferences.wrappedValue != preferences.wrappedValue {
+                showAlert(
+                    title: NSLocalizedString("Save preferences?", comment: "alert title"),
+                    buttonTitle: saveText,
+                    buttonAction: {
+                        savePreferences(groupInfo: groupInfo, preferences: preferences, currentPreferences: groupInfo.fullGroupPreferences)
+                    },
+                    cancelButton: true
+                )
             }
         }
     } label: {

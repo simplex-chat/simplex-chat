@@ -68,7 +68,10 @@ struct GroupPreferencesView: View {
                 savePreferences(groupInfo: $groupInfo, preferences: $preferences, currentPreferences: $currentPreferences)
                 dismiss()
             }
-            Button("Exit without saving") { dismiss() }
+            Button("Exit without saving") {
+                preferences = currentPreferences
+                dismiss()
+            }
         }
     }
 
