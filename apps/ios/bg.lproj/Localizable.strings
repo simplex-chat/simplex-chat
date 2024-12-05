@@ -1905,27 +1905,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Групови линкове";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Членовете на групата могат да добавят реакции към съобщенията.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Членовете на групата могат необратимо да изтриват изпратените съобщения. (24 часа)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Членовете на групата могат да изпращат лични съобщения.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Членовете на групата могат да изпращат изчезващи съобщения.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Членовете на групата могат да изпращат файлове и медия.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "Членовете на групата могат да изпращат SimpleX линкове.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Членовете на групата могат да изпращат гласови съобщения.";
-
 /* notification */
 "Group message:" = "Групово съобщение:";
 
@@ -2375,6 +2354,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Членовете на групата могат да добавят реакции към съобщенията.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Членовете на групата могат необратимо да изтриват изпратените съобщения. (24 часа)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Членовете на групата могат да изпращат лични съобщения.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Членовете на групата могат да изпращат изчезващи съобщения.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Членовете на групата могат да изпращат файлове и медия.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Членовете на групата могат да изпращат SimpleX линкове.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Членовете на групата могат да изпращат гласови съобщения.";
 
 /* item status text */
 "Message delivery error" = "Грешка при доставката на съобщението";

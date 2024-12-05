@@ -420,8 +420,7 @@
     <string name="callstate_starting">uruchamianie…</string>
     <string name="strikethrough_text">strajk</string>
     <string name="first_platform_without_user_ids">Brak identyfikatorów użytkownika.</string>
-    <string name="next_generation_of_private_messaging">Następna generacja
-\nprywatnych wiadomości</string>
+    <string name="next_generation_of_private_messaging">Następna generacja \nprywatnych wiadomości</string>
     <string name="callstate_waiting_for_answer">oczekiwanie na odpowiedź…</string>
     <string name="callstate_waiting_for_confirmation">oczekiwanie na potwierdzenie…</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Możesz używać markdown do formatowania wiadomości:</string>

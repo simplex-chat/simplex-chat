@@ -1341,6 +1341,11 @@
         <target>Зміна</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change chat profiles" xml:space="preserve">
+        <source>Change chat profiles</source>
+        <target>Зміна профілів користувачів</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
         <target>Змінити пароль до бази даних?</target>
@@ -1386,11 +1391,6 @@
         <target>Змінити пароль самознищення</target>
         <note>authentication reason
    set passcode view</note>
-      </trans-unit>
-      <trans-unit id="Change user profiles" xml:space="preserve">
-        <source>Change user profiles</source>
-        <target>Зміна профілів користувачів</target>
-        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
@@ -5590,14 +5590,9 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Проксі вимагає пароль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push Notifications" xml:space="preserve">
-        <source>Push Notifications</source>
-        <target>Push-сповіщення</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
-        <target>Push-повідомлення</target>
+        <target>Push-сповіщення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push server" xml:space="preserve">
@@ -6019,16 +6014,6 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Safer groups" xml:space="preserve">
         <source>Safer groups</source>
         <target>Безпечніші групи</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Same conditions will apply to operator **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator **%@**.</source>
-        <target>Такі ж умови діятимуть і для оператора **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Same conditions will apply to operator(s): **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator(s): **%@**.</source>
-        <target>Такі ж умови будуть застосовуватися до оператора(ів): **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -7189,6 +7174,16 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
         <source>The profile is only shared with your contacts.</source>
         <target>Профіль доступний лише вашим контактам.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator **%@**.</source>
+        <target>Такі ж умови діятимуть і для оператора **%@**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator(s): **%@**.</source>
+        <target>Такі ж умови будуть застосовуватися до оператора(ів): **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The second preset operator in the app!" xml:space="preserve">
