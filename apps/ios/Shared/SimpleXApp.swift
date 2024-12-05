@@ -143,7 +143,8 @@ struct SimpleXApp: App {
             let chats = try await apiGetChatsAsync()
             await MainActor.run { chatModel.updateChats(chats) }
             if let id = chatModel.chatId,
-               let chat = chatModel.getChat(id) {
+               let chat = chatModel.getChat(id),
+               !ItemsModel.shared.isLoading {
                 Task { await loadChat(chat: chat, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {
