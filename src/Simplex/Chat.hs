@@ -1423,8 +1423,9 @@ processChatCommand' vr = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
-    (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withFastStore $ \db -> getContactRequest' db connReqId
+    userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
+      (user@User {userId}, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
       let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
@@ -1438,11 +1439,12 @@ processChatCommand' vr = \case
         pure ct {contactUsed, activeConn = Just conn'}
       pure $ CRAcceptingContactRequest user ct'
   APIRejectContact connReqId -> withUser $ \user -> do
-    cReq@UserContactRequest {userContactLinkId, agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
-      withFastStore $ \db ->
-        getContactRequest db user connReqId
-          `storeFinally` liftIO (deleteContactRequest db user connReqId)
+    userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withUserContactLock "rejectContact" userContactLinkId $ do
+      cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
+        withFastStore $ \db ->
+          getContactRequest db user connReqId
+            `storeFinally` liftIO (deleteContactRequest db user connReqId)
       withAgent $ \a -> rejectContact a connId invId
       pure $ CRContactRequestRejected user cReq
   APISendCallInvitation contactId callType -> withUser $ \user -> do
