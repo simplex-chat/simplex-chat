@@ -408,7 +408,7 @@ defaultBusinessGroupPrefs :: GroupPreferences
 defaultBusinessGroupPrefs =
   GroupPreferences
     { timedMessages = Just $ TimedMessagesGroupPreference FEOff Nothing,
-      directMessages = Just $ DirectMessagesGroupPreference FEOff Nothing,
+      directMessages = Just $ DirectMessagesGroupPreference FEOn Nothing,
       fullDelete = Just $ FullDeleteGroupPreference FEOff,
       reactions = Just $ ReactionsGroupPreference FEOn,
       voice = Just $ VoiceGroupPreference FEOff Nothing,

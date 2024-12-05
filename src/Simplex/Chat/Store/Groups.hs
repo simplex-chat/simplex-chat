@@ -39,6 +39,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByUserContactLinkConnReq,
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
+    updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
     getGroupMemberIdByName,
@@ -1455,6 +1456,23 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
+
+updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
+updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_profiles
+      SET preferences = ?, updated_at = ?
+      WHERE group_profile_id IN (
+        SELECT group_profile_id
+        FROM groups
+        WHERE user_id = ? AND group_id = ?
+      )
+    |]
+    (ps, currentTs, userId, groupId)
+  pure (g :: GroupInfo) {groupProfile = p {groupPreferences = Just ps}}
 
 updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
 updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, image = img} = do

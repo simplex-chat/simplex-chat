@@ -2927,11 +2927,24 @@ processChatCommand' vr = \case
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> CM ChatResponse
-    runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p@GroupProfile {displayName = n}} ms) p'@GroupProfile {displayName = n'} = do
+    runUpdateGroupProfile user (Group g@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} ms) p'@GroupProfile {displayName = n'} = do
       assertUserGroupRole g GROwner
       when (n /= n') $ checkValidName n'
       g' <- withStore $ \db -> updateGroupProfile db user g p'
-      msg <- sendGroupMessage user g' ms (XGrpInfo p')
+      msg <- case businessChat of
+        Just BusinessChatInfo {memberId, chatType} -> do
+          let (newMs, oldMs) = partition (\m -> maxVersion (memberChatVRange m) >= businessChatsVersion) ms
+          unless (null oldMs) $ do
+            p'' <- case chatType of
+              BCBusiness -> pure p'
+              BCCustomer -> do
+                m <- withStore $ \db -> getGroupMemberByMemberId db vr user g memberId
+                let GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} = m
+                pure (p' :: GroupProfile) {displayName, fullName, image}
+            void $ sendGroupMessage user g' oldMs (XGrpInfo p'')
+          let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
+          sendGroupMessage user g' newMs $ XGrpPrefs ps'
+        Nothing -> sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
@@ -5297,6 +5310,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpLeave -> xGrpLeave gInfo m' msg brokerTs
               XGrpDel -> xGrpDel gInfo m' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo m' p' msg brokerTs
+              XGrpPrefs ps' -> xGrpPrefs gInfo m' ps'
               XGrpDirectInv connReq mContent_ -> memberCanSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg brokerTs
               XGrpMsgForward memberId msg' msgTs -> xGrpMsgForward gInfo m' memberId msg' msgTs
               XInfoProbe probe -> xInfoProbe (COMGroupMember m') probe
@@ -7006,16 +7020,31 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CRGroupDeleted user gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
 
     xGrpInfo :: GroupInfo -> GroupMember -> GroupProfile -> RcvMessage -> UTCTime -> CM ()
-    xGrpInfo g@GroupInfo {groupProfile = p} m@GroupMember {memberRole} p' msg brokerTs
+    xGrpInfo g@GroupInfo {groupProfile = p, businessChat} m@GroupMember {memberRole} p' msg brokerTs
       | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions"
-      | otherwise = unless (p == p') $ do
-          g' <- withStore $ \db -> updateGroupProfile db user g p'
-          toView $ CRGroupUpdated user g g' (Just m)
-          let cd = CDGroupRcv g' m
-          unless (sameGroupProfileInfo p p') $ do
-            ci <- saveRcvChatItem user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
-            groupMsgToView g' ci
-          createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
+      | otherwise = case businessChat of
+          Nothing -> unless (p == p') $ do
+            g' <- withStore $ \db -> updateGroupProfile db user g p'
+            toView $ CRGroupUpdated user g g' (Just m)
+            let cd = CDGroupRcv g' m
+            unless (sameGroupProfileInfo p p') $ do
+              ci <- saveRcvChatItem user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
+              groupMsgToView g' ci
+            createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
+          Just _ -> updateGroupPrefs_ g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
+
+    xGrpPrefs :: GroupInfo -> GroupMember -> GroupPreferences -> CM ()
+    xGrpPrefs g m@GroupMember {memberRole} ps'
+      | memberRole < GROwner = messageError "x.grp.prefs with insufficient member permissions"
+      | otherwise = updateGroupPrefs_ g m ps'
+
+    updateGroupPrefs_ :: GroupInfo -> GroupMember -> GroupPreferences -> CM ()
+    updateGroupPrefs_ g@GroupInfo {groupProfile = p} m ps' =
+      unless (groupPreferences p == Just ps') $ do
+        g' <- withStore' $ \db -> updateGroupPreferences db user g ps'
+        toView $ CRGroupUpdated user g g' (Just m)
+        let cd = CDGroupRcv g' m
+        createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
     xGrpDirectInv g m mConn connReq mContent_ msg brokerTs = do
@@ -7096,6 +7125,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpLeave -> xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs
+            XGrpPrefs ps' -> xGrpPrefs gInfo author ps'
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
 
     createUnknownMember :: GroupInfo -> MemberId -> CM GroupMember
