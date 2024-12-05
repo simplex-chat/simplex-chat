@@ -144,7 +144,7 @@ struct SimpleXApp: App {
             await MainActor.run { chatModel.updateChats(chats) }
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id),
-               !ItemsModel.shared.isLoading {
+               !NtfManager.shared.navigatingToChat {
                 Task { await loadChat(chat: chat, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {
