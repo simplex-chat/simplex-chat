@@ -2247,7 +2247,7 @@
     <string name="maximum_message_size_reached_forwarding">Чтобы отправить сообщение, скопируйте и уменьшите его размер.</string>
     <string name="share_1_time_link_with_a_friend">Поделитесь одноразовой ссылкой с другом</string>
     <string name="share_address_publicly">Поделитесь адресом</string>
-    <string name="share_simplex_address_on_social_media">Поделитесь SimpleX адресом в социальных сетях</string>
+    <string name="share_simplex_address_on_social_media">Поделитесь SimpleX адресом в социальных сетях.</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Адрес SimpleX и одноразовые ссылки безопасно отправлять через любой мессенджер.</string>
     <string name="you_can_set_connection_name_to_remember">Вы можете установить имя соединения, чтобы запомнить кому Вы отправили ссылку.</string>
     <string name="smp_servers_new_server">Новый сервер</string>
@@ -2306,9 +2306,9 @@
     <string name="error_updating_server_title">Ошибка сохранения сервера</string>
     <string name="operator_use_for_messages_private_routing">Для доставки сообщений</string>
     <string name="operator_open_changes">Открыть изменения</string>
-    <string name="error_server_operator_changed">Оператор серверов изменен</string>
+    <string name="error_server_operator_changed">Оператор серверов изменен.</string>
     <string name="error_server_protocol_changed">Протокол сервера изменен.</string>
-    <string name="xftp_servers_per_user">Серверы для новых файлов Вашего текущем профиле</string>
+    <string name="xftp_servers_per_user">Серверы для новых файлов Вашего текущего профиля</string>
     <string name="operator_use_for_messages_receiving">Для получения</string>
     <string name="operator_use_for_messages">Использовать для сообщений</string>
     <string name="appearance_bars_blur_radius">Размыть</string>
@@ -2321,7 +2321,7 @@
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Одноразовая ссылка может быть использована <i>только с одним контактом</i> - поделитесь при встрече или через любой мессенджер.]]></string>
     <string name="no_message_servers_configured_for_private_routing">Нет серверов для доставки сообщений.</string>
     <string name="onboarding_network_operators_configure_via_settings">Вы можете сконфигурировать серверы через настройки.</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">Когда включен больше чем один оператор, приложение будет использовать серверы разных операторов в каждом разговоре.</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">Приложение улучшает конфиденциальность используя разных операторов в каждом разговоре.</string>
     <string name="failed_to_save_servers">Ошибка сохранения серверов</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Условия будут приняты для включенных операторов через 30 дней.</string>
     <string name="error_accepting_operator_conditions">Ошибка приема условий</string>
