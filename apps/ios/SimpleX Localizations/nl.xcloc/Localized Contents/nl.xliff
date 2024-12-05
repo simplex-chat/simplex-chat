@@ -635,8 +635,9 @@
         <target>Voeg een adres toe aan uw profiel, zodat uw contacten het met andere mensen kunnen delen. Profiel update wordt naar uw contacten verzonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add friends" xml:space="preserve">
+      <trans-unit id="Add friends" xml:space="preserve" approved="no">
         <source>Add friends</source>
+        <target state="translated">Vrienden toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -654,8 +655,9 @@
         <target>Servers toevoegen door QR-codes te scannen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add team members" xml:space="preserve">
+      <trans-unit id="Add team members" xml:space="preserve" approved="no">
         <source>Add team members</source>
+        <target state="translated">Teamleden toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -668,8 +670,9 @@
         <target>Welkom bericht toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve" approved="no">
         <source>Add your team members to the conversations.</source>
+        <target state="translated">Voeg uw teamleden toe aan de gesprekken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve">
@@ -827,9 +830,9 @@
         <target>Downgraden toestaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
+      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow irreversible message deletion only if your contact allows it to you. (24 hours)</source>
-        <target>Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)</target>
+        <target state="translated">Sta het definitief verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
@@ -857,9 +860,9 @@
         <target>Delen toestaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
-        <target>Sta toe om verzonden berichten onomkeerbaar te verwijderen. (24 uur)</target>
+        <target state="translated">Sta toe om verzonden berichten definitief te verwijderen. (24 uur)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -897,9 +900,9 @@
         <target>Sta toe dat uw contacten u bellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
-        <target>Laat uw contacten verzonden berichten onomkeerbaar verwijderen. (24 uur)</target>
+        <target state="translated">Laat uw contacten verzonden berichten definitief verwijderen. (24 uur)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
@@ -1052,9 +1055,9 @@
         <target>Audio/video oproepen</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve">
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
         <source>Audio/video calls are prohibited.</source>
-        <target>Audio/video gesprekken zijn verboden.</target>
+        <target state="translated">Audio/video gesprekken zijn niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Authentication cancelled" xml:space="preserve">
@@ -1242,12 +1245,14 @@
         <target>Bulgaars, Fins, Thais en Oekraïens - dankzij de gebruikers en [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Business address" xml:space="preserve">
+      <trans-unit id="Business address" xml:space="preserve" approved="no">
         <source>Business address</source>
+        <target state="translated">Zakelijk adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Business chats" xml:space="preserve">
+      <trans-unit id="Business chats" xml:space="preserve" approved="no">
         <source>Business chats</source>
+        <target state="translated">Zakelijke chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1265,9 +1270,9 @@
         <target>Oproepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Calls prohibited!" xml:space="preserve">
+      <trans-unit id="Calls prohibited!" xml:space="preserve" approved="no">
         <source>Calls prohibited!</source>
-        <target>Bellen verboden!</target>
+        <target state="translated">Bellen niet toegestaan!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Camera not available" xml:space="preserve">
@@ -1392,16 +1397,19 @@
         <target>Gebruikersprofielen wijzigen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Chat" xml:space="preserve">
+      <trans-unit id="Chat" xml:space="preserve" approved="no">
         <source>Chat</source>
+        <target state="translated">Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat already exists" xml:space="preserve">
+      <trans-unit id="Chat already exists" xml:space="preserve" approved="no">
         <source>Chat already exists</source>
+        <target state="translated">Chat bestaat al</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat already exists!" xml:space="preserve">
+      <trans-unit id="Chat already exists!" xml:space="preserve" approved="no">
         <source>Chat already exists!</source>
+        <target state="translated">Chat bestaat al!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
@@ -1479,12 +1487,14 @@
         <target>Chat thema</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
+        <target state="translated">De chat wordt voor alle leden verwijderd - dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Chat will be deleted for you - this cannot be undone!</source>
+        <target state="translated">De chat wordt voor je verwijderd - dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -2241,8 +2251,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verwijderen en contact op de hoogte stellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat" xml:space="preserve">
+      <trans-unit id="Delete chat" xml:space="preserve" approved="no">
         <source>Delete chat</source>
+        <target state="translated">Chat verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2255,8 +2266,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Chatprofiel verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat?" xml:space="preserve">
+      <trans-unit id="Delete chat?" xml:space="preserve" approved="no">
         <source>Delete chat?</source>
+        <target state="translated">Chat verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2524,13 +2536,14 @@ Dit is uw eigen eenmalige link!</target>
         <target>Directe berichten</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited in this chat.</source>
+        <target state="translated">Directe berichten tussen leden zijn in deze chat niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited.</source>
-        <target>Directe berichten tussen leden zijn verboden in deze groep.</target>
+        <target state="translated">Directe berichten tussen leden zijn niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable (keep overrides)" xml:space="preserve">
@@ -2563,14 +2576,14 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verdwijnende berichten</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited in this chat.</source>
-        <target>Verdwijnende berichten zijn verboden in dit gesprek.</target>
+        <target state="translated">Verdwijnende berichten zijn niet toegestaan in dit gesprek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve" approved="no">
         <source>Disappearing messages are prohibited.</source>
-        <target>Verdwijnende berichten zijn verboden in deze groep.</target>
+        <target state="translated">Verdwijnende berichten zijn niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappears at" xml:space="preserve">
@@ -3426,9 +3439,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Bestanden en media</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited." xml:space="preserve">
+      <trans-unit id="Files and media are prohibited." xml:space="preserve" approved="no">
         <source>Files and media are prohibited.</source>
-        <target>Bestanden en media zijn verboden in deze groep.</target>
+        <target state="translated">Bestanden en media zijn niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files and media not allowed" xml:space="preserve">
@@ -3436,9 +3449,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Bestanden en media niet toegestaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media prohibited!" xml:space="preserve">
+      <trans-unit id="Files and media prohibited!" xml:space="preserve" approved="no">
         <source>Files and media prohibited!</source>
-        <target>Bestanden en media verboden!</target>
+        <target state="translated">Bestanden en media niet toegestaan!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
@@ -3840,9 +3853,9 @@ Fout: %2$@</target>
         <target>Als je elkaar niet persoonlijk kunt ontmoeten, laat dan de QR-code zien in een videogesprek of deel de link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
+      <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve" approved="no">
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
-        <target>Als u deze toegangscode invoert bij het openen van de app, worden alle app-gegevens onomkeerbaar verwijderd!</target>
+        <target state="translated">Als u deze toegangscode invoert bij het openen van de app, worden alle app-gegevens definitief verwijderd!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you enter your self-destruct passcode while opening the app:" xml:space="preserve">
@@ -4099,8 +4112,9 @@ Binnenkort meer verbeteringen!</target>
         <target>Nodig leden uit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite to chat" xml:space="preserve">
+      <trans-unit id="Invite to chat" xml:space="preserve" approved="no">
         <source>Invite to chat</source>
+        <target state="translated">Uitnodigen voor een chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
@@ -4113,14 +4127,14 @@ Binnenkort meer verbeteringen!</target>
         <target>Onomkeerbare berichtverwijdering</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Irreversible message deletion is prohibited in this chat." xml:space="preserve" approved="no">
         <source>Irreversible message deletion is prohibited in this chat.</source>
-        <target>Het onomkeerbaar verwijderen van berichten is verboden in dit gesprek.</target>
+        <target state="translated">Het definitief verwijderen van berichten is niet toegestaan in dit gesprek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve" approved="no">
         <source>Irreversible message deletion is prohibited.</source>
-        <target>Het onomkeerbaar verwijderen van berichten is verboden in deze groep.</target>
+        <target state="translated">Het definitief verwijderen van berichten is verbHet definitief verwijderen van berichten is niet toegestaan..</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
@@ -4261,12 +4275,14 @@ Dit is jouw link voor groep %@!</target>
         <target>Verlaten</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Leave chat" xml:space="preserve">
+      <trans-unit id="Leave chat" xml:space="preserve" approved="no">
         <source>Leave chat</source>
+        <target state="translated">Chat verlaten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Leave chat?" xml:space="preserve">
+      <trans-unit id="Leave chat?" xml:space="preserve" approved="no">
         <source>Leave chat?</source>
+        <target state="translated">Chat verlaten?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
@@ -4399,8 +4415,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Lid inactief</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All chat members will be notified.</source>
+        <target state="translated">De rol van het lid wordt gewijzigd naar "%@". Alle chatleden worden op de hoogte gebracht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
@@ -4413,8 +4430,9 @@ Dit is jouw link voor groep %@!</target>
         <target>De rol van lid wordt gewijzigd in "%@". Het lid ontvangt een nieuwe uitnodiging.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Member will be removed from chat - this cannot be undone!</source>
+        <target state="translated">Lid wordt verwijderd uit de chat - dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
@@ -4502,14 +4520,14 @@ Dit is jouw link voor groep %@!</target>
         <target>Reacties op berichten</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited in this chat.</source>
-        <target>Reacties op berichten zijn verboden in deze chat.</target>
+        <target state="translated">Reacties op berichten zijn niet toegestaan in deze chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited.</source>
-        <target>Reacties op berichten zijn verboden in deze groep.</target>
+        <target state="translated">Reacties op berichten zijn niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reception" xml:space="preserve">
@@ -5030,8 +5048,9 @@ Vereist het inschakelen van VPN.</target>
         <target>Onion hosts worden niet gebruikt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve" approved="no">
         <source>Only chat owners can change preferences.</source>
+        <target state="translated">Alleen chateigenaren kunnen voorkeuren wijzigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
@@ -5064,9 +5083,9 @@ Vereist het inschakelen van VPN.</target>
         <target>Alleen jij kunt bericht reacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve">
+      <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve" approved="no">
         <source>Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</source>
-        <target>Alleen jij kunt berichten onomkeerbaar verwijderen (je contact kan ze markeren voor verwijdering). (24 uur)</target>
+        <target state="translated">Alleen jij kunt berichten definitief verwijderen (je contact kan ze markeren voor verwijdering). (24 uur)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can make calls." xml:space="preserve">
@@ -5164,8 +5183,9 @@ Vereist het inschakelen van VPN.</target>
         <target>Operatorserver</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Or import archive file" xml:space="preserve">
+      <trans-unit id="Or import archive file" xml:space="preserve" approved="no">
         <source>Or import archive file</source>
+        <target state="translated">Of importeer archiefbestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve">
@@ -5429,8 +5449,9 @@ Fout: %@</target>
         <target>Privacy en beveiliging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy for your customers." xml:space="preserve">
+      <trans-unit id="Privacy for your customers." xml:space="preserve" approved="no">
         <source>Privacy for your customers.</source>
+        <target state="translated">Privacy voor uw klanten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -5503,9 +5524,9 @@ Fout: %@</target>
         <target>Audio/video gesprekken verbieden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
+      <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve" approved="no">
         <source>Prohibit irreversible message deletion.</source>
-        <target>Verbied het onomkeerbaar verwijderen van berichten.</target>
+        <target state="translated">Verbied het definitief verwijderen van berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit message reactions." xml:space="preserve">
@@ -6763,9 +6784,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>SimpleX links</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="SimpleX links are prohibited." xml:space="preserve">
+      <trans-unit id="SimpleX links are prohibited." xml:space="preserve" approved="no">
         <source>SimpleX links are prohibited.</source>
-        <target>SimpleX-links zijn in deze groep verboden.</target>
+        <target state="translated">SimpleX-links zijn niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX links not allowed" xml:space="preserve">
@@ -7015,8 +7036,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Foto nemen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
+      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve" approved="no">
         <source>Tap Create SimpleX address in the menu to create it later.</source>
+        <target state="translated">Tik op SimpleX-adres maken in het menu om het later te maken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -7256,9 +7278,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze actie kan niet ongedaan worden gemaakt, de berichten die eerder zijn verzonden en ontvangen dan geselecteerd, worden verwijderd. Het kan enkele minuten duren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
-        <target>Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</target>
+        <target state="translated">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan definitief verloren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
@@ -7855,14 +7877,14 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Spraak berichten</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Voice messages are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Voice messages are prohibited in this chat.</source>
-        <target>Spraak berichten zijn verboden in deze chat.</target>
+        <target state="translated">Spraak berichten zijn niet toegestaan in dit gesprek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve" approved="no">
         <source>Voice messages are prohibited.</source>
-        <target>Spraak berichten zijn verboden in deze groep.</target>
+        <target state="translated">Spraak berichten zijn niet toegestaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice messages not allowed" xml:space="preserve">
@@ -7870,9 +7892,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Spraakberichten niet toegestaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages prohibited!" xml:space="preserve">
+      <trans-unit id="Voice messages prohibited!" xml:space="preserve" approved="no">
         <source>Voice messages prohibited!</source>
-        <target>Spraak berichten verboden!</target>
+        <target state="translated">Spraak berichten niet toegestaan!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Voice message…" xml:space="preserve">
@@ -8055,8 +8077,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>U bent al verbonden met %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected with %@." xml:space="preserve">
+      <trans-unit id="You are already connected with %@." xml:space="preserve" approved="no">
         <source>You are already connected with %@.</source>
+        <target state="translated">U bent al verbonden met %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
@@ -8333,8 +8356,9 @@ Verbindingsverzoek herhalen?</target>
         <target>U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
+      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve" approved="no">
         <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
+        <target state="translated">U ontvangt geen berichten meer van deze chat. De chatgeschiedenis blijft bewaard.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
