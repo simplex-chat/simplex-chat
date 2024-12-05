@@ -1546,8 +1546,9 @@ data class GroupProfile (
 
 @Serializable
 data class BusinessChatInfo (
-  val memberId: String,
-  val chatType: BusinessChatType
+  val chatType: BusinessChatType,
+  val businessId: String,
+  val customerId: String,
 )
 
 @Serializable

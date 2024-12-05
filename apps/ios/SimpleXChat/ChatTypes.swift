@@ -1962,8 +1962,9 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
 }
 
 public struct BusinessChatInfo: Decodable, Hashable {
-    public var memberId: String
     public var chatType: BusinessChatType
+    public var businessId: String
+    public var customerId: String
 }
 
 public enum BusinessChatType: String, Codable, Hashable {
