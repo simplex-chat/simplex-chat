@@ -96,6 +96,8 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
+    @State var featuresAllowed: ContactFeaturesAllowed
+    @State var currentFeaturesAllowed: ContactFeaturesAllowed
     var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
@@ -306,6 +308,9 @@ struct ChatInfoView: View {
                 }
             }
         }
+        .onChange(of: contact.mergedPreferences) { pref in
+            currentFeaturesAllowed = contactUserPrefsToFeaturesAllowed(pref)
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .clearChatAlert: return clearChatAlert()
@@ -325,6 +330,16 @@ struct ChatInfoView: View {
                     .presentationDetents([.fraction(0.4)])
             } else {
                 $0.content
+            }
+        }
+        .onDisappear {
+            if currentFeaturesAllowed != featuresAllowed {
+                showAlert(
+                    title: NSLocalizedString("Save preferences?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save and notify contact", comment: "alert button"),
+                    buttonAction: { savePreferences() },
+                    cancelButton: true
+                )
             }
         }
     }
@@ -447,8 +462,9 @@ struct ChatInfoView: View {
         NavigationLink {
             ContactPreferencesView(
                 contact: $contact,
-                featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
-                currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+                featuresAllowed: $featuresAllowed,
+                currentFeaturesAllowed: $currentFeaturesAllowed,
+                savePreferences: savePreferences
             )
             .navigationBarTitle("Contact preferences")
             .modifier(ThemedBackground(grouped: true))
@@ -614,6 +630,23 @@ struct ChatInfoView: View {
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
                 }
+            }
+        }
+    }
+    
+    private func savePreferences() {
+        Task {
+            do {
+                let prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
+                if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
+                    await MainActor.run {
+                        contact = toContact
+                        chatModel.updateContact(toContact)
+                        currentFeaturesAllowed = featuresAllowed
+                    }
+                }
+            } catch {
+                logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
             }
         }
     }
@@ -1173,6 +1206,8 @@ struct ChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
             localAlias: "",
+            featuresAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
+            currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
             onSearch: {}
         )
     }

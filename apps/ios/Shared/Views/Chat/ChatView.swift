@@ -226,6 +226,8 @@ struct ChatView: View {
                             chat: chat,
                             contact: contact,
                             localAlias: chat.chatInfo.localAlias,
+                            featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                            currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
                             onSearch: { focusSearch() }
                         )
                     }
