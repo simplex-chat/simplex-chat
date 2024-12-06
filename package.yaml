@@ -181,6 +181,3 @@ ghc-options:
   - -Wredundant-constraints
   - -Wincomplete-record-updates
   - -Wunused-type-patterns
-
-default-extensions:
-  - StrictData

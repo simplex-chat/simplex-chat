@@ -10,6 +10,7 @@ module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
 import Control.Exception (SomeException, catch)
+import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.Aeson as J
@@ -53,7 +54,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
-import System.IO (utf8)
+import System.IO (BufferMode (..), hSetBuffering, stderr, stdout, utf8)
 import System.Timeout (timeout)
 
 data DBMigrationResult
@@ -192,7 +193,7 @@ mobileChatOpts dbFilePrefix =
             smpServers = [],
             xftpServers = [],
             simpleNetCfg = defaultSimpleNetCfg,
-            logLevel = CLLImportant,
+            logLevel = CLLDebug,
             logConnections = False,
             logServerHosts = True,
             logAgent = Nothing,
@@ -220,7 +221,7 @@ defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
-      logLevel = CLLError,
+      logLevel = CLLDebug,
       coreApi = True,
       deviceNameForRemote = "Mobile"
     }
@@ -266,7 +267,10 @@ handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
 
 chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
-chatSendCmd cc = chatSendRemoteCmd cc Nothing
+chatSendCmd cc cmd = withGlobalLogging logCfg $ do
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
+  chatSendRemoteCmd cc Nothing cmd
 
 chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
 chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
