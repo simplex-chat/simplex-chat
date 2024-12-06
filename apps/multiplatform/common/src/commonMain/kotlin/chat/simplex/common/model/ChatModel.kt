@@ -1895,8 +1895,8 @@ class PendingContactConnection(
       generalGetString(MR.strings.display_name_connection_established)
     } else {
       generalGetString(
-        if (initiated && !viaContactUri) MR.strings.display_name_invited_to_connect
-        else if (viaContactUri) MR.strings.display_name_requested_to_connect
+        if (viaContactUri) MR.strings.display_name_requested_to_connect
+        else if (initiated) MR.strings.display_name_invited_to_connect
         else MR.strings.display_name_connecting
       )
     }
