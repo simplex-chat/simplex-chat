@@ -2206,4 +2206,10 @@
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[سيتم قبول الشروط للمُشغل/ين: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[ستطبق هذه الشروط أيضًا على: <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[ستطبق نفس الشروط على المُشغل <b>%s</b>.]]></string>
+    <string name="business_address">عنوان العمل التجاري</string>
+    <string name="onboarding_notifications_mode_service_desc_short">يتم تشغيل التطبيق دائمًا في الخلفية</string>
+    <string name="v6_2_business_chats">دردشات العمل التجاري</string>
+    <string name="button_add_team_members">أضف أعضاء الفريق</string>
+    <string name="button_add_friends">أضف أصدقاء</string>
+    <string name="add_your_team_members_to_conversations">أضف أعضاء فريقك إلى المحادثات.</string>
 </resources>
