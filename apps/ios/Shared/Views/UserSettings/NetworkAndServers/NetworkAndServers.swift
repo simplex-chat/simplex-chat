@@ -98,7 +98,8 @@ struct NetworkAndServers: View {
                             currentNetCfg: $ss.advancedNetworkSettings.currentNetCfg,
                             netCfg: $ss.advancedNetworkSettings.netCfg,
                             currentNetProxy: $ss.advancedNetworkSettings.currentNetProxy,
-                            netProxy: $ss.advancedNetworkSettings.netProxy
+                            netProxy: $ss.advancedNetworkSettings.netProxy,
+                            saveNetCfg: ss.saveNetCfg
                         )
                         .navigationTitle("Advanced settings")
                         .modifier(ThemedBackground(grouped: true))

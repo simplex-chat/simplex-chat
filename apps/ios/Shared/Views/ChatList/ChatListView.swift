@@ -34,6 +34,28 @@ enum UserPickerSheet: Identifiable {
 class SaveableSettings: ObservableObject {
     @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
     @Published var advancedNetworkSettings: AdvancedNetworkSettingsConfig = AdvancedNetworkSettingsConfig.defaults
+    
+    public func saveNetCfg() -> Bool {
+        do {
+            let netCfg = advancedNetworkSettings.netCfg
+            let netProxy = advancedNetworkSettings.netProxy
+            try setNetworkConfig(netCfg)
+            advancedNetworkSettings.currentNetCfg = netCfg
+            setNetCfg(netCfg, networkProxy: netCfg.socksProxy != nil ? netProxy : nil)
+            advancedNetworkSettings.currentNetProxy = netProxy
+            networkProxyDefault.set(netProxy)
+            return true
+        } catch let error {
+            let err = responseError(error)
+            showAlert(
+                NSLocalizedString("Error updating settings", comment: "alert title"),
+                message: responseError(error)
+            )
+            
+            logger.error("\(err)")
+            return false
+        }
+    }
 }
 
 struct ServerSettings {
@@ -47,12 +69,14 @@ struct AdvancedNetworkSettingsConfig {
     public var netCfg: NetCfg
     public var currentNetProxy: NetworkProxy
     public var netProxy: NetworkProxy
+    public var saveRequested: Bool
     
     static let defaults = AdvancedNetworkSettingsConfig(
         currentNetCfg: NetCfg.defaults,
         netCfg: NetCfg.defaults,
         currentNetProxy: networkProxyDefault.get(),
-        netProxy: networkProxyDefault.get()
+        netProxy: networkProxyDefault.get(),
+        saveRequested: false
     )
 }
 
@@ -118,7 +142,7 @@ struct UserPickerSheetView: View {
                     buttonAction: {
                         saveServers($ss.servers.currUserServers, $ss.servers.userServers)
                         if advancedNetworkCanBeSaved {
-                            _ = saveNetCfg()
+                            _ = ss.saveNetCfg()
                         }
                     },
                     cancelButton: true
@@ -127,34 +151,12 @@ struct UserPickerSheetView: View {
                 showAlert(
                     title: NSLocalizedString("Update network settings?", comment: "alert title"),
                     buttonTitle: advancedNetworkSaveText,
-                    buttonAction: { _ = saveNetCfg() },
+                    buttonAction: { _ = ss.saveNetCfg() },
                     cancelButton: true
                 )
             }
         }
         .environmentObject(ss)
-    }
-    
-    private func saveNetCfg() -> Bool {
-        do {
-            let netCfg = ss.advancedNetworkSettings.netCfg
-            let netProxy = ss.advancedNetworkSettings.netProxy
-            try setNetworkConfig(netCfg)
-            ss.advancedNetworkSettings.currentNetCfg = netCfg
-            setNetCfg(netCfg, networkProxy: netCfg.socksProxy != nil ? netProxy : nil)
-            ss.advancedNetworkSettings.currentNetProxy = netProxy
-            networkProxyDefault.set(netProxy)
-            return true
-        } catch let error {
-            let err = responseError(error)
-            showAlert(
-                NSLocalizedString("Error updating settings", comment: "alert title"),
-                message: responseError(error)
-            )
-            
-            logger.error("\(err)")
-            return false
-        }
     }
 }
 
