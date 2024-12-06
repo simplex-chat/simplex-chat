@@ -182,7 +182,7 @@
     <string name="encrypted_database">قاعدة البيانات مُعمّاة</string>
     <string name="rcv_group_event_changed_member_role">غيرت دور %s إلى %s</string>
     <string name="switch_receiving_address">تغيير عنوان الاستلام</string>
-    <string name="failed_to_create_user_title">خطأ في إنشاء الملف الشخصي!</string>
+    <string name="failed_to_create_user_title">خطأ في إنشاء ملف التعريف!</string>
     <string name="connection_error">خطأ في الإتصال</string>
     <string name="connection_timeout">انتهت مهلة الاتصال</string>
     <string name="contact_already_exists">جهة الاتصال موجودة بالفعل</string>
@@ -557,7 +557,7 @@
     <string name="message_deletion_prohibited_in_chat">يٌمنع حذف الرسائل بشكل لا رجعة فيه.</string>
     <string name="invalid_message_format">تنسيق الرسالة غير صالح</string>
     <string name="invalid_data">البيانات غير صالحة</string>
-    <string name="users_delete_data_only">بيانات الملف الشخصي المحلية فقط</string>
+    <string name="users_delete_data_only">بيانات ملف التعريف المحلية فقط</string>
     <string name="message_deletion_prohibited">يٌمنع حذف الرسائل بشكل لا رجعة فيه في هذه الدردشة.</string>
     <string name="button_add_members">دعوة الأعضاء</string>
     <string name="button_leave_group">غادِر المجموعة</string>
@@ -603,7 +603,7 @@
     <string name="smp_server_test_download_file">نزّل الملف</string>
     <string name="auth_disable_simplex_lock">تعطيل قفل SimpleX</string>
     <string name="edit_verb">تحرير</string>
-    <string name="display_name__field">اسم الملف الشخصي:</string>
+    <string name="display_name__field">اسم ملف التعريف:</string>
     <string name="icon_descr_email">البريد الإلكتروني</string>
     <string name="display_name">أدخل أسمك:</string>
     <string name="integrity_msg_duplicate">كرر الرسالة</string>
@@ -651,7 +651,7 @@
     <string name="dont_create_address">لا تنشئ عنوانًا</string>
     <string name="error_setting_network_config">خطأ في تحديث تضبيط الشبكة</string>
     <string name="error_receiving_file">خطأ في استلام الملف</string>
-    <string name="failed_to_active_user_title">خطأ في تبديل الملف الشخصي!</string>
+    <string name="failed_to_active_user_title">خطأ في تبديل ملف التعريف!</string>
     <string name="v5_2_fix_encryption">حافظ على اتصالاتك</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم XFTP بالتنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
     <string name="marked_deleted_description">عُلّم محذوف</string>
@@ -683,7 +683,7 @@
     <string name="error_starting_chat">خطأ في بدء الدردشة</string>
     <string name="error_exporting_chat_database">خطأ في تصدير قاعدة بيانات الدردشة</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">ستتم إزالة العضو من المجموعة - لا يمكن التراجع عن هذا!</string>
-    <string name="make_profile_private">اجعل الملف الشخصي خاصًا!</string>
+    <string name="make_profile_private">اجعل ملف التعريف خاصًا!</string>
     <string name="v5_2_favourites_filter_descr">تصفية الدردشات غير المقروءة والمفضلة.</string>
     <string name="v5_2_favourites_filter">البحث عن الدردشات بشكل أسرع</string>
     <string name="enable_receipts_all">تفعيل</string>
@@ -827,7 +827,7 @@
     <string name="receiving_via">الاستلام عبر</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">يُرجى التحقق من استخدامك للرابط الصحيح أو اطلب من جهة اتصالك أن ترسل لك رابطًا آخر.</string>
     <string name="periodic_notifications_disabled">الإشعارات الدورية مُعطَّلة</string>
-    <string name="image_descr_profile_image">صورة الملف الشخصي</string>
+    <string name="image_descr_profile_image">صورة ملف التعريف</string>
     <string name="onboarding_notifications_mode_title">الإشعارات خاصة</string>
     <string name="store_passphrase_securely_without_recover">يرجى تخزين عبارة المرور بشكل آمن، فلن تتمكن من الوصول إلى الدردشة إذا فقدتها.</string>
     <string name="contact_developers">يُرجى تحديث التطبيق والتواصل مع المطورين.</string>
@@ -860,7 +860,7 @@
     <string name="restore_database_alert_desc">الرجاء إدخال كلمة المرور السابقة بعد استعادة نسخة احتياطية لقاعدة البيانات. لا يمكن التراجع عن هذا الإجراء.</string>
     <string name="restore_database_alert_title">استعادة النسخة الاحتياطية لقاعدة البيانات؟</string>
     <string name="network_options_save">حفظ</string>
-    <string name="users_delete_with_connections">اتصالات الملف الشخصي والخادم</string>
+    <string name="users_delete_with_connections">اتصالات ملف التعريف والخادم</string>
     <string name="prohibit_message_reactions">منع ردود فعل الرسالة.</string>
     <string name="prohibit_sending_voice">منع إرسال الرسائل الصوتية.</string>
     <string name="prohibit_message_reactions_group">منع ردود فعل الرسائل.</string>
@@ -898,7 +898,7 @@
     <string name="remove_member_confirmation">إزالة</string>
     <string name="network_options_reset_to_defaults">صفّر إلى الإعدادات الافتراضية</string>
     <string name="network_option_ping_interval">بينج الفاصل الزمني</string>
-    <string name="profile_password">كلمة مرور الملف الشخصي</string>
+    <string name="profile_password">كلمة مرور ملف التعريف</string>
     <string name="prohibit_sending_disappearing_messages">منع إرسال الرسائل التي تختفي.</string>
     <string name="network_option_protocol_timeout">مهلة البروتوكول</string>
     <string name="network_option_protocol_timeout_per_kb">مهلة البروتوكول لكل كيلوبايت</string>
@@ -922,7 +922,7 @@
     <string name="revoke_file__title">سحب وصول الملف؟</string>
     <string name="toast_permission_denied">رٌفض الإذن!</string>
     <string name="ask_your_contact_to_enable_voice">يرجى مطالبة جهة اتصالك بتفعيل إرسال الرسائل الصوتية.</string>
-    <string name="icon_descr_profile_image_placeholder">العنصر النائب لصورة الملف الشخصي</string>
+    <string name="icon_descr_profile_image_placeholder">العنصر النائب لصورة ملف التعريف</string>
     <string name="image_descr_qr_code">رمز QR</string>
     <string name="reset_verb">صفّر</string>
     <string name="network_proxy_port">المنفذ %d</string>
@@ -1107,7 +1107,7 @@
     <string name="v4_6_chinese_spanish_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
     <string name="database_initialization_error_desc">قاعدة البيانات لا تعمل بشكل صحيح. انقر لمعرفة المزيد</string>
     <string name="theme_colors_section_title">ألوان الواجهة</string>
-    <string name="tap_to_activate_profile">انقر لتنشيط الملف الشخصي.</string>
+    <string name="tap_to_activate_profile">انقر لتنشيط ملف التعريف.</string>
     <string name="v4_5_transport_isolation">عزل النقل</string>
     <string name="this_string_is_not_a_connection_link">هذه السلسلة ليست رابط اتصال!</string>
     <string name="receipts_section_description">هذه الإعدادات لملف التعريف الحالي الخاص بك</string>
@@ -1152,7 +1152,7 @@
     <string name="call_connection_via_relay">عبر المُرحل</string>
     <string name="you_joined_this_group">لقد انضممت إلى هذه المجموعة</string>
     <string name="you_rejected_group_invitation">لقد رفضت دعوة المجموعة</string>
-    <string name="incognito_info_share">عندما تشارك ملفًا شخصيًا متخفيًا مع شخص ما، فسيتم استخدام هذا الملف الشخصي للمجموعات التي يدعوك إليها.</string>
+    <string name="incognito_info_share">عندما تشارك ملف تعريف متخفي مع شخص ما، فسيتم استخدام هذا الملف التعريفي للمجموعات التي يدعوك إليها.</string>
     <string name="failed_to_create_user_duplicate_desc">لديك بالفعل ملف تعريف دردشة بنفس اسم العرض. الرجاء اختيار اسم آخر.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">أنت متصل بالفعل بـ%1$s.</string>
     <string name="waiting_for_video">في انتظار الفيديو</string>
@@ -1482,9 +1482,7 @@
     <string name="verify_code_with_desktop">تحقق من الرمز مع سطح المكتب</string>
     <string name="scan_qr_code_from_desktop">مسح رمز QR من سطح المكتب</string>
     <string name="unblock_member_confirmation">إلغاء الحظر</string>
-    <string name="v5_4_more_things_descr">- إشعار اختياريًا جهات الاتصال المحذوفة.
-\n- أسماء الملفات الشخصية بمسافات.
-\n- و اكثر!</string>
+    <string name="v5_4_more_things_descr">- إشعار اختياريًا جهات الاتصال المحذوفة. \n- أسماء الملفات التعريفية بمسافات. \n- و اكثر!</string>
     <string name="non_content_uri_alert_title">مسار الملف غير صالح</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">لقد طلبت بالفعل الاتصال عبر هذا العنوان!</string>
     <string name="terminal_always_visible">إظهار وحدة التحكم في نافذة جديدة</string>
@@ -1547,7 +1545,7 @@
     <string name="remote_host_error_inactive"><![CDATA[الجوال <b>%s</b> غير نشط]]></string>
     <string name="show_slow_api_calls">أظهر مكالمات API البطيئة</string>
     <string name="group_member_status_unknown_short">غير معروف</string>
-    <string name="profile_update_event_updated_profile">حدّثت الملف الشخصي</string>
+    <string name="profile_update_event_updated_profile">حدّثت ملف التعريف</string>
     <string name="remote_host_error_missing"><![CDATA[الجوال <b>%s</b> مفقود]]></string>
     <string name="remote_host_error_bad_version"><![CDATA[الجوال <b>%s</b> لديه إصدار غير مدعوم. يُرجى التأكد من استخدام نفس الإصدار على كلا الجهازين]]></string>
     <string name="remote_host_error_bad_state"><![CDATA[الاتصال بالجوال <b>%s</b> في حالة سيئة]]></string>
@@ -1572,9 +1570,9 @@
     <string name="developer_options_section">خيارات المطور</string>
     <string name="profile_update_event_member_name_changed">تغيّر العضو %1$s إلى %2$s</string>
     <string name="profile_update_event_removed_address">أزلت عنوان الاتصال</string>
-    <string name="profile_update_event_removed_picture">أزلت الصورة الشخصية</string>
+    <string name="profile_update_event_removed_picture">أزلت صورة ملف التعريف</string>
     <string name="profile_update_event_set_new_address">عيّن عنوان جهة اتصال جديد</string>
-    <string name="profile_update_event_set_new_picture">عيّن صورة شخصية جديدة</string>
+    <string name="profile_update_event_set_new_picture">عيّن صورة تعريفية جديدة</string>
     <string name="group_member_status_unknown">حالة غير معروفة</string>
     <string name="profile_update_event_contact_name_changed">تغيّر جهة الاتصال %1$s إلى %2$s</string>
     <string name="possible_slow_function_desc">يستغرق تنفيذ الوظيفة وقتًا طويلاً جدًا: %1$d ثانية: %2$s</string>
@@ -1743,8 +1741,8 @@
     <string name="v5_7_call_sounds_descr">عند اتصال بمكالمات الصوت والفيديو.</string>
     <string name="v5_7_network">إدارة الشبكة</string>
     <string name="v5_7_network_descr">اتصال شبكة أكثر موثوقية.</string>
-    <string name="settings_section_title_profile_images">صور الملف الشخصي</string>
-    <string name="v5_7_shape_profile_images">شكل الصور الشخصية</string>
+    <string name="settings_section_title_profile_images">صور ملف التعريف</string>
+    <string name="v5_7_shape_profile_images">شكل الصور التعريفية</string>
     <string name="v5_7_new_interface_languages">واجهة المستخدم الليتوانية</string>
     <string name="v5_7_shape_profile_images_descr">مربع أو دائرة أو أي شيء بينهما.</string>
     <string name="srv_error_host">عنوان الخادم غير متوافق مع إعدادات الشبكة.</string>
@@ -1811,7 +1809,7 @@
     <string name="wallpaper_preview_hello_bob">صباح الخير!</string>
     <string name="color_wallpaper_background">صورة خلفية الشاشة</string>
     <string name="chat_theme_apply_to_light_mode">الوضع الفاتح</string>
-    <string name="settings_section_title_user_theme">السمة الملف الشخصي</string>
+    <string name="settings_section_title_user_theme">سمة ملف التعريف</string>
     <string name="color_mode_light">فاتح</string>
     <string name="chat_theme_apply_to_mode">طبّق لِ</string>
     <string name="wallpaper_scale_fill">ملء</string>
@@ -2071,7 +2069,7 @@
     <string name="forward_files_in_progress_desc">لا يزال يتم تنزيل %1$d ملفًا.</string>
     <string name="network_proxy_auth_mode_no_auth">لا تستخدم بيانات الاعتماد مع الوكيل.</string>
     <string name="error_forwarding_messages">خطأ في تحويل الرسائل</string>
-    <string name="switching_profile_error_title">خطأ في تبديل الملف الشخصي</string>
+    <string name="switching_profile_error_title">خطأ في تبديل ملف التعريف</string>
     <string name="select_chat_profile">حدد ملف تعريف الدردشة</string>
     <string name="switching_profile_error_message">لقد تم نقل اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى الملف الشخصي.</string>
     <string name="forward_alert_title_messages_to_forward">تحويل %1$s رسالة؟</string>
@@ -2240,6 +2238,6 @@
     <string name="maximum_message_size_reached_forwarding">يمكنك نسخ الرسالة وتقليل حجمها لإرسالها.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">عندما يتم تفعيل أكثر من مُشغل واحد، لن يكون لدى أي منهم بيانات تعريفية لمعرفة من يتواصل مع من.</string>
     <string name="member_role_will_be_changed_with_notification_chat">سيتم تغيير الدور إلى %s. وسيتم إشعار الجميع في الدردشة.</string>
-    <string name="chat_main_profile_sent">سيتم إرسال ملفك الشخصي للدردشة إلى أعضاء الدردشة</string>
+    <string name="chat_main_profile_sent">سيتم إرسال ملف تعريفك للدردشة إلى أعضاء الدردشة</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">سوف تتوقف عن تلقي الرسائل من هذه الدردشة. سيتم حفظ سجل الدردشة.</string>
 </resources>
