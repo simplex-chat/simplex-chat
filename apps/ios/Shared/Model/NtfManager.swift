@@ -26,6 +26,7 @@ enum NtfCallAction {
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
+    public var navigatingToChat = false
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
@@ -74,7 +75,10 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             }
         } else {
             if let chatId = content.targetContentIdentifier {
-                ItemsModel.shared.loadOpenChat(chatId)
+                self.navigatingToChat = true
+                ItemsModel.shared.loadOpenChat(chatId) {
+                    self.navigatingToChat = false
+                }
             }
         }
     }

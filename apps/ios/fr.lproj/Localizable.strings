@@ -2301,27 +2301,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Liens de groupe";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Les membres du groupe peuvent ajouter des réactions aux messages.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés. (24 heures)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Les membres du groupe peuvent envoyer des messages directs.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Les membres du groupes peuvent envoyer des messages éphémères.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Les membres du groupe peuvent envoyer des fichiers et des médias.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "Les membres du groupe peuvent envoyer des liens SimpleX.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Les membres du groupe peuvent envoyer des messages vocaux.";
-
 /* notification */
 "Group message:" = "Message du groupe :";
 
@@ -2804,6 +2783,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Ce membre sera retiré du groupe - impossible de revenir en arrière !";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Les membres du groupe peuvent ajouter des réactions aux messages.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés. (24 heures)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Les membres du groupe peuvent envoyer des messages directs.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Les membres du groupes peuvent envoyer des messages éphémères.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Les membres du groupe peuvent envoyer des fichiers et des médias.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Les membres du groupe peuvent envoyer des liens SimpleX.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Les membres du groupe peuvent envoyer des messages vocaux.";
 
 /* No comment provided by engineer. */
 "Menus" = "Menus";

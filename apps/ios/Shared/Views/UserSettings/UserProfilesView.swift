@@ -197,7 +197,7 @@ struct UserProfilesView: View {
             action()
         } else {
             authenticate(
-                reason: NSLocalizedString("Change user profiles", comment: "authentication reason")
+                reason: NSLocalizedString("Change chat profiles", comment: "authentication reason")
             ) { laResult in
                 switch laResult {
                 case .success, .unavailable:

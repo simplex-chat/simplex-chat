@@ -1162,8 +1162,7 @@
     <string name="colored_text">кольоровий</string>
     <string name="callstatus_ended">дзвінок завершено %1$s</string>
     <string name="callstatus_error">помилка дзвінка</string>
-    <string name="next_generation_of_private_messaging">Наступне покоління
-\nприватних повідомлень</string>
+    <string name="next_generation_of_private_messaging">Наступне покоління \nприватних повідомлень</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Кожен може хостити сервери.</string>
     <string name="settings_developer_tools">Інструменти розробника</string>
     <string name="settings_experimental_features">Експериментальні функції</string>

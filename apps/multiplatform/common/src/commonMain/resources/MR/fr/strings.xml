@@ -438,8 +438,7 @@
     <string name="callstate_waiting_for_confirmation">en attente de confirmation…</string>
     <string name="callstate_connected">connecté</string>
     <string name="callstate_ended">terminé</string>
-    <string name="next_generation_of_private_messaging">La nouvelle génération
-\nde messagerie privée</string>
+    <string name="next_generation_of_private_messaging">La nouvelle génération \nde messagerie privée</string>
     <string name="privacy_redefined">La vie privée redéfinie</string>
     <string name="first_platform_without_user_ids">Aucun identifiant d\'utilisateur.</string>
     <string name="immune_to_spam_and_abuse">Protégé du spam</string>

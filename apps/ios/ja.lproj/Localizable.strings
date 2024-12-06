@@ -1661,24 +1661,6 @@
 /* No comment provided by engineer. */
 "Group links" = "グループのリンク";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "グループメンバーはメッセージへのリアクションを追加できます。";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。(24時間)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "グループのメンバーがダイレクトメッセージを送信できます。";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "グループのメンバーが消えるメッセージを送信できます。";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "グループメンバーはファイルやメディアを送信できます。";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "グループのメンバーが音声メッセージを送信できます。";
-
 /* notification */
 "Group message:" = "グループメッセージ:";
 
@@ -2050,6 +2032,24 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "メンバーをグループから除名する (※元に戻せません※)！";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "グループメンバーはメッセージへのリアクションを追加できます。";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "グループのメンバーがメッセージを完全削除することができます。(24時間)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "グループのメンバーがダイレクトメッセージを送信できます。";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "グループのメンバーが消えるメッセージを送信できます。";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "グループメンバーはファイルやメディアを送信できます。";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "グループのメンバーが音声メッセージを送信できます。";
 
 /* item status text */
 "Message delivery error" = "メッセージ送信エラー";

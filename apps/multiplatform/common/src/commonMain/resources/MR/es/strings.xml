@@ -737,8 +737,7 @@
     <string name="connection_you_accepted_will_be_cancelled">¡La conexión que has aceptado se cancelará!</string>
     <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para conocer más</string>
     <string name="moderate_message_will_be_marked_warning">El mensaje será marcado como moderado para todos los miembros.</string>
-    <string name="next_generation_of_private_messaging">La nueva generación
-\nde mensajería privada</string>
+    <string name="next_generation_of_private_messaging">La nueva generación \nde mensajería privada</string>
     <string name="delete_files_and_media_desc">Esta acción es irreversible. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</string>
     <string name="enable_automatic_deletion_message">Esta acción es irreversible. Los mensajes enviados y recibidos anteriores a la selección serán eliminados. Podría tardar varios minutos.</string>
     <string name="messages_section_description">Esta configuración se aplica a los mensajes del perfil actual</string>

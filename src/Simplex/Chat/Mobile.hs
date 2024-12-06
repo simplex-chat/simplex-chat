@@ -10,6 +10,7 @@ module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
 import Control.Exception (SomeException, catch)
+import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.Aeson as J
@@ -266,7 +267,7 @@ handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
 
 chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
-chatSendCmd cc = chatSendRemoteCmd cc Nothing
+chatSendCmd cc = withGlobalLogging logCfg . chatSendRemoteCmd cc Nothing
 
 chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
 chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc

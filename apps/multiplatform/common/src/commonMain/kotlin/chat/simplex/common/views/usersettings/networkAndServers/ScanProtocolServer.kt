@@ -26,6 +26,7 @@ fun ScanProtocolServerLayout(rhId: Long?, onNext: (UserServer) -> Unit) {
           text = generalGetString(MR.strings.smp_servers_check_address)
         )
       }
+      res != null
     }
   }
 }
