@@ -69,14 +69,12 @@ struct AdvancedNetworkSettingsConfig {
     public var netCfg: NetCfg
     public var currentNetProxy: NetworkProxy
     public var netProxy: NetworkProxy
-    public var saveRequested: Bool
     
     static let defaults = AdvancedNetworkSettingsConfig(
         currentNetCfg: NetCfg.defaults,
         netCfg: NetCfg.defaults,
         currentNetProxy: networkProxyDefault.get(),
-        netProxy: networkProxyDefault.get(),
-        saveRequested: false
+        netProxy: networkProxyDefault.get()
     )
 }
 
