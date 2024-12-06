@@ -2725,7 +2725,7 @@ public struct AppSettings: Codable, Equatable {
             uiDarkColorScheme: DefaultTheme.SIMPLEX.themeName,
             uiCurrentThemeIds: nil as [String: String]?,
             uiThemes: nil as [ThemeOverrides]?,
-            oneHandUI: false,
+            oneHandUI: true,
             chatBottomBar: true
         )
     }
