@@ -2110,7 +2110,7 @@
     <string name="onboarding_choose_server_operators">Kiszolgáló-üzemeltetők</string>
     <string name="onboarding_network_operators">Hálózati üzemeltetők</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Az alkalmazás úgy védi az adatait, hogy minden egyes beszélgetésben más-más üzemeltetőt használ.</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha az Ön ismerőse egy SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux kiszolgálón keresztül fogja azokat kézbesíteni.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha az Ön ismerőse egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</string>
     <string name="onboarding_select_network_operators_to_use">Válassza ki a használni kívánt hálózati üzemeltetőket.</string>
     <string name="onboarding_network_operators_review_later">Felülvizsgálat később</string>
     <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a beállításokon keresztül konfigurálhatja.</string>
@@ -2205,4 +2205,6 @@
     <string name="maximum_message_size_reached_non_text">Csökkentse az üzenet méretét vagy távolítsa el a médiát, és küldje el újra.</string>
     <string name="direct_messages_are_prohibited_in_chat">A tagok közötti közvetlen üzenetek le vannak tiltva ebben a csevegésben.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Amikor egynél több üzemeltető van engedélyezve, akkor egyik sem rendelkezik olyan metaadatokkal, amelyekből megtudható, hogy ki kivel kommunikál.</string>
+    <string name="display_name_accepted_invitation">elfogadott meghívó</string>
+    <string name="display_name_requested_to_connect">kérelmezve a kapcsolódáshoz</string>
 </resources>
