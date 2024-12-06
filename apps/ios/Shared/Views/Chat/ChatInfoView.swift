@@ -308,9 +308,6 @@ struct ChatInfoView: View {
                 }
             }
         }
-        .onChange(of: contact.mergedPreferences) { pref in
-            currentFeaturesAllowed = contactUserPrefsToFeaturesAllowed(pref)
-        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .clearChatAlert: return clearChatAlert()
