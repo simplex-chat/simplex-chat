@@ -85,7 +85,7 @@ where
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Data.Either (rights)
+import Data.Either (partitionEithers, rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, isNothing)
@@ -591,8 +591,9 @@ getUserContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getUserContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
   putStrLn $ "*** getUserContacts contactIds" <> show contactIds
-  contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
+  (errs, contacts) <- partitionEithers <$> mapM (runExceptT . getContact db vr user) contactIds
   putStrLn $ "*** getUserContacts contacts" <> show contacts
+  putStrLn $ "*** getUserContacts errors" <> show errs
   r <- pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
   putStrLn $ "*** getUserContacts filtered contacts" <> show r
   pure r

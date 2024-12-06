@@ -22,7 +22,7 @@ import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe, isJust, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -46,6 +46,7 @@ import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
 import Simplex.Messaging.Version
+import System.IO.Unsafe (unsafePerformIO)
 import UnliftIO.STM
 
 data ChatLockEntity
@@ -210,7 +211,26 @@ toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGr
 toMaybeConnection :: VersionRangeChat -> MaybeConnectionRow -> Maybe Connection
 toMaybeConnection vr ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just contactConnInitiated, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just pqSupport, Just pqEncryption, pqSndEnabled_, pqRcvEnabled_, Just authErrCounter, Just quotaErrCounter, connChatVersion, Just minVer, Just maxVer)) =
   Just $ toConnection vr ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled_, pqRcvEnabled_, authErrCounter, quotaErrCounter, connChatVersion, minVer, maxVer))
-toMaybeConnection _ _ = Nothing
+toMaybeConnection _ ((connId_, agentConnId_, connLevel_, viaContact, viaUserContactLink, viaGroupLink_, groupLinkId, customUserProfileId, connStatus_, connType_, contactConnInitiated_, localAlias_) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt_, code_, verifiedAt_, pqSupport_, pqEncryption_, pqSndEnabled_, pqRcvEnabled_, authErrCounter_, quotaErrCounter_, connChatVersion, minVer_, maxVer_)) =
+  unsafePerformIO logRow `seq` Nothing
+  where
+    logRow = do
+      putStrLn $ "connId_ = " <> show connId_
+      when (isNothing agentConnId_) $ putStrLn "agentConnId_ = Nothing"
+      when (isNothing connLevel_) $ putStrLn "connLevel_ = Nothing"
+      when (isNothing viaGroupLink_) $ putStrLn "viaGroupLink_ = Nothing"
+      when (isNothing connStatus_) $ putStrLn "connStatus_ = Nothing"
+      when (isNothing connType_) $ putStrLn "connType_ = Nothing"
+      when (isNothing contactConnInitiated_) $ putStrLn "contactConnInitiated_ = Nothing"
+      when (isNothing localAlias_) $ putStrLn "localAlias_ = Nothing"
+      when (isNothing contactId) $ putStrLn "contactId = Nothing"
+      when (isNothing createdAt_) $ putStrLn "createdAt_ = Nothing"
+      when (isNothing pqSupport_) $ putStrLn "pqSupport_ = Nothing"
+      when (isNothing pqEncryption_) $ putStrLn "pqEncryption_ = Nothing"
+      when (isNothing authErrCounter_) $ putStrLn "authErrCounter_ = Nothing"
+      when (isNothing quotaErrCounter_) $ putStrLn "quotaErrCounter_ = Nothing"
+      when (isNothing minVer_) $ putStrLn "minVer_ = Nothing"
+      when (isNothing maxVer_) $ putStrLn "maxVer_ = Nothing"
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> ConnStatus -> VersionChat -> VersionRangeChat -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> PQSupport -> IO Connection
 createConnection_ db userId connType entityId acId connStatus connChatVersion peerChatVRange@(VersionRange minV maxV) viaContact viaUserContactLink customUserProfileId connLevel currentTs subMode pqSup = do
@@ -394,7 +414,7 @@ type ContactRow = Only ContactId :. ContactRow'
 toContact :: VersionRangeChat -> User -> ContactRow :. MaybeConnectionRow -> Contact
 toContact vr user ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-      activeConn = toMaybeConnection vr connRow
+      activeConn = unsafePerformIO (putStrLn $ "contactId " <> show contactId) `seq` toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
