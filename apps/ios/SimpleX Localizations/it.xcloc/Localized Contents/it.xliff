@@ -1085,14 +1085,14 @@
         <target>Accetta automaticamente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept contact requests" xml:space="preserve">
+      <trans-unit id="Auto-accept contact requests" xml:space="preserve" approved="no">
         <source>Auto-accept contact requests</source>
-        <target>Auto-accetta richieste di contatto</target>
+        <target state="translated">Auto-accetta le richieste di contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept images" xml:space="preserve">
+      <trans-unit id="Auto-accept images" xml:space="preserve" approved="no">
         <source>Auto-accept images</source>
-        <target>Auto-accetta immagini</target>
+        <target state="translated">Auto-accetta le immagini</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept settings" xml:space="preserve">
@@ -1210,9 +1210,9 @@
         <target>Sfoca per una privacy maggiore.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blur media" xml:space="preserve">
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
         <source>Blur media</source>
-        <target>Sfocatura file multimediali</target>
+        <target state="translated">Sfocatura dei file multimediali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -4495,9 +4495,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Avviso di consegna del messaggio</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message draft" xml:space="preserve">
+      <trans-unit id="Message draft" xml:space="preserve" approved="no">
         <source>Message draft</source>
-        <target>Bozza dei messaggi</target>
+        <target state="translated">Bozza del messaggio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message forwarded" xml:space="preserve">
@@ -5982,14 +5982,14 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Rivela</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Review conditions" xml:space="preserve">
+      <trans-unit id="Review conditions" xml:space="preserve" approved="no">
         <source>Review conditions</source>
-        <target>Esamina le condizioni</target>
+        <target state="translated">Leggi le condizioni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Review later" xml:space="preserve">
+      <trans-unit id="Review later" xml:space="preserve" approved="no">
         <source>Review later</source>
-        <target>Esamina più tardi</target>
+        <target state="translated">Leggi più tardi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
@@ -6283,9 +6283,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Errori di invio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send link previews" xml:space="preserve">
+      <trans-unit id="Send link previews" xml:space="preserve" approved="no">
         <source>Send link previews</source>
-        <target>Invia anteprime dei link</target>
+        <target state="translated">Invia le anteprime dei link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send live message" xml:space="preserve">
@@ -6604,9 +6604,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Condividi link una tantum con un amico</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share SimpleX address on social media." xml:space="preserve">
+      <trans-unit id="Share SimpleX address on social media." xml:space="preserve" approved="no">
         <source>Share SimpleX address on social media.</source>
-        <target>Condividi indirizzo SimpleX sui social media.</target>
+        <target state="translated">Condividi l'indirizzo SimpleX sui social media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share address" xml:space="preserve">
