@@ -1346,9 +1346,9 @@
         <target>Változtatás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change chat profiles" xml:space="preserve">
+      <trans-unit id="Change chat profiles" xml:space="preserve" approved="no">
         <source>Change chat profiles</source>
-        <target>Felhasználói profilok megváltoztatása</target>
+        <target state="translated">Csevegési profilok megváltoztatása</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -3519,9 +3519,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Konzolhoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve">
+      <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve" approved="no">
         <source>For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</source>
-        <target>Ha például az ismerőse a SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása a Flux egyik kiszolgálóját használja a kézbesítéshez.</target>
+        <target state="translated">Például, ha az Ön ismerőse egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For private routing" xml:space="preserve">
@@ -7198,9 +7198,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A profilja csak az ismerőseivel kerül megosztásra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve" approved="no">
         <source>The same conditions will apply to operator **%@**.</source>
-        <target>Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: **%@**.</target>
+        <target state="translated">Ugyanezek a feltételek lesznek elfogadva a következő üzemeltetőre is: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
