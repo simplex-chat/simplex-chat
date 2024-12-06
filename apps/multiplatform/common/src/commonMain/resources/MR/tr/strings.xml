@@ -1034,7 +1034,6 @@
     <string name="stop_file__action">Dosyayı durdur</string>
     <string name="error_alert_title">Hata</string>
     <string name="create_another_profile_button">ProfilProfil oluştur</string>
-    <string name="stop_chat_to_enable_database_actions">Veri tabanı eylemlerini etkinleştirmek için sohbeti durdur.</string>
     <string name="stop_snd_file__title">Dosya göndermeyi durdur?</string>
     <string name="auth_stop_chat">Sohbeti durdur</string>
     <string name="connect_use_current_profile">Mevcut profili kullan</string>

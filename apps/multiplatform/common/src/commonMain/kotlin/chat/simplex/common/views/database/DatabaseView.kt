@@ -192,13 +192,7 @@ fun DatabaseLayout(
         }
         RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
-      SectionTextFooter(
-        if (stopped) {
-          stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
-        } else {
-          stringResource(MR.strings.stop_chat_to_enable_database_actions)
-        }
-      )
+      if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
       SectionDividerSpaced(maxTopPadding = true)
     }
 

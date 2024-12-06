@@ -1075,8 +1075,9 @@
   <!-- ChooseServerOperators.kt -->
   <string name="onboarding_choose_server_operators">Server operators</string>
   <string name="onboarding_network_operators">Network operators</string>
-  <string name="onboarding_network_operators_app_will_use_different_operators">When more than one network operator is enabled, the app will use the servers of different operators for each conversation.</string>
-  <string name="onboarding_network_operators_app_will_use_for_routing">For example, if you receive messages via SimpleX Chat server, the app will use one of Flux servers for private routing.</string>
+  <string name="onboarding_network_operators_app_will_use_different_operators">The app protects your privacy by using different operators in each conversation.</string>
+  <string name="onboarding_network_operators_cant_see_who_talks_to_whom">When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</string>
+  <string name="onboarding_network_operators_app_will_use_for_routing">For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</string>
   <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
   <string name="how_it_helps_privacy">How it helps privacy</string>
   <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
@@ -1305,7 +1306,6 @@
   <string name="chat_database_deleted">Chat database deleted</string>
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
-  <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
   <string name="files_and_media_section">Files &amp; media</string>
   <string name="delete_files_and_media_for_all_users">Delete files for all chat profiles</string>
   <string name="delete_files_and_media_all">Delete all files</string>

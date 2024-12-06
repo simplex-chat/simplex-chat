@@ -181,7 +181,7 @@ fun OnboardingInformationButton(
       .clip(CircleShape)
       .clickable { onClick() }
   ) {
-    Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp) ) {
+    Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       Icon(
         painterResource(MR.images.ic_info),
         null,

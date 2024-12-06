@@ -857,6 +857,10 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
           cath <## "updated group preferences:"
           cath <## "Voice messages: on"
       ]
+    biz #$> ("/_get chat #1 count=1", chat, [(1, "Voice messages: on")])
+    alice #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
+    bob #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
+    cath #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
 testPlanAddressOkKnown =

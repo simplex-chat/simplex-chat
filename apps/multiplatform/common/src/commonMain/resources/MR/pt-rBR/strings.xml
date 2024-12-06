@@ -853,7 +853,6 @@
     <string name="settings_section_title_socks">PROXY SOCKS</string>
     <string name="database_backup_can_be_restored">A tentativa de alterar a senha do banco de dados não foi concluída.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Pare o bate-papo para exportar, importar ou excluir o banco de dados do chat. Você não poderá receber e enviar mensagens enquanto o chat estiver interrompido.</string>
-    <string name="stop_chat_to_enable_database_actions">Pare o bate-papo para ativar ações no banco de dados.</string>
     <string name="chat_item_ttl_seconds">%s segundo(s)</string>
     <string name="unknown_database_error_with_info">Erro de banco de dados desconhecido: %s</string>
     <string name="unknown_error">Erro desconhecido</string>

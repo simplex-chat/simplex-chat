@@ -1219,7 +1219,6 @@
     <string name="set_database_passphrase">Nustatyti duomenų slaptafrazę</string>
     <string name="set_passphrase">Nustatyti slaptafrazę</string>
     <string name="privacy_show_last_messages">Rodyti paskutines žinutes</string>
-    <string name="stop_chat_to_enable_database_actions">Sustabdykite pokalbius, kad įgalinti duomenų bazės veiksmus.</string>
     <string name="settings_section_title_support">PALAIKYKITE SIMPLEX CHAT</string>
     <string name="receipts_section_description_1">Jų galima nepaisyti kontaktų ir grupių nustatymuose.</string>
     <string name="enable_automatic_deletion_message">Šis veiksmas negali būti atšauktas - žinutės išsiųstos ir gautos anksčiau nei pasirinkta bus ištrintos. Tai gali užtrukti kelias minutes.</string>

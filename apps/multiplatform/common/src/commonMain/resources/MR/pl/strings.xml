@@ -562,7 +562,6 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Uruchom ponownie aplikację, aby utworzyć nowy profil czatu.</string>
     <string name="save_passphrase_in_keychain">Zapisz hasło w Keystore</string>
     <string name="chat_item_ttl_seconds">%s sekund(y)</string>
-    <string name="stop_chat_to_enable_database_actions">Zatrzymaj czat, aby umożliwić działania na bazie danych.</string>
     <string name="enable_automatic_deletion_message">Tego działania nie można cofnąć - wiadomości wysłane i odebrane wcześniej niż wybrane zostaną usunięte. Może to potrwać kilka minut.</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Tego działania nie można cofnąć - Twój profil, kontakty, wiadomości i pliki zostaną nieodwracalnie utracone.</string>
     <string name="messages_section_description">To ustawienie dotyczy wiadomości Twojego bieżącego profilu czatu</string>

@@ -1133,7 +1133,6 @@
     <string name="save_preferences_question">Запази настройките\?</string>
     <string name="icon_descr_speaker_on">Високоговорителят е включен</string>
     <string name="icon_descr_speaker_off">Високоговорителят е изключен</string>
-    <string name="stop_chat_to_enable_database_actions">Спрете чата, за да активирате действията с базата данни.</string>
     <string name="role_in_group">Роля</string>
     <string name="network_options_save">Запази</string>
     <string name="reset_color">Нулирай цветовете</string>

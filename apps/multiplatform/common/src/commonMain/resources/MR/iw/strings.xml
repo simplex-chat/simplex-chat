@@ -981,7 +981,6 @@
     <string name="stop_chat_question">לעצור צ׳אט\?</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">עיצרו את הצ׳אט כדי לייצא, לייבא או למחוק את מסד הנתונים. לא תוכלו לקבל ולשלוח הודעות בזמן שהצ׳אט מופסק.</string>
     <string name="stop_chat_confirmation">עצור</string>
-    <string name="stop_chat_to_enable_database_actions">עיצרו את הצ׳אט כדי לאפשר פעולות מסד נתונים.</string>
     <string name="skip_inviting_button">דלג על הזמנת חברים</string>
     <string name="share_address">שתף כתובת</string>
     <string name="theme_simplex">SimpleX</string>

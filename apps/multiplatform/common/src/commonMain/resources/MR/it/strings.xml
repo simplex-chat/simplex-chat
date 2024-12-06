@@ -874,7 +874,6 @@
     <string name="remove_passphrase_from_keychain">Rimuovere la password dal Keystore\?</string>
     <string name="save_passphrase_in_keychain">Salva la password nel Keystore</string>
     <string name="chat_item_ttl_seconds">%s secondo/i</string>
-    <string name="stop_chat_to_enable_database_actions">Ferma la chat per attivare le azioni del database.</string>
     <string name="delete_files_and_media_desc">Questa azione non può essere annullata: tutti i file e i media ricevuti e inviati verranno eliminati. Rimarranno le immagini a bassa risoluzione.</string>
     <string name="enable_automatic_deletion_message">Questa azione non può essere annullata: i messaggi inviati e ricevuti prima di quanto selezionato verranno eliminati. Potrebbe richiedere diversi minuti.</string>
     <string name="update_database">Aggiorna</string>
