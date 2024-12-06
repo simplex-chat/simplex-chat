@@ -1615,8 +1615,7 @@
     <string name="snd_group_event_member_blocked">hai bloccato %s</string>
     <string name="welcome_message_is_too_long">Il messaggio di benvenuto è troppo lungo</string>
     <string name="message_too_large">Messaggio troppo grande</string>
-    <string name="database_migration_in_progress">Migrazione database in corso.
-\nPuò richiedere qualche minuto.</string>
+    <string name="database_migration_in_progress">Migrazione del database in corso.\nPuò richiedere qualche minuto.</string>
     <string name="call_service_notification_audio_call">Chiamata audio</string>
     <string name="call_service_notification_end_call">Termina chiamata</string>
     <string name="call_service_notification_video_call">Videochiamata</string>
@@ -2131,7 +2130,7 @@
     <string name="for_social_media">Per i social media</string>
     <string name="or_to_share_privately">O per condividere in modo privato</string>
     <string name="onboarding_network_operators">Operatori di rete</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">Quando più di un operatore di rete è attivato, l\'app userà i server di diversi operatori per ogni conversazione.</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">L\'app protegge la tua privacy usando diversi operatori per ogni conversazione.</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">Puoi configurare gli operatori nelle impostazioni di rete e server.</string>
     <string name="onboarding_choose_server_operators">Operatori del server</string>
     <string name="onboarding_select_network_operators_to_use">Seleziona gli operatori di rete da usare.</string>
@@ -2154,7 +2153,7 @@
     <string name="operator_conditions_accepted_on">Condizioni accettate il: %s.</string>
     <string name="operator">Operatore</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Le condizioni verranno accettate per gli operatori: <b>%s</b>.]]></string>
-    <string name="operator_same_conditions_will_be_applied"><![CDATA[Le stesse condizioni verranno applicate per l\'operatore <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[Le stesse condizioni verranno applicate per l'operatore <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Le stesse condizioni verranno applicate per gli operatori: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Queste condizioni verranno applicate anche per: <b>%s</b>.]]></string>
     <string name="accept_conditions">Accetta le condizioni</string>
@@ -2192,13 +2191,13 @@
     <string name="error_accepting_operator_conditions">Errore di accettazione delle condizioni</string>
     <string name="failed_to_save_servers">Errore di salvataggio dei server</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">per una migliore privacy dei metadati.</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Ad esempio, se ricevi messaggi tramite il server di SimpleX Chat, l\'app userà uno dei server Flux per l\'instradamento privato.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Ad esempio, se il tuo contatto riceve i messaggi tramite un server di SimpleX Chat, la tua app li consegnerà tramite un server di Flux.</string>
     <string name="v6_2_improved_chat_navigation">Navigazione della chat migliorata</string>
     <string name="smp_servers_new_server">Nuovo server</string>
     <string name="operator_use_for_files">Usa per i file</string>
     <string name="simplex_address_or_1_time_link">Indirizzo SimpleX o link una tantum?</string>
     <string name="message_deleted_or_not_received_error_desc">Questo messaggio è stato eliminato o non ancora ricevuto.</string>
-    <string name="address_creation_instruction">Tocca \"Crea indirizzo SimpleX\" nel menu per crearlo più tardi.</string>
+    <string name="address_creation_instruction">Tocca Crea indirizzo SimpleX nel menu per crearlo più tardi.</string>
     <string name="connection_error_quota_desc">La connessione ha raggiunto il limite di messaggi non consegnati, il contatto potrebbe essere offline.</string>
     <string name="operator_use_operator_toggle_description">Usa i server</string>
     <string name="onboarding_network_operators_configure_via_settings">Puoi configurare i server nelle impostazioni.</string>
@@ -2246,4 +2245,5 @@
     <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in %s. Verrà notificato a tutti nella chat.</string>
     <string name="chat_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri della chat</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Non riceverai più messaggi da questa chat. La cronologia della chat verrà conservata.</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Quando più di un operatore è attivato, nessuno di essi ha metadati per capire chi comunica con chi.</string>
 </resources>
