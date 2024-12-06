@@ -2240,4 +2240,8 @@
     <string name="info_row_chat">Чат</string>
     <string name="delete_chat_for_self_cannot_undo_warning">Чат буде видалений для вас — це неможливо скасувати!</string>
     <string name="maximum_message_size_reached_text">Будь ласка, зменшіть розмір повідомлення та надішліть знову.</string>
+    <string name="maximum_message_size_reached_forwarding">Скопіюйте та зменшіть розмір повідомлення для відправки.</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Ви припините отримувати повідомлення з цього чату. Історія чату буде збережена.</string>
+    <string name="chat_main_profile_sent">Ваш профіль чату буде надіслано учасникам чату.</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Коли увімкнено більше ніж одного оператора, жоден з них не має метаданих, щоб дізнатися, хто спілкується з ким.</string>
 </resources>
