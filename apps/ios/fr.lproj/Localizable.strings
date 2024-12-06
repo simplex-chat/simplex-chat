@@ -1101,7 +1101,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Connexion au bureau";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "connexion…";
 
 /* No comment provided by engineer. */
@@ -3784,7 +3784,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Enregistrer la phrase secrète dans la Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Enregistrer les préférences ?";
 
 /* No comment provided by engineer. */

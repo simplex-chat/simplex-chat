@@ -681,7 +681,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ข้อผิดพลาด: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "กำลังเชื่อมต่อ…";
 
 /* No comment provided by engineer. */
@@ -2457,7 +2457,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "บันทึกข้อความรหัสผ่านใน Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "บันทึกการตั้งค่า?";
 
 /* No comment provided by engineer. */

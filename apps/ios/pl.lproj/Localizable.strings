@@ -1086,7 +1086,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Łączenie z komputerem";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "łączenie…";
 
 /* No comment provided by engineer. */
@@ -3757,7 +3757,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Zapisz hasło w pęku kluczy";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Zapisać preferencje?";
 
 /* No comment provided by engineer. */

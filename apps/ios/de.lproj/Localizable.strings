@@ -863,6 +863,9 @@
 /* No comment provided by engineer. */
 "Change" = "Ändern";
 
+/* authentication reason */
+"Change chat profiles" = "Chat-Profile wechseln";
+
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Datenbank-Passwort ändern?";
 
@@ -890,9 +893,6 @@
 /* authentication reason
    set passcode view */
 "Change self-destruct passcode" = "Selbstzerstörungs-Zugangscode ändern";
-
-/* authentication reason */
-"Change chat profiles" = "Chat-Profile wechseln";
 
 /* chat item text */
 "changed address for you" = "Wechselte die Empfängeradresse von Ihnen";
@@ -1173,7 +1173,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Mit dem Desktop verbinden";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "Verbinde…";
 
 /* No comment provided by engineer. */
@@ -3945,12 +3945,6 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Sicherere Gruppen";
 
-/* No comment provided by engineer. */
-"The same conditions will apply to operator **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den Betreiber **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den/die Betreiber: **%@**.";
-
 /* alert button
    chat item action */
 "Save" = "Speichern";
@@ -3979,7 +3973,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Passwort im Schlüsselbund speichern";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Präferenzen speichern?";
 
 /* No comment provided by engineer. */
@@ -4690,6 +4684,12 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Das Profil wird nur mit Ihren Kontakten geteilt.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den Betreiber **%@**.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator(s): **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den/die Betreiber: **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Der zweite voreingestellte Netzwerk-Betreiber in der App!";

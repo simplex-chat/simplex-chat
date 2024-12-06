@@ -863,6 +863,9 @@
 /* No comment provided by engineer. */
 "Change" = "Зміна";
 
+/* authentication reason */
+"Change chat profiles" = "Зміна профілів користувачів";
+
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Змінити пароль до бази даних?";
 
@@ -890,9 +893,6 @@
 /* authentication reason
    set passcode view */
 "Change self-destruct passcode" = "Змінити пароль самознищення";
-
-/* authentication reason */
-"Change chat profiles" = "Зміна профілів користувачів";
 
 /* chat item text */
 "changed address for you" = "змінили для вас адресу";
@@ -1173,7 +1173,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Підключення до ПК";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "з'єднання…";
 
 /* No comment provided by engineer. */
@@ -3669,9 +3669,6 @@
 "Proxy requires password" = "Проксі вимагає пароль";
 
 /* No comment provided by engineer. */
-"Push notifications" = "Push-повідомлення";
-
-/* No comment provided by engineer. */
 "Push notifications" = "Push-сповіщення";
 
 /* No comment provided by engineer. */
@@ -3948,12 +3945,6 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Безпечніші групи";
 
-/* No comment provided by engineer. */
-"The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
-
 /* alert button
    chat item action */
 "Save" = "Зберегти";
@@ -3982,7 +3973,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Збережіть парольну фразу в Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Зберегти настройки?";
 
 /* No comment provided by engineer. */
@@ -4693,6 +4684,12 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Профіль доступний лише вашим контактам.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Другий попередньо встановлений оператор у застосунку!";
