@@ -15,10 +15,10 @@
     <string name="send_disappearing_message_30_seconds">30 másodperc</string>
     <string name="one_time_link_short">Egyszer használható meghívó-hivatkozás</string>
     <string name="contact_wants_to_connect_via_call">%1$s szeretne kapcsolatba lépni Önnel ezen keresztül:</string>
-    <string name="about_simplex_chat">A SimpleX Chat névjegye</string>
+    <string name="about_simplex_chat">SimpleX Chat névjegye</string>
     <string name="chat_item_ttl_day">1 nap</string>
     <string name="abort_switch_receiving_address">Címváltoztatás megszakítása</string>
-    <string name="about_simplex">A SimpleX-ről</string>
+    <string name="about_simplex">A SimpleXről</string>
     <string name="color_primary">Kiemelés</string>
     <string name="callstatus_accepted">fogadott hívás</string>
     <string name="network_enable_socks_info">Hozzáférés a kiszolgálókhoz SOCKS proxyn keresztül a(z) %d porton? A proxyt el kell indítani, mielőtt engedélyezné ezt az opciót.</string>
@@ -1754,7 +1754,7 @@
     <string name="network_smp_proxy_fallback_prohibit_description">Ne küldjön üzeneteket közvetlenül, még akkor sem, ha az Ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az IP-címe látható lesz a fájlkiszolgálók számára.</string>
     <string name="settings_section_title_files">FÁJLOK</string>
-    <string name="protect_ip_address">IP-cím védelem</string>
+    <string name="protect_ip_address">IP-cím védelme</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról történő letöltések megerősítését (kivéve, ha az .onion vagy a SOCKS proxy engedélyezve van).</string>
     <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
     <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe látható lesz az XFTP-közvetítő-kiszolgálók számára:\n%1$s.</string>
@@ -2113,7 +2113,7 @@
     <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha az Ön ismerőse egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</string>
     <string name="onboarding_select_network_operators_to_use">Válassza ki a használni kívánt hálózati üzemeltetőket.</string>
     <string name="onboarding_network_operators_review_later">Felülvizsgálat később</string>
-    <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a beállításokon keresztül konfigurálhatja.</string>
+    <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">A feltételek 30 nap elteltével lesznek elfogadva az engedélyezett üzemeltetők számára.</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">Az üzemeltetőket a „Hálózat és kiszolgálók” menüben konfigurálhatja.</string>
     <string name="onboarding_network_operators_update">Frissítés</string>
