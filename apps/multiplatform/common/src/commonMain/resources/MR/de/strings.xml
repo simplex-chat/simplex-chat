@@ -62,7 +62,7 @@
     <string name="sender_cancelled_file_transfer">Der Absender hat die Dateiübertragung abgebrochen.</string>
     <string name="error_receiving_file">Fehler beim Empfangen der Datei</string>
     <string name="error_creating_address">Fehler beim Erstellen der Adresse</string>
-    <string name="contact_already_exists">Kontakt ist bereits vorhanden</string>
+    <string name="contact_already_exists">Kontakt besteht bereits</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit %1$s verbunden.</string>
     <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben, oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
@@ -683,7 +683,7 @@
     <string name="alert_title_group_invitation_expired">Die Einladung ist abgelaufen!</string>
     <string name="alert_message_group_invitation_expired">Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.</string>
     <string name="alert_title_no_group">Die Gruppe wurde nicht gefunden!</string>
-    <string name="alert_message_no_group">Diese Gruppe existiert nicht mehr.</string>
+    <string name="alert_message_no_group">Diese Gruppe ist nicht mehr vorhanden.</string>
     <string name="alert_title_cant_invite_contacts">Kontakte können nicht eingeladen werden!</string>
     <string name="alert_title_cant_invite_contacts_descr">Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.</string>
     <!-- CIGroupInvitationView.kt -->
@@ -2300,4 +2300,31 @@
     <string name="v6_2_business_chats">Geschäftliche Chats</string>
     <string name="add_your_team_members_to_conversations">Nehmen Sie Team-Mitglieder in Ihre Unterhaltungen auf.</string>
     <string name="onboarding_notifications_mode_service_desc_short">Die App läuft immer im Hintergrund ab</string>
+    <string name="direct_messages_are_prohibited_in_chat">In diesem Chat sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
+    <string name="onboarding_notifications_mode_off_desc_short">Kein Hintergrund-Service</string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">Nachrichten alle 10 Minuten überprüfen</string>
+    <string name="onboarding_notifications_mode_battery">Benachrichtigungen und Akku</string>
+    <string name="invite_to_chat_button">Zum Chat einladen</string>
+    <string name="connect_plan_chat_already_exists">Chat besteht bereits!</string>
+    <string name="chat_bottom_bar">Chat-Symbolleiste unten</string>
+    <string name="button_leave_chat">Chat verlassen</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">Das Mitglied wird aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="chat_main_profile_sent">Ihr Chat-Profil wird an die Chat-Mitglieder gesendet.</string>
+    <string name="direct_messages_are_prohibited">Direktnachrichten zwischen Mitgliedern sind nicht erlaubt.</string>
+    <string name="how_it_helps_privacy">Wie die Privatsphäre geschützt wird</string>
+    <string name="leave_chat_question">Chat verlassen?</string>
+    <string name="delete_chat_question">Chat löschen?</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">Der Chat wird für alle Mitglieder gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="v6_2_business_chats_descr">Schutz der Privatsphäre Ihrer Kunden.</string>
+    <string name="display_name_requested_to_connect">Zur Verbindung aufgefordert</string>
+    <string name="maximum_message_size_reached_non_text">Bitte verkleinern Sie die Nachrichten-Größe oder entfernen Sie Medien und versenden Sie diese erneut.</string>
+    <string name="only_chat_owners_can_change_prefs">Nur Chat-Eigentümer können die Präferenzen ändern.</string>
+    <string name="maximum_message_size_reached_text">Bitte verkleinern Sie die Nachrichten-Größe und versenden Sie diese erneut.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Die Rolle wird auf %s geändert. Im Chat wird Jeder darüber informiert.</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</string>
+    <string name="maximum_message_size_reached_forwarding">Sie können die Nachricht kopieren und verkleinern, um sie zu versenden.</string>
+    <string name="button_delete_chat">Chat löschen</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">Der Chat wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="maximum_message_size_title">Die Nachricht ist zu umfangreich!</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Wenn mehr als ein Betreiber aktiviert ist, hat keiner von ihnen Metadaten, um zu erfahren, wer mit wem kommuniziert.</string>
 </resources>
