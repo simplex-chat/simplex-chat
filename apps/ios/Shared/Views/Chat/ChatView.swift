@@ -134,12 +134,8 @@ struct ChatView: View {
             Group {
                 if case let .group(groupInfo) = chat.chatInfo {
                     GroupMemberInfoView(
-                        groupInfo: Binding(
-                            get: { groupInfo },
-                            set: { gInfo in
-                                chat.chatInfo = .group(groupInfo: gInfo)
-                            }
-                        ),
+                        groupInfo: groupInfo,
+                        chat: chat,
                         groupMember: member,
                         navigation: true
                     )

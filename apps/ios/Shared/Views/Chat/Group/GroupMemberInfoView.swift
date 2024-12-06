@@ -13,7 +13,8 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var groupInfo: GroupInfo
+    @State var groupInfo: GroupInfo
+    @ObservedObject var chat: Chat
     @ObservedObject var groupMember: GMember
     var navigation: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
@@ -259,6 +260,11 @@ struct GroupMemberInfoView: View {
 
             if progressIndicator {
                 ProgressView().scaleEffect(2)
+            }
+        }
+        .onChange(of: chat.chatInfo) { c in
+            if case let .group(gI) = chat.chatInfo {
+                groupInfo = gI
             }
         }
         .modifier(ThemedBackground(grouped: true))
@@ -757,7 +763,8 @@ func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Boo
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupMemberInfoView(
-            groupInfo: Binding.constant(GroupInfo.sampleData),
+            groupInfo: GroupInfo.sampleData,
+            chat: Chat.sampleData,
             groupMember: GMember.sampleData
         )
     }
