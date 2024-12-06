@@ -590,8 +590,12 @@ getContactByName db vr user localDisplayName = do
 getUserContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getUserContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
+  putStrLn $ "*** getUserContacts contactIds" <> show contactIds
   contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
-  pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
+  putStrLn $ "*** getUserContacts contacts" <> show contacts
+  r <- pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
+  putStrLn $ "*** getUserContacts filtered contacts" <> show r
+  pure r
 
 createOrUpdateContactRequest :: DB.Connection -> VersionRangeChat -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ChatOrRequest
 createOrUpdateContactRequest db vr user@User {userId, userContactId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ pqSup =
