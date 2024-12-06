@@ -12,7 +12,7 @@
     <string name="about_simplex">عن SimpleX</string>
     <string name="above_then_preposition_continuation">أعلاه، ثم:</string>
     <string name="accept_call_on_lock_screen">اقبل</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل وملفاتك بشكل نهائي.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف تعريفك وجهات اتصالك ورسائلك وملفاتك بشكل نهائي.</string>
     <string name="alert_message_no_group">هذه المجموعة لم تعد موجودة.</string>
     <string name="this_QR_code_is_not_a_link">رمز QR هذا ليس رابطًا!</string>
     <string name="next_generation_of_private_messaging">مستقبل المُراسلة</string>
@@ -314,7 +314,7 @@
     <string name="colored_text">ملون</string>
     <string name="status_contact_has_e2e_encryption">لدى جهة الاتصال التعمية بين الطريفين</string>
     <string name="create_profile_button">إنشاء</string>
-    <string name="create_your_profile">إنشاء ملف تعريف</string>
+    <string name="create_your_profile">أنشئ ملف تعريفك</string>
     <string name="icon_descr_call_connecting">مكالمة جارية...</string>
     <string name="enable_self_destruct">تفعيل التدمير الذاتي</string>
     <string name="conn_event_ratchet_sync_started">الموافقة على التعمية…</string>
@@ -1100,7 +1100,7 @@
     <string name="color_title">العنوان الرئيسي</string>
     <string name="moderate_message_will_be_marked_warning">سيتم وضع علامة على الرسالة على أنها تحت الإشراف لجميع الأعضاء.</string>
     <string name="group_invitation_tap_to_join">انقر للانضمام</string>
-    <string name="to_reveal_profile_enter_password">للكشف عن ملف التعريف المخفي الخاص بك، أدخل كلمة مرور كاملة في حقل البحث في صفحة ملفات تعريف الدردشة الخاصة بك.</string>
+    <string name="to_reveal_profile_enter_password">للكشف عن ملف تعريفك المخفي، أدخل كلمة مرور كاملة في حقل البحث في صفحة ملفات تعريف الدردشة الخاصة بك.</string>
     <string name="group_invitation_tap_to_join_incognito">انقر للانضمام إلى وضع التخفي</string>
     <string name="la_mode_system">النظام</string>
     <string name="settings_section_title_themes">السمات</string>
@@ -1110,7 +1110,7 @@
     <string name="tap_to_activate_profile">انقر لتنشيط ملف التعريف.</string>
     <string name="v4_5_transport_isolation">عزل النقل</string>
     <string name="this_string_is_not_a_connection_link">هذه السلسلة ليست رابط اتصال!</string>
-    <string name="receipts_section_description">هذه الإعدادات لملف التعريف الحالي الخاص بك</string>
+    <string name="receipts_section_description">هذه الإعدادات لملف تعريفك الحالي</string>
     <string name="receipts_section_description_1">يمكن تجاوزها في إعدادات الاتصال و المجموعة.</string>
     <string name="network_option_tcp_connection_timeout">انتهت مهلة اتصال TCP</string>
     <string name="v4_5_private_filenames_descr">لحماية المنطقة الزمنية، تستخدم ملفات الصور / الصوت التوقيت العالمي المنسق (UTC).</string>
@@ -1137,7 +1137,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
     <string name="la_notice_turn_on">تشغيل</string>
     <string name="webrtc_ice_servers">خوادم WebRTC ICE</string>
-    <string name="alert_title_cant_invite_contacts_descr">أنت تستخدم ملفًا شخصيًا متخفيًا لهذه المجموعة - لمنع مشاركة ملفك الشخصي الرئيسي الذي يدعو جهات الاتصال غير مسموح به</string>
+    <string name="alert_title_cant_invite_contacts_descr">أنت تستخدم ملف تعريف متخفي لهذه المجموعة - لمنع مشاركة ملفك التعريفي الرئيسي الذي يدعو جهات الاتصال غير مسموح به</string>
     <string name="snd_group_event_changed_member_role">غيّرتَ دور %s إلى %s</string>
     <string name="chat_preferences_yes">نعم</string>
     <string name="connected_to_server_to_receive_messages_from_contact">أنت متصل بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
@@ -1239,7 +1239,7 @@
     <string name="custom_time_unit_weeks">أسابيع</string>
     <string name="you_can_hide_or_mute_user_profile">يمكنك إخفاء أو كتم ملف تعريف المستخدم - اضغط مطولاً للقائمة.</string>
     <string name="whats_new">ما هو الجديد</string>
-    <string name="your_current_profile">ملفك الشخصي الحالي</string>
+    <string name="your_current_profile">ملف تعريفك الحالي</string>
     <string name="simplex_link_connection">عبر %1$s</string>
     <string name="icon_descr_received_msg_status_unread">غير مقروءة</string>
     <string name="welcome">مرحبًا!</string>
@@ -1249,7 +1249,7 @@
     <string name="gallery_video_button">فيديو</string>
     <string name="you_can_share_your_address">يمكنك مشاركة عنوانك كرابط أو رمز QR - يمكن لأي شخص الاتصال بك.</string>
     <string name="you_can_create_it_later">يمكنك إنشاؤه لاحقًا</string>
-    <string name="invite_prohibited_description">أنت تحاول دعوة جهة اتصال قمت بمشاركة ملف تعريف متخفي معها إلى المجموعة التي تستخدم فيها ملفك الشخصي الرئيسي</string>
+    <string name="invite_prohibited_description">أنت تحاول دعوة جهة اتصال شاركت ملف تعريف متخفي معها إلى المجموعة التي تستخدم فيها ملف تعريفك الرئيسي</string>
     <string name="user_unmute">ألغِ الكتم</string>
     <string name="unmute_chat">ألغِ الكتم</string>
     <string name="you_accepted_connection">لقد قبلت الاتصال</string>
@@ -1284,8 +1284,8 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">سيتم إرسال ملف تعريف الدردشة الخاص بك
 \nإلى جهة اتصالك</string>
     <string name="user_unhide">إلغاء الإخفاء</string>
-    <string name="incognito_random_profile">ملفك الشخصي العشوائي</string>
-    <string name="you_will_still_receive_calls_and_ntfs">ستستمر في استلام المكالمات والإشعارات من الملفات الشخصية المكتومة عندما تكون نشطة.</string>
+    <string name="incognito_random_profile">ملفك التعريفي العشوائي</string>
+    <string name="you_will_still_receive_calls_and_ntfs">ستستمر في استلام المكالمات والإشعارات من الملفات التعريفية المكتومة عندما تكون نشطة.</string>
     <string name="chat_preferences_you_allow">انت تسمح بها</string>
     <string name="icon_descr_video_call">مكالمة فيديو</string>
     <string name="voice_messages_are_prohibited">الرسائل الصوتية ممنوعة.</string>
@@ -1331,7 +1331,7 @@
     <string name="system_restricted_background_desc">لا يمكن تشغيل SimpleX في الخلفية. ستستلم الإشعارات فقط عندما يكون التطبيق قيد التشغيل.</string>
     <string name="connect__a_new_random_profile_will_be_shared">سيتم مشاركة ملف تعريف عشوائي جديد.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">ألصق الرابط المُستلَم للتواصل مع جهة اتصالك…</string>
-    <string name="connect__your_profile_will_be_shared">ستتم مشاركة ملفك الشخصي %1$s.</string>
+    <string name="connect__your_profile_will_be_shared">ستتم مشاركة ملفك التعريفي %1$s.</string>
     <string name="system_restricted_background_in_call_desc">قد يغلق التطبيق بعد دقيقة واحدة في الخلفية.</string>
     <string name="turn_off_battery_optimization_button">سماح</string>
     <string name="system_restricted_background_in_call_title">لا مكالمات في الخلفية</string>
@@ -2071,7 +2071,7 @@
     <string name="error_forwarding_messages">خطأ في تحويل الرسائل</string>
     <string name="switching_profile_error_title">خطأ في تبديل ملف التعريف</string>
     <string name="select_chat_profile">حدد ملف تعريف الدردشة</string>
-    <string name="switching_profile_error_message">لقد تم نقل اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى الملف الشخصي.</string>
+    <string name="switching_profile_error_message">لقد تم نقل اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى ملف التعريف.</string>
     <string name="forward_alert_title_messages_to_forward">تحويل %1$s رسالة؟</string>
     <string name="forward_files_messages_deleted_after_selection_title">لم يحوّل %1$s من الرسائل</string>
     <string name="compose_forward_messages_n">جارِ تحويل %1$s رسالة</string>
