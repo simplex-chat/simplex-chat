@@ -574,7 +574,7 @@
       </trans-unit>
       <trans-unit id="About SimpleX Chat" xml:space="preserve" approved="no">
         <source>About SimpleX Chat</source>
-        <target state="translated">A SimpleX Chat névjegye</target>
+        <target state="translated">SimpleX Chat névjegye</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About operators" xml:space="preserve" approved="no">
@@ -5569,9 +5569,9 @@ Hiba: %@</target>
         <target>A hangüzenetek küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect IP address" xml:space="preserve">
+      <trans-unit id="Protect IP address" xml:space="preserve" approved="no">
         <source>Protect IP address</source>
-        <target>IP-cím védelem</target>
+        <target state="translated">IP-cím védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -8153,9 +8153,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Az üzemeltetőket a „Hálózat és kiszolgálók” beállításaban konfigurálhatja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure servers via settings." xml:space="preserve">
+      <trans-unit id="You can configure servers via settings." xml:space="preserve" approved="no">
         <source>You can configure servers via settings.</source>
-        <target>A kiszolgálókat a beállításokon keresztül konfigurálhatja.</target>
+        <target state="translated">A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
@@ -8203,9 +8203,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Beállíthatja az ismerős nevét, hogy emlékezzen arra, hogy kivel osztotta meg a hivatkozást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
+      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve" approved="no">
         <source>You can set lock screen notification preview via settings.</source>
-        <target>A beállításokon keresztül beállíthatja a lezárási képernyő értesítési előnézetét.</target>
+        <target state="translated">A lezárási képernyő értesítési előnézetét az „Értesítések” menüben állíthatja be.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
