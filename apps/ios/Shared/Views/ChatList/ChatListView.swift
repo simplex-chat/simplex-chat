@@ -512,6 +512,7 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView() }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
@@ -602,6 +603,58 @@ struct ChatListSearchBar: View {
             filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
             filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )
+    }
+}
+
+enum ChatTag: Identifiable, Equatable {
+    case presetTag(icon: String, activeIcon: String)
+    case chatTag(emoji: String, text: String)
+    
+    var id: String {
+        switch self {
+        case let .presetTag(icon, _): "preset \(icon)"
+        case let .chatTag(emoji, _): "chatTag \(emoji)"
+        }
+    }
+}
+
+struct ChatTagsView: View {
+    var chatTags: [ChatTag] = [
+        .presetTag(icon: "star", activeIcon: "star.fill"),
+        .presetTag(icon: "person", activeIcon: "person.fill"),
+        .presetTag(icon: "person.2", activeIcon: "person.2.fill"),
+        .presetTag(icon: "briefcase", activeIcon: "briefcase.fill"),
+        .chatTag(emoji: "🧑‍💻", text: "Work"),
+        .chatTag(emoji: "🤝", text: "Friends"),
+        .chatTag(emoji: "🐸", text: "Memes")
+    ]
+    @State var selectedTag: ChatTag?
+    
+    var body: some View {
+        HStack {
+            ForEach(chatTags) { tag in
+                let current = selectedTag == tag
+                let color: Color = current ? .accentColor : .secondary
+                ZStack {
+                    switch tag {
+                    case let .presetTag(icon, activeIcon):
+                        Image(systemName: current ? activeIcon : icon)
+                            .foregroundColor(color)
+                    case let .chatTag(emoji, text):
+                        HStack(spacing: 4) {
+                            Text(emoji)
+                            ZStack {
+                                Text(text).fontWeight(.medium).foregroundColor(.clear)
+                                Text(text).fontWeight(current ? .medium : .regular).foregroundColor(color)
+                            }
+                        }
+                    }
+                }
+                .onTapGesture {
+                    selectedTag = tag
+                }
+            }
+        }
     }
 }
 
