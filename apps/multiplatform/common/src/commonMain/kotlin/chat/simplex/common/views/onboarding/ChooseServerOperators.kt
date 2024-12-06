@@ -1,7 +1,11 @@
 package chat.simplex.common.views.onboarding
 
 import SectionBottomSpacer
+import SectionDividerSpaced
+import SectionItemView
 import SectionTextFooter
+import SectionView
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -9,11 +13,13 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ServerOperator
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -339,11 +345,45 @@ private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorId
 
 @Composable
 private fun ChooseServerOperatorsInfoView() {
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.onboarding_network_operators), withPadding = false)
-    ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_different_operators))
-    ReadableText(stringResource(MR.strings.onboarding_network_operators_cant_see_who_talks_to_whom))
-    ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_for_routing))
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.onboarding_network_operators))
+
+    Column(
+      Modifier.padding(horizontal = DEFAULT_PADDING)
+    ) {
+      ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_different_operators))
+      ReadableText(stringResource(MR.strings.onboarding_network_operators_cant_see_who_talks_to_whom))
+      ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_for_routing))
+    }
+
+    SectionDividerSpaced()
+
+    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators).uppercase()) {
+      chatModel.conditions.value.serverOperators.forEach { op ->
+        ServerOperatorRow(op)
+      }
+    }
     SectionBottomSpacer()
+  }
+}
+
+@Composable()
+private fun ServerOperatorRow(
+  operator: ServerOperator
+) {
+  SectionItemView(
+    {
+      ModalManager.start.showModalCloseable { close ->
+        OperatorInfoView(operator)
+      }
+    }
+  ) {
+    Image(
+      painterResource(operator.logo),
+      operator.tradeName,
+      modifier = Modifier.size(24.dp)
+    )
+    TextIconSpaced()
+    Text(operator.tradeName)
   }
 }
