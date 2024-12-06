@@ -219,7 +219,7 @@
     <string name="ok">OK</string>
     <string name="copied">Скопійовано в буфер обміну</string>
     <string name="to_connect_via_link_title">Для підключення через посилання</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 мобільний телефон: натисніть <b>Відкрити у мобільному додатку</b>, а потім торкніться <b>Підключити</b> в додатку.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 мобільний: натисніть <b>Відкрити у мобільному додатку</b>, а потім торкніться <b>Підключити</b> в додатку.]]></string>
     <string name="mute_chat">Приглушити</string>
     <string name="unmute_chat">Скасувати приглушення</string>
     <string name="you_invited_a_contact">Ви запросили контакт</string>
@@ -233,7 +233,7 @@
     <string name="one_time_link">Одноразове запрошення</string>
     <string name="incorrect_code">Невірний код безпеки!</string>
     <string name="to_verify_compare">Для перевірки end-to-end шифрування порівняйте (або скануйте) код на своїх пристроях.</string>
-    <string name="your_settings">Ваші налаштування</string>
+    <string name="your_settings">Налаштування</string>
     <string name="your_simplex_contact_address">Ваша SimpleX-адреса</string>
     <string name="markdown_help">Допомога з Markdown</string>
     <string name="chat_lock">Блокування SimpleX</string>
@@ -1012,7 +1012,7 @@
     <string name="clear_verification">Очистити перевірку</string>
     <string name="is_verified">%s перевірено</string>
     <string name="is_not_verified">%s не перевірено</string>
-    <string name="send_us_an_email">Надішліть нам електронного листа</string>
+    <string name="send_us_an_email">Написати нам ел. листа</string>
     <string name="smp_servers_test_server">Тестовий сервер</string>
     <string name="smp_save_servers_question">Зберегти сервери\?</string>
     <string name="your_ICE_servers">Ваші сервери ICE</string>
@@ -1089,7 +1089,7 @@
     <string name="chat_preferences_no">ні</string>
     <string name="chat_preferences_off">вимк</string>
     <string name="set_group_preferences">Встановити налаштування групи</string>
-    <string name="your_preferences">Ваші налаштування</string>
+    <string name="your_preferences">Налаштування</string>
     <string name="direct_messages">Прямі повідомлення</string>
     <string name="icon_descr_server_status_error">Помилка</string>
     <string name="add_contact">Одноразове запрошення</string>
@@ -1178,7 +1178,7 @@
     <string name="to_share_with_your_contact">(щоб поділитися з вашим контактом)</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(сканувати або вставити з буферу обміну)</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Ви можете <font color="#0088ff">підключитися до розробників SimpleX Chat, щоб задати будь-які питання і отримувати оновлення</font>.]]></string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 настільний комп\'ютер: скануйте відображений QR-код з додатка за допомогою <b>Сканувати QR-код</b>.]]></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 на комп\'ютері: скануйте відображений QR-код з додатка за допомогою <b>Сканувати QR-код</b>.]]></string>
     <string name="icon_descr_address">Адреса SimpleX</string>
     <string name="show_QR_code">Показати QR-код</string>
     <string name="joining_group">Приєднання до групи</string>
@@ -1441,7 +1441,7 @@
     <string name="multicast_connect_automatically">Підключати автоматично</string>
     <string name="desktop_address">Адреса робочого столу</string>
     <string name="only_one_device_can_work_at_the_same_time">Одночасно може працювати лише один пристрій</string>
-    <string name="v5_4_link_mobile_desktop">Посилання на мобільний та комп\'ютерний додатки! 🔗</string>
+    <string name="v5_4_link_mobile_desktop">Підключіть мобільний і десктопний додатки! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Через безпечний квантовостійкий протокол.</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Відкрийте <i>Використовувати з робочого столу</i> у мобільному додатку і скануйте QR-код.]]></string>
     <string name="v5_4_block_group_members_descr">Щоб приховати небажані повідомлення.</string>
@@ -2244,4 +2244,6 @@
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Ви припините отримувати повідомлення з цього чату. Історія чату буде збережена.</string>
     <string name="chat_main_profile_sent">Ваш профіль чату буде надіслано учасникам чату.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Коли увімкнено більше ніж одного оператора, жоден з них не має метаданих, щоб дізнатися, хто спілкується з ким.</string>
+    <string name="display_name_accepted_invitation">прийнято запрошення</string>
+    <string name="display_name_requested_to_connect">запит на підключення</string>
 </resources>
