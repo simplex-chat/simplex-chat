@@ -2109,8 +2109,8 @@
     <string name="create_1_time_link">Egyszer használható meghívó-hivatkozás létrehozása</string>
     <string name="onboarding_choose_server_operators">Kiszolgáló-üzemeltetők</string>
     <string name="onboarding_network_operators">Hálózati üzemeltetők</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">Amikor egynél több hálózati üzemeltető van engedélyezve, akkor az alkalmazás minden egyes beszélgetéshez a különböző üzemeltetők kiszolgálóit használja.</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Ha például a SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, az alkalmazás a Flux egyik kiszolgálóját használja a privát útválasztáshoz.</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">Az alkalmazás úgy védi az adatait, hogy minden egyes beszélgetésben más-más üzemeltetőt használ.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha az Ön ismerőse egy SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux kiszolgálón keresztül fogja azokat kézbesíteni.</string>
     <string name="onboarding_select_network_operators_to_use">Válassza ki a használni kívánt hálózati üzemeltetőket.</string>
     <string name="onboarding_network_operators_review_later">Felülvizsgálat később</string>
     <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a beállításokon keresztül konfigurálhatja.</string>
