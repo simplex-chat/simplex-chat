@@ -2204,4 +2204,5 @@
     <string name="maximum_message_size_title">Az üzenet túl nagy!</string>
     <string name="maximum_message_size_reached_non_text">Csökkentse az üzenet méretét vagy távolítsa el a médiát, és küldje el újra.</string>
     <string name="direct_messages_are_prohibited_in_chat">A tagok közötti közvetlen üzenetek le vannak tiltva ebben a csevegésben.</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Ha egynél több üzemeltető van engedélyezve, akkor egyikük sem rendelkezik olyan metaadatokkal, amelyekből megtudhatja, hogy ki kivel kommunikál.</string>
 </resources>
