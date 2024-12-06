@@ -2147,7 +2147,7 @@
     <string name="onboarding_network_operators_review_later">Later beoordelen</string>
     <string name="onboarding_select_network_operators_to_use">Selecteer welke netwerkoperators u wilt gebruiken.</string>
     <string name="onboarding_network_operators_update">Update</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">Wanneer er meer dan één netwerkoperator is ingeschakeld, gebruikt de app voor elk gesprek de servers van verschillende operators.</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">De app beschermt uw privacy door in elk gesprek verschillende operators te gebruiken.</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">U kunt operators configureren in Netwerk- en serverinstellingen.</string>
     <string name="onboarding_network_operators_continue">Doorgaan</string>
     <string name="operator_review_conditions">Voorwaarden bekijken</string>
@@ -2183,7 +2183,7 @@
     <string name="v6_2_improved_chat_navigation">Verbeterde chatnavigatie</string>
     <string name="v6_2_network_decentralization">Netwerk decentralisatie</string>
     <string name="v6_2_network_decentralization_descr">De tweede vooraf ingestelde operator in de app!</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Als u bijvoorbeeld berichten ontvangt via de SimpleX Chat-server, gebruikt de app een van de Flux-servers voor privéroutering.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Als uw contactpersoon bijvoorbeeld berichten ontvangt via een SimpleX Chat-server, worden deze door uw app via een Flux-server verzonden.</string>
     <string name="v6_2_network_decentralization_enable_flux">Flux inschakelen</string>
     <string name="message_deleted_or_not_received_error_title">Geen bericht</string>
     <string name="appearance_app_toolbars">App-werkbalken</string>
@@ -2243,4 +2243,6 @@
     <string name="only_chat_owners_can_change_prefs">Alleen chateigenaren kunnen voorkeuren wijzigen.</string>
     <string name="maximum_message_size_reached_non_text">Verklein de berichtgrootte of verwijder de media en verzend het bericht opnieuw.</string>
     <string name="display_name_accepted_invitation">geaccepteerde uitnodiging</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Wanneer er meer dan één operator is ingeschakeld, beschikt geen enkele operator over metagegevens om te achterhalen wie met wie communiceert.</string>
+    <string name="display_name_requested_to_connect">gevraagd om verbinding te maken</string>
 </resources>
