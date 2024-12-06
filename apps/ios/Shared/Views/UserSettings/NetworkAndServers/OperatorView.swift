@@ -331,9 +331,12 @@ struct OperatorInfoView: View {
                             Text(d)
                         }
                     }
+                    Link(serverOperator.info.website.absoluteString, destination: serverOperator.info.website)
                 }
-                Section {
-                    Link("\(serverOperator.info.website)", destination: URL(string: serverOperator.info.website)!)
+                if let selfhost = serverOperator.info.selfhost {
+                    Section {
+                        Link(selfhost.text, destination: selfhost.link)
+                    }
                 }
             }
         }
