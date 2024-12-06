@@ -432,7 +432,7 @@ struct ChooseServerOperatorsInfoView: View {
                         operatorInfoNavLinkView(op)
                     }
                 } header: {
-                    Text("Learn more about operators")
+                    Text("About operators")
                         .foregroundColor(theme.colors.secondary)
                 }
             }
