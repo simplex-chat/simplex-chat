@@ -133,7 +133,12 @@ struct ChatView: View {
         .appSheet(item: $selectedMember) { member in
             Group {
                 if case let .group(groupInfo) = chat.chatInfo {
-                    GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
+                    GroupMemberInfoView(
+                        groupInfo: groupInfo,
+                        chat: chat,
+                        groupMember: member,
+                        navigation: true
+                    )
                 }
             }
         }
@@ -1123,6 +1128,7 @@ struct ChatView: View {
                                         } else {
                                             let mem = GMember.init(member)
                                             m.groupMembers.append(mem)
+                                            m.groupMembersIndexes[member.groupMemberId] = m.groupMembers.count - 1
                                             selectedMember = mem
                                         }
                                     }
@@ -1878,6 +1884,7 @@ struct ReactionContextMenu: View {
                     } else {
                         let member = GMember.init(mem)
                         m.groupMembers.append(member)
+                        m.groupMembersIndexes[member.groupMemberId] = m.groupMembers.count - 1
                         selectedMember = member
                     }
                 } label: {

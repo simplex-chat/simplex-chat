@@ -440,7 +440,7 @@ struct GroupChatInfoView: View {
     }
 
     private func memberInfoView(_ groupMember: GMember) -> some View {
-        GroupMemberInfoView(groupInfo: groupInfo, groupMember: groupMember)
+        GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
             .navigationBarHidden(false)
     }
 
