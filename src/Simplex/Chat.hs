@@ -2872,19 +2872,27 @@ processChatCommand' vr = \case
     updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
+          liftIO $ putStrLn $ "*** updateProfile_ profile: " <> show p'
           when (n /= n') $ checkValidName n'
           -- read contacts before user update to correctly merge preferences
           contacts <- withFastStore' $ \db -> getUserContacts db vr user
+          liftIO $ putStrLn $ "*** updateProfile_ contacts: " <> show contacts
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
             let changedCts_ = L.nonEmpty $ foldr (addChangedProfileContact user') [] contacts
             summary <- case changedCts_ of
-              Nothing -> pure $ UserProfileUpdateSummary 0 0 []
+              Nothing -> do
+                liftIO $ putStrLn $ "*** updateProfile_ no changed contacts"
+                pure $ UserProfileUpdateSummary 0 0 []
               Just changedCts -> do
+                liftIO $ putStrLn $ "*** updateProfile_ changed contacts: " <> show changedCts_
                 let idsEvts = L.map ctSndEvent changedCts
+                liftIO $ putStrLn $ "*** updateProfile_ before sending"
                 msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
+                liftIO $ putStrLn $ "*** updateProfile_ created messages"
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
+                liftIO $ putStrLn $ "*** updateProfile_ delivered messages to contacts: " <> show (length cts) <> ", errors: " <> show errs
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
                 let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
                 lift $ createContactsSndFeatureItems user' changedCts'
@@ -2892,7 +2900,7 @@ processChatCommand' vr = \case
                   UserProfileUpdateSummary
                     { updateSuccesses = length cts,
                       updateFailures = length errs,
-                      changedContacts = map (\ChangedProfileContact {ct'} -> ct') changedCts'
+                      changedContacts = map (\ChangedProfileContact {ct'} -> ct') $ L.toList changedCts
                     }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
@@ -3505,6 +3513,7 @@ data ChangedProfileContact = ChangedProfileContact
     mergedProfile' :: Profile,
     conn :: Connection
   }
+  deriving (Show)
 
 prepareGroupMsg :: User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> CM (MsgContainer, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
@@ -7634,7 +7643,9 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- liftIO compressBodies
+  liftIO $ putStrLn "deliverMessagesB"
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
+  liftIO $ putStrLn $ "deliverMessagesB sent: " <> show sent
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
