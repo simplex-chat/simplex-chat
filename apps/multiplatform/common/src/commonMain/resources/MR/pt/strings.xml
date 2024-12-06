@@ -760,7 +760,6 @@
     <string name="group_members_n">%s, %s e %d membros</string>
     <string name="add_contact_or_create_group">Iniciar nova conversa</string>
     <string name="la_mode_system">Sistema</string>
-    <string name="stop_chat_to_enable_database_actions">Parar conversa para habilitar ações do banco de dados</string>
     <string name="group_invitation_tap_to_join">Toque para participar</string>
     <string name="rcv_group_event_3_members_connected">%s, %s e %s conectado</string>
     <string name="network_option_tcp_connection_timeout">Tempo esgotado da conexão TCP</string>

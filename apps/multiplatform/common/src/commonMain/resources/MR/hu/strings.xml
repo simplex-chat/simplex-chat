@@ -922,7 +922,6 @@
     <string name="only_your_contact_can_make_calls">Csak az ismerőse tud hívást indítani.</string>
     <string name="settings_section_title_themes">TÉMÁK</string>
     <string name="videos_limit_title">Túl sok videó!</string>
-    <string name="stop_chat_to_enable_database_actions">Csevegési szolgáltatás megállítása az adatbázis műveletek elvégzéséhez.</string>
     <string name="welcome">Üdvözöljük!</string>
     <string name="v5_1_self_destruct_passcode">Önmegsemmisítési jelkód</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(beolvasás, vagy beillesztés a vágólapról)</string>

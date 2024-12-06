@@ -666,7 +666,6 @@
     <string name="self_destruct_passcode">Itsetuhoutuva pääsykoodi</string>
     <string name="restart_the_app_to_use_imported_chat_database">Käynnistä sovellus uudelleen käyttääksesi tuotua keskustelutietokantaa.</string>
     <string name="old_database_archive">Vanha tietokanta-arkisto</string>
-    <string name="stop_chat_to_enable_database_actions">Pysäytä keskustelu, jotta tietokantatoiminnot voidaan ottaa käyttöön.</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Luo uusi keskusteluprofiili käynnistämällä sovellus uudelleen.</string>
     <string name="messages_section_title">Viestit</string>
     <string name="chat_item_ttl_none">ei koskaan</string>

@@ -617,7 +617,6 @@
     <string name="error_importing_database">Erreur lors de l\'importation de la base de données du chat</string>
     <string name="chat_database_imported">Base de données du chat importée</string>
     <string name="delete_chat_profile_question">Supprimer le profil du chat \?</string>
-    <string name="stop_chat_to_enable_database_actions">Arrêter le chat pour agir sur la base de données.</string>
     <string name="delete_files_and_media_question">Supprimer les fichiers et médias \?</string>
     <string name="delete_files_and_media_desc">Cette action ne peut être annulée - tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</string>
     <string name="no_received_app_files">Aucun fichier reçu ou envoyé</string>

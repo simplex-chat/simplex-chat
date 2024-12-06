@@ -799,7 +799,6 @@
     <string name="prohibit_direct_messages">禁止向成员发送私信。</string>
     <string name="protect_app_screen">保护应用程序屏幕</string>
     <string name="settings_section_title_themes">主题</string>
-    <string name="stop_chat_to_enable_database_actions">停止聊天以启用数据库操作。</string>
     <string name="chat_item_ttl_seconds">%s 秒</string>
     <string name="alert_message_no_group">该群已不存在。</string>
     <string name="group_invitation_tap_to_join">点击加入</string>

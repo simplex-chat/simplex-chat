@@ -1049,7 +1049,6 @@
     <string name="stop_sharing_address">إيقاف مشاركة العنوان؟</string>
     <string name="stop_sharing">إيقاف المشاركة</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">أوقف الدردشة لتصدير أو استيراد أو حذف قاعدة بيانات الدردشة. لن تتمكّن من استلام الرسائل وإرسالها أثناء إيقاف الدردشة.</string>
-    <string name="stop_chat_to_enable_database_actions">أوقف الدردشة لتمكين إجراءات قاعدة البيانات.</string>
     <string name="chat_item_ttl_seconds">%s ثانية/ثواني</string>
     <string name="callstate_starting">يبدأ…</string>
     <string name="auth_simplex_lock_turned_on">تم تشغيل القفل SimpleX</string>

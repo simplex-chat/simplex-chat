@@ -733,7 +733,6 @@
     <string name="share_invitation_link">Compartir enlace de un uso</string>
     <string name="update_network_session_mode_question">¿Actualizar el modo de aislamiento de transporte\?</string>
     <string name="icon_descr_speaker_on">Altavoz activado</string>
-    <string name="stop_chat_to_enable_database_actions">Para habilitar las acciones sobre la base de datos, debes parar SimpleX</string>
     <string name="connection_you_accepted_will_be_cancelled">¡La conexión que has aceptado se cancelará!</string>
     <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para conocer más</string>
     <string name="moderate_message_will_be_marked_warning">El mensaje será marcado como moderado para todos los miembros.</string>

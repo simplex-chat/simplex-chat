@@ -662,7 +662,6 @@
     <string name="icon_descr_speaker_off">スピーカーオフ</string>
     <string name="your_chat_database">あなたのチャットデータベース</string>
     <string name="stop_chat_confirmation">停止</string>
-    <string name="stop_chat_to_enable_database_actions">データベース操作をするにはチャットを停止する必要があります。</string>
     <string name="simplex_link_contact">SimpleX連絡先アドレス</string>
     <string name="simplex_link_invitation">SimpleX使い捨て招待リンク</string>
     <string name="description_via_contact_address_link">連絡先アドレスリンク経由</string>

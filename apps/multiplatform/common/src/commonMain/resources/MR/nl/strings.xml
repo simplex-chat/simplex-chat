@@ -740,7 +740,6 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Start de app opnieuw om een nieuw chatprofiel aan te maken.</string>
     <string name="you_must_use_the_most_recent_version_of_database">U mag ALLEEN de meest recente versie van uw chat-database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</string>
     <string name="restart_the_app_to_use_imported_chat_database">Start de app opnieuw om de geïmporteerde chat database te gebruiken.</string>
-    <string name="stop_chat_to_enable_database_actions">Stop de chat om database acties mogelijk te maken.</string>
     <string name="delete_files_and_media_desc">Deze actie kan niet ongedaan worden gemaakt, alle ontvangen en verzonden bestanden en media worden verwijderd. Foto\'s met een lage resolutie blijven behouden.</string>
     <string name="remove_passphrase_from_keychain">Wachtwoord verwijderen uit Keychain\?</string>
     <string name="remove_passphrase">Verwijderen</string>

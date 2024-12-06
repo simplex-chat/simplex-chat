@@ -899,7 +899,6 @@
     <string name="enable_lock">Увімкнути блокування</string>
     <string name="passcode_not_changed">Пароль не змінено!</string>
     <string name="change_lock_mode">Змінити режим блокування</string>
-    <string name="stop_chat_to_enable_database_actions">Зупиніть чат, щоб увімкнути дії з базою даних.</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустіть додаток, щоб створити новий профіль чату.</string>
     <string name="delete_files_and_media_for_all_users">Видалити файли для всіх профілів чату</string>
     <string name="delete_files_and_media_question">Видалити файли та медіа?</string>
