@@ -67,7 +67,7 @@
     <string name="notifications_mode_service">دائِماً مُتاح</string>
     <string name="notifications_mode_off_desc">يمكن للتطبيق استلام الإشعارات فقط عند تشغيله، ولن يتم بدء تشغيل أي خدمة في الخلفية</string>
     <string name="allow_voice_messages_question">السماح بالرسائل الصوتية؟</string>
-    <string name="all_your_contacts_will_remain_connected">ستبقى جميع جهات الاتصال الخاصة بك متصلة.</string>
+    <string name="all_your_contacts_will_remain_connected">ستبقى جميع جهات اتصالك متصلة.</string>
     <string name="always_use_relay">استخدم التتابع دائمًا</string>
     <string name="full_backup">النسخ الاحتياطي لبيانات التطبيق</string>
     <string name="all_app_data_will_be_cleared">حُذفت جميع بيانات التطبيق.</string>
@@ -76,8 +76,8 @@
     <string name="learn_more_about_address">حول عنوان SimpleX</string>
     <string name="app_version_code">بناء التطبيق: %s</string>
     <string name="appearance_settings">المظهر</string>
-    <string name="add_address_to_your_profile">أضف عنوانًا إلى ملف التعريف الخاص بك ، حتى تتمكن جهات الاتصال الخاصة بك من مشاركته مع أشخاص آخرين. سيتم إرسال تحديث الملف الشخصي إلى جهات الاتصال الخاصة بك.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">ستبقى جميع جهات الاتصال الخاصة بك متصلة. سيتم إرسال تحديث الملف الشخصي إلى جهات الاتصال الخاصة بك.</string>
+    <string name="add_address_to_your_profile">أضف عنوانًا إلى ملف تعريفك، حتى تتمكن جهات اتصالك من مشاركته مع أشخاص آخرين. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">ستبقى جميع جهات اتصالك متصلة. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
     <string name="settings_section_title_icon">رمز التطبيق</string>
     <string name="address_section_title">عنوان</string>
     <string name="allow_your_contacts_irreversibly_delete">اسمح لجهات اتصالك بحذف الرسائل المرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
@@ -882,7 +882,7 @@
     <string name="v4_4_live_messages_desc">يرى المستلمون التحديثات أثناء كتابتها.</string>
     <string name="feature_received_prohibited">استلمت، ممنوع</string>
     <string name="save_servers_button">حفظ</string>
-    <string name="profile_update_will_be_sent_to_contacts">سيتم إرسال تحديث الملف الشخصي إلى جهات الاتصال الخاصة بك.</string>
+    <string name="profile_update_will_be_sent_to_contacts">سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
     <string name="save_and_notify_contacts">حفظ وإشعار جهات الاتصال</string>
     <string name="save_and_update_group_profile">حفظ وتحديث ملف تعريف المجموعة</string>
     <string name="network_option_ping_count">عدد البينج</string>
@@ -1830,8 +1830,7 @@
 \nآخر رسالة تم استلامها: %2$s</string>
     <string name="info_row_debug_delivery">تسليم التصحيح</string>
     <string name="message_queue_info">معلومات قائمة انتظار الرسائل</string>
-    <string name="v5_8_private_routing_descr">احمِ عنوان IP الخاص بك من مُرحلات المُراسلة التي اختارتها جهات الاتصال الخاصة بك.
-\nفعّل في إعدادات *الشبكة والخوادم*.</string>
+    <string name="v5_8_private_routing_descr">احمِ عنوان IP الخاص بك من مُرحلات المُراسلة التي اختارتها جهات اتصالك. \nفعّل في إعدادات *الشبكة والخوادم*.</string>
     <string name="v5_8_chat_themes">سمات دردشة جديدة</string>
     <string name="error_initializing_web_view">حدث خطأ أثناء تهيئة WebView. حدّث نظامك إلى الإصدار الجديد. يُرجى التواصل بالمطورين.
 \nError: %s</string>
@@ -2183,7 +2182,7 @@
     <string name="operator_conditions_failed_to_load">لا يمكن تحميل نص الشروط الحالية، يمكنك مراجعة الشروط عبر هذا الرابط:</string>
     <string name="error_accepting_operator_conditions">خطأ في قبول الشروط</string>
     <string name="failed_to_save_servers">خطأ في حفظ الخوادم</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">على سبيل المثال، إذا تلقى أحد جهات الاتصال الخاصة بك رسائل عبر خادم SimpleX Chat، فسوف يقوم تطبيقك بتسليمها عبر خادم Flux.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">على سبيل المثال، إذا تلقى أحد جهات اتصالك رسائل عبر خادم SimpleX Chat، فسوف يقوم تطبيقك بتسليمها عبر خادم Flux.</string>
     <string name="no_message_servers_configured_for_private_routing">لا يوجد خوادم لتوجيه الرسائل الخاصة.</string>
     <string name="no_message_servers_configured">لا يوجد خوادم رسائل.</string>
     <string name="no_media_servers_configured_for_private_routing">لا يوجد خوادم لاستقبال الملفات.</string>
