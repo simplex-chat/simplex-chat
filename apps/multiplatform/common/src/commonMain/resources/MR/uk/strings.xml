@@ -2246,4 +2246,5 @@
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Коли увімкнено більше ніж одного оператора, жоден з них не має метаданих, щоб дізнатися, хто спілкується з ким.</string>
     <string name="display_name_accepted_invitation">прийнято запрошення</string>
     <string name="display_name_requested_to_connect">запит на підключення</string>
+    <string name="onboarding_network_about_operators">Про операторів</string>
 </resources>
