@@ -94,9 +94,14 @@ struct NetworkAndServers: View {
                     }
 
                     NavigationLink {
-                        AdvancedNetworkSettings()
-                            .navigationTitle("Advanced settings")
-                            .modifier(ThemedBackground(grouped: true))
+                        AdvancedNetworkSettings(
+                            currentNetCfg: $ss.advancedNetworkSettings.currentNetCfg,
+                            netCfg: $ss.advancedNetworkSettings.netCfg,
+                            currentNetProxy: $ss.advancedNetworkSettings.currentNetProxy,
+                            netProxy: $ss.advancedNetworkSettings.netProxy
+                        )
+                        .navigationTitle("Advanced settings")
+                        .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Advanced network settings")
                     }
@@ -334,6 +339,13 @@ func serversCanBeSaved(
     _ serverErrors: [UserServersError]
 ) -> Bool {
     return userServers != currUserServers && serverErrors.isEmpty
+}
+
+func advancedNetworkSettingsCanBeSaved(
+    _ config: AdvancedNetworkSettingsConfig
+) -> Bool {
+    let useNetProxy = config.netCfg.socksProxy != nil
+    return (config.currentNetCfg != config.netCfg || config.currentNetProxy != config.netProxy) && (useNetProxy ? config.netProxy.valid : true)
 }
 
 struct ServersErrorView: View {
