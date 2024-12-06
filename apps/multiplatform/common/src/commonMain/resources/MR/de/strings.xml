@@ -2291,4 +2291,13 @@
     <string name="operator_conditions_failed_to_load">Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:</string>
     <string name="remote_hosts_section">Ferngesteuerte Mobiltelefone</string>
     <string name="chat_archive">Oder importieren Sie eine Archiv-Datei</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Hinweis für Geräte von Xiaomi</b>: Bitte aktivieren Sie in den System-Einstellungen die Option "Autostart", damit Benachrichtigungen funktionieren.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Alle Nachrichten und Dateien werden <b>Ende-zu-Ende-verschlüsselt</b> versendet. In Direktnachrichten sogar mit Post-Quantum-Security.]]></string>
+    <string name="button_add_team_members">Team-Mitglieder aufnehmen</string>
+    <string name="button_add_friends">Freunde aufnehmen</string>
+    <string name="display_name_accepted_invitation">Akzeptierte Einladung</string>
+    <string name="business_address">Geschäftliche Adresse</string>
+    <string name="v6_2_business_chats">Geschäftliche Chats</string>
+    <string name="add_your_team_members_to_conversations">Nehmen Sie Team-Mitglieder in Ihre Unterhaltungen auf.</string>
+    <string name="onboarding_notifications_mode_service_desc_short">Die App läuft immer im Hintergrund ab</string>
 </resources>
