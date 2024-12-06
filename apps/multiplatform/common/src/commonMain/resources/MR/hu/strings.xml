@@ -15,10 +15,10 @@
     <string name="send_disappearing_message_30_seconds">30 másodperc</string>
     <string name="one_time_link_short">Egyszer használható meghívó-hivatkozás</string>
     <string name="contact_wants_to_connect_via_call">%1$s szeretne kapcsolatba lépni Önnel ezen keresztül:</string>
-    <string name="about_simplex_chat">A SimpleX Chatről</string>
+    <string name="about_simplex_chat">A SimpleX Chat névjegye</string>
     <string name="chat_item_ttl_day">1 nap</string>
     <string name="abort_switch_receiving_address">Címváltoztatás megszakítása</string>
-    <string name="about_simplex">A SimpleXről</string>
+    <string name="about_simplex">A SimpleX névjegye</string>
     <string name="color_primary">Kiemelés</string>
     <string name="callstatus_accepted">fogadott hívás</string>
     <string name="network_enable_socks_info">Hozzáférés a kiszolgálókhoz SOCKS proxyn keresztül a(z) %d porton? A proxyt el kell indítani, mielőtt engedélyezné ezt az opciót.</string>
