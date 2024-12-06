@@ -71,6 +71,8 @@
   <string name="connection_local_display_name">connection %1$d</string>
   <string name="display_name_connection_established">connection established</string>
   <string name="display_name_invited_to_connect">invited to connect</string>
+  <string name="display_name_requested_to_connect">requested to connect</string>
+  <string name="display_name_accepted_invitation">accepted invitation</string>
   <string name="display_name_connecting">connecting…</string>
   <string name="description_you_shared_one_time_link">you shared one-time link</string>
   <string name="description_you_shared_one_time_link_incognito">you shared one-time link incognito</string>
