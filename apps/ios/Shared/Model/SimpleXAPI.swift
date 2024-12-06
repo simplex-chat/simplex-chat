@@ -519,7 +519,14 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r
 }
 
-func getServerOperators() throws -> ServerOperatorConditions {
+func getServerOperators() async throws -> ServerOperatorConditions {
+    let r = await chatSendCmd(.apiGetServerOperators)
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
+    logger.error("getServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func getServerOperatorsSync() throws -> ServerOperatorConditions {
     let r = chatSendCmdSync(.apiGetServerOperators)
     if case let .serverOperatorConditions(conditions) = r { return conditions }
     logger.error("getServerOperators error: \(String(describing: r))")
@@ -1599,7 +1606,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
-    m.conditions = try getServerOperators()
+    m.conditions = try getServerOperatorsSync()
     if shouldImportAppSettingsDefault.get() {
         do {
             let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
