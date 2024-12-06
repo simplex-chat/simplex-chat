@@ -1882,8 +1882,7 @@
     <string name="message_queue_info">Информация об очереди сообщений</string>
     <string name="v5_8_persian_ui">Персидский интерфейс</string>
     <string name="protect_ip_address">Защитить IP адрес</string>
-    <string name="v5_8_private_routing_descr">Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.
-\nВключите в настройках Сеть и серверы.</string>
+    <string name="v5_8_private_routing_descr">Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами. \nВключите в настройках Сети и серверов.</string>
     <string name="network_smp_proxy_fallback_allow_description">Отправьте сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="network_smp_proxy_mode_private_routing">Конфиденциальная доставка</string>
     <string name="network_smp_proxy_mode_unknown_description">Использовать конфиденциальную доставку с неизвестными серверами.</string>
@@ -2265,7 +2264,7 @@
     <string name="how_it_helps_privacy">Как это улучшает конфиденциальность</string>
     <string name="onboarding_network_operators">Операторы серверов</string>
     <string name="onboarding_select_network_operators_to_use">Выберите операторов сети.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Вы можете настроить операторов в настройках Сеть и серверы.</string>
+    <string name="onboarding_network_operators_conditions_you_can_configure">Вы можете настроить операторов в настройках Сети и серверов.</string>
     <string name="onboarding_network_operators_continue">Продолжить</string>
     <string name="onboarding_network_operators_review_later">Посмотреть позже</string>
     <string name="onboarding_network_operators_update">Обновить</string>
@@ -2305,7 +2304,7 @@
     <string name="error_updating_server_title">Ошибка сохранения сервера</string>
     <string name="operator_use_for_messages_private_routing">Для доставки сообщений</string>
     <string name="operator_open_changes">Открыть изменения</string>
-    <string name="error_server_operator_changed">Оператор серверов изменен.</string>
+    <string name="error_server_operator_changed">Оператор сервера изменен.</string>
     <string name="error_server_protocol_changed">Протокол сервера изменен.</string>
     <string name="xftp_servers_per_user">Серверы для новых файлов Вашего текущего профиля</string>
     <string name="operator_use_for_messages_receiving">Для получения</string>
