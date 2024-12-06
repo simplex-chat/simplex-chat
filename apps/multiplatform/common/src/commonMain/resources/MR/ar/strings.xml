@@ -12,7 +12,7 @@
     <string name="about_simplex">عن SimpleX</string>
     <string name="above_then_preposition_continuation">أعلاه، ثم:</string>
     <string name="accept_call_on_lock_screen">اقبل</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل وملفاتك بشكل نهائي.</string>
     <string name="alert_message_no_group">هذه المجموعة لم تعد موجودة.</string>
     <string name="this_QR_code_is_not_a_link">رمز QR هذا ليس رابطًا!</string>
     <string name="next_generation_of_private_messaging">مستقبل المُراسلة</string>
@@ -450,7 +450,7 @@
     <string name="full_name__field">الاسم الكامل:</string>
     <string name="alert_message_group_invitation_expired">لم تعد دعوة المجموعة صالحة، تمت أُزيلت بواسطة المرسل.</string>
     <string name="group_link">رابط المجموعة</string>
-    <string name="file_will_be_received_when_contact_is_online">سيتم استلام الملف عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="file_will_be_received_when_contact_is_online">سيتم استلام الملف عندما تكون جهة اتصالك متصلة بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="group_full_name_field">الاسم الكامل للمجموعة:</string>
     <string name="simplex_link_mode_full">رابط كامل</string>
     <string name="choose_file">ملف</string>
@@ -461,7 +461,7 @@
     <string name="notification_preview_mode_hidden">مخفي</string>
     <string name="file_saved">حُفظ الملف</string>
     <string name="revoke_file__message">سيتم حذف الملف من الخوادم.</string>
-    <string name="file_will_be_received_when_contact_completes_uploading">سيتم استلام الملف عند اكتمال تحميل جهة الاتصال الخاصة بك.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">سيتم استلام الملف عندما يكتمل جهة اتصالك من رفعِها.</string>
     <string name="icon_descr_help">المساعدة</string>
     <string name="file_with_path">الملف: %s</string>
     <string name="fix_connection_confirm">إصلاح</string>
@@ -483,7 +483,7 @@
     <string name="import_database">استيراد قاعدة بيانات</string>
     <string name="custom_time_unit_hours">ساعات</string>
     <string name="edit_history">السجل</string>
-    <string name="image_will_be_received_when_contact_completes_uploading">سيتم استلام الصورة عند اكتمال تحميل جهة اتصالك.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">سيتم استلام الصورة عندما يكتمل جهة اتصالك من رفعِها.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[إذا لم تتمكن من الالتقاء شخصيًا، <b>اعرض رمز QR في مكالمة الفيديو</b>، أو شارك الرابط.]]></string>
     <string name="install_simplex_chat_for_terminal">ثبّت SimpleX Chat لطرفية</string>
     <string name="network_disable_socks_info">إذا قمت بالتأكيد، فستتمكن خوادم المراسلة من رؤية عنوان IP الخاص بك ومزود الخدمة الخاص بك - أي الخوادم التي تتصل بها.</string>
@@ -511,7 +511,7 @@
     <string name="description_via_one_time_link_incognito">التخفي عبر رابط لمرة واحدة</string>
     <string name="icon_descr_image_snd_complete">أرسلت صورة</string>
     <string name="image_descr">صورة</string>
-    <string name="image_will_be_received_when_contact_is_online">سيتم استلام الصورة عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="image_will_be_received_when_contact_is_online">سيتم استلام الصورة عندما تكون جهة اتصالك متصلة بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="image_saved">حُفظت الصورة في المعرض</string>
     <string name="gallery_image_button">صورة</string>
     <string name="if_you_cant_meet_in_person">إذا لم تتمكن من الالتقاء شخصيًا، اعرض رمز QR في مكالمة الفيديو، أو شارك الرابط.</string>
@@ -1054,7 +1054,7 @@
     <string name="show_developer_options">عرض خيارات المطور</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="error_smp_test_server_auth">يتطلب الخادم إذنًا لإنشاء قوائم انتظار، تحقق من كلمة المرور</string>
-    <string name="error_xftp_test_server_auth">يتطلب الخادم إذنًا للتحميل، تحقق من كلمة المرور</string>
+    <string name="error_xftp_test_server_auth">يتطلب الخادم إذنًا للرفع، تحقق من كلمة المرور</string>
     <string name="notification_preview_mode_contact_desc">عرض جهة الاتصال فقط</string>
     <string name="ntf_channel_calls">مكالمات SimpleX Chat</string>
     <string name="simplex_service_notification_title">خدمة SimpleX Chat</string>
@@ -1156,19 +1156,19 @@
     <string name="failed_to_create_user_duplicate_desc">لديك بالفعل ملف تعريف دردشة بنفس اسم العرض. الرجاء اختيار اسم آخر.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">أنت متصل بالفعل بـ%1$s.</string>
     <string name="waiting_for_video">في انتظار الفيديو</string>
-    <string name="video_will_be_received_when_contact_completes_uploading">سيتم استلام الفيديو عند اكتمال تحميل جهة اتصالك.</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">سيتم استلام الفيديو عند اكتمال رفع جهة اتصالك.</string>
     <string name="verify_security_code">تحقق من رمز الأمان</string>
     <string name="v4_3_voice_messages">رسائل صوتية</string>
     <string name="you_can_accept_or_reject_connection">عندما يطلب الأشخاص الاتصال، يمكنك قبوله أو رفضه.</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">سوف تكون متصلاً بالمجموعة عندما يكون جهاز مضيف المجموعة متصلاً بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">سوف تكون متصلاً عندما يتم قبول طلب الاتصال الخاص بك، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">سوف تكون متصلاً بالمجموعة عندما يكون جهاز مضيف المجموعة متصلاً بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">سوف تكون متصلاً عندما يتم قبول طلب اتصالك، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="using_simplex_chat_servers">تستخدم خوادم SimpleX Chat.</string>
     <string name="network_socks_toggle_use_socks_proxy">استخدم وكيل SOCKS</string>
     <string name="network_use_onion_hosts">استخدم مضيفي onion.</string>
     <string name="network_enable_socks">استخدام وكيل SOCKS؟</string>
     <string name="network_use_onion_hosts_prefer">عندما تكون متاحة</string>
     <string name="your_contacts_will_remain_connected">ستبقى جهات اتصالك متصلة.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">لا نقوم بتخزين أي من جهات الاتصال أو الرسائل الخاصة بك (بمجرد تسليمها) على الخوادم.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">لا نقوم بتخزين أي من جهات اتصالك أو رسائلك (بمجرد تسليمها) على الخوادم.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">يمكنك استخدام تخفيض السعر لتنسيق الرسائل:</string>
     <string name="use_chat">استخدم الدردشة</string>
     <string name="settings_section_title_you">أنت</string>
@@ -1203,10 +1203,10 @@
     <string name="description_via_one_time_link">عبر رابط لمرة واحدة</string>
     <string name="video_call_no_encryption">مكالمة الفيديو ليست مُعمّاة بين الطريفين</string>
     <string name="snd_conn_event_switch_queue_phase_completed">غيّرتَ العنوان</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">سوف تكون متصلاً عندما يكون جهاز جهة الاتصال الخاصة بك متصلاً بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">سوف تكون متصلاً عندما يكون جهاز جهة اتصالك متصلاً بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="snd_group_event_user_left">غادرت</string>
     <string name="you_must_use_the_most_recent_version_of_database">يجب عليك استخدام أحدث إصدار من قاعدة بيانات الدردشة الخاصة بك على جهاز واحد فقط، وإلا فقد تتوقف عن تلقي الرسائل من بعض جهات الاتصال.</string>
-    <string name="video_will_be_received_when_contact_is_online">سيتم استلام الفيديو عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="video_will_be_received_when_contact_is_online">سيتم استلام الفيديو عندما تكون جهة اتصالك متصلة بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="you_can_share_this_address_with_your_contacts">يمكنك مشاركة هذا العنوان مع جهات اتصالك للسماح لهم بالاتصال بـ%s.</string>
     <string name="snd_group_event_member_deleted">أُزيلت %1$s</string>
     <string name="update_database">تحديث</string>
@@ -1296,7 +1296,7 @@
     <string name="voice_message_send_text">رسالة صوتية…</string>
     <string name="group_preview_you_are_invited">أنت مدعو إلى المجموعة</string>
     <string name="observer_cant_send_message_title">لا يمكنك إرسال رسائل!</string>
-    <string name="you_need_to_allow_to_send_voice">تحتاج إلى السماح لجهة الاتصال الخاصة بك بإرسال رسائل صوتية لتتمكن من إرسالها.</string>
+    <string name="you_need_to_allow_to_send_voice">تحتاج إلى السماح لجهة اتصالك بإرسال رسائل صوتية لتتمكن من إرسالها.</string>
     <string name="contact_sent_large_file">أرسلت جهة اتصالك ملفًا أكبر من الحجم الأقصى المعتمد حاليًا (%1$s).</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[يمكنك <font color="#0088ff">الاتصال بمطوري SimpleX Chat لطرح أي أسئلة وتلقي التحديثات</font>.]]></string>
     <string name="smp_servers_your_server">خادمك</string>
@@ -1621,7 +1621,7 @@
     <string name="v5_6_safer_groups_descr">يمكن للمشرفين حظر عضو للجميع.</string>
     <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
     <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">سيتم تعمية جميع جهات الاتصال والمحادثات والملفات الخاصة بك بشكل آمن وتحميلها في أجزاء إلى مُرحلات XFTP التي ضبطت.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">سيتم تعمية جميع جهات الاتصال والمحادثات والملفات الخاصة بك بشكل آمن ورفعها في أجزاء إلى مُرحلات XFTP التي ضُبطت.</string>
     <string name="migrate_to_device_apply_onion">طبّق</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>تحذير</b>: سيتم حذف الأرشيف.]]></string>
@@ -2113,7 +2113,7 @@
     <string name="for_chat_profile">لملف تعريف الدردشة %s:</string>
     <string name="no_media_servers_configured">لا يوجد وسائط أو خوادم ملفات.</string>
     <string name="no_media_servers_configured_for_sending">لا يوجد خوادم لإرسال الملفات.</string>
-    <string name="connection_error_quota_desc">لقد وصل الاتصال إلى الحد الأقصى من الرسائل غير المُسلمة، قد يكون جهة الاتصال الخاصة بك غير متصلة بالإنترنت.</string>
+    <string name="connection_error_quota_desc">لقد وصل الاتصال إلى الحد الأقصى من الرسائل غير المُسلمة، قد يكون جهة اتصالك غير متصلة بالإنترنت.</string>
     <string name="connection_error_quota">الرسائل غير المُسلَّمة</string>
     <string name="share_1_time_link_with_a_friend">شارك رابطًا لمرة واحدة مع صديق</string>
     <string name="connection_security">أمان الاتصال</string>
