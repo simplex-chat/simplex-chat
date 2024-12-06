@@ -711,7 +711,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Yhteyden muodostaminen palvelimeen... (virhe: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "yhdistää…";
 
 /* No comment provided by engineer. */
@@ -2526,7 +2526,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Tallenna tunnuslause Avainnippuun";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Tallenna asetukset?";
 
 /* No comment provided by engineer. */

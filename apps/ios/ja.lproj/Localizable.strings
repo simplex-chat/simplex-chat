@@ -828,7 +828,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "デスクトップに接続中";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "接続待ち…";
 
 /* No comment provided by engineer. */
@@ -2673,7 +2673,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "パスフレーズをキーチェーンに保存";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "この設定でよろしいですか？";
 
 /* No comment provided by engineer. */
