@@ -2242,4 +2242,5 @@
     <string name="onboarding_notifications_mode_off_desc_short">Geen achtergrondservice</string>
     <string name="only_chat_owners_can_change_prefs">Alleen chateigenaren kunnen voorkeuren wijzigen.</string>
     <string name="maximum_message_size_reached_non_text">Verklein de berichtgrootte of verwijder de media en verzend het bericht opnieuw.</string>
+    <string name="display_name_accepted_invitation">geaccepteerde uitnodiging</string>
 </resources>
