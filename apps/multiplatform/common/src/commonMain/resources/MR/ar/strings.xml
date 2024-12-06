@@ -30,7 +30,7 @@
     <string name="smp_servers_preset_add">أضِف خوادم مُعدة مسبقًا</string>
     <string name="smp_servers_add_to_another_device">أضِف إلى جهاز آخر</string>
     <string name="users_delete_all_chats_deleted">سيتم حذف جميع الدردشات والرسائل - لا يمكن التراجع عن هذا!</string>
-    <string name="network_enable_socks_info">الوصول إلى الخوادم عبر وكيل SOCKS على المنفذ %d؟ يجب بدء تشغيل الوكيل قبل تمكين هذا الخيار.</string>
+    <string name="network_enable_socks_info">الوصول إلى الخوادم عبر وكيل SOCKS على المنفذ %d؟ يجب بدء تشغيل الوكيل قبل تفعيل هذا الخيار.</string>
     <string name="smp_servers_add">أضِف خادم</string>
     <string name="network_settings">إعدادات الشبكة المتقدمة</string>
     <string name="all_group_members_will_remain_connected">سيبقى جميع أعضاء المجموعة على اتصال.</string>
@@ -135,7 +135,7 @@
     <string name="app_passcode_replaced_with_self_destruct">يتم استبدال رمز مرور التطبيق برمز مرور التدمير الذاتي.</string>
     <string name="v4_6_audio_video_calls">مكالمات الصوت والفيديو</string>
     <string name="callstatus_error">خطأ في الاتصال</string>
-    <string name="turning_off_service_and_periodic">تحسين البطارية نشط ، مما يؤدي إلى إيقاف تشغيل خدمة الخلفية والطلبات الدورية للرسائل الجديدة. يمكنك إعادة تمكينها عبر الإعدادات.</string>
+    <string name="turning_off_service_and_periodic">تحسين البطارية نشط، مما يؤدي إلى إيقاف تشغيل خدمة الخلفية والطلبات الدورية للرسائل الجديدة. يمكنك إعادة تفعيلها عبر الإعدادات.</string>
     <string name="database_initialization_error_title">لا يمكن تهيئة قاعدة البيانات</string>
     <string name="attach">إرفاق</string>
     <string name="icon_descr_asked_to_receive">طلب لاستلام الصورة</string>
@@ -423,7 +423,7 @@
     <string name="snd_group_event_group_profile_updated">حُدّث ملف تعريف المجموعة</string>
     <string name="group_display_name_field">أدخل اسم المجموعة:</string>
     <string name="group_members_can_send_voice">يمكن لأعضاء المجموعة إرسال رسائل صوتية.</string>
-    <string name="files_are_prohibited_in_group">الملفات والوسائط ممنوعة في هذه المجموعة.</string>
+    <string name="files_are_prohibited_in_group">الملفات والوسائط ممنوعة.</string>
     <string name="v4_6_group_welcome_message">رسالة ترحيب المجموعة</string>
     <string name="v4_6_reduced_battery_usage">مزيد من تقليل استخدام البطارية</string>
     <string name="info_row_group">المجموعة</string>
@@ -526,7 +526,7 @@
     <string name="onboarding_notifications_mode_service">فوري</string>
     <string name="host_verb">المضيف</string>
     <string name="hide_notification">إخفاء</string>
-    <string name="turn_off_battery_optimization"><![CDATA[من أجل استخدامها، <b>يُرجى السماح لSimpleX للتشغيل في الخلفية</b> في مربع الحوار التالي. وإلا، سيتم تعطيل الإشعارات.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[<b>السماح بذلك</b> في مربع الحوار التالي لتلقي الإشعارات على الفور.]]></string>
     <string name="in_reply_to">ردًا على</string>
     <string name="icon_descr_instant_notifications">إشعارات فورية</string>
     <string name="enter_one_ICE_server_per_line">خوادم ICE (واحد لكل سطر)</string>
@@ -534,7 +534,7 @@
     <string name="hide_profile">إخفاء ملف التعريف</string>
     <string name="how_to_use_markdown">كيفية استخدام ماركداون</string>
     <string name="if_you_enter_self_destruct_code">إذا أدخلت رمز مرور التدمير الذاتي أثناء فتح التطبيق:</string>
-    <string name="onboarding_notifications_mode_subtitle">يمكن تغييره لاحقًا عبر الإعدادات.</string>
+    <string name="onboarding_notifications_mode_subtitle">كيف يؤثر على البطارية</string>
     <string name="join_group_button">انضمام</string>
     <string name="theme_light">فاتح</string>
     <string name="display_name_invited_to_connect">مدعو للتواصل</string>
@@ -613,7 +613,7 @@
     <string name="icon_descr_edited">حُرر</string>
     <string name="downgrade_and_open_chat">الرجوع إلى إصدار سابق وفتح الدردشة</string>
     <string name="direct_messages">رسائل مباشرة</string>
-    <string name="disappearing_messages_are_prohibited">الرسائل المختفية ممنوعة في هذه المجموعة.</string>
+    <string name="disappearing_messages_are_prohibited">الرسائل المختفية ممنوعة.</string>
     <string name="button_edit_group_profile">تحرير ملف تعريف المجموعة</string>
     <string name="dont_show_again">لا تُظهر مرة أخرى</string>
     <string name="settings_section_title_device">الجهاز</string>
@@ -1016,7 +1016,7 @@
     <string name="smp_servers">خوادم SMP</string>
     <string name="share_image">مشاركة الوسائط…</string>
     <string name="ntf_channel_messages">رسائل SimpleX Chat</string>
-    <string name="lock_not_enabled">لم يتم تمكين قفل SimpleX!</string>
+    <string name="lock_not_enabled">قفل SimpleX غير مفعّل!</string>
     <string name="auth_stop_chat">إيقاف الدردشة</string>
     <string name="stop_rcv_file__title">التوقف عن استلام الملف؟</string>
     <string name="share_file">مشاركة الملف…</string>
@@ -1085,13 +1085,12 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">لن تتمكن جهة الاتصال التي شاركت هذا الرابط معها من الاتصال!</string>
     <string name="this_text_is_available_in_settings">هذا النص متاح في الإعدادات</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">لحماية الخصوصية، بدلاً من معرفات المستخدم التي تستخدمها جميع الأنظمة الأساسية الأخرى, يحتوي SimpleX على معرفات لقوائم انتظار الرسائل، منفصلة لكل جهة من جهات اتصالك.</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">لحماية معلوماتك، قم بتشغيل قفل SimpleX
-\nسيُطلب منك إكمال المصادقة قبل تمكين هذه الميزة.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">لحماية معلوماتك، فعّل قفل SimpleX \nسيُطلب منك إكمال المصادقة قبل تفعيل هذه الميزة.</string>
     <string name="network_session_mode_transport_isolation">عزل النقل</string>
     <string name="v4_4_french_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
     <string name="v4_6_audio_video_calls_descr">دعم البلوتوث وتحسينات أخرى.</string>
     <string name="v5_0_polish_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[للحفاظ على خصوصيتك، بدلاً من دفع الإشعارات، يحتوي التطبيق على <b>خدمة SimpleX تعمل في الخلفية</b> – يستخدم نسبة قليلة من البطارية يوميًا.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[لتحسين الخصوصية، <b>يتم تشغيل SimpleX في الخلفية</b> بدلاً من استخدام إشعارات push.]]></string>
     <string name="tap_to_start_new_chat">انقر لبدء محادثة جديدة</string>
     <string name="to_share_with_your_contact">(للمشاركة مع جهة اتصالك)</string>
     <string name="to_connect_via_link_title">للتواصل عبر الرابط</string>
@@ -1274,7 +1273,7 @@
 \n- الوقت المخصص لتختفي.
 \n- تحرير التاريخ.</string>
     <string name="you_can_enable_delivery_receipts_later">يمكنك تفعيلة لاحقًا عبر الإعدادات</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">يمكنك تمكينها لاحقًا عبر إعدادات الخصوصية والأمان للتطبيق.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">يمكنك تفعيلها لاحقًا عبر إعدادات الخصوصية والأمان للتطبيق.</string>
     <string name="description_via_group_link">عبر رابط المجموعة</string>
     <string name="description_you_shared_one_time_link_incognito">لقد شاركت رابط لمرة واحدة متخفي</string>
     <string name="simplex_link_mode_browser">عبر المتصفح</string>
@@ -2186,7 +2185,7 @@
     <string name="operator_conditions_failed_to_load">لا يمكن تحميل نص الشروط الحالية، يمكنك مراجعة الشروط عبر هذا الرابط:</string>
     <string name="error_accepting_operator_conditions">خطأ في قبول الشروط</string>
     <string name="failed_to_save_servers">خطأ في حفظ الخوادم</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">على سبيل المثال، إذا تلقيت رسائل عبر خادم SimpleX Chat، فسيستخدم التطبيق أحد خوادم Flux للتوجيه الخاص.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">على سبيل المثال، إذا تلقى أحد جهات الاتصال الخاصة بك رسائل عبر خادم SimpleX Chat، فسوف يقوم تطبيقك بتسليمها عبر خادم Flux.</string>
     <string name="no_message_servers_configured_for_private_routing">لا يوجد خوادم لتوجيه الرسائل الخاصة.</string>
     <string name="no_message_servers_configured">لا يوجد خوادم رسائل.</string>
     <string name="no_media_servers_configured_for_private_routing">لا يوجد خوادم لاستقبال الملفات.</string>
@@ -2212,4 +2211,17 @@
     <string name="button_add_team_members">أضف أعضاء الفريق</string>
     <string name="button_add_friends">أضف أصدقاء</string>
     <string name="add_your_team_members_to_conversations">أضف أعضاء فريقك إلى المحادثات.</string>
+    <string name="direct_messages_are_prohibited_in_chat">يُحظر إرسال الرسائل المباشرة بين الأعضاء في هذه الدردشة.</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>أجهزة Xiaomi</b>: يُرجى تفعيل التشغيل التلقائي (Autostart) في إعدادات النظام لكي تعمل الإشعارات.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[يتم إرسال جميع الرسائل والملفات <b>مُعمَّاة بين الطرفين</b>، مع أمان ما بعد الكم في الرسائل المباشرة.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">تحقق من الرسائل كل 10 دقائق</string>
+    <string name="direct_messages_are_prohibited">يُمنع إرسال الرسائل المباشرة بين الأعضاء.</string>
+    <string name="info_row_chat">الدردشة</string>
+    <string name="how_it_helps_privacy">كيف يساعد على الخصوصية</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">سيتم حذف الدردشة لجميع الأعضاء - لا يمكن التراجع عن هذا!</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">سيتم حذف الدردشة لديك - لا يمكن التراجع عن هذا!</string>
+    <string name="button_delete_chat">احذف الدردشة</string>
+    <string name="connect_plan_chat_already_exists">الدردشة موجودة بالفعل!</string>
+    <string name="delete_chat_question">حذف الدردشة؟</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[لقد تم توصيلك بالفعل بـ <b>%1$s</b>.]]></string>
 </resources>
