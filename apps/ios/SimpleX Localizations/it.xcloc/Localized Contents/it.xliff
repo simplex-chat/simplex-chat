@@ -7029,9 +7029,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Scatta foto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
+      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve" approved="no">
         <source>Tap Create SimpleX address in the menu to create it later.</source>
-        <target>Tocca "Crea indirizzo SimpleX" nel menu per crearlo più tardi.</target>
+        <target state="translated">Tocca Crea indirizzo SimpleX nel menu per crearlo più tardi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
