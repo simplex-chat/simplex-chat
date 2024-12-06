@@ -1472,7 +1472,7 @@ updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} 
       )
     |]
     (ps, currentTs, userId, groupId)
-  pure (g :: GroupInfo) {groupProfile = p {groupPreferences = Just ps}}
+  pure (g :: GroupInfo) {groupProfile = p {groupPreferences = Just ps}, fullGroupPreferences = mergeGroupPreferences $ Just ps}
 
 updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
 updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, image = img} = do
