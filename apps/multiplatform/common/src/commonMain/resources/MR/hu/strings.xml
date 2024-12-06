@@ -2115,7 +2115,7 @@
     <string name="onboarding_network_operators_review_later">Felülvizsgálat később</string>
     <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a beállításokon keresztül konfigurálhatja.</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">A feltételek 30 nap elteltével lesznek elfogadva az engedélyezett üzemeltetők számára.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Az üzemeltetőket a „Hálózat és kiszolgálók” beállításaban konfigurálhatja.</string>
+    <string name="onboarding_network_operators_conditions_you_can_configure">Az üzemeltetőket a „Hálózat és kiszolgálók” menüben konfigurálhatja.</string>
     <string name="onboarding_network_operators_update">Frissítés</string>
     <string name="onboarding_network_operators_continue">Folytatás</string>
     <string name="operator_review_conditions">Feltételek felülvizsgálata</string>
@@ -2133,14 +2133,14 @@
     <string name="use_servers_of_operator_x">%s használata</string>
     <string name="operator_conditions_failed_to_load">A jelenlegi feltételek szövegét nem lehetett betölteni, a feltételeket ezen a hivatkozáson keresztül vizsgálhatja felül:</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[A feltételek már el lettek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
-    <string name="operator_same_conditions_will_be_applied"><![CDATA[Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: <b>%s</b>.]]></string>
-    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k)re is: <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető számára: <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Ezek a feltételek lesznek elfogadva a következő számára is: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[A feltételek el lesznek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Ezek a feltételek lesznek elfogadva a következő számára is: <b>%s</b>.]]></string>
     <string name="accept_conditions">Feltételek elfogadása</string>
     <string name="operator_conditions_of_use">Használati feltételek</string>
-    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[A(z) <b>%s</b> kiszolgálóinak használatához fogadja el a használati feltételeket.]]></string>
+    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[A(z) <b>%s</b> kiszolgálók használatához fogadja el a használati feltételeket.]]></string>
     <string name="operator_use_for_messages">Használat az üzenetekhez</string>
     <string name="operator_use_for_messages_receiving">A fogadáshoz</string>
     <string name="operator_use_for_messages_private_routing">A privát útválasztáshoz</string>
@@ -2204,5 +2204,5 @@
     <string name="maximum_message_size_title">Az üzenet túl nagy!</string>
     <string name="maximum_message_size_reached_non_text">Csökkentse az üzenet méretét vagy távolítsa el a médiát, és küldje el újra.</string>
     <string name="direct_messages_are_prohibited_in_chat">A tagok közötti közvetlen üzenetek le vannak tiltva ebben a csevegésben.</string>
-    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Ha egynél több üzemeltető van engedélyezve, akkor egyikük sem rendelkezik olyan metaadatokkal, amelyekből megtudhatja, hogy ki kivel kommunikál.</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Amikor egynél több üzemeltető van engedélyezve, akkor egyik sem rendelkezik olyan metaadatokkal, amelyekből megtudható, hogy ki kivel kommunikál.</string>
 </resources>
