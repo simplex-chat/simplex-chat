@@ -62,7 +62,6 @@ struct ChooseServerOperators: View {
     var onboarding: Bool
     @State private var serverOperators: [ServerOperator] = []
     @State private var selectedOperatorIds = Set<Int64>()
-    @State private var reviewConditionsNavLinkActive = false
     @State private var sheetItem: ChooseServerOperatorsSheet? = nil
     @State private var notificationsModeNavLinkActive = false
     @State private var justOpened = true
@@ -79,7 +78,7 @@ struct ChooseServerOperators: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                     
                     if onboarding {
-                        title.padding(.top, 50)
+                        title.padding(.top, 25)
                     } else {
                         title
                     }
@@ -92,11 +91,14 @@ struct ChooseServerOperators: View {
                     ForEach(serverOperators) { srvOperator in
                         operatorCheckView(srvOperator)
                     }
-                    Text("You can configure servers via settings.")
-                        .font(.footnote)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal, 32)
+                    VStack {
+                        Text("SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.").padding(.bottom, 8)
+                        Text("You can configure servers via settings.")
+                    }
+                    .font(.footnote)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 16)
                     
                     Spacer()
                     
@@ -166,8 +168,9 @@ struct ChooseServerOperators: View {
                     .modifier(ThemedBackground(grouped: true))
                 }
             }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .frame(maxHeight: .infinity)
+        .frame(maxHeight: .infinity, alignment: .top)
         .padding(onboarding ? 25 : 16)
     }
 
@@ -214,23 +217,15 @@ struct ChooseServerOperators: View {
     }
 
     private func reviewConditionsButton() -> some View {
-        ZStack {
-            Button {
-                reviewConditionsNavLinkActive = true
-            } label: {
-                Text("Review conditions")
-            }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
-            .disabled(selectedOperatorIds.isEmpty)
-
-            NavigationLink(isActive: $reviewConditionsNavLinkActive) {
-                reviewConditionsDestinationView()
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
+        NavigationLink("Review conditions") {
+            reviewConditionsView()
+                .navigationTitle("Conditions of use")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
+                .modifier(ThemedBackground(grouped: true))
         }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: selectedOperatorIds.isEmpty))
+        .disabled(selectedOperatorIds.isEmpty)
     }
 
     private func setOperatorsButton() -> some View {
@@ -309,20 +304,12 @@ struct ChooseServerOperators: View {
             .modifier(ThemedBackground())
     }
 
-    private func reviewConditionsDestinationView() -> some View {
-        reviewConditionsView()
-            .navigationTitle("Conditions of use")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
-            .modifier(ThemedBackground(grouped: true))
-    }
-
     @ViewBuilder private func reviewConditionsView() -> some View {
         let operatorsWithConditionsAccepted = ChatModel.shared.conditions.serverOperators.filter { $0.conditionsAcceptance.conditionsAccepted }
         let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
         VStack(alignment: .leading, spacing: 20) {
             if !operatorsWithConditionsAccepted.isEmpty {
-                Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
+                Text("Conditions are already accepted for these operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
                 Text("The same conditions will apply to operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
             } else {
                 Text("Conditions will be accepted for operator(s): **\(acceptForOperators.map { $0.legalName_ }.joined(separator: ", "))**.")
@@ -409,26 +396,53 @@ struct ChooseServerOperators: View {
 let operatorsPostLink = URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html")!
 
 struct ChooseServerOperatorsInfoView: View {
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    @EnvironmentObject var theme: AppTheme
+
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Server operators")
-                .font(.largeTitle)
-                .bold()
-                .padding(.vertical)
-            ScrollView {
-                VStack(alignment: .leading) {
-                    Group {
-                        Text("The app protects your privacy by using different operators in each conversation.")
-                        Text("When more than one operator is enabled, none of them has metadata to learn who communicates with whom.")
-                        Text("For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.")
+        NavigationView {
+            List {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("The app protects your privacy by using different operators in each conversation.")
+                    Text("When more than one operator is enabled, none of them has metadata to learn who communicates with whom.")
+                    Text("For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.")
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .padding(.top)
+
+                Section {
+                    ForEach(ChatModel.shared.conditions.serverOperators) { op in
+                        operatorInfoNavLinkView(op)
                     }
-                    .padding(.bottom)
+                } header: {
+                    Text("About operators")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
+            .navigationTitle("Server operators")
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .modifier(ThemedBackground())
+    }
+
+    private func operatorInfoNavLinkView(_ op: ServerOperator) -> some View {
+        NavigationLink() {
+            OperatorInfoView(serverOperator: op)
+                .navigationBarTitle("Network operator")
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            HStack {
+                Image(op.logo(colorScheme))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                Text(op.tradeName)
+            }
+        }
     }
 }
 

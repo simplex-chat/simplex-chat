@@ -918,7 +918,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Свързване с настолно устройство";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "свързване…";
 
 /* No comment provided by engineer. */
@@ -3139,7 +3139,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Запази (и уведоми контактите)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Запази и уведоми контакта";
 
 /* No comment provided by engineer. */
@@ -3157,7 +3157,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Запази паролата в Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Запази настройките?";
 
 /* No comment provided by engineer. */

@@ -410,7 +410,7 @@ fun OperatorViewLayout(
 }
 
 @Composable
-private fun OperatorInfoView(serverOperator: ServerOperator) {
+fun OperatorInfoView(serverOperator: ServerOperator) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.operator_info_title))
 
@@ -427,23 +427,27 @@ private fun OperatorInfoView(serverOperator: ServerOperator) {
 
     SectionDividerSpaced(maxBottomPadding = false)
 
+    val uriHandler = LocalUriHandler.current
     SectionView {
       SectionItemView {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
           serverOperator.info.description.forEach { d ->
             Text(d)
           }
+          val website = serverOperator.info.website
+          Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(website) })
         }
       }
     }
 
-    SectionDividerSpaced()
-
-    SectionView(generalGetString(MR.strings.operator_website).uppercase()) {
-      SectionItemView {
-        val website = serverOperator.info.website
-        val uriHandler = LocalUriHandler.current
-        Text(website, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(website) })
+    val selfhost = serverOperator.info.selfhost
+    if (selfhost != null) {
+      SectionDividerSpaced(maxBottomPadding = false)
+      SectionView {
+        SectionItemView {
+          val (text, link) = selfhost
+          Text(text, color = MaterialTheme.colors.primary, modifier = Modifier.clickable { uriHandler.openUriCatching(link) })
+        }
       }
     }
   }

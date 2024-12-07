@@ -15,7 +15,7 @@ struct AddGroupMembersView: View {
     var groupInfo: GroupInfo
 
     var body: some View {
-        AddGroupMembersViewCommon(chat: chat, groupInfo: groupInfo, preferences: groupInfo.fullGroupPreferences, addedMembersCb: { _ in dismiss() })
+        AddGroupMembersViewCommon(chat: chat, groupInfo: groupInfo, addedMembersCb: { _ in dismiss() })
     }
 }
 
@@ -24,7 +24,6 @@ struct AddGroupMembersViewCommon: View {
     @EnvironmentObject var theme: AppTheme
     var chat: Chat
     @State var groupInfo: GroupInfo
-    @State var preferences: FullGroupPreferences
     var creatingGroup: Bool = false
     var showFooterCounter: Bool = true
     var addedMembersCb: ((Set<Int64>) -> Void)
@@ -79,7 +78,12 @@ struct AddGroupMembersViewCommon: View {
                     let count = selectedContacts.count
                     Section {
                         if creatingGroup {
-                            groupPreferencesButton($groupInfo, $preferences, true)
+                            GroupPreferencesButton(
+                                groupInfo: $groupInfo,
+                                preferences: groupInfo.fullGroupPreferences,
+                                currentPreferences: groupInfo.fullGroupPreferences,
+                                creatingGroup: true
+                            )
                         }
                         rolePicker()
                         inviteMembersButton()

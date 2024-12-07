@@ -577,6 +577,10 @@
         <target>Riguardo SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="About operators" xml:space="preserve">
+        <source>About operators</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
         <source>Accent</source>
         <target>Principale</target>
@@ -1612,8 +1616,8 @@
         <target>Le condizioni sono state accettate per gli operatori: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions are already accepted for following operator(s): **%@**." xml:space="preserve">
-        <source>Conditions are already accepted for following operator(s): **%@**.</source>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
         <target>Le condizioni sono già state accettate per i seguenti operatori: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6051,7 +6055,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
         <target>Salva e avvisa il contatto</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
@@ -6086,7 +6090,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       <trans-unit id="Save preferences?" xml:space="preserve">
         <source>Save preferences?</source>
         <target>Salvare le preferenze?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save profile password" xml:space="preserve">
         <source>Save profile password</source>
@@ -6707,6 +6711,10 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       <trans-unit id="SimpleX Address" xml:space="preserve">
         <source>SimpleX Address</source>
         <target>Indirizzo SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+        <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -8541,6 +8549,10 @@ Ripetere la richiesta di connessione?</target>
         <target>chiamata accettata</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="accepted invitation" xml:space="preserve">
+        <source>accepted invitation</source>
+        <note>chat list item title</note>
+      </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
         <source>admin</source>
         <target>amministratore</target>
@@ -8729,7 +8741,7 @@ Ripetere la richiesta di connessione?</target>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>in connessione…</target>
-        <note>chat list item title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
@@ -9222,6 +9234,10 @@ Ripetere la richiesta di connessione?</target>
         <source>removed you</source>
         <target>ti ha rimosso/a</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="requested to connect" xml:space="preserve">
+        <source>requested to connect</source>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
         <source>saved</source>

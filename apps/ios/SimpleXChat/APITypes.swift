@@ -1212,13 +1212,12 @@ public enum ServerProtocol: String, Decodable {
 public enum OperatorTag: String, Codable {
     case simplex = "simplex"
     case flux = "flux"
-    case xyz = "xyz"
-    case demo = "demo"
 }
 
-public struct ServerOperatorInfo: Decodable {
+public struct ServerOperatorInfo {
     public var description: [String]
-    public var website: String
+    public var website: URL
+    public var selfhost: (text: String, link: URL)? = nil
     public var logo: String
     public var largeLogo: String
     public var logoDarkMode: String
@@ -1228,10 +1227,10 @@ public struct ServerOperatorInfo: Decodable {
 public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .simplex: ServerOperatorInfo(
         description: [
-            "SimpleX Chat is the first communication network that has no user profile IDs of any kind, not even random numbers or keys that identify the users.",
+            "SimpleX Chat is the first communication network that has no user profile IDs of any kind, not even random numbers or identity keys.",
             "SimpleX Chat Ltd develops the communication software for SimpleX network."
         ],
-        website: "https://simplex.chat",
+        website: URL(string: "https://simplex.chat")!,
         logo: "decentralized",
         largeLogo: "logo",
         logoDarkMode: "decentralized-light",
@@ -1239,31 +1238,17 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     ),
     .flux: ServerOperatorInfo(
         description: [
-            "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes.",
-            "Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all."
+            "Flux is the largest decentralized cloud, based on a global network of user-operated nodes.",
+            "Flux offers a powerful, scalable, and affordable cutting edge technology platform for all.",
+            "Flux operates servers in SimpleX network to improve its privacy and decentralization."
         ],
-        website: "https://runonflux.com",
+        website: URL(string: "https://runonflux.com")!,
+        selfhost: (text: "Self-host SimpleX servers on Flux", link: URL(string: "https://home.runonflux.io/apps/marketplace?q=simplex")!),
         logo: "flux_logo_symbol",
         largeLogo: "flux_logo",
         logoDarkMode: "flux_logo_symbol",
         largeLogoDarkMode: "flux_logo-light"
     ),
-    .xyz: ServerOperatorInfo(
-        description: ["XYZ servers"],
-        website: "XYZ website",
-        logo: "shield",
-        largeLogo: "logo",
-        logoDarkMode: "shield",
-        largeLogoDarkMode: "logo-light"
-    ),
-    .demo: ServerOperatorInfo(
-        description: ["Demo operator"],
-        website: "Demo website",
-        logo: "decentralized",
-        largeLogo: "logo",
-        logoDarkMode: "decentralized-light",
-        largeLogoDarkMode: "logo-light"
-    )
 ]
 
 public struct UsageConditions: Decodable {
@@ -1358,7 +1343,7 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
 
     public static let dummyOperatorInfo = ServerOperatorInfo(
         description: ["Default"],
-        website: "Default",
+        website: URL(string: "https://simplex.chat")!,
         logo: "decentralized",
         largeLogo: "logo",
         logoDarkMode: "decentralized-light",
@@ -1383,30 +1368,6 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         enabled: true,
         smpRoles: ServerRoles(storage: true, proxy: true),
         xftpRoles: ServerRoles(storage: true, proxy: true)
-    )
-
-    public static var sampleData2 = ServerOperator(
-        operatorId: 2,
-        operatorTag: .xyz,
-        tradeName: "XYZ",
-        legalName: nil,
-        serverDomains: ["xyz.com"],
-        conditionsAcceptance: .required(deadline: nil),
-        enabled: false,
-        smpRoles: ServerRoles(storage: false, proxy: true),
-        xftpRoles: ServerRoles(storage: false, proxy: true)
-    )
-
-    public static var sampleData3 = ServerOperator(
-        operatorId: 3,
-        operatorTag: .demo,
-        tradeName: "Demo",
-        legalName: nil,
-        serverDomains: ["demo.com"],
-        conditionsAcceptance: .required(deadline: nil),
-        enabled: false,
-        smpRoles: ServerRoles(storage: true, proxy: false),
-        xftpRoles: ServerRoles(storage: true, proxy: false)
     )
 }
 

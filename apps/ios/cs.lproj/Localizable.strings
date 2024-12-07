@@ -729,7 +729,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Připojování k serveru... (chyba: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "připojení…";
 
 /* No comment provided by engineer. */
@@ -2538,7 +2538,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Uložit (a informovat kontakty)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Uložit a upozornit kontakt";
 
 /* No comment provided by engineer. */
@@ -2556,7 +2556,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Uložit přístupovou frázi do Klíčenky";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Uložit předvolby?";
 
 /* No comment provided by engineer. */

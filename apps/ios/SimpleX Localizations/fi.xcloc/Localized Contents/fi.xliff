@@ -543,6 +543,10 @@
         <target>Tietoja SimpleX Chatistä</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="About operators" xml:space="preserve">
+        <source>About operators</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
         <source>Accent</source>
         <note>No comment provided by engineer.</note>
@@ -1481,8 +1485,8 @@
         <source>Conditions are accepted for the operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions are already accepted for following operator(s): **%@**." xml:space="preserve">
-        <source>Conditions are already accepted for following operator(s): **%@**.</source>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions of use" xml:space="preserve">
@@ -5560,7 +5564,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
         <target>Tallenna ja ilmoita kontaktille</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
@@ -5594,7 +5598,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save preferences?" xml:space="preserve">
         <source>Save preferences?</source>
         <target>Tallenna asetukset?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save profile password" xml:space="preserve">
         <source>Save profile password</source>
@@ -6159,6 +6163,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="SimpleX Address" xml:space="preserve">
         <source>SimpleX Address</source>
         <target>SimpleX-osoite</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+        <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -7834,6 +7842,10 @@ Repeat connection request?</source>
         <target>hyväksytty puhelu</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="accepted invitation" xml:space="preserve">
+        <source>accepted invitation</source>
+        <note>chat list item title</note>
+      </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
         <source>admin</source>
         <target>ylläpitäjä</target>
@@ -8012,7 +8024,7 @@ Repeat connection request?</source>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>yhdistää…</target>
-        <note>chat list item title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
@@ -8487,6 +8499,10 @@ Repeat connection request?</source>
         <source>removed you</source>
         <target>poisti sinut</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="requested to connect" xml:space="preserve">
+        <source>requested to connect</source>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
         <source>saved</source>

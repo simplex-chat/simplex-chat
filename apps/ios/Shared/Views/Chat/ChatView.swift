@@ -231,6 +231,8 @@ struct ChatView: View {
                             chat: chat,
                             contact: contact,
                             localAlias: chat.chatInfo.localAlias,
+                            featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
+                            currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
                             onSearch: { focusSearch() }
                         )
                     }
@@ -251,8 +253,7 @@ struct ChatView: View {
                                     chat.created = Date.now
                                 }
                             ),
-                            onSearch: { focusSearch() },
-                            preferences: groupInfo.fullGroupPreferences
+                            onSearch: { focusSearch() }
                         )
                     }
                 } else if case .local = cInfo {
