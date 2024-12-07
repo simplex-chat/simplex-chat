@@ -190,7 +190,7 @@ private fun SetupDatabasePassphraseLayout(
 @Composable
 private fun SetPassphraseButton(disabled: Boolean, onClick: () -> Unit) {
   OnboardingActionButton(
-    if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.set_database_passphrase,
     onboarding = null,
     onclick = onClick,

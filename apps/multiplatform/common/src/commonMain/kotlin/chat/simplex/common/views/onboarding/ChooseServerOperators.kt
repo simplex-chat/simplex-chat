@@ -1,7 +1,11 @@
 package chat.simplex.common.views.onboarding
 
 import SectionBottomSpacer
+import SectionDividerSpaced
+import SectionItemView
 import SectionTextFooter
+import SectionView
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -12,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ServerOperator
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -57,7 +61,8 @@ fun ModalData.ChooseServerOperators(
         Column((
             if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.CenterHorizontally) else Modifier)
           .fillMaxWidth()
-          .padding(horizontal = DEFAULT_PADDING)
+          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+          horizontalAlignment = Alignment.CenterHorizontally
         ) {
           serverOperators.value.forEachIndexed { index, srvOperator ->
             OperatorCheckView(srvOperator, selectedOperatorIds)
@@ -169,7 +174,7 @@ private fun ReviewConditionsButton(
   modalManager: ModalManager
 ) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.operator_review_conditions,
     onboarding = null,
     enabled = enabled,
@@ -184,7 +189,7 @@ private fun ReviewConditionsButton(
 @Composable
 private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>, close: () -> Unit) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.onboarding_network_operators_update,
     onboarding = null,
     enabled = enabled,
@@ -206,7 +211,7 @@ private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOper
 @Composable
 private fun ContinueButton(enabled: Boolean, onboarding: Boolean, close: () -> Unit) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.onboarding_network_operators_continue,
     onboarding = null,
     enabled = enabled,
@@ -234,7 +239,7 @@ private fun ReviewConditionsView(
   // remembering both since we don't want to reload the view after the user accepts conditions
   val operatorsWithConditionsAccepted = remember { chatModel.conditions.value.serverOperators.filter { it.conditionsAcceptance.conditionsAccepted } }
   val acceptForOperators = remember { selectedOperators.value.filter { !it.conditionsAcceptance.conditionsAccepted } }
-  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = if (onboarding) DEFAULT_ONBOARDING_HORIZONTAL_PADDING else DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), withPadding = false, enableAlphaChanges = false, bottomPadding = DEFAULT_PADDING)
     if (operatorsWithConditionsAccepted.isNotEmpty()) {
       ReadableText(MR.strings.operator_conditions_accepted_for_some, args = operatorsWithConditionsAccepted.joinToString(", ") { it.legalName_ })
@@ -267,7 +272,7 @@ private fun AcceptConditionsButton(
     }
   }
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
+    modifier = if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier,
     labelId = MR.strings.accept_conditions,
     onboarding = null,
     onclick = {
@@ -339,11 +344,45 @@ private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorId
 
 @Composable
 private fun ChooseServerOperatorsInfoView() {
-  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.onboarding_network_operators), withPadding = false)
-    ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_different_operators))
-    ReadableText(stringResource(MR.strings.onboarding_network_operators_cant_see_who_talks_to_whom))
-    ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_for_routing))
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.onboarding_network_operators))
+
+    Column(
+      Modifier.padding(horizontal = DEFAULT_PADDING)
+    ) {
+      ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_different_operators))
+      ReadableText(stringResource(MR.strings.onboarding_network_operators_cant_see_who_talks_to_whom))
+      ReadableText(stringResource(MR.strings.onboarding_network_operators_app_will_use_for_routing))
+    }
+
+    SectionDividerSpaced()
+
+    SectionView(title = stringResource(MR.strings.onboarding_network_about_operators).uppercase()) {
+      chatModel.conditions.value.serverOperators.forEach { op ->
+        ServerOperatorRow(op)
+      }
+    }
     SectionBottomSpacer()
+  }
+}
+
+@Composable()
+private fun ServerOperatorRow(
+  operator: ServerOperator
+) {
+  SectionItemView(
+    {
+      ModalManager.start.showModalCloseable { close ->
+        OperatorInfoView(operator)
+      }
+    }
+  ) {
+    Image(
+      painterResource(operator.logo),
+      operator.tradeName,
+      modifier = Modifier.size(24.dp)
+    )
+    TextIconSpaced()
+    Text(operator.tradeName)
   }
 }

@@ -1782,9 +1782,11 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
     public var displayName: String {
         get {
             if let initiated = pccConnStatus.initiated {
-                return initiated && !viaContactUri
+                return viaContactUri
+                ? NSLocalizedString("requested to connect", comment: "chat list item title")
+                : initiated
                 ? NSLocalizedString("invited to connect", comment: "chat list item title")
-                : NSLocalizedString("connecting…", comment: "chat list item title")
+                : NSLocalizedString("accepted invitation", comment: "chat list item title")
             } else {
                 // this should not be in the list
                 return NSLocalizedString("connection established", comment: "chat list item title (it should not be shown")

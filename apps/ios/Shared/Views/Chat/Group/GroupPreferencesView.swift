@@ -20,9 +20,10 @@ struct GroupPreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var groupInfo: GroupInfo
-    @State var preferences: FullGroupPreferences
-    @State var currentPreferences: FullGroupPreferences
+    @Binding var preferences: FullGroupPreferences
+    var currentPreferences: FullGroupPreferences
     let creatingGroup: Bool
+    let savePreferences: () -> Void
     @State private var showSaveDialogue = false
 
     var body: some View {
@@ -68,7 +69,10 @@ struct GroupPreferencesView: View {
                 savePreferences()
                 dismiss()
             }
-            Button("Exit without saving") { dismiss() }
+            Button("Exit without saving") {
+                preferences = currentPreferences
+                dismiss()
+            }
         }
     }
 
@@ -132,32 +136,16 @@ struct GroupPreferencesView: View {
             }
         }
     }
-
-    private func savePreferences() {
-        Task {
-            do {
-                var gp = groupInfo.groupProfile
-                gp.groupPreferences = toGroupPreferences(preferences)
-                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
-                await MainActor.run {
-                    groupInfo = gInfo
-                    chatModel.updateGroup(gInfo)
-                    currentPreferences = preferences
-                }
-            } catch {
-                logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")
-            }
-        }
-    }
 }
 
 struct GroupPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         GroupPreferencesView(
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            preferences: FullGroupPreferences.sampleData,
+            preferences: Binding.constant(FullGroupPreferences.sampleData),
             currentPreferences: FullGroupPreferences.sampleData,
-            creatingGroup: false
+            creatingGroup: false,
+            savePreferences: {}
         )
     }
 }

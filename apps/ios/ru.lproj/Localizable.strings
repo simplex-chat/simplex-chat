@@ -344,6 +344,9 @@
 "Abort changing address?" = "Прекратить изменение адреса?";
 
 /* No comment provided by engineer. */
+"About operators" = "Об операторах";
+
+/* No comment provided by engineer. */
 "About SimpleX Chat" = "Информация о SimpleX Chat";
 
 /* No comment provided by engineer. */
@@ -375,6 +378,9 @@
 
 /* No comment provided by engineer. */
 "Accepted conditions" = "Принятые условия";
+
+/* chat list item title */
+"accepted invitation" = "принятое приглашение";
 
 /* No comment provided by engineer. */
 "Acknowledged" = "Подтверждено";
@@ -878,6 +884,9 @@
 /* No comment provided by engineer. */
 "Change" = "Поменять";
 
+/* authentication reason */
+"Change chat profiles" = "Поменять профили";
+
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Поменять пароль базы данных?";
 
@@ -905,9 +914,6 @@
 /* authentication reason
    set passcode view */
 "Change self-destruct passcode" = "Изменить код самоуничтожения";
-
-/* authentication reason */
-"Change chat profiles" = "Поменять профили";
 
 /* chat item text */
 "changed address for you" = "поменял(а) адрес для Вас";
@@ -1203,7 +1209,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Подключение к компьютеру";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "соединяется…";
 
 /* No comment provided by engineer. */
@@ -3930,6 +3936,9 @@
 /* chat item action */
 "Reply" = "Ответить";
 
+/* chat list item title */
+"requested to connect" = "запрошено соединение";
+
 /* No comment provided by engineer. */
 "Required" = "Обязательно";
 
@@ -4008,12 +4017,6 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Более безопасные группы";
 
-/* No comment provided by engineer. */
-"The same conditions will apply to operator **%@**." = "Те же самые условия будут приняты для оператора **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Те же самые условия будут приняты для оператора(ов): **%@**.";
-
 /* alert button
    chat item action */
 "Save" = "Сохранить";
@@ -4042,7 +4045,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Сохранить пароль в Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Сохранить предпочтения?";
 
 /* No comment provided by engineer. */
@@ -4756,6 +4759,12 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Профиль отправляется только Вашим контактам.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator **%@**." = "Те же самые условия будут приняты для оператора **%@**.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator(s): **%@**." = "Те же самые условия будут приняты для оператора(ов): **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Второй оператор серверов в приложении!";

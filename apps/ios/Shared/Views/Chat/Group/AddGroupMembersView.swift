@@ -78,7 +78,12 @@ struct AddGroupMembersViewCommon: View {
                     let count = selectedContacts.count
                     Section {
                         if creatingGroup {
-                            groupPreferencesButton($groupInfo, true)
+                            GroupPreferencesButton(
+                                groupInfo: $groupInfo,
+                                preferences: groupInfo.fullGroupPreferences,
+                                currentPreferences: groupInfo.fullGroupPreferences,
+                                creatingGroup: true
+                            )
                         }
                         rolePicker()
                         inviteMembersButton()

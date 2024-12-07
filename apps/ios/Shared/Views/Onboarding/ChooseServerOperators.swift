@@ -409,26 +409,54 @@ struct ChooseServerOperators: View {
 let operatorsPostLink = URL(string: "https://simplex.chat/blog/20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.html")!
 
 struct ChooseServerOperatorsInfoView: View {
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
+    @EnvironmentObject var theme: AppTheme
+
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Server operators")
-                .font(.largeTitle)
-                .bold()
-                .padding(.vertical)
-            ScrollView {
+        NavigationView {
+            List {
                 VStack(alignment: .leading) {
-                    Group {
-                        Text("The app protects your privacy by using different operators in each conversation.")
-                        Text("When more than one operator is enabled, none of them has metadata to learn who communicates with whom.")
-                        Text("For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.")
+                    Text("The app protects your privacy by using different operators in each conversation.")
+                        .padding(.bottom)
+                    Text("When more than one operator is enabled, none of them has metadata to learn who communicates with whom.")
+                        .padding(.bottom)
+                    Text("For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.")
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .padding(.top)
+
+                Section {
+                    ForEach(ChatModel.shared.conditions.serverOperators) { op in
+                        operatorInfoNavLinkView(op)
                     }
-                    .padding(.bottom)
+                } header: {
+                    Text("About operators")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
+            .navigationTitle("Server operators")
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .modifier(ThemedBackground())
+    }
+
+    private func operatorInfoNavLinkView(_ op: ServerOperator) -> some View {
+        NavigationLink() {
+            OperatorInfoView(serverOperator: op)
+                .navigationBarTitle("Network operator")
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            HStack {
+                Image(op.logo(colorScheme))
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                Text(op.tradeName)
+            }
+        }
     }
 }
 

@@ -878,6 +878,9 @@
 /* No comment provided by engineer. */
 "Change" = "Veranderen";
 
+/* authentication reason */
+"Change chat profiles" = "Gebruikersprofielen wijzigen";
+
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Wachtwoord database wijzigen?";
 
@@ -905,9 +908,6 @@
 /* authentication reason
    set passcode view */
 "Change self-destruct passcode" = "Zelfvernietigings code wijzigen";
-
-/* authentication reason */
-"Change chat profiles" = "Gebruikersprofielen wijzigen";
 
 /* chat item text */
 "changed address for you" = "adres voor u gewijzigd";
@@ -1203,7 +1203,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Verbinding maken met desktop";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "Verbinden…";
 
 /* No comment provided by engineer. */
@@ -4008,12 +4008,6 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Veiligere groepen";
 
-/* No comment provided by engineer. */
-"The same conditions will apply to operator **%@**." = "Dezelfde voorwaarden gelden voor operator **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Dezelfde voorwaarden gelden voor operator(s): **%@**.";
-
 /* alert button
    chat item action */
 "Save" = "Opslaan";
@@ -4042,7 +4036,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Sla het wachtwoord op in de Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Voorkeuren opslaan?";
 
 /* No comment provided by engineer. */
@@ -4756,6 +4750,12 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Het profiel wordt alleen gedeeld met uw contacten.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator **%@**." = "Dezelfde voorwaarden gelden voor operator **%@**.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator(s): **%@**." = "Dezelfde voorwaarden gelden voor operator(s): **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "De tweede vooraf ingestelde operator in de app!";

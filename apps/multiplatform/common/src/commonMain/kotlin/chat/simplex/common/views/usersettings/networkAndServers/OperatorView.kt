@@ -410,7 +410,7 @@ fun OperatorViewLayout(
 }
 
 @Composable
-private fun OperatorInfoView(serverOperator: ServerOperator) {
+fun OperatorInfoView(serverOperator: ServerOperator) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.operator_info_title))
 

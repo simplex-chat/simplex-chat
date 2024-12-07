@@ -71,6 +71,8 @@
   <string name="connection_local_display_name">connection %1$d</string>
   <string name="display_name_connection_established">connection established</string>
   <string name="display_name_invited_to_connect">invited to connect</string>
+  <string name="display_name_requested_to_connect">requested to connect</string>
+  <string name="display_name_accepted_invitation">accepted invitation</string>
   <string name="display_name_connecting">connecting…</string>
   <string name="description_you_shared_one_time_link">you shared one-time link</string>
   <string name="description_you_shared_one_time_link_incognito">you shared one-time link incognito</string>
@@ -1078,6 +1080,7 @@
   <string name="onboarding_network_operators_app_will_use_different_operators">The app protects your privacy by using different operators in each conversation.</string>
   <string name="onboarding_network_operators_cant_see_who_talks_to_whom">When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</string>
   <string name="onboarding_network_operators_app_will_use_for_routing">For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</string>
+  <string name="onboarding_network_about_operators">About operators</string>
   <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
   <string name="how_it_helps_privacy">How it helps privacy</string>
   <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
