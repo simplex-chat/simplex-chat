@@ -572,14 +572,14 @@
         <target>Címváltoztatás megszakítása??</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX Chat" xml:space="preserve" approved="no">
+      <trans-unit id="About SimpleX Chat" xml:space="preserve">
         <source>About SimpleX Chat</source>
-        <target state="translated">SimpleX Chat névjegye</target>
+        <target>SimpleX Chat névjegye</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About operators" xml:space="preserve" approved="no">
+      <trans-unit id="About operators" xml:space="preserve">
         <source>About operators</source>
-        <target state="translated">Az üzemeltetőkről</target>
+        <target>Az üzemeltetőkről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -1351,9 +1351,9 @@
         <target>Változtatás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change chat profiles" xml:space="preserve" approved="no">
+      <trans-unit id="Change chat profiles" xml:space="preserve">
         <source>Change chat profiles</source>
-        <target state="translated">Csevegési profilok megváltoztatása</target>
+        <target>Csevegési profilok megváltoztatása</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -3524,9 +3524,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Konzolhoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve" approved="no">
+      <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve">
         <source>For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</source>
-        <target state="translated">Például, ha az Ön ismerőse egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</target>
+        <target>Például, ha az Ön ismerőse egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For private routing" xml:space="preserve">
@@ -5569,9 +5569,9 @@ Hiba: %@</target>
         <target>A hangüzenetek küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect IP address" xml:space="preserve" approved="no">
+      <trans-unit id="Protect IP address" xml:space="preserve">
         <source>Protect IP address</source>
-        <target state="translated">IP-cím védelme</target>
+        <target>IP-cím védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -6714,9 +6714,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>SimpleX-cím</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
         <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
-        <target state="translated">A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.</target>
+        <target>A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -7208,9 +7208,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A profilja csak az ismerőseivel kerül megosztásra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve" approved="no">
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
         <source>The same conditions will apply to operator **%@**.</source>
-        <target state="translated">Ugyanezek a feltételek lesznek elfogadva a következő üzemeltetőre is: **%@**.</target>
+        <target>Ugyanezek a feltételek lesznek elfogadva a következő üzemeltetőre is: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
@@ -8154,9 +8154,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Az üzemeltetőket a „Hálózat és kiszolgálók” beállításaban konfigurálhatja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure servers via settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can configure servers via settings." xml:space="preserve">
         <source>You can configure servers via settings.</source>
-        <target state="translated">A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</target>
+        <target>A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
@@ -8204,9 +8204,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Beállíthatja az ismerős nevét, hogy emlékezzen arra, hogy kivel osztotta meg a hivatkozást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>
-        <target state="translated">A lezárási képernyő értesítési előnézetét az „Értesítések” menüben állíthatja be.</target>
+        <target>A lezárási képernyő értesítési előnézetét az „Értesítések” menüben állíthatja be.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
@@ -8551,9 +8551,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>elfogadott hívás</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="accepted invitation" xml:space="preserve" approved="no">
+      <trans-unit id="accepted invitation" xml:space="preserve">
         <source>accepted invitation</source>
-        <target state="translated">elfogadott meghívó</target>
+        <target>elfogadott meghívó</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -9238,9 +9238,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>eltávolította Önt</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested to connect" xml:space="preserve" approved="no">
+      <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>
-        <target state="translated">kérelmezve a kapcsolódáshoz</target>
+        <target>kérelmezve a kapcsolódáshoz</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">

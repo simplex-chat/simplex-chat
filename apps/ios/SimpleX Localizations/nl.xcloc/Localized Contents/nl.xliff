@@ -577,9 +577,9 @@
         <target>Over SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About operators" xml:space="preserve" approved="no">
+      <trans-unit id="About operators" xml:space="preserve">
         <source>About operators</source>
-        <target state="translated">Over operatoren</target>
+        <target>Over operatoren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -8551,9 +8551,9 @@ Verbindingsverzoek herhalen?</target>
         <target>geaccepteerde oproep</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="accepted invitation" xml:space="preserve" approved="no">
+      <trans-unit id="accepted invitation" xml:space="preserve">
         <source>accepted invitation</source>
-        <target state="translated">geaccepteerde uitnodiging</target>
+        <target>geaccepteerde uitnodiging</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -9238,9 +9238,9 @@ Verbindingsverzoek herhalen?</target>
         <target>heeft je verwijderd</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested to connect" xml:space="preserve" approved="no">
+      <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>
-        <target state="translated">gevraagd om verbinding te maken</target>
+        <target>gevraagd om verbinding te maken</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">

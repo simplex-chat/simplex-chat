@@ -382,9 +382,9 @@
         <target>**Рекомендовано**: токен устройства и уведомления отправляются на сервер SimpleX Chat, но сервер не получает сами сообщения, их размер или от кого они.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve" approved="no">
+      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve">
         <source>**Scan / Paste link**: to connect via a link you received.</source>
-        <target state="translated">**Сканировать / Вставить ссылку**: чтобы соединиться через полученную ссылку.</target>
+        <target>**Сканировать / Вставить ссылку**: чтобы соединиться через полученную ссылку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -5578,10 +5578,10 @@ Error: %@</source>
         <target>Защитить экран приложения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target state="translated">Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.
+        <target>Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.
 Включите в настройках *Сети и серверов*.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8148,9 +8148,9 @@ Repeat join request?</source>
         <target>Вы можете изменить это в настройках Интерфейса.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve">
         <source>You can configure operators in Network &amp; servers settings.</source>
-        <target state="translated">Вы можете настроить операторов в настройках Сети и серверов.</target>
+        <target>Вы можете настроить операторов в настройках Сети и серверов.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">

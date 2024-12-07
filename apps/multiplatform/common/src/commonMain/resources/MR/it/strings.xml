@@ -2153,7 +2153,7 @@
     <string name="operator_conditions_accepted_on">Condizioni accettate il: %s.</string>
     <string name="operator">Operatore</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Le condizioni verranno accettate per gli operatori: <b>%s</b>.]]></string>
-    <string name="operator_same_conditions_will_be_applied"><![CDATA[Le stesse condizioni verranno applicate per l'operatore <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[Le stesse condizioni verranno applicate per l\'operatore <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Le stesse condizioni verranno applicate per gli operatori: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Queste condizioni verranno applicate anche per: <b>%s</b>.]]></string>
     <string name="accept_conditions">Accetta le condizioni</string>
