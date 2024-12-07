@@ -360,6 +360,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         return true
       }
 
+      override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
+
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
   }

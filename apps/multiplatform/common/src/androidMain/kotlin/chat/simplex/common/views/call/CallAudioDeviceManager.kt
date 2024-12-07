@@ -71,8 +71,12 @@ class PostSCallAudioDeviceManager: CallAudioDeviceManagerInterface {
   }
 
   override fun stop() {
-    am.unregisterAudioDeviceCallback(audioCallback)
-    am.removeOnCommunicationDeviceChangedListener(listener)
+    try {
+      am.unregisterAudioDeviceCallback(audioCallback)
+      am.removeOnCommunicationDeviceChangedListener(listener)
+    } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
+    }
   }
 
   override fun selectLastExternalDeviceOrDefault(speaker: Boolean, keepAnyExternal: Boolean) {
