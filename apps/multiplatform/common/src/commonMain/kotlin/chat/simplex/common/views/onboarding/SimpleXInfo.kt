@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.TextLayoutResult
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +29,8 @@ import chat.simplex.common.views.migration.MigrateToDeviceView
 import chat.simplex.common.views.migration.MigrationToState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import kotlin.math.ceil
+import kotlin.math.floor
 
 @Composable
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
@@ -187,7 +191,35 @@ fun OnboardingInformationButton(
         null,
         tint = MaterialTheme.colors.primary
       )
-      Text(text, style = MaterialTheme.typography.button, color = MaterialTheme.colors.primary)
+      // https://issuetracker.google.com/issues/206039942#comment32
+      var textLayoutResult: TextLayoutResult? by remember { mutableStateOf(null) }
+      Text(
+        text,
+        Modifier
+          .layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            val newTextLayoutResult = textLayoutResult
+
+            if (newTextLayoutResult == null || newTextLayoutResult.lineCount == 0) {
+              // Default behavior if there is no text or the text layout is not measured yet
+              layout(placeable.width, placeable.height) {
+                placeable.placeRelative(0, 0)
+              }
+            } else {
+              val minX = (0 until newTextLayoutResult.lineCount).minOf(newTextLayoutResult::getLineLeft)
+              val maxX = (0 until newTextLayoutResult.lineCount).maxOf(newTextLayoutResult::getLineRight)
+
+              layout(ceil(maxX - minX).toInt(), placeable.height) {
+                placeable.place(-floor(minX).toInt(), 0)
+              }
+            }
+          },
+        onTextLayout = {
+          textLayoutResult = it
+        },
+        style = MaterialTheme.typography.button,
+        color = MaterialTheme.colors.primary
+      )
     }
   }
 }
