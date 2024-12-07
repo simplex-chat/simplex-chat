@@ -2321,4 +2321,5 @@
     <string name="info_row_chat">Chat</string>
     <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Sie sind bereits mit <b>%1$s</b> verbunden.]]></string>
     <string name="onboarding_network_about_operators">Über Betreiber</string>
+    <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX-Chat und Flux haben vereinbart, die von Flux betriebenen Server in die App aufzunehmen.</string>
 </resources>
