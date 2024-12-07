@@ -1030,7 +1030,7 @@
 "Conditions are accepted for the operator(s): **%@**." = "Для оператора(ів) приймаються умови: **%@**.";
 
 /* No comment provided by engineer. */
-"Conditions are already accepted for following operator(s): **%@**." = "Умови вже прийняті для наступних операторів: **%@**.";
+"Conditions are already accepted for these operator(s): **%@**." = "Умови вже прийняті для наступних операторів: **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Умови використання";
@@ -3952,7 +3952,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Зберегти (і повідомити контактам)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Зберегти та повідомити контакт";
 
 /* No comment provided by engineer. */

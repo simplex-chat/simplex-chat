@@ -1575,8 +1575,8 @@
         <source>Conditions are accepted for the operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions are already accepted for following operator(s): **%@**." xml:space="preserve">
-        <source>Conditions are already accepted for following operator(s): **%@**.</source>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions of use" xml:space="preserve">
@@ -5925,7 +5925,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
         <target>保存并通知联系人</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
@@ -6568,6 +6568,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="SimpleX Address" xml:space="preserve">
         <source>SimpleX Address</source>
         <target>SimpleX 地址</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+        <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">

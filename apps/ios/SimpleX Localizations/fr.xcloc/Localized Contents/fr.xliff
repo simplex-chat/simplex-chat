@@ -1589,8 +1589,8 @@
         <source>Conditions are accepted for the operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions are already accepted for following operator(s): **%@**." xml:space="preserve">
-        <source>Conditions are already accepted for following operator(s): **%@**.</source>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions of use" xml:space="preserve">
@@ -5972,7 +5972,7 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
         <target>Enregistrer et en informer le contact</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
@@ -6621,6 +6621,10 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       <trans-unit id="SimpleX Address" xml:space="preserve">
         <source>SimpleX Address</source>
         <target>Adresse SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+        <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">

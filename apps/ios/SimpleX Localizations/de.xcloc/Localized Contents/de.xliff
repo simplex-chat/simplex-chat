@@ -1606,8 +1606,8 @@
         <target>Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions are already accepted for following operator(s): **%@**." xml:space="preserve">
-        <source>Conditions are already accepted for following operator(s): **%@**.</source>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
         <target>Die Nutzungsbedingungen der/des folgenden Betreiber(s) wurden schon akzeptiert: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6034,7 +6034,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
         <target>Speichern und Kontakt benachrichtigen</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
@@ -6690,6 +6690,11 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       <trans-unit id="SimpleX Address" xml:space="preserve">
         <source>SimpleX Address</source>
         <target>SimpleX-Adresse</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+        <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
+        <target>SimpleX-Chat und Flux haben vereinbart, die von Flux betriebenen Server in die App aufzunehmen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">

@@ -22,7 +22,7 @@ struct SetNotificationsMode: View {
                     Text("Push notifications")
                         .font(.largeTitle)
                         .bold()
-                        .padding(.top, 50)
+                        .padding(.top, 25)
                     
                     infoText()
                     

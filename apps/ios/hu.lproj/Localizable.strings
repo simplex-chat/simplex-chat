@@ -1060,7 +1060,7 @@
 "Conditions are accepted for the operator(s): **%@**." = "A következő üzemeltető(k) számára elfogadott feltételek: **%@**.";
 
 /* No comment provided by engineer. */
-"Conditions are already accepted for following operator(s): **%@**." = "A feltételek már el lettek fogadva a következő üzemeltető(k) számára: **%@**.";
+"Conditions are already accepted for these operator(s): **%@**." = "A feltételek már el lettek fogadva a következő üzemeltető(k) számára: **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Használati feltételek";
@@ -4015,7 +4015,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Mentés és az ismerősök értesítése";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Mentés és az ismerős értesítése";
 
 /* No comment provided by engineer. */

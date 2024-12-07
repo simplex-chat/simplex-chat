@@ -3669,14 +3669,13 @@ enum class ServerProtocol {
 @Serializable
 enum class OperatorTag {
   @SerialName("simplex") SimpleX,
-  @SerialName("flux") Flux,
-  @SerialName("xyz") XYZ,
-  @SerialName("demo") Demo
+  @SerialName("flux") Flux
 }
 
 data class ServerOperatorInfo(
   val description: List<String>,
   val website: String,
+  val selfhost: Pair<String, String>? = null,
   val logo: ImageResource,
   val largeLogo: ImageResource,
   val logoDarkMode: ImageResource,
@@ -3696,31 +3695,17 @@ val operatorsInfo: Map<OperatorTag, ServerOperatorInfo> = mapOf(
   ),
   OperatorTag.Flux to ServerOperatorInfo(
     description = listOf(
-      "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes.",
-      "Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all."
+      "Flux is the largest decentralized cloud, based on a global network of user-operated nodes.",
+      "Flux offers a powerful, scalable, and affordable cutting edge technology platform for all.",
+      "Flux operates servers in SimpleX network to improve its privacy and decentralization."
     ),
     website = "https://runonflux.com",
+    selfhost = "Self-host SimpleX servers on Flux" to "https://home.runonflux.io/apps/marketplace?q=simplex",
     logo = MR.images.flux_logo_symbol,
     largeLogo = MR.images.flux_logo,
     logoDarkMode = MR.images.flux_logo_symbol,
     largeLogoDarkMode = MR.images.flux_logo_light
   ),
-  OperatorTag.XYZ to ServerOperatorInfo(
-    description = listOf("XYZ servers"),
-    website = "XYZ website",
-    logo = MR.images.shield,
-    largeLogo = MR.images.logo,
-    logoDarkMode = MR.images.shield,
-    largeLogoDarkMode = MR.images.logo_light
-  ),
-  OperatorTag.Demo to ServerOperatorInfo(
-    description = listOf("Demo operator"),
-    website = "Demo website",
-    logo = MR.images.decentralized,
-    largeLogo = MR.images.logo,
-    logoDarkMode = MR.images.decentralized_light,
-    largeLogoDarkMode = MR.images.logo_light
-  )
 )
 
 @Serializable
@@ -3800,7 +3785,7 @@ data class ServerOperator(
   companion object {
     val dummyOperatorInfo = ServerOperatorInfo(
       description = listOf("Default"),
-      website = "Default",
+      website = "https://simplex.chat",
       logo = MR.images.decentralized,
       largeLogo = MR.images.logo,
       logoDarkMode = MR.images.decentralized_light,
@@ -3817,30 +3802,6 @@ data class ServerOperator(
       enabled = true,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
-    )
-
-    val sampleData2 = ServerOperator(
-      operatorId = 2,
-      operatorTag = OperatorTag.XYZ,
-      tradeName = "XYZ",
-      legalName = null,
-      serverDomains = listOf("xyz.com"),
-      conditionsAcceptance = ConditionsAcceptance.Required(deadline = null),
-      enabled = false,
-      smpRoles = ServerRoles(storage = false, proxy = true),
-      xftpRoles = ServerRoles(storage = false, proxy = true)
-    )
-
-    val sampleData3 = ServerOperator(
-      operatorId = 3,
-      operatorTag = OperatorTag.Demo,
-      tradeName = "Demo",
-      legalName = null,
-      serverDomains = listOf("demo.com"),
-      conditionsAcceptance = ConditionsAcceptance.Required(deadline = null),
-      enabled = false,
-      smpRoles = ServerRoles(storage = true, proxy = false),
-      xftpRoles = ServerRoles(storage = true, proxy = false)
     )
   }
 
