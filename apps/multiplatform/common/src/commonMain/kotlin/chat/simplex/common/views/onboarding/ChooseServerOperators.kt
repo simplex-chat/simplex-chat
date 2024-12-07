@@ -14,10 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -55,7 +53,7 @@ fun ModalData.ChooseServerOperators(
         Column(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingInformationButton(
             stringResource(MR.strings.how_it_helps_privacy),
-            onClick = { modalManager.showModal { ChooseServerOperatorsInfoView() } }
+            onClick = { modalManager.showModal { ChooseServerOperatorsInfoView(modalManager) } }
           )
         }
 
@@ -346,7 +344,9 @@ private fun enabledOperators(operators: List<ServerOperator>, selectedOperatorId
 }
 
 @Composable
-private fun ChooseServerOperatorsInfoView() {
+private fun ChooseServerOperatorsInfoView(
+  modalManager: ModalManager
+) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.onboarding_network_operators))
 
@@ -362,7 +362,7 @@ private fun ChooseServerOperatorsInfoView() {
 
     SectionView(title = stringResource(MR.strings.onboarding_network_about_operators).uppercase()) {
       chatModel.conditions.value.serverOperators.forEach { op ->
-        ServerOperatorRow(op)
+        ServerOperatorRow(op, modalManager)
       }
     }
     SectionBottomSpacer()
@@ -371,11 +371,12 @@ private fun ChooseServerOperatorsInfoView() {
 
 @Composable()
 private fun ServerOperatorRow(
-  operator: ServerOperator
+  operator: ServerOperator,
+  modalManager: ModalManager
 ) {
   SectionItemView(
     {
-      ModalManager.start.showModalCloseable { close ->
+      modalManager.showModalCloseable { close ->
         OperatorInfoView(operator)
       }
     }
