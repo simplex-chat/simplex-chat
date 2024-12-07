@@ -62,7 +62,7 @@
     <string name="sender_cancelled_file_transfer">Der Absender hat die Dateiübertragung abgebrochen.</string>
     <string name="error_receiving_file">Fehler beim Empfangen der Datei</string>
     <string name="error_creating_address">Fehler beim Erstellen der Adresse</string>
-    <string name="contact_already_exists">Kontakt ist bereits vorhanden</string>
+    <string name="contact_already_exists">Kontakt besteht bereits</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits mit %1$s verbunden.</string>
     <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben, oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
@@ -88,9 +88,9 @@
     <string name="icon_descr_instant_notifications">Sofortige Benachrichtigungen</string>
     <string name="service_notifications">Sofortige Benachrichtigungen!</string>
     <string name="service_notifications_disabled">Sofortige Benachrichtigungen sind deaktiviert!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Um Ihre Privatsphäre zu schützen, kann statt der Push-Benachrichtigung der <b>SimpleX-Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Um Ihre Privatsphäre zu schützen, <b>läuft SimpleX im Hintergrund ab</b>, anstatt Push-Benachrichtigungen zu nutzen.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Diese können über die Einstellungen deaktiviert werden</b> – solange die App läuft, werden Benachrichtigungen weiterhin angezeigt.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Um diese Funktion zu nutzen, wählen Sie im nächsten Dialog bitte die Einstellung <b>Erlauben Sie SimpleX im Hintergrund abzulaufen</b>. Ansonsten werden die Benachrichtigungen deaktiviert.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Um Benachrichtigungen sofort zu erhalten, <b>Erlauben Sie es</b> im nächsten Dialog.]]></string>
     <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die periodische Nachfrage nach neuen Nachrichten ist abgeschaltet. Sie können diese Funktion in den Einstellungen wieder aktivieren.</string>
     <string name="periodic_notifications">Periodische Benachrichtigungen</string>
     <string name="periodic_notifications_disabled">Periodische Benachrichtigungen sind deaktiviert!</string>
@@ -462,7 +462,7 @@
     <string name="callstate_connected">Verbunden</string>
     <string name="callstate_ended">Beendet</string>
     <!-- SimpleXInfo -->
-    <string name="next_generation_of_private_messaging">Die nächste Generation \ndes privaten Messagings</string>
+    <string name="next_generation_of_private_messaging">Die Zukunft des Messagings</string>
     <string name="privacy_redefined">Datenschutz neu definiert</string>
     <string name="first_platform_without_user_ids">Keine Benutzerkennungen.</string>
     <string name="immune_to_spam_and_abuse">Immun gegen Spam</string>
@@ -474,8 +474,8 @@
     <string name="how_it_works">Wie es funktioniert</string>
     <!-- How SimpleX Works -->
     <string name="how_simplex_works">Wie SimpleX funktioniert</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet SimpleX anstelle von Benutzerkennungen, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine <b>zweischichtige Ende-zu-Ende-Verschlüsselung</b> gesendet werden.]]></string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">SimpleX nutzt individuelle Kennungen für jeden Ihrer Kontakte, um Ihre Privatsphäre zu schützen.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern Benutzerprofile, Kontakte, Gruppen und Nachrichten.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Erfahren Sie in unserem <font color="#0088ff">GitHub-Repository</font> mehr dazu.]]></string>
     <!-- MakeConnection -->
     <string name="paste_the_link_you_received">Fügen Sie den erhaltenen Link ein</string>
@@ -683,7 +683,7 @@
     <string name="alert_title_group_invitation_expired">Die Einladung ist abgelaufen!</string>
     <string name="alert_message_group_invitation_expired">Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.</string>
     <string name="alert_title_no_group">Die Gruppe wurde nicht gefunden!</string>
-    <string name="alert_message_no_group">Diese Gruppe existiert nicht mehr.</string>
+    <string name="alert_message_no_group">Diese Gruppe ist nicht mehr vorhanden.</string>
     <string name="alert_title_cant_invite_contacts">Kontakte können nicht eingeladen werden!</string>
     <string name="alert_title_cant_invite_contacts_descr">Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.</string>
     <!-- CIGroupInvitationView.kt -->
@@ -781,8 +781,8 @@
     <string name="change_verb">Ändern</string>
     <string name="switch_verb">Wechseln</string>
     <string name="change_member_role_question">Die Mitgliederrolle ändern?</string>
-    <string name="member_role_will_be_changed_with_notification">Die Mitgliederrolle wird auf "%s" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.</string>
-    <string name="member_role_will_be_changed_with_invitation">Die Mitgliederrolle wird auf "%s" geändert. Das Mitglied wird eine neue Einladung erhalten.</string>
+    <string name="member_role_will_be_changed_with_notification">Die Rolle wird auf %s geändert. Alle Mitglieder der Gruppe werden benachrichtigt.</string>
+    <string name="member_role_will_be_changed_with_invitation">Die Rolle wird auf %s geändert. Das Mitglied wird eine neue Einladung erhalten.</string>
     <string name="error_removing_member">Fehler beim Entfernen des Mitglieds</string>
     <string name="error_changing_role">Fehler beim Ändern der Rolle</string>
     <string name="info_row_group">Gruppe</string>
@@ -872,12 +872,12 @@
     <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten nicht erlauben.</string>
     <string name="allow_to_send_voice">Das Senden von Sprachnachrichten erlauben.</string>
     <string name="prohibit_sending_voice">Das Senden von Sprachnachrichten nicht erlauben.</string>
-    <string name="group_members_can_send_dms">Gruppenmitglieder können Direktnachrichten versenden.</string>
+    <string name="group_members_can_send_dms">Mitglieder können Direktnachrichten versenden.</string>
     <string name="direct_messages_are_prohibited_in_group">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
-    <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen (bis zu 24 Stunden).</string>
-    <string name="message_deletion_prohibited_in_chat">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
-    <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten versenden.</string>
-    <string name="voice_messages_are_prohibited">In dieser Gruppe sind Sprachnachrichten nicht erlaubt.</string>
+    <string name="group_members_can_delete">Mitglieder können gesendete Nachrichten unwiederbringlich löschen (bis zu 24 Stunden).</string>
+    <string name="message_deletion_prohibited_in_chat">Das unwiederbringliche Löschen von Nachrichten ist nicht erlaubt.</string>
+    <string name="group_members_can_send_voice">Mitglieder können Sprachnachrichten versenden.</string>
+    <string name="voice_messages_are_prohibited">Sprachnachrichten sind nicht erlaubt.</string>
     <string name="live">LIVE</string>
     <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
     <string name="onboarding_notifications_mode_service">Sofort</string>
@@ -887,7 +887,7 @@
     <string name="is_verified">%s wurde erfolgreich überprüft</string>
     <string name="clear_verification">Verifikation zurücknehmen</string>
     <string name="onboarding_notifications_mode_off">Solange die App abläuft</string>
-    <string name="onboarding_notifications_mode_subtitle">Kann später über die Einstellungen geändert werden.</string>
+    <string name="onboarding_notifications_mode_subtitle">Auswirkung auf den Akku</string>
     <string name="delete_after">Löschen nach</string>
     <string name="ttl_hour">%d Stunde</string>
     <string name="ttl_hours">%d Stunden</string>
@@ -922,8 +922,8 @@
     <string name="create_group_link">Gruppenlink erstellen</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Erlauben Sie Ihren Kontakten das Senden von verschwindenden Nachrichten.</string>
     <string name="prohibit_sending_disappearing_messages">Das Senden von verschwindenden Nachrichten nicht erlauben.</string>
-    <string name="disappearing_messages_are_prohibited">In dieser Gruppe sind verschwindende Nachrichten nicht erlaubt.</string>
-    <string name="group_members_can_send_disappearing">Gruppenmitglieder können verschwindende Nachrichten senden.</string>
+    <string name="disappearing_messages_are_prohibited">Verschwindende Nachrichten sind nicht erlaubt.</string>
+    <string name="group_members_can_send_disappearing">Mitglieder können verschwindende Nachrichten senden.</string>
     <string name="v4_3_improved_server_configuration_desc">Fügen Sie Server durch Scannen der QR-Codes hinzu.</string>
     <string name="v4_4_disappearing_messages">Verschwindende Nachrichten</string>
     <string name="accept_feature">Übernehmen</string>
@@ -978,7 +978,7 @@
     <string name="users_delete_profile_for">Chat-Profil löschen für</string>
     <string name="network_option_ping_count">PING-Zähler</string>
     <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
-    <string name="smp_servers_per_user">Mögliche Server für neue Verbindungen über Ihr aktuelles Chat-Profil</string>
+    <string name="smp_servers_per_user">Nachrichten-Server für neue Verbindungen über Ihr aktuelles Chat-Profil</string>
     <string name="files_and_media_section">Dateien &amp; Medien</string>
     <string name="network_session_mode_transport_isolation">Transport-Isolation</string>
     <string name="users_delete_question">Chat-Profil löschen\?</string>
@@ -1248,7 +1248,7 @@
     <string name="if_you_enter_passcode_data_removed">Wenn Sie diesen Zugangscode während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</string>
     <string name="self_destruct_passcode">Selbstzerstörungs-Zugangscode</string>
     <string name="set_passcode">Zugangscode einstellen</string>
-    <string name="message_reactions_are_prohibited">In dieser Gruppe sind Reaktionen auf Nachrichten nicht erlaubt.</string>
+    <string name="message_reactions_are_prohibited">Reaktionen auf Nachrichten sind nicht erlaubt.</string>
     <string name="error_loading_details">Fehler beim Laden von Details</string>
     <string name="received_message">Empfangene Nachricht</string>
     <string name="info_menu">Information</string>
@@ -1279,7 +1279,7 @@
     <string name="only_your_contact_can_add_message_reactions">Nur Ihr Kontakt kann Reaktionen auf Nachrichten geben.</string>
     <string name="allow_message_reactions">Reaktionen auf Nachrichten erlauben.</string>
     <string name="prohibit_message_reactions_group">Reaktionen auf Nachrichten nicht erlauben.</string>
-    <string name="group_members_can_add_message_reactions">Gruppenmitglieder können eine Reaktion auf Nachrichten geben.</string>
+    <string name="group_members_can_add_message_reactions">Mitglieder können eine Reaktion auf Nachrichten geben.</string>
     <string name="whats_new_read_more">Mehr erfahren</string>
     <string name="v5_1_message_reactions_descr">Endlich haben wir sie! 🚀</string>
     <string name="v5_1_message_reactions">Reaktionen auf Nachrichten</string>
@@ -1294,9 +1294,7 @@
     <string name="v5_1_custom_themes_descr">Farbdesigns anpassen und weitergeben.</string>
     <string name="custom_time_unit_days">Tage</string>
     <string name="custom_time_unit_hours">Stunden</string>
-    <string name="v5_1_better_messages_descr">- Bis zu 5 Minuten lange Sprachnachrichten
-\n- Zeitdauer für verschwindende Nachrichten anpassen
-\n- Nachrichtenverlauf bearbeiten</string>
+    <string name="v5_1_better_messages_descr">- Bis zu 5 Minuten lange Sprachnachrichten\n- Zeitdauer für verschwindende Nachrichten anpassen\n- Nachrichtenverlauf bearbeiten</string>
     <string name="custom_time_picker_custom">benutzerdefiniert</string>
     <string name="custom_time_unit_months">Monate</string>
     <string name="custom_time_picker_select">Auswählen</string>
@@ -1325,9 +1323,9 @@
     <string name="abort_switch_receiving_address_question">Wechsel der Empfängeradresse beenden?</string>
     <string name="files_and_media_prohibited">Dateien und Medien sind nicht erlaubt!</string>
     <string name="only_owners_can_enable_files_and_media">Nur Gruppenbesitzer können Dateien und Medien aktivieren.</string>
-    <string name="group_members_can_send_files">Gruppenmitglieder können Dateien und Medien senden.</string>
+    <string name="group_members_can_send_files">Mitglieder können Dateien und Medien senden.</string>
     <string name="abort_switch_receiving_address_desc">Der Wechsel der Empfängeradresse wird beendet. Die bisherige Adresse wird weiter verwendet.</string>
-    <string name="files_are_prohibited_in_group">In dieser Gruppe sind Dateien und Medien nicht erlaubt.</string>
+    <string name="files_are_prohibited_in_group">Dateien und Medien sind nicht erlaubt.</string>
     <string name="unfavorite_chat">Favorit entfernen</string>
     <string name="favorite_chat">Favorit</string>
     <string name="no_filtered_chats">Keine gefilterten Chats</string>
@@ -1385,9 +1383,7 @@
     <string name="v5_2_fix_encryption_descr">Reparatur der Verschlüsselung nach Wiedereinspielen von Backups.</string>
     <string name="v5_2_more_things">Ein paar weitere Dinge</string>
     <string name="v5_2_disappear_one_message_descr">Auch wenn sie in den Unterhaltungen deaktiviert sind.</string>
-    <string name="v5_2_more_things_descr">- stabilere Zustellung von Nachrichten.
-\n- ein bisschen verbesserte Gruppen.
-\n- und mehr!</string>
+    <string name="v5_2_more_things_descr">- Stabilere Zustellung von Nachrichten.\n- Ein bisschen verbesserte Gruppen.\n- Und mehr!</string>
     <string name="dont_enable_receipts">Nicht aktivieren</string>
     <string name="sending_delivery_receipts_will_be_enabled">Das Senden von Empfangsbestätigungen an alle Kontakte wird aktiviert.</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Sie können diese später in den Datenschutz- und Sicherheits-Einstellungen der App aktivieren.</string>
@@ -1457,9 +1453,7 @@
     <string name="v5_3_new_interface_languages_descr">Arabisch, Bulgarisch, Finnisch, Hebräisch, Thailändisch und Ukrainisch - Dank der Nutzer und Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Erstellen eines neuen Profils in der Desktop-App. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognito beim Verbinden einschalten.</string>
-    <string name="v5_3_discover_join_groups_descr">- Verbindung mit dem Directory-Service (BETA)!
-\n- Empfangsbestätigungen (für bis zu 20 Mitglieder).
-\n- Schneller und stabiler.</string>
+    <string name="v5_3_discover_join_groups_descr">- Verbindung mit dem Directory-Service (BETA)!\n- Empfangsbestätigungen (für bis zu 20 Mitglieder).\n- Schneller und stabiler.</string>
     <string name="member_contact_send_direct_message">Direktnachricht senden</string>
     <string name="rcv_group_event_member_created_contact">Direkt miteinander verbunden</string>
     <string name="expand_verb">Erweitern</string>
@@ -1568,9 +1562,7 @@
     <string name="paste_desktop_address">Desktop-Adresse einfügen</string>
     <string name="verify_code_with_desktop">Code mit dem Desktop überprüfen</string>
     <string name="scan_qr_code_from_desktop">Den QR-Code vom Desktop scannen</string>
-    <string name="v5_4_more_things_descr">- Optionale Benachrichtigung von gelöschten Kontakten.
-\n- Profilnamen mit Leerzeichen.
-\n- Und mehr!</string>
+    <string name="v5_4_more_things_descr">- Optionale Benachrichtigung von gelöschten Kontakten.\n- Profilnamen mit Leerzeichen.\n- Und mehr!</string>
     <string name="scan_from_mobile">Vom Mobiltelefon scannen</string>
     <string name="verify_connections">Verbindungen überprüfen</string>
     <string name="loading_remote_file_desc">Bitte warten Sie, solange die Datei von dem verknüpften Mobiltelefon geladen wird</string>
@@ -1799,12 +1791,12 @@
     <string name="simplex_links_not_allowed">SimpleX-Links sind nicht erlaubt</string>
     <string name="voice_messages_not_allowed">Sprachnachrichten sind nicht erlaubt</string>
     <string name="simplex_links">SimpleX-Links</string>
-    <string name="group_members_can_send_simplex_links">Gruppenmitglieder können SimpleX-Links senden.</string>
+    <string name="group_members_can_send_simplex_links">Mitglieder können SimpleX-Links senden.</string>
     <string name="feature_roles_admins">Administratoren</string>
     <string name="feature_roles_all_members">Alle Mitglieder</string>
     <string name="feature_enabled_for">Aktiviert für</string>
     <string name="feature_roles_owners">Eigentümer</string>
-    <string name="simplex_links_are_prohibited_in_group">In dieser Gruppe sind SimpleX-Links nicht erlaubt.</string>
+    <string name="simplex_links_are_prohibited_in_group">SimpleX-Links sind nicht erlaubt.</string>
     <string name="prohibit_sending_simplex_links">Das Senden von SimpleX-Links nicht erlauben.</string>
     <string name="allow_to_send_simplex_links">Das Senden von SimpleX-Links erlauben.</string>
     <string name="audio_device_speaker">Lautsprecher</string>
@@ -2077,7 +2069,7 @@
     <string name="deleted_chats">Archivierte Kontakte</string>
     <string name="no_filtered_contacts">Keine gefilterten Kontakte</string>
     <string name="contact_list_header_title">Ihre Kontakte</string>
-    <string name="one_hand_ui">Chat-Symbolleiste unten</string>
+    <string name="one_hand_ui">App-Symbolleiste unten</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Bitten Sie Ihren Kontakt darum, Anrufe zu aktivieren.</string>
     <string name="you_need_to_allow_calls">Sie müssen Ihrem Kontakt Anrufe zu Ihnen erlauben, bevor Sie ihn selbst anrufen können.</string>
     <string name="allow_calls_question">Anrufe erlauben?</string>
@@ -2157,8 +2149,7 @@
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Verwenden Sie für jedes Profil unterschiedliche Proxy-Anmeldeinformationen.</string>
     <string name="network_proxy_random_credentials">Verwenden Sie zufällige Anmeldeinformationen</string>
     <string name="network_proxy_username">Benutzername</string>
-    <string name="n_file_errors">%1$d Datei-Fehler:
-\n%2$s</string>
+    <string name="n_file_errors">%1$d Datei-Fehler:\n%2$s</string>
     <string name="forward_files_in_progress_desc">%1$d Datei(en) wird/werden immer noch heruntergeladen.</string>
     <string name="forward_files_failed_to_receive_desc">Bei %1$d Datei(en) ist das Herunterladen fehlgeschlagen.</string>
     <string name="error_forwarding_messages">Fehler beim Weiterleiten der Nachrichten</string>
@@ -2215,11 +2206,11 @@
     <string name="for_social_media">Für soziale Medien</string>
     <string name="or_to_share_privately">Oder zum privaten Teilen</string>
     <string name="simplex_address_or_1_time_link">SimpleX-Adresse oder Einmal-Link?</string>
-    <string name="onboarding_choose_server_operators">Betreiber auswählen</string>
+    <string name="onboarding_choose_server_operators">Server-Betreiber</string>
     <string name="onboarding_network_operators">Netzwerk-Betreiber</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">Wenn mehr als ein Netzwerk-Betreiber aktiviert ist, verwendet die App für jede Unterhaltung Server der verschiedenen Betreiber.</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">Die App verwendet für jede Unterhaltung Server von unterschiedlichen Betreibern, um Ihre Privatsphäre zu schützen.</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Die Nutzungsbedingungen der aktivierten Betreiber werden nach 30 Tagen akzeptiert.</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">Wenn Sie beispielsweise Nachrichten über einen SimpleX-Chatserver empfangen, verwendet die App einen der Server von Flux für die private Weiterleitung.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Wenn Ihr Kontakt beispielsweise Nachrichten über einen SimpleX-Chat-Server empfängt, wird Ihre App diese über einen Flux-Server versenden.</string>
     <string name="onboarding_network_operators_review_later">Später einsehen</string>
     <string name="onboarding_select_network_operators_to_use">Wählen sie die zu nutzenden Netzwerk-Betreiber aus.</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">Sie können die Betreiber in den Netzwerk- und Servereinstellungen konfigurieren.</string>
@@ -2246,7 +2237,7 @@
     <string name="operator_use_for_messages">Für Nachrichten verwenden</string>
     <string name="operator_added_message_servers">Nachrichtenserver hinzugefügt</string>
     <string name="operator_use_for_messages_private_routing">Für privates Routing</string>
-    <string name="xftp_servers_per_user">Die Server Deines aktuellen Chat-Profils für neue Dateien</string>
+    <string name="xftp_servers_per_user">Medien- und Datei-Server für neue Daten über Ihr aktuelles Chat-Profil</string>
     <string name="operator_use_for_sending">Für das Senden</string>
     <string name="operator_use_for_files">Für Dateien verwenden</string>
     <string name="error_adding_server">Fehler beim Hinzufügen des Servers</string>
@@ -2271,7 +2262,7 @@
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Ein Einmal-Link kann <i>nur mit einem Kontakt</i> genutzt werden - teilen Sie in nur persönlich oder über einen beliebigen Messenger.]]></string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Die Nutzungsbedingungen der/des folgenden Betreiber(s) wurden schon akzeptiert: <b>%s</b>.]]></string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: <b>%s</b>.]]></string>
-    <string name="operator_conditions_will_be_accepted_on">Die Nutzungsbedingungen werden akzeptiert am: %s.</string>
+    <string name="operator_conditions_will_be_accepted_on">Die Nutzungsbedingungen wurden akzeptiert am: %s</string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Diese Nutzungsbedingungen gelten auch für: <b>%s</b>.]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Um die Server von <b>%s</b> zu nutzen, müssen Sie dessen Nutzungsbedingungen akzeptieren.]]></string>
     <string name="error_accepting_operator_conditions">Fehler beim Akzeptieren der Nutzungsbedingungen</string>
@@ -2285,10 +2276,49 @@
     <string name="connection_error_quota_desc">Diese Verbindung hat das Limit der nicht ausgelieferten Nachrichten erreicht. Ihr Kontakt ist möglicherweise offline.</string>
     <string name="message_deleted_or_not_received_error_desc">Diese Nachricht wurde gelöscht oder bisher noch nicht empfangen.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Zum Schutz vor dem Austausch Ihres Links können Sie die Sicherheitscodes Ihrer Kontakte vergleichen.</string>
-    <string name="operators_conditions_accepted_for"><![CDATA[Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: <b>%s</b>.]]></string>
+    <string name="operators_conditions_accepted_for"><![CDATA[Die Nutzungsbedingungen der/des Betreiber(s) wurden akzeptiert: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_on">Die Nutzungsbedingungen wurden akzeptiert am: %s.</string>
     <string name="operator_conditions_failed_to_load">Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:</string>
     <string name="remote_hosts_section">Ferngesteuerte Mobiltelefone</string>
     <string name="chat_archive">Oder importieren Sie eine Archiv-Datei</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Hinweis für Geräte von Xiaomi</b>: Bitte aktivieren Sie in den System-Einstellungen die Option "Autostart", damit Benachrichtigungen funktionieren.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Alle Nachrichten und Dateien werden <b>Ende-zu-Ende-verschlüsselt</b> versendet. In Direktnachrichten sogar mit Post-Quantum-Security.]]></string>
+    <string name="button_add_team_members">Team-Mitglieder aufnehmen</string>
+    <string name="button_add_friends">Freunde aufnehmen</string>
+    <string name="display_name_accepted_invitation">Einladung akzeptiert</string>
+    <string name="business_address">Geschäftliche Adresse</string>
+    <string name="v6_2_business_chats">Geschäftliche Chats</string>
+    <string name="add_your_team_members_to_conversations">Nehmen Sie Team-Mitglieder in Ihre Unterhaltungen auf.</string>
+    <string name="onboarding_notifications_mode_service_desc_short">Die App läuft immer im Hintergrund ab</string>
+    <string name="direct_messages_are_prohibited_in_chat">In diesem Chat sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
+    <string name="onboarding_notifications_mode_off_desc_short">Kein Hintergrund-Service</string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">Nachrichten alle 10 Minuten überprüfen</string>
+    <string name="onboarding_notifications_mode_battery">Benachrichtigungen und Akku</string>
+    <string name="invite_to_chat_button">Zum Chat einladen</string>
+    <string name="connect_plan_chat_already_exists">Chat besteht bereits!</string>
+    <string name="chat_bottom_bar">Chat-Symbolleiste unten</string>
+    <string name="button_leave_chat">Chat verlassen</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">Das Mitglied wird aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="chat_main_profile_sent">Ihr Chat-Profil wird an die Chat-Mitglieder gesendet.</string>
+    <string name="direct_messages_are_prohibited">Direktnachrichten zwischen Mitgliedern sind nicht erlaubt.</string>
+    <string name="how_it_helps_privacy">Wie die Privatsphäre geschützt wird</string>
+    <string name="leave_chat_question">Chat verlassen?</string>
+    <string name="delete_chat_question">Chat löschen?</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">Der Chat wird für alle Mitglieder gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="v6_2_business_chats_descr">Schutz der Privatsphäre Ihrer Kunden.</string>
+    <string name="display_name_requested_to_connect">Zur Verbindung aufgefordert</string>
+    <string name="maximum_message_size_reached_non_text">Bitte verkleinern Sie die Nachrichten-Größe oder entfernen Sie Medien und versenden Sie diese erneut.</string>
+    <string name="only_chat_owners_can_change_prefs">Nur Chat-Eigentümer können die Präferenzen ändern.</string>
+    <string name="maximum_message_size_reached_text">Bitte verkleinern Sie die Nachrichten-Größe und versenden Sie diese erneut.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Die Rolle wird auf %s geändert. Im Chat wird Jeder darüber informiert.</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</string>
+    <string name="maximum_message_size_reached_forwarding">Sie können die Nachricht kopieren und verkleinern, um sie zu versenden.</string>
+    <string name="button_delete_chat">Chat löschen</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">Der Chat wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="maximum_message_size_title">Die Nachricht ist zu umfangreich!</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Wenn mehr als ein Betreiber aktiviert ist, hat keiner von ihnen Metadaten, um zu erfahren, wer mit wem kommuniziert.</string>
+    <string name="info_row_chat">Chat</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Sie sind bereits mit <b>%1$s</b> verbunden.]]></string>
+    <string name="onboarding_network_about_operators">Über Betreiber</string>
 </resources>

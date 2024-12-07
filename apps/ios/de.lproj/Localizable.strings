@@ -344,6 +344,9 @@
 "Abort changing address?" = "Wechsel der Empfängeradresse beenden?";
 
 /* No comment provided by engineer. */
+"About operators" = "Über Betreiber";
+
+/* No comment provided by engineer. */
 "About SimpleX Chat" = "Über SimpleX Chat";
 
 /* No comment provided by engineer. */
@@ -376,6 +379,9 @@
 /* No comment provided by engineer. */
 "Accepted conditions" = "Akzeptierte Nutzungsbedingungen";
 
+/* chat list item title */
+"accepted invitation" = "Einladung akzeptiert";
+
 /* No comment provided by engineer. */
 "Acknowledged" = "Bestätigt";
 
@@ -389,6 +395,9 @@
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Fügen Sie die Adresse Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.";
 
 /* No comment provided by engineer. */
+"Add friends" = "Freunde aufnehmen";
+
+/* No comment provided by engineer. */
 "Add profile" = "Profil hinzufügen";
 
 /* No comment provided by engineer. */
@@ -398,10 +407,16 @@
 "Add servers by scanning QR codes." = "Fügen Sie Server durch Scannen der QR Codes hinzu.";
 
 /* No comment provided by engineer. */
+"Add team members" = "Team-Mitglieder aufnehmen";
+
+/* No comment provided by engineer. */
 "Add to another device" = "Einem anderen Gerät hinzufügen";
 
 /* No comment provided by engineer. */
 "Add welcome message" = "Begrüßungsmeldung hinzufügen";
+
+/* No comment provided by engineer. */
+"Add your team members to the conversations." = "Nehmen Sie Team-Mitglieder in Ihre Unterhaltungen auf.";
 
 /* No comment provided by engineer. */
 "Added media & file servers" = "Medien- und Dateiserver hinzugefügt";
@@ -794,6 +809,12 @@
 "Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Bulgarisch, Finnisch, Thailändisch und Ukrainisch - Dank der Nutzer und [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
+"Business address" = "Geschäftliche Adresse";
+
+/* No comment provided by engineer. */
+"Business chats" = "Geschäftliche Chats";
+
+/* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Per Chat-Profil (Voreinstellung) oder [per Verbindung](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
@@ -910,6 +931,15 @@
 "changing address…" = "Wechsel der Empfängeradresse wurde gestartet…";
 
 /* No comment provided by engineer. */
+"Chat" = "Chat";
+
+/* No comment provided by engineer. */
+"Chat already exists" = "Chat besteht bereits";
+
+/* No comment provided by engineer. */
+"Chat already exists!" = "Chat besteht bereits!";
+
+/* No comment provided by engineer. */
 "Chat colors" = "Chat-Farben";
 
 /* No comment provided by engineer. */
@@ -953,6 +983,12 @@
 
 /* No comment provided by engineer. */
 "Chat theme" = "Chat-Design";
+
+/* No comment provided by engineer. */
+"Chat will be deleted for all members - this cannot be undone!" = "Der Chat wird für alle Mitglieder gelöscht. Dies kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"Chat will be deleted for you - this cannot be undone!" = "Der Chat wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
 "Chats" = "Chats";
@@ -1476,10 +1512,16 @@
 "Delete and notify contact" = "Kontakt löschen und benachrichtigen";
 
 /* No comment provided by engineer. */
+"Delete chat" = "Chat löschen";
+
+/* No comment provided by engineer. */
 "Delete chat profile" = "Chat-Profil löschen";
 
 /* No comment provided by engineer. */
 "Delete chat profile?" = "Chat-Profil löschen?";
+
+/* No comment provided by engineer. */
+"Delete chat?" = "Chat löschen?";
 
 /* No comment provided by engineer. */
 "Delete connection" = "Verbindung löschen";
@@ -1654,6 +1696,9 @@
 
 /* chat feature */
 "Direct messages" = "Direkte Nachrichten";
+
+/* No comment provided by engineer. */
+"Direct messages between members are prohibited in this chat." = "In diesem Chat sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.";
 
 /* No comment provided by engineer. */
 "Direct messages between members are prohibited." = "In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.";
@@ -2695,6 +2740,9 @@
 "Invite members" = "Mitglieder einladen";
 
 /* No comment provided by engineer. */
+"Invite to chat" = "Zum Chat einladen";
+
+/* No comment provided by engineer. */
 "Invite to group" = "In Gruppe einladen";
 
 /* No comment provided by engineer. */
@@ -2809,6 +2857,12 @@
 "Leave" = "Verlassen";
 
 /* No comment provided by engineer. */
+"Leave chat" = "Chat verlassen";
+
+/* No comment provided by engineer. */
+"Leave chat?" = "Chat verlassen?";
+
+/* No comment provided by engineer. */
 "Leave group" = "Gruppe verlassen";
 
 /* No comment provided by engineer. */
@@ -2905,10 +2959,16 @@
 "Member inactive" = "Mitglied inaktiv";
 
 /* No comment provided by engineer. */
+"Member role will be changed to \"%@\". All chat members will be notified." = "Die Rolle des Mitglieds wird auf \"%@\" geändert. Alle Chat-Mitglieder werden darüber informiert.";
+
+/* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "Die Mitgliederrolle wird auf \"%@\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". The member will receive a new invitation." = "Die Mitgliederrolle wird auf \"%@\" geändert. Das Mitglied wird eine neue Einladung erhalten.";
+
+/* No comment provided by engineer. */
+"Member will be removed from chat - this cannot be undone!" = "Das Mitglied wird aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!";
@@ -3330,6 +3390,9 @@
 "Onion hosts will not be used." = "Onion-Hosts werden nicht verwendet.";
 
 /* No comment provided by engineer. */
+"Only chat owners can change preferences." = "Nur Chat-Eigentümer können die Präferenzen ändern.";
+
+/* No comment provided by engineer. */
 "Only client devices store user profiles, contacts, groups, and messages." = "Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine **2-Schichten Ende-zu-Ende-Verschlüsselung** gesendet werden.";
 
 /* No comment provided by engineer. */
@@ -3406,6 +3469,9 @@
 
 /* alert title */
 "Operator server" = "Betreiber-Server";
+
+/* No comment provided by engineer. */
+"Or import archive file" = "Oder importieren Sie eine Archiv-Datei";
 
 /* No comment provided by engineer. */
 "Or paste archive link" = "Oder fügen Sie den Archiv-Link ein";
@@ -3574,6 +3640,9 @@
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Datenschutz & Sicherheit";
+
+/* No comment provided by engineer. */
+"Privacy for your customers." = "Schutz der Privatsphäre Ihrer Kunden.";
 
 /* No comment provided by engineer. */
 "Privacy redefined" = "Datenschutz neu definiert";
@@ -3866,6 +3935,9 @@
 
 /* chat item action */
 "Reply" = "Antwort";
+
+/* chat list item title */
+"requested to connect" = "Zur Verbindung aufgefordert";
 
 /* No comment provided by engineer. */
 "Required" = "Erforderlich";
@@ -4575,6 +4647,9 @@
 "Tap button " = "Schaltfläche antippen ";
 
 /* No comment provided by engineer. */
+"Tap Create SimpleX address in the menu to create it later." = "Tippen Sie im Menü auf SimpleX-Adresse erstellen, um sie später zu erstellen.";
+
+/* No comment provided by engineer. */
 "Tap to activate profile." = "Zum Aktivieren des Profils tippen.";
 
 /* No comment provided by engineer. */
@@ -4704,10 +4779,10 @@
 "The sender will NOT be notified" = "Der Absender wird NICHT benachrichtigt";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Mögliche Server für neue Verbindungen von Ihrem aktuellen Chat-Profil **%@**.";
+"The servers for new connections of your current chat profile **%@**." = "Nachrichten-Server für neue Verbindungen über Ihr aktuelles Chat-Profil **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "Die Server Deines aktuellen Chat-Profils für neue Dateien **%@**.";
+"The servers for new files of your current chat profile **%@**." = "Medien- und Datei-Server für neue Daten über Ihr aktuelles Chat-Profil **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Der von Ihnen eingefügte Text ist kein SimpleX-Link.";
@@ -5283,6 +5358,9 @@
 "You are already connected to %@." = "Sie sind bereits mit %@ verbunden.";
 
 /* No comment provided by engineer. */
+"You are already connected with %@." = "Sie sind bereits mit %@ verbunden.";
+
+/* No comment provided by engineer. */
 "You are already connecting to %@." = "Sie sind bereits mit %@ verbunden.";
 
 /* No comment provided by engineer. */
@@ -5479,6 +5557,9 @@
 
 /* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.";
+
+/* No comment provided by engineer. */
+"You will stop receiving messages from this chat. Chat history will be preserved." = "Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.";

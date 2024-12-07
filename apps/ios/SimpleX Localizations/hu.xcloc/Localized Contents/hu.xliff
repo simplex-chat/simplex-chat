@@ -574,11 +574,12 @@
       </trans-unit>
       <trans-unit id="About SimpleX Chat" xml:space="preserve">
         <source>About SimpleX Chat</source>
-        <target>A SimpleX Chatről</target>
+        <target>SimpleX Chat névjegye</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About operators" xml:space="preserve">
         <source>About operators</source>
+        <target>Az üzemeltetőkről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -1352,7 +1353,7 @@
       </trans-unit>
       <trans-unit id="Change chat profiles" xml:space="preserve">
         <source>Change chat profiles</source>
-        <target>Felhasználói profilok megváltoztatása</target>
+        <target>Csevegési profilok megváltoztatása</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -3525,7 +3526,7 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
       </trans-unit>
       <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve">
         <source>For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</source>
-        <target>Ha például az ismerőse a SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása a Flux egyik kiszolgálóját használja a kézbesítéshez.</target>
+        <target>Például, ha az Ön ismerőse egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For private routing" xml:space="preserve">
@@ -5570,7 +5571,7 @@ Hiba: %@</target>
       </trans-unit>
       <trans-unit id="Protect IP address" xml:space="preserve">
         <source>Protect IP address</source>
-        <target>IP-cím védelem</target>
+        <target>IP-cím védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
@@ -6715,6 +6716,7 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
       </trans-unit>
       <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
         <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
+        <target>A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -7208,7 +7210,7 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
         <source>The same conditions will apply to operator **%@**.</source>
-        <target>Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: **%@**.</target>
+        <target>Ugyanezek a feltételek lesznek elfogadva a következő üzemeltetőre is: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
@@ -8154,7 +8156,7 @@ Csatlakozáskérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">
         <source>You can configure servers via settings.</source>
-        <target>A kiszolgálókat a beállításokon keresztül konfigurálhatja.</target>
+        <target>A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
@@ -8204,7 +8206,7 @@ Csatlakozáskérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>
-        <target>A beállításokon keresztül beállíthatja a lezárási képernyő értesítési előnézetét.</target>
+        <target>A lezárási képernyő értesítési előnézetét az „Értesítések” menüben állíthatja be.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
@@ -8551,6 +8553,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="accepted invitation" xml:space="preserve">
         <source>accepted invitation</source>
+        <target>elfogadott meghívó</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -9237,6 +9240,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>
+        <target>kérelmezve a kapcsolódáshoz</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">

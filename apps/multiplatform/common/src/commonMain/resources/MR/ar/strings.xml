@@ -12,10 +12,10 @@
     <string name="about_simplex">عن SimpleX</string>
     <string name="above_then_preposition_continuation">أعلاه، ثم:</string>
     <string name="accept_call_on_lock_screen">اقبل</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف تعريفك وجهات اتصالك ورسائلك وملفاتك بشكل نهائي.</string>
     <string name="alert_message_no_group">هذه المجموعة لم تعد موجودة.</string>
     <string name="this_QR_code_is_not_a_link">رمز QR هذا ليس رابطًا!</string>
-    <string name="next_generation_of_private_messaging">الجيل القادم من \nالرسائل الخاصة</string>
+    <string name="next_generation_of_private_messaging">مستقبل المُراسلة</string>
     <string name="delete_files_and_media_desc">لا يمكن التراجع عن هذا الإجراء - سيتم حذف جميع الملفات والوسائط المستلمة والمرسلة. ستبقى الصور منخفضة الدقة.</string>
     <string name="enable_automatic_deletion_message">لا يمكن التراجع عن هذا الإجراء - سيتم حذف الرسائل المرسلة والمستلمة قبل التحديد. قد تأخذ عدة دقائق.</string>
     <string name="messages_section_description">ينطبق هذا الإعداد على الرسائل الموجودة في ملف تعريف الدردشة الحالي الخاص بك</string>
@@ -30,7 +30,7 @@
     <string name="smp_servers_preset_add">أضِف خوادم مُعدة مسبقًا</string>
     <string name="smp_servers_add_to_another_device">أضِف إلى جهاز آخر</string>
     <string name="users_delete_all_chats_deleted">سيتم حذف جميع الدردشات والرسائل - لا يمكن التراجع عن هذا!</string>
-    <string name="network_enable_socks_info">الوصول إلى الخوادم عبر وكيل SOCKS على المنفذ %d؟ يجب بدء تشغيل الوكيل قبل تمكين هذا الخيار.</string>
+    <string name="network_enable_socks_info">الوصول إلى الخوادم عبر وكيل SOCKS على المنفذ %d؟ يجب بدء تشغيل الوكيل قبل تفعيل هذا الخيار.</string>
     <string name="smp_servers_add">أضِف خادم</string>
     <string name="network_settings">إعدادات الشبكة المتقدمة</string>
     <string name="all_group_members_will_remain_connected">سيبقى جميع أعضاء المجموعة على اتصال.</string>
@@ -42,7 +42,7 @@
     <string name="accept_contact_incognito_button">قبول التخفي</string>
     <string name="button_add_welcome_message">أضِف رسالة ترحيب</string>
     <string name="v4_3_improved_server_configuration_desc">أضف الخوادم عن طريق مسح رموز QR.</string>
-    <string name="v4_2_group_links_desc">يمكّن للمشرفين إنشاء روابط للانضمام إلى المجموعات.</string>
+    <string name="v4_2_group_links_desc">يمكن للمشرفين إنشاء روابط للانضمام إلى المجموعات.</string>
     <string name="accept_connection_request__question">قبول طلب الاتصال؟</string>
     <string name="clear_chat_warning">سيتم حذف جميع الرسائل - لا يمكن التراجع عن هذا! سيتم حذف الرسائل فقط من أجلك.</string>
     <string name="callstatus_accepted">مكالمة مقبولة</string>
@@ -67,17 +67,17 @@
     <string name="notifications_mode_service">دائِماً مُتاح</string>
     <string name="notifications_mode_off_desc">يمكن للتطبيق استلام الإشعارات فقط عند تشغيله، ولن يتم بدء تشغيل أي خدمة في الخلفية</string>
     <string name="allow_voice_messages_question">السماح بالرسائل الصوتية؟</string>
-    <string name="all_your_contacts_will_remain_connected">ستبقى جميع جهات الاتصال الخاصة بك متصلة.</string>
+    <string name="all_your_contacts_will_remain_connected">ستبقى جميع جهات اتصالك متصلة.</string>
     <string name="always_use_relay">استخدم التتابع دائمًا</string>
     <string name="full_backup">النسخ الاحتياطي لبيانات التطبيق</string>
     <string name="all_app_data_will_be_cleared">حُذفت جميع بيانات التطبيق.</string>
     <string name="allow_to_delete_messages">السماح بحذف الرسائل المرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
     <string name="allow_your_contacts_to_send_voice_messages">اسمح لجهات اتصالك بإرسال رسائل صوتية.</string>
-    <string name="learn_more_about_address">حول عنوان SimpleX</string>
+    <string name="learn_more_about_address">عن عنوان SimpleX</string>
     <string name="app_version_code">بناء التطبيق: %s</string>
     <string name="appearance_settings">المظهر</string>
-    <string name="add_address_to_your_profile">أضف عنوانًا إلى ملف التعريف الخاص بك ، حتى تتمكن جهات الاتصال الخاصة بك من مشاركته مع أشخاص آخرين. سيتم إرسال تحديث الملف الشخصي إلى جهات الاتصال الخاصة بك.</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">ستبقى جميع جهات الاتصال الخاصة بك متصلة. سيتم إرسال تحديث الملف الشخصي إلى جهات الاتصال الخاصة بك.</string>
+    <string name="add_address_to_your_profile">أضف عنوانًا إلى ملف تعريفك، حتى تتمكن جهات اتصالك من مشاركته مع أشخاص آخرين. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">ستبقى جميع جهات اتصالك متصلة. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
     <string name="settings_section_title_icon">رمز التطبيق</string>
     <string name="address_section_title">عنوان</string>
     <string name="allow_your_contacts_irreversibly_delete">اسمح لجهات اتصالك بحذف الرسائل المرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
@@ -96,7 +96,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">يمكنك أنت وجهة اتصالك إضافة ردود فعل الرسائل.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">يمكنك أنت وجهة اتصالك إرسال رسائل تختفي.</string>
     <string name="icon_descr_call_progress">مكالمتك تحت الإجراء</string>
-    <string name="cannot_receive_file">لا يمكّن استلام الملف</string>
+    <string name="cannot_receive_file">لا يمكن استلام الملف</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>جيد للبطارية</b>. يتحقق التطبيق من الرسائل كل 10 دقائق. قد تفوتك مكالمات أو رسائل عاجلة.]]></string>
     <string name="bold_text">عريض</string>
     <string name="audio_call_no_encryption">مكالمات الصوت (ليست مُعمّاة بين الطرفين)</string>
@@ -135,7 +135,7 @@
     <string name="app_passcode_replaced_with_self_destruct">يتم استبدال رمز مرور التطبيق برمز مرور التدمير الذاتي.</string>
     <string name="v4_6_audio_video_calls">مكالمات الصوت والفيديو</string>
     <string name="callstatus_error">خطأ في الاتصال</string>
-    <string name="turning_off_service_and_periodic">تحسين البطارية نشط ، مما يؤدي إلى إيقاف تشغيل خدمة الخلفية والطلبات الدورية للرسائل الجديدة. يمكنك إعادة تمكينها عبر الإعدادات.</string>
+    <string name="turning_off_service_and_periodic">تحسين البطارية نشط، مما يؤدي إلى إيقاف تشغيل خدمة الخلفية والطلبات الدورية للرسائل الجديدة. يمكنك إعادة تفعيلها عبر الإعدادات.</string>
     <string name="database_initialization_error_title">لا يمكن تهيئة قاعدة البيانات</string>
     <string name="attach">إرفاق</string>
     <string name="icon_descr_asked_to_receive">طلب لاستلام الصورة</string>
@@ -182,7 +182,7 @@
     <string name="encrypted_database">قاعدة البيانات مُعمّاة</string>
     <string name="rcv_group_event_changed_member_role">غيرت دور %s إلى %s</string>
     <string name="switch_receiving_address">تغيير عنوان الاستلام</string>
-    <string name="failed_to_create_user_title">خطأ في إنشاء الملف الشخصي!</string>
+    <string name="failed_to_create_user_title">خطأ في إنشاء ملف التعريف!</string>
     <string name="connection_error">خطأ في الإتصال</string>
     <string name="connection_timeout">انتهت مهلة الاتصال</string>
     <string name="contact_already_exists">جهة الاتصال موجودة بالفعل</string>
@@ -303,7 +303,7 @@
     <string name="la_enter_app_passcode">أدخل عبارة المرور</string>
     <string name="your_chats">الدردشات</string>
     <string name="icon_descr_server_status_connected">متصل</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">سيتم حذف جهة الاتصال وجميع الرسائل - لا يمكن التراجع عن هذا الإجراء!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">سيتم حذف جهة الاتصال وجميع الرسائل - لا يمكن التراجع عن هذا!</string>
     <string name="maximum_supported_file_size">الحد الأقصى لحجم الملف المدعوم حاليًا هو %1$s.</string>
     <string name="connect_via_link_or_qr">تواصل عبر الرابط / رمز QR</string>
     <string name="share_one_time_link">إنشاء رابط دعوة لمرة واحدة</string>
@@ -314,7 +314,7 @@
     <string name="colored_text">ملون</string>
     <string name="status_contact_has_e2e_encryption">لدى جهة الاتصال التعمية بين الطريفين</string>
     <string name="create_profile_button">إنشاء</string>
-    <string name="create_your_profile">إنشاء ملف تعريف</string>
+    <string name="create_your_profile">أنشئ ملف تعريفك</string>
     <string name="icon_descr_call_connecting">مكالمة جارية...</string>
     <string name="enable_self_destruct">تفعيل التدمير الذاتي</string>
     <string name="conn_event_ratchet_sync_started">الموافقة على التعمية…</string>
@@ -409,11 +409,11 @@
     <string name="icon_descr_expand_role">توسيع تحديد الدور</string>
     <string name="group_invitation_expired">انتهت صلاحية دعوة المجموعة</string>
     <string name="alert_title_no_group">المجموعة غير موجودة!</string>
-    <string name="export_theme">تصدير السمة</string>
+    <string name="export_theme">صدّر السمة</string>
     <string name="files_and_media">الملفات والوسائط</string>
     <string name="icon_descr_flip_camera">قلب الكاميرا</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">سيتم حذف المجموعة لجميع الأعضاء - لا يمكن التراجع عن هذا!</string>
-    <string name="group_members_can_send_dms">يمكن لأعضاء المجموعة إرسال رسائل مباشرة.</string>
+    <string name="group_members_can_send_dms">يمكن للأعضاء إرسال رسائل مباشرة.</string>
     <string name="failed_to_parse_chats_title">فشل تحميل الدردشات</string>
     <string name="email_invite_body">أهلاً!
 \nتواصل معي عبر SimpleX Chat: %s</string>
@@ -422,8 +422,8 @@
     <string name="icon_descr_file">الملف</string>
     <string name="snd_group_event_group_profile_updated">حُدّث ملف تعريف المجموعة</string>
     <string name="group_display_name_field">أدخل اسم المجموعة:</string>
-    <string name="group_members_can_send_voice">يمكن لأعضاء المجموعة إرسال رسائل صوتية.</string>
-    <string name="files_are_prohibited_in_group">الملفات والوسائط ممنوعة في هذه المجموعة.</string>
+    <string name="group_members_can_send_voice">يمكن للأعضاء إرسال رسائل صوتية.</string>
+    <string name="files_are_prohibited_in_group">الملفات والوسائط ممنوعة.</string>
     <string name="v4_6_group_welcome_message">رسالة ترحيب المجموعة</string>
     <string name="v4_6_reduced_battery_usage">مزيد من تقليل استخدام البطارية</string>
     <string name="info_row_group">المجموعة</string>
@@ -433,16 +433,16 @@
     <string name="v4_4_french_interface">الواجهة الفرنسية</string>
     <string name="settings_section_title_help">المساعدة</string>
     <string name="group_member_status_group_deleted">حُذِفت المجموعة</string>
-    <string name="group_members_can_send_disappearing">يمكن لأعضاء المجموعة إرسال رسائل تختفي.</string>
+    <string name="group_members_can_send_disappearing">يمكن للأعضاء إرسال رسائل تختفي.</string>
     <string name="v4_6_group_moderation">إشراف المجموعة</string>
     <string name="v5_1_message_reactions_descr">أخيرا، لدينا منهم! 🚀</string>
-    <string name="export_database">تصدير قاعدة البيانات</string>
+    <string name="export_database">صدّر قاعدة البيانات</string>
     <string name="section_title_for_console">لوحدة التحكم</string>
     <string name="settings_experimental_features">الميزات التجريبية</string>
     <string name="settings_section_title_experimenta">تجريبي</string>
     <string name="icon_descr_group_inactive">المجموعة غير نشطة</string>
     <string name="files_and_media_section">الملفات والوسائط</string>
-    <string name="group_members_can_delete">يمكن لأعضاء المجموعة حذف الرسائل المرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
+    <string name="group_members_can_delete">يمكن للأعضاء حذف الرسائل المُرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
     <string name="fix_connection_not_supported_by_contact">الإصلاح غير مدعوم من قبل جهة الاتصال</string>
     <string name="group_profile_is_stored_on_members_devices">يُخزّن ملف تعريف المجموعة على أجهزة الأعضاء، وليس على الخوادم.</string>
     <string name="v4_2_group_links">روابط المجموعة</string>
@@ -450,25 +450,25 @@
     <string name="full_name__field">الاسم الكامل:</string>
     <string name="alert_message_group_invitation_expired">لم تعد دعوة المجموعة صالحة، تمت أُزيلت بواسطة المرسل.</string>
     <string name="group_link">رابط المجموعة</string>
-    <string name="file_will_be_received_when_contact_is_online">سيتم استلام الملف عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="file_will_be_received_when_contact_is_online">سيتم استلام الملف عندما تكون جهة اتصالك متصلة بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="group_full_name_field">الاسم الكامل للمجموعة:</string>
     <string name="simplex_link_mode_full">رابط كامل</string>
     <string name="choose_file">ملف</string>
     <string name="delete_group_for_self_cannot_undo_warning">سيتم حذف المجموعة لك - لا يمكن التراجع عن هذا!</string>
     <string name="failed_to_parse_chat_title">فشل تحميل الدردشة</string>
-    <string name="group_members_can_add_message_reactions">يمكن لأعضاء المجموعة إضافة ردود فعل الرسالة.</string>
+    <string name="group_members_can_add_message_reactions">يمكن للأعضاء إضافة ردود الفعل على الرسائل.</string>
     <string name="favorite_chat">المفضل</string>
     <string name="notification_preview_mode_hidden">مخفي</string>
     <string name="file_saved">حُفظ الملف</string>
     <string name="revoke_file__message">سيتم حذف الملف من الخوادم.</string>
-    <string name="file_will_be_received_when_contact_completes_uploading">سيتم استلام الملف عند اكتمال تحميل جهة الاتصال الخاصة بك.</string>
+    <string name="file_will_be_received_when_contact_completes_uploading">سيتم استلام الملف عندما يكتمل جهة اتصالك من رفعِها.</string>
     <string name="icon_descr_help">المساعدة</string>
     <string name="file_with_path">الملف: %s</string>
     <string name="fix_connection_confirm">إصلاح</string>
     <string name="fix_connection">إصلاح الاتصال</string>
     <string name="fix_connection_question">إصلاح الاتصال؟</string>
     <string name="fix_connection_not_supported_by_group_member">الإصلاح غير مدعوم من قبل أعضاء المجموعة</string>
-    <string name="group_members_can_send_files">يمكن لأعضاء المجموعة إرسال الملفات والوسائط.</string>
+    <string name="group_members_can_send_files">يمكن للأعضاء إرسال الملفات والوسائط.</string>
     <string name="group_preferences">تفضيلات المجموعة</string>
     <string name="v5_0_large_files_support_descr">سريع ولا تنتظر حتى يصبح المرسل متصلاً بالإنترنت!</string>
     <string name="hide_verb">إخفاء</string>
@@ -483,7 +483,7 @@
     <string name="import_database">استيراد قاعدة بيانات</string>
     <string name="custom_time_unit_hours">ساعات</string>
     <string name="edit_history">السجل</string>
-    <string name="image_will_be_received_when_contact_completes_uploading">سيتم استلام الصورة عند اكتمال تحميل جهة اتصالك.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">سيتم استلام الصورة عندما يكتمل جهة اتصالك من رفعِها.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[إذا لم تتمكن من الالتقاء شخصيًا، <b>اعرض رمز QR في مكالمة الفيديو</b>، أو شارك الرابط.]]></string>
     <string name="install_simplex_chat_for_terminal">ثبّت SimpleX Chat لطرفية</string>
     <string name="network_disable_socks_info">إذا قمت بالتأكيد، فستتمكن خوادم المراسلة من رؤية عنوان IP الخاص بك ومزود الخدمة الخاص بك - أي الخوادم التي تتصل بها.</string>
@@ -511,7 +511,7 @@
     <string name="description_via_one_time_link_incognito">التخفي عبر رابط لمرة واحدة</string>
     <string name="icon_descr_image_snd_complete">أرسلت صورة</string>
     <string name="image_descr">صورة</string>
-    <string name="image_will_be_received_when_contact_is_online">سيتم استلام الصورة عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="image_will_be_received_when_contact_is_online">سيتم استلام الصورة عندما تكون جهة اتصالك متصلة بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="image_saved">حُفظت الصورة في المعرض</string>
     <string name="gallery_image_button">صورة</string>
     <string name="if_you_cant_meet_in_person">إذا لم تتمكن من الالتقاء شخصيًا، اعرض رمز QR في مكالمة الفيديو، أو شارك الرابط.</string>
@@ -526,7 +526,7 @@
     <string name="onboarding_notifications_mode_service">فوري</string>
     <string name="host_verb">المضيف</string>
     <string name="hide_notification">إخفاء</string>
-    <string name="turn_off_battery_optimization"><![CDATA[من أجل استخدامها، <b>يُرجى السماح لSimpleX للتشغيل في الخلفية</b> في مربع الحوار التالي. وإلا، سيتم تعطيل الإشعارات.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[<b>السماح بذلك</b> في مربع الحوار التالي لتلقي الإشعارات على الفور.]]></string>
     <string name="in_reply_to">ردًا على</string>
     <string name="icon_descr_instant_notifications">إشعارات فورية</string>
     <string name="enter_one_ICE_server_per_line">خوادم ICE (واحد لكل سطر)</string>
@@ -534,7 +534,7 @@
     <string name="hide_profile">إخفاء ملف التعريف</string>
     <string name="how_to_use_markdown">كيفية استخدام ماركداون</string>
     <string name="if_you_enter_self_destruct_code">إذا أدخلت رمز مرور التدمير الذاتي أثناء فتح التطبيق:</string>
-    <string name="onboarding_notifications_mode_subtitle">يمكن تغييره لاحقًا عبر الإعدادات.</string>
+    <string name="onboarding_notifications_mode_subtitle">كيف يؤثر على البطارية</string>
     <string name="join_group_button">انضمام</string>
     <string name="theme_light">فاتح</string>
     <string name="display_name_invited_to_connect">مدعو للتواصل</string>
@@ -554,13 +554,13 @@
     <string name="invite_friends">دعوة الأصدقاء</string>
     <string name="keychain_error">خطأ في Keychain</string>
     <string name="invite_to_group_button">دعوة للمجموعة</string>
-    <string name="message_deletion_prohibited_in_chat">يٌمنع حذف الرسائل بشكل لا رجعة فيه في هذه المجموعة.</string>
+    <string name="message_deletion_prohibited_in_chat">يٌمنع حذف الرسائل بشكل لا رجعة فيه.</string>
     <string name="invalid_message_format">تنسيق الرسالة غير صالح</string>
     <string name="invalid_data">البيانات غير صالحة</string>
-    <string name="users_delete_data_only">بيانات الملف الشخصي المحلية فقط</string>
+    <string name="users_delete_data_only">بيانات ملف التعريف المحلية فقط</string>
     <string name="message_deletion_prohibited">يٌمنع حذف الرسائل بشكل لا رجعة فيه في هذه الدردشة.</string>
     <string name="button_add_members">دعوة الأعضاء</string>
-    <string name="button_leave_group">مغادرة المجموعة</string>
+    <string name="button_leave_group">غادِر المجموعة</string>
     <string name="info_row_local_name">الاسم المحلي:</string>
     <string name="rcv_group_event_member_left">غادر</string>
     <string name="incognito_info_allows">يسمح بوجود العديد من الاتصالات المجهولة دون مشاركة أي بيانات بينهم في ملف تعريف دردشة واحد.</string>
@@ -603,7 +603,7 @@
     <string name="smp_server_test_download_file">نزّل الملف</string>
     <string name="auth_disable_simplex_lock">تعطيل قفل SimpleX</string>
     <string name="edit_verb">تحرير</string>
-    <string name="display_name__field">اسم الملف الشخصي:</string>
+    <string name="display_name__field">اسم ملف التعريف:</string>
     <string name="icon_descr_email">البريد الإلكتروني</string>
     <string name="display_name">أدخل أسمك:</string>
     <string name="integrity_msg_duplicate">كرر الرسالة</string>
@@ -613,7 +613,7 @@
     <string name="icon_descr_edited">حُرر</string>
     <string name="downgrade_and_open_chat">الرجوع إلى إصدار سابق وفتح الدردشة</string>
     <string name="direct_messages">رسائل مباشرة</string>
-    <string name="disappearing_messages_are_prohibited">الرسائل المختفية ممنوعة في هذه المجموعة.</string>
+    <string name="disappearing_messages_are_prohibited">الرسائل المختفية ممنوعة.</string>
     <string name="button_edit_group_profile">تحرير ملف تعريف المجموعة</string>
     <string name="dont_show_again">لا تُظهر مرة أخرى</string>
     <string name="settings_section_title_device">الجهاز</string>
@@ -651,7 +651,7 @@
     <string name="dont_create_address">لا تنشئ عنوانًا</string>
     <string name="error_setting_network_config">خطأ في تحديث تضبيط الشبكة</string>
     <string name="error_receiving_file">خطأ في استلام الملف</string>
-    <string name="failed_to_active_user_title">خطأ في تبديل الملف الشخصي!</string>
+    <string name="failed_to_active_user_title">خطأ في تبديل ملف التعريف!</string>
     <string name="v5_2_fix_encryption">حافظ على اتصالاتك</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">تأكد من أن عناوين خادم XFTP بالتنسيق الصحيح، وأن تكون مفصولة بأسطر وليست مكررة.</string>
     <string name="marked_deleted_description">عُلّم محذوف</string>
@@ -683,7 +683,7 @@
     <string name="error_starting_chat">خطأ في بدء الدردشة</string>
     <string name="error_exporting_chat_database">خطأ في تصدير قاعدة بيانات الدردشة</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">ستتم إزالة العضو من المجموعة - لا يمكن التراجع عن هذا!</string>
-    <string name="make_profile_private">اجعل الملف الشخصي خاصًا!</string>
+    <string name="make_profile_private">اجعل ملف التعريف خاصًا!</string>
     <string name="v5_2_favourites_filter_descr">تصفية الدردشات غير المقروءة والمفضلة.</string>
     <string name="v5_2_favourites_filter">البحث عن الدردشات بشكل أسرع</string>
     <string name="enable_receipts_all">تفعيل</string>
@@ -734,7 +734,7 @@
 \n- و اكثر!</string>
     <string name="network_status">حالة الشبكة</string>
     <string name="user_mute">كتم</string>
-    <string name="message_reactions_are_prohibited">ردود الفعل الرسائل ممنوعة في هذه المجموعة.</string>
+    <string name="message_reactions_are_prohibited">ردود الفعل الرسائل ممنوعة.</string>
     <string name="icon_descr_more_button">المزيد</string>
     <string name="network_settings_title">إعدادات متقدّمة</string>
     <string name="icon_descr_call_missed">مكالمة فائتة</string>
@@ -757,9 +757,7 @@
     <string name="network_use_onion_hosts_prefer_desc">سيتم استخدام مضيفات البصل عند توفرها.</string>
     <string name="network_use_onion_hosts_no_desc">لن يتم استخدام مضيفات البصل.</string>
     <string name="no_contacts_selected">لم تٌحدد جهات اتصال</string>
-    <string name="v4_6_group_moderation_descr">يمكّن للمشرف الآن:
-\n- حذف رسائل الأعضاء.
-\n- تعطيل الأعضاء (دور "المراقب")</string>
+    <string name="v4_6_group_moderation_descr">يمكن للمشرف الآن:\n- حذف رسائل الأعضاء.\n- تعطيل الأعضاء (دور المراقب)</string>
     <string name="settings_notifications_mode_title">خدمة الإشعار</string>
     <string name="chat_preferences_off">غير مفعّل</string>`
   <string name="chat_preferences_on">مفعل</string>
@@ -793,7 +791,7 @@
     <string name="passcode_set">تم تعيين كلمة المرور!</string>
     <string name="group_member_role_owner">المالك</string>
     <string name="only_your_contact_can_send_disappearing">فقط جهة اتصالك يمكنها إرسال رسائل تختفي.</string>
-    <string name="only_your_contact_can_add_message_reactions">جهة اتصالك فقط يمكنها إضافة تفاعلات على الرسالة</string>
+    <string name="only_your_contact_can_add_message_reactions">جهة اتصالك فقط يمكنها إضافة ردود الفعل على الرسالة</string>
     <string name="only_group_owners_can_change_prefs">فقط مالكي المجموعة يمكنهم تغيير تفضيلات المجموعة.</string>
     <string name="only_your_contact_can_delete">جهة اتصالك فقط يمكنها حذف الرسائل بشكل لا رجعة فيه (يمكنك تعليم الرسالة للحذف). (24 ساعة)</string>
     <string name="only_you_can_send_voice">أنت فقط يمكنك إرسال رسائل صوتية.</string>
@@ -806,7 +804,7 @@
     <string name="restore_passphrase_not_found_desc">كلمة المرور غير موجودة في مخزن المفاتيح، يرجى إدخالها يدوياً. قد يحدث هذا إذا قمت باستعادة ملفات التطبيق باستخدام أداة استرجاع بيانات. إذا لم يكن الأمر كذلك، تواصل مع المبرمجين رجاء</string>
     <string name="open_chat">افتح الدردشة</string>
     <string name="simplex_link_mode_browser_warning">فتح الرابط في المتصفح قد يقلل خصوصية وحماية اتصالك. الروابط غير الموثوقة من SimpleX ستكون باللون الأحمر</string>
-    <string name="only_you_can_add_message_reactions">أنت فقط يمكنك إضافة تفاعل على الرسالة.</string>
+    <string name="only_you_can_add_message_reactions">أنت فقط يمكنك إضافة ردود الفعل على الرسالة.</string>
     <string name="only_you_can_delete_messages">أنت فقط يمكنك حذف الرسائل بشكل لا رجعة فيه (يمكن للمستلم تعليمها للحذف). (24 ساعة)</string>
     <string name="only_you_can_send_disappearing">أنت فقط يمكنك إرسال رسائل تختفي</string>
     <string name="only_you_can_make_calls">أنت فقط يمكنك إجراء المكالمات.</string>
@@ -819,7 +817,7 @@
     <string name="call_connection_peer_to_peer">ندّ لِندّ</string>
     <string name="people_can_connect_only_via_links_you_share">أنت تقرر من يمكنه الاتصال.</string>
     <string name="icon_descr_call_pending_sent">مكالمة قيد الانتظار</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المُرسلة باستخدام <b>تعمية ثنائية الطبقات من بين الطريفين</b>.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل.</string>
     <string name="reset_color">صفّر الألوان</string>
     <string name="save_verb">حفظ</string>
     <string name="smp_servers_preset_address">عنوان الخادم المُعد مسبقًا</string>
@@ -829,7 +827,7 @@
     <string name="receiving_via">الاستلام عبر</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">يُرجى التحقق من استخدامك للرابط الصحيح أو اطلب من جهة اتصالك أن ترسل لك رابطًا آخر.</string>
     <string name="periodic_notifications_disabled">الإشعارات الدورية مُعطَّلة</string>
-    <string name="image_descr_profile_image">صورة الملف الشخصي</string>
+    <string name="image_descr_profile_image">صورة ملف التعريف</string>
     <string name="onboarding_notifications_mode_title">الإشعارات خاصة</string>
     <string name="store_passphrase_securely_without_recover">يرجى تخزين عبارة المرور بشكل آمن، فلن تتمكن من الوصول إلى الدردشة إذا فقدتها.</string>
     <string name="contact_developers">يُرجى تحديث التطبيق والتواصل مع المطورين.</string>
@@ -862,7 +860,7 @@
     <string name="restore_database_alert_desc">الرجاء إدخال كلمة المرور السابقة بعد استعادة نسخة احتياطية لقاعدة البيانات. لا يمكن التراجع عن هذا الإجراء.</string>
     <string name="restore_database_alert_title">استعادة النسخة الاحتياطية لقاعدة البيانات؟</string>
     <string name="network_options_save">حفظ</string>
-    <string name="users_delete_with_connections">اتصالات الملف الشخصي والخادم</string>
+    <string name="users_delete_with_connections">اتصالات ملف التعريف والخادم</string>
     <string name="prohibit_message_reactions">منع ردود فعل الرسالة.</string>
     <string name="prohibit_sending_voice">منع إرسال الرسائل الصوتية.</string>
     <string name="prohibit_message_reactions_group">منع ردود فعل الرسائل.</string>
@@ -884,7 +882,7 @@
     <string name="v4_4_live_messages_desc">يرى المستلمون التحديثات أثناء كتابتها.</string>
     <string name="feature_received_prohibited">استلمت، ممنوع</string>
     <string name="save_servers_button">حفظ</string>
-    <string name="profile_update_will_be_sent_to_contacts">سيتم إرسال تحديث الملف الشخصي إلى جهات الاتصال الخاصة بك.</string>
+    <string name="profile_update_will_be_sent_to_contacts">سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
     <string name="save_and_notify_contacts">حفظ وإشعار جهات الاتصال</string>
     <string name="save_and_update_group_profile">حفظ وتحديث ملف تعريف المجموعة</string>
     <string name="network_option_ping_count">عدد البينج</string>
@@ -900,7 +898,7 @@
     <string name="remove_member_confirmation">إزالة</string>
     <string name="network_options_reset_to_defaults">صفّر إلى الإعدادات الافتراضية</string>
     <string name="network_option_ping_interval">بينج الفاصل الزمني</string>
-    <string name="profile_password">كلمة مرور الملف الشخصي</string>
+    <string name="profile_password">كلمة مرور ملف التعريف</string>
     <string name="prohibit_sending_disappearing_messages">منع إرسال الرسائل التي تختفي.</string>
     <string name="network_option_protocol_timeout">مهلة البروتوكول</string>
     <string name="network_option_protocol_timeout_per_kb">مهلة البروتوكول لكل كيلوبايت</string>
@@ -924,7 +922,7 @@
     <string name="revoke_file__title">سحب وصول الملف؟</string>
     <string name="toast_permission_denied">رٌفض الإذن!</string>
     <string name="ask_your_contact_to_enable_voice">يرجى مطالبة جهة اتصالك بتفعيل إرسال الرسائل الصوتية.</string>
-    <string name="icon_descr_profile_image_placeholder">العنصر النائب لصورة الملف الشخصي</string>
+    <string name="icon_descr_profile_image_placeholder">العنصر النائب لصورة ملف التعريف</string>
     <string name="image_descr_qr_code">رمز QR</string>
     <string name="reset_verb">صفّر</string>
     <string name="network_proxy_port">المنفذ %d</string>
@@ -1016,7 +1014,7 @@
     <string name="smp_servers">خوادم SMP</string>
     <string name="share_image">مشاركة الوسائط…</string>
     <string name="ntf_channel_messages">رسائل SimpleX Chat</string>
-    <string name="lock_not_enabled">لم يتم تمكين قفل SimpleX!</string>
+    <string name="lock_not_enabled">قفل SimpleX غير مفعّل!</string>
     <string name="auth_stop_chat">إيقاف الدردشة</string>
     <string name="stop_rcv_file__title">التوقف عن استلام الملف؟</string>
     <string name="share_file">مشاركة الملف…</string>
@@ -1056,7 +1054,7 @@
     <string name="show_developer_options">عرض خيارات المطور</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="error_smp_test_server_auth">يتطلب الخادم إذنًا لإنشاء قوائم انتظار، تحقق من كلمة المرور</string>
-    <string name="error_xftp_test_server_auth">يتطلب الخادم إذنًا للتحميل، تحقق من كلمة المرور</string>
+    <string name="error_xftp_test_server_auth">يتطلب الخادم إذنًا للرفع، تحقق من كلمة المرور</string>
     <string name="notification_preview_mode_contact_desc">عرض جهة الاتصال فقط</string>
     <string name="ntf_channel_calls">مكالمات SimpleX Chat</string>
     <string name="simplex_service_notification_title">خدمة SimpleX Chat</string>
@@ -1084,14 +1082,13 @@
     <string name="connection_you_accepted_will_be_cancelled">سيتم إلغاء الاتصال الذي قبلته!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">لن تتمكن جهة الاتصال التي شاركت هذا الرابط معها من الاتصال!</string>
     <string name="this_text_is_available_in_settings">هذا النص متاح في الإعدادات</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">لحماية الخصوصية، بدلاً من معرفات المستخدم التي تستخدمها جميع الأنظمة الأساسية الأخرى, يحتوي SimpleX على معرفات لقوائم انتظار الرسائل، منفصلة لكل جهة من جهات اتصالك.</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">لحماية معلوماتك، قم بتشغيل قفل SimpleX
-\nسيُطلب منك إكمال المصادقة قبل تمكين هذه الميزة.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">لحماية خصوصيتك، يستخدم SimpleX معرّفات منفصلة لكل جهة اتصال لديك.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">لحماية معلوماتك، فعّل قفل SimpleX \nسيُطلب منك إكمال المصادقة قبل تفعيل هذه الميزة.</string>
     <string name="network_session_mode_transport_isolation">عزل النقل</string>
     <string name="v4_4_french_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
     <string name="v4_6_audio_video_calls_descr">دعم البلوتوث وتحسينات أخرى.</string>
     <string name="v5_0_polish_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[للحفاظ على خصوصيتك، بدلاً من دفع الإشعارات، يحتوي التطبيق على <b>خدمة SimpleX تعمل في الخلفية</b> – يستخدم نسبة قليلة من البطارية يوميًا.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[لتحسين الخصوصية، <b>يتم تشغيل SimpleX في الخلفية</b> بدلاً من استخدام إشعارات push.]]></string>
     <string name="tap_to_start_new_chat">انقر لبدء محادثة جديدة</string>
     <string name="to_share_with_your_contact">(للمشاركة مع جهة اتصالك)</string>
     <string name="to_connect_via_link_title">للتواصل عبر الرابط</string>
@@ -1103,17 +1100,17 @@
     <string name="color_title">العنوان الرئيسي</string>
     <string name="moderate_message_will_be_marked_warning">سيتم وضع علامة على الرسالة على أنها تحت الإشراف لجميع الأعضاء.</string>
     <string name="group_invitation_tap_to_join">انقر للانضمام</string>
-    <string name="to_reveal_profile_enter_password">للكشف عن ملف التعريف المخفي الخاص بك، أدخل كلمة مرور كاملة في حقل البحث في صفحة ملفات تعريف الدردشة الخاصة بك.</string>
+    <string name="to_reveal_profile_enter_password">للكشف عن ملف تعريفك المخفي، أدخل كلمة مرور كاملة في حقل البحث في صفحة ملفات تعريف الدردشة الخاصة بك.</string>
     <string name="group_invitation_tap_to_join_incognito">انقر للانضمام إلى وضع التخفي</string>
     <string name="la_mode_system">النظام</string>
     <string name="settings_section_title_themes">السمات</string>
     <string name="v4_6_chinese_spanish_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
     <string name="database_initialization_error_desc">قاعدة البيانات لا تعمل بشكل صحيح. انقر لمعرفة المزيد</string>
     <string name="theme_colors_section_title">ألوان الواجهة</string>
-    <string name="tap_to_activate_profile">انقر لتنشيط الملف الشخصي.</string>
+    <string name="tap_to_activate_profile">انقر لتنشيط ملف التعريف.</string>
     <string name="v4_5_transport_isolation">عزل النقل</string>
     <string name="this_string_is_not_a_connection_link">هذه السلسلة ليست رابط اتصال!</string>
-    <string name="receipts_section_description">هذه الإعدادات لملف التعريف الحالي الخاص بك</string>
+    <string name="receipts_section_description">هذه الإعدادات لملف تعريفك الحالي</string>
     <string name="receipts_section_description_1">يمكن تجاوزها في إعدادات الاتصال و المجموعة.</string>
     <string name="network_option_tcp_connection_timeout">انتهت مهلة اتصال TCP</string>
     <string name="v4_5_private_filenames_descr">لحماية المنطقة الزمنية، تستخدم ملفات الصور / الصوت التوقيت العالمي المنسق (UTC).</string>
@@ -1140,7 +1137,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
     <string name="la_notice_turn_on">تشغيل</string>
     <string name="webrtc_ice_servers">خوادم WebRTC ICE</string>
-    <string name="alert_title_cant_invite_contacts_descr">أنت تستخدم ملفًا شخصيًا متخفيًا لهذه المجموعة - لمنع مشاركة ملفك الشخصي الرئيسي الذي يدعو جهات الاتصال غير مسموح به</string>
+    <string name="alert_title_cant_invite_contacts_descr">أنت تستخدم ملف تعريف متخفي لهذه المجموعة - لمنع مشاركة ملفك التعريفي الرئيسي الذي يدعو جهات الاتصال غير مسموح به</string>
     <string name="snd_group_event_changed_member_role">غيّرتَ دور %s إلى %s</string>
     <string name="chat_preferences_yes">نعم</string>
     <string name="connected_to_server_to_receive_messages_from_contact">أنت متصل بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
@@ -1155,23 +1152,23 @@
     <string name="call_connection_via_relay">عبر المُرحل</string>
     <string name="you_joined_this_group">لقد انضممت إلى هذه المجموعة</string>
     <string name="you_rejected_group_invitation">لقد رفضت دعوة المجموعة</string>
-    <string name="incognito_info_share">عندما تشارك ملفًا شخصيًا متخفيًا مع شخص ما، فسيتم استخدام هذا الملف الشخصي للمجموعات التي يدعوك إليها.</string>
+    <string name="incognito_info_share">عندما تشارك ملف تعريف متخفي مع شخص ما، فسيتم استخدام هذا الملف التعريفي للمجموعات التي يدعوك إليها.</string>
     <string name="failed_to_create_user_duplicate_desc">لديك بالفعل ملف تعريف دردشة بنفس اسم العرض. الرجاء اختيار اسم آخر.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">أنت متصل بالفعل بـ%1$s.</string>
     <string name="waiting_for_video">في انتظار الفيديو</string>
-    <string name="video_will_be_received_when_contact_completes_uploading">سيتم استلام الفيديو عند اكتمال تحميل جهة اتصالك.</string>
+    <string name="video_will_be_received_when_contact_completes_uploading">سيتم استلام الفيديو عند اكتمال رفع جهة اتصالك.</string>
     <string name="verify_security_code">تحقق من رمز الأمان</string>
     <string name="v4_3_voice_messages">رسائل صوتية</string>
     <string name="you_can_accept_or_reject_connection">عندما يطلب الأشخاص الاتصال، يمكنك قبوله أو رفضه.</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">سوف تكون متصلاً بالمجموعة عندما يكون جهاز مضيف المجموعة متصلاً بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">سوف تكون متصلاً عندما يتم قبول طلب الاتصال الخاص بك، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">سوف تكون متصلاً بالمجموعة عندما يكون جهاز مضيف المجموعة متصلاً بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">سوف تكون متصلاً عندما يتم قبول طلب اتصالك، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="using_simplex_chat_servers">تستخدم خوادم SimpleX Chat.</string>
     <string name="network_socks_toggle_use_socks_proxy">استخدم وكيل SOCKS</string>
     <string name="network_use_onion_hosts">استخدم مضيفي onion.</string>
     <string name="network_enable_socks">استخدام وكيل SOCKS؟</string>
     <string name="network_use_onion_hosts_prefer">عندما تكون متاحة</string>
     <string name="your_contacts_will_remain_connected">ستبقى جهات اتصالك متصلة.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">لا نقوم بتخزين أي من جهات الاتصال أو الرسائل الخاصة بك (بمجرد تسليمها) على الخوادم.</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">لا نقوم بتخزين أي من جهات اتصالك أو رسائلك (بمجرد تسليمها) على الخوادم.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">يمكنك استخدام تخفيض السعر لتنسيق الرسائل:</string>
     <string name="use_chat">استخدم الدردشة</string>
     <string name="settings_section_title_you">أنت</string>
@@ -1206,10 +1203,10 @@
     <string name="description_via_one_time_link">عبر رابط لمرة واحدة</string>
     <string name="video_call_no_encryption">مكالمة الفيديو ليست مُعمّاة بين الطريفين</string>
     <string name="snd_conn_event_switch_queue_phase_completed">غيّرتَ العنوان</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">سوف تكون متصلاً عندما يكون جهاز جهة الاتصال الخاصة بك متصلاً بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">سوف تكون متصلاً عندما يكون جهاز جهة اتصالك متصلاً بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="snd_group_event_user_left">غادرت</string>
     <string name="you_must_use_the_most_recent_version_of_database">يجب عليك استخدام أحدث إصدار من قاعدة بيانات الدردشة الخاصة بك على جهاز واحد فقط، وإلا فقد تتوقف عن تلقي الرسائل من بعض جهات الاتصال.</string>
-    <string name="video_will_be_received_when_contact_is_online">سيتم استلام الفيديو عندما تكون جهة اتصالك متصلة بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="video_will_be_received_when_contact_is_online">سيتم استلام الفيديو عندما تكون جهة اتصالك متصلة بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="you_can_share_this_address_with_your_contacts">يمكنك مشاركة هذا العنوان مع جهات اتصالك للسماح لهم بالاتصال بـ%s.</string>
     <string name="snd_group_event_member_deleted">أُزيلت %1$s</string>
     <string name="update_database">تحديث</string>
@@ -1238,11 +1235,11 @@
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">سيتم حذف قاعدة بيانات الدردشة الحالية واستبدالها بالقاعدة المستوردة.
 \nلا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
     <string name="update_database_passphrase">تحديث عبارة مرور قاعدة البيانات</string>
-    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">سوف تتوقف عن تلقي الرسائل من هذه المجموعة. سيتم الاحتفاظ سجل الدردشة.</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">سوف تتوقف عن تلقي الرسائل من هذه المجموعة. سيتم الاحتفاظ بسجل الدردشة.</string>
     <string name="custom_time_unit_weeks">أسابيع</string>
     <string name="you_can_hide_or_mute_user_profile">يمكنك إخفاء أو كتم ملف تعريف المستخدم - اضغط مطولاً للقائمة.</string>
     <string name="whats_new">ما هو الجديد</string>
-    <string name="your_current_profile">ملفك الشخصي الحالي</string>
+    <string name="your_current_profile">ملف تعريفك الحالي</string>
     <string name="simplex_link_connection">عبر %1$s</string>
     <string name="icon_descr_received_msg_status_unread">غير مقروءة</string>
     <string name="welcome">مرحبًا!</string>
@@ -1252,7 +1249,7 @@
     <string name="gallery_video_button">فيديو</string>
     <string name="you_can_share_your_address">يمكنك مشاركة عنوانك كرابط أو رمز QR - يمكن لأي شخص الاتصال بك.</string>
     <string name="you_can_create_it_later">يمكنك إنشاؤه لاحقًا</string>
-    <string name="invite_prohibited_description">أنت تحاول دعوة جهة اتصال قمت بمشاركة ملف تعريف متخفي معها إلى المجموعة التي تستخدم فيها ملفك الشخصي الرئيسي</string>
+    <string name="invite_prohibited_description">أنت تحاول دعوة جهة اتصال شاركت ملف تعريف متخفي معها إلى المجموعة التي تستخدم فيها ملف تعريفك الرئيسي</string>
     <string name="user_unmute">ألغِ الكتم</string>
     <string name="unmute_chat">ألغِ الكتم</string>
     <string name="you_accepted_connection">لقد قبلت الاتصال</string>
@@ -1274,7 +1271,7 @@
 \n- الوقت المخصص لتختفي.
 \n- تحرير التاريخ.</string>
     <string name="you_can_enable_delivery_receipts_later">يمكنك تفعيلة لاحقًا عبر الإعدادات</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">يمكنك تمكينها لاحقًا عبر إعدادات الخصوصية والأمان للتطبيق.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">يمكنك تفعيلها لاحقًا عبر إعدادات الخصوصية والأمان للتطبيق.</string>
     <string name="description_via_group_link">عبر رابط المجموعة</string>
     <string name="description_you_shared_one_time_link_incognito">لقد شاركت رابط لمرة واحدة متخفي</string>
     <string name="simplex_link_mode_browser">عبر المتصفح</string>
@@ -1287,11 +1284,11 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">سيتم إرسال ملف تعريف الدردشة الخاص بك
 \nإلى جهة اتصالك</string>
     <string name="user_unhide">إلغاء الإخفاء</string>
-    <string name="incognito_random_profile">ملفك الشخصي العشوائي</string>
-    <string name="you_will_still_receive_calls_and_ntfs">ستستمر في استلام المكالمات والإشعارات من الملفات الشخصية المكتومة عندما تكون نشطة.</string>
+    <string name="incognito_random_profile">ملفك التعريفي العشوائي</string>
+    <string name="you_will_still_receive_calls_and_ntfs">ستستمر في استلام المكالمات والإشعارات من الملفات التعريفية المكتومة عندما تكون نشطة.</string>
     <string name="chat_preferences_you_allow">انت تسمح بها</string>
     <string name="icon_descr_video_call">مكالمة فيديو</string>
-    <string name="voice_messages_are_prohibited">الرسائل الصوتية ممنوعة في هذه الدردشة.</string>
+    <string name="voice_messages_are_prohibited">الرسائل الصوتية ممنوعة.</string>
     <string name="auth_unlock">فتح القفل</string>
     <string name="smp_server_test_upload_file">رفع الملف</string>
     <string name="la_could_not_be_verified">لا يمكن التحقق منك؛ الرجاء المحاولة مرة اخرى.</string>
@@ -1299,7 +1296,7 @@
     <string name="voice_message_send_text">رسالة صوتية…</string>
     <string name="group_preview_you_are_invited">أنت مدعو إلى المجموعة</string>
     <string name="observer_cant_send_message_title">لا يمكنك إرسال رسائل!</string>
-    <string name="you_need_to_allow_to_send_voice">تحتاج إلى السماح لجهة الاتصال الخاصة بك بإرسال رسائل صوتية لتتمكن من إرسالها.</string>
+    <string name="you_need_to_allow_to_send_voice">تحتاج إلى السماح لجهة اتصالك بإرسال رسائل صوتية لتتمكن من إرسالها.</string>
     <string name="contact_sent_large_file">أرسلت جهة اتصالك ملفًا أكبر من الحجم الأقصى المعتمد حاليًا (%1$s).</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[يمكنك <font color="#0088ff">الاتصال بمطوري SimpleX Chat لطرح أي أسئلة وتلقي التحديثات</font>.]]></string>
     <string name="smp_servers_your_server">خادمك</string>
@@ -1334,7 +1331,7 @@
     <string name="system_restricted_background_desc">لا يمكن تشغيل SimpleX في الخلفية. ستستلم الإشعارات فقط عندما يكون التطبيق قيد التشغيل.</string>
     <string name="connect__a_new_random_profile_will_be_shared">سيتم مشاركة ملف تعريف عشوائي جديد.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">ألصق الرابط المُستلَم للتواصل مع جهة اتصالك…</string>
-    <string name="connect__your_profile_will_be_shared">ستتم مشاركة ملفك الشخصي %1$s.</string>
+    <string name="connect__your_profile_will_be_shared">ستتم مشاركة ملفك التعريفي %1$s.</string>
     <string name="system_restricted_background_in_call_desc">قد يغلق التطبيق بعد دقيقة واحدة في الخلفية.</string>
     <string name="turn_off_battery_optimization_button">سماح</string>
     <string name="system_restricted_background_in_call_title">لا مكالمات في الخلفية</string>
@@ -1388,9 +1385,9 @@
     <string name="blocked_item_description">محظور</string>
     <string name="v5_4_block_group_members">حظر أعضاء المجموعة</string>
     <string name="rcv_direct_event_contact_deleted">جهة الاتصال حُذفت</string>
-    <string name="v5_4_incognito_groups_descr">أنشِئ مجموعة باستخدام ملف تعريف عشوائي.</string>
-    <string name="create_group_button">أنشِئ مجموعة</string>
-    <string name="create_another_profile_button">أنشِئ ملف تعريف</string>
+    <string name="v5_4_incognito_groups_descr">أنشئ مجموعة باستخدام ملف تعريف عشوائي.</string>
+    <string name="create_group_button">أنشئ مجموعة</string>
+    <string name="create_another_profile_button">أنشئ ملف تعريف</string>
     <string name="connected_desktop">سطح المكتب متصل</string>
     <string name="multicast_connect_automatically">اتصل تلقائيًا</string>
     <string name="desktop_address">عنوان سطح المكتب</string>
@@ -1485,9 +1482,7 @@
     <string name="verify_code_with_desktop">تحقق من الرمز مع سطح المكتب</string>
     <string name="scan_qr_code_from_desktop">مسح رمز QR من سطح المكتب</string>
     <string name="unblock_member_confirmation">إلغاء الحظر</string>
-    <string name="v5_4_more_things_descr">- إشعار اختياريًا جهات الاتصال المحذوفة.
-\n- أسماء الملفات الشخصية بمسافات.
-\n- و اكثر!</string>
+    <string name="v5_4_more_things_descr">- إشعار اختياريًا جهات الاتصال المحذوفة. \n- أسماء الملفات التعريفية بمسافات. \n- و اكثر!</string>
     <string name="non_content_uri_alert_title">مسار الملف غير صالح</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">لقد طلبت بالفعل الاتصال عبر هذا العنوان!</string>
     <string name="terminal_always_visible">إظهار وحدة التحكم في نافذة جديدة</string>
@@ -1522,7 +1517,7 @@
     <string name="you_can_view_invitation_link_again">يمكنك عرض رابط الدعوة مرة أخرى في تفاصيل الاتصال.</string>
     <string name="keep_unused_invitation_question">أبقِ الدعوة غير المستخدمة؟</string>
     <string name="share_this_1_time_link">شارك رابط الدعوة هذا لمرة واحدة</string>
-    <string name="create_group_button_to_create_new_group"><![CDATA[<b>أنشِئ مجموعة</b>: لإنشاء مجموعة جديدة.]]></string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>أنشئ مجموعة</b>: لإنشاء مجموعة جديدة.]]></string>
     <string name="recent_history">التاريخ المرئي</string>
     <string name="la_app_passcode">رمز مرور التطبيق</string>
     <string name="new_chat">دردشة جديدة</string>
@@ -1550,7 +1545,7 @@
     <string name="remote_host_error_inactive"><![CDATA[الجوال <b>%s</b> غير نشط]]></string>
     <string name="show_slow_api_calls">أظهر مكالمات API البطيئة</string>
     <string name="group_member_status_unknown_short">غير معروف</string>
-    <string name="profile_update_event_updated_profile">حدّثت الملف الشخصي</string>
+    <string name="profile_update_event_updated_profile">حدّثت ملف التعريف</string>
     <string name="remote_host_error_missing"><![CDATA[الجوال <b>%s</b> مفقود]]></string>
     <string name="remote_host_error_bad_version"><![CDATA[الجوال <b>%s</b> لديه إصدار غير مدعوم. يُرجى التأكد من استخدام نفس الإصدار على كلا الجهازين]]></string>
     <string name="remote_host_error_bad_state"><![CDATA[الاتصال بالجوال <b>%s</b> في حالة سيئة]]></string>
@@ -1575,9 +1570,9 @@
     <string name="developer_options_section">خيارات المطور</string>
     <string name="profile_update_event_member_name_changed">تغيّر العضو %1$s إلى %2$s</string>
     <string name="profile_update_event_removed_address">أزلت عنوان الاتصال</string>
-    <string name="profile_update_event_removed_picture">أزلت الصورة الشخصية</string>
+    <string name="profile_update_event_removed_picture">أزلت صورة ملف التعريف</string>
     <string name="profile_update_event_set_new_address">عيّن عنوان جهة اتصال جديد</string>
-    <string name="profile_update_event_set_new_picture">عيّن صورة شخصية جديدة</string>
+    <string name="profile_update_event_set_new_picture">عيّن صورة تعريفية جديدة</string>
     <string name="group_member_status_unknown">حالة غير معروفة</string>
     <string name="profile_update_event_contact_name_changed">تغيّر جهة الاتصال %1$s إلى %2$s</string>
     <string name="possible_slow_function_desc">يستغرق تنفيذ الوظيفة وقتًا طويلاً جدًا: %1$d ثانية: %2$s</string>
@@ -1624,7 +1619,7 @@
     <string name="v5_6_safer_groups_descr">يمكن للمشرفين حظر عضو للجميع.</string>
     <string name="v5_6_app_data_migration">ترحيل بيانات التطبيق</string>
     <string name="migrate_from_device_archiving_database">جارِ أرشفة قاعدة البيانات</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">سيتم تعمية جميع جهات الاتصال والمحادثات والملفات الخاصة بك بشكل آمن وتحميلها في أجزاء إلى مُرحلات XFTP التي ضبطت.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">سيتم تعمية جميع جهات الاتصال والمحادثات والملفات الخاصة بك بشكل آمن ورفعها في أجزاء إلى مُرحلات XFTP التي ضُبطت.</string>
     <string name="migrate_to_device_apply_onion">طبّق</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>يُرجى ملاحظة</b>: استخدام نفس قاعدة البيانات على جهازين سيؤدي إلى كسر فك تعمية الرسائل من اتصالاتك، كحماية أمنية.]]></string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>تحذير</b>: سيتم حذف الأرشيف.]]></string>
@@ -1658,7 +1653,7 @@
     <string name="paste_archive_link">ألصق رابط الأرشيف</string>
     <string name="migrate_to_device_try_again">يمكنك إعطاء محاولة أخرى.</string>
     <string name="migrate_to_device_error_downloading_archive">حدث خطأ أثناء تنزيل الأرشيف</string>
-    <string name="migrate_from_device_exported_file_doesnt_exist">الملف المُصدر غير موجود</string>
+    <string name="migrate_from_device_exported_file_doesnt_exist">الملف المُصدّر غير موجود</string>
     <string name="migrate_from_device_verify_passphrase">تحقق من عبارة المرور</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">تأكد من أنك تتذكر عبارة مرور قاعدة البيانات لترحيلها.</string>
     <string name="migrate_from_device_verify_database_passphrase">التحقق من عبارة مرور قاعدة البيانات</string>
@@ -1718,8 +1713,8 @@
     <string name="allow_to_send_simplex_links">السماح بإرسال روابط SimpleX.</string>
     <string name="prohibit_sending_simplex_links">منع إرسال روابط SimpleX</string>
     <string name="feature_roles_all_members">كل الأعضاء</string>
-    <string name="group_members_can_send_simplex_links">يمكن لأعضاء المجموعة إرسال روابط SimpleX.</string>
-    <string name="simplex_links_are_prohibited_in_group">روابط SimpleX محظورة في هذه المجموعة.</string>
+    <string name="group_members_can_send_simplex_links">يمكن للأعضاء إرسال روابط SimpleX.</string>
+    <string name="simplex_links_are_prohibited_in_group">روابط SimpleX محظورة.</string>
     <string name="feature_roles_admins">المشرفين</string>
     <string name="feature_enabled_for">مفعّل لـ</string>
     <string name="feature_roles_owners">المالكون</string>
@@ -1746,8 +1741,8 @@
     <string name="v5_7_call_sounds_descr">عند اتصال بمكالمات الصوت والفيديو.</string>
     <string name="v5_7_network">إدارة الشبكة</string>
     <string name="v5_7_network_descr">اتصال شبكة أكثر موثوقية.</string>
-    <string name="settings_section_title_profile_images">صور الملف الشخصي</string>
-    <string name="v5_7_shape_profile_images">شكل الصور الشخصية</string>
+    <string name="settings_section_title_profile_images">صور ملف التعريف</string>
+    <string name="v5_7_shape_profile_images">شكل الصور التعريفية</string>
     <string name="v5_7_new_interface_languages">واجهة المستخدم الليتوانية</string>
     <string name="v5_7_shape_profile_images_descr">مربع أو دائرة أو أي شيء بينهما.</string>
     <string name="srv_error_host">عنوان الخادم غير متوافق مع إعدادات الشبكة.</string>
@@ -1814,7 +1809,7 @@
     <string name="wallpaper_preview_hello_bob">صباح الخير!</string>
     <string name="color_wallpaper_background">صورة خلفية الشاشة</string>
     <string name="chat_theme_apply_to_light_mode">الوضع الفاتح</string>
-    <string name="settings_section_title_user_theme">السمة الملف الشخصي</string>
+    <string name="settings_section_title_user_theme">سمة ملف التعريف</string>
     <string name="color_mode_light">فاتح</string>
     <string name="chat_theme_apply_to_mode">طبّق لِ</string>
     <string name="wallpaper_scale_fill">ملء</string>
@@ -1833,8 +1828,7 @@
 \nآخر رسالة تم استلامها: %2$s</string>
     <string name="info_row_debug_delivery">تسليم التصحيح</string>
     <string name="message_queue_info">معلومات قائمة انتظار الرسائل</string>
-    <string name="v5_8_private_routing_descr">احمِ عنوان IP الخاص بك من مُرحلات المُراسلة التي اختارتها جهات الاتصال الخاصة بك.
-\nفعّل في إعدادات *الشبكة والخوادم*.</string>
+    <string name="v5_8_private_routing_descr">احمِ عنوان IP الخاص بك من مُرحلات المُراسلة التي اختارتها جهات اتصالك. \nفعّل في إعدادات *الشبكة والخوادم*.</string>
     <string name="v5_8_chat_themes">سمات دردشة جديدة</string>
     <string name="error_initializing_web_view">حدث خطأ أثناء تهيئة WebView. حدّث نظامك إلى الإصدار الجديد. يُرجى التواصل بالمطورين.
 \nError: %s</string>
@@ -1999,7 +1993,7 @@
     <string name="you_can_still_send_messages_to_contact">بإمكانك إرسال رسائل إلى %1$s من جهات الاتصال المؤرشفة.</string>
     <string name="paste_link">ألصق الرابط</string>
     <string name="contact_list_header_title">جهات اتصالك</string>
-    <string name="one_hand_ui">شريط أدوات الدردشة القابل للوصول</string>
+    <string name="one_hand_ui">شريط أدوات التطبيق القابلة للوصول</string>
     <string name="cant_call_contact_deleted_alert_text">حُذفت جهة الاتصال.</string>
     <string name="allow_calls_question">السماح بالمكالمات؟</string>
     <string name="cant_call_member_send_message_alert_text">أرسل رسالة لتفعيل المكالمات.</string>
@@ -2040,7 +2034,7 @@
     <string name="v6_0_private_routing_descr">يحمي عنوان IP الخاص بك واتصالاتك.</string>
     <string name="network_option_tcp_connection">اتصال TCP</string>
     <string name="network_options_save_and_reconnect">حفظ وإعادة الاتصال</string>
-    <string name="create_address_button">أنشِئ</string>
+    <string name="create_address_button">أنشئ</string>
     <string name="v6_0_new_chat_experience">تجربة دردشة جديدة 🎉</string>
     <string name="v6_0_privacy_blur">تمويه من أجل خصوصية أفضل.</string>
     <string name="v6_0_increase_font_size">كبّر حجم الخط</string>
@@ -2075,9 +2069,9 @@
     <string name="forward_files_in_progress_desc">لا يزال يتم تنزيل %1$d ملفًا.</string>
     <string name="network_proxy_auth_mode_no_auth">لا تستخدم بيانات الاعتماد مع الوكيل.</string>
     <string name="error_forwarding_messages">خطأ في تحويل الرسائل</string>
-    <string name="switching_profile_error_title">خطأ في تبديل الملف الشخصي</string>
+    <string name="switching_profile_error_title">خطأ في تبديل ملف التعريف</string>
     <string name="select_chat_profile">حدد ملف تعريف الدردشة</string>
-    <string name="switching_profile_error_message">لقد تم نقل اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى الملف الشخصي.</string>
+    <string name="switching_profile_error_message">لقد تم نقل اتصالك إلى %s ولكن حدث خطأ غير متوقع أثناء إعادة توجيهك إلى ملف التعريف.</string>
     <string name="forward_alert_title_messages_to_forward">تحويل %1$s رسالة؟</string>
     <string name="forward_files_messages_deleted_after_selection_title">لم يحوّل %1$s من الرسائل</string>
     <string name="compose_forward_messages_n">جارِ تحويل %1$s رسالة</string>
@@ -2117,7 +2111,7 @@
     <string name="for_chat_profile">لملف تعريف الدردشة %s:</string>
     <string name="no_media_servers_configured">لا يوجد وسائط أو خوادم ملفات.</string>
     <string name="no_media_servers_configured_for_sending">لا يوجد خوادم لإرسال الملفات.</string>
-    <string name="connection_error_quota_desc">لقد وصل الاتصال إلى الحد الأقصى من الرسائل غير المُسلمة، قد يكون جهة الاتصال الخاصة بك غير متصلة بالإنترنت.</string>
+    <string name="connection_error_quota_desc">لقد وصل الاتصال إلى الحد الأقصى من الرسائل غير المُسلمة، قد يكون جهة اتصالك غير متصلة بالإنترنت.</string>
     <string name="connection_error_quota">الرسائل غير المُسلَّمة</string>
     <string name="share_1_time_link_with_a_friend">شارك رابطًا لمرة واحدة مع صديق</string>
     <string name="connection_security">أمان الاتصال</string>
@@ -2182,11 +2176,11 @@
     <string name="address_or_1_time_link">عنوان أو رابط لمرة واحدة؟</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[يمكن استخدام الرابط لمرة واحدة <i>مع جهة اتصال واحدة فقط</i> - المشاركة شخصيًا أو عبر أي مُراسل.]]></string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">سيتم قبول الشروط للمُشغلين المفعّلين بعد 30 يومًا.</string>
-    <string name="onboarding_choose_server_operators">اختر المُشغلين</string>
+    <string name="onboarding_choose_server_operators">مُشغلي الخادم</string>
     <string name="operator_conditions_failed_to_load">لا يمكن تحميل نص الشروط الحالية، يمكنك مراجعة الشروط عبر هذا الرابط:</string>
     <string name="error_accepting_operator_conditions">خطأ في قبول الشروط</string>
     <string name="failed_to_save_servers">خطأ في حفظ الخوادم</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">على سبيل المثال، إذا تلقيت رسائل عبر خادم SimpleX Chat، فسيستخدم التطبيق أحد خوادم Flux للتوجيه الخاص.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">على سبيل المثال، إذا تلقى أحد جهات اتصالك رسائل عبر خادم SimpleX Chat، فسوف يقوم تطبيقك بتسليمها عبر خادم Flux.</string>
     <string name="no_message_servers_configured_for_private_routing">لا يوجد خوادم لتوجيه الرسائل الخاصة.</string>
     <string name="no_message_servers_configured">لا يوجد خوادم رسائل.</string>
     <string name="no_media_servers_configured_for_private_routing">لا يوجد خوادم لاستقبال الملفات.</string>
@@ -2202,8 +2196,49 @@
     <string name="address_creation_instruction">انقر فوق أنشئ عنوان SimpleX في القائمة لإنشائه لاحقًا.</string>
     <string name="message_deleted_or_not_received_error_desc">حُذفت هذه الرسالة أو لم يتم استلامها بعد.</string>
     <string name="operator_use_for_messages">استخدم للرسائل</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">عندما تفعّل أكثر من مُشغل شبكة واحد، سيستخدم التطبيق خوادم مُشغلين مختلفين لكل مُحادثة.</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">يحمي التطبيق خصوصيتك من خلال استخدام مُشغلين مختلفين في كل محادثة.</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[سيتم قبول الشروط للمُشغل/ين: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[ستطبق هذه الشروط أيضًا على: <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[ستطبق نفس الشروط على المُشغل <b>%s</b>.]]></string>
+    <string name="business_address">عنوان العمل التجاري</string>
+    <string name="onboarding_notifications_mode_service_desc_short">يتم تشغيل التطبيق دائمًا في الخلفية</string>
+    <string name="v6_2_business_chats">دردشات العمل التجاري</string>
+    <string name="button_add_team_members">أضف أعضاء الفريق</string>
+    <string name="button_add_friends">أضف أصدقاء</string>
+    <string name="add_your_team_members_to_conversations">أضف أعضاء فريقك إلى المحادثات.</string>
+    <string name="direct_messages_are_prohibited_in_chat">يُحظر إرسال الرسائل المباشرة بين الأعضاء في هذه الدردشة.</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>أجهزة Xiaomi</b>: يُرجى تفعيل التشغيل التلقائي (Autostart) في إعدادات النظام لكي تعمل الإشعارات.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[يتم إرسال جميع الرسائل والملفات <b>مُعمَّاة بين الطرفين</b>، مع أمان ما بعد الكم في الرسائل المباشرة.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">تحقق من الرسائل كل 10 دقائق</string>
+    <string name="direct_messages_are_prohibited">يُمنع إرسال الرسائل المباشرة بين الأعضاء.</string>
+    <string name="info_row_chat">الدردشة</string>
+    <string name="how_it_helps_privacy">كيف يساعد على الخصوصية</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">سيتم حذف الدردشة لجميع الأعضاء - لا يمكن التراجع عن هذا!</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">سيتم حذف الدردشة لديك - لا يمكن التراجع عن هذا!</string>
+    <string name="button_delete_chat">احذف الدردشة</string>
+    <string name="connect_plan_chat_already_exists">الدردشة موجودة بالفعل!</string>
+    <string name="delete_chat_question">حذف الدردشة؟</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[لقد تم توصيلك بالفعل بـ <b>%1$s</b>.]]></string>
+    <string name="chat_archive">أو استورد ملف الأرشيف</string>
+    <string name="onboarding_notifications_mode_off_desc_short">لا توجد خدمة خلفية</string>
+    <string name="onboarding_notifications_mode_battery">الإشعارات والبطارية</string>
+    <string name="only_chat_owners_can_change_prefs">يمكن فقط لأصحاب الدردشة تغيير التفضيلات.</string>
+    <string name="v6_2_business_chats_descr">الخصوصية لعملائك.</string>
+    <string name="remote_hosts_section">الجوالات عن بُعد</string>
+    <string name="invite_to_chat_button">ادعُ للدردشة</string>
+    <string name="leave_chat_question">مغادرة المجموعة؟</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">سيتم إزالة العضو من الدردشة - لا يمكن التراجع عن هذا!</string>
+    <string name="button_leave_chat">غادِر الدردشة</string>
+    <string name="maximum_message_size_title">الرسالة كبيرة جدًا!</string>
+    <string name="maximum_message_size_reached_text">يُرجى تقليل حجم الرسالة وإرسالها مرة أخرى.</string>
+    <string name="chat_bottom_bar">شريط أداة الدردشة القابلة للوصول</string>
+    <string name="display_name_accepted_invitation">الدعوة قُبلت</string>
+    <string name="display_name_requested_to_connect">طلبت الاتصال</string>
+    <string name="maximum_message_size_reached_non_text">يُرجى تقليل حجم الرسالة أو إزالة الوسائط ثم إرسالها مرة أخرى.</string>
+    <string name="maximum_message_size_reached_forwarding">يمكنك نسخ الرسالة وتقليل حجمها لإرسالها.</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">عندما يتم تفعيل أكثر من مُشغل واحد، لن يكون لدى أي منهم بيانات تعريفية لمعرفة من يتواصل مع من.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">سيتم تغيير الدور إلى %s. وسيتم إشعار الجميع في الدردشة.</string>
+    <string name="chat_main_profile_sent">سيتم إرسال ملف تعريفك للدردشة إلى أعضاء الدردشة</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">سوف تتوقف عن تلقي الرسائل من هذه الدردشة. سيتم حفظ سجل الدردشة.</string>
+    <string name="onboarding_network_about_operators">عن المُشغلين</string>
 </resources>

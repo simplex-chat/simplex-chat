@@ -579,6 +579,7 @@
       </trans-unit>
       <trans-unit id="About operators" xml:space="preserve">
         <source>About operators</source>
+        <target>Über Betreiber</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -641,6 +642,7 @@
       </trans-unit>
       <trans-unit id="Add friends" xml:space="preserve">
         <source>Add friends</source>
+        <target>Freunde aufnehmen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -660,6 +662,7 @@
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
         <source>Add team members</source>
+        <target>Team-Mitglieder aufnehmen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -674,6 +677,7 @@
       </trans-unit>
       <trans-unit id="Add your team members to the conversations." xml:space="preserve">
         <source>Add your team members to the conversations.</source>
+        <target>Nehmen Sie Team-Mitglieder in Ihre Unterhaltungen auf.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve">
@@ -1248,10 +1252,12 @@
       </trans-unit>
       <trans-unit id="Business address" xml:space="preserve">
         <source>Business address</source>
+        <target>Geschäftliche Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Business chats" xml:space="preserve">
         <source>Business chats</source>
+        <target>Geschäftliche Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1398,14 +1404,17 @@
       </trans-unit>
       <trans-unit id="Chat" xml:space="preserve">
         <source>Chat</source>
+        <target>Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat already exists" xml:space="preserve">
         <source>Chat already exists</source>
+        <target>Chat besteht bereits</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat already exists!" xml:space="preserve">
         <source>Chat already exists!</source>
+        <target>Chat besteht bereits!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
@@ -1485,10 +1494,12 @@
       </trans-unit>
       <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
         <source>Chat will be deleted for all members - this cannot be undone!</source>
+        <target>Der Chat wird für alle Mitglieder gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
         <source>Chat will be deleted for you - this cannot be undone!</source>
+        <target>Der Chat wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -2247,6 +2258,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Delete chat" xml:space="preserve">
         <source>Delete chat</source>
+        <target>Chat löschen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2261,6 +2273,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
         <source>Delete chat?</source>
+        <target>Chat löschen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2530,6 +2543,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
         <source>Direct messages between members are prohibited in this chat.</source>
+        <target>In diesem Chat sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
@@ -4105,6 +4119,7 @@ Weitere Verbesserungen sind bald verfügbar!</target>
       </trans-unit>
       <trans-unit id="Invite to chat" xml:space="preserve">
         <source>Invite to chat</source>
+        <target>Zum Chat einladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
@@ -4267,10 +4282,12 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Leave chat" xml:space="preserve">
         <source>Leave chat</source>
+        <target>Chat verlassen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave chat?" xml:space="preserve">
         <source>Leave chat?</source>
+        <target>Chat verlassen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
@@ -4405,6 +4422,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All chat members will be notified.</source>
+        <target>Die Rolle des Mitglieds wird auf "%@" geändert. Alle Chat-Mitglieder werden darüber informiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
@@ -4419,6 +4437,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from chat - this cannot be undone!</source>
+        <target>Das Mitglied wird aus dem Chat entfernt. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
@@ -5036,6 +5055,7 @@ Dies erfordert die Aktivierung eines VPNs.</target>
       </trans-unit>
       <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
         <source>Only chat owners can change preferences.</source>
+        <target>Nur Chat-Eigentümer können die Präferenzen ändern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
@@ -5170,6 +5190,7 @@ Dies erfordert die Aktivierung eines VPNs.</target>
       </trans-unit>
       <trans-unit id="Or import archive file" xml:space="preserve">
         <source>Or import archive file</source>
+        <target>Oder importieren Sie eine Archiv-Datei</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve">
@@ -5435,6 +5456,7 @@ Fehler: %@</target>
       </trans-unit>
       <trans-unit id="Privacy for your customers." xml:space="preserve">
         <source>Privacy for your customers.</source>
+        <target>Schutz der Privatsphäre Ihrer Kunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -7011,6 +7033,7 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
         <source>Tap Create SimpleX address in the menu to create it later.</source>
+        <target>Tippen Sie im Menü auf SimpleX-Adresse erstellen, um sie später zu erstellen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -7212,12 +7235,12 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
         <source>The servers for new connections of your current chat profile **%@**.</source>
-        <target>Mögliche Server für neue Verbindungen von Ihrem aktuellen Chat-Profil **%@**.</target>
+        <target>Nachrichten-Server für neue Verbindungen über Ihr aktuelles Chat-Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve">
         <source>The servers for new files of your current chat profile **%@**.</source>
-        <target>Die Server Deines aktuellen Chat-Profils für neue Dateien **%@**.</target>
+        <target>Medien- und Datei-Server für neue Daten über Ihr aktuelles Chat-Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
@@ -8061,6 +8084,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You are already connected with %@." xml:space="preserve">
         <source>You are already connected with %@.</source>
+        <target>Sie sind bereits mit %@ verbunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
@@ -8339,6 +8363,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
         <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
+        <target>Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
@@ -8528,6 +8553,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="accepted invitation" xml:space="preserve">
         <source>accepted invitation</source>
+        <target>Einladung akzeptiert</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -9214,6 +9240,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>
+        <target>Zur Verbindung aufgefordert</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
