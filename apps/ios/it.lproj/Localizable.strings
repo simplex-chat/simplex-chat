@@ -1060,7 +1060,7 @@
 "Conditions are accepted for the operator(s): **%@**." = "Le condizioni sono state accettate per gli operatori: **%@**.";
 
 /* No comment provided by engineer. */
-"Conditions are already accepted for following operator(s): **%@**." = "Le condizioni sono già state accettate per i seguenti operatori: **%@**.";
+"Conditions are already accepted for these operator(s): **%@**." = "Le condizioni sono già state accettate per i seguenti operatori: **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Condizioni d'uso";
@@ -4015,7 +4015,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Salva (e avvisa i contatti)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Salva e avvisa il contatto";
 
 /* No comment provided by engineer. */

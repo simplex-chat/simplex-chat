@@ -1030,7 +1030,7 @@
 "Conditions are accepted for the operator(s): **%@**." = "Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: **%@**.";
 
 /* No comment provided by engineer. */
-"Conditions are already accepted for following operator(s): **%@**." = "Die Nutzungsbedingungen der/des folgenden Betreiber(s) wurden schon akzeptiert: **%@**.";
+"Conditions are already accepted for these operator(s): **%@**." = "Die Nutzungsbedingungen der/des folgenden Betreiber(s) wurden schon akzeptiert: **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Nutzungsbedingungen";
@@ -3952,7 +3952,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Speichern (und Kontakte benachrichtigen)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Speichern und Kontakt benachrichtigen";
 
 /* No comment provided by engineer. */
@@ -4390,6 +4390,9 @@
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "SimpleX-Adresse oder Einmal-Link?";
+
+/* No comment provided by engineer. */
+"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX-Chat und Flux haben vereinbart, die von Flux betriebenen Server in die App aufzunehmen.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "Die Sicherheit von SimpleX Chat wurde von Trail of Bits überprüft.";
