@@ -577,8 +577,9 @@
         <target>Riguardo SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About operators" xml:space="preserve">
+      <trans-unit id="About operators" xml:space="preserve" approved="no">
         <source>About operators</source>
+        <target state="translated">Info sugli operatori</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -6713,9 +6714,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Indirizzo SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve" approved="no">
         <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
-        <target>SimpleX Chat e Flux hanno concluso un accordo per includere server gestiti da Flux nell'app</target>
+        <target state="translated">SimpleX Chat e Flux hanno concluso un accordo per includere server gestiti da Flux nell'app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -8550,8 +8551,9 @@ Ripetere la richiesta di connessione?</target>
         <target>chiamata accettata</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="accepted invitation" xml:space="preserve">
+      <trans-unit id="accepted invitation" xml:space="preserve" approved="no">
         <source>accepted invitation</source>
+        <target state="translated">invito accettato</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -9236,8 +9238,9 @@ Ripetere la richiesta di connessione?</target>
         <target>ti ha rimosso/a</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested to connect" xml:space="preserve">
+      <trans-unit id="requested to connect" xml:space="preserve" approved="no">
         <source>requested to connect</source>
+        <target state="translated">richiesto di connettersi</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
