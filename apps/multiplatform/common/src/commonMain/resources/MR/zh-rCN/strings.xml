@@ -2230,4 +2230,7 @@
     <string name="member_will_be_removed_from_chat_cannot_be_undone">将从聊天中删除成员 - 此操作无法撤销！</string>
     <string name="maximum_message_size_reached_text">请减小消息尺寸并再次发送。</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">当启用了超过一个运营者时，没有一个运营者拥有了解谁和谁联络的元数据。</string>
+    <string name="display_name_accepted_invitation">已接受邀请</string>
+    <string name="display_name_requested_to_connect">被请求连接</string>
+    <string name="onboarding_network_about_operators">关于运营者</string>
 </resources>
