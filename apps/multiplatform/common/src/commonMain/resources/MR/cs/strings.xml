@@ -1860,7 +1860,7 @@
     <string name="smp_servers_configured">Nastavené SMP servery</string>
     <string name="servers_info_subscriptions_connections_pending">Probíhá</string>
     <string name="chunks_uploaded">Části nahrány</string>
-    <string name="n_file_errors">%1$d chuba souboru(ů):\n%2$s</string>
+    <string name="n_file_errors">%1$d chyba souboru(ů):\n%2$s</string>
     <string name="n_other_file_errors">%1$d jiná chyba souboru(ů).</string>
     <string name="error_forwarding_messages">Chyba přeposílaní zpráv</string>
     <string name="srv_error_host">Adresa serveru není kompatibilní s nastavením sítě.</string>
