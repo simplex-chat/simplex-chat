@@ -2245,4 +2245,5 @@
     <string name="display_name_accepted_invitation">geaccepteerde uitnodiging</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Wanneer er meer dan één operator is ingeschakeld, beschikt geen enkele operator over metagegevens om te achterhalen wie met wie communiceert.</string>
     <string name="display_name_requested_to_connect">gevraagd om verbinding te maken</string>
+    <string name="onboarding_network_about_operators">Over operatoren</string>
 </resources>
