@@ -50,7 +50,7 @@ fun ModalData.ChooseServerOperators(
           AppBarTitle(stringResource(MR.strings.onboarding_choose_server_operators), bottomPadding = DEFAULT_PADDING)
         }
 
-        Column(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING ), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingInformationButton(
             stringResource(MR.strings.how_it_helps_privacy),
             onClick = { modalManager.showModal { ChooseServerOperatorsInfoView() } }
