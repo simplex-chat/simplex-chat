@@ -32,7 +32,6 @@ struct AddGroupView: View {
                 AddGroupMembersViewCommon(
                     chat: chat,
                     groupInfo: groupInfo,
-                    preferences: groupInfo.fullGroupPreferences,
                     creatingGroup: true,
                     showFooterCounter: false
                 ) { _ in

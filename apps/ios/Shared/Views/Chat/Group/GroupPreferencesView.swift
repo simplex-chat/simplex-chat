@@ -21,8 +21,9 @@ struct GroupPreferencesView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var groupInfo: GroupInfo
     @Binding var preferences: FullGroupPreferences
-    @Binding var currentPreferences: FullGroupPreferences
+    var currentPreferences: FullGroupPreferences
     let creatingGroup: Bool
+    let savePreferences: () -> Void
     @State private var showSaveDialogue = false
 
     var body: some View {
@@ -41,7 +42,7 @@ struct GroupPreferencesView: View {
                 if groupInfo.isOwner {
                     Section {
                         Button("Reset") { preferences = currentPreferences }
-                        Button(saveText) { savePreferences(groupInfo: $groupInfo, preferences: $preferences, currentPreferences: $currentPreferences) }
+                        Button(saveText) { savePreferences() }
                     }
                     .disabled(currentPreferences == preferences)
                 }
@@ -65,7 +66,7 @@ struct GroupPreferencesView: View {
         })
         .confirmationDialog("Save preferences?", isPresented: $showSaveDialogue) {
             Button(saveText) {
-                savePreferences(groupInfo: $groupInfo, preferences: $preferences, currentPreferences: $currentPreferences)
+                savePreferences()
                 dismiss()
             }
             Button("Exit without saving") {
@@ -137,34 +138,14 @@ struct GroupPreferencesView: View {
     }
 }
 
-func savePreferences(
-    groupInfo: Binding<GroupInfo>,
-    preferences: Binding<FullGroupPreferences>,
-    currentPreferences: Binding<FullGroupPreferences>
-) {
-    Task {
-        do {
-            var gp = groupInfo.groupProfile.wrappedValue
-            gp.groupPreferences = toGroupPreferences(preferences.wrappedValue)
-            let gInfo = try await apiUpdateGroup(groupInfo.groupId.wrappedValue, gp)
-            await MainActor.run {
-                groupInfo.wrappedValue = gInfo
-                ChatModel.shared.updateGroup(gInfo)
-                currentPreferences.wrappedValue = preferences.wrappedValue
-            }
-        } catch {
-            logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")
-        }
-    }
-}
-
 struct GroupPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         GroupPreferencesView(
             groupInfo: Binding.constant(GroupInfo.sampleData),
             preferences: Binding.constant(FullGroupPreferences.sampleData),
-            currentPreferences: Binding.constant(FullGroupPreferences.sampleData),
-            creatingGroup: false
+            currentPreferences: FullGroupPreferences.sampleData,
+            creatingGroup: false,
+            savePreferences: {}
         )
     }
 }

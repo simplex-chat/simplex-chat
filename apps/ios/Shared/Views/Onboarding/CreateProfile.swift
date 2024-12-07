@@ -136,7 +136,6 @@ struct CreateFirstProfile: View {
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity) // Ensures it takes up the full width
-            .padding(.top, 25)
             .padding(.horizontal, 10)
 
             HStack {

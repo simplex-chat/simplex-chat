@@ -117,7 +117,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       ColumnWithScrollBar {
         val displayName = rememberSaveable { mutableStateOf("") }
         val focusRequester = remember { FocusRequester() }
-        Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING * 2, bottom = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
+        Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(start = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, end = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, bottom = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           Box(Modifier.align(Alignment.CenterHorizontally)) {
             AppBarTitle(stringResource(MR.strings.create_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
           }
@@ -130,7 +130,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
         Spacer(Modifier.fillMaxHeight().weight(1f))
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
-            if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+            if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
             labelId = MR.strings.create_profile_button,
             onboarding = null,
             enabled = canCreateProfile(displayName.value),

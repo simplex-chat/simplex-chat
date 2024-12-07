@@ -863,6 +863,9 @@
 /* No comment provided by engineer. */
 "Change" = "Cambiar";
 
+/* authentication reason */
+"Change chat profiles" = "Cambiar perfil de usuario";
+
 /* No comment provided by engineer. */
 "Change database passphrase?" = "¿Cambiar contraseña de la base de datos?";
 
@@ -890,9 +893,6 @@
 /* authentication reason
    set passcode view */
 "Change self-destruct passcode" = "Cambiar código autodestrucción";
-
-/* authentication reason */
-"Change chat profiles" = "Cambiar perfil de usuario";
 
 /* chat item text */
 "changed address for you" = "ha cambiado tu servidor de envío";
@@ -1030,7 +1030,7 @@
 "Conditions are accepted for the operator(s): **%@**." = "Las condiciones se han aceptado para el(los) operador(s): **%@**.";
 
 /* No comment provided by engineer. */
-"Conditions are already accepted for following operator(s): **%@**." = "Las condiciones ya se han aceptado para el/los siguiente(s) operador(s): **%@**.";
+"Conditions are already accepted for these operator(s): **%@**." = "Las condiciones ya se han aceptado para el/los siguiente(s) operador(s): **%@**.";
 
 /* No comment provided by engineer. */
 "Conditions of use" = "Condiciones de uso";
@@ -1173,7 +1173,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Conectando con ordenador";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "conectando…";
 
 /* No comment provided by engineer. */
@@ -3945,12 +3945,6 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Grupos más seguros";
 
-/* No comment provided by engineer. */
-"The same conditions will apply to operator **%@**." = "Las mismas condiciones se aplicarán al operador **%@**.";
-
-/* No comment provided by engineer. */
-"The same conditions will apply to operator(s): **%@**." = "Las mismas condiciones se aplicarán a el/los operador(es) **%@**.";
-
 /* alert button
    chat item action */
 "Save" = "Guardar";
@@ -3958,7 +3952,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Guardar (y notificar contactos)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Guardar y notificar contacto";
 
 /* No comment provided by engineer. */
@@ -3979,7 +3973,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Guardar la contraseña en Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "¿Guardar preferencias?";
 
 /* No comment provided by engineer. */
@@ -4398,6 +4392,9 @@
 "SimpleX address or 1-time link?" = "Dirección SimpleX o enlace de un uso?";
 
 /* No comment provided by engineer. */
+"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "Simplex Chat y Flux han acordado incluir servidores operados por Flux en la aplicación";
+
+/* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "La seguridad de SimpleX Chat ha sido auditada por Trail of Bits.";
 
 /* simplex link type */
@@ -4690,6 +4687,12 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "El perfil sólo se comparte con tus contactos.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator **%@**." = "Las mismas condiciones se aplicarán al operador **%@**.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator(s): **%@**." = "Las mismas condiciones se aplicarán a el/los operador(es) **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "El segundo operador predefinido!";
