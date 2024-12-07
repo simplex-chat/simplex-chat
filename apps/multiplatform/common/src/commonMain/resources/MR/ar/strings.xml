@@ -73,7 +73,7 @@
     <string name="all_app_data_will_be_cleared">حُذفت جميع بيانات التطبيق.</string>
     <string name="allow_to_delete_messages">السماح بحذف الرسائل المرسلة بشكل لا رجعة فيه. (24 ساعة)</string>
     <string name="allow_your_contacts_to_send_voice_messages">اسمح لجهات اتصالك بإرسال رسائل صوتية.</string>
-    <string name="learn_more_about_address">حول عنوان SimpleX</string>
+    <string name="learn_more_about_address">عن عنوان SimpleX</string>
     <string name="app_version_code">بناء التطبيق: %s</string>
     <string name="appearance_settings">المظهر</string>
     <string name="add_address_to_your_profile">أضف عنوانًا إلى ملف تعريفك، حتى تتمكن جهات اتصالك من مشاركته مع أشخاص آخرين. سيتم إرسال تحديث ملف التعريف إلى جهات اتصالك.</string>
@@ -2240,4 +2240,5 @@
     <string name="member_role_will_be_changed_with_notification_chat">سيتم تغيير الدور إلى %s. وسيتم إشعار الجميع في الدردشة.</string>
     <string name="chat_main_profile_sent">سيتم إرسال ملف تعريفك للدردشة إلى أعضاء الدردشة</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">سوف تتوقف عن تلقي الرسائل من هذه الدردشة. سيتم حفظ سجل الدردشة.</string>
+    <string name="onboarding_network_about_operators">عن المُشغلين</string>
 </resources>
