@@ -2320,6 +2320,7 @@
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Одноразовая ссылка может быть использована <i>только с одним контактом</i> - поделитесь при встрече или через любой мессенджер.]]></string>
     <string name="no_message_servers_configured_for_private_routing">Нет серверов для доставки сообщений.</string>
     <string name="onboarding_network_operators_configure_via_settings">Вы можете настроить серверы позже.</string>
+    <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat и Flux заключили соглашение добавить серверы под управлением Flux в приложение.</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Приложение улучшает конфиденциальность используя разных операторов в каждом разговоре.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Когда больше чем один оператор включен, ни один из них не видит метаданные, чтобы определить, кто соединен с кем.</string>
     <string name="failed_to_save_servers">Ошибка сохранения серверов</string>
