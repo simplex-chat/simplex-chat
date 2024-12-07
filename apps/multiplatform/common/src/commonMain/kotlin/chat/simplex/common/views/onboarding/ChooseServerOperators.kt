@@ -61,7 +61,8 @@ fun ModalData.ChooseServerOperators(
         Column((
             if (appPlatform.isDesktop) Modifier.width(600.dp).align(Alignment.CenterHorizontally) else Modifier)
           .fillMaxWidth()
-          .padding(horizontal = DEFAULT_PADDING)
+          .padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING),
+          horizontalAlignment = Alignment.CenterHorizontally
         ) {
           serverOperators.value.forEachIndexed { index, srvOperator ->
             OperatorCheckView(srvOperator, selectedOperatorIds)
@@ -173,7 +174,7 @@ private fun ReviewConditionsButton(
   modalManager: ModalManager
 ) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.operator_review_conditions,
     onboarding = null,
     enabled = enabled,
@@ -188,7 +189,7 @@ private fun ReviewConditionsButton(
 @Composable
 private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOperators: State<List<ServerOperator>>, selectedOperatorIds: State<Set<Long>>, close: () -> Unit) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.onboarding_network_operators_update,
     onboarding = null,
     enabled = enabled,
@@ -210,7 +211,7 @@ private fun SetOperatorsButton(enabled: Boolean, onboarding: Boolean, serverOper
 @Composable
 private fun ContinueButton(enabled: Boolean, onboarding: Boolean, close: () -> Unit) {
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.onboarding_network_operators_continue,
     onboarding = null,
     enabled = enabled,
@@ -238,7 +239,7 @@ private fun ReviewConditionsView(
   // remembering both since we don't want to reload the view after the user accepts conditions
   val operatorsWithConditionsAccepted = remember { chatModel.conditions.value.serverOperators.filter { it.conditionsAcceptance.conditionsAccepted } }
   val acceptForOperators = remember { selectedOperators.value.filter { !it.conditionsAcceptance.conditionsAccepted } }
-  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = if (onboarding) DEFAULT_ONBOARDING_HORIZONTAL_PADDING else DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), withPadding = false, enableAlphaChanges = false, bottomPadding = DEFAULT_PADDING)
     if (operatorsWithConditionsAccepted.isNotEmpty()) {
       ReadableText(MR.strings.operator_conditions_accepted_for_some, args = operatorsWithConditionsAccepted.joinToString(", ") { it.legalName_ })
@@ -271,7 +272,7 @@ private fun AcceptConditionsButton(
     }
   }
   OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
+    modifier = if (appPlatform.isAndroid) Modifier.fillMaxWidth() else Modifier,
     labelId = MR.strings.accept_conditions,
     onboarding = null,
     onclick = {

@@ -35,14 +35,14 @@ fun SetNotificationsMode(m: ChatModel) {
           AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title), bottomPadding = DEFAULT_PADDING)
         }
         val currentMode = rememberSaveable { mutableStateOf(NotificationsMode.default) }
-        Column(Modifier.padding(horizontal = DEFAULT_PADDING).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingInformationButton(
             stringResource(MR.strings.onboarding_notifications_mode_subtitle),
             onClick = { ModalManager.fullscreen.showModalCloseable { NotificationBatteryUsageInfo() } }
           )
         }
         Spacer(Modifier.weight(1f))
-        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+        Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)) {
           SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short)) {
             currentMode.value = NotificationsMode.SERVICE
           }
@@ -56,7 +56,7 @@ fun SetNotificationsMode(m: ChatModel) {
         Spacer(Modifier.weight(1f))
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
           OnboardingActionButton(
-            modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
+            modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier,
             labelId = MR.strings.use_chat,
             onboarding = OnboardingStage.OnboardingComplete,
             onclick = {
