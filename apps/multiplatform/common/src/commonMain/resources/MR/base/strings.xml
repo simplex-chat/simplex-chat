@@ -1752,7 +1752,6 @@
   <string name="operator_same_conditions_will_be_applied"><![CDATA[The same conditions will apply to operator <b>%s</b>.]]></string>
   <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[The same conditions will apply to operator(s): <b>%s</b>.]]></string>
   <string name="operator_conditions_will_be_applied"><![CDATA[These conditions will also apply for: <b>%s</b>.]]></string>
-  <string name="operator_same_conditions_will_be_applied"><![CDATA[The same conditions will apply to operator: <b>%s</b>.]]></string>
   <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Conditions will be accepted for operator(s): <b>%s</b>.]]></string>
   <string name="operators_conditions_will_also_apply"><![CDATA[These conditions will also apply for: <b>%s</b>.]]></string>
   <string name="view_conditions">View conditions</string>
