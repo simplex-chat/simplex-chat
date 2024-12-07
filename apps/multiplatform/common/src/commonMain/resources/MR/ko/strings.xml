@@ -851,7 +851,6 @@
     <string name="submit_passcode">제출하기</string>
     <string name="store_passphrase_securely_without_recover">암호를 모르면 채팅에 액세스할 수 없으니 암호를 안전하게 보관해 주세요.</string>
     <string name="stop_chat_question">채팅 기능을 중지할까요\?</string>
-    <string name="stop_chat_to_enable_database_actions">데이터베이스 작업을 할 수 있도록 채팅 기능을 중지하기</string>
     <string name="switch_receiving_address">수신 주소 바꾸기</string>
     <string name="decryption_error">복호화 오류</string>
     <string name="confirm_passcode">패스코드 확인</string>

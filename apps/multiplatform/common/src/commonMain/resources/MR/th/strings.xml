@@ -937,7 +937,6 @@
     <string name="star_on_github">ติดดาวบน GitHub</string>
     <string name="switch_verb">เปลี่ยน</string>
     <string name="callstate_starting">กำลังเริ่มต้น…</string>
-    <string name="stop_chat_to_enable_database_actions">หยุดการแชทเพื่อเปิดใช้งานการดำเนินการกับฐานข้อมูล</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">หยุดแชทเพื่อส่งออก นำเข้า หรือลบฐานข้อมูลแชท คุณจะไม่สามารถรับและส่งข้อความได้ในขณะที่การแชทหยุดลง</string>
     <string name="v4_6_audio_video_calls_descr">รองรับบลูทูธและการปรับปรุงอื่นๆ</string>
     <string name="stop_sharing_address">หยุดแชร์ที่อยู่ไหม\?</string>

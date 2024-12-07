@@ -729,7 +729,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Připojování k serveru... (chyba: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "připojení…";
 
 /* No comment provided by engineer. */
@@ -1544,24 +1544,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Odkazy na skupiny";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Členové skupiny mohou posílat mizící zprávy.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Členové skupiny mohou posílat soubory a média.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Členové skupiny mohou posílat hlasové zprávy.";
-
 /* notification */
 "Group message:" = "Skupinová zpráva:";
 
@@ -1933,6 +1915,24 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Člen bude odstraněn ze skupiny - toto nelze vzít zpět!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Členové skupiny mohou posílat mizící zprávy.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Členové skupiny mohou posílat soubory a média.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Členové skupiny mohou posílat hlasové zprávy.";
 
 /* item status text */
 "Message delivery error" = "Chyba doručení zprávy";
@@ -2556,7 +2556,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Uložit přístupovou frázi do Klíčenky";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Uložit předvolby?";
 
 /* No comment provided by engineer. */

@@ -19,7 +19,7 @@ struct SetNotificationsMode: View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .center, spacing: 20) {
-                    Text("Push Notifications")
+                    Text("Push notifications")
                         .font(.largeTitle)
                         .bold()
                         .padding(.top, 50)
@@ -119,6 +119,7 @@ struct NtfModeSelector: View {
                     Text(ntfModeShortDescription(mode))
                         .lineLimit(2)
                         .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.vertical, 12)

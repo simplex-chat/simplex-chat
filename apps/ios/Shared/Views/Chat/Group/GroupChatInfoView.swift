@@ -87,7 +87,7 @@ struct GroupChatInfoView: View {
                     if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
                         addOrEditWelcomeMessage()
                     }
-                    groupPreferencesButton($groupInfo)
+                    GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                     if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                         sendReceiptsOption()
                     } else {
@@ -439,7 +439,7 @@ struct GroupChatInfoView: View {
     }
 
     private func memberInfoView(_ groupMember: GMember) -> some View {
-        GroupMemberInfoView(groupInfo: groupInfo, groupMember: groupMember)
+        GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
             .navigationBarHidden(false)
     }
 
@@ -654,26 +654,71 @@ func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
     )
 }
 
-func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
-    let label: LocalizedStringKey = groupInfo.wrappedValue.businessChat == nil ? "Group preferences" : "Chat preferences"
-    return NavigationLink {
-        GroupPreferencesView(
-            groupInfo: groupInfo,
-            preferences: groupInfo.wrappedValue.fullGroupPreferences,
-            currentPreferences: groupInfo.wrappedValue.fullGroupPreferences,
-            creatingGroup: creatingGroup
-        )
-        .navigationBarTitle(label)
-        .modifier(ThemedBackground(grouped: true))
-        .navigationBarTitleDisplayMode(.large)
-    } label: {
-        if creatingGroup {
-            Text("Set group preferences")
-        } else {
-            Label(label, systemImage: "switch.2")
+struct GroupPreferencesButton: View {
+    @Binding var groupInfo: GroupInfo
+    @State var preferences: FullGroupPreferences
+    @State var currentPreferences: FullGroupPreferences
+    var creatingGroup: Bool = false
+    
+    private var label: LocalizedStringKey {
+        groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
+    }
+    
+    var body: some View {
+        NavigationLink {
+            GroupPreferencesView(
+                groupInfo: $groupInfo,
+                preferences: $preferences,
+                currentPreferences: currentPreferences,
+                creatingGroup: creatingGroup,
+                savePreferences: savePreferences
+            )
+            .navigationBarTitle(label)
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+            .onDisappear {
+                let saveText = NSLocalizedString(
+                    creatingGroup ? "Save" : "Save and notify group members",
+                    comment: "alert button"
+                )
+                
+                if groupInfo.fullGroupPreferences != preferences {
+                    showAlert(
+                        title: NSLocalizedString("Save preferences?", comment: "alert title"),
+                        buttonTitle: saveText,
+                        buttonAction: { savePreferences() },
+                        cancelButton: true
+                    )
+                }
+            }
+        } label: {
+            if creatingGroup {
+                Text("Set group preferences")
+            } else {
+                Label(label, systemImage: "switch.2")
+            }
         }
     }
+    
+    private func savePreferences() {
+        Task {
+            do {
+                var gp = groupInfo.groupProfile
+                gp.groupPreferences = toGroupPreferences(preferences)
+                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
+                await MainActor.run {
+                    groupInfo = gInfo
+                    ChatModel.shared.updateGroup(gInfo)
+                    currentPreferences = preferences
+                }
+            } catch {
+                logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")
+            }
+        }
+    }
+
 }
+
 
 func cantInviteIncognitoAlert() -> Alert {
     Alert(

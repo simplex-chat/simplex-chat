@@ -2436,9 +2436,7 @@ object ChatController {
           ) {
             receiveFile(rhId, r.user, file.fileId, auto = true)
           }
-          if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
-            ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
-          }
+          ntfManager.notifyMessageReceived(rhId, r.user, cInfo, cItem)
         }
       }
       is CR.ChatItemsStatusesUpdated ->
@@ -2452,7 +2450,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
+        chatItemUpdateNotify(rhId, r.user, r.chatItem)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withChats {
@@ -2950,9 +2948,17 @@ object ChatController {
   }
 
   private suspend fun chatItemSimpleUpdate(rh: Long?, user: UserLike, aChatItem: AChatItem) {
+    if (activeUser(rh, user)) {
+      val cInfo = aChatItem.chatInfo
+      val cItem = aChatItem.chatItem
+      withChats { upsertChatItem(rh, cInfo, cItem) }
+    }
+  }
+
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
-    val notify = { ntfManager.notifyMessageReceived(user, cInfo, cItem) }
+    val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       notify()
     } else if (withChats { upsertChatItem(rh, cInfo, cItem) }) {

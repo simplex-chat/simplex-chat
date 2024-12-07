@@ -15,8 +15,7 @@
     <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
     <string name="alert_message_no_group">هذه المجموعة لم تعد موجودة.</string>
     <string name="this_QR_code_is_not_a_link">رمز QR هذا ليس رابطًا!</string>
-    <string name="next_generation_of_private_messaging">الجيل القادم من
-\nالرسائل الخاصة</string>
+    <string name="next_generation_of_private_messaging">الجيل القادم من \nالرسائل الخاصة</string>
     <string name="delete_files_and_media_desc">لا يمكن التراجع عن هذا الإجراء - سيتم حذف جميع الملفات والوسائط المستلمة والمرسلة. ستبقى الصور منخفضة الدقة.</string>
     <string name="enable_automatic_deletion_message">لا يمكن التراجع عن هذا الإجراء - سيتم حذف الرسائل المرسلة والمستلمة قبل التحديد. قد تأخذ عدة دقائق.</string>
     <string name="messages_section_description">ينطبق هذا الإعداد على الرسائل الموجودة في ملف تعريف الدردشة الحالي الخاص بك</string>
@@ -1050,7 +1049,6 @@
     <string name="stop_sharing_address">إيقاف مشاركة العنوان؟</string>
     <string name="stop_sharing">إيقاف المشاركة</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">أوقف الدردشة لتصدير أو استيراد أو حذف قاعدة بيانات الدردشة. لن تتمكّن من استلام الرسائل وإرسالها أثناء إيقاف الدردشة.</string>
-    <string name="stop_chat_to_enable_database_actions">أوقف الدردشة لتمكين إجراءات قاعدة البيانات.</string>
     <string name="chat_item_ttl_seconds">%s ثانية/ثواني</string>
     <string name="callstate_starting">يبدأ…</string>
     <string name="auth_simplex_lock_turned_on">تم تشغيل القفل SimpleX</string>

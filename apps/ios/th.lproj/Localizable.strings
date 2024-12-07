@@ -681,7 +681,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ข้อผิดพลาด: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "กำลังเชื่อมต่อ…";
 
 /* No comment provided by engineer. */
@@ -1469,24 +1469,6 @@
 /* No comment provided by engineer. */
 "Group links" = "ลิงค์กลุ่ม";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "สมาชิกกลุ่มสามารถส่งข้อความเสียง";
-
 /* notification */
 "Group message:" = "ข้อความกลุ่ม:";
 
@@ -1852,6 +1834,24 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "สมาชิกกลุ่มสามารถส่งข้อความเสียง";
 
 /* item status text */
 "Message delivery error" = "ข้อผิดพลาดในการส่งข้อความ";
@@ -2457,7 +2457,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "บันทึกข้อความรหัสผ่านใน Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "บันทึกการตั้งค่า?";
 
 /* No comment provided by engineer. */

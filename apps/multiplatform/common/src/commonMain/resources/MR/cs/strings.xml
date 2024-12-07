@@ -280,7 +280,6 @@
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Tuto akci nelze vzít zpět! Váš profil, kontakty, zprávy a soubory budou nenávratně ztraceny.</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Restartujte aplikaci a vytvořte nový chat profil.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Nejnovější verzi databáze chatu musíte používat POUZE v jednom zařízení, jinak se může stát, že přestanete přijímat zprávy od některých kontaktů.</string>
-    <string name="stop_chat_to_enable_database_actions">Zastavte chat a povolte akce s databází.</string>
     <string name="files_and_media_section">Soubory a média</string>
     <string name="delete_files_and_media_question">Smazat soubory a média\?</string>
     <string name="delete_messages">Odstranit zprávy</string>

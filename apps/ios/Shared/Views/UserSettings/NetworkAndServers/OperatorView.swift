@@ -450,7 +450,7 @@ struct SingleOperatorUsageConditionsView: View {
                     Group {
                         viewHeader()
                         Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
-                        Text("Same conditions will apply to operator **\(userServers[operatorIndex].operator_.legalName_)**.")
+                        Text("The same conditions will apply to operator **\(userServers[operatorIndex].operator_.legalName_)**.")
                         conditionsAppliedToOtherOperatorsText()
                         usageConditionsNavLinkButton()
 

@@ -1546,8 +1546,9 @@ data class GroupProfile (
 
 @Serializable
 data class BusinessChatInfo (
-  val memberId: String,
-  val chatType: BusinessChatType
+  val chatType: BusinessChatType,
+  val businessId: String,
+  val customerId: String,
 )
 
 @Serializable
@@ -1894,8 +1895,9 @@ class PendingContactConnection(
       generalGetString(MR.strings.display_name_connection_established)
     } else {
       generalGetString(
-        if (initiated && !viaContactUri) MR.strings.display_name_invited_to_connect
-        else MR.strings.display_name_connecting
+        if (viaContactUri) MR.strings.display_name_requested_to_connect
+        else if (initiated) MR.strings.display_name_invited_to_connect
+        else MR.strings.display_name_accepted_invitation
       )
     }
   }

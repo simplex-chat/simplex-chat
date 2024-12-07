@@ -863,6 +863,9 @@
 /* No comment provided by engineer. */
 "Change" = "Зміна";
 
+/* authentication reason */
+"Change chat profiles" = "Зміна профілів користувачів";
+
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Змінити пароль до бази даних?";
 
@@ -890,9 +893,6 @@
 /* authentication reason
    set passcode view */
 "Change self-destruct passcode" = "Змінити пароль самознищення";
-
-/* authentication reason */
-"Change user profiles" = "Зміна профілів користувачів";
 
 /* chat item text */
 "changed address for you" = "змінили для вас адресу";
@@ -1173,7 +1173,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Підключення до ПК";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "з'єднання…";
 
 /* No comment provided by engineer. */
@@ -2424,27 +2424,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Групові посилання";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Учасники групи можуть додавати реакції на повідомлення.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Учасники групи можуть надсилати зникаючі повідомлення.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Учасники групи можуть надсилати файли та медіа.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "Учасники групи можуть надсилати посилання SimpleX.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Учасники групи можуть надсилати голосові повідомлення.";
-
 /* notification */
 "Group message:" = "Групове повідомлення:";
 
@@ -2933,6 +2912,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Учасник буде видалений з групи - це неможливо скасувати!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Учасники групи можуть додавати реакції на повідомлення.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Учасники групи можуть надсилати зникаючі повідомлення.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Учасники групи можуть надсилати файли та медіа.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Учасники групи можуть надсилати посилання SimpleX.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Учасники групи можуть надсилати голосові повідомлення.";
 
 /* No comment provided by engineer. */
 "Menus" = "Меню";
@@ -3669,10 +3669,7 @@
 "Proxy requires password" = "Проксі вимагає пароль";
 
 /* No comment provided by engineer. */
-"Push notifications" = "Push-повідомлення";
-
-/* No comment provided by engineer. */
-"Push Notifications" = "Push-сповіщення";
+"Push notifications" = "Push-сповіщення";
 
 /* No comment provided by engineer. */
 "Push server" = "Push-сервер";
@@ -3948,12 +3945,6 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Безпечніші групи";
 
-/* No comment provided by engineer. */
-"Same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
-
-/* No comment provided by engineer. */
-"Same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
-
 /* alert button
    chat item action */
 "Save" = "Зберегти";
@@ -3982,7 +3973,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Збережіть парольну фразу в Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Зберегти настройки?";
 
 /* No comment provided by engineer. */
@@ -4693,6 +4684,12 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Профіль доступний лише вашим контактам.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator **%@**." = "Такі ж умови діятимуть і для оператора **%@**.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator(s): **%@**." = "Такі ж умови будуть застосовуватися до оператора(ів): **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Другий попередньо встановлений оператор у застосунку!";

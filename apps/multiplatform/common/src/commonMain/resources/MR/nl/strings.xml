@@ -19,7 +19,7 @@
     <string name="network_enable_socks_info">Toegang tot de servers via SOCKS proxy op poort %d\? De proxy moet worden gestart voordat u deze optie inschakelt.</string>
     <string name="alert_title_cant_invite_contacts">Kan geen contacten uitnodigen!</string>
     <string name="allow_direct_messages">Sta het verzenden van directe berichten naar leden toe.</string>
-    <string name="allow_to_delete_messages">Sta toe om verzonden berichten onomkeerbaar te verwijderen. (24 uur)</string>
+    <string name="allow_to_delete_messages">Sta toe om verzonden berichten definitief te verwijderen. (24 uur)</string>
     <string name="allow_to_send_voice">Sta toe om spraak berichten te verzenden.</string>
     <string name="chat_is_running">Chat is actief</string>
     <string name="clear_chat_menu_action">Wissen</string>
@@ -57,7 +57,7 @@
     <string name="v4_2_auto_accept_contact_requests">Contact verzoeken automatisch accepteren</string>
     <string name="bold_text">vetgedrukt</string>
     <string name="attach">Bijvoegen</string>
-    <string name="allow_irreversible_message_deletion_only_if">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)</string>
+    <string name="allow_irreversible_message_deletion_only_if">Sta het definitief verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)</string>
     <string name="allow_to_send_disappearing">Sta toe om verdwijnende berichten te verzenden.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
@@ -74,7 +74,7 @@
     <string name="clear_chat_warning">Alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt! De berichten worden ALLEEN voor jou verwijderd.</string>
     <string name="allow_disappearing_messages_only_if">Sta verdwijnende berichten alleen toe als uw contact dit toestaat.</string>
     <string name="allow_voice_messages_only_if">Sta spraak berichten alleen toe als uw contact ze toestaat.</string>
-    <string name="allow_your_contacts_irreversibly_delete">Laat uw contacten verzonden berichten onomkeerbaar verwijderen. (24 uur)</string>
+    <string name="allow_your_contacts_irreversibly_delete">Laat uw contacten verzonden berichten definitief verwijderen. (24 uur)</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Sta toe dat uw contacten verdwijnende berichten verzenden.</string>
     <string name="chat_preferences_always">altijd</string>
     <string name="icon_descr_audio_off">Geluid uit</string>
@@ -95,7 +95,7 @@
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Het beste voor de batterij</b>. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Het kan worden uitgeschakeld via instellingen</b>, meldingen worden nog steeds weergegeven terwijl de app actief is.]]></string>
-    <string name="both_you_and_your_contacts_can_delete">Zowel u als uw contact kunnen verzonden berichten onomkeerbaar verwijderen. (24 uur)</string>
+    <string name="both_you_and_your_contacts_can_delete">Zowel u als uw contact kunnen verzonden berichten definitief verwijderen. (24 uur)</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contact kunnen verdwijnende berichten sturen.</string>
     <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contact kunnen spraak berichten verzenden.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.]]></string>
@@ -254,12 +254,12 @@
     <string name="auth_device_authentication_is_disabled_turning_off">Apparaatverificatie is uitgeschakeld. SimpleX Vergrendelen uitschakelen.</string>
     <string name="display_name">Vul uw naam in:</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Vergrendelen inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.</string>
-    <string name="direct_messages_are_prohibited_in_group">Directe berichten tussen leden zijn verboden in deze groep.</string>
+    <string name="direct_messages_are_prohibited_in_group">Directe berichten tussen leden zijn niet toegestaan in deze groep.</string>
     <string name="total_files_count_and_size">%d bestand(en) met een totale grootte van %s</string>
     <string name="ttl_hour">%d uur</string>
     <string name="no_call_on_lock_screen">Uitzetten</string>
     <string name="v4_4_disappearing_messages">Verdwijnende berichten</string>
-    <string name="disappearing_prohibited_in_this_chat">Verdwijnende berichten zijn verboden in dit gesprek.</string>
+    <string name="disappearing_prohibited_in_this_chat">Verdwijnende berichten zijn niet toegestaan in dit gesprek.</string>
     <string name="auth_disable_simplex_lock">SimpleX Vergrendelen uitschakelen</string>
     <string name="timed_messages">Verdwijnende berichten</string>
     <string name="smp_server_test_disconnect">Verbinding verbreken</string>
@@ -272,7 +272,7 @@
     <string name="ttl_s">%ds</string>
     <string name="button_delete_contact">Verwijder contact</string>
     <string name="smp_servers_delete_server">Server verwijderen</string>
-    <string name="disappearing_messages_are_prohibited">Verdwijnende berichten zijn verboden in deze groep.</string>
+    <string name="disappearing_messages_are_prohibited">Verdwijnende berichten zijn niet toegestaan.</string>
     <string name="ttl_sec">%d sec</string>
     <string name="ttl_m">%dm</string>
     <string name="ttl_mth">%dmth</string>
@@ -338,9 +338,9 @@
     <string name="feature_enabled">ingeschakeld</string>
     <string name="feature_enabled_for_contact">ingeschakeld voor contact</string>
     <string name="feature_enabled_for_you">voor u ingeschakeld</string>
-    <string name="group_members_can_delete">Groepsleden kunnen verzonden berichten onomkeerbaar verwijderen. (24 uur)</string>
-    <string name="group_members_can_send_dms">Groepsleden kunnen directe berichten sturen</string>
-    <string name="group_members_can_send_voice">Groepsleden kunnen spraak berichten verzenden.</string>
+    <string name="group_members_can_delete">Leden kunnen verzonden berichten definitief verwijderen. (24 uur)</string>
+    <string name="group_members_can_send_dms">Leden kunnen directe berichten sturen.</string>
+    <string name="group_members_can_send_voice">Leden kunnen spraak berichten verzenden.</string>
     <string name="v4_5_transport_isolation_descr">Per chatprofiel (standaard) of per verbinding (BETA).</string>
     <string name="v4_5_multiple_chat_profiles_descr">Verschillende namen, avatars en transportisolatie.</string>
     <string name="v4_4_french_interface">Franse interface</string>
@@ -373,7 +373,7 @@
     <string name="gallery_video_button">Video</string>
     <string name="error_saving_ICE_servers">Fout bij opslaan van ICE servers</string>
     <string name="callstate_ended">geëindigd</string>
-    <string name="group_members_can_send_disappearing">Groepsleden kunnen verdwijnende berichten sturen.</string>
+    <string name="group_members_can_send_disappearing">Leden kunnen verdwijnende berichten sturen.</string>
     <string name="ttl_week">%d week</string>
     <string name="ttl_w">%dw</string>
     <string name="ttl_weeks">%d weken</string>
@@ -396,7 +396,7 @@
     <string name="icon_descr_image_snd_complete">Afbeelding verzonden</string>
     <string name="live_message">Live bericht!</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Als je een uitnodiging link voor SimpleX Chat hebt ontvangen, kun je deze in je browser openen:</string>
-    <string name="onboarding_notifications_mode_subtitle">Dit kan later worden gewijzigd via instellingen.</string>
+    <string name="onboarding_notifications_mode_subtitle">Hoe dit de batterij beïnvloedt</string>
     <string name="join_group_question">Deelnemen aan groep\?</string>
     <string name="icon_descr_add_members">Nodig leden uit</string>
     <string name="no_contacts_selected">Geen contacten geselecteerd</string>
@@ -439,7 +439,7 @@
     <string name="button_leave_group">Groep verlaten</string>
     <string name="info_row_local_name">Lokale naam</string>
     <string name="users_delete_data_only">Alleen lokale profielgegevens</string>
-    <string name="message_deletion_prohibited_in_chat">Het onomkeerbaar verwijderen van berichten is verboden in deze groep.</string>
+    <string name="message_deletion_prohibited_in_chat">Het definitief verwijderen van berichten is niet toegestaan.</string>
     <string name="v4_3_improved_privacy_and_security_desc">App scherm verbergen in de recente apps.</string>
     <string name="settings_section_title_incognito">Incognito modus</string>
     <string name="messages_section_title">Berichten</string>
@@ -458,7 +458,7 @@
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="button_add_members">Nodig leden uit</string>
     <string name="notification_display_mode_hidden_desc">Verberg contact en bericht</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Om het te gebruiken, kunt u Simplex in het volgende dialoogvenster \u0020<b>op de achtergrond uitvoeren</b>. Anders worden de meldingen uitgeschakeld.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[<b>Sta dit toe</b> in het volgende dialoogvenster om direct meldingen te ontvangen.]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om te weigeren, wordt de afzender NIET op de hoogte gesteld.</string>
     <string name="onboarding_notifications_mode_service">Onmiddellijk</string>
     <string name="rcv_group_event_member_added">heeft %1$s uitgenodigd</string>
@@ -508,7 +508,7 @@
     <string name="network_use_onion_hosts_no">Nee</string>
     <string name="immune_to_spam_and_abuse">Immuun voor spam</string>
     <string name="make_private_connection">Maak een privéverbinding</string>
-    <string name="message_deletion_prohibited">Het onomkeerbaar verwijderen van berichten is verboden in dit gesprek.</string>
+    <string name="message_deletion_prohibited">Het definitief verwijderen van berichten is niet toegestaan in dit gesprek.</string>
     <string name="new_in_version">Nieuw in %s</string>
     <string name="v4_3_voice_messages_desc">Max 40 seconden, direct ontvangen.</string>
     <string name="v4_3_improved_server_configuration">Verbeterde serverconfiguratie</string>
@@ -552,7 +552,7 @@
     <string name="chat_preferences_on">aan</string>
     <string name="only_you_can_send_disappearing">Alleen jij kunt verdwijnende berichten verzenden.</string>
     <string name="only_your_contact_can_send_disappearing">Alleen uw contact kan verdwijnende berichten verzenden.</string>
-    <string name="only_you_can_delete_messages">Alleen u kunt berichten onomkeerbaar verwijderen (uw contact kan ze markeren voor verwijdering). (24 uur)</string>
+    <string name="only_you_can_delete_messages">Alleen u kunt berichten definitief verwijderen (uw contact kan ze markeren voor verwijdering). (24 uur)</string>
     <string name="feature_offered_item_with_param">voorgesteld %s: %2s</string>
     <string name="old_database_archive">Oud database archief</string>
     <string name="enter_correct_current_passphrase">Voer het juiste huidige wachtwoord in.</string>
@@ -581,7 +581,7 @@
     <string name="only_your_contact_can_delete">Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering). (24 uur)</string>
     <string name="only_you_can_send_voice">Alleen jij kunt spraak berichten verzenden.</string>
     <string name="only_your_contact_can_send_voice">Alleen uw contact kan spraak berichten verzenden.</string>
-    <string name="prohibit_message_deletion">Verbied het onomkeerbaar verwijderen van berichten.</string>
+    <string name="prohibit_message_deletion">Verbied het definitief verwijderen van berichten.</string>
     <string name="feature_offered_item">voorgesteld %s</string>
     <string name="store_passphrase_securely_without_recover">Sla het wachtwoord veilig op. Als u deze kwijtraakt, heeft u GEEN toegang tot de chats.</string>
     <string name="store_passphrase_securely">Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u deze kwijtraakt.</string>
@@ -590,7 +590,7 @@
     <string name="icon_descr_call_pending_sent">Oproep in behandeling</string>
     <string name="simplex_link_mode_browser_warning">Het openen van de link in de browser kan de privacy en beveiliging van de verbinding verminderen. Niet vertrouwde SimpleX links worden rood weergegeven.</string>
     <string name="contact_developers">Werk de app bij en neem contact op met de ontwikkelaars.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met <b>2-laags end-to-end codering</b>.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Alleen clientapparaten slaan gebruikersprofielen, contacten, groepen en berichten op.</string>
     <string name="sender_may_have_deleted_the_connection_request">De afzender heeft mogelijk het verbindingsverzoek verwijderd.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Schakel SimpleX Vergrendelen in om uw informatie te beschermen.
 \nU wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.</string>
@@ -611,7 +611,7 @@
     <string name="your_profile_is_stored_on_your_device">Uw profiel, contacten en afgeleverde berichten worden op uw apparaat opgeslagen.</string>
     <string name="callstate_starting">beginnen…</string>
     <string name="icon_descr_video_on">Video aan</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan definitief verloren.</string>
     <string name="messages_section_description">Deze instelling is van toepassing op berichten in uw huidige chatprofiel</string>
     <string name="rcv_group_event_updated_group_profile">bijgewerkt groep profiel</string>
     <string name="group_member_status_removed">verwijderd</string>
@@ -710,10 +710,9 @@
     <string name="you_can_use_markdown_to_format_messages__prompt">U kunt markdown gebruiken voor opmaak in berichten:</string>
     <string name="callstatus_rejected">geweigerde oproep</string>
     <string name="secret_text">geheim</string>
-    <string name="next_generation_of_private_messaging">De volgende generatie
-\nprivéberichten</string>
+    <string name="next_generation_of_private_messaging">De toekomst van berichtenuitwisseling</string>
     <string name="callstate_waiting_for_answer">wachten op antwoord…</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID\'s die door alle andere platforms worden gebruikt, ID\'s voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Om uw privacy te beschermen, gebruikt SimpleX voor elk van uw contacten afzonderlijke ID\'s.</string>
     <string name="use_chat">Gebruik chat</string>
     <string name="onboarding_notifications_mode_off">Wanneer de app actief is</string>
     <string name="video_call_no_encryption">video gesprek (niet e2e versleuteld)</string>
@@ -741,7 +740,6 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Start de app opnieuw om een nieuw chatprofiel aan te maken.</string>
     <string name="you_must_use_the_most_recent_version_of_database">U mag ALLEEN de meest recente versie van uw chat-database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.</string>
     <string name="restart_the_app_to_use_imported_chat_database">Start de app opnieuw om de geïmporteerde chat database te gebruiken.</string>
-    <string name="stop_chat_to_enable_database_actions">Stop de chat om database acties mogelijk te maken.</string>
     <string name="delete_files_and_media_desc">Deze actie kan niet ongedaan worden gemaakt, alle ontvangen en verzonden bestanden en media worden verwijderd. Foto\'s met een lage resolutie blijven behouden.</string>
     <string name="remove_passphrase_from_keychain">Wachtwoord verwijderen uit Keychain\?</string>
     <string name="remove_passphrase">Verwijderen</string>
@@ -764,7 +762,7 @@
     <string name="group_is_decentralized">Volledig gedecentraliseerd – alleen zichtbaar voor leden.</string>
     <string name="network_option_tcp_connection_timeout">Timeout van TCP-verbinding</string>
     <string name="voice_messages">Spraak berichten</string>
-    <string name="voice_prohibited_in_this_chat">Spraak berichten zijn verboden in dit gesprek.</string>
+    <string name="voice_prohibited_in_this_chat">Spraak berichten zijn niet toegestaan in dit gesprek.</string>
     <string name="prohibit_sending_disappearing">Verbied het verzenden van verdwijnende berichten.</string>
     <string name="v4_5_reduced_battery_usage">Verminderd batterijgebruik</string>
     <string name="v4_5_private_filenames_descr">Om de tijdzone te beschermen, gebruiken afbeeldings-/spraakbestanden UTC.</string>
@@ -804,7 +802,7 @@
     <string name="reset_color">Kleuren resetten</string>
     <string name="theme_system">Systeem</string>
     <string name="chat_preferences_yes">ja</string>
-    <string name="feature_received_prohibited">gekregen, verboden</string>
+    <string name="feature_received_prohibited">gekregen, niet toegestaan</string>
     <string name="your_preferences">Jouw voorkeuren</string>
     <string name="accept_feature_set_1_day">Stel 1 dag in</string>
     <string name="whats_new">Wat is er nieuw</string>
@@ -824,7 +822,7 @@
     <string name="voice_message_send_text">Spraakbericht…</string>
     <string name="voice_message_with_duration">Spraakbericht (%1$s)</string>
     <string name="text_field_set_contact_placeholder">Contactnaam instellen…</string>
-    <string name="voice_messages_prohibited">Spraak berichten verboden!</string>
+    <string name="voice_messages_prohibited">Spraak berichten niet toegestaan!</string>
     <string name="reset_verb">Resetten</string>
     <string name="send_verb">Verstuur</string>
     <string name="send_live_message_desc">Stuur een live bericht, het wordt bijgewerkt voor de ontvanger(s) terwijl u het typt</string>
@@ -886,21 +884,20 @@
     <string name="this_string_is_not_a_connection_link">Deze string is geen verbinding link!</string>
     <string name="enable_automatic_deletion_message">Deze actie kan niet ongedaan worden gemaakt, de berichten die eerder zijn verzonden en ontvangen dan geselecteerd, worden verwijderd. Het kan enkele minuten duren.</string>
     <string name="switch_receiving_address_desc">Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Om je privacy te behouden, heeft de app in plaats van push meldingen een <b>SimpleX achtergrond service</b> - deze gebruikt een paar procent van de batterij per dag.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Om de privacy te verbeteren, <b>draait SimpleX op de achtergrond</b> in plaats van pushmeldingen te gebruiken.]]></string>
     <string name="chat_preferences_you_allow">Jij staat toe</string>
     <string name="you_are_invited_to_group">Je bent uitgenodigd voor de groep</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.]]></string>
     <string name="connection_error_auth_desc">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
 \nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat servers gebruiken\?</string>
-    <string name="voice_messages_are_prohibited">Spraak berichten zijn verboden in deze groep.</string>
+    <string name="voice_messages_are_prohibited">Spraak berichten zijn niet toegestaan.</string>
     <string name="personal_welcome">Welkom %1$s!</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">U kunt de chat starten via app Instellingen / Database of door de app opnieuw op te starten.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">je hebt het adres gewijzigd voor %s</string>
     <string name="snd_group_event_member_deleted">je hebt %1$s verwijderd</string>
     <string name="contact_sent_large_file">Je contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%1$s).</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Uw huidige chatdatabase wordt VERWIJDERD en VERVANGEN door de geïmporteerde.
-\nDeze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Uw huidige chatdatabase wordt VERWIJDERD en VERVANGEN door de geïmporteerde. \nDeze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan definitief verloren.</string>
     <string name="invite_prohibited_description">Je probeert een contact met wie je een incognito profiel hebt gedeeld uit te nodigen voor de groep waarin je je hoofdprofiel gebruikt</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Uw profiel wordt op uw apparaat opgeslagen en alleen gedeeld met uw contacten. SimpleX servers kunnen uw profiel niet zien.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">U moet zich authenticeren wanneer u de app na 30 seconden op de achtergrond start of hervat.</string>
@@ -1090,7 +1087,7 @@
     <string name="available_in_v51">"
 \nBeschikbaar in v5.1"</string>
     <string name="prohibit_calls">Audio/video gesprekken verbieden.</string>
-    <string name="calls_prohibited_with_this_contact">Audio/video gesprekken zijn verboden.</string>
+    <string name="calls_prohibited_with_this_contact">Audio/video gesprekken zijn niet toegestaan.</string>
     <string name="v5_0_large_files_support_descr">Snel en niet wachten tot de afzender online is!</string>
     <string name="v5_0_app_passcode">App toegangscode</string>
     <string name="v5_0_app_passcode_descr">Stel het in in plaats van systeemverificatie.</string>
@@ -1165,19 +1162,19 @@
     <string name="self_destruct_passcode_enabled">Zelfvernietigings wachtwoord ingeschakeld!</string>
     <string name="app_passcode_replaced_with_self_destruct">De app-toegangscode wordt vervangen door een zelfvernietigings wachtwoord.</string>
     <string name="if_you_enter_self_destruct_code">Als u uw zelfvernietigings wachtwoord invoert tijdens het openen van de app:</string>
-    <string name="if_you_enter_passcode_data_removed">Als u deze toegangscode invoert bij het openen van de app, worden alle app-gegevens onomkeerbaar verwijderd!</string>
+    <string name="if_you_enter_passcode_data_removed">Als u deze toegangscode invoert bij het openen van de app, worden alle app-gegevens definitief verwijderd!</string>
     <string name="set_passcode">Toegangscode instellen</string>
     <string name="prohibit_message_reactions">Bericht reacties verbieden.</string>
     <string name="only_you_can_add_message_reactions">Alleen jij kunt bericht reacties toevoegen.</string>
-    <string name="message_reactions_are_prohibited">Reacties op berichten zijn verboden in deze groep.</string>
+    <string name="message_reactions_are_prohibited">Reacties op berichten zijn niet toegestaan.</string>
     <string name="prohibit_message_reactions_group">Berichten reacties verbieden.</string>
     <string name="allow_message_reactions_only_if">Sta bericht reacties alleen toe als uw contact dit toestaat.</string>
     <string name="allow_your_contacts_adding_message_reactions">Sta uw contactpersonen toe om bericht reacties toe te voegen.</string>
     <string name="allow_message_reactions">Sta bericht reacties toe.</string>
-    <string name="group_members_can_add_message_reactions">Groepsleden kunnen bericht reacties toevoegen.</string>
+    <string name="group_members_can_add_message_reactions">Leden kunnen reacties op berichten toevoegen.</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Zowel u als uw contact kunnen bericht reacties toevoegen.</string>
     <string name="message_reactions">Reacties op berichten</string>
-    <string name="message_reactions_prohibited_in_this_chat">Reacties op berichten zijn verboden in deze chat.</string>
+    <string name="message_reactions_prohibited_in_this_chat">Reacties op berichten zijn niet toegestaan in deze chat.</string>
     <string name="only_your_contact_can_add_message_reactions">Alleen uw contact kan bericht reacties toevoegen.</string>
     <string name="custom_time_unit_days">dagen</string>
     <string name="custom_time_unit_hours">uren</string>
@@ -1241,14 +1238,14 @@
     <string name="abort_switch_receiving_address_confirm">Afbreken</string>
     <string name="no_filtered_chats">Geen gefilterde chats</string>
     <string name="only_owners_can_enable_files_and_media">Alleen groep eigenaren kunnen bestanden en media inschakelen.</string>
-    <string name="files_are_prohibited_in_group">Bestanden en media zijn verboden in deze groep.</string>
+    <string name="files_are_prohibited_in_group">Bestanden en media zijn niet toegestaan.</string>
     <string name="favorite_chat">Favoriet</string>
-    <string name="files_and_media_prohibited">Bestanden en media verboden!</string>
+    <string name="files_and_media_prohibited">Bestanden en media niet toegestaan!</string>
     <string name="unfavorite_chat">Niet favoriet</string>
     <string name="files_and_media">Bestanden en media</string>
     <string name="prohibit_sending_files">Verbied het verzenden van bestanden en media.</string>
     <string name="allow_to_send_files">Sta toe om bestanden en media te verzenden.</string>
-    <string name="group_members_can_send_files">Groepsleden kunnen bestanden en media verzenden.</string>
+    <string name="group_members_can_send_files">Leden kunnen bestanden en media verzenden.</string>
     <string name="search_verb">Zoeken</string>
     <string name="la_mode_off">Uit</string>
     <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
@@ -1722,10 +1719,10 @@
     <string name="feature_roles_admins">beheerders</string>
     <string name="feature_roles_all_members">alle leden</string>
     <string name="feature_roles_owners">eigenaren</string>
-    <string name="simplex_links_are_prohibited_in_group">SimpleX-links zijn in deze groep verboden.</string>
+    <string name="simplex_links_are_prohibited_in_group">SimpleX-links zijn niet toegestaan.</string>
     <string name="feature_enabled_for">Ingeschakeld voor</string>
     <string name="allow_to_send_simplex_links">Sta het verzenden van SimpleX-links toe.</string>
-    <string name="group_members_can_send_simplex_links">Groepsleden kunnen SimpleX-links verzenden.</string>
+    <string name="group_members_can_send_simplex_links">Leden kunnen SimpleX-links verzenden.</string>
     <string name="saved_description">opgeslagen</string>
     <string name="saved_from_description">opgeslagen van %s</string>
     <string name="forward_chat_item">Doorsturen</string>
@@ -1988,7 +1985,7 @@
     <string name="allow_calls_question">Oproepen toestaan?</string>
     <string name="info_view_call_button">bellen</string>
     <string name="cant_call_member_alert_title">Kan geen groepslid bellen</string>
-    <string name="calls_prohibited_alert_title">Bellen verboden!</string>
+    <string name="calls_prohibited_alert_title">Bellen niet toegestaan!</string>
     <string name="confirm_delete_contact_question">Contact verwijderen bevestigen?</string>
     <string name="conversation_deleted">Gesprek verwijderd!</string>
     <string name="delete_without_notification">Verwijderen zonder melding</string>
@@ -2009,7 +2006,7 @@
     <string name="info_view_open_button">open</string>
     <string name="paste_link">Plak de link</string>
     <string name="action_button_add_members">Uitnodiging</string>
-    <string name="one_hand_ui">Toegankelijke chatwerkbalk</string>
+    <string name="one_hand_ui">Bereikbare app-toolbars</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Vraag uw contactpersoon om oproepen in te schakelen.</string>
     <string name="no_filtered_contacts">Geen gefilterde contacten</string>
     <string name="select_verb">Selecteer</string>
@@ -2144,7 +2141,7 @@
     <string name="or_to_share_privately">Of om privé te delen</string>
     <string name="address_settings">Adres instellingen</string>
     <string name="create_1_time_link">Eenmalige link maken</string>
-    <string name="onboarding_choose_server_operators">Operators kiezen</string>
+    <string name="onboarding_choose_server_operators">Serverbeheerders</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Voor ingeschakelde operators worden de voorwaarden na 30 dagen geaccepteerd.</string>
     <string name="onboarding_network_operators">Netwerkbeheerders</string>
     <string name="onboarding_network_operators_review_later">Later beoordelen</string>
@@ -2209,4 +2206,40 @@
     <string name="operator_use_for_sending">Om te verzenden</string>
     <string name="onboarding_network_operators_configure_via_settings">U kunt servers configureren via instellingen.</string>
     <string name="chat_archive">Of importeer archiefbestand</string>
+    <string name="direct_messages_are_prohibited_in_chat">Directe berichten tussen leden zijn in deze chat niet toegestaan.</string>
+    <string name="remote_hosts_section">Externe mobiele telefoons</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi-apparaten</b>: schakel Automatisch starten in de systeeminstellingen in om meldingen te laten werken.]]></string>
+    <string name="maximum_message_size_title">Bericht is te groot!</string>
+    <string name="maximum_message_size_reached_text">Verklein het bericht en verstuur het opnieuw.</string>
+    <string name="maximum_message_size_reached_forwarding">U kunt het bericht kopiëren en verkleinen om het te verzenden.</string>
+    <string name="add_your_team_members_to_conversations">Voeg uw teamleden toe aan de gesprekken.</string>
+    <string name="business_address">Zakelijk adres</string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Alle berichten en bestanden worden <b>end-to-end-versleuteld</b> verzonden, met post-kwantumbeveiliging in directe berichten.]]></string>
+    <string name="onboarding_notifications_mode_service_desc_short">App draait altijd op de achtergrond</string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">Controleer berichten elke 10 minuten</string>
+    <string name="onboarding_notifications_mode_battery">Meldingen en batterij</string>
+    <string name="how_it_helps_privacy">Hoe het de privacy helpt</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">U ontvangt geen berichten meer van deze chat. De chatgeschiedenis blijft bewaard.</string>
+    <string name="leave_chat_question">Chat verlaten?</string>
+    <string name="button_add_friends">Vrienden toevoegen</string>
+    <string name="button_add_team_members">Teamleden toevoegen</string>
+    <string name="invite_to_chat_button">Uitnodigen voor een chat</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">De chat wordt voor je verwijderd - dit kan niet ongedaan worden gemaakt!</string>
+    <string name="info_row_chat">Chat</string>
+    <string name="direct_messages_are_prohibited">Directe berichten tussen leden zijn niet toegestaan.</string>
+    <string name="connect_plan_chat_already_exists">Chat bestaat al!</string>
+    <string name="button_delete_chat">Chat verwijderen</string>
+    <string name="delete_chat_question">Chat verwijderen?</string>
+    <string name="button_leave_chat">Chat verlaten</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">Lid wordt verwijderd uit de chat - dit kan niet ongedaan worden gemaakt!</string>
+    <string name="member_role_will_be_changed_with_notification_chat">De rol wordt gewijzigd naar %s. Iedereen in de chat wordt op de hoogte gebracht.</string>
+    <string name="chat_main_profile_sent">Uw chatprofiel wordt naar chatleden verzonden</string>
+    <string name="v6_2_business_chats_descr">Privacy voor uw klanten.</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[U bent al verbonden met <b>%1$s</b>.]]></string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">De chat wordt voor alle leden verwijderd - dit kan niet ongedaan worden gemaakt!</string>
+    <string name="chat_bottom_bar">Bereikbare chat-toolbar</string>
+    <string name="v6_2_business_chats">Zakelijke chats</string>
+    <string name="onboarding_notifications_mode_off_desc_short">Geen achtergrondservice</string>
+    <string name="only_chat_owners_can_change_prefs">Alleen chateigenaren kunnen voorkeuren wijzigen.</string>
+    <string name="maximum_message_size_reached_non_text">Verklein de berichtgrootte of verwijder de media en verzend het bericht opnieuw.</string>
 </resources>

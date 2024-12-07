@@ -462,8 +462,7 @@
     <string name="callstate_connected">Verbunden</string>
     <string name="callstate_ended">Beendet</string>
     <!-- SimpleXInfo -->
-    <string name="next_generation_of_private_messaging">Die nächste Generation
-\ndes privaten Messagings</string>
+    <string name="next_generation_of_private_messaging">Die nächste Generation \ndes privaten Messagings</string>
     <string name="privacy_redefined">Datenschutz neu definiert</string>
     <string name="first_platform_without_user_ids">Keine Benutzerkennungen.</string>
     <string name="immune_to_spam_and_abuse">Immun gegen Spam</string>
@@ -598,7 +597,6 @@
     <string name="chat_database_deleted">Chat-Datenbank gelöscht</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
-    <string name="stop_chat_to_enable_database_actions">Chat beenden, um Datenbankaktionen zu erlauben.</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
     <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
     <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>

@@ -711,7 +711,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Yhteyden muodostaminen palvelimeen... (virhe: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "yhdistää…";
 
 /* No comment provided by engineer. */
@@ -1520,24 +1520,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Ryhmälinkit";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Ryhmän jäsenet voivat lisätä viestireaktioita.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Ryhmän jäsenet voivat lähettää suoraviestejä.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Ryhmän jäsenet voivat lähettää katoavia viestejä.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Ryhmän jäsenet voivat lähettää tiedostoja ja mediaa.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Ryhmän jäsenet voivat lähettää ääniviestejä.";
-
 /* notification */
 "Group message:" = "Ryhmäviesti:";
 
@@ -1909,6 +1891,24 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Jäsen poistetaan ryhmästä - tätä ei voi perua!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Ryhmän jäsenet voivat lisätä viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Ryhmän jäsenet voivat lähettää suoraviestejä.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Ryhmän jäsenet voivat lähettää katoavia viestejä.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Ryhmän jäsenet voivat lähettää tiedostoja ja mediaa.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Ryhmän jäsenet voivat lähettää ääniviestejä.";
 
 /* item status text */
 "Message delivery error" = "Viestin toimitusvirhe";
@@ -2526,7 +2526,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Tallenna tunnuslause Avainnippuun";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Tallenna asetukset?";
 
 /* No comment provided by engineer. */

@@ -211,8 +211,8 @@
     <string name="connection_error_auth_desc">A meno che il tuo contatto non abbia eliminato la connessione o che questo link non sia già stato usato, potrebbe essere un errore; per favore segnalalo.
 \nPer connetterti, chiedi al tuo contatto di creare un altro link di connessione e controlla di avere una connessione di rete stabile.</string>
     <string name="error_smp_test_certificate">Probabilmente l\'impronta del certificato nell\'indirizzo del server è sbagliata</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Per rispettare la tua privacy, invece delle notifiche push l\'app ha un <b>servizio SimpleX in secondo piano</b>; usa una piccola percentuale di batteria al giorno.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Per usarlo, <b>consenti a SimpleX di funzionare in secondo piano</b> nella prossima schermata. Altrimenti le notifiche saranno disattivate.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Per migliorare la privacy, <b>SimpleX funziona in secondo piano</b> invece di usare le notifiche push.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[<b>Consentilo</b> nella prossima schermata per ricevere le notifiche immediatamente.]]></string>
     <string name="simplex_service_notification_title">Servizio SimpleX Chat</string>
     <string name="notifications_mode_service_desc">Servizio in secondo piano sempre attivo. Le notifiche verranno mostrate appena i messaggi saranno disponibili.</string>
     <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -478,7 +478,7 @@
     <string name="ttl_h">%do</string>
     <string name="ttl_hour">%d ora</string>
     <string name="ttl_hours">%d ore</string>
-    <string name="disappearing_messages_are_prohibited">I messaggi a tempo sono vietati in questo gruppo.</string>
+    <string name="disappearing_messages_are_prohibited">I messaggi a tempo sono vietati.</string>
     <string name="ttl_m">%dm</string>
     <string name="ttl_min">%d min</string>
     <string name="ttl_month">%d mese</string>
@@ -490,10 +490,10 @@
     <string name="ttl_week">%d settimana</string>
     <string name="ttl_weeks">%d settimane</string>
     <string name="v4_2_group_links">Link del gruppo</string>
-    <string name="group_members_can_delete">I membri del gruppo possono eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
-    <string name="group_members_can_send_dms">I membri del gruppo possono inviare messaggi diretti.</string>
-    <string name="group_members_can_send_disappearing">I membri del gruppo possono inviare messaggi a tempo.</string>
-    <string name="group_members_can_send_voice">I membri del gruppo possono inviare messaggi vocali.</string>
+    <string name="group_members_can_delete">I membri possono eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
+    <string name="group_members_can_send_dms">I membri possono inviare messaggi diretti.</string>
+    <string name="group_members_can_send_disappearing">I membri possono inviare messaggi a tempo.</string>
+    <string name="group_members_can_send_voice">I membri possono inviare messaggi vocali.</string>
     <string name="v4_4_verify_connection_security_desc">Confronta i codici di sicurezza con i tuoi contatti.</string>
     <string name="v4_4_disappearing_messages">Messaggi a tempo</string>
     <string name="v4_3_improved_privacy_and_security_desc">Nascondi la schermata dell\'app nelle app recenti.</string>
@@ -648,9 +648,9 @@
     <string name="incoming_audio_call">Chiamata in arrivo</string>
     <string name="incoming_video_call">Videochiamata in arrivo</string>
     <string name="onboarding_notifications_mode_service">Istantaneo</string>
-    <string name="onboarding_notifications_mode_subtitle">Può essere cambiato in seguito via impostazioni.</string>
+    <string name="onboarding_notifications_mode_subtitle">Come influisce sulla batteria</string>
     <string name="make_private_connection">Crea una connessione privata</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Solo i dispositivi client memorizzano i profili utente, i contatti, i gruppi e i messaggi inviati con <b>crittografia end-to-end a 2 livelli</b>.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Solo i dispositivi client memorizzano i profili utente, i contatti, i gruppi e i messaggi.</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Chiunque può installare i server.</string>
     <string name="paste_the_link_you_received">Incolla il link che hai ricevuto</string>
     <string name="people_can_connect_only_via_links_you_share">Sei tu a decidere chi può connettersi.</string>
@@ -660,9 +660,8 @@
     <string name="read_more_in_github_with_link"><![CDATA[Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.]]></string>
     <string name="reject">Rifiuta</string>
     <string name="first_platform_without_user_ids">Nessun identificatore utente.</string>
-    <string name="next_generation_of_private_messaging">La nuova generazione
-\ndi messaggistica privata</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Per proteggere la privacy, invece degli ID utente usati da tutte le altre piattaforme, SimpleX dispone di identificatori per le code dei messaggi, separati per ciascuno dei tuoi contatti.</string>
+    <string name="next_generation_of_private_messaging">Il futuro dei messaggi</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Per proteggere la tua privacy, SimpleX usa ID separati per ciascuno dei tuoi contatti.</string>
     <string name="use_chat">Usa la chat</string>
     <string name="icon_descr_video_call">videochiamata</string>
     <string name="video_call_no_encryption">videochiamata (non crittografata e2e)</string>
@@ -843,7 +842,7 @@
     <string name="your_preferences">Le tue preferenze</string>
     <string name="v4_3_improved_server_configuration">Configurazione del server migliorata</string>
     <string name="v4_3_irreversible_message_deletion">Eliminazione irreversibile del messaggio</string>
-    <string name="message_deletion_prohibited_in_chat">L\'eliminazione irreversibile dei messaggi è vietata in questo gruppo.</string>
+    <string name="message_deletion_prohibited_in_chat">L\'eliminazione irreversibile dei messaggi è vietata.</string>
     <string name="v4_3_voice_messages_desc">Max 40 secondi, ricevuto istantaneamente.</string>
     <string name="new_in_version">Novità nella %s</string>
     <string name="only_you_can_send_voice">Solo tu puoi inviare messaggi vocali.</string>
@@ -856,7 +855,7 @@
     <string name="v4_2_security_assessment_desc">La sicurezza di SimpleX Chat è stata verificata da Trail of Bits.</string>
     <string name="v4_3_voice_messages">Messaggi vocali</string>
     <string name="voice_prohibited_in_this_chat">I messaggi vocali sono vietati in questa chat.</string>
-    <string name="voice_messages_are_prohibited">I messaggi vocali sono vietati in questo gruppo.</string>
+    <string name="voice_messages_are_prohibited">I messaggi vocali sono vietati.</string>
     <string name="whats_new">Novità</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Con messaggio di benvenuto facoltativo.</string>
     <string name="v4_3_irreversible_message_deletion_desc">I tuoi contatti possono consentire l\'eliminazione completa dei messaggi.</string>
@@ -875,7 +874,6 @@
     <string name="remove_passphrase_from_keychain">Rimuovere la password dal Keystore\?</string>
     <string name="save_passphrase_in_keychain">Salva la password nel Keystore</string>
     <string name="chat_item_ttl_seconds">%s secondo/i</string>
-    <string name="stop_chat_to_enable_database_actions">Ferma la chat per attivare le azioni del database.</string>
     <string name="delete_files_and_media_desc">Questa azione non può essere annullata: tutti i file e i media ricevuti e inviati verranno eliminati. Rimarranno le immagini a bassa risoluzione.</string>
     <string name="enable_automatic_deletion_message">Questa azione non può essere annullata: i messaggi inviati e ricevuti prima di quanto selezionato verranno eliminati. Potrebbe richiedere diversi minuti.</string>
     <string name="update_database">Aggiorna</string>
@@ -1171,7 +1169,7 @@
     <string name="change_self_destruct_passcode">Cambia codice di autodistruzione</string>
     <string name="message_reactions">Reazioni ai messaggi</string>
     <string name="message_reactions_prohibited_in_this_chat">Le reazioni ai messaggi sono vietate in questa chat.</string>
-    <string name="message_reactions_are_prohibited">Le reazioni ai messaggi sono vietate in questo gruppo.</string>
+    <string name="message_reactions_are_prohibited">Le reazioni ai messaggi sono vietate.</string>
     <string name="only_you_can_add_message_reactions">Solo tu puoi aggiungere reazioni ai messaggi.</string>
     <string name="prohibit_message_reactions">Proibisci le reazioni ai messaggi.</string>
     <string name="prohibit_message_reactions_group">Proibisci le reazioni ai messaggi.</string>
@@ -1180,7 +1178,7 @@
     <string name="only_your_contact_can_add_message_reactions">Solo il tuo contatto può aggiungere reazioni ai messaggi.</string>
     <string name="allow_your_contacts_adding_message_reactions">Consenti ai tuoi contatti di aggiungere reazioni ai messaggi.</string>
     <string name="allow_message_reactions_only_if">Consenti reazioni ai messaggi solo se il tuo contatto le consente.</string>
-    <string name="group_members_can_add_message_reactions">I membri del gruppo possono aggiungere reazioni ai messaggi.</string>
+    <string name="group_members_can_add_message_reactions">I membri possono aggiungere reazioni ai messaggi.</string>
     <string name="send_disappearing_message_30_seconds">30 secondi</string>
     <string name="send_disappearing_message_send">Invia</string>
     <string name="send_disappearing_message">Invia messaggio a tempo</string>
@@ -1244,10 +1242,10 @@
     <string name="error_aborting_address_change">Errore nell\'interruzione del cambio di indirizzo</string>
     <string name="only_owners_can_enable_files_and_media">Solo i proprietari del gruppo possono attivare file e contenuti multimediali.</string>
     <string name="files_and_media">File e multimediali</string>
-    <string name="group_members_can_send_files">I membri del gruppo possono inviare file e contenuti multimediali.</string>
+    <string name="group_members_can_send_files">I membri possono inviare file e contenuti multimediali.</string>
     <string name="prohibit_sending_files">Proibisci l\'invio di file e contenuti multimediali.</string>
     <string name="abort_switch_receiving_address_desc">Il cambio di indirizzo verrà interrotto. Verrà usato il vecchio indirizzo di ricezione.</string>
-    <string name="files_are_prohibited_in_group">File e contenuti multimediali sono vietati in questo gruppo.</string>
+    <string name="files_are_prohibited_in_group">File e contenuti multimediali sono vietati.</string>
     <string name="files_and_media_prohibited">File e contenuti multimediali vietati!</string>
     <string name="la_mode_off">Off</string>
     <string name="no_filtered_chats">Nessuna chat filtrata</string>
@@ -1723,11 +1721,11 @@
     <string name="allow_to_send_simplex_links">Consenti di inviare link di SimpleX.</string>
     <string name="prohibit_sending_simplex_links">Vieta l\'invio di link di SimpleX</string>
     <string name="feature_enabled_for">Attivo per</string>
-    <string name="group_members_can_send_simplex_links">I membri del gruppo possono inviare link di Simplex.</string>
+    <string name="group_members_can_send_simplex_links">I membri possono inviare link di Simplex.</string>
     <string name="feature_roles_owners">proprietari</string>
     <string name="feature_roles_admins">amministratori</string>
     <string name="feature_roles_all_members">tutti i membri</string>
-    <string name="simplex_links_are_prohibited_in_group">I link di SimpleX sono vietati in questo gruppo.</string>
+    <string name="simplex_links_are_prohibited_in_group">I link di SimpleX sono vietati.</string>
     <string name="saved_description">salvato</string>
     <string name="saved_from_chat_item_info_title">Salvato da</string>
     <string name="forward_message">Inoltra messaggio…</string>
@@ -1999,7 +1997,7 @@
     <string name="no_filtered_contacts">Nessun contatto filtrato</string>
     <string name="paste_link">Incolla link</string>
     <string name="contact_list_header_title">I tuoi contatti</string>
-    <string name="one_hand_ui">Barra degli strumenti di chat accessibile</string>
+    <string name="one_hand_ui">Barre degli strumenti dell\'app accessibili</string>
     <string name="action_button_add_members">Invita</string>
     <string name="allow_calls_question">Consentire le chiamate?</string>
     <string name="calls_prohibited_alert_title">Chiamate proibite!</string>
@@ -2135,7 +2133,7 @@
     <string name="onboarding_network_operators">Operatori di rete</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Quando più di un operatore di rete è attivato, l\'app userà i server di diversi operatori per ogni conversazione.</string>
     <string name="onboarding_network_operators_conditions_you_can_configure">Puoi configurare gli operatori nelle impostazioni di rete e server.</string>
-    <string name="onboarding_choose_server_operators">Scegli gli operatori</string>
+    <string name="onboarding_choose_server_operators">Operatori del server</string>
     <string name="onboarding_select_network_operators_to_use">Seleziona gli operatori di rete da usare.</string>
     <string name="onboarding_network_operators_continue">Continua</string>
     <string name="onboarding_network_operators_update">Aggiorna</string>
@@ -2213,4 +2211,39 @@
     <string name="share_simplex_address_on_social_media">Condividi indirizzo SimpleX sui social media.</string>
     <string name="chat_archive">O importa file archivio</string>
     <string name="remote_hosts_section">Telefoni remoti</string>
+    <string name="direct_messages_are_prohibited_in_chat">I messaggi diretti tra i membri sono vietati in questa chat.</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Dispositivi Xiaomi</b>: attiva l\'avvio automatico nelle impostazioni di sistema per fare funzionare le notifiche.]]></string>
+    <string name="add_your_team_members_to_conversations">Aggiungi i membri del tuo team alle conversazioni.</string>
+    <string name="business_address">Indirizzo di lavoro</string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tutti i messaggi e i file sono <b>cifrati end-to-end</b>, con sicurezza quantistica nei messaggi diretti.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">Controlla i messaggi ogni 10 minuti</string>
+    <string name="how_it_helps_privacy">Come aiuta la privacy</string>
+    <string name="invite_to_chat_button">Invita in chat</string>
+    <string name="button_add_team_members">Aggiungi membri del team</string>
+    <string name="info_row_chat">Chat</string>
+    <string name="direct_messages_are_prohibited">I messaggi diretti tra i membri sono vietati.</string>
+    <string name="connect_plan_chat_already_exists">La chat esiste già!</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Sei già connesso/a con <b>%1$s</b>.]]></string>
+    <string name="leave_chat_question">Uscire dalla chat?</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">La chat verrà eliminata solo per te, non è reversibile!</string>
+    <string name="button_leave_chat">Esci dalla chat</string>
+    <string name="v6_2_business_chats">Chat di lavoro</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">La chat verrà eliminata per tutti i membri, non è reversibile!</string>
+    <string name="button_add_friends">Aggiungi amici</string>
+    <string name="onboarding_notifications_mode_service_desc_short">L\'app funziona sempre in secondo piano</string>
+    <string name="button_delete_chat">Elimina chat</string>
+    <string name="delete_chat_question">Eliminare la chat?</string>
+    <string name="maximum_message_size_title">Il messaggio è troppo grande!</string>
+    <string name="maximum_message_size_reached_text">Riduci la dimensione del messaggio e invialo di nuovo.</string>
+    <string name="maximum_message_size_reached_non_text">Riduci la dimensione del messaggio o rimuovi i media e invialo di nuovo.</string>
+    <string name="onboarding_notifications_mode_off_desc_short">Nessun servizio in secondo piano</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">Il membro verrà rimosso dalla chat, non è reversibile!</string>
+    <string name="v6_2_business_chats_descr">Privacy per i tuoi clienti.</string>
+    <string name="chat_bottom_bar">Barra degli strumenti di chat accessibile</string>
+    <string name="only_chat_owners_can_change_prefs">Solo i proprietari della chat possono modificarne le preferenze.</string>
+    <string name="onboarding_notifications_mode_battery">Notifiche e batteria</string>
+    <string name="maximum_message_size_reached_forwarding">Puoi copiare e ridurre la dimensione del messaggio per inviarlo.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Il ruolo verrà cambiato in %s. Verrà notificato a tutti nella chat.</string>
+    <string name="chat_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri della chat</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Non riceverai più messaggi da questa chat. La cronologia della chat verrà conservata.</string>
 </resources>

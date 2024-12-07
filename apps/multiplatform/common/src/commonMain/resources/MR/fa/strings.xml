@@ -942,7 +942,6 @@
     <string name="delete_files_and_media_desc">این عمل قابل برگشت نیست - تمام پرونده‌ها و رسانه دریافتی حذف خواهند شد. عکس‌های با کیفیت پایین باقی خواهند ماند.</string>
     <string name="you_must_use_the_most_recent_version_of_database">شما باید از تازه‌ترین نسخه پایگاه داده گپ خود روی فقط یک دستگاه استفاده کنید، در غیر این صورت ممکن است از بعضی از مخاطب‌ها ‌دیگر پیامی دریافت نکنید.</string>
     <string name="messages_section_title">پیام‌ها</string>
-    <string name="stop_chat_to_enable_database_actions">به منظور فعال‌سازی اقدامات پایگاه داده، گپ را متوقف کنید.</string>
     <string name="enable_automatic_deletion_message">این عمل قابل برگشت نیست - پیام‌های ارسالی و دریافتی قدیمی‌تر از زمان انتخابی حذف خواهند شد. این کار ممکن است چندین دقیقه زمان ببرد.</string>
     <string name="error_changing_message_deletion">خطا در تغییر تنظیمات</string>
     <string name="save_passphrase_in_settings">ذخیره عبارت عبور در تنظیمات</string>

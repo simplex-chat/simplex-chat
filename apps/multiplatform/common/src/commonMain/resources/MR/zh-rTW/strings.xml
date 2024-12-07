@@ -119,7 +119,6 @@
     <string name="chat_is_stopped">聊天室已停止運作</string>
     <string name="stop_chat_confirmation">停止</string>
     <string name="chat_database_deleted">已刪除數據庫的對話內容</string>
-    <string name="stop_chat_to_enable_database_actions">停止聊天室以啟用數據庫功能。</string>
     <string name="change_database_passphrase_question">修改數據庫密碼？</string>
     <string name="leave_group_question">確定要退出群組？</string>
     <string name="leave_group_button">退出</string>

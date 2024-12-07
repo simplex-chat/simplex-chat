@@ -863,6 +863,9 @@
 /* No comment provided by engineer. */
 "Change" = "Ändern";
 
+/* authentication reason */
+"Change chat profiles" = "Chat-Profile wechseln";
+
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Datenbank-Passwort ändern?";
 
@@ -890,9 +893,6 @@
 /* authentication reason
    set passcode view */
 "Change self-destruct passcode" = "Selbstzerstörungs-Zugangscode ändern";
-
-/* authentication reason */
-"Change user profiles" = "Chat-Profile wechseln";
 
 /* chat item text */
 "changed address for you" = "Wechselte die Empfängeradresse von Ihnen";
@@ -1173,7 +1173,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Mit dem Desktop verbinden";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "Verbinde…";
 
 /* No comment provided by engineer. */
@@ -2424,27 +2424,6 @@
 /* No comment provided by engineer. */
 "Group links" = "Gruppen-Links";
 
-/* No comment provided by engineer. */
-"Members can add message reactions." = "Gruppenmitglieder können eine Reaktion auf Nachrichten geben.";
-
-/* No comment provided by engineer. */
-"Members can irreversibly delete sent messages. (24 hours)" = "Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)";
-
-/* No comment provided by engineer. */
-"Members can send direct messages." = "Gruppenmitglieder können Direktnachrichten versenden.";
-
-/* No comment provided by engineer. */
-"Members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten senden.";
-
-/* No comment provided by engineer. */
-"Members can send files and media." = "Gruppenmitglieder können Dateien und Medien senden.";
-
-/* No comment provided by engineer. */
-"Members can send SimpleX links." = "Gruppenmitglieder können SimpleX-Links senden.";
-
-/* No comment provided by engineer. */
-"Members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
-
 /* notification */
 "Group message:" = "Grppennachricht:";
 
@@ -2933,6 +2912,27 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!";
+
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Gruppenmitglieder können eine Reaktion auf Nachrichten geben.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Gruppenmitglieder können Direktnachrichten versenden.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten senden.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Gruppenmitglieder können Dateien und Medien senden.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Gruppenmitglieder können SimpleX-Links senden.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
 
 /* No comment provided by engineer. */
 "Menus" = "Menüs";
@@ -3672,9 +3672,6 @@
 "Push notifications" = "Push-Benachrichtigungen";
 
 /* No comment provided by engineer. */
-"Push Notifications" = "Push-Benachrichtigungen";
-
-/* No comment provided by engineer. */
 "Push server" = "Push-Server";
 
 /* chat item text */
@@ -3948,12 +3945,6 @@
 /* No comment provided by engineer. */
 "Safer groups" = "Sicherere Gruppen";
 
-/* No comment provided by engineer. */
-"Same conditions will apply to operator **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den Betreiber **%@**.";
-
-/* No comment provided by engineer. */
-"Same conditions will apply to operator(s): **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den/die Betreiber: **%@**.";
-
 /* alert button
    chat item action */
 "Save" = "Speichern";
@@ -3982,7 +3973,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Passwort im Schlüsselbund speichern";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Präferenzen speichern?";
 
 /* No comment provided by engineer. */
@@ -4693,6 +4684,12 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Das Profil wird nur mit Ihren Kontakten geteilt.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den Betreiber **%@**.";
+
+/* No comment provided by engineer. */
+"The same conditions will apply to operator(s): **%@**." = "Dieselben Nutzungsbedingungen gelten auch für den/die Betreiber: **%@**.";
 
 /* No comment provided by engineer. */
 "The second preset operator in the app!" = "Der zweite voreingestellte Netzwerk-Betreiber in der App!";
