@@ -90,7 +90,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle)
+import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle, crossDeviceRenameFile)
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
@@ -4656,7 +4656,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
             Just targetPath -> do
               fsTargetPath <- lift $ toFSFilePath targetPath
-              renameFile xftpPath fsTargetPath
+              crossDeviceRenameFile xftpPath fsTargetPath
               ci_ <- withStore $ \db -> do
                 liftIO $ do
                   updateRcvFileStatus db fileId FSComplete
@@ -7380,7 +7380,7 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
           tryChatError (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
             Right () -> do
               removeFile fsFilePath `catchChatError` \_ -> pure ()
-              renameFile tmpFile fsFilePath
+              crossDeviceRenameFile tmpFile fsFilePath
             Left e -> do
               toView $ CRChatError Nothing e
               removeFile tmpFile `catchChatError` \_ -> pure ()
