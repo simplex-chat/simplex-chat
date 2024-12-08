@@ -1982,8 +1982,7 @@
     <string name="servers_info_transport_sessions_section_header">Sessões de transporte</string>
     <string name="servers_info_subscriptions_section_header">Recepção de mensagem</string>
     <string name="servers_info_subscriptions_connections_pending">Pendente</string>
-    <string name="servers_info_private_data_disclaimer">Começando de %s.
-\nTodos os dados são privados do seu dispositivo.</string>
+    <string name="servers_info_private_data_disclaimer">Começando de %s. \nTodos os dados são privados do seu dispositivo.</string>
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="servers_info_proxied_servers_section_header">Servidores proxiados</string>
     <string name="servers_info_previously_connected_servers_section_header">Servidores conectados anteriormente</string>
