@@ -1917,8 +1917,7 @@
     <string name="servers_info_reset_stats_alert_confirm">重置</string>
     <string name="network_error_broker_host_desc">服务器地址不兼容网络设置：%1$s。</string>
     <string name="servers_info_starting_from">起始自 %s。</string>
-    <string name="servers_info_private_data_disclaimer">起始自 %s.
-\n所有数据都是设备的私有数据。</string>
+    <string name="servers_info_private_data_disclaimer">起始自 %s. \n所有数据都是设备的私有数据。</string>
     <string name="subscribed">已订阅</string>
     <string name="acknowledged">已认可</string>
     <string name="network_error_broker_version_desc">服务器版本不兼容你的应用：%1$s.</string>
