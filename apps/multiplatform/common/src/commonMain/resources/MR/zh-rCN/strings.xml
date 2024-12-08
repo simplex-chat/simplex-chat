@@ -2233,4 +2233,5 @@
     <string name="display_name_accepted_invitation">已接受邀请</string>
     <string name="display_name_requested_to_connect">被请求连接</string>
     <string name="onboarding_network_about_operators">关于运营者</string>
+    <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat 和 Flux 达成协议将 Flux 运营的服务器包括在应用中。</string>
 </resources>
