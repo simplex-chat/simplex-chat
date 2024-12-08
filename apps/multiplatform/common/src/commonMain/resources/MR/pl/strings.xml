@@ -1932,8 +1932,7 @@
     <string name="servers_info_target">Wyświetlanie informacji dla</string>
     <string name="servers_info_statistics_section_header">Statystyki</string>
     <string name="servers_info_transport_sessions_section_header">Sesje transportowe</string>
-    <string name="servers_info_private_data_disclaimer">Zaczynanie od %s.
-\nWszystkie dane są prywatne na Twoim urządzeniu.</string>
+    <string name="servers_info_private_data_disclaimer">Zaczynanie od %s. \nWszystkie dane są prywatne na Twoim urządzeniu.</string>
     <string name="servers_info_reconnect_all_servers_button">Połącz ponownie wszystkie serwery</string>
     <string name="servers_info_reconnect_server_title">Połączyć ponownie serwer?</string>
     <string name="servers_info_proxied_servers_section_footer">Nie jesteś połączony z tymi serwerami. Prywatne trasowanie jest używane do dostarczania do nich wiadomości.</string>
