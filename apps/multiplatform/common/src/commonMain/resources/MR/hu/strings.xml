@@ -52,7 +52,7 @@
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
-    <string name="app_version_code">Az alkalmazás build száma: %s</string>
+    <string name="app_version_code">Az alkalmazás összeállítási száma: %s</string>
     <string name="audio_video_calls">Hang- és videóhívások</string>
     <string name="network_settings">Speciális hálózati beállítások</string>
     <string name="allow_your_contacts_to_send_voice_messages">A hangüzenetek küldése engedélyezve van az ismerősei számára.</string>
@@ -1350,7 +1350,7 @@
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Akkor lesz kapcsolódva, ha a kapcsolatkérése elfogadásra kerül, várjon, vagy ellenőrizze később!</string>
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[A háttérben való hívásokhoz válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
-    <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumrezisztens-protokollon keresztül.</string>
+    <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumálló-protokollon keresztül.</string>
     <string name="v5_1_better_messages_descr">- 5 perc hosszúságú hangüzenetek.\n- egyéni üzenet-eltűnési időkorlát.\n- előzmények szerkesztése.</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Társítás számítógéppel</i> menüt a hordozható eszköz alkalmazásban és olvassa be a QR-kódot.]]></string>
     <string name="sender_at_ts">%s ekkor: %s</string>
@@ -1653,7 +1653,7 @@
     <string name="migrate_from_device_to_another_device">Átköltöztetés egy másik eszközre</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Figyelmeztetés:</b> az archívum törlésre kerül.]]></string>
     <string name="migrate_from_another_device">Átköltöztetés egy másik eszközről</string>
-    <string name="v5_6_quantum_resistant_encryption">Kvantumrezisztens titkosítás</string>
+    <string name="v5_6_quantum_resistant_encryption">Kvantumálló titkosítás</string>
     <string name="migrate_from_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="migrate_from_device_migration_complete">Átköltöztetés befejezve</string>
     <string name="v5_6_app_data_migration_descr">Átköltöztetés egy másik eszközre QR-kód használatával.</string>
@@ -1661,12 +1661,12 @@
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Megjegyzés:</b> ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.]]></string>
     <string name="migrate_to_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="invalid_file_link">Érvénytelen hivatkozás</string>
-    <string name="conn_event_enabled_pq">végpontok közötti kvantumrezisztens titkosítás</string>
+    <string name="conn_event_enabled_pq">végpontok közötti kvantumálló titkosítás</string>
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">Átköltöztetési párbeszédablak megnyitása</string>
-    <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
+    <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumálló tikosítással védett.</string>
     <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.]]></string>
-    <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Az üzenetek, fájlok és hívások <b>végpontok közötti kvantumálló titkosítással</b> sérülés utáni titkosságvédelemmel, visszautasítással és feltörés utáni helyreállítással vannak védve.]]></string>
     <string name="error_showing_desktop_notification">Hiba az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="permissions_find_in_settings_and_grant">Keresse meg ezt az engedélyt az Android beállításaiban, és adja meg kézzel.</string>
     <string name="permissions_grant_in_settings">Engedélyezés a beállításokban</string>
@@ -1835,7 +1835,7 @@
     <string name="servers_info_sessions_connecting">Kapcsolódás</string>
     <string name="servers_info_sessions_errors">Hibák</string>
     <string name="servers_info_subscriptions_connections_pending">Függőben</string>
-    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat biztonságban van az eszközén..</string>
+    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat privát módon van tárolva az Ön eszközén.</string>
     <string name="servers_info_messages_sent">Elküldött üzenetek</string>
     <string name="servers_info_proxied_servers_section_header">Proxyzott kiszolgálók</string>
     <string name="servers_info_reconnect_servers_title">Újrakapcsolódás a kiszolgálókhoz?</string>
@@ -2173,7 +2173,7 @@
     <string name="maximum_message_size_reached_forwarding">A küldéshez másolhatja és csökkentheti az üzenet méretét.</string>
     <string name="add_your_team_members_to_conversations">Adja hozzá csapattagjait a beszélgetésekhez.</string>
     <string name="business_address">Üzleti cím</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Az összes üzenet és fájl <b>végpontok közötti titkosítással</b>, a közvetlen üzenetek továbbá kvantumrezisztens titkosítással is rendelkeznek.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Az összes üzenet és fájl <b>végpontok közötti titkosítással</b>, a közvetlen üzenetek továbbá kvantumálló titkosítással is rendelkeznek.]]></string>
     <string name="how_it_helps_privacy">Hogyan segíti az adatvédelmet</string>
     <string name="onboarding_notifications_mode_off_desc_short">Nincs háttérszolgáltatás</string>
     <string name="onboarding_notifications_mode_battery">Értesítések és akkumulátor</string>
