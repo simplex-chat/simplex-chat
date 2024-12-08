@@ -38,6 +38,30 @@
   </description>
 
   <releases>
+    <release version="6.2.0" date="2024-12-08">
+      <url type="details">https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html</url>
+      <description>
+        <p>New in v6.2:</p>
+        <p>General:</p>
+        <ul>
+          <li>SimpleX Chat and Flux made an agreement to include servers operated by Flux into the app – to improve metadata privacy.</li>
+          <li>Business chats – your customers privacy.</li>
+        </ul>
+        <p>UI/UX:</p>
+        <ul>
+          <li>Open chat on the first unread message.</li>
+          <li>Jump to quoted messages anywhere in the conversation.</li>
+          <li>See who reacted to messages.</li>
+          <li>UX of database operations.</li>
+          <li>edge-to-edge interface with translucent toolbars in (configurable in Appearance settings)</li>
+          <li>reachable UI in desktop apps - greatly reduces risks to send a message to a wrong chat accidentally.</li>
+          <li>conversation and settings toolbars moved to the bottom with reachable UI</li>
+          <li>don't ask passcode/biometric to open Your chat profiles (only required to add/delete).</li>
+          <li>performance of loading chats.</li>
+          <li>design of onboarding.</li>
+        </ul>
+      </description>
+    </release>
     <release version="6.1.1" date="2024-10-18">
       <url type="details">https://simplex.chat/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html</url>
       <description>
