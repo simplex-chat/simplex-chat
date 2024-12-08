@@ -1951,8 +1951,7 @@
     <string name="servers_info">Infos serveurs</string>
     <string name="servers_info_target">Afficher les informations pour</string>
     <string name="servers_info_starting_from">À partir de %s.</string>
-    <string name="servers_info_private_data_disclaimer">À partir de %s.
-\nToutes les données restent confinées dans votre appareil.</string>
+    <string name="servers_info_private_data_disclaimer">À partir de %s. \nToutes les données restent confinées dans votre appareil.</string>
     <string name="servers_info_statistics_section_header">Statistiques</string>
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="xftp_server">Serveur XFTP</string>
