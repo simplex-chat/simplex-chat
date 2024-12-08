@@ -1967,7 +1967,7 @@
     <string name="size">Tamaño</string>
     <string name="servers_info_subscriptions_connections_subscribed">Conexiones activas</string>
     <string name="servers_info_starting_from">Iniciado el %s.</string>
-    <string name="servers_info_private_data_disclaimer">Iniciado el %s \nTodos los datos son privados a tu dispositivo</string>
+    <string name="servers_info_private_data_disclaimer">Iniciado el %s \nLa información es privada en tu dispositivo.</string>
     <string name="chunks_deleted">Bloques eliminados</string>
     <string name="chunks_downloaded">Bloques descargados</string>
     <string name="chunks_uploaded">Bloques subidos</string>
