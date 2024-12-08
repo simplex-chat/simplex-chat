@@ -1835,7 +1835,7 @@
     <string name="servers_info_sessions_connecting">Kapcsolódás</string>
     <string name="servers_info_sessions_errors">Hibák</string>
     <string name="servers_info_subscriptions_connections_pending">Függőben</string>
-    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat biztonságban van az eszközén.</string>
+    <string name="servers_info_private_data_disclaimer">Statisztikagyűjtés kezdete: %s.\nAz összes adat biztonságban van az eszközén..</string>
     <string name="servers_info_messages_sent">Elküldött üzenetek</string>
     <string name="servers_info_proxied_servers_section_header">Proxyzott kiszolgálók</string>
     <string name="servers_info_reconnect_servers_title">Újrakapcsolódás a kiszolgálókhoz?</string>
