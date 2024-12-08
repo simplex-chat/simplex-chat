@@ -2027,8 +2027,7 @@
     <string name="servers_info_connected_servers_section_header">Подключенные серверы</string>
     <string name="servers_info_previously_connected_servers_section_header">Ранее подключенные серверы</string>
     <string name="servers_info_proxied_servers_section_header">Проксированные серверы</string>
-    <string name="servers_info_private_data_disclaimer">Начиная с %s.
-\nВсе данные хранятся только на вашем устройстве.</string>
+    <string name="servers_info_private_data_disclaimer">Начиная с %s. \nВсе данные хранятся только на вашем устройстве.</string>
     <string name="servers_info_reconnect_server_message">Переподключить сервер для устранения неполадок доставки сообщений. Это использует дополнительный трафик.</string>
     <string name="servers_info_modal_error_title">Ошибка</string>
     <string name="servers_info_reconnect_server_error">Ошибка переподключения к серверу</string>
