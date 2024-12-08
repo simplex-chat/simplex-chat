@@ -35,10 +35,12 @@ import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
 import System.FilePath (combine)
+import Simplex.Chat.Types (ContactName)
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
     deviceName :: Maybe Text,
+    userDisplayName :: Maybe ContactName,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
@@ -286,6 +288,13 @@ chatOptsP appDir defaultDbFileName = do
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
+  userDisplayName <-
+    optional $
+      strOption
+        ( long "user-display-name"
+            <> metavar "DISPLAY_NAME"
+            <> help "Create new or switch to existing user profile with this display name."
+        )
   chatCmd <-
     strOption
       ( long "execute"
@@ -375,6 +384,7 @@ chatOptsP appDir defaultDbFileName = do
   pure
     ChatOpts
       { coreOptions,
+        userDisplayName,
         deviceName,
         chatCmd,
         chatCmdDelay,
