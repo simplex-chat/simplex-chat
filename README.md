@@ -39,6 +39,7 @@
 - 📱 Mobile apps for Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) [app / CLI](#zap-quick-installation-of-a-terminal-app) on Linux, MacOS, Windows.
+- 💻🖱️ Also available as graphical [desktop application.](https://simplex.chat/downloads/#desktop-app)
 
 ## Connect to the team
 
