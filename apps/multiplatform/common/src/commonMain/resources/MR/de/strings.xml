@@ -2025,8 +2025,7 @@
     <string name="appearance_zoom">Zoom</string>
     <string name="smp_server">SMP-Server</string>
     <string name="servers_info_target">Informationen zeigen für</string>
-    <string name="servers_info_private_data_disclaimer">Beginnend mit %s.
-\nAlle Daten werden nur auf Ihrem Gerät gespeichert.</string>
+    <string name="servers_info_private_data_disclaimer">Beginnend mit %s. \nAlle Daten werden nur auf Ihrem Gerät gespeichert.</string>
     <string name="servers_info_statistics_section_header">Statistiken</string>
     <string name="servers_info_transport_sessions_section_header">Transport-Sitzungen</string>
     <string name="servers_info_uploaded">Hochgeladen</string>
