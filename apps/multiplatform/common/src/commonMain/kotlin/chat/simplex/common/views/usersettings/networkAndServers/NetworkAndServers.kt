@@ -1,6 +1,7 @@
-package chat.simplex.common.views.usersettings
+package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
+import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
@@ -20,119 +21,260 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatController.getServerOperators
+import chat.simplex.common.model.ChatController.getUserServers
+import chat.simplex.common.model.ChatController.setUserServers
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.common.views.onboarding.ReadableText
+import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 
 @Composable
-fun NetworkAndServersView() {
+fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
+  val currUserServers = remember { stateGetOrPut("currUserServers") { emptyList<UserOperatorServers>() } }
+  val userServers = remember { stateGetOrPut("userServers") { emptyList<UserOperatorServers>() } }
+  val serverErrors = remember { stateGetOrPut("serverErrors") { emptyList<UserServersError>() } }
 
   val proxyPort = remember { derivedStateOf { appPrefs.networkProxy.state.value.port } }
-  NetworkAndServersLayout(
-    currentRemoteHost = currentRemoteHost,
-    networkUseSocksProxy = networkUseSocksProxy,
-    onionHosts = remember { mutableStateOf(netCfg.onionHosts) },
-    toggleSocksProxy = { enable ->
-      val def = NetCfg.defaults
-      val proxyDef = NetCfg.proxyDefaults
-      if (enable) {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.network_enable_socks),
-          text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
-          confirmText = generalGetString(MR.strings.confirm_verb),
-          onConfirm = {
-            withBGApi {
-              var conf = controller.getNetCfg().withProxy(controller.appPrefs.networkProxy.get())
-              if (conf.tcpConnectTimeout == def.tcpConnectTimeout) {
-                conf = conf.copy(tcpConnectTimeout = proxyDef.tcpConnectTimeout)
-              }
-              if (conf.tcpTimeout == def.tcpTimeout) {
-                conf = conf.copy(tcpTimeout = proxyDef.tcpTimeout)
-              }
-              if (conf.tcpTimeoutPerKb == def.tcpTimeoutPerKb) {
-                conf = conf.copy(tcpTimeoutPerKb = proxyDef.tcpTimeoutPerKb)
-              }
-              if (conf.rcvConcurrency == def.rcvConcurrency) {
-                conf = conf.copy(rcvConcurrency = proxyDef.rcvConcurrency)
-              }
-              chatModel.controller.apiSetNetworkConfig(conf)
-              chatModel.controller.setNetCfg(conf)
-              networkUseSocksProxy.value = true
-            }
-          }
-        )
-      } else {
-        AlertManager.shared.showAlertDialog(
-          title = generalGetString(MR.strings.network_disable_socks),
-          text = generalGetString(MR.strings.network_disable_socks_info),
-          confirmText = generalGetString(MR.strings.confirm_verb),
-          onConfirm = {
-            withBGApi {
-              var conf = controller.getNetCfg().copy(socksProxy = null)
-              if (conf.tcpConnectTimeout == proxyDef.tcpConnectTimeout) {
-                conf = conf.copy(tcpConnectTimeout = def.tcpConnectTimeout)
-              }
-              if (conf.tcpTimeout == proxyDef.tcpTimeout) {
-                conf = conf.copy(tcpTimeout = def.tcpTimeout)
-              }
-              if (conf.tcpTimeoutPerKb == proxyDef.tcpTimeoutPerKb) {
-                conf = conf.copy(tcpTimeoutPerKb = def.tcpTimeoutPerKb)
-              }
-              if (conf.rcvConcurrency == proxyDef.rcvConcurrency) {
-                conf = conf.copy(rcvConcurrency = def.rcvConcurrency)
-              }
-              chatModel.controller.apiSetNetworkConfig(conf)
-              chatModel.controller.setNetCfg(conf)
-              networkUseSocksProxy.value = false
-            }
-          }
-        )
+  fun onClose(close: () -> Unit): Boolean = if (!serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)) {
+    chatModel.centerPanelBackgroundClickHandler = null
+    close()
+    false
+  } else {
+    showUnsavedChangesAlert(
+      {
+        CoroutineScope(Dispatchers.Default).launch {
+          saveServers(currentRemoteHost?.remoteHostId, currUserServers, userServers)
+          chatModel.centerPanelBackgroundClickHandler = null
+          close()
+        }
+      },
+      {
+        chatModel.centerPanelBackgroundClickHandler = null
+        close()
       }
+    )
+    true
+  }
+
+  LaunchedEffect(Unit) {
+    // Enables unsaved changes alert on this view and all children views.
+    chatModel.centerPanelBackgroundClickHandler = {
+      onClose(close = { ModalManager.start.closeModals() })
     }
-  )
+  }
+  ModalView(close = { onClose(closeNetworkAndServers) }) {
+    NetworkAndServersLayout(
+      currentRemoteHost = currentRemoteHost,
+      networkUseSocksProxy = networkUseSocksProxy,
+      onionHosts = remember { mutableStateOf(netCfg.onionHosts) },
+      currUserServers = currUserServers,
+      userServers = userServers,
+      serverErrors = serverErrors,
+      toggleSocksProxy = { enable ->
+        val def = NetCfg.defaults
+        val proxyDef = NetCfg.proxyDefaults
+        if (enable) {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.network_enable_socks),
+            text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
+            confirmText = generalGetString(MR.strings.confirm_verb),
+            onConfirm = {
+              withBGApi {
+                var conf = controller.getNetCfg().withProxy(controller.appPrefs.networkProxy.get())
+                if (conf.tcpConnectTimeout == def.tcpConnectTimeout) {
+                  conf = conf.copy(tcpConnectTimeout = proxyDef.tcpConnectTimeout)
+                }
+                if (conf.tcpTimeout == def.tcpTimeout) {
+                  conf = conf.copy(tcpTimeout = proxyDef.tcpTimeout)
+                }
+                if (conf.tcpTimeoutPerKb == def.tcpTimeoutPerKb) {
+                  conf = conf.copy(tcpTimeoutPerKb = proxyDef.tcpTimeoutPerKb)
+                }
+                if (conf.rcvConcurrency == def.rcvConcurrency) {
+                  conf = conf.copy(rcvConcurrency = proxyDef.rcvConcurrency)
+                }
+                chatModel.controller.apiSetNetworkConfig(conf)
+                chatModel.controller.setNetCfg(conf)
+                networkUseSocksProxy.value = true
+              }
+            }
+          )
+        } else {
+          AlertManager.shared.showAlertDialog(
+            title = generalGetString(MR.strings.network_disable_socks),
+            text = generalGetString(MR.strings.network_disable_socks_info),
+            confirmText = generalGetString(MR.strings.confirm_verb),
+            onConfirm = {
+              withBGApi {
+                var conf = controller.getNetCfg().copy(socksProxy = null)
+                if (conf.tcpConnectTimeout == proxyDef.tcpConnectTimeout) {
+                  conf = conf.copy(tcpConnectTimeout = def.tcpConnectTimeout)
+                }
+                if (conf.tcpTimeout == proxyDef.tcpTimeout) {
+                  conf = conf.copy(tcpTimeout = def.tcpTimeout)
+                }
+                if (conf.tcpTimeoutPerKb == proxyDef.tcpTimeoutPerKb) {
+                  conf = conf.copy(tcpTimeoutPerKb = def.tcpTimeoutPerKb)
+                }
+                if (conf.rcvConcurrency == proxyDef.rcvConcurrency) {
+                  conf = conf.copy(rcvConcurrency = def.rcvConcurrency)
+                }
+                chatModel.controller.apiSetNetworkConfig(conf)
+                chatModel.controller.setNetCfg(conf)
+                networkUseSocksProxy.value = false
+              }
+            }
+          )
+        }
+      }
+    )
+  }
 }
 
 @Composable fun NetworkAndServersLayout(
   currentRemoteHost: RemoteHostInfo?,
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  userServers: MutableState<List<UserOperatorServers>>,
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
   val m = chatModel
-  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
-    val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
-    val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) }}
+  val conditionsAction = remember { m.conditions.value.conditionsAction }
+  val anyOperatorEnabled = remember { derivedStateOf { userServers.value.any { it.operator?.enabled == true } } }
+  val scope = rememberCoroutineScope()
+
+  LaunchedEffect(Unit) {
+    if (currUserServers.value.isNotEmpty() || userServers.value.isNotEmpty()) {
+      return@LaunchedEffect
+    }
+    try {
+      val servers = getUserServers(rh = currentRemoteHost?.remoteHostId)
+      if (servers != null) {
+        currUserServers.value = servers
+        userServers.value = servers
+      }
+    } catch (e: Exception) {
+      Log.e(TAG, e.stackTraceToString())
+    }
+  }
+
+  @Composable
+  fun ConditionsButton(conditionsAction: UsageConditionsAction, rhId: Long?) {
+    SectionItemView(
+      click = { ModalManager.start.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close -> UsageConditionsView(currUserServers, userServers, close, rhId) } },
+    ) {
+      Text(
+        stringResource(if (conditionsAction is UsageConditionsAction.Review) MR.strings.operator_review_conditions else MR.strings.operator_conditions_accepted),
+        color = MaterialTheme.colors.primary
+      )
+    }
+  }
+
+  ColumnWithScrollBar {
+    val showModal = { it: @Composable ModalData.() -> Unit -> ModalManager.start.showModal(content = it) }
+    val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) } }
 
     AppBarTitle(stringResource(MR.strings.network_and_servers))
+    // TODO: Review this and socks.
     if (!chatModel.desktopNoUserNoRemote) {
-      SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
-        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.message_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) } })
+      SectionView(generalGetString(MR.strings.network_preset_servers_title).uppercase()) {
+        userServers.value.forEachIndexed { index, srv ->
+          srv.operator?.let { ServerOperatorRow(index, it, currUserServers, userServers, serverErrors, currentRemoteHost?.remoteHostId) }
+        }
+      }
+      if (conditionsAction != null && anyOperatorEnabled.value) {
+        ConditionsButton(conditionsAction, rhId = currentRemoteHost?.remoteHostId)
+      }
+      val footerText = if (conditionsAction is UsageConditionsAction.Review && conditionsAction.deadline != null && anyOperatorEnabled.value) {
+        String.format(generalGetString(MR.strings.operator_conditions_will_be_accepted_on), localDate(conditionsAction.deadline))
+      } else null
 
-        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.media_and_file_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) } })
+      if (footerText != null) {
+        SectionTextFooter(footerText)
+      }
+      SectionDividerSpaced()
+    }
 
-        if (currentRemoteHost == null) {
-          UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-          SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) }})
-          SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
-          if (networkUseSocksProxy.value) {
-            SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
-            SectionDividerSpaced(maxTopPadding = true)
-          } else {
-            SectionDividerSpaced()
+    SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
+      val nullOperatorIndex = userServers.value.indexOfFirst { it.operator == null }
+
+      if (nullOperatorIndex != -1) {
+        SectionItemView({
+          ModalManager.start.showModal {
+            YourServersView(
+              userServers = userServers,
+              serverErrors = serverErrors,
+              operatorIndex = nullOperatorIndex,
+              rhId = currentRemoteHost?.remoteHostId
+            )
+          }
+        }) {
+          Icon(
+            painterResource(MR.images.ic_dns),
+            stringResource(MR.strings.your_servers),
+            tint = MaterialTheme.colors.secondary
+          )
+          TextIconSpaced()
+          Text(stringResource(MR.strings.your_servers), color = MaterialTheme.colors.onBackground)
+
+          if (currUserServers.value.getOrNull(nullOperatorIndex) != userServers.value.getOrNull(nullOperatorIndex)) {
+            Spacer(Modifier.weight(1f))
+            UnsavedChangesIndicator()
           }
         }
       }
+
+      if (currentRemoteHost == null) {
+        UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
+        SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxy, onionHosts, sessionMode = appPrefs.networkSessionMode.get(), false, it) } })
+        SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
+        if (networkUseSocksProxy.value) {
+          SectionTextFooter(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
+          SectionDividerSpaced(maxTopPadding = true)
+        } else {
+          SectionDividerSpaced(maxBottomPadding = false)
+        }
+      }
     }
+    val saveDisabled = !serversCanBeSaved(currUserServers.value, userServers.value, serverErrors.value)
+
+    SectionItemView(
+      { scope.launch { saveServers(rhId = currentRemoteHost?.remoteHostId, currUserServers, userServers) } },
+      disabled = saveDisabled,
+    ) {
+      Text(stringResource(MR.strings.smp_servers_save), color = if (!saveDisabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+    }
+    val serversErr = globalServersError(serverErrors.value)
+    if (serversErr != null) {
+      SectionCustomFooter {
+        ServersErrorFooter(serversErr)
+      }
+    } else if (serverErrors.value.isNotEmpty()) {
+      SectionCustomFooter {
+        ServersErrorFooter(generalGetString(MR.strings.errors_in_servers_configuration))
+      }
+    }
+
+    SectionDividerSpaced()
 
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
@@ -304,10 +446,7 @@ fun SocksProxySettings(
       }
     },
   ) {
-    ColumnWithScrollBar(
-      Modifier
-        .fillMaxWidth()
-    ) {
+    ColumnWithScrollBar {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
       SectionView(stringResource(MR.strings.network_socks_proxy).uppercase()) {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -479,9 +618,7 @@ fun SessionModePicker(
     icon = painterResource(MR.images.ic_safety_divider),
     onSelected = {
       showModal {
-        ColumnWithScrollBar(
-          Modifier.fillMaxWidth(),
-        ) {
+        ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.network_session_mode_transport_isolation))
           SectionViewSelectable(null, sessionMode, values, updateSessionMode)
         }
@@ -509,6 +646,165 @@ fun showWrongProxyConfigAlert() {
   )
 }
 
+@Composable()
+private fun ServerOperatorRow(
+  index: Int,
+  operator: ServerOperator,
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
+  serverErrors: MutableState<List<UserServersError>>,
+  rhId: Long?
+) {
+  SectionItemView(
+    {
+      ModalManager.start.showModalCloseable { close ->
+        OperatorView(
+          currUserServers,
+          userServers,
+          serverErrors,
+          index,
+          rhId
+        )
+      }
+    }
+  ) {
+    Image(
+      painterResource(operator.logo),
+      operator.tradeName,
+      modifier = Modifier.size(24.dp),
+      colorFilter = if (operator.enabled) null else ColorFilter.colorMatrix(ColorMatrix().apply {
+        setToSaturation(0f)
+      })
+    )
+    TextIconSpaced()
+    Text(operator.tradeName, color = if (operator.enabled) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
+
+    if (currUserServers.value.getOrNull(index) != userServers.value.getOrNull(index)) {
+      Spacer(Modifier.weight(1f))
+      UnsavedChangesIndicator()
+    }
+  }
+}
+
+@Composable
+private fun UnsavedChangesIndicator() {
+  Icon(
+    painterResource(MR.images.ic_edit_filled),
+    stringResource(MR.strings.icon_descr_edited),
+    tint = MaterialTheme.colors.secondary,
+    modifier = Modifier.size(16.dp)
+  )
+}
+
+@Composable
+fun UsageConditionsView(
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>,
+  close: () -> Unit,
+  rhId: Long?
+) {
+  suspend fun acceptForOperators(rhId: Long?, operatorIds: List<Long>, close: () -> Unit) {
+    try {
+      val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
+      val r = chatController.acceptConditions(rhId, conditionsId, operatorIds) ?: return
+      chatModel.conditions.value = r
+      updateOperatorsConditionsAcceptance(currUserServers, r.serverOperators)
+      updateOperatorsConditionsAcceptance(userServers, r.serverOperators)
+      close()
+    } catch (ex: Exception) {
+      Log.e(TAG, ex.stackTraceToString())
+    }
+  }
+
+  @Composable
+  fun AcceptConditionsButton(operatorIds: List<Long>, close: () -> Unit, bottomPadding: Dp = DEFAULT_PADDING * 2) {
+    val scope = rememberCoroutineScope()
+    Column(Modifier.fillMaxWidth().padding(bottom = bottomPadding), horizontalAlignment = Alignment.CenterHorizontally) {
+      OnboardingActionButton(
+        labelId = MR.strings.accept_conditions,
+        onboarding = null,
+        enabled = operatorIds.isNotEmpty(),
+        onclick = {
+          scope.launch {
+            acceptForOperators(rhId, operatorIds, close)
+          }
+        }
+      )
+    }
+  }
+
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
+    when (val conditionsAction = chatModel.conditions.value.conditionsAction) {
+      is UsageConditionsAction.Review -> {
+        if (conditionsAction.operators.isNotEmpty()) {
+          ReadableText(MR.strings.operators_conditions_will_be_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
+        }
+        Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+          ConditionsTextView(rhId)
+        }
+        AcceptConditionsButton(conditionsAction.operators.map { it.operatorId }, close, if (conditionsAction.deadline != null) DEFAULT_PADDING_HALF else DEFAULT_PADDING * 2)
+        if (conditionsAction.deadline != null) {
+          SectionTextFooter(
+            text = AnnotatedString(String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localDate(conditionsAction.deadline))),
+            textAlign = TextAlign.Center
+          )
+          Spacer(Modifier.fillMaxWidth().height(DEFAULT_PADDING))
+        }
+      }
+
+      is UsageConditionsAction.Accepted -> {
+        if (conditionsAction.operators.isNotEmpty()) {
+          ReadableText(MR.strings.operators_conditions_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
+        }
+        Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+          ConditionsTextView(rhId)
+        }
+      }
+
+      else -> {
+        Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+          ConditionsTextView(rhId)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun ServersErrorFooter(errStr: String) {
+  Row(
+    Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      painterResource(MR.images.ic_error),
+      contentDescription = stringResource(MR.strings.server_error),
+      tint = Color.Red,
+      modifier = Modifier
+        .size(19.sp.toDp())
+        .offset(x = 2.sp.toDp())
+    )
+    TextIconSpaced()
+    Text(
+      errStr,
+      color = MaterialTheme.colors.secondary,
+      lineHeight = 18.sp,
+      fontSize = 14.sp
+    )
+  }
+}
+
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(MR.strings.smp_save_servers_question),
+    confirmText = generalGetString(MR.strings.save_verb),
+    dismissText = generalGetString(MR.strings.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
+}
+
 fun showUpdateNetworkSettingsDialog(
   title: String,
   startsWith: String = "",
@@ -526,6 +822,107 @@ fun showUpdateNetworkSettingsDialog(
   )
 }
 
+fun updateOperatorsConditionsAcceptance(usvs: MutableState<List<UserOperatorServers>>, updatedOperators: List<ServerOperator>) {
+  val modified = ArrayList(usvs.value)
+  for (i in modified.indices) {
+    val updatedOperator = updatedOperators.firstOrNull { it.operatorId == modified[i].operator?.operatorId } ?: continue
+    modified[i] = modified[i].copy(operator = modified[i].operator?.copy(conditionsAcceptance = updatedOperator.conditionsAcceptance))
+  }
+  usvs.value = modified
+}
+
+suspend fun validateServers_(
+  rhId: Long?,
+  userServersToValidate: List<UserOperatorServers>,
+  serverErrors: MutableState<List<UserServersError>>
+) {
+  try {
+    val errors = chatController.validateServers(rhId, userServersToValidate) ?: return
+    serverErrors.value = errors
+  } catch (ex: Exception) {
+    Log.e(TAG, ex.stackTraceToString())
+  }
+}
+
+fun serversCanBeSaved(
+  currUserServers: List<UserOperatorServers>,
+  userServers: List<UserOperatorServers>,
+  serverErrors: List<UserServersError>
+): Boolean {
+  return userServers != currUserServers && serverErrors.isEmpty()
+}
+
+fun globalServersError(serverErrors: List<UserServersError>): String? {
+  for (err in serverErrors) {
+    if (err.globalError != null) {
+      return err.globalError
+    }
+  }
+  return null
+}
+
+fun globalSMPServersError(serverErrors: List<UserServersError>): String? {
+  for (err in serverErrors) {
+    if (err.globalSMPError != null) {
+      return err.globalSMPError
+    }
+  }
+  return null
+}
+
+fun globalXFTPServersError(serverErrors: List<UserServersError>): String? {
+  for (err in serverErrors) {
+    if (err.globalXFTPError != null) {
+      return err.globalXFTPError
+    }
+  }
+  return null
+}
+
+fun findDuplicateHosts(serverErrors: List<UserServersError>): Set<String> {
+  val duplicateHostsList = serverErrors.mapNotNull { err ->
+    if (err is UserServersError.DuplicateServer) {
+      err.duplicateHost
+    } else {
+      null
+    }
+  }
+  return duplicateHostsList.toSet()
+}
+
+private suspend fun saveServers(
+  rhId: Long?,
+  currUserServers: MutableState<List<UserOperatorServers>>,
+  userServers: MutableState<List<UserOperatorServers>>
+) {
+  val userServersToSave = userServers.value
+  try {
+    val set = setUserServers(rhId, userServersToSave)
+
+    if (set) {
+      // Get updated servers to learn new server ids (otherwise it messes up delete of newly added and saved servers)
+      val updatedServers = getUserServers(rhId)
+      // Get updated operators to update model
+      val updatedOperators = getServerOperators(rhId)
+
+      if (updatedOperators != null) {
+        chatModel.conditions.value = updatedOperators
+      }
+
+      if (updatedServers != null ) {
+        currUserServers.value = updatedServers
+        userServers.value = updatedServers
+      } else {
+        currUserServers.value = userServersToSave
+      }
+    } else {
+      currUserServers.value = userServersToSave
+    }
+  } catch (ex: Exception) {
+    Log.e(TAG, ex.stackTraceToString())
+  }
+}
+
 @Preview
 @Composable
 fun PreviewNetworkAndServersLayout() {
@@ -535,6 +932,9 @@ fun PreviewNetworkAndServersLayout() {
       networkUseSocksProxy = remember { mutableStateOf(true) },
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       toggleSocksProxy = {},
+      currUserServers =  remember { mutableStateOf(emptyList()) },
+      userServers = remember { mutableStateOf(emptyList()) },
+      serverErrors = remember { mutableStateOf(emptyList()) }
     )
   }
 }

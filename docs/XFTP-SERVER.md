@@ -361,7 +361,74 @@ Feb 27 19:21:11 localhost xftp-server[2350]: Listening on port 443...
 Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src/Simplex/FileTransfer/Server/Env.hs:85] Total / available storage: 64424509440 / 64424509440
 ````
 
-### Monitoring
+### Control port
+
+Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
+
+1. Generate two passwords for each user:
+
+   ```sh
+   tr -dc A-Za-z0-9 </dev/urandom | head -c 20; echo
+   ```
+
+2. Open the configuration file:
+
+   ```sh
+   vim /etc/opt/simplex-xftp/file-server.ini
+   ```
+
+2. Configure the control port and replace the passwords:
+
+   ```ini
+   [AUTH]
+   control_port_admin_password: <your_randomly_generated_admin_password>
+   control_port_user_password: <your_randomly_generated_user_password>
+
+   [TRANSPORT]
+   control_port: 5224
+   ```
+
+3. Restart the server:
+
+   ```sh
+   systemctl restart xftp-server
+   ```
+
+To access the control port, use:
+
+```sh
+nc 127.0.0.1 5224
+```
+
+or:
+
+```sh
+telnet 127.0.0.1 5224
+```
+
+Upon connecting, the control port should print:
+
+```sh
+XFTP server control port
+'help' for supported commands
+```
+
+To authenticate, type the following and hit enter. Change the `my_generated_password` with the `user` or `admin` password from the configuration:
+
+```sh
+auth my_generated_password
+```
+
+Here's the full list of commands, their descriptions and who can access them.
+
+| Command          | Description                                                                     | Requires `admin` role      |
+| ---------------- | ------------------------------------------------------------------------------- | -------------------------- |
+| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | -                          |
+| `delete`         | Delete known file chunk. Useful for content moderation.                         | -                          |
+| `help`           | Help menu.                                                                      | -                          |
+| `quit`           | Exit the control port.                                                          | -                          |
+
+### Daily statistics
 
 You can enable `xftp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex-xftp/file-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
 

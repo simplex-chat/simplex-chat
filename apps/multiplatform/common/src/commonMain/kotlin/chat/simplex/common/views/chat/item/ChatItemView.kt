@@ -2,6 +2,8 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.HoverInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
@@ -18,6 +20,7 @@ import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
@@ -26,6 +29,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlin.math.*
 
@@ -56,8 +60,9 @@ fun ChatItemView(
   imageProvider: (() -> ImageGalleryProvider)? = null,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
-  revealed: MutableState<Boolean>,
-  range: IntRange?,
+  revealed: State<Boolean>,
+  highlighted: State<Boolean>,
+  range: State<IntRange?>,
   selectedChatItems: MutableState<Set<Long>?>,
   fillMaxWidth: Boolean = true,
   selectChatItem: () -> Unit,
@@ -68,6 +73,7 @@ fun ChatItemView(
   joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
+  scrollToQuotedItemFromItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
   forwardItem: (ChatInfo, ChatItem) -> Unit,
@@ -79,6 +85,8 @@ fun ChatItemView(
   findModelMember: (String) -> GroupMember?,
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
+  reveal: (Boolean) -> Unit,
+  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
@@ -91,7 +99,7 @@ fun ChatItemView(
   val showMenu = remember { mutableStateOf(false) }
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLinkLongClick = { _: String -> showMenu.value = true }
-  val live = composeState.value.liveMessage != null
+  val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
 
   Box(
     modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
@@ -111,14 +119,69 @@ fun ChatItemView(
     fun ChatItemReactions() {
       Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
         cItem.reactions.forEach { r ->
-          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
-          if (cInfo.featureEnabled(ChatFeature.Reactions) && (cItem.allowAddReaction || r.userReacted)) {
-            modifier = modifier.clickable {
-              setReaction(cInfo, cItem, !r.userReacted, r.reaction)
+          val showReactionMenu = remember { mutableStateOf(false) }
+          val reactionMembers = remember { mutableStateOf(emptyList<MemberReaction>()) }
+          val interactionSource = remember { MutableInteractionSource() }
+          val enterInteraction = remember { HoverInteraction.Enter() }
+          KeyChangeEffect(highlighted.value) {
+            if (highlighted.value) {
+              interactionSource.emit(enterInteraction)
+            } else {
+              interactionSource.emit(HoverInteraction.Exit(enterInteraction))
             }
+          }
+
+          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          if (cInfo.featureEnabled(ChatFeature.Reactions)) {
+            fun showReactionsMenu() {
+              if (cInfo is ChatInfo.Group) {
+                withBGApi {
+                  try {
+                    val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
+                    if (members != null) {
+                      showReactionMenu.value = true
+                      reactionMembers.value = members
+                    }
+                  } catch (e: Exception) {
+                    Log.d(TAG, "hatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
+                  }
+                }
+              }
+            }
+            modifier = modifier
+              .combinedClickable(
+                onClick = {
+                  if (cItem.allowAddReaction || r.userReacted) {
+                    setReaction(cInfo, cItem, !r.userReacted, r.reaction)
+                  }
+                },
+                onLongClick = {
+                  showReactionsMenu()
+                },
+                interactionSource = interactionSource,
+                indication = LocalIndication.current
+              )
+              .onRightClick { showReactionsMenu() }
           }
           Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
+            DefaultDropdownMenu(showMenu = showReactionMenu) {
+              reactionMembers.value.forEach { m ->
+                ItemAction(
+                  text = m.groupMember.displayName,
+                  composable = { ProfileImage(44.dp, m.groupMember.image) },
+                  onClick = {
+                    if (cInfo is ChatInfo.Group && cInfo.groupInfo.membership.groupMemberId != m.groupMember.groupMemberId) {
+                      showMemberInfo(cInfo.groupInfo, m.groupMember)
+                      showReactionMenu.value = false
+                    } else {
+                      showReactionMenu.value = false
+                    }
+                  },
+                  lineLimit = 1
+                )
+              }
+            }
             if (r.totalReacted > 1) {
               Spacer(Modifier.width(4.dp))
               Text(
@@ -134,15 +197,24 @@ fun ChatItemView(
     }
 
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+      val interactionSource = remember { MutableInteractionSource() }
+      val enterInteraction = remember { HoverInteraction.Enter() }
+      KeyChangeEffect(highlighted.value) {
+        if (highlighted.value) {
+          interactionSource.emit(enterInteraction)
+        } else {
+          interactionSource.emit(HoverInteraction.Exit(enterInteraction))
+        }
+      }
       Column(
         Modifier
           .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
-          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
+          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick, interactionSource = interactionSource, indication = LocalIndication.current)
           .onRightClick { showMenu.value = true },
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToQuotedItemFromItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -275,7 +347,7 @@ fun ChatItemView(
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 if (revealed.value) {
-                  HideItemAction(revealed, showMenu)
+                  HideItemAction(revealed, showMenu, reveal)
                 }
                 if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null && !cItem.localNote) {
                   CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
@@ -296,11 +368,11 @@ fun ChatItemView(
             cItem.meta.itemDeleted != null -> {
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
-                  HideItemAction(revealed, showMenu)
+                  HideItemAction(revealed, showMenu, reveal)
                 } else if (!cItem.isDeletedContent) {
-                  RevealItemAction(revealed, showMenu)
-                } else if (range != null) {
-                  ExpandItemAction(revealed, showMenu)
+                  RevealItemAction(revealed, showMenu, reveal)
+                } else if (range.value != null) {
+                  ExpandItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -320,12 +392,12 @@ fun ChatItemView(
                 }
               }
             }
-            cItem.mergeCategory != null && ((range?.count() ?: 0) > 1 || revealed.value) -> {
+            cItem.mergeCategory != null && ((range.value?.count() ?: 0) > 1 || revealed.value) -> {
               DefaultDropdownMenu(showMenu) {
                 if (revealed.value) {
-                  ShrinkItemAction(revealed, showMenu)
+                  ShrinkItemAction(revealed, showMenu, reveal)
                 } else {
-                  ExpandItemAction(revealed, showMenu)
+                  ExpandItemAction(revealed, showMenu, reveal)
                 }
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
@@ -350,7 +422,7 @@ fun ChatItemView(
         fun MarkedDeletedItemDropdownMenu() {
           DefaultDropdownMenu(showMenu) {
             if (!cItem.isDeletedContent) {
-              RevealItemAction(revealed, showMenu)
+              RevealItemAction(revealed, showMenu, reveal)
             }
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
@@ -623,7 +695,7 @@ fun ItemInfoAction(
 @Composable
 fun DeleteItemAction(
   cItem: ChatItem,
-  revealed: MutableState<Boolean>,
+  revealed: State<Boolean>,
   showMenu: MutableState<Boolean>,
   questionText: String,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -700,48 +772,48 @@ fun SelectItemAction(
 }
 
 @Composable
-private fun RevealItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun RevealItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.reveal_verb),
     painterResource(MR.images.ic_visibility),
     onClick = {
-      revealed.value = true
+      reveal(true)
       showMenu.value = false
     }
   )
 }
 
 @Composable
-private fun HideItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun HideItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_visibility_off),
     onClick = {
-      revealed.value = false
+      reveal(false)
       showMenu.value = false
     }
   )
 }
 
 @Composable
-private fun ExpandItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun ExpandItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.expand_verb),
     painterResource(MR.images.ic_expand_all),
     onClick = {
-      revealed.value = true
+      reveal(true)
       showMenu.value = false
     },
   )
 }
 
 @Composable
-private fun ShrinkItemAction(revealed: MutableState<Boolean>, showMenu: MutableState<Boolean>) {
+private fun ShrinkItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.hide_verb),
     painterResource(MR.images.ic_collapse_all),
     onClick = {
-      revealed.value = false
+      reveal(false)
       showMenu.value = false
     },
   )
@@ -763,6 +835,34 @@ fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, on
         color = finalColor
       )
       Icon(icon, text, tint = finalColor)
+    }
+  }
+}
+
+@Composable
+fun ItemAction(
+  text: String,
+  composable: @Composable () -> Unit,
+  color: Color = Color.Unspecified,
+  onClick: () -> Unit,
+  lineLimit: Int = Int.MAX_VALUE
+) {
+  val finalColor = if (color == Color.Unspecified) {
+    MenuTextColor
+  } else color
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(
+        text,
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1F)
+          .padding(end = 15.dp),
+        color = finalColor,
+        maxLines = lineLimit,
+        overflow = TextOverflow.Ellipsis
+      )
+      composable()
     }
   }
 }
@@ -1063,7 +1163,8 @@ fun PreviewChatItemView(
     linkMode = SimplexLinkMode.DESCRIPTION,
     composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
     revealed = remember { mutableStateOf(false) },
-    range = 0..1,
+    highlighted = remember { mutableStateOf(false) },
+    range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
     selectChatItem = {},
     deleteMessage = { _, _ -> },
@@ -1073,6 +1174,7 @@ fun PreviewChatItemView(
     joinGroup = { _, _ -> },
     acceptCall = { _ -> },
     scrollToItem = {},
+    scrollToQuotedItemFromItem = {},
     acceptFeature = { _, _, _ -> },
     openDirectChat = { _ -> },
     forwardItem = { _, _ -> },
@@ -1084,6 +1186,8 @@ fun PreviewChatItemView(
     findModelMember = { null },
     setReaction = { _, _, _, _ -> },
     showItemDetails = { _, _ -> },
+    reveal = {},
+    showMemberInfo = { _, _ ->},
     developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
@@ -1104,7 +1208,8 @@ fun PreviewChatItemViewDeletedContent() {
       linkMode = SimplexLinkMode.DESCRIPTION,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       revealed = remember { mutableStateOf(false) },
-      range = 0..1,
+      highlighted = remember { mutableStateOf(false) },
+      range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
       selectChatItem = {},
       deleteMessage = { _, _ -> },
@@ -1114,6 +1219,7 @@ fun PreviewChatItemViewDeletedContent() {
       joinGroup = { _, _ -> },
       acceptCall = { _ -> },
       scrollToItem = {},
+      scrollToQuotedItemFromItem = {},
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
       forwardItem = { _, _ -> },
@@ -1125,6 +1231,8 @@ fun PreviewChatItemViewDeletedContent() {
       findModelMember = { null },
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
+      reveal = {},
+      showMemberInfo = { _, _ ->},
       developerTools = false,
       showViaProxy = false,
       preview = true,

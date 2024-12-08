@@ -17,6 +17,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         application.registerForRemoteNotifications()
         removePasscodesIfReinstalled()
         prepareForLaunch()
+        deleteOldChatArchive()
         return true
     }
 

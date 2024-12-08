@@ -301,6 +301,7 @@ const processCommand = (function () {
                         localStream = await getLocalMediaStream(true, command.media == CallMediaType.Video && (await browserHasCamera()), VideoCamera.User);
                         const videos = getVideoElements();
                         if (videos) {
+                            setupLocalVideoRatio(videos.local);
                             videos.local.srcObject = localStream;
                             videos.local.play().catch((e) => console.log(e));
                         }
@@ -330,9 +331,12 @@ const processCommand = (function () {
                     console.log("starting incoming call - create webrtc session");
                     if (activeCall)
                         endCall();
+                    // It can be already defined on Android when switching calls (if the previous call was outgoing)
+                    notConnectedCall = undefined;
                     inactiveCallMediaSources.mic = true;
                     inactiveCallMediaSources.camera = command.media == CallMediaType.Video;
                     inactiveCallMediaSourcesChanged(inactiveCallMediaSources);
+                    setupLocalVideoRatio(getVideoElements().local);
                     const { media, iceServers, relay } = command;
                     const encryption = supportsInsertableStreams(useWorker);
                     const aesKey = encryption ? command.aesKey : undefined;
@@ -547,13 +551,13 @@ const processCommand = (function () {
     }
     function endCall() {
         var _a;
+        shutdownCameraAndMic();
         try {
             (_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection) === null || _a === void 0 ? void 0 : _a.close();
         }
         catch (e) {
             console.log(e);
         }
-        shutdownCameraAndMic();
         activeCall = undefined;
         resetVideoElements();
     }
@@ -642,27 +646,21 @@ const processCommand = (function () {
         }
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
         videos.local.play().catch((e) => console.log(e));
-        setupLocalVideoRatio(videos.local);
     }
     function setupLocalVideoRatio(local) {
-        const ratio = isDesktop ? 1.33 : 1 / 1.33;
-        const currentRect = local.getBoundingClientRect();
-        // better to get percents from here than to hardcode values from styles (the styles can be changed)
-        const screenWidth = currentRect.left + currentRect.width;
-        const percents = currentRect.width / screenWidth;
-        local.style.width = `${percents * 100}%`;
-        local.style.height = `${(percents / ratio) * 100}vw`;
         local.addEventListener("loadedmetadata", function () {
             console.log("Local video videoWidth: " + local.videoWidth + "px,  videoHeight: " + local.videoHeight + "px");
             if (local.videoWidth == 0 || local.videoHeight == 0)
                 return;
-            local.style.height = `${(percents / (local.videoWidth / local.videoHeight)) * 100}vw`;
+            const ratio = local.videoWidth > local.videoHeight ? 0.2 : 0.3;
+            local.style.height = `${(ratio / (local.videoWidth / local.videoHeight)) * 100}vw`;
         });
         local.onresize = function () {
             console.log("Local video size changed to " + local.videoWidth + "x" + local.videoHeight);
             if (local.videoWidth == 0 || local.videoHeight == 0)
                 return;
-            local.style.height = `${(percents / (local.videoWidth / local.videoHeight)) * 100}vw`;
+            const ratio = local.videoWidth > local.videoHeight ? 0.2 : 0.3;
+            local.style.height = `${(ratio / (local.videoWidth / local.videoHeight)) * 100}vw`;
         };
     }
     function setupEncryptionForLocalStream(call) {
@@ -1128,8 +1126,9 @@ const processCommand = (function () {
             (!!useWorker && "RTCRtpScriptTransform" in window));
     }
     function shutdownCameraAndMic() {
-        if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localStream) {
+        if (activeCall) {
             activeCall.localStream.getTracks().forEach((track) => track.stop());
+            activeCall.localScreenStream.getTracks().forEach((track) => track.stop());
         }
     }
     function resetVideoElements() {
@@ -1295,6 +1294,9 @@ function changeLayout(layout) {
             break;
     }
     videos.localScreen.style.visibility = localSources.screenVideo ? "visible" : "hidden";
+    if (!isDesktop && !localSources.camera) {
+        resetLocalVideoElementHeight(videos.local);
+    }
 }
 function getVideoElements() {
     const local = document.getElementById("local-video-stream");
@@ -1311,6 +1313,11 @@ function getVideoElements() {
         remoteScreen instanceof HTMLMediaElement))
         return;
     return { local, localScreen, remote, remoteScreen };
+}
+// Allow CSS to figure out the size of view by itself on Android because rotating to different orientation
+// without dropping override will cause the view to have not normal proportion while no video is present
+function resetLocalVideoElementHeight(local) {
+    local.style.height = "";
 }
 function desktopShowPermissionsAlert(mediaType) {
     if (!isDesktop)

@@ -124,7 +124,7 @@ struct UserPicker: View {
             ZStack(alignment: .topTrailing) {
                 ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
                 if (u.unreadCount > 0) {
-                    unreadBadge(u).offset(x: 4, y: -4)
+                    UnreadBadge(userInfo: u).offset(x: 4, y: -4)
                 }
             }
             .padding(.trailing, 6)
@@ -169,15 +169,21 @@ struct UserPicker: View {
             }
         }
     }
-    
-    private func unreadBadge(_ u: UserInfo) -> some View {
+}
+
+struct UnreadBadge: View {
+    var userInfo: UserInfo
+    @EnvironmentObject var theme: AppTheme
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+
+    var body: some View {
         let size = dynamicSize(userFont).chatInfoSize
-        return unreadCountText(u.unreadCount)
-            .font(userFont <= .xxxLarge ? .caption  : .caption2)
+        unreadCountText(userInfo.unreadCount)
+            .font(userFont <= .xxxLarge ? .caption : .caption2)
             .foregroundColor(.white)
             .padding(.horizontal, dynamicSize(userFont).unreadPadding)
             .frame(minWidth: size, minHeight: size)
-            .background(u.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
+            .background(userInfo.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
             .cornerRadius(dynamicSize(userFont).unreadCorner)
     }
 }

@@ -20,7 +20,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
@@ -41,7 +41,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
 }
 
 @Composable
-private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<Boolean>) {
+private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>) {
   var i = getChatItemIndexOrNull(chatItem)
   val ciCategory = chatItem.mergeCategory
   val text =  if (!revealed.value && ciCategory != null && i != null) {

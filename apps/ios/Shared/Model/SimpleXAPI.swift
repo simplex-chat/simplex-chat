@@ -446,6 +446,13 @@ func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, re
     throw r
 }
 
+func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction) async throws -> [MemberReaction] {
+    let userId = try currentUserId("apiGetReactionMemebers")
+    let r = await chatSendCmd(.apiGetReactionMembers(userId: userId, groupId: groupId, itemId: itemId, reaction: reaction ))
+    if case let .reactionMembers(_, memberReactions) = r { return memberReactions }
+    throw r
+}
+
 func apiDeleteChatItems(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
     if case let .chatItemsDeleted(_, items, _) = r { return items }
@@ -500,18 +507,6 @@ func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserProtoServers(_ serverProtocol: ServerProtocol) throws -> UserProtoServers {
-    let userId = try currentUserId("getUserProtoServers")
-    let r = chatSendCmdSync(.apiGetUserProtoServers(userId: userId, serverProtocol: serverProtocol))
-    if case let .userProtoServers(_, servers) = r { return servers }
-    throw r
-}
-
-func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [ServerCfg]) async throws {
-    let userId = try currentUserId("setUserProtoServers")
-    try await sendCommandOkResp(.apiSetUserProtoServers(userId: userId, serverProtocol: serverProtocol, servers: servers))
-}
-
 func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFailure> {
     let userId = try currentUserId("testProtoServer")
     let r = await chatSendCmd(.apiTestProtoServer(userId: userId, server: server))
@@ -521,6 +516,72 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
         }
         return .success(())
     }
+    throw r
+}
+
+func getServerOperators() async throws -> ServerOperatorConditions {
+    let r = await chatSendCmd(.apiGetServerOperators)
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
+    logger.error("getServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func getServerOperatorsSync() throws -> ServerOperatorConditions {
+    let r = chatSendCmdSync(.apiGetServerOperators)
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
+    logger.error("getServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func setServerOperators(operators: [ServerOperator]) async throws -> ServerOperatorConditions {
+    let r = await chatSendCmd(.apiSetServerOperators(operators: operators))
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
+    logger.error("setServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func getUserServers() async throws -> [UserOperatorServers] {
+    let userId = try currentUserId("getUserServers")
+    let r = await chatSendCmd(.apiGetUserServers(userId: userId))
+    if case let .userServers(_, userServers) = r { return userServers }
+    logger.error("getUserServers error: \(String(describing: r))")
+    throw r
+}
+
+func setUserServers(userServers: [UserOperatorServers]) async throws {
+    let userId = try currentUserId("setUserServers")
+    let r = await chatSendCmd(.apiSetUserServers(userId: userId, userServers: userServers))
+    if case .cmdOk = r { return }
+    logger.error("setUserServers error: \(String(describing: r))")
+    throw r
+}
+
+func validateServers(userServers: [UserOperatorServers]) async throws -> [UserServersError] {
+    let userId = try currentUserId("validateServers")
+    let r = await chatSendCmd(.apiValidateServers(userId: userId, userServers: userServers))
+    if case let .userServersValidation(_, serverErrors) = r { return serverErrors }
+    logger.error("validateServers error: \(String(describing: r))")
+    throw r
+}
+
+func getUsageConditions() async throws -> (UsageConditions, String?, UsageConditions?) {
+    let r = await chatSendCmd(.apiGetUsageConditions)
+    if case let .usageConditions(usageConditions, conditionsText, acceptedConditions) = r { return (usageConditions, conditionsText, acceptedConditions) }
+    logger.error("getUsageConditions error: \(String(describing: r))")
+    throw r
+}
+
+func setConditionsNotified(conditionsId: Int64) async throws {
+    let r = await chatSendCmd(.apiSetConditionsNotified(conditionsId: conditionsId))
+    if case .cmdOk = r { return }
+    logger.error("setConditionsNotified error: \(String(describing: r))")
+    throw r
+}
+
+func acceptConditions(conditionsId: Int64, operatorIds: [Int64]) async throws -> ServerOperatorConditions {
+    let r = await chatSendCmd(.apiAcceptConditions(conditionsId: conditionsId, operatorIds: operatorIds))
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
+    logger.error("acceptConditions error: \(String(describing: r))")
     throw r
 }
 
@@ -1014,8 +1075,8 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
     throw r
 }
 
-func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
-    try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
+func apiChatRead(type: ChatType, id: Int64) async throws {
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id))
 }
 
 func apiChatItemsRead(type: ChatType, id: Int64, itemIds: [Int64]) async throws {
@@ -1321,15 +1382,13 @@ func apiGetNetworkStatuses() throws -> [ConnNetworkStatus] {
     throw r
 }
 
-func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
+func markChatRead(_ chat: Chat) async {
     do {
         if chat.chatStats.unreadCount > 0 {
-            let minItemId = chat.chatStats.minUnreadItemId
-            let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
             let cInfo = chat.chatInfo
-            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
             await MainActor.run {
-                withAnimation { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+                withAnimation { ChatModel.shared.markChatItemsRead(cInfo) }
             }
         }
         if chat.chatStats.unreadChat {
@@ -1349,17 +1408,6 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
         }
     } catch {
         logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
-    }
-}
-
-func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
-    do {
-        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        DispatchQueue.main.async {
-            ChatModel.shared.markChatItemsRead(cInfo, [cItem.id])
-        }
-    } catch {
-        logger.error("apiChatRead error: \(responseError(error))")
     }
 }
 
@@ -1558,6 +1606,16 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
+    m.conditions = try getServerOperatorsSync()
+    if shouldImportAppSettingsDefault.get() {
+        do {
+            let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
+            appSettings.importIntoApp()
+            shouldImportAppSettingsDefault.set(false)
+        } catch {
+            logger.error("Error while importing app settings: \(error)")
+        }
+    }
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
@@ -1602,7 +1660,7 @@ private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
     }
 }
 
-func startChat(refreshInvitations: Bool = true) throws {
+func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
@@ -1621,13 +1679,15 @@ func startChat(refreshInvitations: Bool = true) throws {
         if let token = m.deviceToken {
             registerToken(token: token)
         }
-        withAnimation {
-            let savedOnboardingStage = onboardingStageDefault.get()
-            m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
-                                ? .step3_CreateSimpleXAddress
-                                : savedOnboardingStage
-            if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
-                m.setDeliveryReceipts = true
+        if !onboarding {
+            withAnimation {
+                let savedOnboardingStage = onboardingStageDefault.get()
+                m.onboardingStage = [.step1_SimpleXInfo, .step2_CreateProfile].contains(savedOnboardingStage) && m.users.count == 1
+                ? .step3_ChooseServerOperators
+                : savedOnboardingStage
+                if m.onboardingStage == .onboardingComplete && !privacyDeliveryReceiptsSet.get() {
+                    m.setDeliveryReceipts = true
+                }
             }
         }
     }
@@ -1960,6 +2020,18 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.dismissConnReqView(hostConn.id)
                 m.removeChat(hostConn.id)
             }
+        }
+    case let .businessLinkConnecting(user, groupInfo, _, fromContact):
+        if !active(user) { return }
+
+        await MainActor.run {
+            m.updateGroup(groupInfo)
+        }
+        if m.chatId == fromContact.id {
+            ItemsModel.shared.loadOpenChat(groupInfo.id)
+        }
+        await MainActor.run {
+            m.removeChat(fromContact.id)
         }
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
         if active(user) {

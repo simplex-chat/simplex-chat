@@ -2,6 +2,7 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionSpacer
 import SectionView
 import android.app.Activity
 import android.content.ComponentName
@@ -31,6 +32,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -75,9 +77,7 @@ fun AppearanceScope.AppearanceLayout(
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
     SectionView(stringResource(MR.strings.settings_section_title_interface), contentPadding = PaddingValues()) {
       val context = LocalContext.current
@@ -106,14 +106,19 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
 
-      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) {
-        val c = CurrentColors.value.colors
-        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) { enabled ->
+        if (enabled) appPrefs.chatBottomBar.set(true)
+      }
+      if (remember { appPrefs.oneHandUI.state }.value) {
+        SettingsPreferenceItem(icon = null, stringResource(MR.strings.chat_bottom_bar), ChatModel.controller.appPrefs.chatBottomBar)
       }
     }
 
     SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
+
+    SectionDividerSpaced()
+    AppToolbarsSection()
 
     SectionDividerSpaced()
     MessageShapeSection()
