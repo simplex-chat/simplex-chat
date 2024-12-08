@@ -550,11 +550,11 @@
         <target>Se usará una conexión TCP independiente **por cada perfil que tengas en la aplicación**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve">
+      <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each contact and group member**.
 **Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.</source>
-        <target>Se usará una conexión TCP independiente **por cada contacto y miembro de grupo**.
-**Atención**: si tienes muchas conexiones, tu consumo de batería y tráfico pueden ser sustancialmente mayores y algunas conexiones pueden fallar.</target>
+        <target state="translated">Se usará una conexión TCP independiente **por cada contacto y miembro de grupo**.
+**Atención**: si tienes muchas conexiones, tu consumo de batería y tráfico pueden aumentar bastante y algunas conexiones pueden fallar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Abort" xml:space="preserve">
@@ -990,9 +990,9 @@
         <target>El código de acceso será reemplazado por código de autodestrucción.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App session" xml:space="preserve">
+      <trans-unit id="App session" xml:space="preserve" approved="no">
         <source>App session</source>
-        <target>Sesión de aplicación</target>
+        <target state="translated">por sesión</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -2837,9 +2837,9 @@ This is your own one-time link!</source>
         <target>¿Cifrar base de datos?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt local files" xml:space="preserve">
+      <trans-unit id="Encrypt local files" xml:space="preserve" approved="no">
         <source>Encrypt local files</source>
-        <target>Cifra archivos locales</target>
+        <target state="translated">Cifrar archivos locales</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
@@ -3529,9 +3529,9 @@ This is your own one-time link!</source>
         <target>Si por ejemplo tu contacto recibe los mensajes a través de un servidor de SimpleX Chat, tu aplicación los entregará a través de un servidor de Flux.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="For private routing" xml:space="preserve">
+      <trans-unit id="For private routing" xml:space="preserve" approved="no">
         <source>For private routing</source>
-        <target>Para el enrutamiento privado</target>
+        <target state="translated">Para enrutamiento privado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For social media" xml:space="preserve">
@@ -4780,9 +4780,9 @@ This is your link for group %@!</source>
         <target>Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve" approved="no">
         <source>New SOCKS credentials will be used for each server.</source>
-        <target>Se usarán credenciales SOCKS nuevas por cada servidor.</target>
+        <target state="translated">Se usarán credenciales SOCKS nuevas para cada servidor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -4905,14 +4905,14 @@ This is your link for group %@!</source>
         <target>No hay información, intenta recargar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No media &amp; file servers." xml:space="preserve">
+      <trans-unit id="No media &amp; file servers." xml:space="preserve" approved="no">
         <source>No media &amp; file servers.</source>
-        <target>Ningún servidor de archivos y multimedia.</target>
+        <target state="translated">Sin servidores para archivos y multimedia.</target>
         <note>servers error</note>
       </trans-unit>
-      <trans-unit id="No message servers." xml:space="preserve">
+      <trans-unit id="No message servers." xml:space="preserve" approved="no">
         <source>No message servers.</source>
-        <target>Ningún servidor de mensajes.</target>
+        <target state="translated">Sin servidores para mensajes.</target>
         <note>servers error</note>
       </trans-unit>
       <trans-unit id="No network connection" xml:space="preserve">
@@ -4935,9 +4935,9 @@ This is your link for group %@!</source>
         <target>Sin permiso para grabar mensajes de voz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No push server" xml:space="preserve">
+      <trans-unit id="No push server" xml:space="preserve" approved="no">
         <source>No push server</source>
-        <target>Ningún servidor push</target>
+        <target state="translated">Sin servidores push</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No received or sent files" xml:space="preserve">
@@ -4945,24 +4945,24 @@ This is your link for group %@!</source>
         <target>Sin archivos recibidos o enviados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No servers for private message routing." xml:space="preserve">
+      <trans-unit id="No servers for private message routing." xml:space="preserve" approved="no">
         <source>No servers for private message routing.</source>
-        <target>Ningún servidor para enrutamiento privado.</target>
+        <target state="translated">Sin servidores para enrutamiento privado.</target>
         <note>servers error</note>
       </trans-unit>
-      <trans-unit id="No servers to receive files." xml:space="preserve">
+      <trans-unit id="No servers to receive files." xml:space="preserve" approved="no">
         <source>No servers to receive files.</source>
-        <target>Ningún servidor para recibir archivos.</target>
+        <target state="translated">Sin servidores para recibir archivos.</target>
         <note>servers error</note>
       </trans-unit>
-      <trans-unit id="No servers to receive messages." xml:space="preserve">
+      <trans-unit id="No servers to receive messages." xml:space="preserve" approved="no">
         <source>No servers to receive messages.</source>
-        <target>Ningún servidor para recibir mensajes.</target>
+        <target state="translated">Sin servidores para recibir mensajes.</target>
         <note>servers error</note>
       </trans-unit>
-      <trans-unit id="No servers to send files." xml:space="preserve">
+      <trans-unit id="No servers to send files." xml:space="preserve" approved="no">
         <source>No servers to send files.</source>
-        <target>Ningún servidor para enviar archivos.</target>
+        <target state="translated">Sin servidores para enviar archivos.</target>
         <note>servers error</note>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
@@ -7233,14 +7233,14 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>El remitente NO será notificado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new connections of your current chat profile **%@**.</source>
-        <target>Lista de servidores para las conexiones nuevas del perfil **%@**.</target>
+        <target state="translated">Servidores para conexiones nuevas en tu perfil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new files of your current chat profile **%@**.</source>
-        <target>Los servidores para archivos nuevos en tu perfil actual **%@**.</target>
+        <target state="translated">Servidores para archivos nuevos en tu perfil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
@@ -7425,9 +7425,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Para permitir las notificaciones automáticas instantáneas, la base de datos se debe migrar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
+      <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve" approved="no">
         <source>To use the servers of **%@**, accept conditions of use.</source>
-        <target>Para usar los servidores de **%@**, acepta las condiciones de uso.</target>
+        <target state="translated">Para usar los servidores de **%@**, debes aceptar las condiciones de uso.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
@@ -7722,9 +7722,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Usar para mensajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use for new connections" xml:space="preserve">
+      <trans-unit id="Use for new connections" xml:space="preserve" approved="no">
         <source>Use for new connections</source>
-        <target>Usar para conexiones nuevas</target>
+        <target state="translated">Para conexiones nuevas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use from desktop" xml:space="preserve">
@@ -8306,9 +8306,9 @@ Repeat connection request?</source>
         <target>Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve">
+      <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve" approved="no">
         <source>You need to allow your contact to call to be able to call them.</source>
-        <target>Necesitas permitir que tus contacto llamen para poder llamarles.</target>
+        <target state="translated">Debes permitir que tus contacto te llamen para poder llamarles.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
@@ -9519,9 +9519,9 @@ last received msg: %2$@</source>
         <target>SimpleX</target>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
+      <trans-unit id="NSCameraUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
-        <target>SimpleX necesita acceso a la cámara para escanear códigos QR para conectarse con otros usuarios y para las videollamadas.</target>
+        <target state="translated">SimpleX necesita acceso a la cámara para escanear códigos QR para conectarse con otros usuarios y para las videollamadas.</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
       <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
@@ -9534,9 +9534,9 @@ last received msg: %2$@</source>
         <target>SimpleX utiliza el acceso a la red local para abrir el perfil de chat en la aplicación de ordenador en la misma red.</target>
         <note>Privacy - Local Network Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
+      <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>
-        <target>SimpleX necesita acceso al micrófono para las llamadas de audio, vídeo y para grabar mensajes de voz.</target>
+        <target state="translated">SimpleX necesita acceso al micrófono para las llamadas de audio, vídeo y para grabar mensajes de voz.</target>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
       <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
