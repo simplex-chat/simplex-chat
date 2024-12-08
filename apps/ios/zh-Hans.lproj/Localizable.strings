@@ -413,7 +413,7 @@
 "All data is erased when it is entered." = "所有数据在输入后将被删除。";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "所有数据都是您设备的私有数据.";
+"All data is kept private on your device." = "所有数据都是您设备的私有数据.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "所有群组成员将保持连接。";

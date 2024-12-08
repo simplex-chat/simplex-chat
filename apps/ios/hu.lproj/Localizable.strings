@@ -479,7 +479,7 @@
 "All data is erased when it is entered." = "A jelkód megadása után az összes adat törlésre kerül.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Az összes adat biztonságban van az eszközén.";
+"All data is kept private on your device." = "Az összes adat biztonságban van az eszközén.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Az összes csoporttag kapcsolatban marad.";

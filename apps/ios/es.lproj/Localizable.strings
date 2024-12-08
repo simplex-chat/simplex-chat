@@ -479,7 +479,7 @@
 "All data is erased when it is entered." = "Al introducirlo todos los datos son eliminados.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Todos los datos son privados y están en tu dispositivo.";
+"All data is kept private on your device." = "Todos los datos son privados y están en tu dispositivo.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Todos los miembros del grupo permanecerán conectados.";

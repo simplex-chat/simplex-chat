@@ -431,7 +431,7 @@
 "All data is erased when it is entered." = "Toutes les données sont effacées lorsqu'il est saisi.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Toutes les données restent confinées dans votre appareil.";
+"All data is kept private on your device." = "Toutes les données restent confinées dans votre appareil.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Tous les membres du groupe resteront connectés.";

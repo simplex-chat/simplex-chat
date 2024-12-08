@@ -739,8 +739,8 @@
         <target>所有数据在输入后将被删除。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
-        <source>All data is private to your device.</source>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve">
+        <source>All data is kept private on your device.</source>
         <target>所有数据都是您设备的私有数据.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
