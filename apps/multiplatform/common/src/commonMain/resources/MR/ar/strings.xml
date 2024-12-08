@@ -1850,7 +1850,7 @@
     <string name="cannot_share_message_alert_title">لا يمكن إرسال الرسالة</string>
     <string name="cannot_share_message_alert_text">تفضيلات الدردشة المحدّدة تحظر هذه الرسالة.</string>
     <string name="servers_info_details">التفاصيل</string>
-    <string name="servers_info_private_data_disclaimer">بدءًا من %s. \nجميع البيانات خاصة بجهازك.</string>
+    <string name="servers_info_private_data_disclaimer">بدءًا من %s.\nجميع البيانات خاصة على جهازك..</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">أرسلت الإجمالي</string>
     <string name="size">الحجم</string>
     <string name="uploaded_files">الملفات المرفوعة</string>
@@ -2240,4 +2240,5 @@
     <string name="chat_main_profile_sent">سيتم إرسال ملف تعريفك للدردشة إلى أعضاء الدردشة</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">سوف تتوقف عن تلقي الرسائل من هذه الدردشة. سيتم حفظ سجل الدردشة.</string>
     <string name="onboarding_network_about_operators">عن المُشغلين</string>
+    <string name="onboarding_network_operators_simplex_flux_agreement">توصلت SimpleX Chat وFlux إلى اتفاق لتضمين الخوادم التي تديرها Flux في التطبيق.</string>
 </resources>
