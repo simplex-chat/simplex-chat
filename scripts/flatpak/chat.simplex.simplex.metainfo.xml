@@ -45,12 +45,7 @@
         <ul>
           <li>SimpleX Chat and Flux made an agreement to include servers operated by Flux into the app – to improve metadata privacy.</li>
           <li>Business chats – your customers privacy.</li>
-        </ul>
-        <p>Improved user experience of chats:</p>
-        <ul>
-          <li>Open chat on the first unread message.</li>
-          <li>Jump to quoted messages anywhere in the conversation.</li>
-          <li>See who reacted to messages.</li>
+        <li>Improved user experience in chats: open on the first unread, jump to quoted messages, see who reacted.</li>
         </ul>
       </description>
     </release>
