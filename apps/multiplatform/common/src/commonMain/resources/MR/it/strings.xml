@@ -1947,8 +1947,7 @@
     <string name="appearance_font_size">Dimensione carattere</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Totale inviato</string>
     <string name="message_forwarded_title">Messaggio inoltrato</string>
-    <string name="servers_info_private_data_disclaimer">Inizio da %s.
-\nTutti i dati sono privati, nel tuo dispositivo.</string>
+    <string name="servers_info_private_data_disclaimer">Inizio da %s. \nTutti i dati sono privati, nel tuo dispositivo.</string>
     <string name="message_forwarded_desc">Ancora nessuna connessione diretta, il messaggio viene inoltrato dall\'amministratore.</string>
     <string name="servers_info_proxied_servers_section_footer">Non sei connesso/a a questi server. L\'instradamento privato è usato per consegnare loro i messaggi.</string>
     <string name="xftp_servers_other">Altri server XFTP</string>
