@@ -1332,7 +1332,7 @@
     <string name="this_link_is_not_a_valid_connection_link">Ez nem egy érvényes kapcsolattartási hivatkozás!</string>
     <string name="to_verify_compare">A végpontok közötti titkosítás hitelesítéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.</string>
     <string name="you_must_use_the_most_recent_version_of_database">A csevegési adatbázis legfrissebb verzióját CSAK egy eszközön kell használnia, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogja megkapni valamennyi ismerősétől.</string>
-    <string name="messages_section_description">Ez a beállítás csak a jelenlegi csevegési profiljában lévő üzenetekre vonatkozik</string>
+    <string name="messages_section_description">Ez a beállítás csak az Ön jelenlegi csevegő-profiljában lévő üzenetekre vonatkozik</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Meghívást kapott a csoportba. Csatlakozzon, hogy kapcsolatba léphessen a csoport tagjaival.</string>
     <string name="alert_message_no_group">Ez a csoport már nem létezik.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">A csatlakozás már folyamatban van a csoporthoz ezen a hivatkozáson keresztül.</string>
@@ -1465,7 +1465,7 @@
     <string name="v4_4_live_messages_desc">A címzettek a beírás közben látják a szövegváltozásokat.</string>
     <string name="store_passphrase_securely">Tárolja el biztonságosan jelmondatát, mert ha elveszíti azt, NEM tudja megváltoztatni.</string>
     <string name="passphrase_will_be_saved_in_settings">A jelmondat a beállításokban egyszerű szövegként kerül tárolásra, miután megváltoztatta vagy újraindította az alkalmazást.</string>
-    <string name="smp_servers_per_user">A jelenlegi csevegési profilhoz tartozó új kapcsolatok kiszolgálói</string>
+    <string name="smp_servers_per_user">Az Ön jelenlegi csevegőprofiljához tartozó új kapcsolatok kiszolgálói</string>
     <string name="receiving_via">Fogadás ezen keresztül:</string>
     <string name="store_passphrase_securely_without_recover">Tárolja el biztonságosan jelmondát, mert ha elveszti azt, akkor NEM férhet hozzá a csevegéshez.</string>
     <string name="member_role_will_be_changed_with_invitation">A szerepkör meg fog változni erre: %s. A tag új meghívót fog kapni.</string>
@@ -1477,7 +1477,7 @@
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet hasító értéke különbözik.</string>
-    <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi profiljára vonatkoznak</string>
+    <string name="receipts_section_description">Ezek a beállítások csak az Ön jelenlegi csevegő-profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
     <string name="error_showing_content">hiba a tartalom megjelenítésekor</string>
