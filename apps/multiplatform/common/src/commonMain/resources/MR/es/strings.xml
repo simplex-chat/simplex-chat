@@ -36,8 +36,7 @@
     <string name="appearance_settings">Apariencia</string>
     <string name="app_version_title">Versión</string>
     <string name="network_session_mode_user_description"><![CDATA[Se usará una conexión TCP (y credenciales SOCKS) independiente <b>por cada perfil que tengas en la aplicación</b>.]]></string>
-    <string name="network_session_mode_entity_description">Se usará una conexión TCP (y credenciales SOCKS) independiente <b>por cada contacto y miembro del grupo</b>. 
-\n<b>Recuerda</b>: si tienes muchas conexiones, el consumo de batería y tráfico pueden ser sustancialmente mayores y algunas conexiones pueden fallar.</string>
+    <string name="network_session_mode_entity_description">Se usará una conexión TCP (y credenciales SOCKS) independiente <b>por cada contacto y miembro del grupo</b>. \n<b>Recuerda</b>: si tienes muchas conexiones, el consumo de batería y tráfico pueden aumentar bastante y algunas conexiones pueden fallar.</string>
     <string name="a_plus_b">a + b</string>
     <string name="about_simplex">Acerca de SimpleX</string>
     <string name="bold_text">negrita</string>
@@ -785,7 +784,7 @@
     <string name="smp_servers_test_server">Probar servidor</string>
     <string name="smp_servers_test_servers">Probar servidores</string>
     <string name="star_on_github">Estrella en GitHub</string>
-    <string name="smp_servers_per_user">Lista de servidores para las conexiones nuevas del perfil</string>
+    <string name="smp_servers_per_user">Servidores para conexiones nuevas en tu perfil</string>
     <string name="network_disable_socks">¿Usar conexión directa a Internet\?</string>
     <string name="profile_is_only_shared_with_your_contacts">El perfil sólo se comparte con tus contactos.</string>
     <string name="callstate_starting">inicializando…</string>
@@ -825,7 +824,7 @@
     <string name="smp_servers_test_failed">¡Prueba no superada!</string>
     <string name="smp_servers_test_some_failed">Algunos servidores no han superado la prueba:</string>
     <string name="smp_servers_use_server">Usar servidor</string>
-    <string name="smp_servers_use_server_for_new_conn">Usar para conexiones nuevas</string>
+    <string name="smp_servers_use_server_for_new_conn">Para conexiones nuevas</string>
     <string name="theme_system">Sistema</string>
     <string name="description_via_one_time_link">mediante enlace de un solo uso</string>
     <string name="your_chats">Chats</string>
@@ -1368,7 +1367,7 @@
     <string name="v5_3_encrypt_local_files">Cifra archivos almacenados y multimedia</string>
     <string name="error_creating_member_contact">Error al establecer contacto con el miembro</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Recuerda</b>: los servidores están conectados mediante proxy SOCKS, pero las llamadas y las previsualizaciones de enlaces usan conexión directa.]]></string>
-    <string name="encrypt_local_files">Cifra archivos locales</string>
+    <string name="encrypt_local_files">Cifrar archivos locales</string>
     <string name="v5_3_new_desktop_app">Nueva aplicación para ordenador!</string>
     <string name="v5_3_new_interface_languages">6 idiomas nuevos para el interfaz</string>
     <string name="v5_3_encrypt_local_files_descr">Cifrado de los nuevos archivos locales (excepto vídeos).</string>
@@ -2039,7 +2038,7 @@
     <string name="proxy_destination_error_broker_host">La dirección del servidor de destino de %1$s es incompatible con la configuración del servidor de reenvío %2$s.</string>
     <string name="proxy_destination_error_broker_version">La versión del servidor de destino de %1$s es incompatible con el servidor de reenvío %2$s.</string>
     <string name="contact_list_header_title">Tus contactos</string>
-    <string name="you_need_to_allow_calls">Necesitas permitir que tus contacto llamen para poder llamarles.</string>
+    <string name="you_need_to_allow_calls">Debes permitir que tus contacto te llamen para poder llamarles.</string>
     <string name="smp_proxy_error_connecting">Error al conectar con el servidor de reenvío %1$s. Por favor, inténtalo más tarde.</string>
     <string name="smp_proxy_error_broker_host">La dirección del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
     <string name="proxy_destination_error_failed_to_connect">El servidor de reenvío %1$s no ha podido conectarse al servidor de destino %2$s. Por favor, intentalo más tarde.</string>
@@ -2101,12 +2100,12 @@
     <string name="settings_message_shape_corner">Esquinas</string>
     <string name="settings_message_shape_tail">Cola</string>
     <string name="network_session_mode_session_description">Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.</string>
-    <string name="network_session_mode_session">Sesión de aplicación</string>
+    <string name="network_session_mode_session">por sesión</string>
     <string name="call_desktop_permission_denied_safari">Abre la configuración de Safari / Sitios Web / Micrófono y a continuación selecciona Permitir para localhost.</string>
     <string name="call_desktop_permission_denied_chrome">Pulsa el botón info del campo dirección para permitir el uso del micrófono.</string>
     <string name="call_desktop_permission_denied_title">Para hacer llamadas, permite el uso del micrófono. Cuelga e intenta llamar de nuevo.</string>
-    <string name="network_session_mode_server_description">Se usarán credenciales SOCKS nuevas por cada servidor.</string>
-    <string name="network_session_mode_server">Servidor</string>
+    <string name="network_session_mode_server_description">Se usarán credenciales SOCKS nuevas para cada servidor.</string>
+    <string name="network_session_mode_server">por servidor</string>
     <string name="v6_1_better_calls">Llamadas mejoradas</string>
     <string name="v6_1_message_dates_descr">Sistema de fechas mejorado.</string>
     <string name="v6_1_better_user_experience">Experiencia de usuario mejorada</string>
@@ -2120,9 +2119,9 @@
     <string name="failed_to_save_servers">Error al guardar servidores</string>
     <string name="errors_in_servers_configuration">Error en la configuración del servidor.</string>
     <string name="for_chat_profile">Para el perfil de chat %s:</string>
-    <string name="no_message_servers_configured">Ningún servidor de mensajes.</string>
-    <string name="no_media_servers_configured_for_private_routing">Ningún servidor para recibir archivos.</string>
-    <string name="no_media_servers_configured_for_sending">Ningún servidor para enviar archivos.</string>
+    <string name="no_message_servers_configured">Sin servidores para mensajes.</string>
+    <string name="no_media_servers_configured_for_private_routing">Sin servidores para recibir archivos.</string>
+    <string name="no_media_servers_configured_for_sending">Sin servidores para enviar archivos.</string>
     <string name="connection_security">Seguridad de conexión</string>
     <string name="share_1_time_link_with_a_friend">Compartir enlace de un uso con un amigo</string>
     <string name="share_simplex_address_on_social_media">Comparte tu dirección SimpleX en redes sociales.</string>
@@ -2142,7 +2141,7 @@
     <string name="operator_servers_title">%s servidores</string>
     <string name="operator_conditions_will_be_accepted_on">Las condiciones serán aceptadas el: %s.</string>
     <string name="operator_conditions_of_use">Condiciones de uso</string>
-    <string name="operator_use_for_messages_private_routing">Para el enrutamiento privado</string>
+    <string name="operator_use_for_messages_private_routing">Para enrutamiento privado</string>
     <string name="error_adding_server">Error al añadir servidor</string>
     <string name="operator_open_changes">Abrir cambios</string>
     <string name="operator_open_conditions">Abrir condiciones</string>
@@ -2168,9 +2167,9 @@
     <string name="v6_2_network_decentralization_enable_flux_reason">para mejorar la privacidad de los metadatos.</string>
     <string name="message_deleted_or_not_received_error_title">Ningún mensaje</string>
     <string name="smp_servers_new_server">Servidor nuevo</string>
-    <string name="no_media_servers_configured">Ningún servidor de archivos y multimedia.</string>
-    <string name="no_message_servers_configured_for_private_routing">Ningún servidor para enrutamiento privado.</string>
-    <string name="no_message_servers_configured_for_receiving">Ningún servidor para recibir mensajes.</string>
+    <string name="no_media_servers_configured">Sin servidores para archivos y multimedia.</string>
+    <string name="no_message_servers_configured_for_private_routing">Sin servidores para enrutamiento privado.</string>
+    <string name="no_message_servers_configured_for_receiving">Sin servidores para recibir mensajes.</string>
     <string name="operator_server_alert_title">Servidor del operador</string>
     <string name="or_to_share_privately">O para compartir en privado</string>
     <string name="onboarding_select_network_operators_to_use">Selecciona los operadores de red a utilizar</string>
@@ -2199,8 +2198,8 @@
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Las mismas condiciones se aplican al operador <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Las condiciones serán aceptadas para el/los operador(es): <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Estas condiciones también se aplican para: <b>%s</b>.]]></string>
-    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Para usar los servidores de <b>%s</b>, acepta las condiciones de uso.]]></string>
-    <string name="xftp_servers_per_user">Los servidores para archivos nuevos en tu perfil actual</string>
+    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Para usar los servidores de <b>%s</b>, debes aceptar las condiciones de uso.]]></string>
+    <string name="xftp_servers_per_user">Servidores para archivos nuevos en tu perfil</string>
     <string name="v6_2_network_decentralization_descr">¡Segundo operador predefinido!</string>
     <string name="onboarding_network_operators_configure_via_settings">Puedes configurar los servidores a través de su configuración.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Para protegerte contra una sustitución del enlace, puedes comparar los códigos de seguridad con tu contacto.</string>
