@@ -1850,8 +1850,7 @@
     <string name="cannot_share_message_alert_title">لا يمكن إرسال الرسالة</string>
     <string name="cannot_share_message_alert_text">تفضيلات الدردشة المحدّدة تحظر هذه الرسالة.</string>
     <string name="servers_info_details">التفاصيل</string>
-    <string name="servers_info_private_data_disclaimer">بدءًا من %s.
-\nجميع البيانات خاصة بجهازك.</string>
+    <string name="servers_info_private_data_disclaimer">بدءًا من %s. \nجميع البيانات خاصة بجهازك.</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">أرسلت الإجمالي</string>
     <string name="size">الحجم</string>
     <string name="uploaded_files">الملفات المرفوعة</string>
