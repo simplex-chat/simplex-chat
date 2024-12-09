@@ -67,7 +67,7 @@ object NtfManager {
             ntf.second.close()
           } catch (e: Exception) {
             // Can be java.lang.UnsupportedOperationException, for example. May do nothing
-            println("Failed to close notification: ${e.stackTraceToString()}")
+            Log.e(TAG, "Failed to close notification: ${e.stackTraceToString()}")
           }*/
         }
       }
@@ -85,7 +85,8 @@ object NtfManager {
   }
 
   fun cancelAllNotifications() {
-//    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { println("Failed to close notification: ${e.stackTraceToString()}") } }
+//    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { Log.e(TAG, "Failed to close notification: ${e
+    //    .stackTraceToString()}") } }
     withBGApi {
       prevNtfsMutex.withLock {
         prevNtfs.clear()
@@ -153,7 +154,7 @@ object NtfManager {
       ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
       newFile.absolutePath
     } catch (e: Exception) {
-      println("Failed to write an icon to tmpDir: ${e.stackTraceToString()}")
+      Log.e(TAG, "Failed to write an icon to tmpDir: ${e.stackTraceToString()}")
       null
     }
   } else null
