@@ -284,21 +284,35 @@ struct GroupMemberInfoView: View {
                 HStack(alignment: .center, spacing: 8) {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
+                        InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
+                        }
+                        InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
+                        }
                     } else if let connectionStats = connectionStats,
                               member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
                         if connectionStats.ratchetSyncAllowed {
                             InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) { showFixConnectionAlert() }
+                            InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showFixConnectionAlert()
+                            }
+                            InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) { showFixConnectionAlert()
+                            }
                         } else if connectionStats.ratchetSyncState != .ok {
-                            InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) { showEncryptionRenegotiationAlert() }
+                            InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) { showEncryptionRenegotiationAlert("Can't message member") }
+                            InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showEncryptionRenegotiationAlert("Can't call member")
+                            }
+                            InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) { showEncryptionRenegotiationAlert("Can't call member")
+                            }
                         } else {
                             createMemberContactButton(width: buttonWidth)
+                            InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
+                            }
+                            InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
+                            }
                         }
                     } else {
                         InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) {}
-                    }
-                    InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
-                    }
-                    InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
+                        InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) {}
+                        InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) {}
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -330,10 +344,10 @@ struct GroupMemberInfoView: View {
         ))
     }
 
-    func showEncryptionRenegotiationAlert() {
+    func showEncryptionRenegotiationAlert(_ title: LocalizedStringKey) {
         alert = .someAlert(alert: SomeAlert(
             alert: mkAlert(
-                title: "Can't message member",
+                title: title,
                 message: "Encryption renegotiation in progress."
             ),
             id: "can't message contact, encryption renegotiation in progress"
