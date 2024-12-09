@@ -1217,7 +1217,7 @@
     <string name="selected_chat_items_nothing_selected">Không có gì được chọn</string>
     <string name="open_verb">Mở</string>
     <string name="auth_open_chat_console">Mở bảng điều khiển trò chuyện</string>
-    <string name="auth_open_chat_profiles">Mở hồ sơ trò chuyện</string>
+    <string name="auth_open_chat_profiles">Thay đổi hồ sơ trò chuyện</string>
     <string name="network_use_onion_hosts_required_desc">Dịch vụ onion sẽ được yêu cầu để kết nối.\nXin lưu ý: bạn sẽ không thể kết nối tới các máy chủ mà không có địa chỉ .onion.</string>
     <string name="rcv_group_event_open_chat">Mở</string>
     <string name="open_database_folder">Mở thư mục cơ sở dữ liệu</string>
@@ -1373,9 +1373,9 @@
     <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Bạn đã kết nối tới <b>%1$s</b> rồi.]]></string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Để thực hiện cuộc gọi trong nền, vui lòng chọn <b>Mức sử dụng pin ứng dụng</b> / <b>Không hạn chế</b> trong phần cài đặt ứng dụng.]]></string>
     <string name="remote_host_error_timeout"><![CDATA[Đã hết thời gian chờ khi kết nối tới thiết bị di động <b>%s</b>]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Để sử dụng, xin vui lòng <b>cho phép SimpleX chạy trong nền</b> trong hộp thoại tiếp theo. Nếu không, thông báo sẽ bị vô hiệu hóa.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[<b>Chọn cho phép</b> trong hộp thoại tiếp theo để nhận thông báo ngay lập tức.]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Để sử dụng các máy chủ của <b>%s</b>, vui lòng chấp nhận điều kiện sử dụng.]]></string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Để bảo vệ sự riêng tư của bạn, thay vì sử dụng thông báo đẩy thì ứng dụng dùng <b>Dịch vụ nền SimpleX</b> – nó tiêu tốn một vài phần trăm pin mỗi ngày.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Để tăng cường sự riêng tư, <b>SimpleX chạy trong nền</b> thay vì dùng thông báo đẩy.]]></string>
     <string name="system_restricted_background_warn"><![CDATA[Để bật thông báo, vui lòng chọn <b>Mức sử dụng pin ứng dụng</b> / <b>Không hạn chế</b> trong phần cài đặt ứng dụng.]]></string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Bạn đã ở trong nhóm <b>%1$s</b> rồi.]]></string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Đây là đường dẫn của bạn cho nhóm <b>%1$s</b>!]]></string>
@@ -1399,4 +1399,19 @@
     <string name="error_updating_server_title">Lỗi cập nhật máy chủ</string>
     <string name="operator_conditions_accepted_on">Các điều kiện đã được chấp nhận vào: %s.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Các điều kiện sẽ được tự động chấp nhận với các nhà cung cấp được cho phép vào: %s.</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Thiết bị Xiaomi</b>: vui lòng bật Tự động khởi động trong phần cài đặt hệ thống để thông báo có thể hoạt động bình thường.]]></string>
+    <string name="onboarding_notifications_mode_service_desc_short">Ứng dụng luôn chạy dưới nền</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">Cuộc trò chuyện sẽ bị xóa cho tất cả các thành viên - việc này không thể được hoàn tác!</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">Cuộc trò chuyện sẽ bị xóa cho bạn - việc này không thể được hoàn tác!</string>
+    <string name="v6_2_business_chats">Các cuộc trò chuyện công việc</string>
+    <string name="button_add_team_members">Thêm các thành viên nhóm</string>
+    <string name="info_row_chat">Cuộc trò chuyện</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Bạn đã kết nối với <b>%1$s</b> rồi.]]></string>
+    <string name="connect_plan_chat_already_exists">Cuộc trò chuyện đã tồn tại!</string>
+    <string name="button_add_friends">Thêm bạn bè</string>
+    <string name="display_name_accepted_invitation">đã chấp nhận lời mời</string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tất cả các tin nhắn và tệp gửi đi đều được <b>mã hóa đầu cuối</b>, với bảo mật sau ượng tử trong các tin nhắn trực tiếp.]]></string>
+    <string name="onboarding_network_about_operators">Giới thiệu về các nhà cung cấp</string>
+    <string name="add_your_team_members_to_conversations">Thêm các thành viên nhóm của bạn vào các cuộc trò chuyện.</string>
+    <string name="business_address">Địa chỉ doanh nghiệp</string>
 </resources>
