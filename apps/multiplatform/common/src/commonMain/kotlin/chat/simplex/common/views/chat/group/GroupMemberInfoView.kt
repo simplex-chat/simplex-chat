@@ -8,8 +8,6 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import java.net.URI
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -350,9 +348,20 @@ fun GroupMemberInfoLayout(
         val knownChat = if (contactId != null) knownDirectChat(contactId) else null
         if (knownChat != null) {
           val (chat, contact) = knownChat
+          val knownContactConnectionStats: MutableState<ConnectionStats?> = remember { mutableStateOf(null) }
+
+          LaunchedEffect(contact.contactId) {
+            withBGApi {
+              val contactInfo = chatModel.controller.apiContactInfo(chat.remoteHostId, chat.chatInfo.apiId)
+              if (contactInfo != null) {
+                knownContactConnectionStats.value = contactInfo.first
+              }
+            }
+          }
+
           OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contact.contactId) })
-          AudioCallButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
-          VideoButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
+          AudioCallButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact, knownContactConnectionStats)
+          VideoButton(modifier = Modifier.fillMaxWidth(1f), chat, contact, knownContactConnectionStats)
         } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
           if (contactId != null) {
             OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contactId) }) // legacy - only relevant for direct contacts created when joining group

@@ -131,26 +131,14 @@ fun ChatInfoView(
       },
       syncContactConnection = {
         withBGApi {
-          val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
-          connStats.value = cStats
-          if (cStats != null) {
-            withChats {
-              updateContactConnectionStats(chatRh, contact, cStats)
-            }
-          }
+          syncContactConnection(chatRh, contact, connStats, force = false)
           close.invoke()
         }
       },
       syncContactConnectionForce = {
         showSyncConnectionForceAlert(syncConnectionForce = {
           withBGApi {
-            val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = true)
-            connStats.value = cStats
-            if (cStats != null) {
-              withChats {
-                updateContactConnectionStats(chatRh, contact, cStats)
-              }
-            }
+            syncContactConnection(chatRh, contact, connStats, force = true)
             close.invoke()
           }
         })
@@ -186,6 +174,16 @@ fun ChatInfoView(
       close = close,
       onSearchClicked = onSearchClicked
     )
+  }
+}
+
+suspend fun syncContactConnection(rhId: Long?, contact: Contact, connectionStats: MutableState<ConnectionStats?>, force: Boolean) {
+  val cStats = chatModel.controller.apiSyncContactRatchet(rhId, contact.contactId, force = force)
+  connectionStats.value = cStats
+  if (cStats != null) {
+    withChats {
+      updateContactConnectionStats(rhId, contact, cStats)
+    }
   }
 }
 
@@ -505,7 +503,7 @@ fun ChatInfoLayout(
   currentUser: User,
   sendReceipts: State<SendReceipts>,
   setSendReceipts: (SendReceipts) -> Unit,
-  connStats: State<ConnectionStats?>,
+  connStats: MutableState<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
@@ -553,8 +551,8 @@ fun ChatInfoLayout(
         verticalAlignment = Alignment.CenterVertically
       ) {
         SearchButton(modifier = Modifier.fillMaxWidth(0.25f), chat, contact, close, onSearchClicked)
-        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact)
-        VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
+        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact, connStats)
+        VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact, connStats)
         MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
       }
     }
@@ -825,12 +823,14 @@ fun MuteButton(
 fun AudioCallButton(
   modifier: Modifier,
   chat: Chat,
-  contact: Contact
+  contact: Contact,
+  connectionStats: MutableState<ConnectionStats?>
 ) {
   CallButton(
     modifier = modifier,
     chat,
     contact,
+    connectionStats,
     icon = painterResource(MR.images.ic_call),
     title = generalGetString(MR.strings.info_view_call_button),
     mediaType = CallMediaType.Audio
@@ -841,12 +841,14 @@ fun AudioCallButton(
 fun VideoButton(
   modifier: Modifier,
   chat: Chat,
-  contact: Contact
+  contact: Contact,
+  connectionStats: MutableState<ConnectionStats?>
 ) {
   CallButton(
     modifier = modifier,
     chat,
     contact,
+    connectionStats,
     icon = painterResource(MR.images.ic_videocam),
     title = generalGetString(MR.strings.info_view_video_button),
     mediaType = CallMediaType.Video
@@ -858,6 +860,7 @@ fun CallButton(
   modifier: Modifier,
   chat: Chat,
   contact: Contact,
+  connectionStats: MutableState<ConnectionStats?>,
   icon: Painter,
   title: String,
   mediaType: CallMediaType
@@ -879,7 +882,23 @@ fun CallButton(
     disabledLook = !canCall,
     onClick =
       when {
-        canCall -> { { startChatCall(chat.remoteHostId, chat.chatInfo, mediaType) } }
+        canCall -> { {
+          val connStats = connectionStats.value
+          if (connStats != null) {
+            if (connStats.ratchetSyncState == RatchetSyncState.Ok) {
+              startChatCall(chat.remoteHostId, chat.chatInfo, mediaType)
+            } else if (connStats.ratchetSyncAllowed) {
+              showFixConnectionAlert(syncConnection = {
+                withBGApi { syncContactConnection(chat.remoteHostId, contact, connectionStats, force = false) }
+              })
+            } else {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.cant_call_contact_alert_title),
+                generalGetString(MR.strings.encryption_renegotiation_in_progress)
+              )
+            }
+          }
+        } }
         contact.nextSendGrpInv -> { { showCantCallContactSendMessageAlert() } }
         !contact.active -> { { showCantCallContactDeletedAlert() } }
         !contact.ready -> { { showCantCallContactConnectingAlert() } }
