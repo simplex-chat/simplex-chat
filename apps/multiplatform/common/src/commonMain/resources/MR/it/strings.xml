@@ -2249,4 +2249,8 @@
     <string name="display_name_requested_to_connect">richiesto di connettersi</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat e Flux hanno concluso un accordo per includere server gestiti da Flux nell\'app.</string>
     <string name="onboarding_network_about_operators">Info sugli operatori</string>
+    <string name="sync_connection_desc">La connessione richiede la rinegoziazione della crittografia.</string>
+    <string name="sync_connection_confirm">Correggi</string>
+    <string name="sync_connection_question">Correggere la connessione?</string>
+    <string name="encryption_renegotiation_in_progress">Rinegoziazione della crittografia in corso.</string>
 </resources>
