@@ -193,6 +193,8 @@ final class ChatModel: ObservableObject {
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
+    // usage conditions
+    @Published var conditions: ServerOperatorConditions = .empty
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -843,7 +845,7 @@ final class ChatModel: ObservableObject {
     }
 
     func dismissConnReqView(_ id: String) {
-        if id == showingInvitation?.connId {
+        if id == showingInvitation?.pcc.id {
             markShowingInvitationUsed()
             dismissAllSheets()
         }
@@ -896,7 +898,7 @@ final class ChatModel: ObservableObject {
 }
 
 struct ShowingInvitation {
-    var connId: String
+    var pcc: PendingContactConnection
     var connChatUsed: Bool
 }
 

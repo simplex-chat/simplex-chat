@@ -14,9 +14,10 @@ struct ContactPreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var contact: Contact
-    @State var featuresAllowed: ContactFeaturesAllowed
-    @State var currentFeaturesAllowed: ContactFeaturesAllowed
+    @Binding var featuresAllowed: ContactFeaturesAllowed
+    @Binding var currentFeaturesAllowed: ContactFeaturesAllowed
     @State private var showSaveDialogue = false
+    let savePreferences: () -> Void
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -48,7 +49,10 @@ struct ContactPreferencesView: View {
                 savePreferences()
                 dismiss()
             }
-            Button("Exit without saving") { dismiss() }
+            Button("Exit without saving") {
+                featuresAllowed = currentFeaturesAllowed
+                dismiss()
+            }
         }
     }
 
@@ -118,31 +122,15 @@ struct ContactPreferencesView: View {
     private func featureFooter(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> some View {
         Text(feature.enabledDescription(enabled))
     }
-
-    private func savePreferences() {
-        Task {
-            do {
-                let prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
-                if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
-                    await MainActor.run {
-                        contact = toContact
-                        chatModel.updateContact(toContact)
-                        currentFeaturesAllowed = featuresAllowed
-                    }
-                }
-            } catch {
-                logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
-            }
-        }
-    }
 }
 
 struct ContactPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         ContactPreferencesView(
             contact: Binding.constant(Contact.sampleData),
-            featuresAllowed: ContactFeaturesAllowed.sampleData,
-            currentFeaturesAllowed: ContactFeaturesAllowed.sampleData
+            featuresAllowed: Binding.constant(ContactFeaturesAllowed.sampleData),
+            currentFeaturesAllowed: Binding.constant(ContactFeaturesAllowed.sampleData),
+            savePreferences: {}
         )
     }
 }

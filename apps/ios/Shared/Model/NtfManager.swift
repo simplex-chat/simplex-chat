@@ -26,6 +26,7 @@ enum NtfCallAction {
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
+    public var navigatingToChat = false
     private var granted = false
     private var prevNtfTime: Dictionary<ChatId, Date> = [:]
 
@@ -74,7 +75,10 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             }
         } else {
             if let chatId = content.targetContentIdentifier {
-                ItemsModel.shared.loadOpenChat(chatId)
+                self.navigatingToChat = true
+                ItemsModel.shared.loadOpenChat(chatId) {
+                    self.navigatingToChat = false
+                }
             }
         }
     }
@@ -199,6 +203,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("SimpleX encrypted message or connection event", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryManyEvents,
+                actions: [],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New events", comment: "notification")
             )
         ])
     }
@@ -228,24 +238,24 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 
     func notifyContactRequest(_ user: any UserLike, _ contactRequest: UserContactRequest) {
         logger.debug("NtfManager.notifyContactRequest")
-        addNotification(createContactRequestNtf(user, contactRequest))
+        addNotification(createContactRequestNtf(user, contactRequest, 0))
     }
 
     func notifyContactConnected(_ user: any UserLike, _ contact: Contact) {
         logger.debug("NtfManager.notifyContactConnected")
-        addNotification(createContactConnectedNtf(user, contact))
+        addNotification(createContactConnectedNtf(user, contact, 0))
     }
 
     func notifyMessageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         if cInfo.ntfsEnabled {
-            addNotification(createMessageReceivedNtf(user, cInfo, cItem))
+            addNotification(createMessageReceivedNtf(user, cInfo, cItem, 0))
         }
     }
 
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
-        addNotification(createCallInvitationNtf(invitation))
+        addNotification(createCallInvitationNtf(invitation, 0))
     }
 
     func setNtfBadgeCount(_ count: Int) {

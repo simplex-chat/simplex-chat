@@ -821,38 +821,38 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
             switch self {
             case .timedMessages:
                 switch enabled {
-                case .on: return "Group members can send disappearing messages."
-                case .off: return "Disappearing messages are prohibited in this group."
+                case .on: return "Members can send disappearing messages."
+                case .off: return "Disappearing messages are prohibited."
                 }
             case .directMessages:
                 switch enabled {
-                case .on: return "Group members can send direct messages."
-                case .off: return "Direct messages between members are prohibited in this group."
+                case .on: return "Members can send direct messages."
+                case .off: return "Direct messages between members are prohibited."
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Group members can irreversibly delete sent messages. (24 hours)"
-                case .off: return "Irreversible message deletion is prohibited in this group."
+                case .on: return "Members can irreversibly delete sent messages. (24 hours)"
+                case .off: return "Irreversible message deletion is prohibited."
                 }
             case .reactions:
                 switch enabled {
-                case .on: return "Group members can add message reactions."
-                case .off: return "Message reactions are prohibited in this group."
+                case .on: return "Members can add message reactions."
+                case .off: return "Message reactions are prohibited."
                 }
             case .voice:
                 switch enabled {
-                case .on: return "Group members can send voice messages."
-                case .off: return "Voice messages are prohibited in this group."
+                case .on: return "Members can send voice messages."
+                case .off: return "Voice messages are prohibited."
                 }
             case .files:
                 switch enabled {
-                case .on: return "Group members can send files and media."
-                case .off: return "Files and media are prohibited in this group."
+                case .on: return "Members can send files and media."
+                case .off: return "Files and media are prohibited."
                 }
             case .simplexLinks:
                 switch enabled {
-                case .on: return "Group members can send SimpleX links."
-                case .off: return "SimpleX links are prohibited in this group."
+                case .on: return "Members can send SimpleX links."
+                case .off: return "SimpleX links are prohibited."
                 }
             case .history:
                 switch enabled {
@@ -1782,9 +1782,11 @@ public struct PendingContactConnection: Decodable, NamedChat, Hashable {
     public var displayName: String {
         get {
             if let initiated = pccConnStatus.initiated {
-                return initiated && !viaContactUri
+                return viaContactUri
+                ? NSLocalizedString("requested to connect", comment: "chat list item title")
+                : initiated
                 ? NSLocalizedString("invited to connect", comment: "chat list item title")
-                : NSLocalizedString("connecting…", comment: "chat list item title")
+                : NSLocalizedString("accepted invitation", comment: "chat list item title")
             } else {
                 // this should not be in the list
                 return NSLocalizedString("connection established", comment: "chat list item title (it should not be shown")
@@ -1890,6 +1892,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
+    public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
     public var membership: GroupMember
     public var hostConnCustomUserProfileId: Int64?
@@ -1908,7 +1911,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var image: String? { get { groupProfile.image } }
     public var localAlias: String { "" }
 
-    public var canEdit: Bool {
+    public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
     }
 
@@ -1958,6 +1961,17 @@ public struct GroupProfile: Codable, NamedChat, Hashable {
         displayName: "team",
         fullName: "My Team"
     )
+}
+
+public struct BusinessChatInfo: Decodable, Hashable {
+    public var chatType: BusinessChatType
+    public var businessId: String
+    public var customerId: String
+}
+
+public enum BusinessChatType: String, Codable, Hashable {
+    case business
+    case customer
 }
 
 public struct GroupMember: Identifiable, Decodable, Hashable {
@@ -2270,16 +2284,13 @@ public enum ConnectionEntity: Decodable, Hashable {
         case let .userContactConnection(entityConnection, _): entityConnection
         }
     }
+}
 
-    public var ntfsEnabled: Bool {
-        switch self {
-        case let .rcvDirectMsgConnection(_, contact): return contact?.chatSettings.enableNtfs == .all
-        case let .rcvGroupMsgConnection(_, groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
-        case .sndFileConnection: return false
-        case .rcvFileConnection: return false
-        case let .userContactConnection(_, userContact): return userContact.groupId == nil
-        }
-    }
+public struct NtfConn: Decodable, Hashable {
+    public var user_: User?
+    public var connEntity_: ConnectionEntity?
+    public var expectedMsg_: NtfMsgInfo?
+
 }
 
 public struct NtfMsgInfo: Decodable, Hashable {
@@ -2312,6 +2323,11 @@ public struct AChatItem: Decodable, Hashable {
 public struct ACIReaction: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatReaction: CIReaction
+}
+
+public struct MemberReaction: Decodable, Hashable {
+    public var groupMember: GroupMember
+    public var reactionTs: Date
 }
 
 public struct CIReaction: Decodable, Hashable {

@@ -9,6 +9,18 @@ import SwiftUI
 import Intents
 import SimpleXChat
 
+private enum NoticesSheet: Identifiable {
+    case whatsNew(updatedConditions: Bool)
+    case updatedConditions
+
+    var id: String {
+        switch self {
+        case .whatsNew: return "whatsNew"
+        case .updatedConditions: return "updatedConditions"
+        }
+    }
+}
+
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
@@ -30,7 +42,8 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
-    @State private var showWhatsNew = false
+    @State private var noticesShown = false
+    @State private var noticesSheetItem: NoticesSheet? = nil
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
@@ -261,8 +274,15 @@ struct ContentView: View {
                     alertManager.showAlert(laNoticeAlert())
                 } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        if !showWhatsNew {
-                            showWhatsNew = shouldShowWhatsNew()
+                        if !noticesShown {
+                            let showWhatsNew = shouldShowWhatsNew()
+                            let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                            noticesShown = showWhatsNew || showUpdatedConditions
+                            if showWhatsNew {
+                                noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                            } else if showUpdatedConditions {
+                                noticesSheetItem = .updatedConditions
+                            }
                         }
                     }
                 }
@@ -270,8 +290,22 @@ struct ContentView: View {
                 connectViaUrl()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
-            .sheet(isPresented: $showWhatsNew) {
-                WhatsNewView()
+            .sheet(item: $noticesSheetItem) { item in
+                switch item {
+                case let .whatsNew(updatedConditions):
+                    WhatsNewView(updatedConditions: updatedConditions)
+                        .modifier(ThemedBackground())
+                        .if(updatedConditions) { v in
+                            v.task { await setConditionsNotified_() }
+                        }
+                case .updatedConditions:
+                    UsageConditionsView(
+                        currUserServers: Binding.constant([]),
+                        userServers: Binding.constant([])
+                    )
+                    .modifier(ThemedBackground(grouped: true))
+                    .task { await setConditionsNotified_() }
+                }
             }
             if chatModel.setDeliveryReceipts {
                 SetDeliveryReceiptsView()
@@ -281,6 +315,15 @@ struct ContentView: View {
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+    }
+
+    private func setConditionsNotified_() async {
+        do {
+            let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+            try await setConditionsNotified(conditionsId: conditionsId)
+        } catch let error {
+            logger.error("setConditionsNotified error: \(responseError(error))")
+        }
     }
 
     private func processUserActivity(_ activity: NSUserActivity) {

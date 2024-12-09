@@ -12,8 +12,8 @@ import CodeScanner
 
 struct ScanProtocolServer: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var servers: [ServerCfg]
-    @State private var showAddressError = false
+    @Binding var userServers: [UserOperatorServers]
+    @Binding var serverErrors: [UserServersError]
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -28,23 +28,14 @@ struct ScanProtocolServer: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .alert(isPresented: $showAddressError) {
-            Alert(
-                title: Text("Invalid server address!"),
-                message: Text("Check server address and try again.")
-            )
-        }
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if parseServerAddress(r.string) != nil {
-                servers.append(ServerCfg(server: r.string, preset: false, tested: nil, enabled: false))
-                dismiss()
-            } else {
-                showAddressError = true
-            }
+            var server: UserServer = .empty
+            server.server = r.string
+            addServer(server, $userServers, $serverErrors, dismiss)
         case let .failure(e):
             logger.error("ScanProtocolServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
@@ -54,6 +45,9 @@ struct ScanProtocolServer: View {
 
 struct ScanProtocolServer_Previews: PreviewProvider {
     static var previews: some View {
-        ScanProtocolServer(servers: Binding.constant([]))
+        ScanProtocolServer(
+            userServers: Binding.constant([UserOperatorServers.sampleDataNilOperator]),
+            serverErrors: Binding.constant([])
+        )
     }
 }

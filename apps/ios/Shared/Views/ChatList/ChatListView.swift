@@ -31,9 +31,21 @@ enum UserPickerSheet: Identifiable {
     }
 }
 
+class SaveableSettings: ObservableObject {
+    @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
+}
+
+struct ServerSettings {
+    public var currUserServers: [UserOperatorServers]
+    public var userServers: [UserOperatorServers]
+    public var serverErrors: [UserServersError]
+}
+
 struct UserPickerSheetView: View {
     let sheet: UserPickerSheet
     @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var ss = SaveableSettings()
+
     @State private var loaded = false
 
     var body: some View {
@@ -76,6 +88,21 @@ struct UserPickerSheetView: View {
                 { loaded = true }
             )
         }
+        .onDisappear {
+            if serversCanBeSaved(
+                ss.servers.currUserServers,
+                ss.servers.userServers,
+                ss.servers.serverErrors
+            ) {
+                showAlert(
+                    title: NSLocalizedString("Save servers?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
+                    cancelButton: true
+                )
+            }
+        }
+        .environmentObject(ss)
     }
 }
 
@@ -94,6 +121,7 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
+    @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
@@ -276,12 +304,6 @@ struct ChatListView: View {
                         .padding(.top, oneHandUI ? 8 : 0)
                         .id("searchBar")
                     }
-                    if !oneHandUICardShown {
-                        OneHandUICard()
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .listRowSeparator(.hidden)
-                            .listRowBackground(Color.clear)
-                    }
                     if #available(iOS 16.0, *) {
                         ForEach(cs, id: \.viewId) { chat in
                             ChatListNavLink(chat: chat)
@@ -306,6 +328,20 @@ struct ChatListView: View {
                             .background { theme.colors.background } // Hides default list selection colour
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
+                    }
+                    if !oneHandUICardShown {
+                        OneHandUICard()
+                            .padding(.vertical, 6)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    if !addressCreationCardShown {
+                        AddressCreationCard()
+                            .padding(.vertical, 6)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                     }
                 }
                 .listStyle(.plain)

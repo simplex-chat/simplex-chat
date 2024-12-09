@@ -26,7 +26,7 @@ expect val agentDatabaseFileName: String
 
 /**
 * This is used only for temporary storing db archive for export.
-* Providing [tmpDir] instead crashes the app. Check db export before moving from this path to something else
+* Providing [tmpDir] instead crashes the app on Android (only). Check db export before moving from this path to something else
 * */
 expect val databaseExportDir: File
 

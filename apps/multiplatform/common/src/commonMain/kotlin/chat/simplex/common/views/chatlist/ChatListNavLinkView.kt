@@ -1,7 +1,6 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -14,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +33,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
+import kotlin.math.min
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
@@ -71,7 +72,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } },
+        click = { if (chatModel.chatId.value != chat.id) scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu, showMarkRead)
@@ -90,7 +91,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout)
           }
         },
-        click = { if (!inProgress.value) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } },
+        click = { if (!inProgress.value && chatModel.chatId.value != chat.id) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, inProgress, showMarkRead)
@@ -108,7 +109,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
+        click = { if (chatModel.chatId.value != chat.id) scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             NoteFolderMenuItems(chat, showMenu, showMarkRead)
@@ -187,7 +188,7 @@ fun ErrorChatListItem() {
 suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
     contact.activeConn == null && contact.profile.contactLink != null && contact.active -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
-    else -> openChat(rhId, ChatInfo.Direct(contact), chatModel)
+    else -> openChat(rhId, ChatInfo.Direct(contact))
   }
 }
 
@@ -195,54 +196,31 @@ suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    else -> openChat(rhId, ChatInfo.Group(groupInfo), chatModel)
+    else -> openChat(rhId, ChatInfo.Group(groupInfo))
   }
 }
 
-suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
-  openChat(rhId, ChatInfo.Local(noteFolder), chatModel)
-}
+suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat(rhId, ChatInfo.Local(noteFolder))
 
-suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
-  if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
-  }
-}
+suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(rhId, ChatType.Direct, contactId)
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId)
-  if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
-  }
-}
+suspend fun openGroupChat(rhId: Long?, groupId: Long) = openChat(rhId, ChatType.Group, groupId)
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
-  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
-  if (chat != null && isActive) {
-    openLoadedChat(chat, chatModel)
-  }
-}
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo) = openChat(rhId, chatInfo.chatType, chatInfo.apiId)
 
-fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
+private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long) =
+  apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
+
+fun openLoadedChat(chat: Chat) {
   chatModel.chatItemStatuses.clear()
   chatModel.chatItems.replaceAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
+  chatModel.chatState.clear()
 }
 
-suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String) {
-  val chatInfo = ch.chatInfo
-  val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
-  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
-  if (chatModel.chatId.value != chat.id) return
-  chatModel.chatItems.addAll(0, chat.chatItems)
-}
-
-suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
-  val chatInfo = ch.chatInfo
-  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, search = search) ?: return
-  if (chatModel.chatId.value != chat.id) return
-  chatModel.chatItems.replaceAll(chat.chatItems)
+suspend fun apiFindMessages(ch: Chat, search: String) {
+  chatModel.chatItems.clearAndNotify()
+  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), chatModel.chatState, search = search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
@@ -559,15 +537,13 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
   var chat = c
   withApi {
     if (chat.chatStats.unreadCount > 0) {
-      val minUnreadItemId = chat.chatStats.minUnreadItemId
       withChats {
         markChatItemsRead(chat.remoteHostId, chat.chatInfo)
       }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
-        chat.chatInfo.apiId,
-        CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
+        chat.chatInfo.apiId
       )
       chat = chatModel.getChat(chat.id) ?: return@withApi
     }
@@ -724,7 +700,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
             if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId, chatModel)
+              openDirectChat(rhId, contact.contactId)
             }
           }
         }) {
@@ -736,7 +712,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
             if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId, chatModel)
+              openDirectChat(rhId, contact.contactId)
             }
           }
         }) {

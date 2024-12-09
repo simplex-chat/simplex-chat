@@ -7,6 +7,7 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
+import android.view.View
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.*
 import androidx.work.*
+import chat.simplex.app.MainActivity.Companion.OLD_ANDROID_UI_FLAGS
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
 import chat.simplex.app.views.call.CallActivity
@@ -26,7 +28,7 @@ import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.chatlist.statusBarColorAfterCall
+import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -71,6 +73,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
+    deleteOldChatArchive()
 
     // Present screen for continue migration if it wasn't finished yet
     if (chatModel.migrationState.value != null) {
@@ -274,79 +277,32 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetDrawerStatusAndNavBarColor(
-        isLight: Boolean,
-        drawerShadingColor: Color,
-        toolbarOnTop: Boolean,
-        navBarColor: Color,
-      ) {
-        val window = mainActivity.get()?.window ?: return
-
-        @Suppress("DEPRECATION")
-        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-        // Blend status bar color to the animated color
-        val colors = CurrentColors.value.colors
-        val baseBackgroundColor = if (toolbarOnTop) colors.background.mixWith(colors.onBackground, 0.97f) else colors.background
-        var statusBar = baseBackgroundColor.mixWith(drawerShadingColor.copy(1f), 1 - drawerShadingColor.alpha).toArgb()
-        var statusBarLight = isLight
-
-        // SimplexGreen while in call
-        if (window.statusBarColor == SimplexGreen.toArgb()) {
-          statusBarColorAfterCall.intValue = statusBar
-          statusBar = SimplexGreen.toArgb()
-          statusBarLight = false
-        }
-        window.statusBarColor = statusBar
-        val navBar = navBarColor.toArgb()
-        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
-          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
-        }
-        if (window.navigationBarColor != navBar) {
-          window.navigationBarColor = navBar
-        }
-        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
-          windowInsetController?.isAppearanceLightNavigationBars = isLight
-        }
-      }
-
-      override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
+      override fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean, blackNavBar: Boolean, themeBackgroundColor: Color) {
         val window = mainActivity.get()?.window ?: return
         @Suppress("DEPRECATION")
+        val statusLight = isLightStatusBar && chatModel.activeCall.value == null
+        val navBarLight = isLightNavBar || windowOrientation() == WindowOrientation.LANDSCAPE
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-
-        var statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-        } else {
-          if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
-            backgroundColor.lighter(0.4f)
+        if (windowInsetController?.isAppearanceLightStatusBars != statusLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusLight
+        }
+        window.navigationBarColor = Color.Transparent.toArgb()
+        if (windowInsetController?.isAppearanceLightNavigationBars != navBarLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = navBarLight
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+          window.decorView.systemUiVisibility = if (statusLight && navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (statusLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
           } else {
-            backgroundColor
+            OLD_ANDROID_UI_FLAGS
           }
-        }).toArgb()
-        var statusBarLight = isLight
-
-        // SimplexGreen while in call
-        if (window.statusBarColor == SimplexGreen.toArgb()) {
-          statusBarColorAfterCall.intValue = statusBar
-          statusBar = SimplexGreen.toArgb()
-          statusBarLight = false
-        }
-        val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+          window.navigationBarColor = if (blackNavBar) Color.Black.toArgb() else themeBackgroundColor.toArgb()
         } else {
-          backgroundColor
-        }).toArgb()
-        if (window.statusBarColor != statusBar) {
-          window.statusBarColor = statusBar
-        }
-        if (windowInsetController?.isAppearanceLightStatusBars != statusBarLight) {
-          windowInsetController?.isAppearanceLightStatusBars = statusBarLight
-        }
-        if (window.navigationBarColor != navBar) {
-          window.navigationBarColor = navBar
-        }
-        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
-          windowInsetController?.isAppearanceLightNavigationBars = isLight
+          window.navigationBarColor = Color.Transparent.toArgb()
         }
       }
 
@@ -376,6 +332,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         NetworkObserver.shared.restartNetworkObserver()
       }
 
+      override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {
@@ -401,6 +359,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         return true
       }
+
+      override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
+
+      override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
   }
 }

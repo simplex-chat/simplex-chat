@@ -102,7 +102,7 @@ Some links to answer the most common questions:
 
 [What are the risks to have identifiers assigned to the users](https://simplex.chat/#why-ids-bad-for-privacy).
 
-[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations).
+[Technical details and limitations](https://github.com/simplex-chat/simplex-chat#privacy-and-security-technical-details-and-limitations).
 
 [How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
 

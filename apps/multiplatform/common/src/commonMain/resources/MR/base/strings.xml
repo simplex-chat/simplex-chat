@@ -71,6 +71,8 @@
   <string name="connection_local_display_name">connection %1$d</string>
   <string name="display_name_connection_established">connection established</string>
   <string name="display_name_invited_to_connect">invited to connect</string>
+  <string name="display_name_requested_to_connect">requested to connect</string>
+  <string name="display_name_accepted_invitation">accepted invitation</string>
   <string name="display_name_connecting">connecting…</string>
   <string name="description_you_shared_one_time_link">you shared one-time link</string>
   <string name="description_you_shared_one_time_link_incognito">you shared one-time link incognito</string>
@@ -109,6 +111,16 @@
   <string name="failed_to_create_user_invalid_title">Invalid display name!</string>
   <string name="failed_to_create_user_invalid_desc">This display name is invalid. Please choose another name.</string>
   <string name="failed_to_active_user_title">Error switching profile!</string>
+  <string name="failed_to_save_servers">Error saving servers</string>
+  <string name="no_message_servers_configured">No message servers.</string>
+  <string name="no_message_servers_configured_for_receiving">No servers to receive messages.</string>
+  <string name="no_message_servers_configured_for_private_routing">No servers for private message routing.</string>
+  <string name="no_media_servers_configured">No media &amp; file servers.</string>
+  <string name="no_media_servers_configured_for_sending">No servers to send files.</string>
+  <string name="no_media_servers_configured_for_private_routing">No servers to receive files.</string>
+  <string name="for_chat_profile">For chat profile %s:</string>
+  <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
+  <string name="error_accepting_operator_conditions">Error accepting conditions</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
@@ -181,9 +193,9 @@
   <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="service_notifications">Instant notifications!</string>
   <string name="service_notifications_disabled">Instant notifications are disabled!</string>
-  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To preserve your privacy, instead of push notifications the app has a <b>SimpleX background service</b> – it uses a few percent of the battery per day.]]></string>
+  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[To improve privacy, <b>SimpleX runs in background</b> instead of using push notifications.]]></string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>It can be disabled via settings</b> – notifications will still be shown while the app is running.]]></string>
-  <string name="turn_off_battery_optimization"><![CDATA[To use it, please <b>allow SimpleX to run in background</b> in the next dialog. Otherwise, the notifications will be disabled.]]></string>
+  <string name="turn_off_battery_optimization"><![CDATA[<b>Allow it</b> in the next dialog to receive notifications instantly.]]></string>
   <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
@@ -200,6 +212,7 @@
   <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
   <string name="database_initialization_error_title">Can\'t initialize the database</string>
   <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
+  <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi devices</b>: please enable Autostart in the system settings for notifications to work.]]></string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title">SimpleX Chat service</string>
@@ -267,7 +280,7 @@
   <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_stop_chat">Stop chat</string>
   <string name="auth_open_chat_console">Open chat console</string>
-  <string name="auth_open_chat_profiles">Open chat profiles</string>
+  <string name="auth_open_chat_profiles">Change chat profiles</string>
   <string name="auth_open_migration_to_another_device">Open migration screen</string>
   <string name="lock_not_enabled">SimpleX Lock not enabled!</string>
   <string name="you_can_turn_on_lock">You can turn on SimpleX Lock via Settings.</string>
@@ -276,6 +289,8 @@
   <string name="message_delivery_error_title">Message delivery error</string>
   <string name="message_delivery_warning_title">Message delivery warning</string>
   <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
+  <string name="message_deleted_or_not_received_error_title">No message</string>
+  <string name="message_deleted_or_not_received_error_desc">This message was deleted or not received yet.</string>
 
   <!-- CIStatus errors -->
   <string name="ci_status_other_error">Error: %1$s</string>
@@ -378,6 +393,7 @@
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
+  <string name="address_creation_instruction">Tap Create SimpleX address in the menu to create it later.</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -427,6 +443,10 @@
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
   <string name="compose_message_placeholder">Message</string>
+  <string name="maximum_message_size_title">Message is too large!</string>
+  <string name="maximum_message_size_reached_text">Please reduce the message size and send again.</string>
+  <string name="maximum_message_size_reached_non_text">Please reduce the message size or remove media and send again.</string>
+  <string name="maximum_message_size_reached_forwarding">You can copy and reduce the message size to send it.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -662,10 +682,19 @@
   <string name="if_you_cant_meet_in_person">If you can\'t meet in person, show QR code in a video call, or share the link.</string>
 
   <!-- User Address Learn More - UserAddressLearnMore.kt -->
+  <string name="share_address_publicly">Share address publicly</string>
+  <string name="share_simplex_address_on_social_media">Share SimpleX address on social media.</string>
   <string name="you_can_share_your_address">You can share your address as a link or QR code - anybody can connect to you.</string>
   <string name="you_wont_lose_your_contacts_if_delete_address">You won\'t lose your contacts if you later delete your address.</string>
+  <string name="share_1_time_link_with_a_friend">Share 1-time link with a friend</string>
+  <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1-time link can be used <i>with one contact only</i> - share in person or via any messenger.]]></string>
+  <string name="you_can_set_connection_name_to_remember">You can set connection name, to remember who the link was shared with.</string>
+  <string name="connection_security">Connection security</string>
+  <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX address and 1-time links are safe to share via any messenger.</string>
+  <string name="to_protect_against_your_link_replaced_compare_codes">To protect against your link being replaced, you can compare contact security codes.</string>
   <string name="you_can_accept_or_reject_connection">When people request to connect, you can accept or reject it.</string>
   <string name="read_more_in_user_guide_with_link"><![CDATA[Read more in <font color="#0088ff">User Guide</font>.]]></string>
+  <string name="address_or_1_time_link">Address or 1-time link?</string>
 
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Connect via link</string>
@@ -747,6 +776,7 @@
   <string name="smp_servers_test_some_failed">Some servers failed the test:</string>
   <string name="smp_servers_scan_qr">Scan server QR code</string>
   <string name="smp_servers_enter_manually">Enter server manually</string>
+  <string name="smp_servers_new_server">New server</string>
   <string name="smp_servers_preset_server">Preset server</string>
   <string name="smp_servers_your_server">Your server</string>
   <string name="smp_servers_your_server_address">Your server address</string>
@@ -903,6 +933,13 @@
   <string name="invite_friends">Invite friends</string>
   <string name="email_invite_subject">Let\'s talk in SimpleX Chat</string>
   <string name="email_invite_body">Hi!\nConnect to me via SimpleX Chat: %s</string>
+  <string name="for_social_media">For social media</string>
+  <string name="or_to_share_privately">Or to share privately</string>
+  <string name="simplex_address_or_1_time_link">SimpleX address or 1-time link?</string>
+  <string name="create_1_time_link">Create 1-time link</string>
+  <string name="address_settings">Address settings</string>
+  <string name="business_address">Business address</string>
+  <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>
@@ -998,7 +1035,7 @@
   <string name="error_initializing_web_view_wrong_arch">Error initializing WebView. Make sure you have WebView installed and it\'s supported architecture is arm64.\nError: %s</string>
 
   <!-- SimpleXInfo -->
-  <string name="next_generation_of_private_messaging">The next generation\nof private messaging</string>
+  <string name="next_generation_of_private_messaging">The future of messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
   <string name="first_platform_without_user_ids">No user identifiers.</string>
   <string name="immune_to_spam_and_abuse">Immune to spam</string>
@@ -1012,28 +1049,47 @@
 
   <!-- How SimpleX Works -->
   <string name="how_simplex_works">How SimpleX works</string>
-  <string name="many_people_asked_how_can_it_deliver"><![CDATA[Many people asked: <i>if SimpleX has no user identifiers, how can it deliver messages?</i>]]></string>
-  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</string>
-  <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.]]></string>
-  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.]]></string>
-  <string name="read_more_in_github">Read more in our GitHub repository.</string>
+  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
+  <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>
   <string name="read_more_in_github_with_link"><![CDATA[Read more in our <font color="#0088ff">GitHub repository</font>.]]></string>
 
   <!-- SetNotificationsMode.kt -->
   <string name="use_chat">Use chat</string>
   <string name="onboarding_notifications_mode_title">Private notifications</string>
-  <string name="onboarding_notifications_mode_subtitle">It can be changed later via settings.</string>
+  <string name="onboarding_notifications_mode_subtitle">How it affects battery</string>
   <string name="onboarding_notifications_mode_off">When app is running</string>
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
   <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
+  <string name="onboarding_notifications_mode_off_desc_short">No background service</string>
   <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. App checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
+  <string name="onboarding_notifications_mode_periodic_desc_short">Check messages every 10 minutes</string>
   <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
+  <string name="onboarding_notifications_mode_service_desc_short">App always runs in background</string>
+  <string name="onboarding_notifications_mode_battery">Notifications and battery</string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
   <string name="you_can_change_it_later">Random passphrase is stored in settings as plaintext.\nYou can change it later.</string>
   <string name="use_random_passphrase">Use random passphrase</string>
+
+  <!-- ChooseServerOperators.kt -->
+  <string name="onboarding_choose_server_operators">Server operators</string>
+  <string name="onboarding_network_operators">Network operators</string>
+  <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</string>
+  <string name="onboarding_network_operators_app_will_use_different_operators">The app protects your privacy by using different operators in each conversation.</string>
+  <string name="onboarding_network_operators_cant_see_who_talks_to_whom">When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</string>
+  <string name="onboarding_network_operators_app_will_use_for_routing">For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</string>
+  <string name="onboarding_network_about_operators">About operators</string>
+  <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
+  <string name="how_it_helps_privacy">How it helps privacy</string>
+  <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
+  <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
+  <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>
+  <string name="onboarding_network_operators_review_later">Review later</string>
+  <string name="onboarding_network_operators_update">Update</string>
+  <string name="onboarding_network_operators_continue">Continue</string>
 
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>
@@ -1222,6 +1278,7 @@
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
   <string name="run_chat_section">RUN CHAT</string>
+  <string name="remote_hosts_section">Remote mobiles</string>
   <string name="chat_is_running">Chat is running</string>
   <string name="chat_is_stopped">Chat is stopped</string>
   <string name="chat_database_section">CHAT DATABASE</string>
@@ -1253,7 +1310,6 @@
   <string name="chat_database_deleted">Chat database deleted</string>
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
-  <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
   <string name="files_and_media_section">Files &amp; media</string>
   <string name="delete_files_and_media_for_all_users">Delete files for all chat profiles</string>
   <string name="delete_files_and_media_all">Delete all files</string>
@@ -1344,7 +1400,8 @@
   <string name="database_downgrade">Database downgrade</string>
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
-  <string name="one_hand_ui">Reachable chat toolbar</string>
+  <string name="one_hand_ui">Reachable app toolbars</string>
+  <string name="chat_bottom_bar">Reachable chat toolbar</string>
   <string name="one_hand_ui_card_title">Toggle chat list:</string>
   <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
@@ -1363,14 +1420,6 @@
   <string name="start_chat_question">Start chat?</string>
   <string name="chat_is_stopped_you_should_transfer_database">Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</string>
 
-  <!-- ChatArchiveView.kt -->
-  <string name="chat_archive_header">Chat archive</string>
-  <string name="chat_archive_section">CHAT ARCHIVE</string>
-  <string name="save_archive">Save archive</string>
-  <string name="delete_archive">Delete archive</string>
-  <string name="archive_created_on_ts">Created on %1$s</string>
-  <string name="delete_chat_archive_question">Delete chat archive?</string>
-
   <!-- Groups -->
   <string name="group_invitation_item_description">invitation to group %1$s</string>
   <string name="join_group_question">Join group?</string>
@@ -1381,7 +1430,9 @@
   <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">You joined this group. Connecting to inviting group member.</string>
   <string name="leave_group_button">Leave</string>
   <string name="leave_group_question">Leave group?</string>
+  <string name="leave_chat_question">Leave chat?</string>
   <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">You will stop receiving messages from this group. Chat history will be preserved.</string>
+  <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">You will stop receiving messages from this chat. Chat history will be preserved.</string>
   <string name="icon_descr_add_members">Invite members</string>
   <string name="icon_descr_group_inactive">Group inactive</string>
   <string name="alert_title_group_invitation_expired">Invitation expired!</string>
@@ -1498,6 +1549,7 @@
   <string name="initial_member_role">Initial role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
+  <string name="invite_to_chat_button">Invite to chat</string>
   <string name="skip_inviting_button">Skip inviting members</string>
   <string name="select_contacts">Select contacts</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
@@ -1509,13 +1561,20 @@
 
   <!-- GroupChatInfoView.kt -->
   <string name="button_add_members">Invite members</string>
+  <string name="button_add_team_members">Add team members</string>
+  <string name="button_add_friends">Add friends</string>
   <string name="group_info_section_title_num_members">%1$s MEMBERS</string>
   <string name="group_info_member_you">you: %1$s</string>
   <string name="button_delete_group">Delete group</string>
+  <string name="button_delete_chat">Delete chat</string>
   <string name="delete_group_question">Delete group?</string>
+  <string name="delete_chat_question">Delete chat?</string>
   <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
+  <string name="delete_chat_for_all_members_cannot_undo_warning">Chat will be deleted for all members - this cannot be undone!</string>
   <string name="delete_group_for_self_cannot_undo_warning">Group will be deleted for you - this cannot be undone!</string>
+  <string name="delete_chat_for_self_cannot_undo_warning">Chat will be deleted for you - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
+  <string name="button_leave_chat">Leave chat</string>
   <string name="button_edit_group_profile">Edit group profile</string>
   <string name="button_add_welcome_message">Add welcome message</string>
   <string name="button_welcome_message">Welcome message</string>
@@ -1532,6 +1591,7 @@
   <string name="error_creating_member_contact">Error creating member contact</string>
   <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
+  <string name="only_chat_owners_can_change_prefs">Only chat owners can change preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
   <string name="you_can_share_this_address_with_your_contacts">You can share this address with your contacts to let them connect with %s.</string>
@@ -1578,6 +1638,7 @@
 
   <string name="button_send_direct_message">Send direct message</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="member_will_be_removed_from_chat_cannot_be_undone">Member will be removed from chat - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
   <string name="remove_member_button">Remove member</string>
   <string name="block_member_question">Block member?</string>
@@ -1603,6 +1664,7 @@
   <string name="switch_verb">Switch</string>
   <string name="change_member_role_question">Change group role?</string>
   <string name="member_role_will_be_changed_with_notification">The role will be changed to "%s". Everyone in the group will be notified.</string>
+  <string name="member_role_will_be_changed_with_notification_chat">The role will be changed to "%s". Everyone in the chat will be notified.</string>
   <string name="member_role_will_be_changed_with_invitation">The role will be changed to "%s". The member will receive a new invitation.</string>
   <string name="connect_via_member_address_alert_title">Connect directly?</string>
   <string name="connect_via_member_address_alert_desc">Сonnection request will be sent to this group member.</string>
@@ -1610,6 +1672,7 @@
   <string name="error_changing_role">Error changing role</string>
   <string name="error_blocking_member_for_all">Error blocking member for all</string>
   <string name="info_row_group">Group</string>
+  <string name="info_row_chat">Chat</string>
   <string name="info_row_connection">Connection</string>
   <string name="conn_level_desc_direct">direct</string>
   <string name="conn_level_desc_indirect">indirect (%1$s)</string>
@@ -1657,12 +1720,64 @@
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
+  <string name="chat_main_profile_sent">Your chat profile will be sent to chat members</string>
   <string name="create_group_button">Create group</string>
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
   <string name="save_group_profile">Save group profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+
+  <!-- NetworkAndServers.kt -->
+  <string name="network_preset_servers_title">Preset servers</string>
+  <string name="operator_review_conditions">Review conditions</string>
+  <string name="operator_conditions_accepted">Accepted conditions</string>
+  <string name="operator_conditions_accepted_for_enabled_operators_on">Conditions will be automatically accepted for enabled operators on: %s.</string>
+  <string name="your_servers">Your servers</string>
+  <string name="operators_conditions_accepted_for"><![CDATA[Conditions are accepted for the operator(s): <b>%s</b>.]]></string>
+  <string name="operators_conditions_will_be_accepted_for"><![CDATA[Conditions will be accepted for the operator(s): <b>%s</b>.]]></string>
+
+  <!-- OperatorView.kt -->
+  <string name="operator">Operator</string>
+  <string name="operator_servers_title">%s servers</string>
+  <string name="operator_info_title">Network operator</string>
+  <string name="operator_website">Website</string>
+  <string name="operator_conditions_accepted_on">Conditions accepted on: %s.</string>
+  <string name="operator_conditions_will_be_accepted_on">Conditions will be accepted on: %s.</string>
+  <string name="operator">Operator</string>
+  <string name="operator_use_operator_toggle_description">Use servers</string>
+  <string name="use_servers_of_operator_x">Use %s</string>
+  <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
+  <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s): <b>%s</b>.]]></string>
+  <string name="operator_same_conditions_will_be_applied"><![CDATA[The same conditions will apply to operator <b>%s</b>.]]></string>
+  <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[The same conditions will apply to operator(s): <b>%s</b>.]]></string>
+  <string name="operator_conditions_will_be_applied"><![CDATA[These conditions will also apply for: <b>%s</b>.]]></string>
+  <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Conditions will be accepted for operator(s): <b>%s</b>.]]></string>
+  <string name="operators_conditions_will_also_apply"><![CDATA[These conditions will also apply for: <b>%s</b>.]]></string>
+  <string name="view_conditions">View conditions</string>
+  <string name="accept_conditions">Accept conditions</string>
+  <string name="operator_conditions_of_use">Conditions of use</string>
+  <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the servers of <b>%s</b>, accept conditions of use.]]></string>
+  <string name="operator_use_for_messages">Use for messages</string>
+  <string name="operator_use_for_messages_receiving">To receive</string>
+  <string name="operator_use_for_messages_private_routing">For private routing</string>
+  <string name="operator_added_message_servers">Added message servers</string>
+  <string name="operator_use_for_files">Use for files</string>
+  <string name="operator_use_for_sending">To send</string>
+  <string name="xftp_servers_per_user">The servers for new files of your current chat profile</string>
+  <string name="operator_added_xftp_servers">Added media &amp; file servers</string>
+  <string name="operator_open_conditions">Open conditions</string>
+  <string name="operator_open_changes">Open changes</string>
+
+  <!-- ProtocolServerView.kt -->
+  <string name="error_updating_server_title">Error updating server</string>
+  <string name="error_server_protocol_changed">Server protocol changed.</string>
+  <string name="error_server_operator_changed">Server operator changed.</string>
+
+  <!-- NewServerView.kt -->
+  <string name="operator_server_alert_title">Operator server</string>
+  <string name="server_added_to_operator__name">Server added to operator %s.</string>
+  <string name="error_adding_server">Error adding server</string>
 
   <!-- AdvancedNetworkSettings.kt -->
   <string name="network_option_tcp_connection">TCP connection</string>
@@ -1755,6 +1870,9 @@
   <string name="theme_remove_image">Remove image</string>
   <string name="appearance_font_size">Font size</string>
   <string name="appearance_zoom">Zoom</string>
+  <string name="appearance_app_toolbars">App toolbars</string>
+  <string name="appearance_in_app_bars_alpha">Transparency</string>
+  <string name="appearance_bars_blur_radius">Blur</string>
   <string name="system_mode_toast">System mode</string>
 
   <!-- Wallpapers -->
@@ -1856,20 +1974,22 @@
   <string name="prohibit_sending_simplex_links">Prohibit sending SimpleX links</string>
   <string name="enable_sending_recent_history">Send up to 100 last messages to new members.</string>
   <string name="disable_sending_recent_history">Do not send history to new members.</string>
-  <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
-  <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
-  <string name="group_members_can_send_dms">Group members can send direct messages.</string>
-  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
-  <string name="group_members_can_delete">Group members can irreversibly delete sent messages. (24 hours)</string>
-  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
-  <string name="group_members_can_send_voice">Group members can send voice messages.</string>
-  <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
-  <string name="group_members_can_add_message_reactions">Group members can add message reactions.</string>
-  <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
-  <string name="group_members_can_send_files">Group members can send files and media.</string>
-  <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
-  <string name="group_members_can_send_simplex_links">Group members can send SimpleX links.</string>
-  <string name="simplex_links_are_prohibited_in_group">SimpleX links are prohibited in this group.</string>
+  <string name="group_members_can_send_disappearing">Members can send disappearing messages.</string>
+  <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited.</string>
+  <string name="group_members_can_send_dms">Members can send direct messages.</string>
+  <string name="direct_messages_are_prohibited">Direct messages between members are prohibited.</string>
+  <string name="direct_messages_are_prohibited_in_group">Direct messages between members are prohibited in this group.</string>
+  <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this chat.</string>
+  <string name="group_members_can_delete">Members can irreversibly delete sent messages. (24 hours)</string>
+  <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited.</string>
+  <string name="group_members_can_send_voice">Members can send voice messages.</string>
+  <string name="voice_messages_are_prohibited">Voice messages are prohibited.</string>
+  <string name="group_members_can_add_message_reactions">Members can add message reactions.</string>
+  <string name="message_reactions_are_prohibited">Message reactions are prohibited.</string>
+  <string name="group_members_can_send_files">Members can send files and media.</string>
+  <string name="files_are_prohibited_in_group">Files and media are prohibited.</string>
+  <string name="group_members_can_send_simplex_links">Members can send SimpleX links.</string>
+  <string name="simplex_links_are_prohibited_in_group">SimpleX links are prohibited.</string>
   <string name="recent_history_is_sent_to_new_members">Up to 100 last messages are sent to new members.</string>
   <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="delete_after">Delete after</string>
@@ -2053,6 +2173,15 @@
   <string name="v6_1_message_dates_descr">Better message dates.</string>
   <string name="v6_1_forward_many_messages_descr">Forward up to 20 messages at once.</string>
   <string name="v6_1_delete_many_messages_descr">Delete or moderate up to 200 messages.</string>
+  <string name="v6_2_network_decentralization">Network decentralization</string>
+  <string name="v6_2_network_decentralization_descr">The second preset operator in the app!</string>
+  <string name="v6_2_network_decentralization_enable_flux">Enable flux</string>
+  <string name="v6_2_network_decentralization_enable_flux_reason">for better metadata privacy.</string>
+  <string name="v6_2_improved_chat_navigation">Improved chat navigation</string>
+  <string name="v6_2_improved_chat_navigation_descr">- Open chat on the first unread message.\n- Jump to quoted messages.</string>
+  <string name="v6_2_business_chats">Business chats</string>
+  <string name="v6_2_business_chats_descr">Privacy for your customers.</string>
+  <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
@@ -2170,10 +2299,12 @@
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
+  <string name="connect_plan_chat_already_exists">Chat already exists!</string>
   <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[You are already joining the group <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
   <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
+  <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[You are already connected with <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
 
   <!-- Errors -->
@@ -2188,6 +2319,7 @@
   <string name="or_paste_archive_link">Or paste archive link</string>
   <string name="paste_archive_link">Paste archive link</string>
   <string name="invalid_file_link">Invalid link</string>
+  <string name="chat_archive">Or import archive file</string>
   <string name="migrate_to_device_migrating">Migrating</string>
   <string name="migrate_to_device_database_init">Preparing download</string>
   <string name="migrate_to_device_downloading_details">Downloading link details</string>

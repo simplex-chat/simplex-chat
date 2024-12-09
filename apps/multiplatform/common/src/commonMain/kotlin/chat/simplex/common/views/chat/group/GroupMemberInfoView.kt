@@ -38,6 +38,7 @@ import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.openLoadedChat
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
 
 @Composable
@@ -70,17 +71,9 @@ fun GroupMemberInfoView(
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
         withBGApi {
-          val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it)
-          if (c != null) {
-            withChats {
-              if (chatModel.getContactChat(it) == null) {
-                addChat(c)
-              }
-              chatModel.chatItemStatuses.clear()
-              chatModel.chatItems.replaceAll(c.chatItems)
-              chatModel.chatId.value = c.id
-              closeAll()
-            }
+          apiLoadMessages(rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
+          if (chatModel.getContactChat(it) != null) {
+            closeAll()
           }
         }
       },
@@ -92,7 +85,7 @@ fun GroupMemberInfoView(
             val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
             withChats {
               addChat(memberChat)
-              openLoadedChat(memberChat, chatModel)
+              openLoadedChat(memberChat)
             }
             closeAll()
             chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
@@ -112,7 +105,7 @@ fun GroupMemberInfoView(
         if (it == newRole.value) return@GroupMemberInfoLayout
         val prevValue = newRole.value
         newRole.value = it
-        updateMemberRoleDialog(it, member, onDismiss = {
+        updateMemberRoleDialog(it, groupInfo, member, onDismiss = {
           newRole.value = prevValue
         }) {
           withBGApi {
@@ -219,9 +212,13 @@ fun GroupMemberInfoView(
 }
 
 fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.member_will_be_removed_from_group_cannot_be_undone
+  else
+    MR.strings.member_will_be_removed_from_chat_cannot_be_undone
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_remove_member),
-    text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withBGApi {
@@ -313,10 +310,7 @@ fun GroupMemberInfoLayout(
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
@@ -357,14 +351,15 @@ fun GroupMemberInfoLayout(
             showSendMessageToEnableCallsAlert()
           })
         } else { // no known contact chat && directMessages are off
+          val messageId = if (groupInfo.businessChat == null) MR.strings.direct_messages_are_prohibited_in_group else MR.strings.direct_messages_are_prohibited_in_chat
           InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.33f), painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
-            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title))
+            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title), messageId)
           })
           InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
-            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title), messageId)
           })
           InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
-            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title), messageId)
           })
         }
       }
@@ -405,7 +400,8 @@ fun GroupMemberInfoLayout(
     }
 
     SectionView(title = stringResource(MR.strings.member_info_section_title_member)) {
-      InfoRow(stringResource(MR.strings.info_row_group), groupInfo.displayName)
+      val titleId = if (groupInfo.businessChat == null) MR.strings.info_row_group else MR.strings.info_row_chat
+      InfoRow(stringResource(titleId), groupInfo.displayName)
       val roles = remember { member.canChangeRoleTo(groupInfo) }
       if (roles != null) {
         RoleSelectionRow(roles, newRole, onRoleSelected)
@@ -481,10 +477,10 @@ private fun showSendMessageToEnableCallsAlert() {
   )
 }
 
-private fun showDirectMessagesProhibitedAlert(title: String) {
+private fun showDirectMessagesProhibitedAlert(title: String, messageId: StringResource) {
   AlertManager.shared.showAlertMsg(
     title = title,
-    text = generalGetString(MR.strings.direct_messages_are_prohibited_in_chat)
+    text = generalGetString(messageId)
   )
 }
 
@@ -646,15 +642,19 @@ fun MemberProfileImage(
 
 private fun updateMemberRoleDialog(
   newRole: GroupMemberRole,
+  groupInfo: GroupInfo,
   member: GroupMember,
   onDismiss: () -> Unit,
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
-    text = if (member.memberCurrent)
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
-    else
+    text = if (member.memberCurrent) {
+      if (groupInfo.businessChat == null)
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
+      else
+        String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification_chat), newRole.text)
+    } else
       String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text),
     confirmText = generalGetString(MR.strings.change_verb),
     onDismiss = onDismiss,
