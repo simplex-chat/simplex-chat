@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20241205_business_chat_members where
+module Simplex.Chat.Migrations.M20241206_chat_tags where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
