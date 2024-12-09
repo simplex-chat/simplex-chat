@@ -2887,9 +2887,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Titkosított üzenet: váratlan hiba</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encryption re-negotiation error" xml:space="preserve">
+      <trans-unit id="Encryption re-negotiation error" xml:space="preserve" approved="no">
         <source>Encryption re-negotiation error</source>
-        <target>Titkosítás újraegyeztetési hiba</target>
+        <target state="translated">Titkosítás-újraegyeztetési hiba</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Encryption re-negotiation failed." xml:space="preserve">
@@ -8077,9 +8077,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Már van egy csevegési profil ugyanezzel a megjelenített névvel. Válasszon egy másik nevet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected to %@." xml:space="preserve">
+      <trans-unit id="You are already connected to %@." xml:space="preserve" approved="no">
         <source>You are already connected to %@.</source>
-        <target>Ön már kapcsolódva van ehhez: %@.</target>
+        <target state="translated">Ön már kapcsolódva van a következőhöz: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected with %@." xml:space="preserve">
@@ -8087,9 +8087,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Ön már kapcsolódva van vele: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connecting to %@." xml:space="preserve">
+      <trans-unit id="You are already connecting to %@." xml:space="preserve" approved="no">
         <source>You are already connecting to %@.</source>
-        <target>Már folyamatban van a kapcsolódás ehhez: %@.</target>
+        <target state="translated">Már folyamatban van a kapcsolódás a következőhöz: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve">
@@ -8781,9 +8781,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>egyedi</target>
         <note>dropdown time picker choice</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
-        <target>az adatbázis verziója újabb, mint az alkalmazásé, de nincs visszafelé átköltöztetés ehhez: %@</target>
+        <target state="translated">az adatbázis verziója újabb, mint az alkalmazásé, de nincs visszafelé átköltöztetés a következőhöz: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="days" xml:space="preserve">
@@ -8891,24 +8891,24 @@ Kapcsolatkérés megismétlése?</target>
         <target>titkosítás rendben vele: %@</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation allowed" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation allowed" xml:space="preserve" approved="no">
         <source>encryption re-negotiation allowed</source>
-        <target>titkosítás újraegyeztetés engedélyezve</target>
+        <target state="translated">titkosítás-újraegyeztetés engedélyezve</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve" approved="no">
         <source>encryption re-negotiation allowed for %@</source>
-        <target>titkosítás újraegyeztetés engedélyezve vele: %@</target>
+        <target state="translated">a titkosítás újraegyeztetése engedélyezve van a következőhöz: %@</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation required" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation required" xml:space="preserve" approved="no">
         <source>encryption re-negotiation required</source>
-        <target>titkosítás újraegyeztetés szükséges</target>
+        <target state="translated">titkosítás-újraegyeztetés szükséges</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve" approved="no">
         <source>encryption re-negotiation required for %@</source>
-        <target>titkosítás újraegyeztetés szükséges %@ számára</target>
+        <target state="translated">a titkosítás újraegyeztetése szükséges a következőhöz: %@</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
