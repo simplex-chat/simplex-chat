@@ -122,8 +122,8 @@ struct GroupMemberInfoView: View {
                             } label: {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }
-                            if let contactId = member.memberContactId {
-                                if knownContact == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                            if member.memberContactId != nil {
+                                if knownContactChat == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                                     connectViaAddressButton(contactLink)
                                 }
                             } else {
