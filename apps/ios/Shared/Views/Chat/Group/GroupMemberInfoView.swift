@@ -273,12 +273,18 @@ struct GroupMemberInfoView: View {
     func infoActionButtons(_ member: GroupMember) -> some View {
         GeometryReader { g in
             let buttonWidth = g.size.width / 4
-            HStack(alignment: .center, spacing: 8) {
-                if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
-                    knownDirectChatButton(chat, width: buttonWidth)
-                    AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                    VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+            if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
+                KnownDirectChatButtons(
+                    chat: chat,
+                    contact: contact,
+                    buttonWidth: buttonWidth,
+                    showAlert: { alert = .someAlert(alert: $0) },
+                    syncContactConnection: {
+                        
+                    }
+                )
+            } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                HStack(alignment: .center, spacing: 8) {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
                     } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
@@ -288,7 +294,10 @@ struct GroupMemberInfoView: View {
                     }
                     InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
                     }
-                } else { // no known contact chat && directMessages are off
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            } else { // no known contact chat && directMessages are off
+                HStack(alignment: .center, spacing: 8) {
                     InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) { showDirectMessagesProhibitedAlert("Can't message member")
                     }
                     InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showDirectMessagesProhibitedAlert("Can't call member")
@@ -296,8 +305,8 @@ struct GroupMemberInfoView: View {
                     InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) { showDirectMessagesProhibitedAlert("Can't call member")
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 
@@ -337,14 +346,6 @@ struct GroupMemberInfoView: View {
             )
         } label: {
             Label("Connect", systemImage: "link")
-        }
-    }
-
-    func knownDirectChatButton(_ chat: Chat, width: CGFloat) -> some View {
-        InfoViewButton(image: "message.fill", title: "message", width: width) {
-            ItemsModel.shared.loadOpenChat(chat.id) {
-                dismissAllSheets(animated: true)
-            }
         }
     }
 
@@ -661,6 +662,84 @@ struct GroupMemberInfoView: View {
                 let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
                     alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
+}
+
+struct KnownDirectChatButtons: View {
+    @ObservedObject var chat: Chat
+    var contact: Contact
+    @State var connectionStats: ConnectionStats?
+    var buttonWidth: CGFloat
+    var showAlert: (SomeAlert) -> Void
+    var syncContactConnection: () -> Void
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            openChatButton(chat, width: buttonWidth)
+            if let connectionStats = connectionStats {
+                AudioCallButton(
+                    chat: chat,
+                    contact: contact,
+                    connectionStats: connectionStats,
+                    width: buttonWidth,
+                    showAlert: showAlert,
+                    syncConnection: syncContactConnection
+                )
+                VideoButton(
+                    chat: chat,
+                    contact: contact,
+                    connectionStats: connectionStats,
+                    width: buttonWidth,
+                    showAlert: showAlert,
+                    syncConnection: syncContactConnection
+                )
+            } else {
+                InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) {}
+                InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) {}
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .task {
+            do {
+                let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
+                await MainActor.run {
+                    connectionStats = stats
+                }
+            } catch let error {
+                logger.error("apiContactInfo error: \(responseError(error))")
+            }
+        }
+    }
+
+    private func openChatButton(_ chat: Chat, width: CGFloat) -> some View {
+        InfoViewButton(image: "message.fill", title: "message", width: width) {
+            ItemsModel.shared.loadOpenChat(chat.id) {
+                dismissAllSheets(animated: true)
+            }
+        }
+    }
+
+    private func syncContactConnection(contact: Contact, force: Bool) {
+        Task {
+            do {
+                let stats = try apiSyncContactRatchet(contact.apiId, force)
+                connectionStats = stats
+                await MainActor.run {
+                    ChatModel.shared.updateContactConnectionStats(contact, stats)
+                }
+            } catch let error {
+                logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error synchronizing connection")
+                await MainActor.run {
+                    showAlert(
+                        SomeAlert(
+                            alert: mkAlert(title: a.title, message: a.message),
+                            id: "syncContactConnection error"
+                        )
+                    )
                 }
             }
         }
