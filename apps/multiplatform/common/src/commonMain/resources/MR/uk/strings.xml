@@ -1953,7 +1953,7 @@
     <string name="servers_info_subscriptions_connections_pending">В очікуванні</string>
     <string name="servers_info_proxied_servers_section_header">Проксіровані сервери</string>
     <string name="servers_info_target">Показувати інформацію для</string>
-    <string name="servers_info_private_data_disclaimer">Починаючи з %s. \nВсі дані зберігаються лише на вашому пристрою.</string>
+    <string name="servers_info_private_data_disclaimer">Починаючи з %s.\nУсі дані зберігаються приватно на вашому пристрої.</string>
     <string name="servers_info_reconnect_server_message">Перепідключити сервер для примусової доставки повідомлень. Це використовує додатковий трафік.</string>
     <string name="servers_info_reset_stats">Скинути всю статистику</string>
     <string name="servers_info_reset_stats_alert_title">Скинути всю статистику?</string>
