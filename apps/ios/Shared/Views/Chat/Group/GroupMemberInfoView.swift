@@ -366,25 +366,49 @@ struct GroupMemberInfoView: View {
 
     func createMemberContactButton(width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
-            progressIndicator = true
-            Task {
-                do {
-                    let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
-                    await MainActor.run {
-                        progressIndicator = false
-                        chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                        ItemsModel.shared.loadOpenChat(memberContact.id) {
-                            dismissAllSheets(animated: true)
+            if let connStats = connectionStats {
+                if connStats.ratchetSyncState == .ok {
+                    progressIndicator = true
+                    Task {
+                        do {
+                            let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
+                            await MainActor.run {
+                                progressIndicator = false
+                                chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
+                                ItemsModel.shared.loadOpenChat(memberContact.id) {
+                                    dismissAllSheets(animated: true)
+                                }
+                                NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
+                            }
+                        } catch let error {
+                            logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
+                            let a = getErrorAlert(error, "Error creating member contact")
+                            await MainActor.run {
+                                progressIndicator = false
+                                alert = .error(title: a.title, error: a.message)
+                            }
                         }
-                        NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
                     }
-                } catch let error {
-                    logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error creating member contact")
-                    await MainActor.run {
-                        progressIndicator = false
-                        alert = .error(title: a.title, error: a.message)
-                    }
+                } else if connStats.ratchetSyncAllowed {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: Alert(
+                            title: Text("Fix connection?"),
+                            message: Text("Connection requires encryption renegotiation."),
+                            primaryButton: .default(Text("Fix")) {
+                                syncMemberConnection(force: false)
+                            },
+                            secondaryButton: .cancel()
+                        ),
+                        id: "can't message member, fix connection"
+                    ))
+                } else {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't message member",
+                            message: "Encryption renegotiation in progress."
+                        ),
+                        id: "can't message contact, encryption renegotiation in progress"
+                    ))
                 }
             }
         }
