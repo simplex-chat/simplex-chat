@@ -2211,4 +2211,6 @@
     <string name="onboarding_network_operators_simplex_flux_agreement">A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.</string>
     <string name="encryption_renegotiation_in_progress">A titkosítás újraegyeztetése folyamatban van.</string>
     <string name="sync_connection_desc">A kapcsolat titkosítása újraegyeztetést igényel.</string>
+    <string name="sync_connection_confirm">Javítás</string>
+    <string name="sync_connection_question">Kapcsolat javítása?</string>
 </resources>
