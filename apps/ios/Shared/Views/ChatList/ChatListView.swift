@@ -33,16 +33,16 @@ enum UserPickerSheet: Identifiable {
 
 class SaveableSettings: ObservableObject {
     @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
-    @Published var advancedNetworkSettings: AdvancedNetworkSettingsConfig = AdvancedNetworkSettingsConfig.defaults
+    @Published var networkSettings: NetworkSettings = NetworkSettings.defaults
     
     public func saveNetCfg() -> Bool {
         do {
-            let netCfg = advancedNetworkSettings.netCfg
-            let netProxy = advancedNetworkSettings.netProxy
+            let netCfg = networkSettings.netCfg
+            let netProxy = networkSettings.netProxy
             try setNetworkConfig(netCfg)
-            advancedNetworkSettings.currentNetCfg = netCfg
+            networkSettings.currentNetCfg = netCfg
             setNetCfg(netCfg, networkProxy: netCfg.socksProxy != nil ? netProxy : nil)
-            advancedNetworkSettings.currentNetProxy = netProxy
+            networkSettings.currentNetProxy = netProxy
             networkProxyDefault.set(netProxy)
             return true
         } catch let error {
@@ -64,13 +64,13 @@ struct ServerSettings {
     public var serverErrors: [UserServersError]
 }
 
-struct AdvancedNetworkSettingsConfig {
+struct NetworkSettings {
     public var currentNetCfg: NetCfg
     public var netCfg: NetCfg
     public var currentNetProxy: NetworkProxy
     public var netProxy: NetworkProxy
     
-    static let defaults = AdvancedNetworkSettingsConfig(
+    static let defaults = NetworkSettings(
         currentNetCfg: NetCfg.defaults,
         netCfg: NetCfg.defaults,
         currentNetProxy: networkProxyDefault.get(),
@@ -126,7 +126,7 @@ struct UserPickerSheetView: View {
             )
         }
         .onDisappear {
-            let advancedNetworkCanBeSaved = advancedNetworkSettingsCanBeSaved(ss.advancedNetworkSettings)
+            let advancedNetworkCanBeSaved = advancedNetworkSettingsCanBeSaved(ss.networkSettings)
             let advancedNetworkSaveText = NSLocalizedString("Save and reconnect", comment: "alert button")
             
             if serversCanBeSaved(

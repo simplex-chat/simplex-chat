@@ -95,10 +95,10 @@ struct NetworkAndServers: View {
 
                     NavigationLink {
                         AdvancedNetworkSettings(
-                            currentNetCfg: $ss.advancedNetworkSettings.currentNetCfg,
-                            netCfg: $ss.advancedNetworkSettings.netCfg,
-                            currentNetProxy: $ss.advancedNetworkSettings.currentNetProxy,
-                            netProxy: $ss.advancedNetworkSettings.netProxy,
+                            currentNetCfg: $ss.networkSettings.currentNetCfg,
+                            netCfg: $ss.networkSettings.netCfg,
+                            currentNetProxy: $ss.networkSettings.currentNetProxy,
+                            netProxy: $ss.networkSettings.netProxy,
                             saveNetCfg: ss.saveNetCfg
                         )
                         .navigationTitle("Advanced settings")
@@ -343,7 +343,7 @@ func serversCanBeSaved(
 }
 
 func advancedNetworkSettingsCanBeSaved(
-    _ config: AdvancedNetworkSettingsConfig
+    _ config: NetworkSettings
 ) -> Bool {
     let useNetProxy = config.netCfg.socksProxy != nil
     return (config.currentNetCfg != config.netCfg || config.currentNetProxy != config.netProxy) && (useNetProxy ? config.netProxy.valid : true)

@@ -371,7 +371,7 @@ struct AdvancedNetworkSettings: View {
 
 struct AdvancedNetworkSettings_Previews: PreviewProvider {
     static var previews: some View {
-        let defaultSettings = AdvancedNetworkSettingsConfig.defaults
+        let defaultSettings = NetworkSettings.defaults
         AdvancedNetworkSettings(
             currentNetCfg: Binding.constant(defaultSettings.currentNetCfg),
             netCfg: Binding.constant(defaultSettings.netCfg),
