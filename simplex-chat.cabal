@@ -155,6 +155,7 @@ library
       Simplex.Chat.Migrations.M20241125_indexes
       Simplex.Chat.Migrations.M20241128_business_chats
       Simplex.Chat.Migrations.M20241205_business_chat_members
+      Simplex.Chat.Migrations.M20241206_chat_tags
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
