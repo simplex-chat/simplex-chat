@@ -7927,9 +7927,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Várakozás a videóra</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wallpaper accent" xml:space="preserve">
+      <trans-unit id="Wallpaper accent" xml:space="preserve" approved="no">
         <source>Wallpaper accent</source>
-        <target>Háttérkép kiemelés</target>
+        <target state="translated">Háttérkép kiemelőszíne</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wallpaper background" xml:space="preserve">
