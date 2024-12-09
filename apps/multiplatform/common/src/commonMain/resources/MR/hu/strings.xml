@@ -460,7 +460,7 @@
     <string name="error_sending_message">Hiba az üzenet küldésekor</string>
     <string name="la_enter_app_passcode">Jelkód megadása</string>
     <string name="for_everybody">Mindenkinél</string>
-    <string name="encryption_renegotiation_error">Titkosítás újraegyeztetési hiba</string>
+    <string name="encryption_renegotiation_error">Titkosítás-újraegyeztetési hiba</string>
     <string name="error_encrypting_database">Hiba az adatbázis titkosításakor</string>
     <string name="error_deleting_group">Hiba a csoport törlésekor</string>
     <string name="exit_without_saving">Kilépés mentés nélkül</string>
@@ -507,7 +507,7 @@
     <string name="v4_6_group_moderation">Csoport moderáció</string>
     <string name="choose_file">Fájl</string>
     <string name="group_link">Csoporthivatkozás</string>
-    <string name="snd_conn_event_ratchet_sync_required">titkosítás-újraegyeztetés szükséges ehhez: %s</string>
+    <string name="snd_conn_event_ratchet_sync_required">a titkosítás újraegyeztetése szükséges a következőhöz: %s</string>
     <string name="failed_to_active_user_title">Hiba a profilváltáskor!</string>
     <string name="settings_experimental_features">Kísérleti funkciók</string>
     <string name="receipts_contacts_enable_keep_overrides">Engedélyezés (felülírások megtartásával)</string>
@@ -532,7 +532,7 @@
     <string name="fix_connection_question">Kapcsolat javítása?</string>
     <string name="files_and_media">Fájlok és médiatartalmak</string>
     <string name="section_title_for_console">KONZOLHOZ</string>
-    <string name="alert_text_encryption_renegotiation_failed">Sikertelen titkosítás-újraegyeztetés.</string>
+    <string name="alert_text_encryption_renegotiation_failed">Nem sikerült a titkosítást újraegyeztetni.</string>
     <string name="error_deleting_user">Hiba a felhasználó-profil törlésekor</string>
     <string name="fix_connection_not_supported_by_group_member">Csoporttag általi javítás nem támogatott</string>
     <string name="enter_welcome_message">Üdvözlőüzenet megadása…</string>
@@ -610,7 +610,7 @@
     <string name="feature_enabled">engedélyezve</string>
     <string name="error_loading_details">Hiba a részletek betöltésekor</string>
     <string name="error_accepting_contact_request">Hiba történt a kapcsolatkérés elfogadásakor</string>
-    <string name="snd_conn_event_ratchet_sync_allowed">titkosítás újraegyeztetése engedélyezett %s számára</string>
+    <string name="snd_conn_event_ratchet_sync_allowed">a titkosítás újraegyeztetése engedélyezve van a következőhöz: %s</string>
     <string name="conn_event_ratchet_sync_required">titkosítás-újraegyeztetés szükséges</string>
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
     <string name="files_and_media_section">Fájlok és médiatartalmak</string>
@@ -1906,7 +1906,7 @@
     <string name="servers_info_transport_sessions_section_header">Munkamenetek átvitele</string>
     <string name="servers_info_subscriptions_total">Összes kapcsolat</string>
     <string name="servers_info_statistics_section_header">Statisztikák</string>
-    <string name="servers_info_target">Információk megjelenítése ehhez:</string>
+    <string name="servers_info_target">Információk megjelenítése a következőhöz:</string>
     <string name="network_error_broker_version_desc">A kiszolgáló verziója nem kompatibilis az alkalmazással: %1$s.</string>
     <string name="servers_info_proxied_servers_section_footer">Ön nem kapcsolódik ezekhez a kiszolgálókhoz. A privát útválasztás az üzenetek kézbesítésére szolgál.</string>
     <string name="servers_info_subscriptions_connections_subscribed">Aktív kapcsolatok száma</string>
@@ -2209,4 +2209,6 @@
     <string name="display_name_requested_to_connect">kérelmezve a kapcsolódáshoz</string>
     <string name="onboarding_network_about_operators">Az üzemeltetőkről</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.</string>
+    <string name="encryption_renegotiation_in_progress">A titkosítás újraegyeztetése folyamatban van.</string>
+    <string name="sync_connection_desc">A kapcsolat titkosítása újraegyeztetést igényel.</string>
 </resources>
