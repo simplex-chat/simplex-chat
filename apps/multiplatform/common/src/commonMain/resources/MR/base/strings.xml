@@ -903,6 +903,7 @@
   <string name="show_dev_options">Show:</string>
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
+  <string name="debug_logs">Debug logs in system journal</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
   <string name="developer_options_section">Developer options</string>
   <string name="show_internal_errors">Show internal errors</string>
