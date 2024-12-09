@@ -736,12 +736,7 @@ private struct CallButton: View {
                                 message: Text("Connection requires encryption renegotiation."),
                                 primaryButton: .default(Text("Fix")) {
                                     Task {
-                                        await syncContactConnection(
-                                            contact,
-                                            $connectionStats,
-                                            force: false,
-                                            showAlert: showAlert
-                                        )
+                                        await syncContactConnection(contact, $connectionStats, force: false, showAlert: showAlert)
                                     }
                                 },
                                 secondaryButton: .cancel()
