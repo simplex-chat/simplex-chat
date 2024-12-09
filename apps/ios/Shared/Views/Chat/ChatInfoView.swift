@@ -317,8 +317,10 @@ struct ChatInfoView: View {
             case .syncConnectionForceAlert:
                 return syncConnectionForceAlert({
                     Task {
-                        let r = await syncContactConnection(contact, $connectionStats, force: true, showAlert: { alert = .someAlert(alert: $0) })
-                        if r { dismiss() }
+                        if let stats = await syncContactConnection(contact, force: true, showAlert: { alert = .someAlert(alert: $0) }) {
+                            connectionStats = stats
+                            dismiss()
+                        }
                     }
                 })
             case let .queueInfo(info): return queueInfoAlert(info)
@@ -500,8 +502,10 @@ struct ChatInfoView: View {
     private func synchronizeConnectionButton() -> some View {
         Button {
             Task {
-                let r = await syncContactConnection(contact, $connectionStats, force: false, showAlert: { alert = .someAlert(alert: $0) })
-                if r { dismiss() }
+                if let stats = await syncContactConnection(contact, force: false, showAlert: { alert = .someAlert(alert: $0) }) {
+                    connectionStats = stats
+                    dismiss()
+                }
             }
         } label: {
             Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
@@ -639,14 +643,13 @@ struct ChatInfoView: View {
     }
 }
 
-func syncContactConnection(_ contact: Contact, _ connectionStats: Binding<ConnectionStats?>, force: Bool, showAlert: (SomeAlert) -> Void) async -> Bool {
+func syncContactConnection(_ contact: Contact, force: Bool, showAlert: (SomeAlert) -> Void) async -> ConnectionStats? {
     do {
         let stats = try apiSyncContactRatchet(contact.apiId, force)
         await MainActor.run {
-            connectionStats.wrappedValue = stats
             ChatModel.shared.updateContactConnectionStats(contact, stats)
         }
-        return true
+        return stats
     } catch let error {
         logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
         let a = getErrorAlert(error, "Error synchronizing connection")
@@ -658,7 +661,7 @@ func syncContactConnection(_ contact: Contact, _ connectionStats: Binding<Connec
                 )
             )
         }
-        return false
+        return nil
     }
 }
 
@@ -736,7 +739,9 @@ private struct CallButton: View {
                                 message: Text("Connection requires encryption renegotiation."),
                                 primaryButton: .default(Text("Fix")) {
                                     Task {
-                                        await syncContactConnection(contact, $connectionStats, force: false, showAlert: showAlert)
+                                        if let stats = await syncContactConnection(contact, force: false, showAlert: showAlert) {
+                                            connectionStats = stats
+                                        }
                                     }
                                 },
                                 secondaryButton: .cancel()
