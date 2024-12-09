@@ -278,23 +278,17 @@ struct GroupMemberInfoView: View {
                     chat: chat,
                     contact: contact,
                     buttonWidth: buttonWidth,
-                    showAlert: { alert = .someAlert(alert: $0) }
+                    showAlert: { alert = .someAlert(alert: $0) },
+                    syncContactConnection: {
+                        
+                    }
                 )
             } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                 HStack(alignment: .center, spacing: 8) {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
-                    } else if let connectionStats = connectionStats,
-                              member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
-                        if connectionStats.ratchetSyncAllowed {
-                            InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) { showFixConnectionAlert() }
-                        } else if connectionStats.ratchetSyncState != .ok {
-                            InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) { showEncryptionRenegotiationAlert() }
-                        } else {
-                            createMemberContactButton(width: buttonWidth)
-                        }
-                    } else {
-                        InfoViewButton(image: "message.fill", title: "message", disabledLook: true, width: buttonWidth) {}
+                    } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
+                        createMemberContactButton(width: buttonWidth)
                     }
                     InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
                     }
@@ -314,30 +308,6 @@ struct GroupMemberInfoView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-    }
-
-    func showFixConnectionAlert() {
-        alert = .someAlert(alert: SomeAlert(
-            alert: Alert(
-                title: Text("Fix connection?"),
-                message: Text("Connection requires encryption renegotiation."),
-                primaryButton: .default(Text("Fix")) {
-                    syncMemberConnection(force: false)
-                },
-                secondaryButton: .cancel()
-            ),
-            id: "can't message member, fix connection"
-        ))
-    }
-
-    func showEncryptionRenegotiationAlert() {
-        alert = .someAlert(alert: SomeAlert(
-            alert: mkAlert(
-                title: "Can't message member",
-                message: "Encryption renegotiation in progress."
-            ),
-            id: "can't message contact, encryption renegotiation in progress"
-        ))
     }
 
     func showSendMessageToEnableCallsAlert() {
@@ -704,6 +674,7 @@ struct KnownDirectChatButtons: View {
     @State var connectionStats: ConnectionStats?
     var buttonWidth: CGFloat
     var showAlert: (SomeAlert) -> Void
+    var syncContactConnection: () -> Void
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -715,7 +686,7 @@ struct KnownDirectChatButtons: View {
                     connectionStats: connectionStats,
                     width: buttonWidth,
                     showAlert: showAlert,
-                    syncConnection: { syncContactConnection(contact: contact, force: false) }
+                    syncConnection: syncContactConnection
                 )
                 VideoButton(
                     chat: chat,
@@ -723,7 +694,7 @@ struct KnownDirectChatButtons: View {
                     connectionStats: connectionStats,
                     width: buttonWidth,
                     showAlert: showAlert,
-                    syncConnection: { syncContactConnection(contact: contact, force: false) }
+                    syncConnection: syncContactConnection
                 )
             } else {
                 InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) {}
