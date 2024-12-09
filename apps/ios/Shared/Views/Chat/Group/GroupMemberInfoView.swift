@@ -20,6 +20,9 @@ struct GroupMemberInfoView: View {
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var connectionLoaded: Bool = false
+    @State private var knownContactChat: Chat? = nil
+    @State private var knownContact: Contact? = nil
+    @State private var knownContactConnectionStats: ConnectionStats? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @State private var sheet: PlanAndConnectActionSheet?
@@ -120,7 +123,7 @@ struct GroupMemberInfoView: View {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }
                             if let contactId = member.memberContactId {
-                                if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                                if knownContact == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                                     connectViaAddressButton(contactLink)
                                 }
                             } else {
@@ -229,6 +232,18 @@ struct GroupMemberInfoView: View {
                     }
                     logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
                 }
+                if let contactId = member.memberContactId, let (contactChat, contact) = knownDirectChat(contactId) {
+                    knownContactChat = contactChat
+                    knownContact = contact
+                    do {
+                        let (stats, _) = try await apiContactInfo(contactChat.chatInfo.apiId)
+                        await MainActor.run {
+                            knownContactConnectionStats = stats
+                        }
+                    } catch let error {
+                        logger.error("apiContactInfo error: \(responseError(error))")
+                    }
+                }
             }
             .onChange(of: newRole) { newRole in
                 if newRole != member.memberRole {
@@ -274,10 +289,10 @@ struct GroupMemberInfoView: View {
         GeometryReader { g in
             let buttonWidth = g.size.width / 4
             HStack(alignment: .center, spacing: 8) {
-                if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
+                if let chat = knownContactChat, let contact = knownContact {
                     knownDirectChatButton(chat, width: buttonWidth)
-                    AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                    VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                    AudioCallButton(chat: chat, contact: contact, connectionStats: $knownContactConnectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                    VideoButton(chat: chat, contact: contact, connectionStats: $knownContactConnectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                 } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)

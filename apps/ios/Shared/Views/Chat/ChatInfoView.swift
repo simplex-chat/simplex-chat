@@ -156,8 +156,8 @@ struct ChatInfoView: View {
                     HStack(alignment: .center, spacing: 8) {
                         let buttonWidth = g.size.width / 4
                         searchButton(width: buttonWidth)
-                        AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                        VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                        AudioCallButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                        VideoButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                         muteButton(width: buttonWidth)
                     }
                 }
@@ -314,7 +314,13 @@ struct ChatInfoView: View {
             case .networkStatusAlert: return networkStatusAlert()
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
-            case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
+            case .syncConnectionForceAlert:
+                return syncConnectionForceAlert({
+                    Task {
+                        let r = await syncContactConnection(contact, $connectionStats, force: true, showAlert: { alert = .someAlert(alert: $0) })
+                        if r { dismiss() }
+                    }
+                })
             case let .queueInfo(info): return queueInfoAlert(info)
             case let .someAlert(a): return a.alert
             case let .error(title, error): return mkAlert(title: title, message: error)
@@ -493,7 +499,10 @@ struct ChatInfoView: View {
     
     private func synchronizeConnectionButton() -> some View {
         Button {
-            syncContactConnection(force: false)
+            Task {
+                let r = await syncContactConnection(contact, $connectionStats, force: false, showAlert: { alert = .someAlert(alert: $0) })
+                if r { dismiss() }
+            }
         } label: {
             Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
                 .foregroundColor(.orange)
@@ -612,25 +621,6 @@ struct ChatInfoView: View {
         }
     }
     
-    private func syncContactConnection(force: Bool) {
-        Task {
-            do {
-                let stats = try apiSyncContactRatchet(contact.apiId, force)
-                connectionStats = stats
-                await MainActor.run {
-                    chatModel.updateContactConnectionStats(contact, stats)
-                    dismiss()
-                }
-            } catch let error {
-                logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
-                await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
-                }
-            }
-        }
-    }
-    
     private func savePreferences() {
         Task {
             do {
@@ -649,9 +639,33 @@ struct ChatInfoView: View {
     }
 }
 
+func syncContactConnection(_ contact: Contact, _ connectionStats: Binding<ConnectionStats?>, force: Bool, showAlert: (SomeAlert) -> Void) async -> Bool {
+    do {
+        let stats = try apiSyncContactRatchet(contact.apiId, force)
+        await MainActor.run {
+            connectionStats.wrappedValue = stats
+            ChatModel.shared.updateContactConnectionStats(contact, stats)
+        }
+        return true
+    } catch let error {
+        logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
+        let a = getErrorAlert(error, "Error synchronizing connection")
+        await MainActor.run {
+            showAlert(
+                SomeAlert(
+                    alert: mkAlert(title: a.title, message: a.message),
+                    id: "syncContactConnection error"
+                )
+            )
+        }
+        return false
+    }
+}
+
 struct AudioCallButton: View {
     var chat: Chat
     var contact: Contact
+    @Binding var connectionStats: ConnectionStats?
     var width: CGFloat
     var showAlert: (SomeAlert) -> Void
 
@@ -659,6 +673,7 @@ struct AudioCallButton: View {
         CallButton(
             chat: chat,
             contact: contact,
+            connectionStats: $connectionStats,
             image: "phone.fill",
             title: "call",
             mediaType: .audio,
@@ -671,6 +686,7 @@ struct AudioCallButton: View {
 struct VideoButton: View {
     var chat: Chat
     var contact: Contact
+    @Binding var connectionStats: ConnectionStats?
     var width: CGFloat
     var showAlert: (SomeAlert) -> Void
 
@@ -678,6 +694,7 @@ struct VideoButton: View {
         CallButton(
             chat: chat,
             contact: contact,
+            connectionStats: $connectionStats,
             image: "video.fill",
             title: "video",
             mediaType: .video,
@@ -690,6 +707,7 @@ struct VideoButton: View {
 private struct CallButton: View {
     var chat: Chat
     var contact: Contact
+    @Binding var connectionStats: ConnectionStats?
     var image: String
     var title: LocalizedStringKey
     var mediaType: CallMediaType
@@ -701,12 +719,43 @@ private struct CallButton: View {
 
         InfoViewButton(image: image, title: title, disabledLook: !canCall, width: width) {
             if canCall {
-                if CallController.useCallKit() {
-                    CallController.shared.startCall(contact, mediaType)
-                } else {
-                    // When CallKit is not used, colorscheme will be changed and it will be visible if not hiding sheets first
-                    dismissAllSheets(animated: true) {
-                        CallController.shared.startCall(contact, mediaType)
+                if let connStats = connectionStats {
+                    if connStats.ratchetSyncState == .ok {
+                        if CallController.useCallKit() {
+                            CallController.shared.startCall(contact, mediaType)
+                        } else {
+                            // When CallKit is not used, colorscheme will be changed and it will be visible if not hiding sheets first
+                            dismissAllSheets(animated: true) {
+                                CallController.shared.startCall(contact, mediaType)
+                            }
+                        }
+                    } else if connStats.ratchetSyncAllowed {
+                        showAlert(SomeAlert(
+                            alert: Alert(
+                                title: Text("Fix connection?"),
+                                message: Text("Connection requires encryption renegotiation."),
+                                primaryButton: .default(Text("Fix")) {
+                                    Task {
+                                        await syncContactConnection(
+                                            contact,
+                                            $connectionStats,
+                                            force: false,
+                                            showAlert: showAlert
+                                        )
+                                    }
+                                },
+                                secondaryButton: .cancel()
+                            ),
+                            id: "can't call contact, fix connection"
+                        ))
+                    } else {
+                        showAlert(SomeAlert(
+                            alert: mkAlert(
+                                title: "Can't call contact",
+                                message: "Encryption renegotiation in progress."
+                            ),
+                            id: "can't call contact, encryption renegotiation in progress"
+                        ))
                     }
                 }
             } else if contact.nextSendGrpInv {
