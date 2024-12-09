@@ -1784,7 +1784,7 @@
     <string name="color_sent_quote">Válaszüzenet-buborék színe</string>
     <string name="chat_theme_set_default_theme">Alapértelmezett téma beállítása</string>
     <string name="color_mode_system">Rendszer</string>
-    <string name="color_wallpaper_tint">Háttérkép kiemelés</string>
+    <string name="color_wallpaper_tint">Háttérkép kiemelőszíne</string>
     <string name="color_wallpaper_background">Háttérkép háttérszíne</string>
     <string name="color_primary_variant2">További kiemelés 2</string>
     <string name="theme_destination_app_theme">Alkalmazás téma</string>
