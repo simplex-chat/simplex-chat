@@ -156,27 +156,8 @@ struct ChatInfoView: View {
                     HStack(alignment: .center, spacing: 8) {
                         let buttonWidth = g.size.width / 4
                         searchButton(width: buttonWidth)
-                        if let connectionStats = connectionStats {
-                            AudioCallButton(
-                                chat: chat,
-                                contact: contact,
-                                connectionStats: connectionStats,
-                                width: buttonWidth,
-                                showAlert: { alert = .someAlert(alert: $0) },
-                                syncConnection: { syncContactConnection(force: false) }
-                            )
-                            VideoButton(
-                                chat: chat,
-                                contact: contact,
-                                connectionStats: connectionStats,
-                                width: buttonWidth,
-                                showAlert: { alert = .someAlert(alert: $0) },
-                                syncConnection: { syncContactConnection(force: false) }
-                            )
-                        } else {
-                            InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) {}
-                            InfoViewButton(image: "video.fill", title: "video", disabledLook: true, width: buttonWidth) {}
-                        }
+                        AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                        VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
                         muteButton(width: buttonWidth)
                     }
                 }
@@ -671,22 +652,18 @@ struct ChatInfoView: View {
 struct AudioCallButton: View {
     var chat: Chat
     var contact: Contact
-    var connectionStats: ConnectionStats
     var width: CGFloat
     var showAlert: (SomeAlert) -> Void
-    var syncConnection: () -> Void
 
     var body: some View {
         CallButton(
             chat: chat,
             contact: contact,
-            connectionStats: connectionStats,
             image: "phone.fill",
             title: "call",
             mediaType: .audio,
             width: width,
-            showAlert: showAlert,
-            syncConnection: syncConnection
+            showAlert: showAlert
         )
     }
 }
@@ -694,22 +671,18 @@ struct AudioCallButton: View {
 struct VideoButton: View {
     var chat: Chat
     var contact: Contact
-    var connectionStats: ConnectionStats
     var width: CGFloat
     var showAlert: (SomeAlert) -> Void
-    var syncConnection: () -> Void
 
     var body: some View {
         CallButton(
             chat: chat,
             contact: contact,
-            connectionStats: connectionStats,
             image: "video.fill",
             title: "video",
             mediaType: .video,
             width: width,
-            showAlert: showAlert,
-            syncConnection: syncConnection
+            showAlert: showAlert
         )
     }
 }
@@ -717,22 +690,14 @@ struct VideoButton: View {
 private struct CallButton: View {
     var chat: Chat
     var contact: Contact
-    var connectionStats: ConnectionStats
     var image: String
     var title: LocalizedStringKey
     var mediaType: CallMediaType
     var width: CGFloat
     var showAlert: (SomeAlert) -> Void
-    var syncConnection: () -> Void
 
     var body: some View {
-        let canCall = (
-            contact.ready &&
-            contact.active &&
-            connectionStats.ratchetSyncState == .ok &&
-            chat.chatInfo.featureEnabled(.calls) &&
-            ChatModel.shared.activeCall == nil
-        )
+        let canCall = contact.ready && contact.active && chat.chatInfo.featureEnabled(.calls) && ChatModel.shared.activeCall == nil
 
         InfoViewButton(image: image, title: title, disabledLook: !canCall, width: width) {
             if canCall {
@@ -767,26 +732,6 @@ private struct CallButton: View {
                         message: "Connecting to contact, please wait or check later!"
                     ),
                     id: "can't call contact, contact not ready"
-                ))
-            } else if connectionStats.ratchetSyncAllowed {
-                showAlert(SomeAlert(
-                    alert: Alert(
-                        title: Text("Fix connection?"),
-                        message: Text("Connection requires encryption renegotiation."),
-                        primaryButton: .default(Text("Fix")) {
-                            syncConnection()
-                        },
-                        secondaryButton: .cancel()
-                    ),
-                    id: "can't call contact, fix connection"
-                ))
-            } else if connectionStats.ratchetSyncState != .ok {
-                showAlert(SomeAlert(
-                    alert: mkAlert(
-                        title: "Can't call contact",
-                        message: "Encryption renegotiation in progress."
-                    ),
-                    id: "can't call contact, encryption renegotiation in progress"
                 ))
             } else if !chat.chatInfo.featureEnabled(.calls) {
                 switch chat.chatInfo.showEnableCallsAlert {
