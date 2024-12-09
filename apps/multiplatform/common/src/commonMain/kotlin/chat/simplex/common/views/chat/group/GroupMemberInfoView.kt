@@ -58,6 +58,19 @@ fun GroupMemberInfoView(
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }
 
+  fun syncMemberConnection() {
+    withBGApi {
+      val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
+      if (r != null) {
+        connStats.value = r.second
+        withChats {
+          updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+        }
+        close.invoke()
+      }
+    }
+  }
+
   if (chat != null) {
     val newRole = remember { mutableStateOf(member.memberRole) }
     GroupMemberInfoLayout(
@@ -78,19 +91,30 @@ fun GroupMemberInfoView(
         }
       },
       createMemberContact = {
-        withBGApi {
-          progressIndicator = true
-          val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
-          if (memberContact != null) {
-            val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
-            withChats {
-              addChat(memberChat)
-              openLoadedChat(memberChat)
+        if (connectionStats != null) {
+          if (connectionStats.ratchetSyncState == RatchetSyncState.Ok) {
+            withBGApi {
+              progressIndicator = true
+              val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
+              if (memberContact != null) {
+                val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
+                withChats {
+                  addChat(memberChat)
+                  openLoadedChat(memberChat)
+                }
+                closeAll()
+                chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
+              }
+              progressIndicator = false
             }
-            closeAll()
-            chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
+          } else if (connectionStats.ratchetSyncAllowed) {
+            showFixConnectionAlert(syncConnection = { syncMemberConnection() })
+          } else {
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.cant_send_message_to_member_alert_title),
+              generalGetString(MR.strings.encryption_renegotiation_in_progress)
+            )
           }
-          progressIndicator = false
         }
       },
       connectViaAddress = { connReqUri ->
@@ -149,16 +173,7 @@ fun GroupMemberInfoView(
         })
       },
       syncMemberConnection = {
-        withBGApi {
-          val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
-          if (r != null) {
-            connStats.value = r.second
-            withChats {
-              updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
-            }
-            close.invoke()
-          }
-        }
+        syncMemberConnection()
       },
       syncMemberConnectionForce = {
         showSyncConnectionForceAlert(syncConnectionForce = {

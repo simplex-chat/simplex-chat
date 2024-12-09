@@ -1265,6 +1265,15 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
   )
 }
 
+fun showFixConnectionAlert(syncConnection: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.sync_connection_question),
+    text = generalGetString(MR.strings.sync_connection_desc),
+    confirmText = generalGetString(MR.strings.sync_connection_confirm),
+    onConfirm = syncConnection,
+  )
+}
+
 fun queueInfoText(info: Pair<RcvMsgInfo?, ServerQueueInfo>): String {
   val (rcvMsgInfo, qInfo) = info
   val msgInfo: String = if (rcvMsgInfo != null) json.encodeToString(rcvMsgInfo) else generalGetString(MR.strings.message_queue_info_none)
