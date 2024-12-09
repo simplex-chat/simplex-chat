@@ -22,9 +22,9 @@
         },
         "contactLink": {"ref": "connReqUri"},
         "preferences": {
-          "type": "string",
+          "additionalProperties": true,
           "metadata": {
-            "format": "JSON encoded user preferences"
+            "format": "an object with user or contact preferences"
           }
         }
       },
@@ -48,9 +48,9 @@
           }
         },
         "groupPreferences": {
-          "type": "string",
+          "additionalProperties": "true",
           "metadata": {
-            "format": "JSON encoded user preferences"
+            "format": "an object with group preferences"
           }
         }
       },
@@ -70,7 +70,59 @@
             "content": {"ref": "msgContent"}
           }
         },
-        "forward": {"type": "boolean"}
+        "forward": {"type": "boolean"},
+        "choice": {
+          "optionalProperties": {
+            "persistent": {
+              "enum": {
+                "type": "boolean",
+                "metadata": {
+                  "comment": "the choices will remain without bot sending additional message",
+                  "default": false
+                }
+              }
+            },
+            "layout": {
+              "enum": ["column", "row"],
+              "metadata": {"default": "column"}
+            },
+            "allow": {
+              "optionalProperties": {
+                "text": {
+                  "type": "boolean",
+                  "metadata": {"default": false}
+                }
+              }
+            },
+            "buttons": {
+              "values": {
+                "optionalProperties": {
+                  "tag": {
+                    "type": "string",
+                    "metadata": {"comment": "tag that will be sent in choiceTag property of response"}
+                  },
+                  "icon": {
+                    "type": "string",
+                    "metadata": {"comment": "emoji or name of the icon"}
+                  },
+                  "color": {
+                    "type": "string",
+                    "metadata": {"comment": "color name or hex code"}
+                  },
+                  "disabled": {
+                    "type": "boolean",
+                    "metadata": {"default": false}
+                  }
+                }
+              },
+              "metadata": {"comment": "each key must be one of the choices in the text"}
+            }
+          }
+        },
+        "choiceTag": {
+          "type": "string",
+          "metadata": {"comment": "sent inside the response to `choice`, and is mutually exclusive with it"}
+        }
       },
       "metadata": {
         "comment": "optional properties `quote` and `forward` are mutually exclusive"
@@ -648,6 +700,16 @@
         "params": {
           "properties": {
             "groupProfile": {"ref": "groupProfile"}
+          }
+        }
+      }
+    },
+    "x.grp.prefs": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupPreferences": {"ref": "groupPreferences"}
           }
         }
       }
