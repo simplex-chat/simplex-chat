@@ -464,8 +464,8 @@
     <string name="file_will_be_received_when_contact_completes_uploading">سيتم استلام الملف عندما يكتمل جهة اتصالك من رفعِها.</string>
     <string name="icon_descr_help">المساعدة</string>
     <string name="file_with_path">الملف: %s</string>
-    <string name="fix_connection_confirm">إصلاح</string>
-    <string name="fix_connection">إصلاح الاتصال</string>
+    <string name="fix_connection_confirm">أصلح</string>
+    <string name="fix_connection">أصلح الاتصال</string>
     <string name="fix_connection_question">إصلاح الاتصال؟</string>
     <string name="fix_connection_not_supported_by_group_member">الإصلاح غير مدعوم من قبل أعضاء المجموعة</string>
     <string name="group_members_can_send_files">يمكن للأعضاء إرسال الملفات والوسائط.</string>
@@ -2241,4 +2241,8 @@
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">سوف تتوقف عن تلقي الرسائل من هذه الدردشة. سيتم حفظ سجل الدردشة.</string>
     <string name="onboarding_network_about_operators">عن المُشغلين</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">توصلت SimpleX Chat وFlux إلى اتفاق لتضمين الخوادم التي تديرها Flux في التطبيق.</string>
+    <string name="encryption_renegotiation_in_progress">جارِ إعادة التفاوض على التعمية.</string>
+    <string name="sync_connection_question">إصلاح الاتصال؟</string>
+    <string name="sync_connection_desc">يتطلب الاتصال إعادة التفاوض على التعمية.</string>
+    <string name="sync_connection_confirm">إصلاح</string>
 </resources>
