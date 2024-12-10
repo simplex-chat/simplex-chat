@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -44,6 +45,12 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
     if (devTools.value) {
       SectionDividerSpaced(maxTopPadding = true)
       SectionView(stringResource(MR.strings.developer_options_section).uppercase()) {
+        SettingsActionItemWithContent(painterResource(MR.images.ic_breaking_news), stringResource(MR.strings.debug_logs)) {
+          DefaultSwitch(
+            checked = remember { appPrefs.logLevel.state }.value <= LogLevel.DEBUG,
+            onCheckedChange = { appPrefs.logLevel.set(if (it) LogLevel.DEBUG else LogLevel.WARNING) }
+          )
+        }
         SettingsPreferenceItem(painterResource(MR.images.ic_drive_folder_upload), stringResource(MR.strings.confirm_database_upgrades), m.controller.appPrefs.confirmDBUpgrades)
         if (appPlatform.isDesktop) {
           TerminalAlwaysVisibleItem(m.controller.appPrefs.terminalAlwaysVisible) { checked ->
