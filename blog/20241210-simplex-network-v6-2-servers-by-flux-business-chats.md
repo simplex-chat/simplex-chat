@@ -62,7 +62,7 @@ This can be done manually, or you can automate these conversations using bots th
 
 This has been a long-standing complaint from the users: *why does the app opens conversations on the last message, and not on the first unread message*?
 
-This is how it works now in Android and desktop apps, and will soon be done in the iOS app too. 
+Android and desktop apps now open the chat on the first unread message. It will soon be done in the iOS app too.
 
 Also, the app can scroll to the replied message anywhere in the conversation (when you tap it), even if it was sent a very long time ago.
 
@@ -72,7 +72,7 @@ This is a small but important change - you can now see who reacted to your messa
 
 ### Improving notifications in iOS app
 
-iOS notifications in a decentralized network is a complex problems. We [support iOS notifications](./20220404-simplex-chat-instant-notifications.md#our-ios-approach-has-one-trade-off) from early versions of the app, focussing on preserving privacy as much as possible. But the reliability of notifications was not good enough.
+iOS notifications in a decentralized network is a complex problems. We [support iOS notifications](./20220404-simplex-chat-instant-notifications.md#ios-notifications-require-a-server) from early versions of the app, focussing on preserving privacy as much as possible. But the reliability of notifications was not good enough.
 
 We solved several problems of notification delivery in this release:
 - messaging servers no longer lose notifications while notification servers are restarted.
