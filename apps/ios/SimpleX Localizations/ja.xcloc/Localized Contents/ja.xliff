@@ -2478,9 +2478,9 @@ This is your own one-time link!</source>
         <source>Do not use credentials with proxy.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't create address" xml:space="preserve">
+      <trans-unit id="Don't create address" xml:space="preserve" approved="no">
         <source>Don't create address</source>
-        <target>アドレスを作成しないでください</target>
+        <target state="translated">アドレスを作成しない</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't enable" xml:space="preserve">
@@ -3760,9 +3760,9 @@ More improvements are coming soon!</source>
         <target>インストール [ターミナル用SimpleX Chat](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Instant" xml:space="preserve">
+      <trans-unit id="Instant" xml:space="preserve" approved="no">
         <source>Instant</source>
-        <target>すぐに</target>
+        <target state="translated">即時</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve">
@@ -4298,8 +4298,9 @@ This is your link for group %@!</source>
         <source>Migrate device</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrate from another device" xml:space="preserve">
+      <trans-unit id="Migrate from another device" xml:space="preserve" approved="no">
         <source>Migrate from another device</source>
+        <target state="translated">別の端末から移行</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrate here" xml:space="preserve">
@@ -5083,8 +5084,9 @@ Error: %@</source>
         <source>Private message routing 🚀</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private notes" xml:space="preserve">
+      <trans-unit id="Private notes" xml:space="preserve" approved="no">
         <source>Private notes</source>
+        <target state="translated">プライベートノート</target>
         <note>name of notes to self</note>
       </trans-unit>
       <trans-unit id="Private routing" xml:space="preserve">
@@ -7537,8 +7539,9 @@ Repeat join request?</source>
         <target>ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve" approved="no">
         <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <target state="translated">設定でSimpleXの連絡先に表示させることができます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now chat with %@" xml:space="preserve">
