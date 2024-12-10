@@ -2233,4 +2233,8 @@
     <string name="display_name_requested_to_connect">被请求连接</string>
     <string name="onboarding_network_about_operators">关于运营者</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat 和 Flux 达成协议将 Flux 运营的服务器包括在应用中。</string>
+    <string name="sync_connection_confirm">修复</string>
+    <string name="sync_connection_question">修复连接？</string>
+    <string name="encryption_renegotiation_in_progress">正进行加密重协商。</string>
+    <string name="sync_connection_desc">连接需要加密重协商。</string>
 </resources>
