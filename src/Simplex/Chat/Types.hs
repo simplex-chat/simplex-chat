@@ -1639,7 +1639,6 @@ data CommandData = CommandData
 
 data ChatTag = ChatTag
   { chatTagId :: Int64,
-    userId :: UserId,
     chatTagText :: Text,
     chatTagEmoji :: Text,
     contactId :: Maybe ContactId,
