@@ -46,7 +46,7 @@ We use SimpleX Chat to provide support to SimpleX Chat users, and we also see so
 
 One of the problem of providing support via general purpose messengers is that the customers don't see who they talk to, as they can in all dedicated support systems.
 
-It is not possible in most messengers, including SimpleX Chat prior to v6.2 - every new customer joins a one-to-one conversation, where the customers see that they talk to a company, not knowing if it's a bot or a human.
+It is not possible in most messengers, including SimpleX Chat prior to v6.2 - every new customer joins a one-to-one conversation, where the customers see that they talk to a company, not knowing who they talk to, and if it's a bot or a human.
 
 The new business chats in SimpleX Chat solve this problem: to use them enable the toggle under the contact address in your chat profile. It is safe to do, and you can always toggle it off, if needed - the address itself does not change.
 
