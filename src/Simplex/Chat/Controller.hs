@@ -294,11 +294,14 @@ data ChatCommand
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
+  | APIGetChatTags
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APITagChat ChatRef ChatTagData
+  | APIUntagChat ChatTagId
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
@@ -587,6 +590,7 @@ data ChatResponse
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
+  | CRChatTags {user :: User, chatTags :: [ChatTag]}
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
@@ -617,6 +621,8 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
+  | CRChatTagged {user :: User, chatTags :: [ChatTag]}
+  | CRChatUntagged {user :: User, chatTagId :: ChatTagId}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
@@ -1067,6 +1073,16 @@ instance FromJSON ComposedMessage where
     pure ComposedMessage {fileSource, quotedItemId, msgContent}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+
+data ChatTagData = ChatTagData
+  { emoji :: Text,
+    text :: Text
+  }
+  deriving (Show)
+
+instance FromJSON ChatTagData where
+  parseJSON (J.Object v) = ChatTagData <$> v .: "emoji" <*> v .: "text"
+  parseJSON invalid = JT.prependFailure "bad ChatTagData, " (JT.typeMismatch "Object" invalid)
 
 data NtfConn = NtfConn
   { user_ :: Maybe User,
@@ -1603,3 +1619,5 @@ $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
+
+$(JQ.deriveToJSON defaultJSON ''ChatTagData)
