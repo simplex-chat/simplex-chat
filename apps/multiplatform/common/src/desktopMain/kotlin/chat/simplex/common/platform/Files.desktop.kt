@@ -1,9 +1,16 @@
 package chat.simplex.common.platform
 
+import SectionItemView
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.*
-import chat.simplex.common.views.helpers.AlertManager
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.chatlist.acceptContactRequest
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import java.awt.Desktop
 import java.io.*
@@ -75,8 +82,41 @@ actual class FileChooserLauncher actual constructor() {
         res = File(res, input)
       }
     }
-    onResult(res?.toURI())
+    if (res == null) {
+      onResult(null)
+    } else if (!res.exists()) {
+      onResult(res.toURI())
+    } else {
+      showSaveRenameFileAlert(res, onResult)
+    }
   }
+}
+
+private fun showSaveRenameFileAlert(file: File, onResult: (URI?) -> Unit) {
+  val newFileName = uniqueCombine(file.name, file.parentFile.absoluteFile)
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.file_already_exists),
+    text = generalGetString(MR.strings.what_would_you_like_to_do_with_file),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onResult(file.toURI())
+        }) {
+          Text(generalGetString(MR.strings.overwrite_file), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          onResult(File(file.parentFile, newFileName).toURI())
+        }) {
+          Text(generalGetString(MR.strings.save_file_as).format(newFileName), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    },
+    onDismissRequest = {
+      onResult(null)
+    }
+  )
 }
 
 actual class FileChooserMultipleLauncher actual constructor() {
