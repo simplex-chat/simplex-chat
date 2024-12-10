@@ -2171,7 +2171,7 @@
     <string name="remote_hosts_section">Távoli hordozható eszközök</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi eszközök</b>: engedélyezze az automatikus indítást a rendszerbeállításokban, hogy az értesítések működjenek.]]></string>
     <string name="maximum_message_size_reached_forwarding">A küldéshez másolhatja és csökkentheti az üzenet méretét.</string>
-    <string name="add_your_team_members_to_conversations">Adja hozzá csapattagjait a beszélgetésekhez.</string>
+    <string name="add_your_team_members_to_conversations">Adja hozzá a kollégáit a beszélgetésekhez.</string>
     <string name="business_address">Üzleti cím</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Az összes üzenet és fájl <b>végpontok közötti titkosítással</b>, a közvetlen üzenetek továbbá kvantumálló titkosítással is rendelkeznek.]]></string>
     <string name="how_it_helps_privacy">Hogyan segíti az adatvédelmet</string>
@@ -2183,7 +2183,7 @@
     <string name="button_delete_chat">Csevegés törlése</string>
     <string name="invite_to_chat_button">Meghívás a csevegésbe</string>
     <string name="button_add_friends">Barátok hozzáadása</string>
-    <string name="button_add_team_members">Csapattagok hozzáadása</string>
+    <string name="button_add_team_members">Kollégák hozzáadása</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">A csevegés minden tag számára törlésre kerül - ezt a műveletet nem lehet visszavonni!</string>
     <string name="delete_chat_for_self_cannot_undo_warning">A csevegés törlésre kerül az Ön számára - ezt a műveletet nem lehet visszavonni!</string>
     <string name="delete_chat_question">Csevegés törlése?</string>
