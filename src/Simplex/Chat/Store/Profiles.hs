@@ -892,3 +892,35 @@ setUserUIThemes :: DB.Connection -> User -> Maybe UIThemeEntityOverrides -> IO (
 setUserUIThemes db User {userId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)
+
+-- Creates a new tag for a given emoji and text if it doesn't exist
+createChatTag :: DB.Connection -> User -> Text -> Text -> IO ChatTagId
+createChatTag db User {userId} emoji text = Nothing
+
+-- Creates a tag for a given contact.
+tagChatContact :: DB.Connection -> Contact -> ChatTagId -> IO ()
+tagChatContact db Contact {contactId} tId = Nothing
+
+-- Create a tag for a given group.
+tagChatGroup :: DB.Connection -> User -> GroupInfo -> ChatTagId -> IO ()
+tagChatGroup db User {userId} GroupInfo {groupId} tId = Nothing
+
+-- Deletes a chat tag. To be called by untag
+deleteChatTag :: DB.Connection -> User -> ChatTagId -> IO ()
+deleteChatTag db User {userId} chatTagId = Nothing
+
+-- Remove a tag for a given group. If no tags left for the chat tag id, delete the tag.
+untagChatGroup :: DB.Connection -> User -> GroupInfo -> ChatTagId -> IO ()
+untagChatGroup db User {userId} GroupInfo {groupId} tId = Nothing
+
+-- Remove a tag for a given contact. If no tags left for the chat tag id, delete the tag.
+untagChatContact :: DB.Connection -> Contact -> ChatTagId -> IO ()
+untagChatContact db Contact {contactId} tId = Nothing
+
+-- Gets all chat tags for a given user
+getUserChatTags :: DB.Connection -> User -> IO [ChatTag]
+getUserChatTags db User {userId} = Nothing
+
+-- Gets the total number of tags with associated chats for a given user and tag. To be used to determine if a tag can be deleted when group or contact is untagged.
+getTagChatsCount :: DB.Connection -> User -> ChatTagId -> IO Int
+getTagChatsCount db User {userId} = Nothing
