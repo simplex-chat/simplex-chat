@@ -530,9 +530,9 @@
 &lt;p&gt;&lt;a href="%@"&gt;Csatlakozzon hozzám a SimpleX Chaten keresztül&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
-      <trans-unit id="A few more things" xml:space="preserve">
+      <trans-unit id="A few more things" xml:space="preserve" approved="no">
         <source>A few more things</source>
-        <target>Még néhány dolog</target>
+        <target state="translated">Néhány további dolog</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve">
