@@ -660,9 +660,9 @@
         <target>Kiszolgáló hozzáadása QR-kód beolvasásával.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add team members" xml:space="preserve">
+      <trans-unit id="Add team members" xml:space="preserve" approved="no">
         <source>Add team members</source>
-        <target>Csapattagok hozzáadása</target>
+        <target state="translated">Kollégák hozzáadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -675,9 +675,9 @@
         <target>Üdvözlőüzenet hozzáadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve" approved="no">
         <source>Add your team members to the conversations.</source>
-        <target>Adja hozzá csapattagjait a beszélgetésekhez.</target>
+        <target state="translated">Adja hozzá a kollégáit a beszélgetésekhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve">
