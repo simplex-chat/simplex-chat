@@ -1619,6 +1619,11 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     )
 }
 
+public enum ChatLandingSection: String, Decodable, Hashable {
+    case latest = "latest"
+    case unread = "unread"
+}
+
 public enum ContactStatus: String, Decodable, Hashable {
     case active = "active"
     case deleted = "deleted"
