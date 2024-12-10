@@ -3,7 +3,7 @@ layout: layouts/article.html
 title: "SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps"
 date: 2024-12-10
 previewBody: blog_previews/20241210.html
-image: images/20241210-operators.png
+image: images/20241210-operators-1.png
 permalink: "/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html"
 ---
 
@@ -22,7 +22,7 @@ What's new in v6.2:
 
 ### SimpleX Chat and Flux improve metadata privacy in SimpleX network
 
-<img src="./images/20241210-operators-2.png" width=288 class="float-to-right"> <img src="./images/20241210-operators-1.png" width=288 class="float-to-right">
+<img src="./images/20241210-operators-1.png" width=288 class="float-to-right"> <img src="./images/20241210-operators-2.png" width=288 class="float-to-right">
 
 SimpleX Chat and [Flux](https://runonflux.com) (Influx Technology Limited) made an agreement to include messaging and file servers operated by Flux into the app.
 
