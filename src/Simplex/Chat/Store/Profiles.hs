@@ -71,11 +71,11 @@ module Simplex.Chat.Store.Profiles
     getCommandDataByCorrId,
     setUserUIThemes,
     createChatTag,
-    tagChatContact,
-    tagChatGroup,
+    tagDirectChat,
+    tagGroupChat,
     deleteChatTag,
-    untagChatGroup,
-    untagChatContact,
+    untagGroupChat,
+    untagDirectChat,
     getUserChatTags,
     getTagChatsCount,
   )
@@ -901,45 +901,83 @@ setUserUIThemes db User {userId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)
 
--- Creates a new tag for a given emoji and text if it doesn't exist
 createChatTag :: DB.Connection -> User -> Text -> Text -> IO ChatTagId
 createChatTag db User {userId} emoji text = do
-  putStrLn $ "Creating tag " ++ show emoji ++ show text ++ " for user " ++ show userId
-  pure 1
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_tags (user_id, chat_tag_emoji, chat_tag_text)
+      VALUES (?,?,?)
+    |]
+    (userId, emoji, text)
+  insertedRowId db
 
--- Creates a tag for a given contact.
-tagChatContact :: DB.Connection -> Contact -> ChatTagId -> IO ()
-tagChatContact db Contact {contactId} tId =
-  putStrLn $ "Tagging contact " ++ show contactId ++ " with tag " ++ show tId
+tagDirectChat :: DB.Connection -> ContactId -> ChatTagId -> IO ()
+tagDirectChat db contactId tId =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_tags_chats (contact_id, chat_tag_id)
+      VALUES (?,?)
+    |]
+    (contactId, tId)
 
--- Create a tag for a given group.
-tagChatGroup :: DB.Connection -> GroupInfo -> ChatTagId -> IO ()
-tagChatGroup db GroupInfo {groupId} tId =
-  putStrLn $ "Tagging group " ++ show groupId ++ " with tag " ++ show tId
+tagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
+tagGroupChat db groupId tId =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_tags_chats (group_id, chat_tag_id)
+      VALUES (?,?)
+    |]
+    (groupId, tId)
 
--- Deletes a chat tag. To be called by untag
 deleteChatTag :: DB.Connection -> User -> ChatTagId -> IO ()
 deleteChatTag db User {userId} tId =
-  putStrLn $ "Deleted tag for user " ++ show userId ++ " tag id " ++ show tId
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_tags
+      WHERE user_id = ? AND chat_tag_id = ?
+    |]
+    (userId, tId)
 
--- Remove a tag for a given group. If no tags left for the chat tag id, delete the tag.
-untagChatGroup :: DB.Connection -> GroupInfo -> ChatTagId -> IO ()
-untagChatGroup db GroupInfo {groupId} tId =
-  putStrLn $ "Untagging group " ++ show groupId ++ " tag id " ++ show tId
+untagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
+untagGroupChat db groupId tId =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_tags_chats
+      WHERE group_id = ? AND chat_tag_id = ?
+    |]
+    (groupId, tId)
 
--- Remove a tag for a given contact. If no tags left for the chat tag id, delete the tag.
-untagChatContact :: DB.Connection -> Contact -> ChatTagId -> IO ()
-untagChatContact db Contact {contactId} tId =
-  putStrLn $ "Untagging contact " ++ show contactId ++ " tag id " ++ show tId
+untagDirectChat :: DB.Connection -> ContactId -> ChatTagId -> IO ()
+untagDirectChat db contactId tId =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_tags_chats
+      WHERE contact_id = ? AND chat_tag_id = ?
+    |]
+    (contactId, tId)
 
--- Gets all chat tags for a given user
 getUserChatTags :: DB.Connection -> User -> IO [ChatTag]
-getUserChatTags db User {userId} = do
-  putStrLn $ "Getting all tags for user" ++ show userId
-  pure []
+getUserChatTags db User {userId} =
+  map toChatTag
+    <$> DB.query
+      db
+      [sql|
+        SELECT t.chat_tag_id, t.chat_tag_emoji, t.chat_tag_text, ct.contact_id, ct.group_id
+        FROM chat_tags_chats ct
+        JOIN chat_tags t ON ct.chat_tag_id = t.chat_tag_id
+        WHERE t.user_id = ?
+      |]
+      (Only userId)
+  where
+    toChatTag :: (ChatTagId, Text, Text, Maybe ContactId, Maybe GroupId) -> ChatTag
+    toChatTag (chatTagId, chatTagEmoji, chatTagText, contactId, groupId) = ChatTag {chatTagId, chatTagEmoji, chatTagText, contactId, groupId}
 
--- Gets the total number of tags with associated chats for a given user and tag. To be used to determine if a tag can be deleted when group or contact is untagged.
-getTagChatsCount :: DB.Connection -> User -> ChatTagId -> IO Int
-getTagChatsCount db User {userId} tagId = do
-  putStrLn $ "Getting tag chats count for user " ++ show userId ++ " and tag " ++ show tagId
-  pure 0
+getTagChatsCount :: DB.Connection -> ChatTagId -> IO Int
+getTagChatsCount db tId =
+  fromOnly . head <$> DB.query db "SELECT COUNT(*) FROM chat_tags_chats WHERE chat_tag_id = ?" (Only tId)

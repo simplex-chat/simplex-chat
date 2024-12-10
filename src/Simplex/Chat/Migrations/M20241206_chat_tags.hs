@@ -23,15 +23,19 @@ CREATE TABLE chat_tags_chats (
   UNIQUE(chat_tag_id, contact_id)
 );
 
-CREATE INDEX idx_chat_tags_user_id ON chat_tags_chat(user_id);
+CREATE INDEX idx_chat_tags_user_id ON chat_tags(user_id);
+CREATE INDEX idx_chat_tags_chat_tag_id ON chat_tags(chat_tag_id);
+CREATE INDEX idx_chat_tags_chats_chat_tag_id ON chat_tags_chats(chat_tag_id);
+CREATE INDEX idx_chat_tags_user_id_chat_tag_id ON chat_tags(user_id, chat_tag_id);
 |]
 
 down_m20241206_chat_tags :: Query
 down_m20241206_chat_tags =
   [sql|
 DROP INDEX idx_chat_tags_user_id;
-DROP INDEX idx_chat_tags_user_id_contact_id;
-DROP INDEX idx_chat_tags_group_id_contact_id;
+DROP INDEX idx_chat_tags_chat_tag_id;
+DROP INDEX idx_chat_tags_chats_chat_tag_id;
+DROP INDEX idx_chat_tags_user_id_chat_tag_id;
 
 DROP TABLE chat_tags_chats
 DROP TABLE chat_tags;
