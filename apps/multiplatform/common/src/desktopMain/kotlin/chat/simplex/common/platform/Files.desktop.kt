@@ -93,7 +93,6 @@ actual class FileChooserLauncher actual constructor() {
 }
 
 private fun showSaveRenameFileAlert(file: File, onResult: (URI?) -> Unit) {
-  val newFileName = uniqueCombine(file.name, file.parentFile.absoluteFile)
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.file_already_exists),
     text = generalGetString(MR.strings.what_would_you_like_to_do_with_file),
@@ -107,9 +106,9 @@ private fun showSaveRenameFileAlert(file: File, onResult: (URI?) -> Unit) {
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          onResult(File(file.parentFile, newFileName).toURI())
+          onResult(null)
         }) {
-          Text(generalGetString(MR.strings.save_file_as).format(newFileName), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
     },
