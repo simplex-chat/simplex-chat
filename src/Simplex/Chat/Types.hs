@@ -1637,6 +1637,15 @@ data CommandData = CommandData
   }
   deriving (Show)
 
+data ChatTag = ChatTag
+  { chatTagId :: Int64,
+    chatTagText :: Text,
+    chatTagEmoji :: Text,
+    contactId :: Maybe ContactId,
+    groupId :: Maybe GroupId
+  }
+  deriving (Show)
+
 -- ad-hoc type for data required for XGrpMemIntro continuation
 data XGrpMemIntroCont = XGrpMemIntroCont
   { groupId :: GroupId,
@@ -1791,3 +1800,5 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
+
+$(JQ.deriveJSON defaultJSON ''ChatTag)

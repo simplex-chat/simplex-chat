@@ -848,6 +848,9 @@ processChatCommand' vr = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
+  APIGetChatTags -> withUser $ \user -> do
+    tags <- withFastStore' (`getUserChatTags` user)
+    pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
@@ -895,6 +898,30 @@ processChatCommand' vr = \case
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  APICreateChatTag (ChatRef cType chatId) (ChatTagData emoji text) -> withUser $ \user -> withFastStore $ \db -> case cType of
+    CTDirect -> do
+      ctId <- liftIO $ createChatTag db user emoji text
+      tagDirectChat' db user chatId ctId
+    CTGroup -> do
+      ctId <- liftIO $ createChatTag db user emoji text
+      tagGroupChat' db user chatId ctId
+    _ -> pure $ chatCmdError (Just user) "not supported"
+  APITagChat (ChatRef cType chatId) ctId -> withUser $ \user -> withFastStore $ \db -> case cType of
+    CTDirect -> tagDirectChat' db user chatId ctId
+    CTGroup -> tagGroupChat' db user chatId ctId
+    _ -> pure $ chatCmdError (Just user) "not supported"
+  APIUntagChat (ChatRef cType chatId) ctId -> withUser $ \user -> withFastStore $ \db -> case cType of
+    CTDirect -> do
+      _ <- liftIO $ untagDirectChat db chatId ctId
+      _ <- deleteChatTagIfEmpty db user ctId
+      (allTags, chatTags) <- updatedDirectChatTags db user chatId
+      pure $ CRChatUntagged user allTags chatTags
+    CTGroup -> do
+      _ <- liftIO $ untagGroupChat db chatId ctId
+      _ <- deleteChatTagIfEmpty db user ctId
+      (allTags, chatTags) <- updatedGroupChatTags db user chatId
+      pure $ CRChatUntagged user allTags chatTags
+    _ -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatItems folderId cms -> withUser $ \user ->
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
@@ -7460,6 +7487,35 @@ closeFileHandle fileId files = do
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
+tagGroupChat' :: DB.Connection -> User -> GroupId -> ChatTagId -> ExceptT StoreError IO ChatResponse
+tagGroupChat' db user gId ctId = do
+  liftIO $ tagGroupChat db gId ctId
+  (allTags, chatTags) <- updatedGroupChatTags db user gId
+  pure $ CRChatTagged user allTags chatTags
+
+updatedGroupChatTags :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ([ChatTag], [ChatTag])
+updatedGroupChatTags db user gId = do
+  allTags <- liftIO $ getUserChatTags db user
+  let (groupTags, otherTags) = partition (\ChatTag {groupId} -> groupId == Just gId) allTags
+  pure (groupTags, otherTags)
+
+deleteChatTagIfEmpty :: DB.Connection -> User -> ChatTagId -> ExceptT StoreError IO ()
+deleteChatTagIfEmpty db user ctId = do
+  tagChatsCount <- liftIO $ getTagChatsCount db ctId
+  when (tagChatsCount == 0) $ liftIO $ deleteChatTag db user ctId
+
+tagDirectChat' :: DB.Connection -> User -> ContactId -> ChatTagId -> ExceptT StoreError IO ChatResponse
+tagDirectChat' db user cId ctId = do
+  liftIO $ tagDirectChat db cId ctId
+  (allTags, chatTags) <- updatedDirectChatTags db user cId
+  pure $ CRChatTagged user allTags chatTags
+
+updatedDirectChatTags :: DB.Connection -> User -> ContactId -> ExceptT StoreError IO ([ChatTag], [ChatTag])
+updatedDirectChatTags db user cId = do
+  allTags <- liftIO $ getUserChatTags db user
+  let (directTags, otherTags) = partition (\ChatTag {contactId} -> contactId == Just cId) allTags
+  pure (directTags, otherTags)
+
 deleteMembersConnections :: User -> [GroupMember] -> CM ()
 deleteMembersConnections user members = deleteMembersConnections' user members False
 
@@ -8392,6 +8448,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
+      "/_get tags" $> APIGetChatTags,
       "/_get chats "
         *> ( APIGetChats
               <$> A.decimal
@@ -8403,6 +8460,9 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
+      "/_create tag " *> (APICreateChatTag <$> chatRefP <* A.space <*> jsonP),
+      "/_tag " *> (APITagChat <$> chatRefP <* A.space <*> A.decimal),
+      "/_untag " *> (APIUntagChat <$> chatRefP <* A.space <*> A.decimal),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
