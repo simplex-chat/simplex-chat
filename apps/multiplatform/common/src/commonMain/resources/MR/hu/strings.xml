@@ -106,7 +106,7 @@
     <string name="v5_1_self_destruct_passcode_descr">A jelkód megadása után az összes adat törlésre kerül.</string>
     <string name="icon_descr_video_asked_to_receive">Felkérték a videó fogadására</string>
     <string name="block_member_button">Letiltás</string>
-    <string name="v5_2_more_things">Még néhány dolog</string>
+    <string name="v5_2_more_things">Néhány további dolog</string>
     <string name="authentication_cancelled">Hitelesítés visszavonva</string>
     <string name="allow_to_send_files">A fájlok- és a médiatartalmak küldése engedélyezve van.</string>
     <string name="users_delete_all_chats_deleted">Az összes csevegés és üzenet törlésre kerül - ez a művelet nem vonható vissza!</string>
