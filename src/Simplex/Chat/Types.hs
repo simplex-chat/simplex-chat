@@ -1641,12 +1641,7 @@ data ChatTag = ChatTag
   { chatTagId :: Int64,
     userId :: UserId,
     chatTagText :: Text,
-    chatTagEmoji :: Text
-  }
-  deriving (Show)
-
-data ChatTagChat = ChatTagChat
-  { chatTagId :: Int64,
+    chatTagEmoji :: Text,
     contactId :: Maybe ContactId,
     groupId :: Maybe GroupId
   }
