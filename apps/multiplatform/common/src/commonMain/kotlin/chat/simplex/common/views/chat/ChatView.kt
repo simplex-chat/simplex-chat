@@ -1979,7 +1979,7 @@ private fun BoxScope.BottomEndFloatingButton(
       )
     }
   }
-  showButtonWithArrow.value -> {
+  showButtonWithArrow.value && !animatedScrollingInProgress.value -> {
     FloatingActionButton(
       onClick = onClick,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
