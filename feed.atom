@@ -3169,7 +3169,7 @@ A few bugs and UX issues but great foundation. Love that it’s public domain.&l
 &lt;/ul&gt;
 &lt;h2 id=&quot;whats-new-in-v62&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v6.2&lt;/h2&gt;
 &lt;h3 id=&quot;simplex-chat-and-flux-improve-metadata-privacy-in-simplex-network&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat and Flux improve metadata privacy in SimpleX network&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20241210-operators-2.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20241210-operators-1.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20241210-operators-1.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20241210-operators-2.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;SimpleX Chat and &lt;a href=&quot;https://runonflux.com/&quot;&gt;Flux&lt;/a&gt; (Influx Technology Limited) made an agreement to include messaging and file servers operated by Flux into the app.&lt;/p&gt;
 &lt;p&gt;SimpleX network is decentralized by design, but in the users of the previous app versions had to find other servers online or host servers themselves to use any other servers than operated by us.&lt;/p&gt;
 &lt;p&gt;Now all users can choose between servers of two companies, use both of them, and continue using any other servers they host or available online.&lt;/p&gt;
