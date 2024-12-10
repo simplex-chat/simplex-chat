@@ -8,7 +8,7 @@ When business uses a communication system for support and other business scenari
 
 It's important for the business:
 - to have bot accept incoming requests.
-- to be able to add other people to the coversation, as transfer and as escalation.
+- to be able to add other people to the conversation, as transfer and as escalation.
 
 This is how all messaging support system works, and how WeChat business accounts work, but no messenger provides it.
 
