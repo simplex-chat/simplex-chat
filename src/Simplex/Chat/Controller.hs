@@ -300,8 +300,9 @@ data ChatCommand
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
-  | APITagChat ChatRef ChatTagData
-  | APIUntagChat ChatTagId
+  | APICreateChatTag ChatRef ChatTagData
+  | APITagChat ChatRef ChatTagId
+  | APIUntagChat ChatRef ChatTagId
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode

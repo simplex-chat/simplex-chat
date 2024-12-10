@@ -848,6 +848,9 @@ processChatCommand' vr = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
+  APIGetChatTags -> withUser $ \user -> do
+    tags <- withFastStore' (`getUserChatTags` user)
+    pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
@@ -895,6 +898,12 @@ processChatCommand' vr = \case
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  APICreateChatTag _ _ -> withUser $ \user -> do
+    pure $ chatCmdError (Just user) "not implemented"
+  APITagChat _ _ -> withUser $ \user -> do
+    pure $ chatCmdError (Just user) "not implemented"
+  APIUntagChat _ _ -> withUser $ \user -> do
+    pure $ chatCmdError (Just user) "not implemented"
   APICreateChatItems folderId cms -> withUser $ \user ->
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
@@ -8392,6 +8401,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
+      "/_get tags" $> APIGetChatTags,
       "/_get chats "
         *> ( APIGetChats
               <$> A.decimal
@@ -8403,6 +8413,9 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
+      "/_create tag " *> (APICreateChatTag <$> chatRefP <* A.space <*> jsonP),
+      "/_tag " *> (APITagChat <$> chatRefP <* A.space <*> A.decimal),
+      "/_untag " *> (APIUntagChat <$> chatRefP <* A.space <*> A.decimal),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),

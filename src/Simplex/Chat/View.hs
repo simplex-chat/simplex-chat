@@ -96,6 +96,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
+  CRChatTags u tags -> ttyUser u $ [viewJSON tags]
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
@@ -149,6 +150,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     | otherwise -> []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
+  CRChatTagged u _ _ -> ttyUser u ["chat tagged"]
+  CRChatUntagged u _ _ -> ttyUser u ["chat untagged"]
   CRChatItemsDeleted u deletions byUser timed -> case deletions of
     [ChatItemDeletion (AChatItem _ _ chat deletedItem) toItem] ->
       ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
