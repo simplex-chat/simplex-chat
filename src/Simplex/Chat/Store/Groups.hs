@@ -1502,12 +1502,15 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
       GroupProfile {displayName, fullName, description, image, groupPreferences}
 
 getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfo db vr User {userId, userContactId} groupId =
-  ExceptT . firstRow (toGroupInfo vr userContactId) (SEGroupNotFound groupId) $
-    DB.query
-      db
-      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-      (groupId, userId, userContactId)
+getGroupInfo db vr User {userId, userContactId} groupId = do
+  info <-
+    ExceptT . firstRow (toGroupInfo vr userContactId) (SEGroupNotFound groupId) $
+      DB.query
+        db
+        (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+        (groupId, userId, userContactId)
+  chatTags <- liftIO $ getGroupChatTags db groupId
+  pure (info :: GroupInfo) {chatTags}
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
