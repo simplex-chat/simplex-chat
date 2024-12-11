@@ -2124,4 +2124,12 @@
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1 kerelik bağlantı <i>sadece bir kişiyle</i> kullanılabilir - yüz yüze veya herhangi bir mesajlaşma programı aracılığıyla paylaşın]]></string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Aşağıdaki operatör(ler) için koşullar zaten kabul edilmiştir: <b>%s</b>.]]></string>
     <string name="operators_conditions_accepted_for"><![CDATA[Şart(lar) operatör(ler) için kabul edilir: <b>%s</b>.]]></string>
+    <string name="button_add_friends">Arkadaş ekle</string>
+    <string name="v6_2_business_chats">İş konuşmaları</string>
+    <string name="button_add_team_members">Takım üyesi ekle</string>
+    <string name="display_name_accepted_invitation">kabul edilmiş davet</string>
+    <string name="business_address">İş adresi</string>
+    <string name="add_your_team_members_to_conversations">Takım üyelerini konuşmalara ekle</string>
+    <string name="onboarding_notifications_mode_service_desc_short">Uygulama her zaman arka planda çalışır</string>
+    <string name="onboarding_network_about_operators">Operatörler hakkında</string>
 </resources>
