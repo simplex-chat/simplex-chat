@@ -850,7 +850,7 @@ getContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT Stor
 getContact db vr user contactId = do
   ct <- getContact_ db vr user contactId False
   chatTags <- liftIO $ getDirectChatTags db contactId
-  pure (ct :: Contact) {chatTags = chatTags}
+  pure (ct :: Contact) {chatTags}
 
 getContact_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
 getContact_ db vr user@User {userId} contactId deleted =
