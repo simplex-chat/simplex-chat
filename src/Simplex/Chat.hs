@@ -848,7 +848,7 @@ processChatCommand' vr = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
-  APIGetChatTags -> withUser $ \user -> do
+  APIGetChatTags userId -> withUserId' userId $ \user -> do
     tags <- withFastStore' (`getUserChatTags` user)
     pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
@@ -8421,7 +8421,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
-      "/_get tags" $> APIGetChatTags,
+      "/_get tags" *> (APIGetChatTags <$> A.decimal),
       "/_get chats "
         *> ( APIGetChats
               <$> A.decimal
