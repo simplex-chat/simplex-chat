@@ -251,6 +251,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         chatTs = Just currentTs,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
+        chatTags = [],
         uiThemes = Nothing,
         chatDeleted = False,
         customData = Nothing
@@ -819,6 +820,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
             chatTs = Just createdAt,
             contactGroupMemberId = Nothing,
             contactGrpInvSent = False,
+            chatTags = [],
             uiThemes = Nothing,
             chatDeleted = False,
             customData = Nothing

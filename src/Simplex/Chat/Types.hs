@@ -160,6 +160,8 @@ type ContactId = Int64
 
 type ProfileId = Int64
 
+type ChatTagId = Int64
+
 data Contact = Contact
   { contactId :: ContactId,
     localDisplayName :: ContactName,
@@ -176,6 +178,7 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
+    chatTags :: [ChatTagId],
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
@@ -380,6 +383,7 @@ data GroupInfo = GroupInfo
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
+    chatTags :: [ChatTagId],
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
@@ -1640,9 +1644,7 @@ data CommandData = CommandData
 data ChatTag = ChatTag
   { chatTagId :: Int64,
     chatTagText :: Text,
-    chatTagEmoji :: Text,
-    contactId :: Maybe ContactId,
-    groupId :: Maybe GroupId
+    chatTagEmoji :: Text
   }
   deriving (Show)
 

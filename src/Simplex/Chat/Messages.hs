@@ -992,8 +992,6 @@ instance StrEncoding GroupSndStatus where
 
 type ChatItemId = Int64
 
-type ChatTagId = Int64
-
 type ChatItemTs = UTCTime
 
 data SChatType (c :: ChatType) where

@@ -591,7 +591,7 @@ data ChatResponse
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
-  | CRChatTags {user :: User, chatTags :: [ChatTag]}
+  | CRChatTags {user :: User, userTags :: [ChatTag]}
   | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
@@ -622,7 +622,7 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRChatTagged {user :: User, userTags :: [ChatTag], chatTags :: [ChatTag]}
+  | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTag]}
   | CRChatUntagged {user :: User, userTags :: [ChatTag], chatTags :: [ChatTag]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
