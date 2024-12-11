@@ -313,6 +313,13 @@ func apiGetChatsAsync() async throws -> [ChatData] {
     return try apiChatsResponse(await chatSendCmd(.apiGetChats(userId: userId)))
 }
 
+func apiGetChatTags() async throws -> [ChatTag] {
+    let userId = try currentUserId("apiGetChatTags")
+    let r = await chatSendCmd(.apiGetChatTags(userId: userId))
+    if case let .chatTags(_, chatTags) = r { return chatTags }
+    throw r
+}
+
 private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     if case let .apiChats(_, chats) = r { return chats }
     throw r
@@ -366,6 +373,30 @@ func apiPlanForwardChatItems(type: ChatType, id: Int64, itemIds: [Int64]) async 
 func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
     let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
+}
+
+func apiCreateChatTag(type: ChatType, id: Int64, tag: ChatTagData) async throws -> ([ChatTag], [Int64]) {
+    let r = await chatSendCmd(.apiCreateChatTag(type: type, id: id, tag: tag))
+    if case let .tagsUpdated(_, userTags, chatTags) = r {
+        return (userTags, chatTags)
+    }
+    throw r
+}
+
+func apiTagChat(type: ChatType, id: Int64, tagId: Int64) async throws -> ([ChatTag], [Int64]) {
+    let r = await chatSendCmd(.apiTagChat(type: type, id: id, tagId: tagId))
+    if case let .tagsUpdated(_, userTags, chatTags) = r {
+        return (userTags, chatTags)
+    }
+    throw r
+}
+
+func apiUntagChat(type: ChatType, id: Int64, tagId: Int64) async throws -> ([ChatTag], [Int64]) {
+    let r = await chatSendCmd(.apiUntagChat(type: type, id: id, tagId: tagId))
+    if case let .chatUntagged(_, userTags, chatTags) = r {
+        return (userTags, chatTags)
+    }
+    throw r
 }
 
 func apiSendMessages(type: ChatType, id: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {

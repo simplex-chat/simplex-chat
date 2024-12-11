@@ -117,6 +117,7 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var scrollToSearchBar = false
     @State private var userPickerShown: Bool = false
+    @StateObject private var chatTagsModel = ChatTagsModel.shared
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
@@ -144,6 +145,7 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
+        .environmentObject(chatTagsModel)
         .modifier(
             Sheet(isPresented: $userPickerShown) {
                 UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
@@ -394,13 +396,13 @@ struct ChatListView: View {
             let s = searchString()
             return s == "" && !showUnreadAndFavorites
             ? chatModel.chats.filter { chat in
-                !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card
+                filterByTag(chat) && !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card
             }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
                 switch cInfo {
                 case let .direct(contact):
-                    return !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
+                    return filterByTag(chat) && !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
                         s == ""
                         ? filtered(chat)
                         : (viewNameContains(cInfo, s) ||
@@ -409,28 +411,49 @@ struct ChatListView: View {
                     )
                 case let .group(gInfo):
                     return s == ""
-                    ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
-                    : viewNameContains(cInfo, s)
+                    ? filterByTag(chat) && (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
+                    : filterByTag(chat) && viewNameContains(cInfo, s)
                 case .local:
-                    return s == "" || viewNameContains(cInfo, s)
+                    return filterByTag(chat) && (s == "" || viewNameContains(cInfo, s))
                 case .contactRequest:
-                    return s == "" || viewNameContains(cInfo, s)
+                    return filterByTag(chat) && (s == "" || viewNameContains(cInfo, s))
                 case let .contactConnection(conn):
-                    return s != "" && conn.localAlias.localizedLowercase.contains(s)
+                    return filterByTag(chat) && (s != "" && conn.localAlias.localizedLowercase.contains(s))
                 case .invalidJSON:
                     return false
                 }
             }
         }
-
+        
         func searchString() -> String {
             searchShowingSimplexLink ? "" : searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
         }
-
+        
         func filtered(_ chat: Chat) -> Bool {
             (chat.chatInfo.chatSettings?.favorite ?? false) ||
             chat.chatStats.unreadChat ||
             (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
+        }
+        
+        func filterByTag(_ chat: Chat) -> Bool {
+            if let tag = chatTagsModel.selectedTag {
+                switch tag {
+                case let .presetTag(_, _, filter):
+                    return filter(chat.chatInfo)
+                case let .chatTag(_, _, tagId):
+                    let cInfo = chat.chatInfo
+                    switch cInfo {
+                    case let .direct(contact):
+                        return contact.chatTags.contains(tagId)
+                    case let .group(gInfo):
+                        return gInfo.chatTags.contains(tagId)
+                    default:
+                        return false
+                    }
+                }
+            } else {
+                return true
+            }
         }
 
         func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
@@ -500,6 +523,7 @@ struct SubsStatusIndicator: View {
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -512,6 +536,7 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
+            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView() }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
@@ -602,6 +627,83 @@ struct ChatListSearchBar: View {
             filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
             filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )
+    }
+}
+
+enum ChatTagFilter: Identifiable, Equatable {
+    static func == (lhs: ChatTagFilter, rhs: ChatTagFilter) -> Bool {
+        switch (lhs, rhs) {
+        case let (.presetTag(icon1, activeIcon1, _), .presetTag(icon2, activeIcon2, _)):
+            return icon1 == icon2 && activeIcon1 == activeIcon2
+        case let (.chatTag(emoji1, text1, tagId1), .chatTag(emoji2, text2, tagId2)):
+            return emoji1 == emoji2 && text1 == text2 && tagId1 == tagId2
+        default:
+            return false
+        }
+    }
+    
+    case presetTag(icon: String, activeIcon: String, filter: (_ cInfo: ChatInfo) -> Bool)
+    case chatTag(emoji: String, text: String, tagId: Int64)
+
+    public var id: String {
+        switch self {
+        case let .presetTag(icon, _, _): "preset \(icon)"
+        case let .chatTag(emoji, _, _): "chatTag \(emoji)"
+        }
+    }
+}
+
+struct ChatTagsView: View {
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
+
+    var body: some View {
+        let tags = chatTagsModel.presetTags + chatTagsModel.tags
+        HStack {
+            ForEach(tags, id: \.id) { tag in
+                let current = chatTagsModel.selectedTag == tag
+                let color: Color = current ? .accentColor : .secondary
+                ZStack {
+                    switch tag {
+                    case let .presetTag(icon, activeIcon, _):
+                        Image(systemName: current ? activeIcon : icon)
+                            .foregroundColor(color)
+                    case let .chatTag(emoji, text, _):
+                        HStack(spacing: 4) {
+                            Text(emoji)
+                            ZStack {
+                                Text(text).fontWeight(.medium).foregroundColor(.clear)
+                                Text(text).fontWeight(current ? .medium : .regular).foregroundColor(color)
+                            }
+                        }
+                    }
+                }
+                .onTapGesture {
+                    if (chatTagsModel.selectedTag == tag) {
+                        chatTagsModel.selectedTag = nil
+                    } else {
+                        chatTagsModel.selectedTag = tag
+                    }
+                }
+            }
+        }.task {
+            getChatTags()
+        }
+    }
+    
+    private func getChatTags() {
+        Task {
+            do {
+                let chatTags = try await apiGetChatTags()
+                
+                await MainActor.run {
+                    self.chatTagsModel.tags = chatTags.map {
+                        .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
+                    }
+                }
+            } catch let error {
+                AlertManager.shared.showAlertMsg(title: "Error", message: "\(responseError(error))")
+            }
+        }
     }
 }
 

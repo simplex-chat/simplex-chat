@@ -122,6 +122,7 @@ struct ChatListNavLink: View {
                     markReadButton()
                     toggleFavoriteButton()
                     toggleNtfsButton(chat: chat)
+                    tagChatButton(chat)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     if !chat.chatItems.isEmpty {
@@ -140,6 +141,7 @@ struct ChatListNavLink: View {
                         deleteLabel
                     }
                     .tint(.red)
+                    untagChatButton(chat)
                 }
                 .frame(height: dynamicRowHeight)
             }
@@ -149,7 +151,7 @@ struct ChatListNavLink: View {
         .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
                 $0.content
-                    .presentationDetents([.fraction(0.4)])
+                    .presentationDetents([.fraction($0.fraction)])
             } else {
                 $0.content
             }
@@ -306,7 +308,41 @@ struct ChatListNavLink: View {
         }
         .tint(Color.orange)
     }
+    
+    private func tagChatButton(_ chat: Chat) -> some View {
+        Button {
+            sheet = SomeSheet(
+                content: {
+                    AnyView(
+                        ChatListTag(chat: chat)
+                    )
+                },
+                id: "tag sheet",
+                fraction: 0.7
+            )
+        } label: {
+            SwipeLabel(NSLocalizedString("Tag", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
+        }
+        .tint(Color.indigo)
+    }
 
+    private func untagChatButton(_ chat: Chat) -> some View {
+        Button {
+            sheet = SomeSheet(
+                content: {
+                    AnyView(
+                        ChatListTag(chat: chat, untag: true)
+                    )
+                },
+                id: "tag sheet",
+                fraction: 0.7
+            )
+        } label: {
+            SwipeLabel(NSLocalizedString("Untag", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
+        }
+        .tint(Color.yellow.opacity(0.8))
+    }
+    
     private func clearNoteFolderButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearNoteFolderAlert())
@@ -480,6 +516,163 @@ struct ChatListNavLink: View {
                 ItemsModel.shared.loadOpenChat(contact.id)
                 AlertManager.shared.showAlert(connReqSentAlert(.contact))
             }
+        }
+    }
+}
+
+struct ChatListTag: View {
+    var chat: Chat
+    var untag: Bool = false
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
+    @EnvironmentObject var m: ChatModel
+    @State private var emoji: String = ""
+    @State private var name: String = ""
+    
+    var chatTagsIds: [Int64] { chat.chatInfo.contact?.chatTags ?? chat.chatInfo.groupInfo?.chatTags ?? [] }
+    
+    var body: some View {
+        List {
+            if untag {
+                untagView()
+            } else {
+                tagView()
+            }
+        }
+    }
+    
+    @ViewBuilder private func tagView() -> some View {
+        Section {
+            TextField("Emoji..", text: $emoji)
+            TextField("Tag name...", text: $name)
+            Button {
+                createChatTag()
+            } label: {
+                Text("Create tag")
+            }
+        }
+        
+        let tagsToPick = chatTagsModel.tags.compactMap { tag in
+            if case let .chatTag(emoji, text, tagId) = tag, !chatTagsIds.contains(tagId) {
+                return (emoji, text, tagId)
+            } else {
+                return nil
+            }
+        }
+        
+        if !tagsToPick.isEmpty {
+            Section {
+                ForEach(tagsToPick, id: \.0) { tag in
+                    let (emoji, text, tagId) = tag
+                    Button {
+                        tagChat(tagId)
+                    } label: {
+                        Text("\(emoji) \(text)")
+                    }
+                }
+            } header: {
+                Text("Choose existing")
+            }
+        }
+    }
+    
+    @ViewBuilder private func untagView() -> some View {
+        Section {
+            ForEach(chatTagsModel.tags) { tag in
+                if case let .chatTag(emoji, text, tagId) = tag, chatTagsIds.contains(tagId) {
+                    Button {
+                        untagChat(tagId)
+                    } label: {
+                        Text("\(emoji) \(text)")
+                    }
+                } else {
+                    EmptyView()
+                }
+            }
+        } header: {
+            Text("Choose existing")
+        }
+    }
+    
+    private func createChatTag() {
+        Task {
+            do {
+                let (userTags, chatTags) = try await apiCreateChatTag(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    tag: ChatTagData(emoji: emoji, text: name)
+                )
+                
+                await MainActor.run {
+                    chatTagsModel.tags = userTags.map {
+                        .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
+                    }
+                    updateChatTags(chat: chat, chatTags: chatTags)
+                }
+            } catch let error {
+                showAlert(
+                    NSLocalizedString("Error creating tag", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
+    
+    private func tagChat(_ tagId: Int64) {
+        Task {
+            do {
+                let (userTags, chatTags) = try await apiTagChat(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    tagId: tagId
+                )
+                
+                await MainActor.run {
+                    chatTagsModel.tags = userTags.map {
+                        .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
+                    }
+                    updateChatTags(chat: chat, chatTags: chatTags)
+                }
+            } catch let error {
+                showAlert(
+                    NSLocalizedString("Error tagging chat", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
+    
+    private func untagChat(_ tagId: Int64) {
+        Task {
+            do {
+                let (userTags, chatTags) = try await apiUntagChat(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    tagId: tagId
+                )
+                
+                await MainActor.run {
+                    chatTagsModel.tags = userTags.map {
+                        .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
+                    }
+                    updateChatTags(chat: chat, chatTags: chatTags)
+                }
+            } catch let error {
+                showAlert(
+                    NSLocalizedString("Error untagging chat", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+
+        }
+    }
+    
+    private func updateChatTags(chat: Chat, chatTags: [Int64]) {
+        if var contact = chat.chatInfo.contact {
+            contact.chatTags = chatTags
+            m.updateContact(contact)
+        } else if var group = chat.chatInfo.groupInfo {
+            group.chatTags = chatTags
+            m.updateGroup(group)
         }
     }
 }

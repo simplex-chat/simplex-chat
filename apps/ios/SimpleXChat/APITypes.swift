@@ -40,10 +40,14 @@ public enum ChatCommand {
     case testStorageEncryption(key: String)
     case apiSaveSettings(settings: AppSettings)
     case apiGetSettings(settings: AppSettings)
+    case apiGetChatTags(userId: Int64)
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
     case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiCreateChatTag(type: ChatType, id: Int64, tag: ChatTagData)
+    case apiTagChat(type: ChatType, id: Int64, tagId: Int64)
+    case apiUntagChat(type: ChatType, id: Int64, tagId: Int64)
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
@@ -198,6 +202,7 @@ public enum ChatCommand {
             case let .testStorageEncryption(key): return "/db test key \(key)"
             case let .apiSaveSettings(settings): return "/_save app settings \(encodeJSON(settings))"
             case let .apiGetSettings(settings): return "/_get app settings \(encodeJSON(settings))"
+            case let .apiGetChatTags(userId): return "/_get tags \(userId)"
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
@@ -206,6 +211,9 @@ public enum ChatCommand {
                 let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
                 return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            case let .apiCreateChatTag(type, id, tag): return "/_create tag \(ref(type, id)) \(encodeJSON(tag))"
+            case let .apiTagChat(type, id, tagId): return "/_tag \(ref(type, id)) \(tagId)"
+            case let .apiUntagChat(type, id, tagId): return "/_untag \(ref(type, id)) \(tagId)"
             case let .apiCreateChatItems(noteFolderId, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
@@ -367,10 +375,14 @@ public enum ChatCommand {
             case .testStorageEncryption: return "testStorageEncryption"
             case .apiSaveSettings: return "apiSaveSettings"
             case .apiGetSettings: return "apiGetSettings"
+            case .apiGetChatTags: return "apiGetChatTags"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
             case .apiSendMessages: return "apiSendMessages"
+            case .apiCreateChatTag: return "apiCreateChatTag"
+            case .apiTagChat: return "apiTagChat"
+            case .apiUntagChat: return "apiUntagChat"
             case .apiCreateChatItems: return "apiCreateChatItems"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
@@ -564,6 +576,7 @@ public enum ChatResponse: Decodable, Error {
     case chatSuspended
     case apiChats(user: UserRef, chats: [ChatData])
     case apiChat(user: UserRef, chat: ChatData)
+    case chatTags(user: UserRef, userTags: [ChatTag])
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case serverOperatorConditions(conditions: ServerOperatorConditions)
@@ -590,6 +603,8 @@ public enum ChatResponse: Decodable, Error {
     case contactCode(user: UserRef, contact: Contact, connectionCode: String)
     case groupMemberCode(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
+    case tagsUpdated(user: UserRef, userTags: [ChatTag], chatTags: [Int64])
+    case chatUntagged(user: UserRef, userTags: [ChatTag], chatTags: [Int64])
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
@@ -741,6 +756,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return "chatSuspended"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
+            case .chatTags: return "chatTags"
             case .chatItemInfo: return "chatItemInfo"
             case .serverTestResult: return "serverTestResult"
             case .serverOperatorConditions: return "serverOperators"
@@ -767,6 +783,8 @@ public enum ChatResponse: Decodable, Error {
             case .contactCode: return "contactCode"
             case .groupMemberCode: return "groupMemberCode"
             case .connectionVerified: return "connectionVerified"
+            case .tagsUpdated: return "tagsUpdated"
+            case .chatUntagged: return "chatUntagged"
             case .invitation: return "invitation"
             case .connectionIncognitoUpdated: return "connectionIncognitoUpdated"
             case .connectionUserChanged: return "connectionUserChanged"
@@ -914,6 +932,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatSuspended: return noDetails
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
             case let .apiChat(u, chat): return withUser(u, String(describing: chat))
+            case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
             case let .serverOperatorConditions(conditions): return "conditions: \(String(describing: conditions))"
@@ -942,6 +961,8 @@ public enum ChatResponse: Decodable, Error {
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
+            case let .tagsUpdated(u, userTags, chatTags): return withUser(u, "userTags: \(String(describing: userTags))\nchatTags: \(String(describing: chatTags))")
+            case let .chatUntagged(u, userTags, chatTags): return withUser(u, "userTags: \(String(describing: userTags))\nchatTags: \(String(describing: chatTags))")
             case let .invitation(u, connReqInvitation, connection): return withUser(u, "connReqInvitation: \(connReqInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\newUserId: \(String(describing: newUser.userId))")
@@ -1169,6 +1190,16 @@ public enum ChatPagination {
         case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
         case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
         }
+    }
+}
+
+public struct ChatTagData: Encodable {
+    public var emoji: String
+    public var text: String
+    
+    public init(emoji: String, text: String) {
+        self.emoji = emoji
+        self.text = text
     }
 }
 

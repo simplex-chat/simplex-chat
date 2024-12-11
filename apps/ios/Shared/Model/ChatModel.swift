@@ -100,6 +100,44 @@ class ItemsModel: ObservableObject {
     }
 }
 
+class ChatTagsModel: ObservableObject {
+    static let shared = ChatTagsModel()
+    
+    let presetTags: [ChatTagFilter] = [
+        .presetTag(icon: "star", activeIcon: "star.fill", filter: { c in c.chatSettings?.favorite ?? false }),
+        .presetTag(icon: "person", activeIcon: "person.fill", filter: { if case .direct = $0 { true } else { false }}),
+        .presetTag(icon: "person.2", activeIcon: "person.2.fill", filter: { filterGroupChat($0) }),
+        .presetTag(icon: "briefcase", activeIcon: "briefcase.fill", filter: { filterBusinessChat($0) })
+    ]
+    
+    @Published var tags: [ChatTagFilter] = []
+    @Published var selectedTag: ChatTagFilter?
+}
+
+private func filterBusinessChat(_ cInfo: ChatInfo) -> Bool {
+   if case let .group(gInfo) = cInfo  {
+       return switch gInfo.businessChat?.chatType {
+       case .none: false
+       case .business: true
+       case .customer: true
+       }
+   } else {
+       return false
+   }
+}
+
+private func filterGroupChat(_ cInfo: ChatInfo) -> Bool {
+   if case let .group(gInfo) = cInfo  {
+       return switch gInfo.businessChat?.chatType {
+       case .none: true
+       case .business: false
+       case .customer: false
+       }
+   } else {
+       return false
+   }
+}
+
 class NetworkModel: ObservableObject {
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
