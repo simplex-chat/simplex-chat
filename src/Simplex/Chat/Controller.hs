@@ -622,8 +622,8 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTag]}
-  | CRChatUntagged {user :: User, userTags :: [ChatTag], chatTags :: [ChatTag]}
+  | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
+  | CRChatUntagged {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}

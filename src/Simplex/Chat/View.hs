@@ -150,7 +150,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     | otherwise -> []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
-  CRChatTagged u _ _ -> ttyUser u ["chat tagged"]
+  CRTagsUpdated u _ _ -> ttyUser u ["chat tagged"]
   CRChatUntagged u _ _ -> ttyUser u ["chat untagged"]
   CRChatItemsDeleted u deletions byUser timed -> case deletions of
     [ChatItemDeletion (AChatItem _ _ chat deletedItem) toItem] ->

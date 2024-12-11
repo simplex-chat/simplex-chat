@@ -122,6 +122,9 @@ module Simplex.Chat.Store.Groups
     updateUserMemberProfileSentAt,
     setGroupCustomData,
     setGroupUIThemes,
+    tagGroupChat,
+    untagGroupChat,
+    getGroupChatTags,
   )
 where
 
@@ -1484,16 +1487,17 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
   updateGroupProfile db user g' p'
   where
     getGroupProfile =
-      ExceptT $ firstRow toGroupProfile (SEGroupNotFound groupId) $
-        DB.query
-          db
-          [sql|
+      ExceptT $
+        firstRow toGroupProfile (SEGroupNotFound groupId) $
+          DB.query
+            db
+            [sql|
             SELECT gp.display_name, gp.full_name, gp.description, gp.image, gp.preferences
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
             WHERE g.group_id = ?
           |]
-          (Only groupId)
+            (Only groupId)
     toGroupProfile (displayName, fullName, description, image, groupPreferences) =
       GroupProfile {displayName, fullName, description, image, groupPreferences}
 
@@ -2303,3 +2307,32 @@ setGroupUIThemes :: DB.Connection -> User -> GroupInfo -> Maybe UIThemeEntityOve
 setGroupUIThemes db User {userId} GroupInfo {groupId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (uiThemes, updatedAt, userId, groupId)
+
+tagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
+tagGroupChat db groupId tId =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_tags_chats (group_id, chat_tag_id)
+      VALUES (?,?)
+    |]
+    (groupId, tId)
+
+untagGroupChat :: DB.Connection -> User -> GroupId -> ChatTagId -> IO ()
+untagGroupChat db user gId tId = do
+  untagGroupChat' db gId tId
+  deleteChatTagIfEmpty db user tId
+
+untagGroupChat' :: DB.Connection -> GroupId -> ChatTagId -> IO ()
+untagGroupChat' db groupId tId =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_tags_chats
+      WHERE group_id = ? AND chat_tag_id = ?
+    |]
+    (groupId, tId)
+
+getGroupChatTags :: DB.Connection -> GroupId -> IO [ChatTagId]
+getGroupChatTags db groupId =
+  map fromOnly <$> DB.query db "SELECT chat_tag_id FROM chat_tags_chats WHERE group_id = ?" (Only groupId)

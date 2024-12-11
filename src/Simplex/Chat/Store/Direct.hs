@@ -79,6 +79,9 @@ module Simplex.Chat.Store.Direct
     setContactCustomData,
     setContactUIThemes,
     setContactChatDeleted,
+    tagDirectChat,
+    untagDirectChat,
+    getDirectChatTags,
   )
 where
 
@@ -1020,3 +1023,31 @@ setContactChatDeleted :: DB.Connection -> User -> Contact -> Bool -> IO ()
 setContactChatDeleted db User {userId} Contact {contactId} chatDeleted = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET chat_deleted = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (chatDeleted, updatedAt, userId, contactId)
+
+tagDirectChat :: DB.Connection -> ContactId -> ChatTagId -> IO ()
+tagDirectChat db contactId tId =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_tags_chats (contact_id, chat_tag_id)
+      VALUES (?,?)
+    |]
+    (contactId, tId)
+
+untagDirectChat :: DB.Connection -> User -> ContactId -> ChatTagId -> IO ()
+untagDirectChat db user contactId tId = do
+  untagDirectChat' db contactId tId
+  deleteChatTagIfEmpty db user tId
+
+untagDirectChat' :: DB.Connection -> ContactId -> ChatTagId -> IO ()
+untagDirectChat' db contactId tId =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_tags_chats
+      WHERE contact_id = ? AND chat_tag_id = ?
+    |]
+    (contactId, tId)
+
+getDirectChatTags :: DB.Connection -> ContactId -> IO [ChatTagId]
+getDirectChatTags db contactId = map fromOnly <$> DB.query db "SELECT chat_tag_id FROM chat_tags_chats WHERE contact_id = ?" (Only contactId)

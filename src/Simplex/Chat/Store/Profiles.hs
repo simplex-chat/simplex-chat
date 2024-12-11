@@ -70,14 +70,6 @@ module Simplex.Chat.Store.Profiles
     updateCommandStatus,
     getCommandDataByCorrId,
     setUserUIThemes,
-    createChatTag,
-    tagDirectChat,
-    tagGroupChat,
-    deleteChatTag,
-    untagGroupChat,
-    untagDirectChat,
-    getUserChatTags,
-    getTagChatsCount,
   )
 where
 
@@ -900,84 +892,3 @@ setUserUIThemes :: DB.Connection -> User -> Maybe UIThemeEntityOverrides -> IO (
 setUserUIThemes db User {userId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?" (uiThemes, updatedAt, userId)
-
-createChatTag :: DB.Connection -> User -> Text -> Text -> IO ChatTagId
-createChatTag db User {userId} emoji text = do
-  DB.execute
-    db
-    [sql|
-      INSERT INTO chat_tags (user_id, chat_tag_emoji, chat_tag_text)
-      VALUES (?,?,?)
-    |]
-    (userId, emoji, text)
-  insertedRowId db
-
-tagDirectChat :: DB.Connection -> ContactId -> ChatTagId -> IO ()
-tagDirectChat db contactId tId =
-  DB.execute
-    db
-    [sql|
-      INSERT INTO chat_tags_chats (contact_id, chat_tag_id)
-      VALUES (?,?)
-    |]
-    (contactId, tId)
-
-tagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
-tagGroupChat db groupId tId =
-  DB.execute
-    db
-    [sql|
-      INSERT INTO chat_tags_chats (group_id, chat_tag_id)
-      VALUES (?,?)
-    |]
-    (groupId, tId)
-
-deleteChatTag :: DB.Connection -> User -> ChatTagId -> IO ()
-deleteChatTag db User {userId} tId =
-  DB.execute
-    db
-    [sql|
-      DELETE FROM chat_tags
-      WHERE user_id = ? AND chat_tag_id = ?
-    |]
-    (userId, tId)
-
-untagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
-untagGroupChat db groupId tId =
-  DB.execute
-    db
-    [sql|
-      DELETE FROM chat_tags_chats
-      WHERE group_id = ? AND chat_tag_id = ?
-    |]
-    (groupId, tId)
-
-untagDirectChat :: DB.Connection -> ContactId -> ChatTagId -> IO ()
-untagDirectChat db contactId tId =
-  DB.execute
-    db
-    [sql|
-      DELETE FROM chat_tags_chats
-      WHERE contact_id = ? AND chat_tag_id = ?
-    |]
-    (contactId, tId)
-
-getUserChatTags :: DB.Connection -> User -> IO [ChatTag]
-getUserChatTags db User {userId} =
-  map toChatTag
-    <$> DB.query
-      db
-      [sql|
-        SELECT t.chat_tag_id, t.chat_tag_emoji, t.chat_tag_text, ct.contact_id, ct.group_id
-        FROM chat_tags_chats ct
-        JOIN chat_tags t ON ct.chat_tag_id = t.chat_tag_id
-        WHERE t.user_id = ?
-      |]
-      (Only userId)
-  where
-    toChatTag :: (ChatTagId, Text, Text, Maybe ContactId, Maybe GroupId) -> ChatTag
-    toChatTag (chatTagId, chatTagEmoji, chatTagText, contactId, groupId) = ChatTag {chatTagId, chatTagEmoji, chatTagText, contactId, groupId}
-
-getTagChatsCount :: DB.Connection -> ChatTagId -> IO Int
-getTagChatsCount db tId =
-  fromOnly . head <$> DB.query db "SELECT COUNT(*) FROM chat_tags_chats WHERE chat_tag_id = ?" (Only tId)

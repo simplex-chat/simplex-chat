@@ -592,3 +592,48 @@ groupInfoQuery =
     JOIN group_members mu ON mu.group_id = g.group_id
     JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
   |]
+
+createChatTag :: DB.Connection -> User -> Text -> Text -> IO ChatTagId
+createChatTag db User {userId} emoji text = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_tags (user_id, chat_tag_emoji, chat_tag_text)
+      VALUES (?,?,?)
+    |]
+    (userId, emoji, text)
+  insertedRowId db
+
+deleteChatTag :: DB.Connection -> User -> ChatTagId -> IO ()
+deleteChatTag db User {userId} tId =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_tags
+      WHERE user_id = ? AND chat_tag_id = ?
+    |]
+    (userId, tId)
+
+getTagChatsCount :: DB.Connection -> ChatTagId -> IO Int
+getTagChatsCount db tId =
+  fromOnly . head <$> DB.query db "SELECT COUNT(*) FROM chat_tags_chats WHERE chat_tag_id = ?" (Only tId)
+
+deleteChatTagIfEmpty :: DB.Connection -> User -> ChatTagId -> IO ()
+deleteChatTagIfEmpty db user ctId = do
+  tagChatsCount <- getTagChatsCount db ctId
+  when (tagChatsCount == 0) $ deleteChatTag db user ctId
+
+getUserChatTags :: DB.Connection -> User -> IO [ChatTag]
+getUserChatTags db User {userId} =
+  map toChatTag
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_tag_id, chat_tag_emoji, chat_tag_text
+        FROM chat_tags
+        WHERE user_id = ?
+      |]
+      (Only userId)
+  where
+    toChatTag :: (ChatTagId, Text, Text) -> ChatTag
+    toChatTag (chatTagId, chatTagEmoji, chatTagText) = ChatTag {chatTagId, chatTagEmoji, chatTagText}

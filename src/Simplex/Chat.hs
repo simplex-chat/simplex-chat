@@ -900,27 +900,29 @@ processChatCommand' vr = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatTag (ChatRef cType chatId) (ChatTagData emoji text) -> withUser $ \user -> withFastStore $ \db -> case cType of
     CTDirect -> do
-      ctId <- liftIO $ createChatTag db user emoji text
-      tagDirectChat' db user chatId ctId
+      tId <- liftIO $ createChatTag db user emoji text
+      liftIO $ tagDirectChat db chatId tId
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
     CTGroup -> do
-      ctId <- liftIO $ createChatTag db user emoji text
-      tagGroupChat' db user chatId ctId
+      tId <- liftIO $ createChatTag db user emoji text
+      liftIO $ tagGroupChat db chatId tId
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APITagChat (ChatRef cType chatId) ctId -> withUser $ \user -> withFastStore $ \db -> case cType of
-    CTDirect -> tagDirectChat' db user chatId ctId
-    CTGroup -> tagGroupChat' db user chatId ctId
-    _ -> pure $ chatCmdError (Just user) "not supported"
-  APIUntagChat (ChatRef cType chatId) ctId -> withUser $ \user -> withFastStore $ \db -> case cType of
+  APITagChat (ChatRef cType chatId) tId -> withUser $ \user -> withFastStore $ \db -> case cType of
     CTDirect -> do
-      _ <- liftIO $ untagDirectChat db chatId ctId
-      _ <- deleteChatTagIfEmpty db user ctId
-      (allTags, chatTags) <- updatedDirectChatTags db user chatId
-      pure $ CRChatUntagged user allTags chatTags
+      liftIO $ tagDirectChat db chatId tId
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
     CTGroup -> do
-      _ <- liftIO $ untagGroupChat db chatId ctId
-      _ <- deleteChatTagIfEmpty db user ctId
-      (allTags, chatTags) <- updatedGroupChatTags db user chatId
-      pure $ CRChatUntagged user allTags chatTags
+      liftIO $ tagGroupChat db chatId tId
+      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
+    _ -> pure $ chatCmdError (Just user) "not supported"
+  APIUntagChat (ChatRef cType chatId) tId -> withUser $ \user -> withFastStore $ \db -> case cType of
+    CTDirect -> do
+      liftIO $ untagDirectChat db user chatId tId
+      CRChatUntagged user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
+    CTGroup -> do
+      liftIO $ untagGroupChat db user chatId tId
+      CRChatUntagged user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
     _ -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatItems folderId cms -> withUser $ \user ->
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
@@ -7486,35 +7488,6 @@ closeFileHandle fileId files = do
   fs <- asks files
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
-
-tagGroupChat' :: DB.Connection -> User -> GroupId -> ChatTagId -> ExceptT StoreError IO ChatResponse
-tagGroupChat' db user gId ctId = do
-  liftIO $ tagGroupChat db gId ctId
-  (allTags, chatTags) <- updatedGroupChatTags db user gId
-  pure $ CRChatTagged user allTags chatTags
-
-updatedGroupChatTags :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ([ChatTag], [ChatTag])
-updatedGroupChatTags db user gId = do
-  allTags <- liftIO $ getUserChatTags db user
-  let (groupTags, otherTags) = partition (\ChatTag {groupId} -> groupId == Just gId) allTags
-  pure (groupTags, otherTags)
-
-deleteChatTagIfEmpty :: DB.Connection -> User -> ChatTagId -> ExceptT StoreError IO ()
-deleteChatTagIfEmpty db user ctId = do
-  tagChatsCount <- liftIO $ getTagChatsCount db ctId
-  when (tagChatsCount == 0) $ liftIO $ deleteChatTag db user ctId
-
-tagDirectChat' :: DB.Connection -> User -> ContactId -> ChatTagId -> ExceptT StoreError IO ChatResponse
-tagDirectChat' db user cId ctId = do
-  liftIO $ tagDirectChat db cId ctId
-  (allTags, chatTags) <- updatedDirectChatTags db user cId
-  pure $ CRChatTagged user allTags chatTags
-
-updatedDirectChatTags :: DB.Connection -> User -> ContactId -> ExceptT StoreError IO ([ChatTag], [ChatTag])
-updatedDirectChatTags db user cId = do
-  allTags <- liftIO $ getUserChatTags db user
-  let (directTags, otherTags) = partition (\ChatTag {contactId} -> contactId == Just cId) allTags
-  pure (directTags, otherTags)
 
 deleteMembersConnections :: User -> [GroupMember] -> CM ()
 deleteMembersConnections user members = deleteMembersConnections' user members False
