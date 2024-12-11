@@ -8421,7 +8421,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
-      "/_get tags" *> (APIGetChatTags <$> A.decimal),
+      "/_get tags " *> (APIGetChatTags <$> A.decimal),
       "/_get chats "
         *> ( APIGetChats
               <$> A.decimal
