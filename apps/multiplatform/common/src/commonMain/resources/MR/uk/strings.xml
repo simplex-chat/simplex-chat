@@ -19,7 +19,7 @@
     <string name="about_simplex_chat">Про SimpleX Chat</string>
     <string name="v4_3_improved_server_configuration_desc">Додавайте сервери, скануючи QR-коди.</string>
     <string name="users_delete_all_chats_deleted">Всі чати і повідомлення будуть видалені - цю дію неможливо скасувати!</string>
-    <string name="allow_calls_only_if">Дозволяйте дзвінки тільки в разі дозволу вашого контакту.</string>
+    <string name="allow_calls_only_if">Дозволити дзвінки тільки за умови, що ваш контакт дозволяє їх.</string>
     <string name="allow_irreversible_message_deletion_only_if">Дозволити безповоротне видалення повідомлень, тільки якщо ваш контакт дозволяє вам. (24 години)</string>
     <string name="allow_voice_messages_question">Дозволити голосові повідомлення\?</string>
     <string name="app_passcode_replaced_with_self_destruct">Пароль застосунку замінено паролем самознищення.</string>
@@ -29,21 +29,21 @@
     <string name="keychain_is_storing_securely">Сховище ключів Android використовується для безпечного збереження ключової фрази - це дозволяє службі сповіщень працювати.</string>
     <string name="v4_2_group_links_desc">Адміністратори можуть створювати посилання для приєднання до групи.</string>
     <string name="app_version_code">Збірка додатку: %s</string>
-    <string name="allow_voice_messages_only_if">Дозволяйте голосові повідомлення тільки в разі дозволу вашого контакту.</string>
-    <string name="allow_to_send_disappearing">Дозволяйте надсилати повідомлення, які зникають.</string>
+    <string name="allow_voice_messages_only_if">Дозволити голосові повідомлення тільки за умови, що ваш контакт дозволяє їх.</string>
+    <string name="allow_to_send_disappearing">Дозволити надсилати зникаючі повідомлення.</string>
     <string name="callstatus_accepted">прийнятий виклик</string>
     <string name="always_use_relay">Завжди використовувати реле</string>
     <string name="settings_section_title_app">ДОДАТОК</string>
-    <string name="allow_direct_messages">Дозволяйте надсилати прямі повідомлення учасникам.</string>
+    <string name="allow_direct_messages">Дозволити надсилання приватних повідомлень учасникам.</string>
     <string name="allow_to_delete_messages">Дозволити безповоротно видаляти надіслані повідомлення. (24 години)</string>
     <string name="allow_to_send_voice">Дозволяйте надсилати голосові повідомлення.</string>
     <string name="allow_message_reactions">Дозволити реакції на повідомлення.</string>
     <string name="v5_1_self_destruct_passcode_descr">Вся інформація стирається при його введенні.</string>
     <string name="v5_0_app_passcode">Пароль для додатка</string>
     <string name="settings_section_title_icon">ІКОНКА ДОДАТКУ</string>
-    <string name="allow_disappearing_messages_only_if">Дозволяйте повідомлення, які зникають, тільки якщо ваш контакт дозволяє їх.</string>
+    <string name="allow_disappearing_messages_only_if">Дозволити зникаючі повідомлення тільки за умови, що ваш контакт дозволяє їх.</string>
     <string name="allow_your_contacts_adding_message_reactions">Дозвольте вашим контактам додавати реакції на повідомлення.</string>
-    <string name="allow_message_reactions_only_if">Дозволяйте реакції на повідомлення тільки в разі дозволу вашого контакту.</string>
+    <string name="allow_message_reactions_only_if">Дозволити реакції на повідомлення тільки за умови, що ваш контакт дозволяє їх.</string>
     <string name="empty_chat_profile_is_created">Створений порожній профіль чату з наданим ім\'ям, і застосунок відкривається, як завжди.</string>
     <string name="color_primary_variant">Додатковий акцент</string>
     <string name="allow_your_contacts_irreversibly_delete">Дозволити вашим контактам безповоротно видаляти надіслані повідомлення. (24 години)</string>
@@ -224,7 +224,7 @@
     <string name="unmute_chat">Скасувати приглушення</string>
     <string name="you_invited_a_contact">Ви запросили контакт</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Контакт, якому ви поділилися посиланням, НЕ зможе підключитися!</string>
-    <string name="icon_descr_profile_image_placeholder">заповнювач зображення профілю</string>
+    <string name="icon_descr_profile_image_placeholder">аватар не встановлено</string>
     <string name="image_descr_qr_code">QR-код</string>
     <string name="icon_descr_help">довідка</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Якщо ви не можете зустрітися особисто, <b>покажіть QR-код у відеовиклику</b>, або поділіться посиланням.]]></string>
@@ -451,7 +451,7 @@
     <string name="v5_0_app_passcode_descr">Встановіть його замість системної аутентифікації.</string>
     <string name="shutdown_alert_question">Вимкнути\?</string>
     <string name="share_with_contacts">Поділитися з контактами</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профіль зберігається на вашому пристрої і обмінюється лише з ваших контактів. Сервери SimpleX не можуть його бачити.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профіль зберігається на вашому пристрої та ділиться лише з вашими контактами. Серверам SimpleX профіль недоступний.</string>
     <string name="save_and_notify_contacts">Зберегти і повідомити контакти</string>
     <string name="save_and_notify_group_members">Зберегти і повідомити учасників групи</string>
     <string name="exit_without_saving">Вийти без збереження</string>
@@ -516,7 +516,7 @@
     <string name="v4_5_message_draft_descr">Зберігайте останню чернетку повідомлення із вкладеннями.</string>
     <string name="disappearing_message">Зникне повідомлення</string>
     <string name="send_disappearing_message">Надіслати зникне повідомлення</string>
-    <string name="image_descr_profile_image">зображення профілю</string>
+    <string name="image_descr_profile_image">аватар</string>
     <string name="icon_descr_more_button">Більше</string>
     <string name="create_profile">Створити профіль</string>
     <string name="read_more_in_github_with_link"><![CDATA[Докладніше читайте в нашому репозиторії на <font color="#0088ff">GitHub</font>.]]></string>
@@ -580,7 +580,7 @@
     <string name="videos_limit_desc">Одночасно можна відправити лише 10 відео</string>
     <string name="image_decoding_exception_title">Помилка декодування зображення</string>
     <string name="image_decoding_exception_desc">Неможливо декодувати зображення. Спробуйте інше зображення або зв\'яжіться з розробниками.</string>
-    <string name="image_descr">Зображення</string>
+    <string name="image_descr">Фото</string>
     <string name="image_will_be_received_when_contact_completes_uploading">Зображення буде отримано, коли ваш контакт завершить його вивантаження.</string>
     <string name="image_will_be_received_when_contact_is_online">Зображення буде отримано, коли ваш контакт буде в мережі, будь ласка, зачекайте або перевірте пізніше!</string>
     <string name="image_saved">Зображення збережено в галереї</string>
@@ -609,8 +609,8 @@
     <string name="image_descr_simplex_logo">Логотип SimpleX</string>
     <string name="icon_descr_email">Електронна пошта</string>
     <string name="this_QR_code_is_not_a_link">Цей QR-код не є посиланням!</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">Ви будете підключені до групи, коли пристрій господаря групи буде в мережі, зачекайте або перевірте пізніше!</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Вас підключать, коли ваш запит на з\'єднання буде прийнятий, зачекайте або перевірте пізніше!</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Ви будете підключені до групи, коли пристрій власник групи буде в мережі, зачекайте або перевірте пізніше!</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Підключення відбудеться, коли ваш запит на підключення буде прийнято. Будь ласка, зачекайте або спробуйте пізніше!</string>
     <string name="share_invitation_link">Поділитися 1-разовим посиланням</string>
     <string name="learn_more">Дізнатися більше</string>
     <string name="scan_qr_to_connect_to_contact">Щоб підключитися, ваш контакт може сканувати QR-код або використовувати посилання у додатку.</string>
@@ -733,7 +733,7 @@
     <string name="theme_light">Світлий</string>
     <string name="import_theme_error">Помилка імпорту теми</string>
     <string name="group_preferences">Налаштування групи</string>
-    <string name="timed_messages">Повідомлення зникнення</string>
+    <string name="timed_messages">Зникаючі повідомлення</string>
     <string name="feature_enabled_for_contact">ввімкнено для контакту</string>
     <string name="feature_off">вимкнено</string>
     <string name="feature_received_prohibited">отримано, заборонено</string>
@@ -827,7 +827,7 @@
     <string name="send_disappearing_message_custom_time">Інший час</string>
     <string name="share_one_time_link">Створити одноразове запрошення</string>
     <string name="scan_QR_code">Сканувати QR-код</string>
-    <string name="gallery_image_button">Зображення</string>
+    <string name="gallery_image_button">Фото</string>
     <string name="gallery_video_button">Відео</string>
     <string name="connection_you_accepted_will_be_cancelled">Прийняте вами з\'єднання буде скасоване!</string>
     <string name="alert_title_contact_connection_pending">Контакт ще не підключений!</string>
@@ -938,7 +938,7 @@
     <string name="only_group_owners_can_enable_voice">Тільки власники груп можуть увімкнути голосові повідомлення.</string>
     <string name="reject_contact_button">Відхилити</string>
     <string name="clear_chat_question">Очистити чат\?</string>
-    <string name="image_descr_link_preview">зображення попереднього перегляду посилання</string>
+    <string name="image_descr_link_preview">зображення прев’ю посилання</string>
     <string name="icon_descr_cancel_link_preview">скасувати попередній перегляд посилання</string>
     <string name="icon_descr_settings">Налаштування</string>
     <string name="icon_descr_call_progress">Виклик у процесі</string>
@@ -1004,7 +1004,7 @@
     <string name="connect_via_link_or_qr">Підключитися за посиланням / QR-кодом</string>
     <string name="clear_verb">Очистити</string>
     <string name="invalid_QR_code">Неправильний QR-код</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Вас підключать, коли пристрій вашого контакту буде в мережі, зачекайте або перевірте пізніше!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Підключення відбудеться, коли пристрій вашого контакту буде онлайн. Будь ласка, зачекайте або спробуйте пізніше!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Ви не втратите свої контакти, якщо ви пізніше видалите свою адресу.</string>
     <string name="you_can_accept_or_reject_connection">Коли люди просять про з\'єднання, ви можете його прийняти чи відхилити.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Докладніше читайте в <font color="#0088ff">Посібнику користувача</font>.]]></string>
@@ -1200,16 +1200,14 @@
     <string name="export_theme">Експортувати тему</string>
     <string name="import_theme_error_desc">Переконайтеся, що файл має правильний синтаксис YAML. Експортуйте тему, щоб мати приклад структури файлу теми.</string>
     <string name="reset_color">Скинути кольори</string>
-    <string name="chat_preferences_default">за замовчуванням (%s)</string>
+    <string name="chat_preferences_default">типово (%s)</string>
     <string name="only_you_can_make_calls">Тільки ви можете здійснювати дзвінки.</string>
     <string name="only_your_contact_can_make_calls">Тільки ваш контакт може здійснювати дзвінки.</string>
     <string name="whats_new">Що нового</string>
     <string name="v4_3_voice_messages">Голосові повідомлення</string>
     <string name="v4_5_transport_isolation_descr">За профілем чату (типово) або за підключенням (BETA).</string>
     <string name="v5_1_custom_themes">Власні теми</string>
-    <string name="v5_1_better_messages_descr">- голосові повідомлення до 5 хвилин.
-\n- власний час на зникнення.
-\n- історія редагування.</string>
+    <string name="v5_1_better_messages_descr">- голосові повідомлення до 5 хвилин.\n- налаштування часу для зникнення повідомлень.\n- історія змін.</string>
     <string name="v5_1_japanese_portuguese_interface">Японський та португальський інтерфейс</string>
     <string name="group_invitation_tap_to_join">Натисніть, щоб приєднатися</string>
     <string name="group_invitation_tap_to_join_incognito">Натисніть, щоб приєднатися анонімно</string>
@@ -1443,14 +1441,14 @@
     <string name="only_one_device_can_work_at_the_same_time">Одночасно може працювати лише один пристрій</string>
     <string name="v5_4_link_mobile_desktop">Підключіть мобільний і десктопний додатки! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Через безпечний квантовостійкий протокол.</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Відкрийте <i>Використовувати з робочого столу</i> у мобільному додатку і скануйте QR-код.]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Відкрийте <i>Використовувати з комп'ютера</i> в мобільному додатку та відскануйте QR-код.]]></string>
     <string name="v5_4_block_group_members_descr">Щоб приховати небажані повідомлення.</string>
     <string name="desktop_incompatible_version">Несумісна версія</string>
     <string name="new_desktop"><![CDATA[<i>(новий)</i>]]></string>
-    <string name="unlink_desktop_question">Відсунути відсилання до робочого столу?</string>
+    <string name="unlink_desktop_question">Відключити комп\'ютер?</string>
     <string name="v5_4_better_groups">Кращі групи</string>
     <string name="linked_desktop_options">Параметри пов\'язаних робочих столів</string>
-    <string name="linked_desktops">Пов\'язані робочі столи</string>
+    <string name="linked_desktops">Підключені комп\'ютери</string>
     <string name="discover_on_network">Виявити через локальну мережу</string>
     <string name="v5_4_incognito_groups">Інкогніто групи</string>
     <string name="this_device">Цей пристрій</string>
@@ -1459,10 +1457,10 @@
     <string name="v5_4_better_groups_descr">Швидше приєднуйтесь та надійшовні повідомлення.</string>
     <string name="linked_mobiles">Пов\'язані мобільні</string>
     <string name="desktop_device">Робочий стіл</string>
-    <string name="connected_to_desktop">Підключено до робочого столу</string>
+    <string name="connected_to_desktop">Підключено до комп\'ютера</string>
     <string name="this_device_name">Назва цього пристрою</string>
     <string name="loading_remote_file_title">Завантаження файлу</string>
-    <string name="connecting_to_desktop">Підключення до робочого столу</string>
+    <string name="connecting_to_desktop">Підключення до комп\'ютера</string>
     <string name="found_desktop">Знайдено робочий стіл</string>
     <string name="desktop_devices">Пристрої робочого столу</string>
     <string name="not_compatible">Не сумісно!</string>
@@ -1477,7 +1475,7 @@
     <string name="verify_code_on_mobile">Перевірте код на мобільному</string>
     <string name="enter_this_device_name">Введіть назву цього пристрою…</string>
     <string name="error">Помилка</string>
-    <string name="connect_to_desktop">Підключитися до робочого столу</string>
+    <string name="connect_to_desktop">Підключитися до комп\'ютера</string>
     <string name="disconnect_remote_host">Відключити</string>
     <string name="group_member_role_author">автор</string>
     <string name="connected_to_mobile">Підключено до мобільного</string>
@@ -1494,7 +1492,7 @@
     <string name="verify_connections">Перевірити підключення</string>
     <string name="disconnect_desktop_question">Відключити робочий стіл?</string>
     <string name="loading_remote_file_desc">Будь ласка, зачекайте, поки файл завантажується з підключеного мобільного</string>
-    <string name="desktop_app_version_is_incompatible">Версія робочого столу %s не сумісна з цим додатком.</string>
+    <string name="desktop_app_version_is_incompatible">Версія комп\'ютерного додатка %s несумісна з цим додатком.</string>
     <string name="verify_connection">Перевірити підключення</string>
     <string name="chat_is_stopped_you_should_transfer_database">Чат зупинено. Якщо ви вже використовували цю базу даних на іншому пристрої, перенесіть її назад перед запуском чату.</string>
     <string name="v5_5_private_notes_descr">З зашифрованими файлами та медіа.</string>
@@ -1611,7 +1609,7 @@
     <string name="profile_update_event_member_name_changed">учасник %1$s змінений на %2$s</string>
     <string name="profile_update_event_removed_picture">вилучено зображення профілю</string>
     <string name="profile_update_event_set_new_address">Установлено нову адресу контакту</string>
-    <string name="profile_update_event_set_new_picture">Установлено нове зображення профілю</string>
+    <string name="profile_update_event_set_new_picture">встановити новий аватар</string>
     <string name="profile_update_event_updated_profile">оновлений профіль</string>
     <string name="profile_update_event_removed_address">вилучено адресу контакту</string>
     <string name="past_member_vName">Колишній учасник %1$s</string>
@@ -1751,7 +1749,7 @@
     <string name="permissions_grant">Надайте дозвіл(и) на здійснення дзвінків</string>
     <string name="permissions_open_settings">Відкрити налаштування</string>
     <string name="settings_section_title_files">ФАЙЛИ</string>
-    <string name="settings_section_title_profile_images">Зображення профілю</string>
+    <string name="settings_section_title_profile_images">Зображення профілів</string>
     <string name="settings_section_title_network_connection">Підключення до мережі</string>
     <string name="feature_roles_admins">адміністратори</string>
     <string name="feature_roles_all_members">всі учасники</string>
@@ -1829,7 +1827,7 @@
     <string name="network_smp_proxy_fallback_allow">Так</string>
     <string name="network_option_rcv_concurrency">Отримання паралелізму</string>
     <string name="simplex_links_are_prohibited_in_group">Посилання SimpleX заборонені.</string>
-    <string name="v5_7_shape_profile_images">Сформуйте зображення профілю</string>
+    <string name="v5_7_shape_profile_images">Форма зображень профілю</string>
     <string name="v5_7_call_sounds_descr">При підключенні аудіо та відеодзвінків.</string>
     <string name="reset_single_color">Скинути колір</string>
     <string name="color_mode_system">Система</string>
