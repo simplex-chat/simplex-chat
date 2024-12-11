@@ -847,7 +847,10 @@ getContactIdByName db User {userId} cName =
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, cName)
 
 getContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact db vr user contactId = getContact_ db vr user contactId False
+getContact db vr user contactId = do
+  ct <- getContact_ db vr user contactId False
+  chatTags <- liftIO $ getDirectChatTags db contactId
+  pure (ct :: Contact) {chatTags = chatTags}
 
 getContact_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
 getContact_ db vr user@User {userId} contactId deleted =
