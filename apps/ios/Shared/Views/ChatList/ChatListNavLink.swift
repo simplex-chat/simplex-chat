@@ -681,8 +681,16 @@ struct CreateChatListTag: View {
     var body: some View {
         List {
             HStack {
-                Button {
-                    emoji = "🚀"
+                Menu {
+                    let emojis = allEmojis()
+                    ForEach(emojis, id: \.self) { emj in
+                        Button(action: {
+                            emoji = emj
+                        }) {
+                            Text(emj)
+                                .font(.largeTitle)
+                        }
+                    }
                 } label: {
                     if emoji.isEmpty {
                         Image(systemName: "face.smiling")
@@ -735,6 +743,16 @@ struct CreateChatListTag: View {
                 )
             }
         }
+    }
+    
+    func allEmojis() -> [String] {
+        var emojis: [String] = []
+        for scalar in (0x1F300...0x1FAFF) {
+            if let unicodeScalar = UnicodeScalar(scalar), unicodeScalar.properties.isEmoji {
+                emojis.append(String(unicodeScalar))
+            }
+        }
+        return emojis
     }
 }
 
