@@ -36,18 +36,10 @@ catch (e: Exception) {
   false
 }
 
-private val settingsTmpDir = File(desktopPlatform.configPath, "tmp")
-  .also {
-    it.deleteRecursively()
-    it.mkdirs()
-  }
-
 private val settingsFile =
   File(desktopPlatform.configPath + File.separator + "settings.properties")
-    .also { it.parentFile.mkdirs() }
 private val settingsThemesFile =
   File(desktopPlatform.configPath + File.separator + "themes.properties")
-    .also { it.parentFile.mkdirs() }
 
 private val settingsProps =
   Properties()
@@ -68,12 +60,13 @@ private val settingsThemesProps =
   Properties()
     .also { props -> try { settingsThemesFile.reader().use { props.load(it) } } catch (e: Exception) { /**/ } }
 
-private val lock = "settingsSaver"
+private const val lock = "settingsSaver"
 actual val settings: Settings = PropertiesSettings(settingsProps) {
   synchronized(lock) {
     try {
-      createTmpFileAndDelete(settingsTmpDir) { tmpFile ->
+      createTmpFileAndDelete(preferencesTmpDir) { tmpFile ->
         tmpFile.writer().use { settingsProps.store(it, "") }
+        settingsFile.parentFile.mkdirs()
         Files.move(tmpFile.toPath(), settingsFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
       }
     } catch (e: Exception) {
@@ -85,8 +78,9 @@ actual val settings: Settings = PropertiesSettings(settingsProps) {
 actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) {
   synchronized(lock) {
     try {
-      createTmpFileAndDelete(settingsTmpDir) { tmpFile ->
+      createTmpFileAndDelete(preferencesTmpDir) { tmpFile ->
         tmpFile.writer().use { settingsThemesProps.store(it, "") }
+        settingsThemesFile.parentFile.mkdirs()
         Files.move(tmpFile.toPath(), settingsThemesFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
       }
     } catch (e: Exception) {

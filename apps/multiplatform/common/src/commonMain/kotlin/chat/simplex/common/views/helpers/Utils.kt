@@ -318,6 +318,7 @@ fun removeWallpaperFile(fileName: String? = null) {
 
 fun <T> createTmpFileAndDelete(dir: File = tmpDir, onCreated: (File) -> T): T {
   val tmpFile = File(dir, UUID.randomUUID().toString())
+  tmpFile.parentFile.mkdirs()
   tmpFile.deleteOnExit()
   ChatModel.filesToDelete.add(tmpFile)
   try {

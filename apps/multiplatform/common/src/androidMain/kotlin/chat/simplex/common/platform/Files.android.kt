@@ -19,6 +19,8 @@ actual val wallpapersDir: File = File(filesDir.absolutePath + File.separator + "
 actual val coreTmpDir: File = File(filesDir.absolutePath + File.separator + "temp_files")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "files"
 actual val preferencesDir = File(dataDir.absolutePath + File.separator + "shared_prefs")
+actual val preferencesTmpDir = File(tmpDir, "settings_tmp")
+  .also { it.deleteRecursively() }
 
 actual val chatDatabaseFileName: String = "files_chat.db"
 actual val agentDatabaseFileName: String = "files_agent.db"
