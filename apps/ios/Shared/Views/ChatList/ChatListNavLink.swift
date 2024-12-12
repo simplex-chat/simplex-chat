@@ -43,6 +43,7 @@ func dynamicSize(_ font: DynamicTypeSize) -> DynamicSizes {
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = false
     @ObservedObject var chat: Chat
@@ -327,6 +328,17 @@ struct ChatListNavLink: View {
     }
     
     private func setTagChatSheet(_ chat: Chat) {
+        let fraction: Double
+
+        switch chatTagsModel.tags.count {
+        case 0..<4:
+            fraction = 0.35
+        case 4..<9:
+            fraction = 0.7
+        default:
+            fraction = 1
+        }
+        
         parentSheet = SomeSheet(
             content: {
                 AnyView(
@@ -336,7 +348,7 @@ struct ChatListNavLink: View {
                 )
             },
             id: "lists sheet",
-            fraction: 0.7
+            fraction: fraction
         )
     }
     
