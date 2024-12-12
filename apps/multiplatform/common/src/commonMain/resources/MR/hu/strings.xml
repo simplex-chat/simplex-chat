@@ -2214,4 +2214,5 @@
     <string name="sync_connection_confirm">Javítás</string>
     <string name="sync_connection_question">Kapcsolat javítása?</string>
     <string name="debug_logs">Naplózás engedélyezése</string>
+    <string name="error_saving_database">Hiba az adatbázis mentésekor</string>
 </resources>
