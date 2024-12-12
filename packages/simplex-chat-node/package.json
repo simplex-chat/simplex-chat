@@ -1,0 +1,19 @@
+{
+  "name": "simplexjs",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplexjs.git"
+  },
+  "author": "SimpleX team",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/simplex-chat/simplexjs/issues"
+  },
+  "homepage": "https://github.com/simplex-chat/simplexjs#readme",
+  "description": ""
+}
