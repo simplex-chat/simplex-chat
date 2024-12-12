@@ -86,6 +86,7 @@ struct ChatListNavLink: View {
                 progressByTimeout = false
             }
         }
+        .actionSheet(item: $actionSheet) { $0.actionSheet }
     }
     
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
@@ -147,7 +148,6 @@ struct ChatListNavLink: View {
             }
         }
         .alert(item: $alert) { $0.alert }
-        .actionSheet(item: $actionSheet) { $0.actionSheet }
         .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
                 $0.content
@@ -220,7 +220,7 @@ struct ChatListNavLink: View {
                         deleteGroupChatButton(groupInfo)
                         tagChatButton(chat)
                     } else {
-                        // TODO: Show ...
+                        moreOptionsButton(chat, groupInfo)
                     }
                 } else {
                     tagChatButton(chat)
@@ -319,21 +319,54 @@ struct ChatListNavLink: View {
     
     private func tagChatButton(_ chat: Chat) -> some View {
         Button {
-            parentSheet = SomeSheet(
-                content: {
-                    AnyView(
-                        NavigationView {
-                            ChatListTag(chat: chat)
-                        }
-                    )
-                },
-                id: "lists sheet",
-                fraction: 0.7
-            )
+            setTagChatSheet(chat)
         } label: {
             SwipeLabel(NSLocalizedString("Lists", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
         }
         .tint(Color.indigo)
+    }
+    
+    private func setTagChatSheet(_ chat: Chat) {
+        parentSheet = SomeSheet(
+            content: {
+                AnyView(
+                    NavigationView {
+                        ChatListTag(chat: chat)
+                    }
+                )
+            },
+            id: "lists sheet",
+            fraction: 0.7
+        )
+    }
+    
+    private func moreOptionsButton(_ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
+        Button {
+            var buttons: [Alert.Button] = [
+                .default(Text("Lists")) {
+                    setTagChatSheet(chat)
+                }
+            ]
+            
+            if let gi = groupInfo, gi.canDelete {
+                buttons.append(.default(Text("Delete")) {
+                    AlertManager.shared.showAlert(deleteGroupAlert(gi))
+                })
+            }
+            
+            buttons.append(.cancel())
+                               
+            actionSheet = SomeActionSheet(
+                actionSheet: ActionSheet(
+                    title: Text(""),
+                    buttons: buttons
+                ),
+                id: "other options"
+            )
+        } label: {
+            SwipeLabel(NSLocalizedString("More", comment: "swipe action"), systemImage: "ellipsis", inverted: oneHandUI)
+        }
+        .tint(Color.gray)
     }
     
     private func clearNoteFolderButton() -> some View {
