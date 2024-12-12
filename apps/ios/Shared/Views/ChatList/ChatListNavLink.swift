@@ -643,6 +643,10 @@ struct ChatListTag: View {
                     chatTagsModel.tags = userTags.map {
                         .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
                     }
+                    if case let .chatTag(_, _, tagId) = chatTagsModel.selectedTag,
+                       !userTags.contains(where: { $0.chatTagId == tagId }) {
+                        chatTagsModel.selectedTag = nil
+                    }
                     updateChatTags(chat: chat, chatTags: chatTags)
                 }
             } catch let error {
@@ -676,13 +680,29 @@ struct CreateChatListTag: View {
     
     var body: some View {
         List {
-            TextField("Emoji..", text: $emoji)
-            TextField("List name...", text: $name)
+            HStack {
+                Button {
+                    emoji = "🚀"
+                } label: {
+                    if emoji.isEmpty {
+                        Image(systemName: "face.smiling")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 18, height: 18)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text(emoji)
+                    }
+                }
+                TextField("List name...", text: $name)
+            }
+
             Button {
                 createChatTag()
             } label: {
                 Text("Create list")
             }
+            .disabled(emoji.isEmpty || name.isEmpty)
         }
     }
     
