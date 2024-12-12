@@ -440,6 +440,7 @@ struct ChatView: View {
                     maxWidth: maxWidth,
                     composeState: $composeState,
                     selectedMember: $selectedMember,
+                    showChatInfoSheet: $showChatInfoSheet,
                     revealedChatItem: $revealedChatItem,
                     selectedChatItems: $selectedChatItems,
                     forwardedChatItems: $forwardedChatItems
@@ -893,12 +894,14 @@ struct ChatView: View {
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
+        @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
         @Binding @ObservedObject var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
+        @Binding var showChatInfoSheet: Bool
         @Binding var revealedChatItem: ChatItem?
 
         @State private var deletingItem: ChatItem? = nil
@@ -1255,16 +1258,22 @@ struct ChatView: View {
                             setReaction(ci, add: !r.userReacted, reaction: r.reaction)
                         }
                     }
-                    if case let .group(groupInfo) = chat.chatInfo {
+                    switch chat.chatInfo {
+                    case let .group(groupInfo):
                         v.contextMenu {
                             ReactionContextMenu(
                                 groupInfo: groupInfo,
                                 itemId: ci.id,
                                 reactionCount: r,
-                                selectedMember: $selectedMember
+                                selectedMember: $selectedMember,
+                                profileRadius: profileRadius
                             )
                         }
-                    } else {
+                    case let .direct(contact):
+                        v.contextMenu {
+                            contactReactionMenu(contact, r)
+                        }
+                    default:
                         v
                     }
                 }
@@ -1767,6 +1776,20 @@ struct ChatView: View {
                 }
             }
         }
+        
+        @ViewBuilder private func contactReactionMenu(_ contact: Contact, _ r: CIReactionCount) -> some View {
+            if !r.userReacted || r.totalReacted > 1 {
+                Button { showChatInfoSheet = true } label: {
+                    profileMenuItem(Text(contact.displayName), contact.image, radius: profileRadius)
+                }
+            }
+            if r.userReacted {
+                Button {} label: {
+                    profileMenuItem(Text("you"), m.currentUser?.profile.image, radius: profileRadius)
+                }
+                .disabled(true)
+            }
+        }
 
         private struct SelectedChatItem: View {
             @EnvironmentObject var theme: AppTheme
@@ -1859,13 +1882,12 @@ struct ReactionContextMenu: View {
     var itemId: Int64
     var reactionCount: CIReactionCount
     @Binding var selectedMember: GMember?
+    var profileRadius: CGFloat
     @State private var memberReactions: [MemberReaction] = []
-    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
 
     var body: some View {
         groupMemberReactionList()
             .task {
-                logger.debug("ReactionContextMenu task \(radius)")
                 await loadChatItemReaction()
             }
     }
@@ -1889,25 +1911,10 @@ struct ReactionContextMenu: View {
                         selectedMember = member
                     }
                 } label: {
-                    HStack {
-                        Text(mem.displayName)
-                        if let img = cropImage(mem.image) {
-                            Image(uiImage: img)
-                        } else {
-                            Image(systemName: "person.crop.circle")
-                        }
-                    }
+                    profileMenuItem(Text(mem.displayName), mem.image, radius: profileRadius)
                 }
                 .disabled(userMember)
             }
-        }
-    }
-        
-    private func cropImage(_ img: String?) -> UIImage? {
-        return if let originalImage = imageFromBase64(img) {
-            maskToCustomShape(originalImage, size: 30, radius: radius)
-        } else {
-            nil
         }
     }
 
@@ -1923,6 +1930,17 @@ struct ReactionContextMenu: View {
             }
         } catch let error {
             logger.error("apiGetReactionMembers error: \(responseError(error))")
+        }
+    }
+}
+
+func profileMenuItem(_ nameText: Text, _ image: String?, radius: CGFloat) -> some View {
+    HStack {
+        nameText
+        if let image, let img = imageFromBase64(image) {
+            Image(uiImage: maskToCustomShape(img, size: 30, radius: radius))
+        } else {
+            Image(systemName: "person.crop.circle")
         }
     }
 }
