@@ -622,4 +622,13 @@
     <string name="error_sending_message_contact_invitation">Error en enviar la invitació</string>
     <string name="error_updating_link_for_group">Error en actualitzar l\'enllaç del grup</string>
     <string name="v5_2_disappear_one_message_descr">Fins i tot quan està desactivat a la conversa.</string>
+    <string name="onboarding_network_operators_continue">Continua</string>
+    <string name="continue_to_next_step">Continua</string>
+    <string name="chat_database_exported_continue">Continua</string>
+    <string name="icon_descr_context">Icona contextual</string>
+    <string name="delete_contact_cannot_undo_warning">El contacte serà eliminat; l\'acció no es pot desfer!</string>
+    <string name="conversation_deleted">Conversa eliminada!</string>
+    <string name="copied">Copiat al porta-retalls</string>
+    <string name="contribute">Contribuïu</string>
+    <string name="receipts_section_contacts">Contactes</string>
 </resources>
