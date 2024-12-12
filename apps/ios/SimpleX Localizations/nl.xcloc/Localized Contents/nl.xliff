@@ -6078,9 +6078,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Groep profiel opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase and open chat" xml:space="preserve">
+      <trans-unit id="Save passphrase and open chat" xml:space="preserve" approved="no">
         <source>Save passphrase and open chat</source>
-        <target>Bewaar het wachtwoord en open je chats</target>
+        <target state="translated">Bewaar wachtwoord en open je chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
@@ -7787,9 +7787,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruikersnaam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
+      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve" approved="no">
         <source>Using SimpleX Chat servers.</source>
-        <target>SimpleX Chat servers gebruiken.</target>
+        <target state="translated">Gebruik SimpleX Chat servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
