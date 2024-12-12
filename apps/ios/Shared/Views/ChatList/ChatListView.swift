@@ -117,6 +117,7 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var scrollToSearchBar = false
     @State private var userPickerShown: Bool = false
+    @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
@@ -161,6 +162,17 @@ struct ChatListView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     userPickerShown = false
                 }
+            }
+        }
+        .sheet(item: $sheet) {
+            if #available(iOS 16.0, *) {
+                $0.content
+                    .presentationDetents([.fraction($0.fraction)])
+                    .environmentObject(chatTagsModel)
+            } else {
+                $0.content
+                    .environmentObject(chatTagsModel)
+
             }
         }
     }
@@ -308,7 +320,7 @@ struct ChatListView: View {
                     }
                     if #available(iOS 16.0, *) {
                         ForEach(cs, id: \.viewId) { chat in
-                            ChatListNavLink(chat: chat)
+                            ChatListNavLink(chat: chat, parentSheet: $sheet)
                                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                                 .padding(.trailing, -16)
                                 .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
@@ -320,7 +332,7 @@ struct ChatListView: View {
                             VStack(spacing: .zero) {
                                 Divider()
                                     .padding(.leading, 16)
-                                ChatListNavLink(chat: chat)
+                                ChatListNavLink(chat: chat,  parentSheet: $sheet)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 6)
                             }
