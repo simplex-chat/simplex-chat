@@ -518,14 +518,14 @@
     <string name="settings_section_title_chats">XATS</string>
     <string name="settings_section_title_chat_theme">Tema del xat</string>
     <string name="settings_section_title_chat_colors">Colors del xat</string>
-    <string name="chat_database_deleted">"Base de dades  suprimida"</string>
+    <string name="chat_database_deleted">Base de dades suprimida</string>
     <string name="chat_database_imported">Base de dades importada</string>
     <string name="chat_database_exported_title">Base de dades exportada</string>
     <string name="confirm_new_passphrase">Confirmeu el nou mot de pas…</string>
     <string name="change_database_passphrase_question">Voleu canviar la frase de pas per a la base de dades?</string>
     <string name="rcv_group_event_member_connected">connectat</string>
     <string name="rcv_group_event_member_created_contact">connectat directament</string>
-    <string name="snd_conn_event_switch_queue_phase_changing_for_member">canvi d\'adreça per %s…</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">canviant d\'adreça per %s…</string>
     <string name="group_member_status_connected">connectat</string>
     <string name="group_member_status_complete">complet</string>
     <string name="change_verb">Canvia</string>
@@ -545,4 +545,28 @@
     <string name="servers_info_connected_servers_section_header">Servidors connectats</string>
     <string name="chunks_deleted">Blocs eliminats</string>
     <string name="chunks_downloaded">Blocs descarregats</string>
+    <string name="error_saving_file">Error en desar el fitxer</string>
+    <string name="switch_receiving_address_question">Canviar l\'adreça de recepció?</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Podeu <font color="#0088ff">connectar amb els desenvolupadors de SimpleX Chat per fer qualsevol pregunta i rebre actualitzacions</font>.]]></string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[També us podeu connectar fent clic a l'enllaç. Si s'obre al navegador, feu clic al botó <b>Obre a l'aplicació mòbil</b>.]]></string>
+    <string name="error_saving_ICE_servers">Error en desar els servidors ICE</string>
+    <string name="network_proxy_incorrect_config_title">Error en desar el proxy</string>
+    <string name="chat_database_section">BASE DE DADES DE XAT</string>
+    <string name="chat_is_running">El xat s\'està executant</string>
+    <string name="chat_is_stopped">El xat està aturat</string>
+    <string name="error_with_info">Error: %s</string>
+    <string name="chat_is_stopped_indication">El xat està aturat</string>
+    <string name="chat_is_stopped_you_should_transfer_database">El xat està aturat. Si ja heu utilitzat aquesta base de dades en un altre dispositiu, hauríeu de tornar-la a transferir abans d\'iniciar el xat.</string>
+    <string name="rcv_group_event_changed_member_role">ha canviat el rol de %s a %s</string>
+    <string name="rcv_group_event_changed_your_role">ha canviat el teu rol a %s</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">ha canviat d\'adreça per a tu</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">canviant d\'adreça…</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">canviant d\'adreça…</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">El xat se suprimirà; això no es pot desfer!</string>
+    <string name="change_member_role_question">Canviar el rol del grup?</string>
+    <string name="change_role">Canviar rol</string>
+    <string name="switch_receiving_address">Canvia l\'adreça de recepció</string>
+    <string name="error_saving_group_profile">Error en desar el perfil del grup</string>
+    <string name="network_type_cellular">Mòbil</string>
+    <string name="servers_info_sessions_errors">Errors</string>
 </resources>
