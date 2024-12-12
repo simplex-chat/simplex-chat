@@ -15,12 +15,10 @@ import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
-import kotlinx.coroutines.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.*
-import java.util.concurrent.Executors
 
 @Composable
 actual fun font(name: String, res: String, weight: FontWeight, style: FontStyle): Font =
