@@ -1338,6 +1338,7 @@
   <string name="chat_database_exported_migrate">You may migrate the exported database.</string>
   <string name="chat_database_exported_not_all_files">Some file(s) were not exported</string>
   <string name="chat_database_exported_continue">Continue</string>
+  <string name="error_saving_database">Error saving database</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>

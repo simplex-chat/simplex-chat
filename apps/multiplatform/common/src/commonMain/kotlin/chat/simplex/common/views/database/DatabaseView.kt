@@ -30,6 +30,7 @@ import kotlinx.datetime.*
 import java.io.*
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -680,6 +681,8 @@ suspend fun importArchive(
     } finally {
       File(archivePath).delete()
     }
+  } else {
+    progressIndicator.value = false
   }
   return false
 }
@@ -691,14 +694,15 @@ private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
     if (inputStream != null && archiveName != null) {
       val archivePath = "$databaseExportDir${File.separator}$archiveName"
       val destFile = File(archivePath)
-      Files.copy(inputStream, destFile.toPath())
+      Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
       archivePath
     } else {
       Log.e(TAG, "saveArchiveFromURI null inputStream")
       null
     }
   } catch (e: Exception) {
-    Log.e(TAG, "saveArchiveFromURI error: ${e.message}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_database), e.stackTraceToString())
+    Log.e(TAG, "saveArchiveFromURI error: ${e.stackTraceToString()}")
     null
   }
 }
