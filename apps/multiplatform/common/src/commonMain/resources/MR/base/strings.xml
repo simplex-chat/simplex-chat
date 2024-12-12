@@ -524,6 +524,10 @@
   <string name="sync_connection_force_question">Renegotiate encryption?</string>
   <string name="sync_connection_force_desc">The encryption is working and the new encryption agreement is not required. It may result in connection errors!</string>
   <string name="sync_connection_force_confirm">Renegotiate</string>
+  <string name="sync_connection_question">Fix connection?</string>
+  <string name="sync_connection_desc">Connection requires encryption renegotiation.</string>
+  <string name="sync_connection_confirm">Fix</string>
+  <string name="encryption_renegotiation_in_progress">Encryption renegotiation in progress.</string>
   <string name="view_security_code">View security code</string>
   <string name="verify_security_code">Verify security code</string>
 
