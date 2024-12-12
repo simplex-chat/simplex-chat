@@ -45,11 +45,14 @@ fun DatabaseView() {
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val stopped = remember { m.chatRunning }.value == false
   val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
-    val file = chatArchiveFile.value
-    if (file != null && to != null) {
-      copyFileToFile(File(file), to) {
-        chatArchiveFile.value = null
-      }
+    val archive = chatArchiveFile.value
+    if (archive != null && to != null) {
+      copyFileToFile(File(archive), to) {}
+    }
+    // delete no matter the database was exported or canceled the export process
+    if (archive != null) {
+      File(archive).delete()
+      chatArchiveFile.value = null
     }
   }
   val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
