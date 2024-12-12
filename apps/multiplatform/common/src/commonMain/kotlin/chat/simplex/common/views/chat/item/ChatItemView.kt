@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -50,6 +51,13 @@ fun chatEventText(eventText: String, ts: String): AnnotatedString =
   buildAnnotatedString {
     withStyle(chatEventStyle) { append("$eventText  $ts") }
   }
+
+data class ChatItemReactionMenuItem (
+  val name: String,
+  val image: String?,
+  val enabled: Boolean,
+  val onClick: () -> Unit
+)
 
 @Composable
 fun ChatItemView(
@@ -87,6 +95,7 @@ fun ChatItemView(
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   reveal: (Boolean) -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
+  showChatInfo: () -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
   showTimestamp: Boolean,
@@ -120,7 +129,7 @@ fun ChatItemView(
       Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
-          val reactionMembers = remember { mutableStateOf(emptyList<MemberReaction>()) }
+          val reactionMembers = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
           val interactionSource = remember { MutableInteractionSource() }
           val enterInteraction = remember { HoverInteraction.Enter() }
           KeyChangeEffect(highlighted.value) {
@@ -134,18 +143,44 @@ fun ChatItemView(
           var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
           if (cInfo.featureEnabled(ChatFeature.Reactions)) {
             fun showReactionsMenu() {
-              if (cInfo is ChatInfo.Group) {
-                withBGApi {
-                  try {
-                    val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
-                    if (members != null) {
-                      showReactionMenu.value = true
-                      reactionMembers.value = members
+              when (cInfo) {
+                is ChatInfo.Group -> {
+                  withBGApi {
+                    try {
+                      val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
+                      if (members != null) {
+                        showReactionMenu.value = true
+                        reactionMembers.value = members.map {
+                          val enabled = cInfo.groupInfo.membership.groupMemberId != it.groupMember.groupMemberId
+                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, enabled) {
+                            if (enabled) {
+                              showMemberInfo(cInfo.groupInfo, it.groupMember)
+                            }
+                          }
+                        }
+                      }
+                    } catch (e: Exception) {
+                      Log.d(TAG, "chatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
                     }
-                  } catch (e: Exception) {
-                    Log.d(TAG, "hatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
                   }
                 }
+                is ChatInfo.Direct -> {
+                  showReactionMenu.value = true
+                  val reactions = mutableListOf<ChatItemReactionMenuItem>()
+
+                  if (!r.userReacted || r.totalReacted > 1) {
+                    val contact = cInfo.contact
+                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, true) {
+                      showChatInfo()
+                    })
+                  }
+
+                  if (r.userReacted) {
+                    reactions.add(ChatItemReactionMenuItem(generalGetString(MR.strings.sender_you_pronoun), currentUser.value?.image, false) {})
+                  }
+                  reactionMembers.value = reactions
+                }
+                else -> {}
               }
             }
             modifier = modifier
@@ -168,17 +203,14 @@ fun ChatItemView(
             DefaultDropdownMenu(showMenu = showReactionMenu) {
               reactionMembers.value.forEach { m ->
                 ItemAction(
-                  text = m.groupMember.displayName,
-                  composable = { ProfileImage(44.dp, m.groupMember.image) },
+                  text = m.name,
+                  composable = { ProfileImage(44.dp, m.image) },
                   onClick = {
-                    if (cInfo is ChatInfo.Group && cInfo.groupInfo.membership.groupMemberId != m.groupMember.groupMemberId) {
-                      showMemberInfo(cInfo.groupInfo, m.groupMember)
-                      showReactionMenu.value = false
-                    } else {
-                      showReactionMenu.value = false
-                    }
+                    m.onClick()
+                    showReactionMenu.value = false
                   },
-                  lineLimit = 1
+                  lineLimit = 1,
+                  color = if (m.enabled) MenuTextColor else MaterialTheme.colors.secondary
                 )
               }
             }
@@ -1188,6 +1220,7 @@ fun PreviewChatItemView(
     showItemDetails = { _, _ -> },
     reveal = {},
     showMemberInfo = { _, _ ->},
+    showChatInfo = {},
     developerTools = false,
     showViaProxy = false,
     showTimestamp = true,
@@ -1233,6 +1266,7 @@ fun PreviewChatItemViewDeletedContent() {
       showItemDetails = { _, _ -> },
       reveal = {},
       showMemberInfo = { _, _ ->},
+      showChatInfo = {},
       developerTools = false,
       showViaProxy = false,
       preview = true,
