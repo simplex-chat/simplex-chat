@@ -343,7 +343,11 @@ struct ChatListNavLink: View {
             content: {
                 AnyView(
                     NavigationView {
-                        ChatListTag(chat: chat)
+                        if chatTagsModel.tags.isEmpty {
+                            CreateChatListTag(chat: chat)
+                        } else {
+                            ChatListTag(chat: chat)
+                        }
                     }
                 )
             },

@@ -767,7 +767,6 @@ struct ChatTagsView: View {
                     }
                 }
             }
-                    
         } label: {
             Image(systemName: "list.bullet")
                 .foregroundColor(color)
