@@ -479,7 +479,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           }
         }
         val oneHandUI = remember { appPrefs.oneHandUI.state }
-        Box(Modifier.offset(x = 0.dp, y = if (oneHandUI.value) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)) {
+        Box(Modifier.navigationBarsPadding().offset(x = 0.dp, y = if (oneHandUI.value) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)) {
           TabRow(
             selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
             Modifier.height(AppBarHeight * fontSizeSqrtMultiplier),
