@@ -1117,4 +1117,23 @@
     <string name="color_surface">Menús i alertes</string>
     <string name="theme_remove_image">Eliminar la imatge</string>
     <string name="group_members_can_send_voice">Els membres poden enviar missatges de veu.</string>
+    <string name="save_preferences_question">Voleu desar les preferències?</string>
+    <string name="network_options_save">Desa</string>
+    <string name="save_passphrase_in_keychain">Desa la frase de pas al Keystore</string>
+    <string name="save_passphrase_and_open_chat">Desa la frase de pas i obre el xat</string>
+    <string name="network_options_save_and_reconnect">Desa i reconnecta</string>
+    <string name="wallpaper_scale_repeat">Repeteix</string>
+    <string name="v5_6_safer_groups">Grups més segurs</string>
+    <string name="migrate_to_device_repeat_download">Repeteix la descàrrega</string>
+    <string name="migrate_to_device_repeat_import">Repetir importació</string>
+    <string name="restore_database">Restaura la còpia de la base de dades</string>
+    <string name="group_members_2">%s i %s</string>
+    <string name="restore_database_alert_confirm">Restaura</string>
+    <string name="restore_database_alert_title">Voleu restaurar la còpia de la base de dades?</string>
+    <string name="notifications_mode_off">Solament quan l\'app és oberta</string>
+    <string name="revoke_file__title">Voleu revocar el fitxer?</string>
+    <string name="sync_connection_force_question">Voleu renegociar l\'encriptació?</string>
+    <string name="smp_servers_save">Desa els servidors</string>
+    <string name="saved_message_title">Missatge desat</string>
+    <string name="save_group_profile">Desa el perfil del grup</string>
 </resources>
