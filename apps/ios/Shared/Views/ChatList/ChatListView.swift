@@ -449,20 +449,7 @@ struct ChatListView: View {
         
         func filterByTag(_ chat: Chat) -> Bool {
             if let tag = chatTagsModel.selectedTag {
-                switch tag {
-                case let .presetTag(_, _, filter):
-                    return filter(chat.chatInfo)
-                case let .chatTag(_, _, tagId):
-                    let cInfo = chat.chatInfo
-                    switch cInfo {
-                    case let .direct(contact):
-                        return contact.chatTags.contains(tagId)
-                    case let .group(gInfo):
-                        return gInfo.chatTags.contains(tagId)
-                    default:
-                        return false
-                    }
-                }
+                return tag.filter(chat.chatInfo)
             } else {
                 return true
             }
@@ -645,8 +632,8 @@ struct ChatListSearchBar: View {
 enum ChatTagFilter: Identifiable, Equatable {
     static func == (lhs: ChatTagFilter, rhs: ChatTagFilter) -> Bool {
         switch (lhs, rhs) {
-        case let (.presetTag(icon1, activeIcon1, _), .presetTag(icon2, activeIcon2, _)):
-            return icon1 == icon2 && activeIcon1 == activeIcon2
+        case let (.presetTag(icon1, activeIcon1, text1, enabled1, _), .presetTag(icon2, activeIcon2, text2, enabled2, _)):
+            return icon1 == icon2 && activeIcon1 == activeIcon2 && text1 == text2 && enabled1 == enabled2
         case let (.chatTag(emoji1, text1, tagId1), .chatTag(emoji2, text2, tagId2)):
             return emoji1 == emoji2 && text1 == text2 && tagId1 == tagId2
         default:
@@ -654,13 +641,49 @@ enum ChatTagFilter: Identifiable, Equatable {
         }
     }
     
-    case presetTag(icon: String, activeIcon: String, filter: (_ cInfo: ChatInfo) -> Bool)
+    case presetTag(icon: String, activeIcon: String, text: String, enabled: Bool, filter: (_ cInfo: ChatInfo) -> Bool)
     case chatTag(emoji: String, text: String, tagId: Int64)
 
     public var id: String {
         switch self {
-        case let .presetTag(icon, _, _): "preset \(icon)"
+        case let .presetTag(icon, _, _, _, _): "preset \(icon)"
         case let .chatTag(emoji, _, _): "chatTag \(emoji)"
+        }
+    }
+    
+    public var text: String {
+        switch self {
+        case let .presetTag(_, _, text, _, _): return text
+        case let .chatTag(_, text, _): return text
+        }
+    }
+    
+    public var enabled: Bool {
+        switch self {
+        case let .presetTag(_, _, _, enabled, _): return enabled
+        case .chatTag: return true
+        }
+    }
+    
+    public func getIcon(active: Bool) -> String {
+        switch self {
+        case let .presetTag(icon, activeIcon, _, _, _): return active ? activeIcon : icon
+        case let .chatTag(emoji, _, _): return emoji
+        }
+    }
+    
+    public func filter(_ cInfo: ChatInfo) -> Bool {
+        switch self {
+        case let .presetTag(_, _, _, _, filter): return filter(cInfo)
+        case let .chatTag(_, _, tagId):
+            switch cInfo {
+            case let .direct(contact):
+                return contact.chatTags.contains(tagId)
+            case let .group(gInfo):
+                return gInfo.chatTags.contains(tagId)
+            default:
+                return false
+            }
         }
     }
 }
@@ -669,41 +692,24 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
             
-    var presetTagFilters: [ChatTagFilter] {
-        get {
-            var tags: [ChatTagFilter] = []
-            var filtersLeft = chatTagsModel.presetTags
-            for chat in chatModel.chats {
-                for filter in filtersLeft {
-                    if case let .presetTag(_, _, filterFunction) = filter {
-                        if filterFunction(chat.chatInfo) {
-                            tags.append(filter)
-                            break
-                        }
-                    }
-                }
-                
-                filtersLeft.removeAll { tags.contains($0) }
-                if filtersLeft.isEmpty {
-                    break
-                }
-            }
-            
-            return tags
-        }
-    }
-    
     var body: some View {
-        let tags = presetTagFilters + chatTagsModel.tags
         HStack {
-            ForEach(tags, id: \.id) { tag in
+            let presetFilters = presetTagFilters()
+            
+            let enabledPresetFilters = presetFilters.filter { $0.enabled }
+            if enabledPresetFilters.count + chatTagsModel.tags.count <= 5 {
+                expandedPresetTagsFiltersView(presetFilters)
+            } else {
+                collapsedTagsFilterView(enabledPresetFilters)
+            }
+                
+            ForEach(chatTagsModel.tags, id: \.id) { tag in
                 let current = chatTagsModel.selectedTag == tag
-                let color: Color = current ? .accentColor : .secondary
+                let color: Color? = current ? .accentColor : nil
                 ZStack {
                     switch tag {
-                    case let .presetTag(icon, activeIcon, _):
-                        Image(systemName: current ? activeIcon : icon)
-                            .foregroundColor(color)
+                    case .presetTag:
+                        EmptyView()
                     case let .chatTag(emoji, text, _):
                         HStack(spacing: 4) {
                             Text(emoji)
@@ -712,13 +718,9 @@ struct ChatTagsView: View {
                                 Text(text).fontWeight(current ? .medium : .regular).foregroundColor(color)
                             }
                         }
-                    }
-                }
-                .onTapGesture {
-                    if (chatTagsModel.selectedTag == tag) {
-                        chatTagsModel.selectedTag = nil
-                    } else {
-                        chatTagsModel.selectedTag = tag
+                        .onTapGesture {
+                            setSelectedTag(tag)
+                        }
                     }
                 }
             }
@@ -727,6 +729,79 @@ struct ChatTagsView: View {
         }
         .onChange(of: chatModel.currentUser?.userId) { _ in
             getChatTags()
+        }
+    }
+    
+    
+    @ViewBuilder private func expandedPresetTagsFiltersView(_ filters: [ChatTagFilter]) -> some View {
+        ForEach(filters, id: \.id) { tag in
+            let current = chatTagsModel.selectedTag == tag
+            let color: Color? = current ? .accentColor : (tag.enabled ? nil : .secondary)
+            if chatTagsModel.tags.isEmpty || tag.enabled {
+                ZStack {
+                    Image(systemName: tag.getIcon(active: chatTagsModel.selectedTag == tag))
+                        .foregroundColor(color)
+                }
+                .onTapGesture {
+                    if tag.enabled {
+                        setSelectedTag(tag)
+                    }
+                }
+            } else {
+                EmptyView()
+            }
+        }
+    }
+    
+    @ViewBuilder private func collapsedTagsFilterView(_ filters: [ChatTagFilter]) -> some View {
+        let presetFilterIsSelected = filters.contains(where: { $0 ==  chatTagsModel.selectedTag })
+        let color: Color = presetFilterIsSelected ? .accentColor : .secondary
+        Menu {
+            ForEach(filters, id: \.id) { tag in
+                Button {
+                    setSelectedTag(tag)
+                } label: {
+                    HStack {
+                        Image(systemName: tag.getIcon(active: chatTagsModel.selectedTag == tag))
+                        Text(tag.text)
+                    }
+                }
+            }
+                    
+        } label: {
+            Image(systemName: "list.bullet")
+                .foregroundColor(color)
+        }
+    }
+    
+    private func presetTagFilters() -> [ChatTagFilter] {
+        var tags: [ChatTagFilter] = chatTagsModel.presetTags
+        var filtersLeft = chatTagsModel.presetTags
+        for chat in chatModel.chats {
+            for filter in filtersLeft {
+                if case let .presetTag(icon, activeIcon, text, _, filterFunction) = filter {
+                    if let i = tags.firstIndex(where: { $0.id == filter.id }), filterFunction(chat.chatInfo) {
+                        tags[i] = .presetTag(icon: icon, activeIcon: activeIcon, text: text, enabled: true, filter: filterFunction)
+                    }
+                }
+            }
+            
+            filtersLeft.removeAll { fl in
+                tags.contains(where: { $0.id == fl.id && $0.enabled } )
+            }
+            if filtersLeft.isEmpty {
+                break
+            }
+        }
+        
+        return tags
+    }
+    
+    private func setSelectedTag(_ tag: ChatTagFilter) {
+        if (chatTagsModel.selectedTag == tag) {
+            chatTagsModel.selectedTag = nil
+        } else {
+            chatTagsModel.selectedTag = tag
         }
     }
     
