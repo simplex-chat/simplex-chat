@@ -667,9 +667,34 @@ enum ChatTagFilter: Identifiable, Equatable {
 
 struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
-
+    @EnvironmentObject var chatModel: ChatModel
+            
+    var presetTagFilters: [ChatTagFilter] {
+        get {
+            var tags: [ChatTagFilter] = []
+            var filtersLeft = chatTagsModel.presetTags
+            for chat in chatModel.chats {
+                for filter in filtersLeft {
+                    if case let .presetTag(_, _, filterFunction) = filter {
+                        if filterFunction(chat.chatInfo) {
+                            tags.append(filter)
+                            break
+                        }
+                    }
+                }
+                
+                filtersLeft.removeAll { tags.contains($0) }
+                if filtersLeft.isEmpty {
+                    break
+                }
+            }
+            
+            return tags
+        }
+    }
+    
     var body: some View {
-        let tags = chatTagsModel.presetTags + chatTagsModel.tags
+        let tags = presetTagFilters + chatTagsModel.tags
         HStack {
             ForEach(tags, id: \.id) { tag in
                 let current = chatTagsModel.selectedTag == tag
@@ -698,6 +723,9 @@ struct ChatTagsView: View {
                 }
             }
         }.task {
+            getChatTags()
+        }
+        .onChange(of: chatModel.currentUser?.userId) { _ in
             getChatTags()
         }
     }
