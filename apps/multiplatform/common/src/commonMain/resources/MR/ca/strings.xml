@@ -569,4 +569,26 @@
     <string name="error_saving_group_profile">Error en desar el perfil del grup</string>
     <string name="network_type_cellular">Mòbil</string>
     <string name="servers_info_sessions_errors">Errors</string>
+    <string name="icon_descr_contact_checked">Contacte verificat</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">El contacte i tots els missatges s\'eliminaran, l\'acció és irreversible!</string>
+    <string name="display_name_connection_established">connexió establerta</string>
+    <string name="connection_error">Error de connexió</string>
+    <string name="connection_timeout">Temps de connexió enhaurit</string>
+    <string name="contact_already_exists">El contacte la existeix</string>
+    <string name="connection_error_auth">Error de connexió (AUTH)</string>
+    <string name="notification_preview_mode_contact">Nom del contacte</string>
+    <string name="contact_deleted">Contacte eliminat!</string>
+    <string name="alert_title_contact_connection_pending">El contacte encara no s\'hi ha connectat!</string>
+    <string name="connection_request_sent">Sol·licitud de connexió tramesa!</string>
+    <string name="connect_via_link">Connecta via enllaç</string>
+    <string name="status_contact_has_e2e_encryption">el contacte admet criptografia d\'extrem a extrem</string>
+    <string name="status_contact_has_no_e2e_encryption">el contacte no té criptografía d\'extrem a extrem</string>
+    <string name="cant_call_contact_deleted_alert_text">El contacte ha estat eliminat</string>
+    <string name="contact_preferences">Preferències del contacte</string>
+    <string name="v6_0_connect_faster_descr">Connecteu amb els vostres amic més ràpidament.</string>
+    <string name="remote_host_was_disconnected_title">Connexió interrompuda</string>
+    <string name="remote_ctrl_was_disconnected_title">Connexió aturada</string>
+    <string name="desktop_connection_terminated">Connexió finalitzada</string>
+    <string name="connect_plan_connect_via_link">Voleu connectar a través d\'un enllaç?</string>
+    <string name="connections">Connexions</string>
 </resources>
