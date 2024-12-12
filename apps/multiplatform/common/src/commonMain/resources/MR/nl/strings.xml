@@ -694,7 +694,7 @@
     <string name="smp_servers_test_server">Server test</string>
     <string name="rate_the_app">Beoordeel de app</string>
     <string name="smp_servers_use_server">Gebruik server</string>
-    <string name="using_simplex_chat_servers">Gebruik van SimpleX Chat servers.</string>
+    <string name="using_simplex_chat_servers">Gebruik SimpleX Chat servers.</string>
     <string name="smp_servers_your_server_address">Uw server adres</string>
     <string name="smp_servers_your_server">Uw server</string>
     <string name="network_session_mode_transport_isolation">Transport isolation</string>
@@ -854,7 +854,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">Uw contacten kunnen volledige verwijdering van berichten toestaan.</string>
     <string name="you_have_to_enter_passphrase_every_time">U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.</string>
     <string name="wrong_passphrase">Verkeerd wachtwoord voor de database</string>
-    <string name="save_passphrase_and_open_chat">Bewaar het wachtwoord en open je chats</string>
+    <string name="save_passphrase_and_open_chat">Bewaar wachtwoord en open je chats</string>
     <string name="database_backup_can_be_restored">De poging om het wachtwoord van de database te wijzigen is niet voltooid.</string>
     <string name="restore_database">Database back-up terugzetten</string>
     <string name="restore_database_alert_title">Database back-up terugzetten\?</string>
