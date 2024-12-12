@@ -316,8 +316,9 @@ fun removeWallpaperFile(fileName: String? = null) {
   WallpaperType.cachedImages.remove(fileName)
 }
 
-fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
-  val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+fun <T> createTmpFileAndDelete(dir: File = tmpDir, onCreated: (File) -> T): T {
+  val tmpFile = File(dir, UUID.randomUUID().toString())
+  tmpFile.parentFile.mkdirs()
   tmpFile.deleteOnExit()
   ChatModel.filesToDelete.add(tmpFile)
   try {

@@ -9,15 +9,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.helpers.*
+import chat.simplex.res.MR
 import com.jthemedetecor.OsThemeDetector
 import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
-import kotlinx.coroutines.*
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.*
-import java.util.concurrent.Executors
 
 @Composable
 actual fun font(name: String, res: String, weight: FontWeight, style: FontStyle): Font =
@@ -37,10 +38,8 @@ catch (e: Exception) {
 
 private val settingsFile =
   File(desktopPlatform.configPath + File.separator + "settings.properties")
-    .also { it.parentFile.mkdirs() }
 private val settingsThemesFile =
   File(desktopPlatform.configPath + File.separator + "themes.properties")
-    .also { it.parentFile.mkdirs() }
 
 private val settingsProps =
   Properties()
@@ -61,11 +60,35 @@ private val settingsThemesProps =
   Properties()
     .also { props -> try { settingsThemesFile.reader().use { props.load(it) } } catch (e: Exception) { /**/ } }
 
-
-private val settingsWriterThread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-
-actual val settings: Settings = PropertiesSettings(settingsProps) { CoroutineScope(settingsWriterThread).launch { settingsFile.writer().use { settingsProps.store(it, "") } } }
-actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { CoroutineScope(settingsWriterThread).launch { settingsThemesFile.writer().use { settingsThemesProps.store(it, "") } } }
+private const val lock = "settingsSaver"
+actual val settings: Settings = PropertiesSettings(settingsProps) {
+  synchronized(lock) {
+    try {
+      createTmpFileAndDelete(preferencesTmpDir) { tmpFile ->
+        tmpFile.writer().use { settingsProps.store(it, "") }
+        settingsFile.parentFile.mkdirs()
+        Files.move(tmpFile.toPath(), settingsFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+      }
+    } catch (e: Exception) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.prefs_error_saving_settings), e.stackTraceToString())
+      throw e
+    }
+  }
+}
+actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) {
+  synchronized(lock) {
+    try {
+      createTmpFileAndDelete(preferencesTmpDir) { tmpFile ->
+        tmpFile.writer().use { settingsThemesProps.store(it, "") }
+        settingsThemesFile.parentFile.mkdirs()
+        Files.move(tmpFile.toPath(), settingsThemesFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+      }
+    } catch (e: Exception) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.prefs_error_saving_settings), e.stackTraceToString())
+      throw e
+    }
+  }
+}
 
 actual fun windowOrientation(): WindowOrientation =
   if (simplexWindowState.windowState.size.width > simplexWindowState.windowState.size.height) {

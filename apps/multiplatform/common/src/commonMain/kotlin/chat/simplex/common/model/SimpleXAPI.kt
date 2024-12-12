@@ -3115,8 +3115,12 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 
   init {
     this.set = { value ->
-      set(value)
-      _state.value = value
+      try {
+        set(value)
+        _state.value = value
+      } catch (e: Exception) {
+        Log.e(TAG, "Error saving settings: ${e.stackTraceToString()}")
+      }
     }
   }
 }
