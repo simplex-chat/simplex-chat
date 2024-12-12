@@ -30,7 +30,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlin.math.*
 
@@ -55,8 +54,7 @@ fun chatEventText(eventText: String, ts: String): AnnotatedString =
 data class ChatItemReactionMenuItem (
   val name: String,
   val image: String?,
-  val enabled: Boolean,
-  val onClick: () -> Unit
+  val onClick: (() -> Unit)?
 )
 
 @Composable
@@ -129,7 +127,7 @@ fun ChatItemView(
       Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
         cItem.reactions.forEach { r ->
           val showReactionMenu = remember { mutableStateOf(false) }
-          val reactionMembers = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
+          val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
           val interactionSource = remember { MutableInteractionSource() }
           val enterInteraction = remember { HoverInteraction.Enter() }
           KeyChangeEffect(highlighted.value) {
@@ -150,13 +148,10 @@ fun ChatItemView(
                       val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
                       if (members != null) {
                         showReactionMenu.value = true
-                        reactionMembers.value = members.map {
+                        reactionMenuItems.value = members.map {
                           val enabled = cInfo.groupInfo.membership.groupMemberId != it.groupMember.groupMemberId
-                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, enabled) {
-                            if (enabled) {
-                              showMemberInfo(cInfo.groupInfo, it.groupMember)
-                            }
-                          }
+                          val click = if (enabled) ({ showMemberInfo(cInfo.groupInfo, it.groupMember) }) else null
+                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click)
                         }
                       }
                     } catch (e: Exception) {
@@ -170,15 +165,13 @@ fun ChatItemView(
 
                   if (!r.userReacted || r.totalReacted > 1) {
                     val contact = cInfo.contact
-                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, true) {
-                      showChatInfo()
-                    })
+                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo))
                   }
 
                   if (r.userReacted) {
-                    reactions.add(ChatItemReactionMenuItem(generalGetString(MR.strings.sender_you_pronoun), currentUser.value?.image, false) {})
+                    reactions.add(ChatItemReactionMenuItem(generalGetString(MR.strings.sender_you_pronoun), currentUser.value?.image, null))
                   }
-                  reactionMembers.value = reactions
+                  reactionMenuItems.value = reactions
                 }
                 else -> {}
               }
@@ -201,16 +194,19 @@ fun ChatItemView(
           Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
             ReactionIcon(r.reaction.text, fontSize = 12.sp)
             DefaultDropdownMenu(showMenu = showReactionMenu) {
-              reactionMembers.value.forEach { m ->
+              reactionMenuItems.value.forEach { m ->
                 ItemAction(
                   text = m.name,
                   composable = { ProfileImage(44.dp, m.image) },
                   onClick = {
-                    m.onClick()
-                    showReactionMenu.value = false
+                    val click = m.onClick
+                    if (click != null) {
+                      click()
+                      showReactionMenu.value = false
+                    }
                   },
                   lineLimit = 1,
-                  color = if (m.enabled) MenuTextColor else MaterialTheme.colors.secondary
+                  color = if (m.onClick == null) MaterialTheme.colors.secondary else MenuTextColor
                 )
               }
             }
