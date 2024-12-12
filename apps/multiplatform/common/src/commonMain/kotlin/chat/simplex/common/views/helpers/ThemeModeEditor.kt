@@ -1,6 +1,7 @@
 package chat.simplex.common.views.helpers
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -31,10 +32,7 @@ fun ModalData.UserWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
@@ -203,11 +201,12 @@ fun ModalData.UserWallpaperEditor(
         }
       )
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionSpacer()
+      SectionDividerSpaced(maxBottomPadding = false)
+
       ImportExportThemeSection(null, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
           themeModeOverride.value = it
@@ -229,10 +228,7 @@ fun ModalData.ChatWallpaperEditor(
   globalThemeUsed: MutableState<Boolean>,
   save: suspend (applyToMode: DefaultThemeMode?, ThemeModeOverride?) -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-  ) {
+  ColumnWithScrollBar {
     val applyToMode = remember { stateGetOrPutNullable("applyToMode") { applyToMode } }
     var showMore by remember { stateGetOrPut("showMore") { false } }
     val themeModeOverride = remember { stateGetOrPut("themeModeOverride") { theme } }
@@ -440,11 +436,11 @@ fun ModalData.ChatWallpaperEditor(
         }
       )
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionSpacer()
+      SectionDividerSpaced(maxBottomPadding = false)
       ImportExportThemeSection(themeModeOverride.value, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
           themeModeOverride.value = it

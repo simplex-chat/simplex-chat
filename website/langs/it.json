@@ -244,16 +244,17 @@
     "stable-and-beta-versions-built-by-developers": "Versioni stabili e beta compilate dagli sviluppatori",
     "f-droid-page-simplex-chat-repo-section-text": "Per aggiungerlo al tuo client F-Droid <span class='hide-on-mobile'>scansiona il codice QR o</span> usa questo URL:",
     "comparison-section-list-point-4a": "I relay di SimpleX non possono compromettere la crittografia e2e. Verifica il codice di sicurezza per mitigare gli attacchi sul canale fuori banda",
-    "hero-overlay-3-title": "Valutazione della sicurezza",
-    "hero-overlay-card-3-p-2": "Trail of Bits ha revisionato i componenti di crittografia e di rete della piattaforma SimpleX nel novembre 2022.",
-    "hero-overlay-card-3-p-3": "Maggiori informazioni nell'<a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">annuncio</a>.",
+    "hero-overlay-3-title": "Valutazioni della sicurezza",
+    "hero-overlay-card-3-p-2": "Trail of Bits ha revisionato i componenti di crittografia e di rete della piattaforma SimpleX nel novembre 2022. <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">Maggiori informazioni</a>.",
     "jobs": "Unisciti al team",
-    "hero-overlay-3-textlink": "Valutazione della sicurezza",
+    "hero-overlay-3-textlink": "Valutazioni della sicurezza",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> è leader nella consulenza di sicurezza e tecnologia, i cui clienti includono grandi aziende, agenzie governative e importanti progetti di blockchain.",
     "docs-dropdown-9": "Download",
     "please-enable-javascript": "Attiva JavaScript per vedere il codice QR.",
     "please-use-link-in-mobile-app": "Usa il link nell'app mobile",
     "docs-dropdown-10": "Trasparenza",
     "docs-dropdown-12": "Sicurezza",
-    "docs-dropdown-11": "Domande frequenti"
+    "docs-dropdown-11": "Domande frequenti",
+    "hero-overlay-card-3-p-3": "Trail of Bits ha analizzato la progettazione crittografica dei protocolli della rete SimpleX nel luglio 2024. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Leggi di più</a>.",
+    "docs-dropdown-14": "SimpleX per il lavoro"
 }

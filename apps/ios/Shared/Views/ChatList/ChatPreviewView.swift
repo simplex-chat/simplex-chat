@@ -35,11 +35,16 @@ struct ChatPreviewView: View {
             }
             .padding(.leading, 4)
 
+            let chatTs = if let cItem {
+                cItem.meta.itemTs
+            } else {
+                chat.chatInfo.chatTs
+            }
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
                     chatPreviewTitle()
                     Spacer()
-                    (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.chatTs))
+                    (formatTimestampText(chatTs))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(theme.colors.secondary)
@@ -167,7 +172,7 @@ struct ChatPreviewView: View {
     }
 
     private var verifiedIcon: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        (Text(Image(systemName: "checkmark.shield")) + textSpace)
             .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)
             .kerning(-2)
@@ -227,12 +232,12 @@ struct ChatPreviewView: View {
                 + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
-            Text(Image(systemName: s)).foregroundColor(color) + Text(" ")
+            Text(Image(systemName: s)).foregroundColor(color) + textSpace
         }
 
         func attachment() -> Text {
             switch draft.preview {
-            case let .filePreview(fileName, _): return image("doc.fill") + Text(fileName) + Text(" ")
+            case let .filePreview(fileName, _): return image("doc.fill") + Text(fileName) + textSpace
             case .mediaPreviews: return image("photo")
             case let .voicePreview(_, duration): return image("play.fill") + Text(durationText(duration))
             default: return Text("")
@@ -302,7 +307,7 @@ struct ChatPreviewView: View {
         case let .link(_, preview):
             smallContentPreview(size: dynamicMediaSize) {
                 ZStack(alignment: .topTrailing) {
-                    Image(uiImage: UIImage(base64Encoded: preview.image) ?? UIImage(systemName: "arrow.up.right")!)
+                    Image(uiImage: imageFromBase64(preview.image) ?? UIImage(systemName: "arrow.up.right")!)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: dynamicMediaSize, height: dynamicMediaSize)
@@ -323,13 +328,13 @@ struct ChatPreviewView: View {
             }
         case let .image(_, image):
             smallContentPreview(size: dynamicMediaSize) {
-                CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: dynamicMediaSize, smallView: true, showFullScreenImage: $showFullscreenGallery)
-                    .environmentObject(ReverseListScrollModel<ChatItem>())
+                CIImageView(chatItem: ci, preview: imageFromBase64(image), maxWidth: dynamicMediaSize, smallView: true, showFullScreenImage: $showFullscreenGallery)
+                    .environmentObject(ReverseListScrollModel())
             }
         case let .video(_,image, duration):
             smallContentPreview(size: dynamicMediaSize) {
-                CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: dynamicMediaSize, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
-                    .environmentObject(ReverseListScrollModel<ChatItem>())
+                CIVideoView(chatItem: ci, preview: imageFromBase64(image), duration: duration, maxWidth: dynamicMediaSize, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
+                    .environmentObject(ReverseListScrollModel())
             }
         case let .voice(_, duration):
             smallContentPreviewVoice(size: dynamicMediaSize) {
@@ -362,11 +367,11 @@ struct ChatPreviewView: View {
         case .sndErrorAuth, .sndError:
             return Text(Image(systemName: "multiply"))
                 .font(.caption)
-                .foregroundColor(.red) + Text(" ")
+                .foregroundColor(.red) + textSpace
         case .sndWarning:
             return Text(Image(systemName: "exclamationmark.triangle.fill"))
                 .font(.caption)
-                .foregroundColor(.orange) + Text(" ")
+                .foregroundColor(.orange) + textSpace
         default: return Text("")
         }
     }

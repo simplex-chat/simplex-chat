@@ -12,21 +12,6 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=" " xml:space="preserve">
-        <source> </source>
-        <target> </target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="  " xml:space="preserve">
-        <source>  </source>
-        <target>  </target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="   " xml:space="preserve">
-        <source>   </source>
-        <target>   </target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id=" (" xml:space="preserve">
         <source> (</source>
         <target> (</target>
@@ -126,6 +111,14 @@
         <target>%@ je ověřený</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ server" xml:space="preserve">
+        <source>%@ server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve">
+        <source>%@ servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
         <source>%@ uploaded</source>
         <note>No comment provided by engineer.</note>
@@ -134,6 +127,10 @@
         <source>%@ wants to connect!</source>
         <target>%@ se chce připojit!</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="%@, %@" xml:space="preserve">
+        <source>%1$@, %2$@</source>
+        <note>format for date separator in chat</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
         <source>%@, %@ and %lld members</source>
@@ -154,10 +151,30 @@
         <target>%d dní</target>
         <note>time interval</note>
       </trans-unit>
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
+        <source>%d file(s) are still being downloaded.</source>
+        <note>forward confirmation reason</note>
+      </trans-unit>
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve">
+        <source>%d file(s) failed to download.</source>
+        <note>forward confirmation reason</note>
+      </trans-unit>
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve">
+        <source>%d file(s) were deleted.</source>
+        <note>forward confirmation reason</note>
+      </trans-unit>
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
+        <source>%d file(s) were not downloaded.</source>
+        <note>forward confirmation reason</note>
+      </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
         <source>%d hours</source>
         <target>%d hodin</target>
         <note>time interval</note>
+      </trans-unit>
+      <trans-unit id="%d messages not forwarded" xml:space="preserve">
+        <source>%d messages not forwarded</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
         <source>%d min</source>
@@ -312,26 +329,21 @@
         <target>)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve">
-        <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
-        <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target>**Přidat nový kontakt**: pro vytvoření jednorázového QR kódu nebo odkazu pro váš kontakt.</target>
+      <trans-unit id="**Create 1-time link**: to create and share a new invitation link." xml:space="preserve">
+        <source>**Create 1-time link**: to create and share a new invitation link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
         <source>**Create group**: to create a new group.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
-        <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
+      <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve">
+        <source>**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata.</source>
         <target>**Soukromější**: kontrolovat nové zprávy každých 20 minut. Token zařízení je sdílen se serverem SimpleX Chat, ale ne kolik máte kontaktů nebo zpráv.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
-        <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
+      <trans-unit id="**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." xml:space="preserve">
+        <source>**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app.</source>
         <target>**Nejsoukromější**: nepoužívejte server oznámení SimpleX Chat, pravidelně kontrolujte zprávy na pozadí (závisí na tom, jak často aplikaci používáte).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -344,9 +356,13 @@
         <target>**Upozornění**: Pokud heslo ztratíte, NEBUDETE jej moci obnovit ani změnit.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
-        <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
+      <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve">
+        <source>**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from.</source>
         <target>**Doporučeno**: Token zařízení a oznámení se odesílají na oznamovací server SimpleX Chat, ale nikoli obsah, velikost nebo od koho jsou zprávy.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve">
+        <source>**Scan / Paste link**: to connect via a link you received.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -450,6 +466,14 @@
         <target>1 týden</target>
         <note>time interval</note>
       </trans-unit>
+      <trans-unit id="1-time link" xml:space="preserve">
+        <source>1-time link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="1-time link can be used *with one contact only* - share in person or via any messenger." xml:space="preserve">
+        <source>1-time link can be used *with one contact only* - share in person or via any messenger.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="5 minutes" xml:space="preserve">
         <source>5 minutes</source>
         <target>5 minut</target>
@@ -519,19 +543,13 @@
         <target>Přerušit změnu adresy?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX" xml:space="preserve">
-        <source>About SimpleX</source>
-        <target>O SimpleX</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="About SimpleX Chat" xml:space="preserve">
         <source>About SimpleX Chat</source>
         <target>O SimpleX chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX address" xml:space="preserve">
-        <source>About SimpleX address</source>
-        <target>O SimpleX adrese</target>
+      <trans-unit id="About operators" xml:space="preserve">
+        <source>About operators</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -544,6 +562,10 @@
         <note>accept contact request via notification
    accept incoming call via notification
    swipe action</note>
+      </trans-unit>
+      <trans-unit id="Accept conditions" xml:space="preserve">
+        <source>Accept conditions</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve">
         <source>Accept connection request?</source>
@@ -560,6 +582,10 @@
         <target>Přijmout inkognito</target>
         <note>accept contact request via notification
    swipe action</note>
+      </trans-unit>
+      <trans-unit id="Accepted conditions" xml:space="preserve">
+        <source>Accepted conditions</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Acknowledged" xml:space="preserve">
         <source>Acknowledged</source>
@@ -578,13 +604,8 @@
         <target>Přidejte adresu do svého profilu, aby ji vaše kontakty mohly sdílet s dalšími lidmi. Aktualizace profilu bude zaslána vašim kontaktům.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add contact" xml:space="preserve">
-        <source>Add contact</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Add preset servers" xml:space="preserve">
-        <source>Add preset servers</source>
-        <target>Přidejte přednastavené servery</target>
+      <trans-unit id="Add friends" xml:space="preserve">
+        <source>Add friends</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -602,6 +623,10 @@
         <target>Přidejte servery skenováním QR kódů.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add team members" xml:space="preserve">
+        <source>Add team members</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
         <source>Add to another device</source>
         <target>Přidat do jiného zařízení</target>
@@ -610,6 +635,18 @@
       <trans-unit id="Add welcome message" xml:space="preserve">
         <source>Add welcome message</source>
         <target>Přidat uvítací zprávu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+        <source>Add your team members to the conversations.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Added media &amp; file servers" xml:space="preserve">
+        <source>Added media &amp; file servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Added message servers" xml:space="preserve">
+        <source>Added message servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Additional accent" xml:space="preserve">
@@ -632,6 +669,14 @@
       <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
         <source>Address change will be aborted. Old receiving address will be used.</source>
         <target>Změna adresy bude přerušena. Budou použity staré přijímací adresy.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Address or 1-time link?" xml:space="preserve">
+        <source>Address or 1-time link?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Address settings" xml:space="preserve">
+        <source>Address settings</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve">
@@ -667,13 +712,17 @@
         <target>Všechna data se při zadání vymažou.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
-        <source>All data is private to your device.</source>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve">
+        <source>All data is kept private on your device.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
         <source>All group members will remain connected.</source>
         <target>Všichni členové skupiny zůstanou připojeni.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve">
+        <source>All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
@@ -691,7 +740,7 @@
       </trans-unit>
       <trans-unit id="All profiles" xml:space="preserve">
         <source>All profiles</source>
-        <note>No comment provided by engineer.</note>
+        <note>profile dropdown</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
@@ -845,6 +894,11 @@
         <target>Přijmout hovor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Anybody can host servers." xml:space="preserve">
+        <source>Anybody can host servers.</source>
+        <target>Servery může provozovat kdokoli.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
         <target>Sestavení aplikace: %@</target>
@@ -872,6 +926,10 @@
       <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
         <source>App passcode is replaced with self-destruct passcode.</source>
         <target>Přístupový kód aplikace je nahrazen sebedestrukčním přístupovým heslem.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App session" xml:space="preserve">
+        <source>App session</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
@@ -973,6 +1031,10 @@
         <target>Automaticky přijímat obrázky</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Auto-accept settings" xml:space="preserve">
+        <source>Auto-accept settings</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
         <source>Back</source>
         <target>Zpět</target>
@@ -996,8 +1058,16 @@
         <target>Špatný hash zprávy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better calls" xml:space="preserve">
+        <source>Better calls</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
         <source>Better groups</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better message dates." xml:space="preserve">
+        <source>Better message dates.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -1007,6 +1077,18 @@
       </trans-unit>
       <trans-unit id="Better networking" xml:space="preserve">
         <source>Better networking</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better notifications" xml:space="preserve">
+        <source>Better notifications</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better security ✅" xml:space="preserve">
+        <source>Better security ✅</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better user experience" xml:space="preserve">
+        <source>Better user experience</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1079,6 +1161,14 @@
         <target>Bulharský, finský, thajský a ukrajinský - díky uživatelům a [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Business address" xml:space="preserve">
+        <source>Business address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Business chats" xml:space="preserve">
+        <source>Business chats</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
         <target>Podle chat profilu (výchozí) nebo [podle připojení](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
@@ -1127,7 +1217,8 @@
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>Zrušit</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action
+   alert button</note>
       </trans-unit>
       <trans-unit id="Cancel migration" xml:space="preserve">
         <source>Cancel migration</source>
@@ -1145,7 +1236,7 @@
       <trans-unit id="Cannot receive file" xml:space="preserve">
         <source>Cannot receive file</source>
         <target>Nelze přijmout soubor</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve">
         <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
@@ -1159,6 +1250,10 @@
         <source>Change</source>
         <target>Změnit</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Change chat profiles" xml:space="preserve">
+        <source>Change chat profiles</source>
+        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
@@ -1206,9 +1301,16 @@
         <note>authentication reason
    set passcode view</note>
       </trans-unit>
-      <trans-unit id="Chat archive" xml:space="preserve">
-        <source>Chat archive</source>
-        <target>Chat se archivuje</target>
+      <trans-unit id="Chat" xml:space="preserve">
+        <source>Chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat already exists" xml:space="preserve">
+        <source>Chat already exists</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat already exists!" xml:space="preserve">
+        <source>Chat already exists!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
@@ -1266,8 +1368,25 @@
         <target>Předvolby chatu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat preferences were changed." xml:space="preserve">
+        <source>Chat preferences were changed.</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve">
+        <source>Chat profile</source>
+        <target>Profil uživatele</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for all members - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for you - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1275,10 +1394,18 @@
         <target>Chaty</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Check messages every 20 min." xml:space="preserve">
+        <source>Check messages every 20 min.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Check messages when allowed." xml:space="preserve">
+        <source>Check messages when allowed.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Check server address and try again." xml:space="preserve">
         <source>Check server address and try again.</source>
         <target>Zkontrolujte adresu serveru a zkuste to znovu.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
         <source>Chinese and Spanish interface</source>
@@ -1357,13 +1484,45 @@
         <source>Completed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Conditions accepted on: %@." xml:space="preserve">
+        <source>Conditions accepted on: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are accepted for the operator(s): **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions of use" xml:space="preserve">
+        <source>Conditions of use</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for enabled operators after 30 days." xml:space="preserve">
+        <source>Conditions will be accepted for enabled operators after 30 days.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for operator(s): **%@**." xml:space="preserve">
+        <source>Conditions will be accepted for operator(s): **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve">
+        <source>Conditions will be accepted for the operator(s): **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve">
+        <source>Conditions will be accepted on: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve">
+        <source>Conditions will be automatically accepted for enabled operators on: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
         <source>Configure ICE servers</source>
         <target>Konfigurace serverů ICE</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Configured %@ servers" xml:space="preserve">
-        <source>Configured %@ servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -1531,6 +1690,10 @@ This is your own one-time link!</source>
         <target>Požadavek na připojení byl odeslán!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection security" xml:space="preserve">
+        <source>Connection security</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection terminated" xml:space="preserve">
         <source>Connection terminated</source>
         <note>No comment provided by engineer.</note>
@@ -1623,6 +1786,10 @@ This is your own one-time link!</source>
         <target>Verze jádra: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Corner" xml:space="preserve">
+        <source>Corner</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve">
         <source>Correct name to %@?</source>
         <note>No comment provided by engineer.</note>
@@ -1632,6 +1799,10 @@ This is your own one-time link!</source>
         <target>Vytvořit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create 1-time link" xml:space="preserve">
+        <source>Create 1-time link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create SimpleX address" xml:space="preserve">
         <source>Create SimpleX address</source>
         <target>Vytvořit SimpleX adresu</target>
@@ -1639,11 +1810,6 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Create a group using a random profile." xml:space="preserve">
         <source>Create a group using a random profile.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
-        <source>Create an address to let people connect with you.</source>
-        <target>Vytvořit adresu, aby se s vámi lidé mohli spojit.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create file" xml:space="preserve">
@@ -1701,11 +1867,6 @@ This is your own one-time link!</source>
         <source>Created at: %@</source>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Created on %@" xml:space="preserve">
-        <source>Created on %@</source>
-        <target>Vytvořeno na %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Creating archive link" xml:space="preserve">
         <source>Creating archive link</source>
         <note>No comment provided by engineer.</note>
@@ -1717,6 +1878,10 @@ This is your own one-time link!</source>
       <trans-unit id="Current Passcode" xml:space="preserve">
         <source>Current Passcode</source>
         <target>Aktuální heslo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Current conditions text couldn't be loaded, you can review conditions via this link:" xml:space="preserve">
+        <source>Current conditions text couldn't be loaded, you can review conditions via this link:</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current passphrase…" xml:space="preserve">
@@ -1736,6 +1901,10 @@ This is your own one-time link!</source>
       <trans-unit id="Custom time" xml:space="preserve">
         <source>Custom time</source>
         <target>Vlastní čas</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Customizable message shape." xml:space="preserve">
+        <source>Customizable message shape.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Customize theme" xml:space="preserve">
@@ -1866,7 +2035,8 @@ This is your own one-time link!</source>
       <trans-unit id="Delete" xml:space="preserve">
         <source>Delete</source>
         <target>Smazat</target>
-        <note>chat item action
+        <note>alert action
+   chat item action
    swipe action</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
@@ -1901,14 +2071,8 @@ This is your own one-time link!</source>
         <source>Delete and notify contact</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete archive" xml:space="preserve">
-        <source>Delete archive</source>
-        <target>Smazat archiv</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete chat archive?" xml:space="preserve">
-        <source>Delete chat archive?</source>
-        <target>Smazat archiv chatu?</target>
+      <trans-unit id="Delete chat" xml:space="preserve">
+        <source>Delete chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -1919,6 +2083,10 @@ This is your own one-time link!</source>
       <trans-unit id="Delete chat profile?" xml:space="preserve">
         <source>Delete chat profile?</source>
         <target>Smazat chat profil?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete chat?" xml:space="preserve">
+        <source>Delete chat?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2024,6 +2192,10 @@ This is your own one-time link!</source>
         <target>Smazat starou databázi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete or moderate up to 200 messages." xml:space="preserve">
+        <source>Delete or moderate up to 200 messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete pending connection?" xml:space="preserve">
         <source>Delete pending connection?</source>
         <target>Smazat čekající připojení?</target>
@@ -2068,6 +2240,10 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Deletion errors" xml:space="preserve">
         <source>Deletion errors</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delivered even when Apple drops them." xml:space="preserve">
+        <source>Delivered even when Apple drops them.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery" xml:space="preserve">
@@ -2161,8 +2337,12 @@ This is your own one-time link!</source>
         <target>Přímé zprávy</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
+        <source>Direct messages between members are prohibited in this chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+        <source>Direct messages between members are prohibited.</source>
         <target>Přímé zprávy mezi členy jsou v této skupině zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2200,8 +2380,8 @@ This is your own one-time link!</source>
         <target>Mizící zprávy jsou v tomto chatu zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+        <source>Disappearing messages are prohibited.</source>
         <target>Mizící zprávy jsou v této skupině zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2255,6 +2435,10 @@ This is your own one-time link!</source>
         <source>Do not send history to new members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Do not use credentials with proxy." xml:space="preserve">
+        <source>Do not use credentials with proxy.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
         <source>Don't create address</source>
         <target>Nevytvářet adresu</target>
@@ -2277,7 +2461,8 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Download" xml:space="preserve">
         <source>Download</source>
-        <note>chat item action</note>
+        <note>alert button
+   chat item action</note>
       </trans-unit>
       <trans-unit id="Download errors" xml:space="preserve">
         <source>Download errors</source>
@@ -2291,6 +2476,10 @@ This is your own one-time link!</source>
         <source>Download file</source>
         <target>Stáhnout soubor</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Download files" xml:space="preserve">
+        <source>Download files</source>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Downloaded" xml:space="preserve">
         <source>Downloaded</source>
@@ -2318,6 +2507,10 @@ This is your own one-time link!</source>
         <target>Trvání</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="E2E encrypted notifications." xml:space="preserve">
+        <source>E2E encrypted notifications.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
         <source>Edit</source>
         <target>Upravit</target>
@@ -2336,6 +2529,10 @@ This is your own one-time link!</source>
       <trans-unit id="Enable (keep overrides)" xml:space="preserve">
         <source>Enable (keep overrides)</source>
         <target>Povolit (zachovat přepsání)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable Flux" xml:space="preserve">
+        <source>Enable Flux</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
@@ -2532,14 +2729,13 @@ This is your own one-time link!</source>
         <target>Chyba přerušení změny adresy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error accepting conditions" xml:space="preserve">
+        <source>Error accepting conditions</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
         <source>Error accepting contact request</source>
         <target>Chyba při přijímání žádosti o kontakt</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error accessing database file" xml:space="preserve">
-        <source>Error accessing database file</source>
-        <target>Chyba přístupu k souboru databáze</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -2547,9 +2743,17 @@ This is your own one-time link!</source>
         <target>Chyba přidávání člena(ů)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error adding server" xml:space="preserve">
+        <source>Error adding server</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
         <source>Error changing address</source>
         <target>Chuba změny adresy</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error changing connection profile" xml:space="preserve">
+        <source>Error changing connection profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
@@ -2560,6 +2764,10 @@ This is your own one-time link!</source>
       <trans-unit id="Error changing setting" xml:space="preserve">
         <source>Error changing setting</source>
         <target>Chyba změny nastavení</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error changing to incognito!" xml:space="preserve">
+        <source>Error changing to incognito!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
@@ -2673,9 +2881,12 @@ This is your own one-time link!</source>
         <target>Chyba při připojování ke skupině</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error loading %@ servers" xml:space="preserve">
-        <source>Error loading %@ servers</source>
-        <target>Chyba načítání %@ serverů</target>
+      <trans-unit id="Error loading servers" xml:space="preserve">
+        <source>Error loading servers</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Error migrating settings" xml:space="preserve">
+        <source>Error migrating settings</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error opening chat" xml:space="preserve">
@@ -2685,7 +2896,7 @@ This is your own one-time link!</source>
       <trans-unit id="Error receiving file" xml:space="preserve">
         <source>Error receiving file</source>
         <target>Chyba při příjmu souboru</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error reconnecting server" xml:space="preserve">
         <source>Error reconnecting server</source>
@@ -2702,11 +2913,6 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Error resetting statistics" xml:space="preserve">
         <source>Error resetting statistics</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error saving %@ servers" xml:space="preserve">
-        <source>Error saving %@ servers</source>
-        <target>Chyba při ukládání serverů %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve">
@@ -2728,6 +2934,10 @@ This is your own one-time link!</source>
         <source>Error saving passphrase to keychain</source>
         <target>Při ukládání přístupové fráze do klíčenky došlo k chybě</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving servers" xml:space="preserve">
+        <source>Error saving servers</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving settings" xml:space="preserve">
         <source>Error saving settings</source>
@@ -2772,10 +2982,14 @@ This is your own one-time link!</source>
         <target>Chyba při zastavení chatu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error switching profile" xml:space="preserve">
+        <source>Error switching profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
         <source>Error switching profile!</source>
         <target>Chyba při přepínání profilu!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alertTitle</note>
       </trans-unit>
       <trans-unit id="Error synchronizing connection" xml:space="preserve">
         <source>Error synchronizing connection</source>
@@ -2791,6 +3005,10 @@ This is your own one-time link!</source>
         <source>Error updating message</source>
         <target>Chyba aktualizace zprávy</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating server" xml:space="preserve">
+        <source>Error updating server</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error updating settings" xml:space="preserve">
         <source>Error updating settings</source>
@@ -2818,8 +3036,7 @@ This is your own one-time link!</source>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>Chyba: %@</target>
-        <note>file error text
-   snd error text</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
@@ -2834,6 +3051,10 @@ This is your own one-time link!</source>
       <trans-unit id="Errors" xml:space="preserve">
         <source>Errors</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Errors in servers configuration." xml:space="preserve">
+        <source>Errors in servers configuration.</source>
+        <note>servers error</note>
       </trans-unit>
       <trans-unit id="Even when disabled in the conversation." xml:space="preserve">
         <source>Even when disabled in the conversation.</source>
@@ -2900,6 +3121,11 @@ This is your own one-time link!</source>
         <source>File error</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="File errors:&#10;%@" xml:space="preserve">
+        <source>File errors:
+%@</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="File not found - most likely file was deleted or cancelled." xml:space="preserve">
         <source>File not found - most likely file was deleted or cancelled.</source>
         <note>file error text</note>
@@ -2950,8 +3176,8 @@ This is your own one-time link!</source>
         <target>Soubory a média</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
-        <source>Files and media are prohibited in this group.</source>
+      <trans-unit id="Files and media are prohibited." xml:space="preserve">
+        <source>Files and media are prohibited.</source>
         <target>Soubory a média jsou zakázány v této skupině.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3017,17 +3243,49 @@ This is your own one-time link!</source>
         <target>Opravit nepodporované členem skupiny</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="For chat profile %@:" xml:space="preserve">
+        <source>For chat profile %@:</source>
+        <note>servers error</note>
+      </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>Pro konzoli</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve">
+        <source>For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="For private routing" xml:space="preserve">
+        <source>For private routing</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="For social media" xml:space="preserve">
+        <source>For social media</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forward" xml:space="preserve">
         <source>Forward</source>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Forward %d message(s)?" xml:space="preserve">
+        <source>Forward %d message(s)?</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Forward and save messages" xml:space="preserve">
         <source>Forward and save messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forward messages" xml:space="preserve">
+        <source>Forward messages</source>
+        <note>alert action</note>
+      </trans-unit>
+      <trans-unit id="Forward messages without files?" xml:space="preserve">
+        <source>Forward messages without files?</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Forward up to 20 messages at once." xml:space="preserve">
+        <source>Forward up to 20 messages at once.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarded" xml:space="preserve">
@@ -3036,6 +3294,10 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Forwarded from" xml:space="preserve">
         <source>Forwarded from</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarding %lld messages" xml:space="preserve">
+        <source>Forwarding %lld messages</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
@@ -3077,11 +3339,6 @@ Error: %2$@</source>
       <trans-unit id="Full name (optional)" xml:space="preserve">
         <source>Full name (optional)</source>
         <target>Celé jméno (volitelně)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Full name:" xml:space="preserve">
-        <source>Full name:</source>
-        <target>Celé jméno:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fully decentralized – visible only to members." xml:space="preserve">
@@ -3162,40 +3419,6 @@ Error: %2$@</source>
       <trans-unit id="Group links" xml:space="preserve">
         <source>Group links</source>
         <target>Odkazy na skupiny</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve">
-        <source>Group members can add message reactions.</source>
-        <target>Členové skupin mohou přidávat reakce na zprávy.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
-        <source>Group members can irreversibly delete sent messages. (24 hours)</source>
-        <target>Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
-        <source>Group members can send SimpleX links.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve">
-        <source>Group members can send direct messages.</source>
-        <target>Členové skupiny mohou posílat přímé zprávy.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
-        <source>Group members can send disappearing messages.</source>
-        <target>Členové skupiny mohou posílat mizící zprávy.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve">
-        <source>Group members can send files and media.</source>
-        <target>Členové skupiny mohou posílat soubory a média.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve">
-        <source>Group members can send voice messages.</source>
-        <target>Členové skupiny mohou posílat hlasové zprávy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -3292,9 +3515,12 @@ Error: %2$@</source>
         <target>Jak SimpleX funguje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How it works" xml:space="preserve">
-        <source>How it works</source>
-        <target>Jak to funguje</target>
+      <trans-unit id="How it affects privacy" xml:space="preserve">
+        <source>How it affects privacy</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How it helps privacy" xml:space="preserve">
+        <source>How it helps privacy</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve">
@@ -3319,6 +3545,10 @@ Error: %2$@</source>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
         <source>ICE servers (one per line)</source>
         <target>Servery ICE (jeden na řádek)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="IP address" xml:space="preserve">
+        <source>IP address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve">
@@ -3361,8 +3591,8 @@ Error: %2$@</source>
         <target>Ihned</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Immune to spam and abuse" xml:space="preserve">
-        <source>Immune to spam and abuse</source>
+      <trans-unit id="Immune to spam" xml:space="preserve">
+        <source>Immune to spam</source>
         <target>Odolná vůči spamu a zneužití</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3391,6 +3621,11 @@ Error: %2$@</source>
       </trans-unit>
       <trans-unit id="Importing archive" xml:space="preserve">
         <source>Importing archive</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Improved delivery, reduced traffic usage.&#10;More improvements are coming soon!" xml:space="preserve">
+        <source>Improved delivery, reduced traffic usage.
+More improvements are coming soon!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved message delivery" xml:space="preserve">
@@ -3488,16 +3723,16 @@ Error: %2$@</source>
         <target>Nainstalujte [SimpleX Chat pro terminál](https://github.com/simplex-chat/simplex-chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Instant" xml:space="preserve">
+        <source>Instant</source>
+        <target>Okamžitě</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve">
         <source>Instant push notifications will be hidden!
 </source>
         <target>Okamžitá oznámení budou skryta!
 </target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Instantly" xml:space="preserve">
-        <source>Instantly</source>
-        <target>Okamžitě</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Interface" xml:space="preserve">
@@ -3541,7 +3776,7 @@ Error: %2$@</source>
       <trans-unit id="Invalid server address!" xml:space="preserve">
         <source>Invalid server address!</source>
         <target>Neplatná adresa serveru!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Invalid status" xml:space="preserve">
         <source>Invalid status</source>
@@ -3563,6 +3798,10 @@ Error: %2$@</source>
         <target>Pozvat členy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invite to chat" xml:space="preserve">
+        <source>Invite to chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
         <source>Invite to group</source>
         <target>Pozvat do skupiny</target>
@@ -3578,8 +3817,8 @@ Error: %2$@</source>
         <target>Nevratné mazání zpráv je v tomto chatu zakázáno.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited.</source>
         <target>Nevratné mazání zpráv je v této skupině zakázáno.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3662,7 +3901,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Keep" xml:space="preserve">
         <source>Keep</source>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Keep conversation" xml:space="preserve">
         <source>Keep conversation</source>
@@ -3674,7 +3913,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Keep unused invitation?" xml:space="preserve">
         <source>Keep unused invitation?</source>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
@@ -3710,6 +3949,14 @@ This is your link for group %@!</source>
         <source>Leave</source>
         <target>Opustit</target>
         <note>swipe action</note>
+      </trans-unit>
+      <trans-unit id="Leave chat" xml:space="preserve">
+        <source>Leave chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Leave chat?" xml:space="preserve">
+        <source>Leave chat?</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
         <source>Leave group</source>
@@ -3758,11 +4005,6 @@ This is your link for group %@!</source>
         <target>Živé zprávy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local" xml:space="preserve">
-        <source>Local</source>
-        <target>Místní</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
         <source>Local name</source>
         <target>Místní název</target>
@@ -3783,11 +4025,6 @@ This is your link for group %@!</source>
         <target>Režim zámku</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make a private connection" xml:space="preserve">
-        <source>Make a private connection</source>
-        <target>Vytvořte si soukromé připojení</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Make one message disappear" xml:space="preserve">
         <source>Make one message disappear</source>
         <target>Nechat jednu zprávu zmizet</target>
@@ -3798,19 +4035,9 @@ This is your link for group %@!</source>
         <target>Změnit profil na soukromý!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@)." xml:space="preserve">
-        <source>Make sure %@ server addresses are in correct format, line separated and are not duplicated (%@).</source>
-        <target>Ujistěte se, že adresy %@ serverů jsou ve správném formátu, oddělené řádky a nejsou duplicitní (%@).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
         <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
         <target>Ujistěte se, že adresy serverů WebRTC ICE jsou ve správném formátu, oddělené na řádcích a nejsou duplicitní.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
-        <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
-        <target>Mnoho lidí se ptalo: *Pokud SimpleX nemá žádné uživatelské identifikátory, jak může doručovat zprávy?*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve">
@@ -3855,6 +4082,10 @@ This is your link for group %@!</source>
         <source>Member inactive</source>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+        <source>Member role will be changed to "%@". All chat members will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
         <target>Role člena se změní na "%@". Všichni členové skupiny budou upozorněni.</target>
@@ -3865,9 +4096,47 @@ This is your link for group %@!</source>
         <target>Role člena se změní na "%@". Člen obdrží novou pozvánku.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+        <source>Member will be removed from chat - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
         <target>Člen bude odstraněn ze skupiny - toto nelze vzít zpět!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can add message reactions." xml:space="preserve">
+        <source>Members can add message reactions.</source>
+        <target>Členové skupin mohou přidávat reakce na zprávy.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Members can irreversibly delete sent messages. (24 hours)</source>
+        <target>Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
+        <source>Members can send SimpleX links.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send direct messages." xml:space="preserve">
+        <source>Members can send direct messages.</source>
+        <target>Členové skupiny mohou posílat přímé zprávy.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+        <source>Members can send disappearing messages.</source>
+        <target>Členové skupiny mohou posílat mizící zprávy.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send files and media." xml:space="preserve">
+        <source>Members can send files and media.</source>
+        <target>Členové skupiny mohou posílat soubory a média.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send voice messages." xml:space="preserve">
+        <source>Members can send voice messages.</source>
+        <target>Členové skupiny mohou posílat hlasové zprávy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
@@ -3915,8 +4184,8 @@ This is your link for group %@!</source>
         <target>Reakce na zprávy jsou v tomto chatu zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
-        <source>Message reactions are prohibited in this group.</source>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve">
+        <source>Message reactions are prohibited.</source>
         <target>Reakce na zprávy jsou v této skupině zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3926,6 +4195,10 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Message servers" xml:space="preserve">
         <source>Message servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message shape" xml:space="preserve">
+        <source>Message shape</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -3970,6 +4243,10 @@ This is your link for group %@!</source>
       <trans-unit id="Messages sent" xml:space="preserve">
         <source>Messages sent</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
+        <source>Messages were deleted after you selected them.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
         <source>Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.</source>
@@ -4027,9 +4304,9 @@ This is your link for group %@!</source>
         <target>Přenesení dokončeno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Migrations: %@" xml:space="preserve">
-        <source>Migrations: %@</source>
-        <target>Migrace: %@</target>
+      <trans-unit id="Migrations:" xml:space="preserve">
+        <source>Migrations:</source>
+        <target>Migrace:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderate" xml:space="preserve">
@@ -4054,6 +4331,10 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="More reliable network connection." xml:space="preserve">
         <source>More reliable network connection.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="More reliable notifications" xml:space="preserve">
+        <source>More reliable notifications</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Most likely this connection is deleted." xml:space="preserve">
@@ -4090,12 +4371,20 @@ This is your link for group %@!</source>
         <source>Network connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Network decentralization" xml:space="preserve">
+        <source>Network decentralization</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve">
         <source>Network issues - message expired after many attempts to send it.</source>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Network management" xml:space="preserve">
         <source>Network management</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network operator" xml:space="preserve">
+        <source>Network operator</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network settings" xml:space="preserve">
@@ -4111,6 +4400,14 @@ This is your link for group %@!</source>
       <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
         <target>Nové heslo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used every time you start the app." xml:space="preserve">
+        <source>New SOCKS credentials will be used every time you start the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New SOCKS credentials will be used for each server." xml:space="preserve">
+        <source>New SOCKS credentials will be used for each server.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New chat" xml:space="preserve">
@@ -4131,11 +4428,6 @@ This is your link for group %@!</source>
         <target>Nový kontakt:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New database archive" xml:space="preserve">
-        <source>New database archive</source>
-        <target>Archiv nové databáze</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="New desktop app!" xml:space="preserve">
         <source>New desktop app!</source>
         <target>Nová desktopová aplikace!</target>
@@ -4145,6 +4437,10 @@ This is your link for group %@!</source>
         <source>New display name</source>
         <target>Nově zobrazované jméno</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New events" xml:space="preserve">
+        <source>New events</source>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
         <source>New in %@</source>
@@ -4168,6 +4464,10 @@ This is your link for group %@!</source>
       <trans-unit id="New passphrase…" xml:space="preserve">
         <source>New passphrase…</source>
         <target>Nová přístupová fráze…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New server" xml:space="preserve">
+        <source>New server</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No" xml:space="preserve">
@@ -4223,8 +4523,24 @@ This is your link for group %@!</source>
         <source>No info, try to reload</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No media &amp; file servers." xml:space="preserve">
+        <source>No media &amp; file servers.</source>
+        <note>servers error</note>
+      </trans-unit>
+      <trans-unit id="No message servers." xml:space="preserve">
+        <source>No message servers.</source>
+        <note>servers error</note>
+      </trans-unit>
       <trans-unit id="No network connection" xml:space="preserve">
         <source>No network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record speech" xml:space="preserve">
+        <source>No permission to record speech</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No permission to record video" xml:space="preserve">
+        <source>No permission to record video</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -4232,9 +4548,35 @@ This is your link for group %@!</source>
         <target>Nemáte oprávnění nahrávat hlasové zprávy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No push server" xml:space="preserve">
+        <source>No push server</source>
+        <target>Místní</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>Žádné přijaté ani odeslané soubory</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No servers for private message routing." xml:space="preserve">
+        <source>No servers for private message routing.</source>
+        <note>servers error</note>
+      </trans-unit>
+      <trans-unit id="No servers to receive files." xml:space="preserve">
+        <source>No servers to receive files.</source>
+        <note>servers error</note>
+      </trans-unit>
+      <trans-unit id="No servers to receive messages." xml:space="preserve">
+        <source>No servers to receive messages.</source>
+        <note>servers error</note>
+      </trans-unit>
+      <trans-unit id="No servers to send files." xml:space="preserve">
+        <source>No servers to send files.</source>
+        <note>servers error</note>
+      </trans-unit>
+      <trans-unit id="No user identifiers." xml:space="preserve">
+        <source>No user identifiers.</source>
+        <target>Bez uživatelských identifikátorů</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
@@ -4245,6 +4587,10 @@ This is your link for group %@!</source>
         <source>Nothing selected</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Nothing to forward!" xml:space="preserve">
+        <source>Nothing to forward!</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
         <source>Notifications</source>
         <target>Oznámení</target>
@@ -4253,6 +4599,10 @@ This is your link for group %@!</source>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
         <target>Oznámení jsou zakázána!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Notifications privacy" xml:space="preserve">
+        <source>Notifications privacy</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
@@ -4276,16 +4626,11 @@ This is your link for group %@!</source>
       <trans-unit id="Ok" xml:space="preserve">
         <source>Ok</source>
         <target>Ok</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Old database" xml:space="preserve">
         <source>Old database</source>
         <target>Stará databáze</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
-        <source>Old database archive</source>
-        <target>Archiv staré databáze</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -4312,8 +4657,12 @@ Vyžaduje povolení sítě VPN.</target>
         <target>Onion hostitelé nebudou použiti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
-        <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+        <source>Only chat owners can change preferences.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
+        <source>Only client devices store user profiles, contacts, groups, and messages.</source>
         <target>Pouze klientská zařízení ukládají uživatelské profily, kontakty, skupiny a zprávy odeslané s **2vrstvým šifrováním typu end-to-end**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4396,6 +4745,10 @@ Vyžaduje povolení sítě VPN.</target>
         <target>Otevřít nastavení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Open changes" xml:space="preserve">
+        <source>Open changes</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Open chat" xml:space="preserve">
         <source>Open chat</source>
         <target>Otevřete chat</target>
@@ -4406,6 +4759,10 @@ Vyžaduje povolení sítě VPN.</target>
         <target>Otevřete konzolu chatu</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Open conditions" xml:space="preserve">
+        <source>Open conditions</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Open group" xml:space="preserve">
         <source>Open group</source>
         <note>No comment provided by engineer.</note>
@@ -4414,22 +4771,20 @@ Vyžaduje povolení sítě VPN.</target>
         <source>Open migration to another device</source>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open server settings" xml:space="preserve">
-        <source>Open server settings</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Open user profiles" xml:space="preserve">
-        <source>Open user profiles</source>
-        <target>Otevřít uživatelské profily</target>
-        <note>authentication reason</note>
-      </trans-unit>
-      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
-        <source>Open-source protocol and code – anybody can run the servers.</source>
-        <target>Protokol a kód s otevřeným zdrojovým kódem - servery může provozovat kdokoli.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
         <source>Opening app…</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Operator" xml:space="preserve">
+        <source>Operator</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Operator server" xml:space="preserve">
+        <source>Operator server</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Or import archive file" xml:space="preserve">
+        <source>Or import archive file</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve">
@@ -4448,13 +4803,18 @@ Vyžaduje povolení sítě VPN.</target>
         <source>Or show this code</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Or to share privately" xml:space="preserve">
+        <source>Or to share privately</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Other" xml:space="preserve">
         <source>Other</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other %@ servers" xml:space="preserve">
-        <source>Other %@ servers</source>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Other file errors:&#10;%@" xml:space="preserve">
+        <source>Other file errors:
+%@</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
@@ -4491,6 +4851,10 @@ Vyžaduje povolení sítě VPN.</target>
         <target>Heslo nastaveno!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Password" xml:space="preserve">
+        <source>Password</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Password to show" xml:space="preserve">
         <source>Password to show</source>
         <target>Heslo k zobrazení</target>
@@ -4521,13 +4885,8 @@ Vyžaduje povolení sítě VPN.</target>
         <source>Pending</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
-        <source>People can connect to you only via the links you share.</source>
-        <target>Lidé se s vámi mohou spojit pouze prostřednictvím odkazů, které sdílíte.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Periodically" xml:space="preserve">
-        <source>Periodically</source>
+      <trans-unit id="Periodic" xml:space="preserve">
+        <source>Periodic</source>
         <target>Pravidelně</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4627,6 +4986,10 @@ Error: %@</source>
         <target>Polské rozhraní</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Port" xml:space="preserve">
+        <source>Port</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
         <source>Possibly, certificate fingerprint in server address is incorrect</source>
         <target>Je možné, že otisk certifikátu v adrese serveru je nesprávný</target>
@@ -4637,14 +5000,13 @@ Error: %@</source>
         <target>Zachování posledního návrhu zprávy s přílohami.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preset server" xml:space="preserve">
-        <source>Preset server</source>
-        <target>Přednastavený server</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Preset server address" xml:space="preserve">
         <source>Preset server address</source>
         <target>Přednastavená adresa serveru</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Preset servers" xml:space="preserve">
+        <source>Preset servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Preview" xml:space="preserve">
@@ -4659,6 +5021,10 @@ Error: %@</source>
       <trans-unit id="Privacy &amp; security" xml:space="preserve">
         <source>Privacy &amp; security</source>
         <target>Ochrana osobních údajů a zabezpečení</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Privacy for your customers." xml:space="preserve">
+        <source>Privacy for your customers.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -4705,14 +5071,6 @@ Error: %@</source>
         <source>Profile images</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile name" xml:space="preserve">
-        <source>Profile name</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Profile name:" xml:space="preserve">
-        <source>Profile name:</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Profile password" xml:space="preserve">
         <source>Profile password</source>
         <target>Heslo profilu</target>
@@ -4725,7 +5083,7 @@ Error: %@</source>
       <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve">
         <source>Profile update will be sent to your contacts.</source>
         <target>Aktualizace profilu bude zaslána vašim kontaktům.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
@@ -4808,6 +5166,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Proxied servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Proxy requires password" xml:space="preserve">
+        <source>Proxy requires password</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>Nabízená oznámení</target>
@@ -4845,23 +5207,18 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Přečíst více</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
-        <source>Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</source>
-        <target>Další informace naleznete v [Uživatelské příručce](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." xml:space="preserve">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses)." xml:space="preserve">
+        <source>Read more in [User Guide](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).</source>
+        <target>Další informace naleznete v [Uživatelské příručce](https://simplex.chat/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
         <target>Přečtěte si více v [Uživatelské příručce](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
-        <source>Read more in our GitHub repository.</source>
-        <target>Další informace najdete v našem repozitáři GitHub.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
@@ -5014,6 +5371,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Odstranit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Remove archive?" xml:space="preserve">
+        <source>Remove archive?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Remove image" xml:space="preserve">
         <source>Remove image</source>
         <note>No comment provided by engineer.</note>
@@ -5152,6 +5513,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Odhalit</target>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Review conditions" xml:space="preserve">
+        <source>Review conditions</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Review later" xml:space="preserve">
+        <source>Review later</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
         <target>Odvolat</target>
@@ -5181,6 +5550,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>SMP server</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SOCKS proxy" xml:space="preserve">
+        <source>SOCKS proxy</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
         <source>Safely receive files</source>
         <note>No comment provided by engineer.</note>
@@ -5192,17 +5565,18 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>Uložit</target>
-        <note>chat item action</note>
+        <note>alert button
+   chat item action</note>
       </trans-unit>
       <trans-unit id="Save (and notify contacts)" xml:space="preserve">
         <source>Save (and notify contacts)</source>
         <target>Uložit (a informovat kontakty)</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
         <target>Uložit a upozornit kontakt</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
@@ -5216,16 +5590,6 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save and update group profile" xml:space="preserve">
         <source>Save and update group profile</source>
         <target>Uložit a aktualizovat profil skupiny</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
-        <source>Save archive</source>
-        <target>Uložit archiv</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Save auto-accept settings" xml:space="preserve">
-        <source>Save auto-accept settings</source>
-        <target>Uložit nastavení automatického přijímání</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
@@ -5246,7 +5610,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save preferences?" xml:space="preserve">
         <source>Save preferences?</source>
         <target>Uložit předvolby?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save profile password" xml:space="preserve">
         <source>Save profile password</source>
@@ -5261,17 +5625,16 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save servers?" xml:space="preserve">
         <source>Save servers?</source>
         <target>Uložit servery?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Save settings?" xml:space="preserve">
-        <source>Save settings?</source>
-        <target>Uložit nastavení?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save welcome message?" xml:space="preserve">
         <source>Save welcome message?</source>
         <target>Uložit uvítací zprávu?</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save your profile?" xml:space="preserve">
+        <source>Save your profile?</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Saved" xml:space="preserve">
         <source>Saved</source>
@@ -5289,6 +5652,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Saved message" xml:space="preserve">
         <source>Saved message</source>
         <note>message info title</note>
+      </trans-unit>
+      <trans-unit id="Saving %lld messages" xml:space="preserve">
+        <source>Saving %lld messages</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scale" xml:space="preserve">
         <source>Scale</source>
@@ -5362,6 +5729,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Select</source>
         <target>Vybrat</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Select chat profile" xml:space="preserve">
+        <source>Select chat profile</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Selected %lld" xml:space="preserve">
         <source>Selected %lld</source>
@@ -5447,11 +5818,6 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Odeslat oznámení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send notifications:" xml:space="preserve">
-        <source>Send notifications:</source>
-        <target>Odeslat oznámení:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Send questions and ideas" xml:space="preserve">
         <source>Send questions and ideas</source>
         <target>Zasílání otázek a nápadů</target>
@@ -5474,7 +5840,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
         <source>Sender cancelled file transfer.</source>
         <target>Odesílatel zrušil přenos souboru.</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
         <source>Sender may have deleted the connection request.</source>
@@ -5566,6 +5932,14 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Sent via proxy</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server" xml:space="preserve">
+        <source>Server</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server added to operator %@." xml:space="preserve">
+        <source>Server added to operator %@.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
         <source>Server address</source>
         <note>No comment provided by engineer.</note>
@@ -5577,6 +5951,18 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
         <source>Server address is incompatible with network settings: %@.</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server operator changed." xml:space="preserve">
+        <source>Server operator changed.</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Server operators" xml:space="preserve">
+        <source>Server operators</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server protocol changed." xml:space="preserve">
+        <source>Server protocol changed.</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
@@ -5675,6 +6061,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Nastavení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Settings were changed." xml:space="preserve">
+        <source>Settings were changed.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
         <source>Shape profile images</source>
         <note>No comment provided by engineer.</note>
@@ -5682,11 +6072,20 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Share" xml:space="preserve">
         <source>Share</source>
         <target>Sdílet</target>
-        <note>chat item action</note>
+        <note>alert action
+   chat item action</note>
       </trans-unit>
       <trans-unit id="Share 1-time link" xml:space="preserve">
         <source>Share 1-time link</source>
         <target>Sdílet jednorázovou pozvánku</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share 1-time link with a friend" xml:space="preserve">
+        <source>Share 1-time link with a friend</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share SimpleX address on social media." xml:space="preserve">
+        <source>Share SimpleX address on social media.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share address" xml:space="preserve">
@@ -5694,10 +6093,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Sdílet adresu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share address publicly" xml:space="preserve">
+        <source>Share address publicly</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Share address with contacts?" xml:space="preserve">
         <source>Share address with contacts?</source>
         <target>Sdílet adresu s kontakty?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Share from other apps." xml:space="preserve">
         <source>Share from other apps.</source>
@@ -5706,6 +6109,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Share link" xml:space="preserve">
         <source>Share link</source>
         <target>Sdílet odkaz</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share profile" xml:space="preserve">
+        <source>Share profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
@@ -5771,6 +6178,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>SimpleX Adresa</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+        <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
         <source>SimpleX Chat security was audited by Trail of Bits.</source>
         <target>Zabezpečení SimpleX chatu bylo auditováno společností Trail of Bits.</target>
@@ -5801,6 +6212,14 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Adresa SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SimpleX address and 1-time links are safe to share via any messenger." xml:space="preserve">
+        <source>SimpleX address and 1-time links are safe to share via any messenger.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX address or 1-time link?" xml:space="preserve">
+        <source>SimpleX address or 1-time link?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="SimpleX contact address" xml:space="preserve">
         <source>SimpleX contact address</source>
         <target>SimpleX kontaktní adresa</target>
@@ -5821,8 +6240,8 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Odkazy na SimpleX</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
-        <source>SimpleX links are prohibited in this group.</source>
+      <trans-unit id="SimpleX links are prohibited." xml:space="preserve">
+        <source>SimpleX links are prohibited.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX links not allowed" xml:space="preserve">
@@ -5833,6 +6252,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>SimpleX one-time invitation</source>
         <target>Jednorázová pozvánka SimpleX</target>
         <note>simplex link type</note>
+      </trans-unit>
+      <trans-unit id="SimpleX protocols reviewed by Trail of Bits." xml:space="preserve">
+        <source>SimpleX protocols reviewed by Trail of Bits.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
         <source>Simplified incognito mode</source>
@@ -5862,6 +6285,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Soft</source>
         <note>blur media</note>
       </trans-unit>
+      <trans-unit id="Some app settings were not migrated." xml:space="preserve">
+        <source>Some app settings were not migrated.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
         <source>Some file(s) were not exported:</source>
         <note>No comment provided by engineer.</note>
@@ -5874,6 +6301,11 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
         <source>Some non-fatal errors occurred during import:</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Some servers failed the test:&#10;%@" xml:space="preserve">
+        <source>Some servers failed the test:
+%@</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
         <source>Somebody</source>
@@ -5920,11 +6352,6 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Stop chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
-        <source>Stop chat to enable database actions</source>
-        <target>Zastavte chat pro povolení akcí databáze</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
         <target>Zastavení chatu pro export, import nebo smazání databáze chatu. Během zastavení chatu nebudete moci přijímat a odesílat zprávy.</target>
@@ -5953,12 +6380,12 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Stop sharing" xml:space="preserve">
         <source>Stop sharing</source>
         <target>Přestat sdílet</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert action</note>
       </trans-unit>
       <trans-unit id="Stop sharing address?" xml:space="preserve">
         <source>Stop sharing address?</source>
         <target>Přestat sdílet adresu?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Stopping chat" xml:space="preserve">
         <source>Stopping chat</source>
@@ -5988,6 +6415,14 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Support SimpleX Chat" xml:space="preserve">
         <source>Support SimpleX Chat</source>
         <target>Podpořte SimpleX Chat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Switch audio and video during the call." xml:space="preserve">
+        <source>Switch audio and video during the call.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Switch chat profile for 1-time invitations." xml:space="preserve">
+        <source>Switch chat profile for 1-time invitations.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -6024,9 +6459,17 @@ Enable in *Network &amp; servers* settings.</source>
         <target>TCP_KEEPINTVL</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tail" xml:space="preserve">
+        <source>Tail</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Vyfotit</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
+        <source>Tap Create SimpleX address in the menu to create it later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -6083,7 +6526,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Tests failed!" xml:space="preserve">
         <source>Tests failed!</source>
         <target>Testy selhaly!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
         <source>Thank you for installing SimpleX Chat!</source>
@@ -6100,11 +6543,6 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Díky uživatelům - přispívejte prostřednictvím Weblate!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
-        <source>The 1st platform without any user identifiers – private by design.</source>
-        <target>1. Platforma bez identifikátorů uživatelů - soukromá už od záměru.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
         <source>The ID of the next message is incorrect (less or equal to the previous).
 It can happen because of some bug or when the connection is compromised.</source>
@@ -6115,6 +6553,10 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <target>Aplikace vás může upozornit na přijaté zprávy nebo žádosti o kontakt - povolte to v nastavení.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The app protects your privacy by using different operators in each conversation." xml:space="preserve">
+        <source>The app protects your privacy by using different operators in each conversation.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve">
@@ -6128,6 +6570,10 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
       </trans-unit>
       <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
         <source>The code you scanned is not a SimpleX link QR code.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The connection reached the limit of undelivered messages, your contact may be offline." xml:space="preserve">
+        <source>The connection reached the limit of undelivered messages, your contact may be offline.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
@@ -6148,6 +6594,11 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
       <trans-unit id="The encryption is working and the new encryption agreement is not required. It may result in connection errors!" xml:space="preserve">
         <source>The encryption is working and the new encryption agreement is not required. It may result in connection errors!</source>
         <target>Šifrování funguje a nové povolení šifrování není vyžadováno. To může vyvolat chybu v připojení!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The future of messaging" xml:space="preserve">
+        <source>The future of messaging</source>
+        <target>Nová generace soukromých zpráv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
@@ -6173,11 +6624,6 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
         <source>The messages will be marked as moderated for all members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The next generation of private messaging" xml:space="preserve">
-        <source>The next generation of private messaging</source>
-        <target>Nová generace soukromých zpráv</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
         <source>The old database was not removed during the migration, it can be deleted.</source>
         <target>Stará databáze nebyla během přenášení odstraněna, lze ji smazat.</target>
@@ -6186,6 +6632,18 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
         <source>The profile is only shared with your contacts.</source>
         <target>Profil je sdílen pouze s vašimi kontakty.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator(s): **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The second preset operator in the app!" xml:space="preserve">
+        <source>The second preset operator in the app!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
@@ -6203,12 +6661,24 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
         <target>Servery pro nová připojení vašeho aktuálního chat profilu **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve">
+        <source>The servers for new files of your current chat profile **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
         <source>The text you pasted is not a SimpleX link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The uploaded database archive will be permanently removed from the servers." xml:space="preserve">
+        <source>The uploaded database archive will be permanently removed from the servers.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Themes" xml:space="preserve">
         <source>Themes</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="These conditions will also apply for: **%@**." xml:space="preserve">
+        <source>These conditions will also apply for: **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve">
@@ -6302,9 +6772,8 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
         <target>Vytvoření nového připojení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
-        <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
-        <target>Pro ochranu soukromí namísto ID uživatelů používaných všemi ostatními platformami má SimpleX identifikátory pro fronty zpráv, oddělené pro každý z vašich kontaktů.</target>
+      <trans-unit id="To protect against your link being replaced, you can compare contact security codes." xml:space="preserve">
+        <source>To protect against your link being replaced, you can compare contact security codes.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
@@ -6323,6 +6792,23 @@ You will be prompted to complete authentication before this feature is enabled.<
 Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To protect your privacy, SimpleX uses separate IDs for each of your contacts." xml:space="preserve">
+        <source>To protect your privacy, SimpleX uses separate IDs for each of your contacts.</source>
+        <target>Pro ochranu soukromí namísto ID uživatelů používaných všemi ostatními platformami má SimpleX identifikátory pro fronty zpráv, oddělené pro každý z vašich kontaktů.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To receive" xml:space="preserve">
+        <source>To receive</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record speech please grant permission to use Microphone." xml:space="preserve">
+        <source>To record speech please grant permission to use Microphone.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To record video please grant permission to use Camera." xml:space="preserve">
+        <source>To record video please grant permission to use Camera.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
         <source>To record voice message please grant permission to use Microphone.</source>
         <target>Chcete-li nahrávat hlasové zprávy, udělte povolení k použití mikrofonu.</target>
@@ -6333,9 +6819,17 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <target>Chcete-li odhalit svůj skrytý profil, zadejte celé heslo do vyhledávacího pole na stránce **Chat profily**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To send" xml:space="preserve">
+        <source>To send</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
         <source>To support instant push notifications the chat database has to be migrated.</source>
         <target>Pro podporu doručování okamžitých upozornění musí být přenesena chat databáze.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To use the servers of **%@**, accept conditions of use." xml:space="preserve">
+        <source>To use the servers of **%@**, accept conditions of use.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
@@ -6418,6 +6912,10 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <source>Unblock member?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Undelivered messages" xml:space="preserve">
+        <source>Undelivered messages</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unexpected migration state" xml:space="preserve">
         <source>Unexpected migration state</source>
         <target>Neočekávaný stav přenášení</target>
@@ -6465,7 +6963,7 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
       </trans-unit>
       <trans-unit id="Unknown servers!" xml:space="preserve">
         <source>Unknown servers!</source>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
@@ -6565,9 +7063,17 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <source>Uploading archive</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use %@" xml:space="preserve">
+        <source>Use %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
         <source>Use .onion hosts</source>
         <target>Použít hostitele .onion</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use SOCKS proxy" xml:space="preserve">
+        <source>Use SOCKS proxy</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
@@ -6583,6 +7089,14 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       <trans-unit id="Use current profile" xml:space="preserve">
         <source>Use current profile</source>
         <target>Použít aktuální profil</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use for files" xml:space="preserve">
+        <source>Use for files</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use for messages" xml:space="preserve">
+        <source>Use for messages</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve">
@@ -6621,6 +7135,10 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Použít server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use servers" xml:space="preserve">
+        <source>Use servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use the app while in the call." xml:space="preserve">
         <source>Use the app while in the call.</source>
         <note>No comment provided by engineer.</note>
@@ -6629,13 +7147,12 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <source>Use the app with one hand.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="User profile" xml:space="preserve">
-        <source>User profile</source>
-        <target>Profil uživatele</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
         <source>User selection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Username" xml:space="preserve">
+        <source>Username</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
@@ -6702,9 +7219,17 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Videa a soubory až do velikosti 1 gb</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="View conditions" xml:space="preserve">
+        <source>View conditions</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="View security code" xml:space="preserve">
         <source>View security code</source>
         <target>Zobrazení bezpečnostního kódu</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="View updated conditions" xml:space="preserve">
+        <source>View updated conditions</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Visible history" xml:space="preserve">
@@ -6721,8 +7246,8 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <target>Hlasové zprávy jsou v tomto chatu zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
         <target>Hlasové zprávy jsou v této skupině zakázány.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6809,9 +7334,8 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
         <source>When connecting audio and video calls.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When people request to connect, you can accept or reject it." xml:space="preserve">
-        <source>When people request to connect, you can accept or reject it.</source>
-        <target>Když někdo požádá o připojení, můžete žádost přijmout nebo odmítnout.</target>
+      <trans-unit id="When more than one operator is enabled, none of them has metadata to learn who communicates with whom." xml:space="preserve">
+        <source>When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
@@ -6850,7 +7374,7 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       </trans-unit>
       <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
         <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
         <source>Wrong database passphrase</source>
@@ -6872,11 +7396,6 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       </trans-unit>
       <trans-unit id="XFTP server" xml:space="preserve">
         <source>XFTP server</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You" xml:space="preserve">
-        <source>You</source>
-        <target>Vy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -6901,6 +7420,10 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       <trans-unit id="You are already connected to %@." xml:space="preserve">
         <source>You are already connected to %@.</source>
         <target>Již jste připojeni k %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You are already connected with %@." xml:space="preserve">
+        <source>You are already connected with %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
@@ -6955,6 +7478,14 @@ Repeat join request?</source>
         <source>You can change it in Appearance settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve">
+        <source>You can configure operators in Network &amp; servers settings.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can configure servers via settings." xml:space="preserve">
+        <source>You can configure servers via settings.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
         <source>You can create it later</source>
         <target>Můžete vytvořit později</target>
@@ -6992,6 +7523,10 @@ Repeat join request?</source>
         <source>You can send messages to %@ from Archived contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can set connection name, to remember who the link was shared with." xml:space="preserve">
+        <source>You can set connection name, to remember who the link was shared with.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>
         <target>Náhled oznámení na zamykací obrazovce můžete změnit v nastavení.</target>
@@ -7005,11 +7540,6 @@ Repeat join request?</source>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
         <source>You can share this address with your contacts to let them connect with **%@**.</source>
         <target>Tuto adresu můžete sdílet s vašimi kontakty, abyse se mohli spojit s **%@**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
-        <source>You can share your address as a link or QR code - anybody can connect to you.</source>
-        <target>Můžete sdílet svou adresu jako odkaz nebo jako QR kód - kdokoli se k vám bude moci připojit.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
@@ -7033,21 +7563,21 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can view invitation link again in connection details." xml:space="preserve">
         <source>You can view invitation link again in connection details.</source>
-        <note>No comment provided by engineer.</note>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
         <source>You can't send messages!</source>
         <target>Nemůžete posílat zprávy!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
-        <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
-        <target>Sami řídíte, přes který server(y) **přijímat** zprávy, své kontakty – servery, které používáte k odesílání zpráv.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
         <source>You could not be verified; please try again.</source>
         <target>Nemohli jste být ověřeni; Zkuste to prosím znovu.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You decide who can connect." xml:space="preserve">
+        <source>You decide who can connect.</source>
+        <target>Lidé se s vámi mohou spojit pouze prostřednictvím odkazu, který sdílíte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have already requested connection via this address!" xml:space="preserve">
@@ -7144,6 +7674,10 @@ Repeat connection request?</source>
         <target>Stále budete přijímat volání a upozornění od umlčených profilů pokud budou aktivní.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
+        <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
         <source>You will stop receiving messages from this group. Chat history will be preserved.</source>
         <target>Přestanete dostávat zprávy z této skupiny. Historie chatu bude zachována.</target>
@@ -7164,11 +7698,6 @@ Repeat connection request?</source>
         <target>Pro tuto skupinu používáte inkognito profil - abyste zabránili sdílení svého hlavního profilu, není pozvání kontaktů povoleno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your %@ servers" xml:space="preserve">
-        <source>Your %@ servers</source>
-        <target>Vaše servery %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your ICE servers" xml:space="preserve">
         <source>Your ICE servers</source>
         <target>Vaše servery ICE</target>
@@ -7182,11 +7711,6 @@ Repeat connection request?</source>
       <trans-unit id="Your SimpleX address" xml:space="preserve">
         <source>Your SimpleX address</source>
         <target>Vaše SimpleX adresa</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your XFTP servers" xml:space="preserve">
-        <source>Your XFTP servers</source>
-        <target>Vaše XFTP servery</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -7204,9 +7728,17 @@ Repeat connection request?</source>
         <target>Vaše chat databáze není šifrována – nastavte přístupovou frázi pro její šifrování.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your chat preferences" xml:space="preserve">
+        <source>Your chat preferences</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
         <target>Vaše chat profily</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+        <source>Your connection was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
@@ -7222,6 +7754,10 @@ Repeat connection request?</source>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">
         <source>Your contacts will remain connected.</source>
         <target>Vaše kontakty zůstanou připojeny.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your credentials may be sent unencrypted." xml:space="preserve">
+        <source>Your credentials may be sent unencrypted.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
@@ -7253,12 +7789,14 @@ Repeat connection request?</source>
         <target>Váš profil **%@** bude sdílen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
-        <source>Your profile is stored on your device and shared only with your contacts.
-SimpleX servers cannot see your profile.</source>
-        <target>Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty.
-Servery SimpleX nevidí váš profil.</target>
+      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
+        <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
+        <target>Váš profil je uložen ve vašem zařízení a sdílen pouze s vašimi kontakty. Servery SimpleX nevidí váš profil.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
+        <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
@@ -7270,14 +7808,13 @@ Servery SimpleX nevidí váš profil.</target>
         <target>Váš náhodný profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your server" xml:space="preserve">
-        <source>Your server</source>
-        <target>Váš server</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your server address" xml:space="preserve">
         <source>Your server address</source>
         <target>Adresa vašeho serveru</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your servers" xml:space="preserve">
+        <source>Your servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
@@ -7319,6 +7856,10 @@ Servery SimpleX nevidí váš profil.</target>
         <source>accepted call</source>
         <target>přijatý hovor</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="accepted invitation" xml:space="preserve">
+        <source>accepted invitation</source>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
         <source>admin</source>
@@ -7499,7 +8040,7 @@ Servery SimpleX nevidí váš profil.</target>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>připojení…</target>
-        <note>chat list item title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
@@ -7683,6 +8224,10 @@ Servery SimpleX nevidí váš profil.</target>
       </trans-unit>
       <trans-unit id="expired" xml:space="preserve">
         <source>expired</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="for better metadata privacy." xml:space="preserve">
+        <source>for better metadata privacy.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
@@ -7969,6 +8514,10 @@ Servery SimpleX nevidí váš profil.</target>
         <source>removed you</source>
         <target>odstranil vás</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="requested to connect" xml:space="preserve">
+        <source>requested to connect</source>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
         <source>saved</source>
@@ -8270,6 +8819,33 @@ last received msg: %2$@</source>
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
         <target>Autorská práva © 2022 SimpleX Chat. Všechna práva vyhrazena.</target>
         <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="cs" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+    </header>
+    <body>
+      <trans-unit id="%d new events" xml:space="preserve">
+        <source>%d new events</source>
+        <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="From: %@" xml:space="preserve">
+        <source>From: %@</source>
+        <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="New events" xml:space="preserve">
+        <source>New events</source>
+        <note>notification</note>
+      </trans-unit>
+      <trans-unit id="New messages" xml:space="preserve">
+        <source>New messages</source>
+        <note>notification</note>
+      </trans-unit>
+      <trans-unit id="New messages in %d chats" xml:space="preserve">
+        <source>New messages in %d chats</source>
+        <note>notification body</note>
       </trans-unit>
     </body>
   </file>

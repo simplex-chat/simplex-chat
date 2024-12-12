@@ -96,6 +96,8 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
+    @State var featuresAllowed: ContactFeaturesAllowed
+    @State var currentFeaturesAllowed: ContactFeaturesAllowed
     var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
@@ -154,8 +156,8 @@ struct ChatInfoView: View {
                     HStack(alignment: .center, spacing: 8) {
                         let buttonWidth = g.size.width / 4
                         searchButton(width: buttonWidth)
-                        AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                        VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                        AudioCallButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                        VideoButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                         muteButton(width: buttonWidth)
                     }
                 }
@@ -312,7 +314,15 @@ struct ChatInfoView: View {
             case .networkStatusAlert: return networkStatusAlert()
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
-            case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
+            case .syncConnectionForceAlert:
+                return syncConnectionForceAlert({
+                    Task {
+                        if let stats = await syncContactConnection(contact, force: true, showAlert: { alert = .someAlert(alert: $0) }) {
+                            connectionStats = stats
+                            dismiss()
+                        }
+                    }
+                })
             case let .queueInfo(info): return queueInfoAlert(info)
             case let .someAlert(a): return a.alert
             case let .error(title, error): return mkAlert(title: title, message: error)
@@ -327,6 +337,16 @@ struct ChatInfoView: View {
                 $0.content
             }
         }
+        .onDisappear {
+            if currentFeaturesAllowed != featuresAllowed {
+                showAlert(
+                    title: NSLocalizedString("Save preferences?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save and notify contact", comment: "alert button"),
+                    buttonAction: { savePreferences() },
+                    cancelButton: true
+                )
+            }
+        }
     }
     
     private func contactInfoHeader() -> some View {
@@ -339,7 +359,7 @@ struct ChatInfoView: View {
                     Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(theme.colors.secondary)
                         .font(.title2)
-                    + Text(" ")
+                    + textSpace
                     + Text(contact.profile.displayName)
                         .font(.largeTitle)
                 )
@@ -447,8 +467,9 @@ struct ChatInfoView: View {
         NavigationLink {
             ContactPreferencesView(
                 contact: $contact,
-                featuresAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences),
-                currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
+                featuresAllowed: $featuresAllowed,
+                currentFeaturesAllowed: $currentFeaturesAllowed,
+                savePreferences: savePreferences
             )
             .navigationBarTitle("Contact preferences")
             .modifier(ThemedBackground(grouped: true))
@@ -480,7 +501,12 @@ struct ChatInfoView: View {
     
     private func synchronizeConnectionButton() -> some View {
         Button {
-            syncContactConnection(force: false)
+            Task {
+                if let stats = await syncContactConnection(contact, force: false, showAlert: { alert = .someAlert(alert: $0) }) {
+                    connectionStats = stats
+                    dismiss()
+                }
+            }
         } label: {
             Label("Fix connection", systemImage: "exclamationmark.arrow.triangle.2.circlepath")
                 .foregroundColor(.orange)
@@ -599,29 +625,50 @@ struct ChatInfoView: View {
         }
     }
     
-    private func syncContactConnection(force: Bool) {
+    private func savePreferences() {
         Task {
             do {
-                let stats = try apiSyncContactRatchet(contact.apiId, force)
-                connectionStats = stats
-                await MainActor.run {
-                    chatModel.updateContactConnectionStats(contact, stats)
-                    dismiss()
+                let prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
+                if let toContact = try await apiSetContactPrefs(contactId: contact.contactId, preferences: prefs) {
+                    await MainActor.run {
+                        contact = toContact
+                        chatModel.updateContact(toContact)
+                        currentFeaturesAllowed = featuresAllowed
+                    }
                 }
-            } catch let error {
-                logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
-                await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
-                }
+            } catch {
+                logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
             }
         }
+    }
+}
+
+func syncContactConnection(_ contact: Contact, force: Bool, showAlert: (SomeAlert) -> Void) async -> ConnectionStats? {
+    do {
+        let stats = try apiSyncContactRatchet(contact.apiId, force)
+        await MainActor.run {
+            ChatModel.shared.updateContactConnectionStats(contact, stats)
+        }
+        return stats
+    } catch let error {
+        logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
+        let a = getErrorAlert(error, "Error synchronizing connection")
+        await MainActor.run {
+            showAlert(
+                SomeAlert(
+                    alert: mkAlert(title: a.title, message: a.message),
+                    id: "syncContactConnection error"
+                )
+            )
+        }
+        return nil
     }
 }
 
 struct AudioCallButton: View {
     var chat: Chat
     var contact: Contact
+    @Binding var connectionStats: ConnectionStats?
     var width: CGFloat
     var showAlert: (SomeAlert) -> Void
 
@@ -629,6 +676,7 @@ struct AudioCallButton: View {
         CallButton(
             chat: chat,
             contact: contact,
+            connectionStats: $connectionStats,
             image: "phone.fill",
             title: "call",
             mediaType: .audio,
@@ -641,6 +689,7 @@ struct AudioCallButton: View {
 struct VideoButton: View {
     var chat: Chat
     var contact: Contact
+    @Binding var connectionStats: ConnectionStats?
     var width: CGFloat
     var showAlert: (SomeAlert) -> Void
 
@@ -648,6 +697,7 @@ struct VideoButton: View {
         CallButton(
             chat: chat,
             contact: contact,
+            connectionStats: $connectionStats,
             image: "video.fill",
             title: "video",
             mediaType: .video,
@@ -660,6 +710,7 @@ struct VideoButton: View {
 private struct CallButton: View {
     var chat: Chat
     var contact: Contact
+    @Binding var connectionStats: ConnectionStats?
     var image: String
     var title: LocalizedStringKey
     var mediaType: CallMediaType
@@ -671,7 +722,42 @@ private struct CallButton: View {
 
         InfoViewButton(image: image, title: title, disabledLook: !canCall, width: width) {
             if canCall {
-                CallController.shared.startCall(contact, mediaType)
+                if let connStats = connectionStats {
+                    if connStats.ratchetSyncState == .ok {
+                        if CallController.useCallKit() {
+                            CallController.shared.startCall(contact, mediaType)
+                        } else {
+                            // When CallKit is not used, colorscheme will be changed and it will be visible if not hiding sheets first
+                            dismissAllSheets(animated: true) {
+                                CallController.shared.startCall(contact, mediaType)
+                            }
+                        }
+                    } else if connStats.ratchetSyncAllowed {
+                        showAlert(SomeAlert(
+                            alert: Alert(
+                                title: Text("Fix connection?"),
+                                message: Text("Connection requires encryption renegotiation."),
+                                primaryButton: .default(Text("Fix")) {
+                                    Task {
+                                        if let stats = await syncContactConnection(contact, force: false, showAlert: showAlert) {
+                                            connectionStats = stats
+                                        }
+                                    }
+                                },
+                                secondaryButton: .cancel()
+                            ),
+                            id: "can't call contact, fix connection"
+                        ))
+                    } else {
+                        showAlert(SomeAlert(
+                            alert: mkAlert(
+                                title: "Can't call contact",
+                                message: "Encryption renegotiation in progress."
+                            ),
+                            id: "can't call contact, encryption renegotiation in progress"
+                        ))
+                    }
+                }
             } else if contact.nextSendGrpInv {
                 showAlert(SomeAlert(
                     alert: mkAlert(
@@ -935,7 +1021,7 @@ func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Al
     )
 }
 
-func queueInfoText(_ info: (RcvMsgInfo?, QueueInfo)) -> String {
+func queueInfoText(_ info: (RcvMsgInfo?, ServerQueueInfo)) -> String {
     let (rcvMsgInfo, qInfo) = info
     var msgInfo: String
     if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
@@ -1166,6 +1252,8 @@ struct ChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
             localAlias: "",
+            featuresAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
+            currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
             onSearch: {}
         )
     }

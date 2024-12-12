@@ -40,7 +40,7 @@ struct ComposeLinkView: View {
 
     private func linkPreviewView(_ linkPreview: LinkPreview) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            if let uiImage = UIImage(base64Encoded: linkPreview.image) {
+            if let uiImage = imageFromBase64(linkPreview.image) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -55,7 +55,7 @@ struct ComposeLinkView: View {
                     .foregroundColor(theme.colors.secondary)
             }
             .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60)
+            .frame(maxWidth: .infinity, minHeight: 60)
         }
     }
 }

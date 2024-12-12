@@ -110,6 +110,15 @@ import Simplex.Chat.Migrations.M20240501_chat_deleted
 import Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
 import Simplex.Chat.Migrations.M20240515_rcv_files_user_approved_relays
 import Simplex.Chat.Migrations.M20240528_quota_err_counter
+import Simplex.Chat.Migrations.M20240827_calls_uuid
+import Simplex.Chat.Migrations.M20240920_user_order
+import Simplex.Chat.Migrations.M20241008_indexes
+import Simplex.Chat.Migrations.M20241010_contact_requests_contact_id
+import Simplex.Chat.Migrations.M20241023_chat_item_autoincrement_id
+import Simplex.Chat.Migrations.M20241027_server_operators
+import Simplex.Chat.Migrations.M20241125_indexes
+import Simplex.Chat.Migrations.M20241128_business_chats
+import Simplex.Chat.Migrations.M20241205_business_chat_members
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -219,7 +228,16 @@ schemaMigrations =
     ("20240501_chat_deleted", m20240501_chat_deleted, Just down_m20240501_chat_deleted),
     ("20240510_chat_items_via_proxy", m20240510_chat_items_via_proxy, Just down_m20240510_chat_items_via_proxy),
     ("20240515_rcv_files_user_approved_relays", m20240515_rcv_files_user_approved_relays, Just down_m20240515_rcv_files_user_approved_relays),
-    ("20240528_quota_err_counter", m20240528_quota_err_counter, Just down_m20240528_quota_err_counter)
+    ("20240528_quota_err_counter", m20240528_quota_err_counter, Just down_m20240528_quota_err_counter),
+    ("20240827_calls_uuid", m20240827_calls_uuid, Just down_m20240827_calls_uuid),
+    ("20240920_user_order", m20240920_user_order, Just down_m20240920_user_order),
+    ("20241008_indexes", m20241008_indexes, Just down_m20241008_indexes),
+    ("20241010_contact_requests_contact_id", m20241010_contact_requests_contact_id, Just down_m20241010_contact_requests_contact_id),
+    ("20241023_chat_item_autoincrement_id", m20241023_chat_item_autoincrement_id, Just down_m20241023_chat_item_autoincrement_id),
+    ("20241027_server_operators", m20241027_server_operators, Just down_m20241027_server_operators),
+    ("20241125_indexes", m20241125_indexes, Just down_m20241125_indexes),
+    ("20241128_business_chats", m20241128_business_chats, Just down_m20241128_business_chats),
+    ("20241205_business_chat_members", m20241205_business_chat_members, Just down_m20241205_business_chat_members)
   ]
 
 -- | The list of migrations in ascending order by date

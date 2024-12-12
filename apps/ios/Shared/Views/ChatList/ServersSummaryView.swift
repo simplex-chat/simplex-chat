@@ -407,12 +407,18 @@ struct ServersSummaryView: View {
 
 struct SubscriptionStatusIndicatorView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     var subs: SMPServerSubs
     var hasSess: Bool
 
     var body: some View {
-        let onionHosts = networkUseOnionHostsGroupDefault.get()
-        let (color, variableValue, opacity, _) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, hasSess)
+        let (color, variableValue, opacity, _) = subscriptionStatusColorAndPercentage(
+            online: m.networkInfo.online,
+            usesProxy: networkUseOnionHostsGroupDefault.get() != .no || groupDefaults.string(forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY) != nil,
+            subs: subs,
+            hasSess: hasSess,
+            primaryColor: theme.colors.primary
+        )
         if #available(iOS 16.0, *) {
             Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
                 .foregroundColor(color)
@@ -425,26 +431,32 @@ struct SubscriptionStatusIndicatorView: View {
 
 struct SubscriptionStatusPercentageView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     var subs: SMPServerSubs
     var hasSess: Bool
 
     var body: some View {
-        let onionHosts = networkUseOnionHostsGroupDefault.get()
-        let (_, _, _, statusPercent) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, hasSess)
+        let (_, _, _, statusPercent) = subscriptionStatusColorAndPercentage(
+            online: m.networkInfo.online,
+            usesProxy: networkUseOnionHostsGroupDefault.get() != .no || groupDefaults.string(forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY) != nil,
+            subs: subs,
+            hasSess: hasSess,
+            primaryColor: theme.colors.primary
+        )
         Text(verbatim: "\(Int(floor(statusPercent * 100)))%")
             .foregroundColor(.secondary)
             .font(.caption)
     }
 }
 
-func subscriptionStatusColorAndPercentage(_ online: Bool, _ onionHosts: OnionHosts, _ subs: SMPServerSubs, _ hasSess: Bool) -> (Color, Double, Double, Double) {
+func subscriptionStatusColorAndPercentage(online: Bool, usesProxy: Bool, subs: SMPServerSubs, hasSess: Bool, primaryColor: Color) -> (Color, Double, Double, Double) {
     func roundedToQuarter(_ n: Double) -> Double {
         n >= 1 ? 1
         : n <= 0 ? 0
         : (n * 4).rounded() / 4
     }
 
-    let activeColor: Color = onionHosts == .require ? .indigo : .accentColor
+    let activeColor: Color = usesProxy ? .indigo : primaryColor
     let noConnColorAndPercent: (Color, Double, Double, Double) = (Color(uiColor: .tertiaryLabel), 1, 1, 0)
     let activeSubsRounded = roundedToQuarter(subs.shareOfActive)
 
@@ -479,15 +491,6 @@ struct SMPServerSummaryView: View {
             Section("Server address") {
                 Text(summary.smpServer)
                     .textSelection(.enabled)
-                if summary.known == true {
-                    NavigationLink {
-                        ProtocolServersView(serverProtocol: .smp)
-                            .navigationTitle("Your SMP servers")
-                            .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Open server settings")
-                    }
-                }
             }
 
             if let stats = summary.stats {
@@ -584,7 +587,7 @@ struct SMPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is private to your device.")
+            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is kept private on your device.")
         }
     }
 }
@@ -667,15 +670,6 @@ struct XFTPServerSummaryView: View {
             Section("Server address") {
                 Text(summary.xftpServer)
                     .textSelection(.enabled)
-                if summary.known == true {
-                    NavigationLink {
-                        ProtocolServersView(serverProtocol: .xftp)
-                            .navigationTitle("Your XFTP servers")
-                            .modifier(ThemedBackground(grouped: true))
-                    } label: {
-                        Text("Open server settings")
-                    }
-                }
             }
 
             if let stats = summary.stats {
@@ -709,7 +703,7 @@ struct XFTPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is private to your device.")
+            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is kept private on your device.")
         }
     }
 }

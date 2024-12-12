@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay, NominalDiffTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, nominalDay)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -227,8 +227,8 @@ data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (Cha
 
 deriving instance Show (CChatItem c)
 
-cchatItemId :: CChatItem c -> ChatItemId
-cchatItemId (CChatItem _ ci) = chatItemId' ci
+cChatItemId :: CChatItem c -> ChatItemId
+cChatItemId (CChatItem _ ci) = chatItemId' ci
 
 chatItemId' :: ChatItem c d -> ChatItemId
 chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
@@ -238,6 +238,12 @@ chatItemTs (CChatItem _ ci) = chatItemTs' ci
 
 chatItemTs' :: ChatItem c d -> UTCTime
 chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
+
+ciCreatedAt :: CChatItem c -> UTCTime
+ciCreatedAt (CChatItem _ ci) = ciCreatedAt' ci
+
+ciCreatedAt' :: ChatItem c d -> UTCTime
+ciCreatedAt' ChatItem {meta = CIMeta {createdAt}} = createdAt
 
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
@@ -318,6 +324,12 @@ data ChatStats = ChatStats
   }
   deriving (Show)
 
+data NavigationInfo = NavigationInfo
+  { afterUnread :: Int,
+    afterTotal :: Int
+  }
+  deriving (Show)
+
 -- | type to show a mix of messages from multiple chats
 data AChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
@@ -335,6 +347,9 @@ aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
 
 aChatItemTs :: AChatItem -> UTCTime
 aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
+
+aChatItemDir :: AChatItem -> MsgDirection
+aChatItemDir (AChatItem _ sMsgDir _ _) = toMsgDirection sMsgDir
 
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
@@ -458,6 +473,12 @@ data ACIReaction = forall c d. ChatTypeI c => ACIReaction (SChatType c) (SMsgDir
 deriving instance Show ACIReaction
 
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
+
+data MemberReaction = MemberReaction
+  { groupMember :: GroupMember,
+    reactionTs :: UTCTime
+  }
+  deriving (Show)
 
 type family ChatTypeQuotable (a :: ChatType) :: Constraint where
   ChatTypeQuotable 'CTDirect = ()
@@ -591,6 +612,27 @@ ciFileLoaded = \case
   CIFSRcvError {} -> False
   CIFSRcvWarning {} -> False
   CIFSInvalid {} -> False
+
+data ForwardFileError = FFENotAccepted FileTransferId | FFEInProgress | FFEFailed | FFEMissing
+  deriving (Eq, Ord)
+
+ciFileForwardError :: FileTransferId -> CIFileStatus d -> Maybe ForwardFileError
+ciFileForwardError fId = \case
+  CIFSSndStored -> Nothing
+  CIFSSndTransfer {} -> Nothing
+  CIFSSndComplete -> Nothing
+  CIFSSndCancelled -> Nothing
+  CIFSSndError {} -> Nothing
+  CIFSSndWarning {} -> Nothing
+  CIFSRcvInvitation -> Just $ FFENotAccepted fId
+  CIFSRcvAccepted -> Just FFEInProgress
+  CIFSRcvTransfer {} -> Just FFEInProgress
+  CIFSRcvAborted -> Just $ FFENotAccepted fId
+  CIFSRcvCancelled -> Just FFEFailed
+  CIFSRcvComplete -> Nothing
+  CIFSRcvError {} -> Just FFEFailed
+  CIFSRcvWarning {} -> Just FFEFailed
+  CIFSInvalid {} -> Just FFEFailed
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
@@ -1384,6 +1426,8 @@ $(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
 
+$(JQ.deriveJSON defaultJSON ''NavigationInfo)
+
 instance ChatTypeI c => ToJSON (Chat c) where
   toJSON = $(JQ.mkToJSON defaultJSON ''Chat)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''Chat)
@@ -1426,6 +1470,8 @@ instance FromJSON ACIReaction where
 instance ToJSON ACIReaction where
   toJSON (ACIReaction _ _ cInfo reaction) = J.toJSON $ JSONCIReaction cInfo reaction
   toEncoding (ACIReaction _ _ cInfo reaction) = J.toEncoding $ JSONCIReaction cInfo reaction
+
+$(JQ.deriveJSON defaultJSON ''MemberReaction)
 
 $(JQ.deriveJSON defaultJSON ''MsgMetaJSON)
 

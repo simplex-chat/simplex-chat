@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
 import android.view.View
+import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.*
 import androidx.work.*
+import chat.simplex.app.MainActivity.Companion.OLD_ANDROID_UI_FLAGS
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
 import chat.simplex.app.views.call.CallActivity
@@ -26,7 +28,7 @@ import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.chatlist.statusBarColorAfterCall
+import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -66,11 +68,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
     }
     context = this
-    initHaskell()
+    initHaskell(packageName)
     initMultiplatform()
     runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
+    deleteOldChatArchive()
 
     // Present screen for continue migration if it wasn't finished yet
     if (chatModel.migrationState.value != null) {
@@ -120,7 +123,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * */
           if (chatModel.chatRunning.value != false &&
             chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete &&
-            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
+            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
+            // New installation passes all checks above and tries to start the service which is not needed at all
+            // because preferred notification type is not yet chosen. So, check that the user has initialized db already
+            appPrefs.newDatabaseInitialized.get()
           ) {
             SimplexService.start()
           }
@@ -161,7 +167,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       .addTag(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       .build()
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
-    WorkManager.getInstance(context)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
+    getWorkManagerInstance().enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
   fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {
@@ -257,7 +263,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
-
         val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
@@ -272,42 +277,32 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
+      override fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean, blackNavBar: Boolean, themeBackgroundColor: Color) {
         val window = mainActivity.get()?.window ?: return
         @Suppress("DEPRECATION")
+        val statusLight = isLightStatusBar && chatModel.activeCall.value == null
+        val navBarLight = isLightNavBar || windowOrientation() == WindowOrientation.LANDSCAPE
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-
-        var statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
-        } else {
-          if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
-            backgroundColor.lighter(0.4f)
+        if (windowInsetController?.isAppearanceLightStatusBars != statusLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusLight
+        }
+        window.navigationBarColor = Color.Transparent.toArgb()
+        if (windowInsetController?.isAppearanceLightNavigationBars != navBarLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = navBarLight
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+          window.decorView.systemUiVisibility = if (statusLight && navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (statusLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
           } else {
-            backgroundColor
+            OLD_ANDROID_UI_FLAGS
           }
-        }).toArgb()
-
-        // SimplexGreen while in call
-        if (window.statusBarColor == SimplexGreen.toArgb()) {
-          statusBarColorAfterCall.intValue = statusBar
-          statusBar = SimplexGreen.toArgb()
-        }
-        val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
-          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+          window.navigationBarColor = if (blackNavBar) Color.Black.toArgb() else themeBackgroundColor.toArgb()
         } else {
-          backgroundColor
-        }).toArgb()
-        if (window.statusBarColor != statusBar) {
-          window.statusBarColor = statusBar
-        }
-        if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
-          windowInsetController?.isAppearanceLightStatusBars = isLight
-        }
-        if (window.navigationBarColor != navBar) {
-          window.navigationBarColor = navBar
-        }
-        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
-          windowInsetController?.isAppearanceLightNavigationBars = isLight
+          window.navigationBarColor = Color.Transparent.toArgb()
         }
       }
 
@@ -337,6 +332,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         NetworkObserver.shared.restartNetworkObserver()
       }
 
+      override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {
@@ -362,6 +359,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         return true
       }
+
+      override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
+
+      override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
   }
 }

@@ -4,19 +4,24 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.*
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.net.Uri
 import android.os.*
 import android.os.SystemClock
 import android.provider.Settings
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
+import chat.simplex.app.model.NtfManager
 import chat.simplex.common.AppLock
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.ChatController
@@ -52,18 +57,15 @@ class SimplexService: Service() {
     } else {
       Log.d(TAG, "null intent. Probably restarted by the system.")
     }
-    startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
+    ServiceCompat.startForeground(this, SIMPLEX_SERVICE_ID, createNotificationIfNeeded(), foregroundServiceType())
     return START_STICKY // to restart if killed
   }
 
   override fun onCreate() {
     super.onCreate()
     Log.d(TAG, "Simplex service created")
-    val title = generalGetString(MR.strings.simplex_service_notification_title)
-    val text = generalGetString(MR.strings.simplex_service_notification_text)
-    notificationManager = createNotificationChannel()
-    serviceNotification = createNotification(title, text)
-    startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
+    createNotificationIfNeeded()
+    ServiceCompat.startForeground(this, SIMPLEX_SERVICE_ID, createNotificationIfNeeded(), foregroundServiceType())
     /**
      * The reason [stopAfterStart] exists is because when the service is not called [startForeground] yet, and
      * we call [stopSelf] on the same service, [ForegroundServiceDidNotStartInTimeException] will be thrown.
@@ -101,6 +103,26 @@ class SimplexService: Service() {
     if (SimplexApp.context.allowToStartServiceAfterAppExit())
       sendBroadcast(Intent(this, AutoRestartReceiver::class.java))
     super.onDestroy()
+  }
+
+  private fun createNotificationIfNeeded(): Notification {
+    val ntf = serviceNotification
+    if (ntf != null) return ntf
+
+    val title = generalGetString(MR.strings.simplex_service_notification_title)
+    val text = generalGetString(MR.strings.simplex_service_notification_text)
+    notificationManager = createNotificationChannel()
+    val newNtf = createNotification(title, text)
+    serviceNotification = newNtf
+    return newNtf
+  }
+
+  private fun foregroundServiceType(): Int {
+    return if (Build.VERSION.SDK_INT >= 34) {
+      ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
+    } else {
+      0
+    }
   }
 
   private fun startService() {
@@ -272,7 +294,7 @@ class SimplexService: Service() {
 
     fun scheduleStart(context: Context) {
       Log.d(TAG, "Enqueuing work to start subscriber service")
-      val workManager = WorkManager.getInstance(context)
+      val workManager = context.getWorkManagerInstance()
       val startServiceRequest = OneTimeWorkRequest.Builder(ServiceStartWorker::class.java).build()
       workManager.enqueueUniqueWork(WORK_NAME_ONCE, ExistingWorkPolicy.KEEP, startServiceRequest) // Unique avoids races!
     }
@@ -292,6 +314,10 @@ class SimplexService: Service() {
     }
 
     private suspend fun serviceAction(action: Action) {
+      if (!NtfManager.areNotificationsEnabledInSystem()) {
+        Log.d(TAG, "SimplexService serviceAction: ${action.name}. Notifications are not enabled in OS yet, not starting service")
+        return
+      }
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
         Intent(androidAppContext, SimplexService::class.java).also {
@@ -438,7 +464,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
@@ -473,6 +500,12 @@ class SimplexService: Service() {
               Modifier.padding(bottom = 8.dp)
             )
             Text(annotatedStringResource(MR.strings.turn_off_battery_optimization))
+
+            if (platform.androidIsXiaomiDevice() && (mode == NotificationsMode.PERIODIC || mode == NotificationsMode.SERVICE)) {
+              Text(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization),
+                Modifier.padding(top = 8.dp)
+              )
+            }
           }
         },
         dismissButton = {
@@ -480,7 +513,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = ignoreOptimization) { Text(stringResource(MR.strings.turn_off_battery_optimization_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
@@ -522,7 +556,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
@@ -549,7 +584,8 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = unrestrict) { Text(stringResource(MR.strings.turn_off_system_restriction_button)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
       val scope = rememberCoroutineScope()
       DisposableEffect(Unit) {
@@ -593,13 +629,14 @@ class SimplexService: Service() {
         },
         confirmButton = {
           TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(MR.strings.ok)) }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
 
     fun isBackgroundAllowed(): Boolean = isIgnoringBatteryOptimizations() && !isBackgroundRestricted()
 
-    fun isIgnoringBatteryOptimizations(): Boolean {
+    private fun isIgnoringBatteryOptimizations(): Boolean {
       val powerManager = androidAppContext.getSystemService(Application.POWER_SERVICE) as PowerManager
       return powerManager.isIgnoringBatteryOptimizations(androidAppContext.packageName)
     }

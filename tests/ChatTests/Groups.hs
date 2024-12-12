@@ -1,8 +1,10 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatTests.Groups where
 
@@ -14,7 +16,9 @@ import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
@@ -33,6 +37,8 @@ chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
+    it "mark multiple messages as read" testMarkReadGroup
+    it "initial chat pagination" testChatPaginationInitial
     it "v1: add contacts, create group and send/receive messages" testGroup
     it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "send large message" testGroupLargeMessage
@@ -64,6 +70,10 @@ chatGroupTests = do
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+  describe "batch send messages" $ do
+    it "send multiple messages api" testSendMulti
+    it "send multiple timed messages" testSendMultiTimed
+    it "send multiple messages (many chat batches)" testSendMultiManyBatches
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -123,6 +133,7 @@ chatGroupTests = do
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
+    it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -331,24 +342,70 @@ testGroupShared alice bob cath checkMessages directConnections = do
     getReadChats :: HasCallStack => String -> String -> IO ()
     getReadChats msgItem1 msgItem2 = do
       alice @@@ [("#team", "hey team"), ("@cath", "sent invitation to join group team as admin"), ("@bob", "sent invitation to join group team as admin")]
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       -- "before" and "after" define a chat item id across all chats,
       -- so we take into account group event items as well as sent group invitations in direct chats
       alice #$> ("/_get chat #1 after=" <> msgItem1 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, sndGroupFeatures <> [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 around=" <> msgItem1 <> " count=2", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
-      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
       alice #$> ("/_read chat #1", id, "ok")
       bob #$> ("/_read chat #1", id, "ok")
       cath #$> ("/_read chat #1", id, "ok")
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
+
+testMarkReadGroup :: HasCallStack => FilePath -> IO ()
+testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
+  createGroup2 "team" alice bob
+  alice #> "#team 1"
+  alice #> "#team 2"
+  alice #> "#team 3"
+  alice #> "#team 4"
+  bob <# "#team alice> 1"
+  bob <# "#team alice> 2"
+  bob <# "#team alice> 3"
+  bob <# "#team alice> 4"
+  bob ##> "/last_item_id"
+  i :: ChatItemId <- read <$> getTermLine bob
+  let itemIds = intercalate "," $ map show [i - 3 .. i]
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+
+testChatPaginationInitial :: HasCallStack => FilePath -> IO ()
+testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+  createGroup2 "team" alice bob
+  -- Wait, otherwise ids are going to be wrong.
+  threadDelay 1000000
+  lastEventId <- (read :: String -> Int) <$> lastItemId bob
+  let groupItemId n = show $ lastEventId + n
+
+  -- Send messages from alice to bob
+  forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("#team " <> show n)
+
+  -- Bob receives the messages.
+  forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
+
+  -- All messages are unread for bob, should return area around unread
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
+
+  -- Read next 2 items
+  let itemIds = intercalate "," $ map groupItemId [1 .. 2]
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+
+  -- Read all items
+  bob #$> ("/_read chat #1", id, "ok")
+  bob #$> ("/_get chat #1 initial=3", chat, [(0, "8"), (0, "9"), (0, "10")])
+  bob #$> ("/_get chat #1 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
 
 testGroupLargeMessage :: HasCallStack => FilePath -> IO ()
 testGroupLargeMessage =
@@ -508,18 +565,21 @@ testGroup2 =
       dan <##> cath
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 9"
+      alice ##> "/t #club 17"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
-        <##? [ ConsoleString ("#club " <> e2eeInfoNoPQStr),
-               "#club bob> connected",
-               "#club cath> connected",
-               "#club bob> added dan (Daniel)",
-               "#club dan> connected",
-               "#club hello",
-               "#club bob> hi there",
-               "#club cath> hey",
-               "#club dan> how is it going?"
-             ]
+        <##?
+          ( map (ConsoleString . ("#club " <> )) groupFeatureStrs
+              <>
+                [ "#club bob> connected",
+                  "#club cath> connected",
+                  "#club bob> added dan (Daniel)",
+                  "#club dan> connected",
+                  "#club hello",
+                  "#club bob> hi there",
+                  "#club cath> hey",
+                  "#club dan> how is it going?"
+                ]
+          )
       alice ##> "/t @dan 2"
       alice
         <##? [ "dan> hi",
@@ -1304,26 +1364,29 @@ testGroupMessageDeleteMultipleManyBatches =
       cath ##> "/set receipts all off"
       cath <## "ok"
 
-      alice #> "#team message 0"
-      concurrently_
-        (bob <# "#team alice> message 0")
-        (cath <# "#team alice> message 0")
-      msgIdFirst <- lastItemId alice
+      msgIdZero <- lastItemId alice
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send #1 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
 
       forM_ [(1 :: Int) .. 300] $ \i -> do
-        alice #> ("#team message " <> show i)
         concurrently_
           (bob <# ("#team alice> message " <> show i))
           (cath <# ("#team alice> message " <> show i))
       msgIdLast <- lastItemId alice
 
-      let mIdFirst = read msgIdFirst :: Int
+      let mIdFirst = (read msgIdZero :: Int) + 1
           mIdLast = read msgIdLast :: Int
           deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
       alice `send` ("/_delete item #1 " <> deleteIds <> " broadcast")
       _ <- getTermLine alice
-      alice <## "301 messages deleted"
-      forM_ [(0 :: Int) .. 300] $ \i ->
+      alice <## "300 messages deleted"
+      forM_ [(1 :: Int) .. 300] $ \i ->
         concurrently_
           (bob <# ("#team alice> [marked deleted] message " <> show i))
           (cath <# ("#team alice> [marked deleted] message " <> show i))
@@ -1818,6 +1881,92 @@ testGroupDelayedModerationFullDelete tmp = do
   where
     cfg = testCfgCreateGroupDirect
 
+testSendMulti :: HasCallStack => FilePath -> IO ()
+testSendMulti =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "#team test 1"
+      alice <# "#team test 2"
+      bob <# "#team alice> test 1"
+      bob <# "#team alice> test 2"
+      cath <# "#team alice> test 1"
+      cath <# "#team alice> test 2"
+
+testSendMultiTimed :: HasCallStack => FilePath -> IO ()
+testSendMultiTimed =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/set disappear #team on 1"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (1 sec)"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (1 sec)"
+      cath <## "alice updated group #team:"
+      cath <## "updated group preferences:"
+      cath <## "Disappearing messages: on (1 sec)"
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "#team test 1"
+      alice <# "#team test 2"
+      bob <# "#team alice> test 1"
+      bob <# "#team alice> test 2"
+      cath <# "#team alice> test 1"
+      cath <# "#team alice> test 2"
+
+      alice
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      bob
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      cath
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+
+testSendMultiManyBatches :: HasCallStack => FilePath -> IO ()
+testSendMultiManyBatches =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      msgIdAlice <- lastItemId alice
+      msgIdBob <- lastItemId bob
+      msgIdCath <- lastItemId cath
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send #1 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
+
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        concurrently_
+          (bob <# ("#team alice> message " <> show i))
+          (cath <# ("#team alice> message " <> show i))
+
+      aliceItemsCount <- withCCTransaction alice $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
+      aliceItemsCount `shouldBe` [[300]]
+
+      bobItemsCount <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
+      bobItemsCount `shouldBe` [[300]]
+
+      cathItemsCount <- withCCTransaction cath $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdCath) :: IO [[Int]]
+      cathItemsCount `shouldBe` [[300]]
+
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -1839,7 +1988,6 @@ testGroupAsync tmp = do
         (bob <## "#team: you joined the group")
       alice #> "#team hello bob"
       bob <# "#team alice> hello bob"
-  print (1 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withNewTestChat tmp "cath" cathProfile $ \cath -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -1859,7 +2007,6 @@ testGroupAsync tmp = do
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
-  print (2 :: Integer)
   withTestChat tmp "bob" $ \bob -> do
     withTestChat tmp "cath" $ \cath -> do
       concurrentlyN_
@@ -1875,7 +2022,6 @@ testGroupAsync tmp = do
             cath <## "#team: member bob (Bob) is connected"
         ]
   threadDelay 500000
-  print (3 :: Integer)
   withTestChat tmp "bob" $ \bob -> do
     withNewTestChat tmp "dan" danProfile $ \dan -> do
       bob <## "2 contacts connected (use /cs for the list)"
@@ -1895,7 +2041,6 @@ testGroupAsync tmp = do
         ]
       threadDelay 1000000
   threadDelay 1000000
-  print (4 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withTestChat tmp "cath" $ \cath -> do
       withTestChat tmp "dan" $ \dan -> do
@@ -1917,7 +2062,6 @@ testGroupAsync tmp = do
               dan <## "#team: member cath (Catherine) is connected"
           ]
         threadDelay 1000000
-  print (5 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withTestChat tmp "bob" $ \bob -> do
       withTestChat tmp "cath" $ \cath -> do
@@ -1998,7 +2142,7 @@ testGroupLink =
             bob <## "#team: you joined the group"
         ]
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
       -- contacts connected via group link are not in chat previews
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -2859,7 +3003,7 @@ testGroupLinkNoContact =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -2922,7 +3066,7 @@ testGroupLinkNoContactInviteesWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected"), ("@cath", "hey")]
@@ -3003,7 +3147,7 @@ testGroupLinkNoContactAllMembersWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected"), ("@bob", "hey"), ("@cath", "hey")]
       bob @@@ [("#team", "connected"), ("@alice", "hey"), ("@cath", "hey")]
@@ -3159,7 +3303,7 @@ testGroupLinkNoContactHostIncognito =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -3193,7 +3337,7 @@ testGroupLinkNoContactInviteeIncognito =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -3260,7 +3404,7 @@ testGroupLinkNoContactExistingContactMerged =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
 
       alice <##> bob
 
@@ -3468,7 +3612,8 @@ testGroupSyncRatchet tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
-      bob <## "error: command is prohibited, sendMessagesB: send prohibited" -- silence?
+      -- "send prohibited" error is not printed in group as SndMessage is created,
+      -- but it should be displayed in per member snd statuses
       bob <# "#team 1"
       (alice </)
       -- synchronize bob and alice
@@ -3593,6 +3738,9 @@ testSetGroupMessageReactions =
       cath ##> "/tail #team 1"
       cath <# "#team alice> hi"
       cath <## "      👍 2 🚀 1"
+      itemId' <- lastItemId alice
+      alice ##> ("/_reaction members 1 #1 " <> itemId' <> " {\"type\": \"emoji\", \"emoji\": \"👍\"}")
+      alice <## "2 member(s) reacted"
       bob ##> "-1 #team hi"
       bob <## "removed 👍"
       alice <# "#team bob> > alice hi"
@@ -4424,6 +4572,73 @@ testMemberContactProfileUpdate =
       alice <# "#team kate> hello there"
       bob <# "#team kate> hello there" -- updated profile
 
+testRecreateMemberContactManyGroups :: HasCallStack => FilePath -> IO ()
+testRecreateMemberContactManyGroups =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      createGroup2' "team" alice bob False
+      createGroup2' "club" alice bob False
+
+      -- alice can message bob via team and via club
+      alice ##> "@#team bob 1"
+      alice <# "@bob 1"
+      bob <# "alice> 1"
+
+      bob ##> "@#team alice 2"
+      bob <# "@alice 2"
+      alice <# "bob> 2"
+
+      alice ##> "@#club bob 3"
+      alice <# "@bob 3"
+      bob <# "alice> 3"
+
+      bob ##> "@#club alice 4"
+      bob <# "@alice 4"
+      alice <# "bob> 4"
+
+      -- alice deletes contact with bob
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      bob ##> "/d alice"
+      bob <## "alice: contact is deleted"
+
+      -- alice creates member contact with bob
+      alice ##> "@#team bob hi"
+      alice
+        <### [ "member #team bob does not have direct connection, creating",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob",
+               WithTime "@bob hi"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hi"
+             ]
+      bob <## "alice (Alice): you can send messages to contact"
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+
+      -- alice can message bob via team and via club
+      alice ##> "@#team bob 1"
+      alice <# "@bob 1"
+      bob <# "alice> 1"
+
+      bob ##> "@#team alice 2"
+      bob <# "@alice 2"
+      alice <# "bob> 2"
+
+      alice ##> "@#club bob 3"
+      alice <# "@bob 3"
+      bob <# "alice> 3"
+
+      bob ##> "@#club alice 4"
+      bob <# "@alice 4"
+      alice <# "bob> 4"
+
 testGroupMsgForward :: HasCallStack => FilePath -> IO ()
 testGroupMsgForward =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -4908,7 +5123,7 @@ testGroupHistoryLargeFile =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]"
       bob <# "#team hello"
       bob <# "/f #team ./tests/tmp/testfile"
       bob <## "use /fc 1 to cancel sending"
@@ -4969,7 +5184,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -4981,7 +5196,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"
@@ -5047,7 +5262,7 @@ testGroupHistoryFileCancel =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -5063,7 +5278,7 @@ testGroupHistoryFileCancel =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"
@@ -6306,7 +6521,7 @@ testGroupMemberInactive tmp = do
   where
     serverCfg' =
       smpServerCfg
-        { transports = [("7003", transport @TLS)],
+        { transports = [("7003", transport @TLS, False)],
           msgQueueQuota = 2
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50_000} -- same as in agent tests

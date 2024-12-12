@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -27,7 +26,6 @@ import kotlinx.coroutines.*
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
-import kotlin.math.sqrt
 import kotlin.system.exitProcess
 
 val simplexWindowState = SimplexWindowState()
@@ -58,7 +56,7 @@ fun showApp() {
             } else {
               // The last possible cause that can be closed
               chatModel.chatId.value = null
-              chatModel.chatItems.clear()
+              chatModel.chatItems.clearAndNotify()
             }
             chatModel.activeCall.value?.let {
               withBGApi {
@@ -172,7 +170,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       var windowFocused by remember { simplexWindowState.windowFocused }
       LaunchedEffect(windowFocused) {
         val delay = ChatController.appPrefs.laLockDelay.get()
-        if (!windowFocused && ChatModel.performLA.value && delay > 0) {
+        if (!windowFocused && ChatModel.showAuthScreen.value && delay > 0) {
           delay(delay * 1000L)
           // Trigger auth state check when delay ends (and if it ends)
           AppLock.recheckAuthState()
@@ -200,8 +198,19 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, height =
       768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
+        val data = remember { ModalData() }
         SimpleXTheme {
-          TerminalView(ChatModel) { hiddenUntilRestart = true }
+          CompositionLocalProvider(LocalAppBarHandler provides data.appBarHandler) {
+            ModalView({ hiddenUntilRestart = true }) {
+              TerminalView(true)
+            }
+            ModalManager.floatingTerminal.showInView()
+            DisposableEffect(Unit) {
+              onDispose {
+                ModalManager.floatingTerminal.closeModals()
+              }
+            }
+          }
         }
       }
     }

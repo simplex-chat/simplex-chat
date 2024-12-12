@@ -12,7 +12,7 @@ import SimpleXChat
 struct ContextItemView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
-    let contextItem: ChatItem
+    let contextItems: [ChatItem]
     let contextIcon: String
     let cancelContextItem: () -> Void
     var showSender: Bool = true
@@ -24,13 +24,22 @@ struct ContextItemView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
                 .foregroundColor(theme.colors.secondary)
-            if showSender, let sender = contextItem.memberDisplayName {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sender).font(.caption).foregroundColor(theme.colors.secondary)
-                    msgContentView(lines: 2)
-                }
+            if let singleItem = contextItems.first, contextItems.count == 1 {
+                if showSender, let sender = singleItem.memberDisplayName {
+                     VStack(alignment: .leading, spacing: 4) {
+                         Text(sender).font(.caption).foregroundColor(theme.colors.secondary)
+                         msgContentView(lines: 2, contextItem: singleItem)
+                     }
+                 } else {
+                     msgContentView(lines: 3, contextItem: singleItem)
+                 }
             } else {
-                msgContentView(lines: 3)
+                Text(
+                    chat.chatInfo.chatType == .local
+                    ? "Saving \(contextItems.count) messages"
+                    : "Forwarding \(contextItems.count) messages"
+                )
+                .italic()
             }
             Spacer()
             Button {
@@ -45,29 +54,38 @@ struct ContextItemView: View {
         .padding(12)
         .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
-        .background(chatItemFrameColor(contextItem, theme))
+        .background(background)
     }
 
-    private func msgContentView(lines: Int) -> some View {
-        contextMsgPreview()
+    private var background: Color {
+        contextItems.first
+            .map { chatItemFrameColor($0, theme) }
+            ?? Color(uiColor: .tertiarySystemBackground)
+    }
+
+    private func msgContentView(lines: Int, contextItem: ChatItem) -> some View {
+        contextMsgPreview(contextItem)
             .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
             .lineLimit(lines)
     }
 
-    private func contextMsgPreview() -> Text {
+    private func contextMsgPreview(_ contextItem: ChatItem) -> Text {
         return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func attachment() -> Text {
+            let isFileLoaded = if let fileSource = getLoadedFileSource(contextItem.file) {
+                FileManager.default.fileExists(atPath: getAppFilePath(fileSource.filePath).path)
+            } else { false }
             switch contextItem.content.msgContent {
-            case .file: return image("doc.fill")
+            case .file: return isFileLoaded ? image("doc.fill") : Text("")
             case .image: return image("photo")
-            case .voice: return image("play.fill")
+            case .voice: return isFileLoaded ? image("play.fill") : Text("")
             default: return Text("")
             }
         }
 
         func image(_ s: String) -> Text {
-            Text(Image(systemName: s)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ")
+            Text(Image(systemName: s)).foregroundColor(Color(uiColor: .tertiaryLabel)) + textSpace
         }
     }
 }
@@ -75,6 +93,6 @@ struct ContextItemView: View {
 struct ContextItemView_Previews: PreviewProvider {
     static var previews: some View {
         let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
-        return ContextItemView(chat: Chat.sampleData, contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
+        return ContextItemView(chat: Chat.sampleData, contextItems: [contextItem], contextIcon: "pencil.circle", cancelContextItem: {})
     }
 }

@@ -93,7 +93,6 @@ struct MigrateToDevice: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateToDeviceViewAlert?
@@ -102,6 +101,10 @@ struct MigrateToDevice: View {
     // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
+    @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
+
+    @State private var importingArchiveFromFileProgressIndicator = false
+    @State private var showFileImporter = false
 
     var body: some View {
         VStack {
@@ -197,11 +200,15 @@ struct MigrateToDevice: View {
                         }
                     }
                 }
-                if developerTools {
-                    Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
-                        pasteLinkView()
-                    }
+                Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
+                    pasteLinkView()
                 }
+                Section(header: Text("Or import archive file").foregroundColor(theme.colors.secondary)) {
+                    archiveImportFromFileView()
+                }
+            }
+            if importingArchiveFromFileProgressIndicator {
+                progressView()
             }
         }
     }
@@ -218,9 +225,37 @@ struct MigrateToDevice: View {
         } label: {
             Text("Tap to paste link")
         }
-        .disabled(!ChatModel.shared.pasteboardHasStrings)
+        .disabled(!pasteboardHasStrings)
         .frame(maxWidth: .infinity, alignment: .center)
     }
+
+    private func archiveImportFromFileView() -> some View {
+        Button {
+            showFileImporter = true
+        } label: {
+            Label("Import database", systemImage: "square.and.arrow.down")
+        }
+        .disabled(importingArchiveFromFileProgressIndicator)
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                Task {
+                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, Binding.constant(nil))
+                    if success {
+                        DatabaseView.startChat(
+                            Binding.constant(false),
+                            $importingArchiveFromFileProgressIndicator
+                        )
+                        hideView()
+                    }
+                }
+            }
+        }
+    }
+
 
     private func linkDownloadingView(_ link: String) -> some View {
         ZStack {
@@ -487,6 +522,9 @@ struct MigrateToDevice: View {
             do {
                 if !hasChatCtrl() {
                     chatInitControllerRemovingDatabases()
+                } else if ChatModel.shared.chatRunning == true {
+                    // cannot delete storage if chat is running
+                    try await apiStopChat()
                 }
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -556,11 +594,22 @@ struct MigrateToDevice: View {
         do {
             try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             MigrationToDeviceState.save(nil)
-            appSettings.importIntoApp()
-            try SimpleX.startChat(refreshInvitations: true)
-            AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+            try ObjC.catchException {
+                appSettings.importIntoApp()
+            }
+            do {
+                try SimpleX.startChat(refreshInvitations: true)
+                AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+            } catch let error {
+                AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
+            }
         } catch let error {
-            AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
+            logger.error("Error importing settings: \(error.localizedDescription)")
+            AlertManager.shared.showAlert(
+                Alert(
+                    title: Text("Error migrating settings"),
+                    message: Text ("Some app settings were not migrated.") + Text("\n") + Text(responseError(error)))
+            )
         }
         hideView()
     }

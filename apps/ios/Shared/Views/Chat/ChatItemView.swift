@@ -9,12 +9,33 @@
 import SwiftUI
 import SimpleXChat
 
+extension EnvironmentValues {
+    struct ShowTimestamp: EnvironmentKey {
+        static let defaultValue: Bool = true
+    }
+
+    struct Revealed: EnvironmentKey {
+        static let defaultValue: Bool = true
+    }
+
+    var showTimestamp: Bool {
+        get { self[ShowTimestamp.self] }
+        set { self[ShowTimestamp.self] = newValue }
+    }
+
+    var revealed: Bool {
+        get { self[Revealed.self] }
+        set { self[Revealed.self] = newValue }
+    }
+}
+
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.showTimestamp) var showTimestamp: Bool
+    @Environment(\.revealed) var revealed: Bool
     var chatItem: ChatItem
     var maxWidth: CGFloat = .infinity
-    @Binding var revealed: Bool
     @Binding var allowMenu: Bool
 
     init(
@@ -22,27 +43,25 @@ struct ChatItemView: View {
         chatItem: ChatItem,
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
-        revealed: Binding<Bool>,
         allowMenu: Binding<Bool> = .constant(false)
     ) {
         self.chat = chat
         self.chatItem = chatItem
         self.maxWidth = maxWidth
-        _revealed = revealed
         _allowMenu = allowMenu
     }
 
     var body: some View {
         let ci = chatItem
         if chatItem.meta.itemDeleted != nil && (!revealed || chatItem.isDeletedContent) {
-            MarkedDeletedItemView(chat: chat, chatItem: chatItem, revealed: $revealed)
+            MarkedDeletedItemView(chat: chat, chatItem: chatItem)
         } else if ci.quotedItem == nil && ci.meta.itemForwarded == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chat: chat, chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
-                ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
+                ChatItemContentView(chat: chat, chatItem: chatItem, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
                 framedItemView()
             }
@@ -60,7 +79,7 @@ struct ChatItemView: View {
                 default: nil
                 }
             }
-            .flatMap { UIImage(base64Encoded: $0) }
+            .flatMap { imageFromBase64($0) }
         let adjustedMaxWidth = {
             if let preview, preview.size.width <= preview.size.height {
                 maxWidth * 0.75
@@ -72,7 +91,6 @@ struct ChatItemView: View {
             chat: chat,
             chatItem: chatItem,
             preview: preview,
-            revealed: $revealed,
             maxWidth: maxWidth,
             imgWidth: adjustedMaxWidth,
             videoWidth: adjustedMaxWidth,
@@ -84,9 +102,9 @@ struct ChatItemView: View {
 struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.revealed) var revealed: Bool
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
-    @Binding var revealed: Bool
     var msgContentView: () -> Content
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -118,7 +136,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvChatPreference(feature, allowed, param):
             CIFeaturePreferenceView(chat: chat, chatItem: chatItem, feature: feature, allowed: allowed, param: param)
         case let .sndChatPreference(feature, _, _):
-            CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, icon: feature.icon, iconColor: theme.colors.secondary)
+            CIChatFeatureView(chat: chat, chatItem: chatItem, feature: feature, icon: feature.icon, iconColor: theme.colors.secondary)
         case let .rcvGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary))
         case let .sndGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary))
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
@@ -152,7 +170,7 @@ struct ChatItemContentView<Content: View>: View {
 
     private func eventItemViewText(_ secondaryColor: Color) -> Text {
         if !revealed, let t = mergedGroupEventText {
-            return chatEventText(t + Text(" ") + chatItem.timestampText, secondaryColor)
+            return chatEventText(t + textSpace + chatItem.timestampText, secondaryColor)
         } else if let member = chatItem.memberDisplayName {
             return Text(member + " ")
                     .font(.caption)
@@ -165,7 +183,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
-        CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, iconColor: iconColor)
+        CIChatFeatureView(chat: chat, chatItem: chatItem, feature: feature, iconColor: iconColor)
     }
 
     private var mergedGroupEventText: Text? {
@@ -185,7 +203,7 @@ struct ChatItemContentView<Content: View>: View {
         } else if ns.count == 0 {
             Text("\(count) group events")
         } else if count > ns.count {
-            Text(members) + Text(" ") + Text("and \(count - ns.count) other events")
+            Text(members) + textSpace + Text("and \(count - ns.count) other events")
         } else {
             Text(members)
         }
@@ -216,7 +234,7 @@ func chatEventText(_ text: Text, _ secondaryColor: Color) -> Text {
 }
 
 func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor: Color) -> Text {
-    chatEventText(Text(eventText) + Text(" ") + ts, secondaryColor)
+    chatEventText(Text(eventText) + textSpace + ts, secondaryColor)
 }
 
 func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
@@ -226,16 +244,17 @@ func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
 struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample(), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), revealed: Binding.constant(true))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), revealed: Binding.constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample())
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true)).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true)).environment(\.revealed, true)
         }
+        .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 70))
         .environmentObject(Chat.sampleData)
     }
@@ -253,8 +272,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
                     quotedItem: nil,
                     file: nil
-                ),
-                revealed: Binding.constant(true)
+                )
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -264,8 +282,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvDecryptionError(msgDecryptError: .ratchetHeader, msgCount: 2),
                     quotedItem: nil,
                     file: nil
-                ),
-                revealed: Binding.constant(true)
+                )
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -275,8 +292,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
                     quotedItem: nil,
                     file: nil
-                ),
-                revealed: Binding.constant(true)
+                )
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -286,8 +302,7 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
                     quotedItem: nil,
                     file: nil
-                ),
-                revealed: Binding.constant(true)
+                )
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -297,10 +312,10 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: ciFeatureContent,
                     quotedItem: nil,
                     file: nil
-                ),
-                revealed: Binding.constant(true)
+                )
             )
         }
+        .environment(\.revealed, true)
         .previewLayout(.fixed(width: 360, height: 70))
         .environmentObject(Chat.sampleData)
     }

@@ -26,8 +26,8 @@ describe.skip("ChatClient (expects SimpleX Chat server with a user, without cont
     assert(r2.type === "contactConnected")
     const contact1 = (r1 as CR.CRContactConnected).contact
     // const contact2 = (r2 as C.CRContactConnected).contact
-    const r3 = await c.apiSendTextMessage(CC.ChatType.CTDirect, contact1.contactId, "hello")
-    assert(r3.chatItem.content.type === "sndMsgContent" && r3.chatItem.content.msgContent.text === "hello")
+    const r3 = await c.apiSendTextMessage(CC.ChatType.Direct, contact1.contactId, "hello")
+    assert(r3[0].chatItem.content.type === "sndMsgContent" && r3[0].chatItem.content.msgContent.text === "hello")
     const r4 = await c.msgQ.dequeue()
     assert(isItemSent(r4) || isNewRcvItem(r4))
     await c.disconnect()
@@ -38,9 +38,9 @@ describe.skip("ChatClient (expects SimpleX Chat server with a user, without cont
 
     function isNewRcvItem(r: CR.ChatResponse): boolean {
       return (
-        r.type === "newChatItem" &&
-        r.chatItem.chatItem.content.type === "rcvMsgContent" &&
-        r.chatItem.chatItem.content.msgContent.text === "hello"
+        r.type === "newChatItems" &&
+        r.chatItems[0].chatItem.content.type === "rcvMsgContent" &&
+        r.chatItems[0].chatItem.content.msgContent.text === "hello"
       )
     }
   }, 20000)

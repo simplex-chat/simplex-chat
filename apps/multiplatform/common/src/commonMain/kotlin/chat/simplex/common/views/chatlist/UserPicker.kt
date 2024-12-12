@@ -1,7 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
-import androidx.compose.animation.core.*
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -12,13 +12,15 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.text.TextStyle
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -28,26 +30,23 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.remote.*
-import chat.simplex.common.views.usersettings.doWithAuth
+import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.AppearanceScope.ColorModeSwitcher
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.roundToInt
+
+private val USER_PICKER_SECTION_SPACING = 32.dp
 
 @Composable
 fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
-  showSettings: Boolean = true,
-  contentAlignment: Alignment = Alignment.TopStart,
-  showCancel: Boolean = false,
-  cancelClicked: () -> Unit = {},
-  useFromDesktopClicked: () -> Unit = {},
-  settingsClicked: () -> Unit = {},
+  setPerformLA: (Boolean) -> Unit,
 ) {
-  val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
   if (newChat.isVisible()) {
     BackHandler {
@@ -58,7 +57,7 @@ fun UserPicker(
     derivedStateOf {
       chatModel.users
         .filter { u -> u.user.activeUser || !u.user.hidden }
-        .sortedByDescending { it.user.activeUser }
+        .sortedByDescending { it.user.activeOrder }
     }
   }
   val remoteHosts by remember {
@@ -67,18 +66,32 @@ fun UserPicker(
         .sortedBy { it.hostDeviceName }
     }
   }
-  val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
+
+  val view = LocalMultiplatformView()
   LaunchedEffect(Unit) {
     launch {
       userPickerState.collect {
         newChat = it
+        if (it.isVisible()) {
+          hideKeyboard(view)
+        }
         launch {
-          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
           if (newChat.isHiding()) userPickerState.value = AnimatedViewState.GONE
         }
       }
     }
   }
+
+  LaunchedEffect(Unit) {
+    launch {
+      snapshotFlow { ModalManager.start.modalCount.value }
+        .filter { it > 0 }
+        .collect {
+          closePicker(userPickerState)
+        }
+    }
+  }
+
   LaunchedEffect(Unit) {
     snapshotFlow { newChat.isVisible() }
       .distinctUntilChanged()
@@ -124,110 +137,122 @@ fun UserPicker(
       }
     }
   }
-  val UsersView: @Composable ColumnScope.() -> Unit = {
-    users.forEach { u ->
-      UserProfilePickerItem(u.user, u.unreadCount, openSettings = settingsClicked) {
+
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val iconColor = MaterialTheme.colors.secondaryVariant
+  val background = if (appPlatform.isAndroid) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, alpha = 1 - userPickerAlpha()) else MaterialTheme.colors.surface
+  PlatformUserPicker(
+    modifier = Modifier
+      .height(IntrinsicSize.Min)
+      .fillMaxWidth()
+      .then(if (newChat.isVisible()) Modifier.shadow(8.dp, clip = true, ambientColor = background) else Modifier)
+      .padding(top = if (appPlatform.isDesktop && oneHandUI.value) 7.dp else 0.dp)
+      .background(background)
+      .padding(bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    pickerState = userPickerState
+  ) {
+    val showCustomModal: (@Composable() (ModalData.(ChatModel, () -> Unit) -> Unit)) -> () -> Unit = { modalView ->
+      {
+        ModalManager.start.showCustomModal { close -> modalView(chatModel, close) }
+      }
+    }
+    val stopped = remember { chatModel.chatRunning }.value == false
+    val onUserClicked: (user: User) -> Unit = { user ->
+      if (!user.activeUser) {
         userPickerState.value = AnimatedViewState.HIDING
-        if (!u.user.activeUser) {
-          withBGApi {
-            controller.showProgressIfNeeded {
-              ModalManager.closeAllModalsEverywhere()
-              chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
-            }
+        withBGApi {
+          controller.showProgressIfNeeded {
+            ModalManager.closeAllModalsEverywhere()
+            chatModel.controller.changeActiveUser(user.remoteHostId, user.userId, null)
           }
+        }
+      } else {
+        showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }()
+        withBGApi {
+          closePicker(userPickerState)
         }
       }
-      Divider(Modifier.requiredHeight(1.dp))
-      if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
     }
-  }
-  val xOffset = with(LocalDensity.current) { 10.dp.roundToPx() }
-  val maxWidth = with(LocalDensity.current) { windowWidth() * density }
-  Box(Modifier
-    .fillMaxSize()
-    .offset { IntOffset(if (newChat.isGone()) -maxWidth.value.roundToInt() else xOffset, 0) }
-    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING })
-    .padding(bottom = 10.dp, top = 10.dp)
-    .graphicsLayer {
-      alpha = animatedFloat.value
-      translationY = (if (appPrefs.oneHandUI.state.value) -1 else 1) * (animatedFloat.value - 1) * xOffset
-    },
-    contentAlignment = contentAlignment
-  ) {
-    Column(
-      Modifier
-        .widthIn(min = 260.dp)
-        .width(IntrinsicSize.Min)
-        .height(IntrinsicSize.Min)
-        .shadow(8.dp, RoundedCornerShape(corner = CornerSize(25.dp)), clip = true)
-        .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
-        .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
-    ) {
-      val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
-      Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-        if (remoteHosts.isNotEmpty()) {
-          if (currentRemoteHost == null && chatModel.localUserCreated.value == true) {
-            LocalDevicePickerItem(true) {
-              userPickerState.value = AnimatedViewState.HIDING
-              switchToLocalDevice()
-            }
-            Divider(Modifier.requiredHeight(1.dp))
-          } else if (currentRemoteHost != null) {
-            val connecting = rememberSaveable { mutableStateOf(false) }
-            RemoteHostPickerItem(currentRemoteHost,
-              actionButtonClick = {
-                userPickerState.value = AnimatedViewState.HIDING
-                stopRemoteHostAndReloadHosts(currentRemoteHost, true)
-              }) {
-                userPickerState.value = AnimatedViewState.HIDING
-                switchToRemoteHost(currentRemoteHost, connecting)
-              }
-            Divider(Modifier.requiredHeight(1.dp))
-          }
-        }
 
-        UsersView()
+    @Composable
+    fun FirstSection() {
+      if (remoteHosts.isNotEmpty()) {
+        val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
+        val localDeviceActive = currentRemoteHost == null && chatModel.localUserCreated.value == true
 
-        if (remoteHosts.isNotEmpty() && currentRemoteHost != null && chatModel.localUserCreated.value == true) {
-          LocalDevicePickerItem(false) {
+        DevicePickerRow(
+          localDeviceActive = localDeviceActive,
+          remoteHosts = remoteHosts,
+          onRemoteHostClick = { h, connecting ->
+            userPickerState.value = AnimatedViewState.HIDING
+            switchToRemoteHost(h, connecting)
+          },
+          onLocalDeviceClick = {
             userPickerState.value = AnimatedViewState.HIDING
             switchToLocalDevice()
+          },
+          onRemoteHostActionButtonClick = { h ->
+            userPickerState.value = AnimatedViewState.HIDING
+            stopRemoteHostAndReloadHosts(h, true)
           }
-          Divider(Modifier.requiredHeight(1.dp))
+        )
+      }
+      val currentUser = remember { chatModel.currentUser }.value
+      if (appPlatform.isAndroid) {
+        Column(modifier = Modifier.padding(top = USER_PICKER_SECTION_SPACING, bottom = USER_PICKER_SECTION_SPACING - DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL - 3.dp)) {
+          UserPickerUsersSection(
+            users = users,
+            onUserClicked = onUserClicked,
+            iconColor = iconColor,
+            stopped = stopped
+          )
         }
-        remoteHosts.filter { !it.activeHost }.forEach { h ->
-          val connecting = rememberSaveable { mutableStateOf(false) }
-          RemoteHostPickerItem(h,
-            actionButtonClick = {
-              userPickerState.value = AnimatedViewState.HIDING
-              stopRemoteHostAndReloadHosts(h, false)
-            }) {
-              userPickerState.value = AnimatedViewState.HIDING
-              switchToRemoteHost(h, connecting)
-          }
-          Divider(Modifier.requiredHeight(1.dp))
+      } else if (currentUser != null) {
+        SectionItemView({ onUserClicked(currentUser) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
+          ProfilePreview(currentUser.profile, iconColor = iconColor, stopped = stopped)
         }
       }
-      if (appPlatform.isAndroid) {
-        UseFromDesktopPickerItem {
-          ModalManager.start.showCustomModal { close ->
-            ConnectDesktopView(close)
+    }
+
+    @Composable
+    fun SecondSection() {
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_qr_code),
+        if (chatModel.userAddress.value != null) generalGetString(MR.strings.your_simplex_contact_address) else generalGetString(MR.strings.create_simplex_address),
+        showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped
+      )
+      UserPickerOptionRow(
+        painterResource(MR.images.ic_toggle_on),
+        stringResource(MR.strings.chat_preferences),
+        click = if (stopped) null else ({
+          showCustomModal { m, close ->
+            PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+          }()
+        }),
+        disabled = stopped
+      )
+      if (appPlatform.isDesktop) {
+        Divider(Modifier.padding(DEFAULT_PADDING))
+
+        val inactiveUsers = users.filter { !it.user.activeUser }
+
+        if (inactiveUsers.isNotEmpty()) {
+          Column(modifier = Modifier.padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)) {
+            UserPickerUsersSection(
+              users = inactiveUsers,
+              iconColor = iconColor,
+              onUserClicked = onUserClicked,
+              stopped = stopped
+            )
           }
-          userPickerState.value = AnimatedViewState.GONE
         }
-        Divider(Modifier.requiredHeight(1.dp))
-      } else {
-        if (remoteHosts.isEmpty()) {
-          LinkAMobilePickerItem {
-            ModalManager.start.showModal {
-              ConnectMobileView()
-            }
-            userPickerState.value = AnimatedViewState.GONE
-          }
-          Divider(Modifier.requiredHeight(1.dp))
-        }
-        if (chatModel.desktopNoUserNoRemote) {
-          CreateInitialProfile {
+      }
+
+      if (chatModel.desktopNoUserNoRemote) {
+        UserPickerOptionRow(
+          painterResource(MR.images.ic_manage_accounts),
+          generalGetString(MR.strings.create_chat_profile),
+          {
             doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
               ModalManager.center.showModalCloseable { close ->
                 LaunchedEffect(Unit) {
@@ -237,16 +262,135 @@ fun UserPicker(
               }
             }
           }
-          Divider(Modifier.requiredHeight(1.dp))
-        }
-      }
-      if (showSettings) {
-        SettingsPickerItem(settingsClicked)
-      }
-      if (showCancel) {
-        CancelPickerItem(cancelClicked)
+        )
+      } else {
+        UserPickerOptionRow(
+          painterResource(MR.images.ic_manage_accounts),
+          stringResource(MR.strings.your_chat_profiles),
+          {
+            ModalManager.start.showCustomModal(keyboardCoversBar = false) { close ->
+              val search = rememberSaveable { mutableStateOf("") }
+              val profileHidden = rememberSaveable { mutableStateOf(false) }
+              val authorized = remember { stateGetOrPut("authorized") { false } }
+              ModalView(
+                { close() },
+                showSearch = true,
+                searchAlwaysVisible = true,
+                onSearchValueChanged = {
+                  search.value = it
+                },
+                content = {
+                  UserProfilesView(chatModel, search, profileHidden) { block ->
+                      if (authorized.value) {
+                        block()
+                      } else {
+                        doWithAuth(
+                          generalGetString(MR.strings.auth_open_chat_profiles),
+                          generalGetString(MR.strings.auth_log_in_using_credential)
+                        ) {
+                          authorized.value = true
+                          block()
+                        }
+                      }
+                    }
+                })
+            }
+          },
+          disabled = stopped
+        )
       }
     }
+
+    if (appPlatform.isDesktop || windowOrientation() == WindowOrientation.PORTRAIT) {
+      Column {
+        FirstSection()
+        SecondSection()
+        GlobalSettingsSection(
+          userPickerState = userPickerState,
+          setPerformLA = setPerformLA,
+        )
+      }
+    } else {
+      Column {
+        FirstSection()
+        Row {
+          Box(Modifier.weight(1f)) {
+            Column {
+              SecondSection()
+            }
+          }
+          VerticalDivider()
+          Box(Modifier.weight(1f)) {
+            Column {
+              GlobalSettingsSection(
+                userPickerState = userPickerState,
+                setPerformLA = setPerformLA,
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+fun userPickerAlpha(): Float {
+  return when (CurrentColors.value.base) {
+    DefaultTheme.LIGHT -> 0.05f
+    DefaultTheme.DARK -> 0.05f
+    DefaultTheme.BLACK -> 0.075f
+    DefaultTheme.SIMPLEX -> 0.035f
+  }
+}
+
+@Composable
+private fun GlobalSettingsSection(
+  userPickerState: MutableStateFlow<AnimatedViewState>,
+  setPerformLA: (Boolean) -> Unit,
+) {
+  val stopped = remember { chatModel.chatRunning }.value == false
+
+  if (appPlatform.isAndroid) {
+    val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
+
+    UserPickerOptionRow(
+      painterResource(MR.images.ic_desktop),
+      text,
+      click = {
+        ModalManager.start.showCustomModal { close ->
+          ConnectDesktopView(close)
+        }
+      },
+      disabled = stopped
+    )
+  } else {
+    UserPickerOptionRow(
+      icon = painterResource(MR.images.ic_smartphone_300),
+      text = stringResource(if (remember { chat.simplex.common.platform.chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles),
+      click = {
+        userPickerState.value = AnimatedViewState.HIDING
+        ModalManager.start.showModal {
+          ConnectMobileView()
+        }
+      },
+      disabled = stopped
+    )
+  }
+
+  SectionItemView(
+    click = {
+      ModalManager.start.showModalCloseable { close ->
+        SettingsView(chatModel, setPerformLA, close)
+      }
+    },
+    padding = if (appPlatform.isDesktop) PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING + 2.dp) else PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)
+  ) {
+    val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
+    Icon(painterResource(MR.images.ic_settings), text, tint = MaterialTheme.colors.secondary)
+    TextIconSpaced()
+    Text(text, color = Color.Unspecified)
+    Spacer(Modifier.weight(1f))
+    ColorModeSwitcher()
   }
 }
 
@@ -254,7 +398,7 @@ fun UserPicker(
 fun UserProfilePickerItem(
   u: User,
   unreadCount: Int = 0,
-  enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote,
+  enabled: Boolean = remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote,
   onLongClick: () -> Unit = {},
   openSettings: () -> Unit = {},
   onClick: () -> Unit
@@ -262,7 +406,7 @@ fun UserProfilePickerItem(
   Row(
     Modifier
       .fillMaxWidth()
-      .sizeIn(minHeight = 46.dp)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         enabled = enabled,
         onClick = if (u.activeUser) openSettings else onClick,
@@ -278,32 +422,41 @@ fun UserProfilePickerItem(
     UserProfileRow(u, enabled)
     if (u.activeUser) {
       Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-    } else if (u.hidden) {
-      Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
-    } else if (unreadCount > 0) {
-      Box(
-        contentAlignment = Alignment.Center
-      ) {
-        Text(
-          unreadCountStr(unreadCount),
-          color = Color.White,
-          fontSize = 10.sp,
-          modifier = Modifier
-            .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
-            .padding(2.dp)
-            .badgeLayout()
-        )
+    } else {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (unreadCount > 0) {
+          Box(
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(
+              unreadCountStr(unreadCount),
+              color = Color.White,
+              fontSize = 10.sp,
+              modifier = Modifier
+                .background(if (u.showNtfs) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary, shape = CircleShape)
+                .padding(2.dp)
+                .badgeLayout()
+            )
+          }
+
+          if (u.hidden) {
+            Spacer(Modifier.width(8.dp))
+            Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+          }
+        } else if (u.hidden) {
+          Icon(painterResource(MR.images.ic_lock), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+        } else if (!u.showNtfs) {
+          Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+        } else {
+          Box(Modifier.size(20.dp))
+        }
       }
-    } else if (!u.showNtfs) {
-      Icon(painterResource(MR.images.ic_notifications_off), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
-    }  else {
-      Box(Modifier.size(20.dp))
     }
   }
 }
 
 @Composable
-fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote) {
+fun UserProfileRow(u: User, enabled: Boolean = remember { chatModel.chatRunning }.value == true || chatModel.connectedToRemote) {
   Row(
     Modifier
       .widthIn(max = windowWidth() * 0.7f)
@@ -325,136 +478,144 @@ fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == tr
 }
 
 @Composable
-fun RemoteHostPickerItem(h: RemoteHostInfo, onLongClick: () -> Unit = {}, actionButtonClick: () -> Unit = {}, onClick: () -> Unit) {
-  Row(
+fun UserPickerOptionRow(icon: Painter, text: String, click: (() -> Unit)? = null, disabled: Boolean = false) {
+  SectionItemView(click, disabled = disabled, extraPadding = appPlatform.isDesktop) {
+    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.secondary)
+    TextIconSpaced()
+    Text(text = text, color = if (disabled) MaterialTheme.colors.secondary else Color.Unspecified)
+  }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DevicePickerRow(
+  localDeviceActive: Boolean,
+  remoteHosts: List<RemoteHostInfo>,
+  onLocalDeviceClick: () -> Unit,
+  onRemoteHostClick: (rh: RemoteHostInfo, connecting: MutableState<Boolean>) -> Unit,
+  onRemoteHostActionButtonClick: (rh: RemoteHostInfo) -> Unit,
+) {
+  FlowRow(
     Modifier
       .fillMaxWidth()
-      .background(color = if (h.activeHost) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
-      .sizeIn(minHeight = 46.dp)
-      .combinedClickable(
-        onClick = onClick,
-        onLongClick = onLongClick
-      )
-      .onRightClick { onLongClick() }
-      .padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+      .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING, top = DEFAULT_PADDING + DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    RemoteHostRow(h)
-    if (h.sessionState is RemoteHostSessionState.Connected) {
-      HostDisconnectButton(actionButtonClick)
-    } else {
-      Box(Modifier.size(20.dp))
+    val activeHost = remoteHosts.firstOrNull { h -> h.activeHost }
+
+    if (activeHost != null) {
+      val connecting = rememberSaveable { mutableStateOf(false) }
+
+      DevicePill(
+        active = true,
+        icon = painterResource(MR.images.ic_smartphone_300),
+        text = activeHost.hostDeviceName,
+        actionButtonVisible = activeHost.sessionState is RemoteHostSessionState.Connected,
+        onActionButtonClick = { onRemoteHostActionButtonClick(activeHost) }
+      ) {
+        onRemoteHostClick(activeHost, connecting)
+      }
+    }
+
+    DevicePill(
+      active = localDeviceActive,
+      icon = painterResource(MR.images.ic_desktop),
+      text = stringResource(MR.strings.this_device),
+      actionButtonVisible = false
+    ) {
+      onLocalDeviceClick()
+    }
+
+    remoteHosts.filter { h -> h.sessionState is RemoteHostSessionState.Connected && !h.activeHost }.forEach { h ->
+      val connecting = rememberSaveable { mutableStateOf(false) }
+
+      DevicePill(
+        active = h.activeHost,
+        icon = painterResource(MR.images.ic_smartphone_300),
+        text = h.hostDeviceName,
+        actionButtonVisible = h.sessionState is RemoteHostSessionState.Connected,
+        onActionButtonClick = { onRemoteHostActionButtonClick(h) }
+      ) {
+        onRemoteHostClick(h, connecting)
+      }
     }
   }
 }
 
 @Composable
-fun RemoteHostRow(h: RemoteHostInfo) {
-  Row(
-    Modifier
-      .widthIn(max = windowWidth() * 0.7f)
-      .padding(start = 17.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(painterResource(MR.images.ic_smartphone_300), h.hostDeviceName, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Text(
-      h.hostDeviceName,
-      modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (h.activeHost) MaterialTheme.colors.onBackground else MenuTextColor,
-      fontSize = 14.sp,
-    )
-  }
-}
+expect fun UserPickerUsersSection(
+  users: List<UserInfo>,
+  iconColor: Color,
+  stopped: Boolean,
+  onUserClicked: (user: User) -> Unit,
+)
 
 @Composable
-fun LocalDevicePickerItem(active: Boolean, onLongClick: () -> Unit = {}, onClick: () -> Unit) {
+expect fun PlatformUserPicker(
+  modifier: Modifier,
+  pickerState: MutableStateFlow<AnimatedViewState>,
+  content: @Composable () -> Unit
+)
+
+@Composable
+fun DevicePill(
+  active: Boolean,
+  icon: Painter,
+  text: String,
+  actionButtonVisible: Boolean,
+  onActionButtonClick: (() -> Unit)? = null,
+  onClick: () -> Unit) {
   Row(
     Modifier
-      .fillMaxWidth()
-      .background(color = if (active) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
-      .sizeIn(minHeight = 46.dp)
-      .combinedClickable(
-        onClick = if (active) {{}} else onClick,
-        onLongClick = onLongClick,
-        interactionSource = remember { MutableInteractionSource() },
-        indication = if (!active) LocalIndication.current else null
+      .clip(RoundedCornerShape(8.dp))
+      .border(
+        BorderStroke(1.dp, MaterialTheme.colors.secondaryVariant),
+        shape = RoundedCornerShape(8.dp)
       )
-      .onRightClick { onLongClick() }
-      .padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
-    horizontalArrangement = Arrangement.SpaceBetween,
+      .background(if (active) MaterialTheme.colors.secondaryVariant else Color.Transparent)
+      .clickable(
+        enabled = !active,
+        onClick = onClick,
+        interactionSource = remember { MutableInteractionSource() },
+        indication = LocalIndication.current
+      ),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    LocalDeviceRow(active)
-    Box(Modifier.size(20.dp))
-  }
-}
-
-@Composable
-fun LocalDeviceRow(active: Boolean) {
-  Row(
-    Modifier
-      .widthIn(max = windowWidth() * 0.7f)
-      .padding(start = 17.dp, end = DEFAULT_PADDING),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(painterResource(MR.images.ic_desktop), stringResource(MR.strings.this_device), Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Text(
-      stringResource(MR.strings.this_device),
-      modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (active) MaterialTheme.colors.onBackground else MenuTextColor,
-      fontSize = 14.sp,
-    )
-  }
-}
-
-@Composable
-private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
-    Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = MenuTextColor)
-  }
-}
-
-@Composable
-private fun LinkAMobilePickerItem(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(MR.strings.link_a_mobile)
-    Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = MenuTextColor)
-  }
-}
-
-@Composable
-private fun CreateInitialProfile(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(MR.strings.create_chat_profile)
-    Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = MenuTextColor)
-  }
-}
-
-@Composable
-private fun SettingsPickerItem(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-    Icon(painterResource(MR.images.ic_settings), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = MenuTextColor)
-  }
-}
-
-@Composable
-private fun CancelPickerItem(onClick: () -> Unit) {
-  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
-    val text = generalGetString(MR.strings.cancel_verb)
-    Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
-    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = MenuTextColor)
+    Row(
+      Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Icon(
+        icon,
+        text,
+        Modifier.size(16.dp * fontSizeSqrtMultiplier),
+        tint = MaterialTheme.colors.onSurface
+      )
+      Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON * fontSizeSqrtMultiplier))
+      Text(
+        text,
+        color = MaterialTheme.colors.onSurface,
+        fontSize = 12.sp,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 1,
+        modifier = if (onActionButtonClick != null && actionButtonVisible) Modifier.widthIn(max = 300.dp * fontSizeSqrtMultiplier) else Modifier
+      )
+      if (onActionButtonClick != null && actionButtonVisible) {
+        val interactionSource = remember { MutableInteractionSource() }
+        val hovered = interactionSource.collectIsHoveredAsState().value
+        Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON * fontSizeSqrtMultiplier))
+        IconButton(onActionButtonClick, Modifier.requiredSize(16.dp * fontSizeSqrtMultiplier)) {
+          Icon(
+            painterResource(if (hovered) MR.images.ic_wifi_off else MR.images.ic_wifi),
+            null,
+            Modifier.size(16.dp * fontSizeSqrtMultiplier).hoverable(interactionSource),
+            tint = if (hovered) WarningOrange else MaterialTheme.colors.onBackground
+          )
+        }
+      }
+    }
   }
 }
 
@@ -470,6 +631,28 @@ fun HostDisconnectButton(onClick: (() -> Unit)?) {
       tint = if (hovered && onClick != null) WarningOrange else MaterialTheme.colors.onBackground
     )
   }
+}
+
+@Composable
+fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: Boolean) {
+  Text(
+    if (unreadCount > 0) unreadCountStr(unreadCount) else "",
+    color = Color.White,
+    fontSize = 10.sp,
+    style = TextStyle(textAlign = TextAlign.Center),
+    modifier = Modifier
+      .offset(y = if (hasPadding) 3.sp.toDp() else -4.sp.toDp(), x = if (hasPadding) 0.dp else 4.sp.toDp())
+      .background(if (userMuted) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary, shape = CircleShape)
+      .badgeLayout()
+      .padding(horizontal = 2.sp.toDp())
+      .padding(vertical = 2.sp.toDp())
+      .align(Alignment.TopEnd)
+  )
+}
+
+private suspend fun closePicker(userPickerState: MutableStateFlow<AnimatedViewState>) {
+  delay(500)
+  userPickerState.value = AnimatedViewState.HIDING
 }
 
 private fun switchToLocalDevice() {

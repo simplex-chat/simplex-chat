@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -147,7 +148,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
   forever $ do
     (_, outputRH, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItem u ci -> when markRead $ markChatItemRead u ci
+      CRNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
       CRChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
       CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
       CRRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
@@ -164,7 +165,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
         (True, CISRcvNew) -> do
           let itemId = chatItemId' ci
               chatRef = chatInfoToRef chat
-          void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
+          void $ runReaderT (runExceptT $ processChatCommand (APIChatItemsRead chatRef [itemId])) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
@@ -175,7 +176,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
 
 responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
 responseNotification t@ChatTerminal {sendNotification} cc = \case
-  CRNewChatItem u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) ->
+  -- At the moment of writing received items are created one at a time
+  CRNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
     when (chatDirNtf u cInfo chatDir $ isMention ci) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of

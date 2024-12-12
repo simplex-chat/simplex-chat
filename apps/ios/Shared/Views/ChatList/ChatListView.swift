@@ -9,22 +9,119 @@
 import SwiftUI
 import SimpleXChat
 
+enum UserPickerSheet: Identifiable {
+    case address
+    case chatPreferences
+    case chatProfiles
+    case currentProfile
+    case useFromDesktop
+    case settings
+
+    var id: Self { self }
+
+    var navigationTitle: LocalizedStringKey {
+        switch self {
+        case .address: "SimpleX address"
+        case .chatPreferences: "Your preferences"
+        case .chatProfiles: "Your chat profiles"
+        case .currentProfile: "Your current profile"
+        case .useFromDesktop: "Connect to desktop"
+        case .settings: "Your settings"
+        }
+    }
+}
+
+class SaveableSettings: ObservableObject {
+    @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
+}
+
+struct ServerSettings {
+    public var currUserServers: [UserOperatorServers]
+    public var userServers: [UserOperatorServers]
+    public var serverErrors: [UserServersError]
+}
+
+struct UserPickerSheetView: View {
+    let sheet: UserPickerSheet
+    @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var ss = SaveableSettings()
+
+    @State private var loaded = false
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                if loaded, let currentUser = chatModel.currentUser {
+                    switch sheet {
+                    case .address:
+                        UserAddressView(shareViaProfile: currentUser.addressShared)
+                    case .chatPreferences:
+                        PreferencesView(
+                            profile: currentUser.profile,
+                            preferences: currentUser.fullPreferences,
+                            currentPreferences: currentUser.fullPreferences
+                        )
+                    case .chatProfiles:
+                        UserProfilesView()
+                    case .currentProfile:
+                        UserProfile()
+                    case .useFromDesktop:
+                        ConnectDesktopView()
+                    case .settings:
+                        SettingsView()
+                    }
+                }
+                Color.clear // Required for list background to be rendered during loading
+            }
+            .navigationTitle(sheet.navigationTitle)
+            .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
+        }
+        .overlay {
+            if let la = chatModel.laRequest {
+                LocalAuthView(authRequest: la)
+            }
+        }
+        .task {
+            withAnimation(
+                .easeOut(duration: 0.1),
+                { loaded = true }
+            )
+        }
+        .onDisappear {
+            if serversCanBeSaved(
+                ss.servers.currUserServers,
+                ss.servers.userServers,
+                ss.servers.serverErrors
+            ) {
+                showAlert(
+                    title: NSLocalizedString("Save servers?", comment: "alert title"),
+                    buttonTitle: NSLocalizedString("Save", comment: "alert button"),
+                    buttonAction: { saveServers($ss.servers.currUserServers, $ss.servers.userServers) },
+                    cancelButton: true
+                )
+            }
+        }
+        .environmentObject(ss)
+    }
+}
+
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Binding var showSettings: Bool
+    @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var searchMode = false
     @FocusState private var searchFocussed
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @State private var userPickerVisible = false
-    @State private var showConnectDesktop = false
     @State private var scrollToSearchBar = false
+    @State private var userPickerShown: Bool = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
+    @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
@@ -46,21 +143,23 @@ struct ChatListView: View {
                 ),
                 destination: chatView
             ) { chatListView }
-            if userPickerVisible {
-                Rectangle().fill(.white.opacity(0.001)).onTapGesture {
-                    withAnimation {
-                        userPickerVisible.toggle()
-                    }
+        }
+        .modifier(
+            Sheet(isPresented: $userPickerShown) {
+                UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
+            }
+        )
+        .appSheet(
+            item: $activeUserPickerSheet,
+            onDismiss: { chatModel.laRequest = nil },
+            content: { UserPickerSheetView(sheet: $0) }
+        )
+        .onChange(of: activeUserPickerSheet) {
+            if $0 != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    userPickerShown = false
                 }
             }
-            UserPicker(
-                showSettings: $showSettings,
-                showConnectDesktop: $showConnectDesktop,
-                userPickerVisible: $userPickerVisible
-            )
-        }
-        .sheet(isPresented: $showConnectDesktop) {
-            ConnectDesktopView()
         }
     }
 
@@ -73,7 +172,7 @@ struct ChatListView: View {
                 .navigationBarHidden(searchMode || oneHandUI)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-        .onDisappear() { withAnimation { userPickerVisible = false } }
+        .onDisappear() { activeUserPickerSheet = nil }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Reconnect servers?"),
@@ -164,7 +263,7 @@ struct ChatListView: View {
         let user = chatModel.currentUser ?? User.sampleData
         ZStack(alignment: .topTrailing) {
             ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                .padding(.trailing, 4)
+                .padding([.top, .trailing], 3)
             let allRead = chatModel.users
                 .filter { u in !u.user.activeUser && !u.user.hidden }
                 .allSatisfy { u in u.unreadCount == 0 }
@@ -173,13 +272,7 @@ struct ChatListView: View {
             }
         }
         .onTapGesture {
-            if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                withAnimation {
-                    userPickerVisible.toggle()
-                }
-            } else {
-                showSettings = true
-            }
+            userPickerShown = true
         }
     }
 
@@ -211,20 +304,45 @@ struct ChatListView: View {
                         .padding(.top, oneHandUI ? 8 : 0)
                         .id("searchBar")
                     }
+                    if #available(iOS 16.0, *) {
+                        ForEach(cs, id: \.viewId) { chat in
+                            ChatListNavLink(chat: chat)
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .padding(.trailing, -16)
+                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                                .listRowBackground(Color.clear)
+                        }
+                        .offset(x: -8)
+                    } else {
+                        ForEach(cs, id: \.viewId) { chat in
+                            VStack(spacing: .zero) {
+                                Divider()
+                                    .padding(.leading, 16)
+                                ChatListNavLink(chat: chat)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                            }
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets())
+                            .background { theme.colors.background } // Hides default list selection colour
+                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                        }
+                    }
                     if !oneHandUICardShown {
                         OneHandUICard()
+                            .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
+                    if !addressCreationCardShown {
+                        AddressCreationCard()
+                            .padding(.vertical, 6)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                            .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    .offset(x: -8)
                 }
                 .listStyle(.plain)
                 .onChange(of: chatModel.chatId) { currentChatId in
@@ -252,7 +370,7 @@ struct ChatListView: View {
         }
     }
 
-    private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
+    private func unreadBadge(size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
             .foregroundColor(theme.colors.primary)
@@ -324,7 +442,7 @@ struct ChatListView: View {
 struct SubsStatusIndicator: View {
     @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
     @State private var hasSess: Bool = false
-    @State private var timer: Timer? = nil
+    @State private var task: Task<Void, Never>?
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -343,10 +461,10 @@ struct SubsStatusIndicator: View {
         }
         .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
-            startTimer()
+            startTask()
         }
         .onDisappear {
-            stopTimer()
+            stopTask()
         }
         .appSheet(isPresented: $showServersSummary) {
             ServersSummaryView()
@@ -354,25 +472,28 @@ struct SubsStatusIndicator: View {
         }
     }
 
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if AppChatState.shared.value == .active {
-                getSubsTotal()
+    private func startTask() {
+        task = Task {
+            while !Task.isCancelled {
+                if AppChatState.shared.value == .active, ChatModel.shared.chatRunning == true {
+                    do {
+                        let (subs, hasSess) = try await getAgentSubsTotal()
+                        await MainActor.run {
+                            self.subs = subs
+                            self.hasSess = hasSess
+                        }
+                    } catch let error {
+                        logger.error("getSubsTotal error: \(responseError(error))")
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
             }
         }
     }
 
-    func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-
-    private func getSubsTotal() {
-        do {
-            (subs, hasSess) = try getAgentSubsTotal()
-        } catch let error {
-            logger.error("getSubsTotal error: \(responseError(error))")
-        }
+    func stopTask() {
+        task?.cancel()
+        task = nil
     }
 }
 
@@ -496,27 +617,29 @@ func chatStoppedIcon() -> some View {
 }
 
 struct ChatListView_Previews: PreviewProvider {
+    @State static var userPickerSheet: UserPickerSheet? = .none
+
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.chats = [
-            Chat(
+        chatModel.updateChats([
+            ChatData(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.group,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
             )
 
-        ]
+        ])
         return Group {
-            ChatListView(showSettings: Binding.constant(false))
+            ChatListView(activeUserPickerSheet: $userPickerSheet)
                 .environmentObject(chatModel)
-            ChatListView(showSettings: Binding.constant(false))
+            ChatListView(activeUserPickerSheet: $userPickerSheet)
                 .environmentObject(ChatModel())
         }
     }

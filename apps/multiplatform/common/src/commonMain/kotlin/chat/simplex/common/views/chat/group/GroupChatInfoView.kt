@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -35,12 +36,13 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.launch
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
+fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
@@ -121,12 +123,18 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
 
 fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   val chatInfo = chat.chatInfo
-  val alertTextKey =
-    if (groupInfo.membership.memberCurrent) MR.strings.delete_group_for_all_members_cannot_undo_warning
-    else MR.strings.delete_group_for_self_cannot_undo_warning
+  val titleId = if (groupInfo.businessChat == null) MR.strings.delete_group_question else MR.strings.delete_chat_question
+  val messageId =
+    if (groupInfo.businessChat == null) {
+      if (groupInfo.membership.memberCurrent) MR.strings.delete_group_for_all_members_cannot_undo_warning
+      else MR.strings.delete_group_for_self_cannot_undo_warning
+    } else {
+      if (groupInfo.membership.memberCurrent) MR.strings.delete_chat_for_all_members_cannot_undo_warning
+      else MR.strings.delete_chat_for_self_cannot_undo_warning
+    }
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.delete_group_question),
-    text = generalGetString(alertTextKey),
+    title = generalGetString(titleId),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withBGApi {
@@ -149,9 +157,14 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
 }
 
 fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val titleId = if (groupInfo.businessChat == null) MR.strings.leave_group_question else MR.strings.leave_chat_question
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved
+  else
+    MR.strings.you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.leave_group_question),
-    text = generalGetString(MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
+    title = generalGetString(titleId),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
       withLongRunningApi(60_000) {
@@ -164,9 +177,13 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
 }
 
 private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.member_will_be_removed_from_group_cannot_be_undone
+  else
+    MR.strings.member_will_be_removed_from_chat_cannot_be_undone
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_remove_member_question),
-    text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
+    text = generalGetString(messageId),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withBGApi {
@@ -249,9 +266,8 @@ fun AddGroupMembersButton(
   )
 }
 
-
 @Composable
-fun GroupChatInfoLayout(
+fun ModalData.GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
   currentUser: User,
@@ -272,22 +288,26 @@ fun GroupChatInfoLayout(
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit
 ) {
-  val listState = rememberLazyListState()
+  val listState = remember { appBarHandler.listState }
   val scope = rememberCoroutineScope()
   KeyChangeEffect(chat.id) {
     scope.launch { listState.scrollToItem(0) }
   }
-  val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
+  val searchText = remember { stateGetOrPut("searchText") { TextFieldValue() } }
   val filteredMembers = remember(members) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
       if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
     }
   }
-  // LALAL strange scrolling
+  Box {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
   LazyColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth(),
+    contentPadding = if (oneHandUI.value) {
+      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+    } else {
+      PaddingValues(top = topPaddingToContent(false))
+    },
     state = listState
   ) {
     item {
@@ -324,13 +344,14 @@ fun GroupChatInfoLayout(
       SectionSpacer()
 
       SectionView {
-        if (groupInfo.canEdit) {
+        if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
           EditGroupProfileButton(editGroupProfile)
         }
-        if (groupInfo.groupProfile.description != null || groupInfo.canEdit) {
+        if (groupInfo.groupProfile.description != null || (groupInfo.isOwner && groupInfo.businessChat?.chatType == null)) {
           AddOrEditWelcomeMessage(groupInfo.groupProfile.description, addOrEditWelcomeMessage)
         }
-        GroupPreferencesButton(openPreferences)
+        val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
+        GroupPreferencesButton(prefsTitleId, openPreferences)
         if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
@@ -347,26 +368,34 @@ fun GroupChatInfoLayout(
           }
         }
       }
-      SectionTextFooter(stringResource(MR.strings.only_group_owners_can_change_prefs))
+      val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
+      SectionTextFooter(stringResource(footerId))
       SectionDividerSpaced(maxTopPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
         if (groupInfo.canAddMembers) {
-          if (groupLink == null) {
-            CreateGroupLinkButton(manageGroupLink)
-          } else {
-            GroupLinkButton(manageGroupLink)
+          if (groupInfo.businessChat == null) {
+            if (groupLink == null) {
+              CreateGroupLinkButton(manageGroupLink)
+            } else {
+              GroupLinkButton(manageGroupLink)
+            }
           }
           val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
           val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-          AddMembersButton(tint, onAddMembersClick)
+          val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
+            BusinessChatType.Customer -> MR.strings.button_add_team_members
+            BusinessChatType.Business -> MR.strings.button_add_friends
+            null -> MR.strings.button_add_members
+          }
+          AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
         }
         if (members.size > 8) {
           SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
             SearchRowView(searchText)
           }
         }
-        SectionItemView(minHeight = 54.dp) {
+        SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           MemberRow(groupInfo.membership, user = true)
         }
       }
@@ -374,7 +403,7 @@ fun GroupChatInfoLayout(
     items(filteredMembers.value) { member ->
       Divider()
       val showMenu = remember { mutableStateOf(false) }
-      SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp) {
+      SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         DropDownMenuForMember(chat.remoteHostId, member, groupInfo, showMenu)
         MemberRow(member, onClick = { showMemberInfo(member) })
       }
@@ -384,10 +413,12 @@ fun GroupChatInfoLayout(
       SectionView {
         ClearChatButton(clearChat)
         if (groupInfo.canDelete) {
-          DeleteGroupButton(deleteGroup)
+          val titleId = if (groupInfo.businessChat == null) MR.strings.button_delete_group else MR.strings.button_delete_chat
+          DeleteGroupButton(titleId, deleteGroup)
         }
         if (groupInfo.membership.memberCurrent) {
-          LeaveGroupButton(leaveGroup)
+          val titleId = if (groupInfo.businessChat == null) MR.strings.button_leave_group else MR.strings.button_leave_chat
+          LeaveGroupButton(titleId, leaveGroup)
         }
       }
 
@@ -399,6 +430,11 @@ fun GroupChatInfoLayout(
         }
       }
       SectionBottomSpacer()
+      Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+    }
+  }
+    if (!oneHandUI.value) {
+      NavigationBarBackground(oneHandUI.value, oneHandUI.value)
     }
   }
 }
@@ -430,10 +466,10 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
-private fun GroupPreferencesButton(onClick: () -> Unit) {
+private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
-    stringResource(MR.strings.group_preferences),
+    stringResource(titleId),
     click = onClick
   )
 }
@@ -470,10 +506,10 @@ fun SendReceiptsOptionDisabled() {
 }
 
 @Composable
-private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
+private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_add),
-    stringResource(MR.strings.button_add_members),
+    stringResource(titleId),
     onClick,
     iconColor = tint,
     textColor = tint
@@ -510,11 +546,11 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.weight(1f).padding(end = DEFAULT_PADDING),
+      Modifier.weight(1f).padding(top = 8.dp, end = DEFAULT_PADDING, bottom = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      MemberProfileImage(size = 46.dp, member)
+      MemberProfileImage(size = 42.dp, member)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -637,10 +673,10 @@ private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit
 }
 
 @Composable
-private fun LeaveGroupButton(onClick: () -> Unit) {
+private fun LeaveGroupButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_logout),
-    stringResource(MR.strings.button_leave_group),
+    stringResource(titleId),
     onClick,
     iconColor = Color.Red,
     textColor = Color.Red
@@ -648,10 +684,10 @@ private fun LeaveGroupButton(onClick: () -> Unit) {
 }
 
 @Composable
-private fun DeleteGroupButton(onClick: () -> Unit) {
+private fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_delete),
-    stringResource(MR.strings.button_delete_group),
+    stringResource(titleId),
     onClick,
     iconColor = Color.Red,
     textColor = Color.Red
@@ -675,7 +711,7 @@ private fun SearchRowView(
 @Composable
 fun PreviewGroupChatInfoLayout() {
   SimpleXTheme {
-    GroupChatInfoLayout(
+    ModalData().GroupChatInfoLayout(
       chat = Chat(
         remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,

@@ -35,14 +35,14 @@ fun VerifyCodeView(
       displayName,
       connectionCode,
       connectionVerified,
-      verifyCode = { newCode, cb ->
-        withBGApi {
-          val res = verify(newCode)
-          if (res != null) {
-            val (verified) = res
-            cb(verified)
-            if (verified) close()
-          }
+      verifyCode = { newCode ->
+        val res = verify(newCode)
+        if (res != null) {
+          val (verified) = res
+          if (verified) close()
+          verified
+        } else {
+          false
         }
       }
     )
@@ -54,13 +54,9 @@ private fun VerifyCodeLayout(
   displayName: String,
   connectionCode: String,
   connectionVerified: Boolean,
-  verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit,
+  verifyCode: suspend (String?) -> Boolean,
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxSize()
-      .padding(horizontal = DEFAULT_PADDING)
-  ) {
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.security_code), withPadding = false)
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
@@ -104,7 +100,7 @@ private fun VerifyCodeLayout(
     ) {
       if (connectionVerified) {
         SimpleButton(generalGetString(MR.strings.clear_verification), painterResource(MR.images.ic_shield)) {
-          verifyCode(null) {}
+          withApi { verifyCode(null) }
         }
       } else {
         if (appPlatform.isAndroid) {
@@ -115,7 +111,8 @@ private fun VerifyCodeLayout(
           }
         }
         SimpleButton(generalGetString(MR.strings.mark_code_verified), painterResource(MR.images.ic_verified_user)) {
-          verifyCode(connectionCode) { verified ->
+          withApi {
+            val verified = verifyCode(connectionCode)
             if (!verified) {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(MR.strings.incorrect_code)

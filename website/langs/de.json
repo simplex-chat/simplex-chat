@@ -245,8 +245,7 @@
     "f-droid-page-simplex-chat-repo-section-text": "Um es Ihrem F-Droid-Client hinzuzufügen, <span class='hide-on-mobile'>scannen Sie den QR-Code oder</span> nutzen Sie diese URL:",
     "comparison-section-list-point-4a": "SimpleX-Relais können die E2E-Verschlüsselung nicht kompromittieren. Überprüfen Sie den Sicherheitscode, um einen möglichen Angriff auf den Out-of-Band-Kanal zu entschärfen",
     "hero-overlay-3-title": "Sicherheits-Gutachten",
-    "hero-overlay-card-3-p-2": "Trail of Bits untersuchte im November 2022 die kryptografischen und Netzwerk-Komponenten der SimpleX-Plattform.",
-    "hero-overlay-card-3-p-3": "Lesen Sie mehr dazu in der <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">Ankündigung</a>.",
+    "hero-overlay-card-3-p-2": "Trail of Bits untersuchte im November 2022 die kryptografischen und Netzwerk-Komponenten der SimpleX-Plattform. Lesen Sie mehr dazu in der <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">Ankündigung</a>.",
     "jobs": "Treten Sie dem Team bei",
     "hero-overlay-3-textlink": "Sicherheits-Gutachten",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> ist eine führende Security- und Technologie-Unternehmensberatung, deren Kunden aus den Bereichen Big-Tech, Regierungsbehörden und großen Blockchain-Projekten stammen.",
@@ -255,5 +254,7 @@
     "please-use-link-in-mobile-app": "Bitte nutzen Sie den Link in der Mobiltelefon-App",
     "docs-dropdown-10": "Transparent",
     "docs-dropdown-11": "FAQ",
-    "docs-dropdown-12": "Sicherheit"
+    "docs-dropdown-12": "Sicherheit",
+    "hero-overlay-card-3-p-3": "Trail of Bits hat das kryptografische Design des Netzwerk-Protokolls von SimpleX im Juli 2024 überprüft. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Hier finden Sie weitere Informationen dazu</a>.",
+    "docs-dropdown-14": "SimpleX für geschäftliche Anwendungen"
 }

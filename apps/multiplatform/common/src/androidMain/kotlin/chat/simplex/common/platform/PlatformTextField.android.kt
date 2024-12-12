@@ -6,8 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.text.InputType
 import android.util.Log
-import android.view.OnReceiveContentListener
-import android.view.ViewGroup
+import android.view.*
 import android.view.inputmethod.*
 import android.widget.EditText
 import android.widget.TextView
@@ -26,6 +25,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.view.children
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.widget.doAfterTextChanged
@@ -36,11 +36,12 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.helpers.SharedContent
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
 import java.lang.reflect.Field
 import java.net.URI
 
@@ -84,10 +85,17 @@ actual fun PlatformTextField(
       freeFocus = true
     }
   }
+  LaunchedEffect(Unit) {
+    snapshotFlow { ModalManager.start.modalCount.value }
+      .filter { it > 0 }
+      .collect {
+        freeFocus = true
+      }
+  }
 
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-  AndroidView(modifier = Modifier, factory = {
-    val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
+  AndroidView(modifier = Modifier, factory = { context ->
+    val editText = @SuppressLint("AppCompatCustomView") object: EditText(context) {
       override fun setOnReceiveContentListener(
         mimeTypes: Array<out String>?,
         listener: OnReceiveContentListener?
@@ -132,6 +140,13 @@ actual fun PlatformTextField(
         Log.e(TAG, e.stackTraceToString())
       }
     }
+    editText.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
+      // shows keyboard when user had search field on ChatView focused before clicking on this text field
+      // it still produce weird animation of closing/opening keyboard but the solution is to replace this Android EditText with Compose BasicTextField
+      if (hasFocus) {
+        showKeyboard = true
+      }
+    }
     editText.doOnTextChanged { text, _, _, _ ->
       if (!composeState.value.inProgress) {
         onMessageChange(text.toString())
@@ -140,8 +155,12 @@ actual fun PlatformTextField(
       }
     }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
-    editText
+    val workaround = WorkaroundFocusSearchLayout(context)
+    workaround.addView(editText)
+    workaround.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    workaround
   }) {
+    val it = it.children.first() as EditText
     it.setTextColor(textColor.toArgb())
     it.setHintTextColor(hintColor.toArgb())
     it.hint = placeholder

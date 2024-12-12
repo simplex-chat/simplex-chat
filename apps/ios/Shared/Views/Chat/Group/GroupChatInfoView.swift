@@ -81,13 +81,13 @@ struct GroupChatInfoView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                 Section {
-                    if groupInfo.canEdit {
+                    if groupInfo.isOwner && groupInfo.businessChat == nil {
                         editGroupButton()
                     }
-                    if groupInfo.groupProfile.description != nil || groupInfo.canEdit {
+                    if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
                         addOrEditWelcomeMessage()
                     }
-                    groupPreferencesButton($groupInfo)
+                    GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
                     if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                         sendReceiptsOption()
                     } else {
@@ -101,13 +101,20 @@ struct GroupChatInfoView: View {
                 } header: {
                     Text("")
                 } footer: {
-                    Text("Only group owners can change group preferences.")
+                    let label: LocalizedStringKey = (
+                        groupInfo.businessChat == nil
+                        ? "Only group owners can change group preferences."
+                        : "Only chat owners can change preferences."
+                    )
+                    Text(label)
                         .foregroundColor(theme.colors.secondary)
                 }
 
                 Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                     if groupInfo.canAddMembers {
-                        groupLinkButton()
+                        if groupInfo.businessChat == nil {
+                            groupLinkButton()
+                        }
                         if (chat.chatInfo.incognito) {
                             Label("Invite members", systemImage: "plus")
                                 .foregroundColor(Color(uiColor: .tertiaryLabel))
@@ -185,7 +192,6 @@ struct GroupChatInfoView: View {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
-         .keyboardPadding()
     }
 
     private func groupInfoHeader() -> some View {
@@ -277,10 +283,15 @@ struct GroupChatInfoView: View {
     }
 
     private func addMembersButton() -> some View {
-        NavigationLink {
+        let label: LocalizedStringKey = switch groupInfo.businessChat?.chatType {
+            case .customer: "Add team members"
+            case .business: "Add friends"
+            case .none: "Invite members"
+        }
+        return NavigationLink {
             addMembersDestinationView()
         } label: {
-            Label("Invite members", systemImage: "plus")
+            Label(label, systemImage: "plus")
         }
     }
 
@@ -419,7 +430,7 @@ struct GroupChatInfoView: View {
         }
 
         private var memberVerifiedShield: Text {
-            (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            (Text(Image(systemName: "checkmark.shield")) + textSpace)
                 .font(.caption)
                 .baselineOffset(2)
                 .kerning(-2)
@@ -428,7 +439,7 @@ struct GroupChatInfoView: View {
     }
 
     private func memberInfoView(_ groupMember: GMember) -> some View {
-        GroupMemberInfoView(groupInfo: groupInfo, groupMember: groupMember)
+        GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
             .navigationBarHidden(false)
     }
 
@@ -488,11 +499,12 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func deleteGroupButton() -> some View {
+    @ViewBuilder private func deleteGroupButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group" : "Delete chat"
         Button(role: .destructive) {
             alert = .deleteGroupAlert
         } label: {
-            Label("Delete group", systemImage: "trash")
+            Label(label, systemImage: "trash")
                 .foregroundColor(Color.red)
         }
     }
@@ -506,20 +518,22 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func leaveGroupButton() -> some View {
+    @ViewBuilder private func leaveGroupButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
         Button(role: .destructive) {
             alert = .leaveGroupAlert
         } label: {
-            Label("Leave group", systemImage: "rectangle.portrait.and.arrow.right")
+            Label(label, systemImage: "rectangle.portrait.and.arrow.right")
                 .foregroundColor(Color.red)
         }
     }
 
     // TODO reuse this and clearChatAlert with ChatInfoView
     private func deleteGroupAlert() -> Alert {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Delete group?" : "Delete chat?"
         return Alert(
-            title: Text("Delete group?"),
-            message: deleteGroupAlertMessage(),
+            title: Text(label),
+            message: deleteGroupAlertMessage(groupInfo),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
@@ -538,10 +552,6 @@ struct GroupChatInfoView: View {
         )
     }
 
-    private func deleteGroupAlertMessage() -> Text {
-        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
-    }
-
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
@@ -557,9 +567,15 @@ struct GroupChatInfoView: View {
     }
 
     private func leaveGroupAlert() -> Alert {
-        Alert(
-            title: Text("Leave group?"),
-            message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
+        let titleLabel: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group?" : "Leave chat?"
+        let messageLabel: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "You will stop receiving messages from this group. Chat history will be preserved."
+            : "You will stop receiving messages from this chat. Chat history will be preserved."
+        )
+        return Alert(
+            title: Text(titleLabel),
+            message: Text(messageLabel),
             primaryButton: .destructive(Text("Leave")) {
                 Task {
                     await leaveGroup(chat.chatInfo.apiId)
@@ -603,9 +619,14 @@ struct GroupChatInfoView: View {
     }
 
     private func removeMemberAlert(_ mem: GroupMember) -> Alert {
-        Alert(
+        let messageLabel: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "Member will be removed from group - this cannot be undone!"
+            : "Member will be removed from chat - this cannot be undone!"
+        )
+        return Alert(
             title: Text("Remove member?"),
-            message: Text("Member will be removed from group - this cannot be undone!"),
+            message: Text(messageLabel),
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
@@ -625,25 +646,79 @@ struct GroupChatInfoView: View {
     }
 }
 
-func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bool = false) -> some View {
-    NavigationLink {
-        GroupPreferencesView(
-            groupInfo: groupInfo,
-            preferences: groupInfo.wrappedValue.fullGroupPreferences,
-            currentPreferences: groupInfo.wrappedValue.fullGroupPreferences,
-            creatingGroup: creatingGroup
-        )
-        .navigationBarTitle("Group preferences")
-        .modifier(ThemedBackground(grouped: true))
-        .navigationBarTitleDisplayMode(.large)
-    } label: {
-        if creatingGroup {
-            Text("Set group preferences")
-        } else {
-            Label("Group preferences", systemImage: "switch.2")
+func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
+    groupInfo.businessChat == nil ? (
+        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
+    ) : (
+        groupInfo.membership.memberCurrent ? Text("Chat will be deleted for all members - this cannot be undone!") : Text("Chat will be deleted for you - this cannot be undone!")
+    )
+}
+
+struct GroupPreferencesButton: View {
+    @Binding var groupInfo: GroupInfo
+    @State var preferences: FullGroupPreferences
+    @State var currentPreferences: FullGroupPreferences
+    var creatingGroup: Bool = false
+    
+    private var label: LocalizedStringKey {
+        groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
+    }
+    
+    var body: some View {
+        NavigationLink {
+            GroupPreferencesView(
+                groupInfo: $groupInfo,
+                preferences: $preferences,
+                currentPreferences: currentPreferences,
+                creatingGroup: creatingGroup,
+                savePreferences: savePreferences
+            )
+            .navigationBarTitle(label)
+            .modifier(ThemedBackground(grouped: true))
+            .navigationBarTitleDisplayMode(.large)
+            .onDisappear {
+                let saveText = NSLocalizedString(
+                    creatingGroup ? "Save" : "Save and notify group members",
+                    comment: "alert button"
+                )
+                
+                if groupInfo.fullGroupPreferences != preferences {
+                    showAlert(
+                        title: NSLocalizedString("Save preferences?", comment: "alert title"),
+                        buttonTitle: saveText,
+                        buttonAction: { savePreferences() },
+                        cancelButton: true
+                    )
+                }
+            }
+        } label: {
+            if creatingGroup {
+                Text("Set group preferences")
+            } else {
+                Label(label, systemImage: "switch.2")
+            }
         }
     }
+    
+    private func savePreferences() {
+        Task {
+            do {
+                var gp = groupInfo.groupProfile
+                gp.groupPreferences = toGroupPreferences(preferences)
+                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
+                await MainActor.run {
+                    groupInfo = gInfo
+                    ChatModel.shared.updateGroup(gInfo)
+                    currentPreferences = preferences
+                }
+            } catch {
+                logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")
+            }
+        }
+    }
+
 }
+
 
 func cantInviteIncognitoAlert() -> Alert {
     Alert(

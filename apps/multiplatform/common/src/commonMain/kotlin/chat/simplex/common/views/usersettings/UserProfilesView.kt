@@ -4,10 +4,10 @@ import SectionBottomSpacer
 import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -36,11 +36,10 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 @Composable
-fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, drawerState: DrawerState) {
+fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, withAuth: (block: () -> Unit) -> Unit) {
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
-  val scope = rememberCoroutineScope()
   UserProfilesLayout(
     users = users,
     filteredUsers = filteredUsers,
@@ -49,13 +48,9 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
     addUser = {
-      ModalManager.center.showModalCloseable { close ->
-        CreateProfile(m, close)
-        if (appPlatform.isDesktop) {
-          // Hide settings to allow clicks to pass through to CreateProfile view
-          DisposableEffectOnGone(always = { scope.launch { drawerState.close() } }) {
-            // Show settings again to allow intercept clicks to close modals after profile creation finishes
-            scope.launch(NonCancellable) { drawerState.open() } }
+      withAuth {
+        ModalManager.center.showModalCloseable { close ->
+          CreateProfile(m, close)
         }
       }
     },
@@ -71,68 +66,78 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     removeUser = { user ->
-      val text = buildAnnotatedString {
-        append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-          append(user.displayName)
+      withAuth {
+        val text = buildAnnotatedString {
+          append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
+          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append(user.displayName)
+          }
+          append(":")
         }
-        append(":")
-      }
-      AlertManager.shared.showAlertDialogButtonsColumn(
-        title = generalGetString(MR.strings.users_delete_question),
-        text = text,
-        buttons = {
-          Column {
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              removeUser(m, user, users, true, searchTextOrPassword.value.trim())
-            }) {
-              Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              removeUser(m, user, users, false, searchTextOrPassword.value.trim())
-            }
-            ) {
-              Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        AlertManager.shared.showAlertDialogButtonsColumn(
+          title = generalGetString(MR.strings.users_delete_question),
+          text = text,
+          buttons = {
+            Column {
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                removeUser(m, user, users, true, searchTextOrPassword.value.trim())
+              }) {
+                Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+              }
+              SectionItemView({
+                AlertManager.shared.hideAlert()
+                removeUser(m, user, users, false, searchTextOrPassword.value.trim())
+              }
+              ) {
+                Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+              }
             }
           }
-        }
-      )
+        )
+      }
     },
     unhideUser = { user ->
-      if (passwordEntryRequired(user, searchTextOrPassword.value)) {
-        ModalManager.start.showModalCloseable(true) { close ->
-          ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
-            withBGApi {
-              setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
-              close()
+      withAuth {
+        if (passwordEntryRequired(user, searchTextOrPassword.value)) {
+          ModalManager.start.showModalCloseable(true) { close ->
+            ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
+              withBGApi {
+                setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
+                close()
+              }
             }
           }
+        } else {
+          withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
         }
-      } else {
-        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
       }
     },
     muteUser = { user ->
-      withBGApi {
-        setUserPrivacy(m, onSuccess = {
-          if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
-        }) { m.controller.apiMuteUser(user) }
+      withAuth {
+        withBGApi {
+          setUserPrivacy(m, onSuccess = {
+            if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
+          }) { m.controller.apiMuteUser(user) }
+        }
       }
     },
     unmuteUser = { user ->
-      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
+      withAuth {
+        withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
+      }
     },
     showHiddenProfile = { user ->
-      ModalManager.start.showModalCloseable(true) { close ->
-        HiddenProfileView(m, user) {
-          profileHidden.value = true
-          withBGApi {
-            delay(10_000)
-            profileHidden.value = false
+      withAuth {
+        ModalManager.start.showModalCloseable(true) { close ->
+          HiddenProfileView(m, user) {
+            profileHidden.value = true
+            withBGApi {
+              delay(10_000)
+              profileHidden.value = false
+            }
+            close()
           }
-          close()
         }
       }
     }
@@ -145,7 +150,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
 @Composable
 private fun UserProfilesLayout(
   users: List<User>,
-  filteredUsers: List<User>,
+  filteredUsers: List<UserInfo>,
   searchTextOrPassword: MutableState<String>,
   profileHidden: MutableState<Boolean>,
   visibleUsersCount: Int,
@@ -158,10 +163,7 @@ private fun UserProfilesLayout(
   unmuteUser: (User) -> Unit,
   showHiddenProfile: (User) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-  ) {
+  ColumnWithScrollBar {
     if (profileHidden.value) {
       SectionView {
         SettingsActionItem(painterResource(MR.images.ic_lock_open_right), stringResource(MR.strings.enter_password_to_show), click = {
@@ -205,7 +207,7 @@ private fun UserProfilesLayout(
 
 @Composable
 private fun UserView(
-  user: User,
+  userInfo: UserInfo,
   visibleUsersCount: Int,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
@@ -215,7 +217,8 @@ private fun UserView(
   showHiddenProfile: (User) -> Unit,
 ) {
   val showMenu = remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }) {
+  val user = userInfo.user
+  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }, unreadCount = userInfo.unreadCount) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -259,17 +262,14 @@ enum class UserProfileAction {
 
 @Composable
 private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (String) -> Unit) {
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-  ) {
+  ColumnWithScrollBar {
     val actionPassword = rememberSaveable { mutableStateOf("") }
     val passwordValid by remember { derivedStateOf { actionPassword.value == actionPassword.value.trim() } }
     val actionEnabled by remember { derivedStateOf { actionPassword.value != "" && passwordValid && correctPassword(user, actionPassword.value) } }
 
     @Composable fun ActionHeader(title: StringResource) {
       AppBarTitle(stringResource(title))
-      SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+      SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
         UserProfileRow(user)
       }
       SectionSpacer()
@@ -277,7 +277,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
 
     @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
-        SectionItemView {
+        SectionItemViewWithoutMinPadding {
           PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
@@ -303,7 +303,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
   }
 }
 
-private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
+fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<UserInfo> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
@@ -312,12 +312,12 @@ private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User
     } else {
       correctPassword(u.user, s)
     }
-  }.map { it.user }
+  }
 }
 
 private fun visibleUsersCount(m: ChatModel): Int = m.users.filter { u -> !u.user.hidden }.size
 
-private fun correctPassword(user: User, pwd: String): Boolean {
+fun correctPassword(user: User, pwd: String): Boolean {
   val ph = user.viewPwdHash
   return ph != null && pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
 }

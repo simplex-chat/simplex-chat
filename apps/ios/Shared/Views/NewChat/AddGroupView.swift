@@ -59,7 +59,7 @@ struct AddGroupView: View {
                 .navigationBarTitle("Group link")
             }
         } else {
-            createGroupView().keyboardPadding()
+            createGroupView()
         }
     }
 
@@ -137,10 +137,13 @@ struct AddGroupView: View {
             createInvalidNameAlert(mkValidName(profile.displayName), $profile.displayName)
         }
         .onChange(of: chosenImage) { image in
-            if let image = image {
-                profile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
-            } else {
-                profile.image = nil
+            Task {
+                let resized: String? = if let image {
+                    await resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+                } else {
+                    nil
+                }
+                await MainActor.run { profile.image = resized }
             }
         }
         .modifier(ThemedBackground(grouped: true))

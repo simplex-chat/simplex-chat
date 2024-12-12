@@ -36,7 +36,7 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
-import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration, supportedXFTPhandshakes)
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
 import Simplex.FileTransfer.Transport (supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
@@ -51,8 +51,9 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
+import Simplex.Messaging.Server.MsgStore.Types (AMSType (..), SMSType (..))
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Transport.Server (TransportServerConfig (..), defaultTransportServerConfig)
+import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
@@ -375,6 +376,16 @@ userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _ _) =
   maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
+testChat :: HasCallStack => Profile -> (HasCallStack => TestCC -> IO ()) -> FilePath -> IO ()
+testChat = testChatCfgOpts testCfg testOpts
+
+testChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> (HasCallStack => TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfgOpts cfg opts p test = testChatN cfg opts [p] test_
+  where
+    test_ :: HasCallStack => [TestCC] -> IO ()
+    test_ [tc] = test tc
+    test_ _ = error "expected 1 chat client"
+
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts
 
@@ -420,30 +431,42 @@ concurrentlyN_ = mapConcurrently_ id
 smpServerCfg :: ServerConfig
 smpServerCfg =
   ServerConfig
-    { transports = [(serverPort, transport @TLS)],
+    { transports = [(serverPort, transport @TLS, False)],
       tbqSize = 1,
-      -- serverTbqSize = 1,
+      msgStoreType = AMSType SMSMemory,
       msgQueueQuota = 16,
+      maxJournalMsgCount = 24,
+      maxJournalStateLines = 4,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
       storeMsgsFile = Nothing,
+      storeNtfsFile = Nothing,
       allowNewQueues = True,
       -- server password is disabled as otherwise v1 tests fail
       newQueueBasicAuth = Nothing, -- Just "server_password",
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
       messageExpiration = Just defaultMessageExpiration,
+      expireMessagesOnStart = False,
+      idleQueueInterval = defaultIdleQueueInterval,
+      notificationExpiration = defaultNtfExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
-      caCertificateFile = "tests/fixtures/tls/ca.crt",
-      privateKeyFile = "tests/fixtures/tls/server.key",
-      certificateFile = "tests/fixtures/tls/server.crt",
+      smpCredentials =
+        ServerCredentials
+          { caCertificateFile = Just "tests/fixtures/tls/ca.crt",
+            privateKeyFile = "tests/fixtures/tls/server.key",
+            certificateFile = "tests/fixtures/tls/server.crt"
+          },
+      httpCredentials = Nothing,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
+      pendingENDInterval = 500000,
+      ntfDeliveryInterval = 200000,
       smpServerVRange = supportedServerSMPRelayVRange,
-      transportConfig = defaultTransportServerConfig {alpn = Just supportedSMPHandshakes},
+      transportConfig = defaultTransportServerConfig,
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
@@ -455,8 +478,8 @@ smpServerCfg =
 withSmpServer :: IO () -> IO ()
 withSmpServer = withSmpServer' smpServerCfg
 
-withSmpServer' :: ServerConfig -> IO () -> IO ()
-withSmpServer' cfg = serverBracket (`runSMPServerBlocking` cfg)
+withSmpServer' :: ServerConfig -> IO a -> IO a
+withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"
@@ -480,16 +503,19 @@ xftpServerConfig =
       fileExpiration = Just defaultFileExpiration,
       fileTimeout = 10000000,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
-      caCertificateFile = "tests/fixtures/tls/ca.crt",
-      privateKeyFile = "tests/fixtures/tls/server.key",
-      certificateFile = "tests/fixtures/tls/server.crt",
+      xftpCredentials =
+        ServerCredentials
+          { caCertificateFile = Just "tests/fixtures/tls/ca.crt",
+            privateKeyFile = "tests/fixtures/tls/server.key",
+            certificateFile = "tests/fixtures/tls/server.crt"
+          },
       xftpServerVRange = supportedFileServerVRange,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig {alpn = Just supportedXFTPhandshakes},
+      transportConfig = defaultTransportServerConfig,
       responseDelay = 0
     }
 
@@ -501,15 +527,15 @@ withXFTPServer' cfg =
   serverBracket
     ( \started -> do
         createDirectoryIfMissing False xftpServerFiles
-        runXFTPServerBlocking started cfg
+        runXFTPServerBlocking started cfg Nothing
     )
 
-serverBracket :: (TMVar Bool -> IO ()) -> IO () -> IO ()
+serverBracket :: (TMVar Bool -> IO ()) -> IO a -> IO a
 serverBracket server f = do
   started <- newEmptyTMVarIO
   bracket
     (forkIOWithUnmask ($ server started))
-    (\t -> killThread t >> waitFor started "stop")
+    (\t -> killThread t >> waitFor started "stop" >> threadDelay 100000)
     (\_ -> waitFor started "start" >> f)
   where
     waitFor started s =

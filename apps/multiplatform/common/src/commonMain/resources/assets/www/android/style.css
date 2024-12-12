@@ -12,14 +12,105 @@ body {
   object-fit: cover;
 }
 
-#local-video-stream.inline {
+@media (orientation: portrait) {
+  #remote-video-stream.collapsed {
+    position: absolute;
+    width: 30%;
+    max-width: 30%;
+    height: 39.9vw;
+    object-fit: cover;
+    margin: 16px;
+    border-radius: 16px;
+    bottom: 80px;
+    right: 0;
+  }
+}
+
+@media (orientation: landscape) {
+  #remote-video-stream.collapsed {
+    position: absolute;
+    width: 20%;
+    max-width: 20%;
+    height: 15.03vw;
+    object-fit: cover;
+    margin: 16px;
+    border-radius: 16px;
+    bottom: 80px;
+    right: 0;
+  }
+}
+
+@media (orientation: portrait) {
+  #remote-video-stream.collapsed-pip {
+    position: absolute;
+    width: 50%;
+    max-width: 50%;
+    height: 66.5vw;
+    object-fit: cover;
+    margin: 8px;
+    border-radius: 8px;
+    bottom: 0;
+    right: 0;
+  }
+}
+
+@media (orientation: landscape) {
+  #remote-video-stream.collapsed-pip {
+    position: absolute;
+    width: 50%;
+    max-width: 50%;
+    height: 37.59vw;
+    object-fit: cover;
+    margin: 8px;
+    border-radius: 8px;
+    bottom: 0;
+    right: 0;
+  }
+}
+
+#remote-screen-video-stream.inline {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (orientation: portrait) {
+  #local-video-stream.inline {
+    position: absolute;
+    width: 30%;
+    max-width: 30%;
+    height: 39.9vw;
+    object-fit: cover;
+    margin: 16px;
+    border-radius: 16px;
+    top: 0;
+    right: 0;
+  }
+}
+
+@media (orientation: landscape) {
+  #local-video-stream.inline {
+    position: absolute;
+    width: 20%;
+    max-width: 20%;
+    height: 15.03vw;
+    object-fit: cover;
+    margin: 16px;
+    border-radius: 16px;
+    top: 0;
+    right: 0;
+  }
+}
+
+#local-screen-video-stream.inline {
   position: absolute;
   width: 30%;
   max-width: 30%;
   object-fit: cover;
   margin: 16px;
   border-radius: 16px;
-  top: 0;
+  top: 30%;
   right: 0;
 }
 
@@ -30,7 +121,21 @@ body {
   object-fit: cover;
 }
 
+#remote-screen-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
 #local-video-stream.fullscreen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+#local-screen-video-stream.fullscreen {
   position: absolute;
   height: 100%;
   width: 100%;

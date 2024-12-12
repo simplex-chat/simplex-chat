@@ -78,7 +78,12 @@ struct AddGroupMembersViewCommon: View {
                     let count = selectedContacts.count
                     Section {
                         if creatingGroup {
-                            groupPreferencesButton($groupInfo, true)
+                            GroupPreferencesButton(
+                                groupInfo: $groupInfo,
+                                preferences: groupInfo.fullGroupPreferences,
+                                currentPreferences: groupInfo.fullGroupPreferences,
+                                creatingGroup: true
+                            )
                         }
                         rolePicker()
                         inviteMembersButton()
@@ -105,8 +110,10 @@ struct AddGroupMembersViewCommon: View {
                             .padding(.leading, 2)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
                         let members = s == "" ? membersToAdd : membersToAdd.filter { $0.chatViewName.localizedLowercase.contains(s) }
-                        ForEach(members) { contact in
-                            contactCheckView(contact)
+                        ForEach(members + [dummyContact]) { contact in
+                            if contact.contactId != dummyContact.contactId {
+                                contactCheckView(contact)
+                            }
                         }
                     }
                 }
@@ -130,12 +137,21 @@ struct AddGroupMembersViewCommon: View {
         .modifier(ThemedBackground(grouped: true))
     }
 
-    private func inviteMembersButton() -> some View {
+    // Resolves keyboard losing focus bug in iOS16 and iOS17,
+    // when there are no items inside `ForEach(memebers)` loop
+    private let dummyContact: Contact = {
+        var dummy = Contact.sampleData
+        dummy.contactId = -1
+        return dummy
+    }()
+
+    @ViewBuilder private func inviteMembersButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Invite to group" : "Invite to chat"
         Button {
             inviteMembers()
         } label: {
             HStack {
-                Text("Invite to group")
+                Text(label)
                 Image(systemName: "checkmark")
             }
         }
@@ -221,6 +237,7 @@ func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding, 
             .focused(focussed)
             .foregroundColor(onBackgroundColor)
             .frame(maxWidth: .infinity)
+            .autocorrectionDisabled(true)
         Image(systemName: "xmark.circle.fill")
             .resizable()
             .scaledToFit()

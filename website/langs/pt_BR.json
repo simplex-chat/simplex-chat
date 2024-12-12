@@ -246,11 +246,13 @@
     "hero-overlay-3-textlink": "Avaliação Segura",
     "hero-overlay-3-title": "Avaliação Segura",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> é uma consultoria líder em segurança e tecnologia cujos clientes incluem grandes empresas de tecnologia, agências governamentais e grandes projetos de blockchain.",
-    "hero-overlay-card-3-p-2": "Trail of Bits analisou a criptografia da plataforma SimpleX e os componentes de rede em novembro de 2022.",
-    "hero-overlay-card-3-p-3": "Leia mais em <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">o anúncio</a>.",
+    "hero-overlay-card-3-p-2": "Trail of Bits analisou a criptografia da plataforma SimpleX e os componentes de rede em novembro de 2022. Leia mais em <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">o anúncio</a>.",
     "f-droid-page-f-droid-org-repo-section-text": "Os repositórios SimpleX Chat e F-Droid.org assinam compilações com chaves diferentes. Para mudar, <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exporte</a> o banco de dados de bate-papo e reinstale o aplicativo.",
     "please-enable-javascript": "Por favor habilite o JavaScript para ver o QR code.",
     "jobs": "Junte-se à equipe",
     "docs-dropdown-8": "Serviço de Diretório SimpleX",
-    "docs-dropdown-9": "Baixar"
+    "docs-dropdown-9": "Baixar",
+    "docs-dropdown-11": "FAQ",
+    "docs-dropdown-10": "Transparência",
+    "docs-dropdown-12": "Segurança"
 }

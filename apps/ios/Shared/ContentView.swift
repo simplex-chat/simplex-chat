@@ -9,10 +9,23 @@ import SwiftUI
 import Intents
 import SimpleXChat
 
+private enum NoticesSheet: Identifiable {
+    case whatsNew(updatedConditions: Bool)
+    case updatedConditions
+
+    var id: String {
+        switch self {
+        case .whatsNew: return "whatsNew"
+        case .updatedConditions: return "updatedConditions"
+        }
+    }
+}
+
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
+    @ObservedObject var appSheetState = AppSheetState.shared
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
@@ -29,14 +42,15 @@ struct ContentView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
-    @State private var showSettings = false
-    @State private var showWhatsNew = false
+    @State private var noticesShown = false
+    @State private var noticesSheetItem: NoticesSheet? = nil
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
+    @State private var chatListUserPickerSheet: UserPickerSheet? = nil
 
-    private let callTopPadding: CGFloat = 50
+    private let callTopPadding: CGFloat = 40
 
     private enum ChatListActionSheet: Identifiable {
         case planAndConnectSheet(sheet: PlanAndConnectActionSheet)
@@ -86,7 +100,7 @@ struct ContentView: View {
                 callView(call)
             }
 
-            if !showSettings, let la = chatModel.laRequest {
+            if chatListUserPickerSheet == nil, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
                     .onDisappear {
                         // this flag is separate from accessAuthenticated to show initializationView while we wait for authentication
@@ -109,9 +123,6 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-        .sheet(isPresented: $showSettings) {
-            SettingsView(showSettings: $showSettings)
-        }
         .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode, titleVisibility: .visible) {
             Button("System authentication") { initialEnableLA() }
             Button("Passcode entry") { showSetPasscode = true }
@@ -151,12 +162,12 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            reactOnDarkThemeChanges()
+            reactOnDarkThemeChanges(systemInDarkThemeCurrently)
         }
         .onChange(of: colorScheme) { scheme in
             // It's needed to update UI colors when iOS wants to make screenshot after going to background,
             // so when a user changes his global theme from dark to light or back, the app will adapt to it
-            reactOnDarkThemeChanges()
+            reactOnDarkThemeChanges(scheme == .dark)
         }
         .onChange(of: theme.name) { _ in
             ThemeManager.adjustWindowStyle()
@@ -207,7 +218,7 @@ struct ContentView: View {
             CallDuration(call: call)
         }
         .padding(.horizontal)
-        .frame(height: callTopPadding - 10)
+        .frame(height: callTopPadding)
         .background(Color(uiColor: UIColor(red: 47/255, green: 208/255, blue: 88/255, alpha: 1)))
         .onTapGesture {
             chatModel.activeCallViewIsCollapsed = false
@@ -253,7 +264,8 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
+            ChatListView(activeUserPickerSheet: $chatListUserPickerSheet)
+                .redacted(reason: appSheetState.redactionReasons(protectScreen))
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete
@@ -262,8 +274,15 @@ struct ContentView: View {
                     alertManager.showAlert(laNoticeAlert())
                 } else if !chatModel.showCallView && CallController.shared.activeCallInvitation == nil {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        if !showWhatsNew {
-                            showWhatsNew = shouldShowWhatsNew()
+                        if !noticesShown {
+                            let showWhatsNew = shouldShowWhatsNew()
+                            let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
+                            noticesShown = showWhatsNew || showUpdatedConditions
+                            if showWhatsNew {
+                                noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
+                            } else if showUpdatedConditions {
+                                noticesSheetItem = .updatedConditions
+                            }
                         }
                     }
                 }
@@ -271,8 +290,22 @@ struct ContentView: View {
                 connectViaUrl()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
-            .sheet(isPresented: $showWhatsNew) {
-                WhatsNewView()
+            .sheet(item: $noticesSheetItem) { item in
+                switch item {
+                case let .whatsNew(updatedConditions):
+                    WhatsNewView(updatedConditions: updatedConditions)
+                        .modifier(ThemedBackground())
+                        .if(updatedConditions) { v in
+                            v.task { await setConditionsNotified_() }
+                        }
+                case .updatedConditions:
+                    UsageConditionsView(
+                        currUserServers: Binding.constant([]),
+                        userServers: Binding.constant([])
+                    )
+                    .modifier(ThemedBackground(grouped: true))
+                    .task { await setConditionsNotified_() }
+                }
             }
             if chatModel.setDeliveryReceipts {
                 SetDeliveryReceiptsView()
@@ -282,6 +315,15 @@ struct ContentView: View {
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+    }
+
+    private func setConditionsNotified_() async {
+        do {
+            let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
+            try await setConditionsNotified(conditionsId: conditionsId)
+        } catch let error {
+            logger.error("setConditionsNotified error: \(responseError(error))")
+        }
     }
 
     private func processUserActivity(_ activity: NSUserActivity) {
@@ -300,9 +342,18 @@ struct ContentView: View {
         if let contactId = contacts?.first?.personHandle?.value,
            let chat = chatModel.getChat(contactId),
            case let .direct(contact) = chat.chatInfo {
-            logger.debug("callToRecentContact: schedule call")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                CallController.shared.startCall(contact, mediaType)
+            let activeCall = chatModel.activeCall
+            // This line works when a user clicks on a video button in CallKit UI while in call.
+            // The app tries to make another call to the same contact and overwite activeCall instance making its state broken
+            if let activeCall, contactId == activeCall.contact.id, mediaType == .video, !activeCall.hasVideo {
+                Task {
+                    await chatModel.callCommand.processCommand(.media(source: .camera, enable: true))
+                }
+            } else if activeCall == nil {
+                logger.debug("callToRecentContact: schedule call")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    CallController.shared.startCall(contact, mediaType)
+                }
             }
         }
     }

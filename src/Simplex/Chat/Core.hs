@@ -25,21 +25,22 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction, MigrationConfirmation (..))
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent, yesToUpMigrations}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbFilePrefix dbKey False confirmMigrations >>= either exit run
+    initRun = createChatDatabase dbFilePrefix dbKey False confirm' >>= either exit run
+    confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
     exit e = do
       putStrLn $ "Error opening database: " <> show e
       exitFailure
@@ -74,9 +75,7 @@ getSelectActiveUser st = do
     selectUser :: [User] -> IO (Maybe User)
     selectUser = \case
       [] -> pure Nothing
-      [user@User {userId}] -> do
-        withTransaction st (`setActiveUser` userId)
-        pure $ Just user
+      [user] -> Just <$> withTransaction st (`setActiveUser` user)
       users -> do
         putStrLn "Select user profile:"
         forM_ (zip [1 :: Int ..] users) $ \(n, user) -> putStrLn $ show n <> ": " <> userStr user
@@ -88,10 +87,9 @@ getSelectActiveUser st = do
               Nothing -> putStrLn "not a number" >> loop
               Just n
                 | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
-                | otherwise -> do
-                    let user@User {userId} = users !! (n - 1)
-                    withTransaction st (`setActiveUser` userId)
-                    pure $ Just user
+                | otherwise ->
+                    let user = users !! (n - 1)
+                     in Just <$> withTransaction st (`setActiveUser` user)
 
 createActiveUser :: ChatController -> IO User
 createActiveUser cc = do

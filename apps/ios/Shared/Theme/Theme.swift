@@ -91,8 +91,8 @@ var systemInDarkThemeCurrently: Bool {
     return UITraitCollection.current.userInterfaceStyle == .dark
 }
 
-func reactOnDarkThemeChanges() {
-    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == systemInDarkThemeCurrently {
+func reactOnDarkThemeChanges(_ inDarkNow: Bool) {
+    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == inDarkNow {
         // Change active colors from light to dark and back based on system theme
         ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
     }
@@ -102,7 +102,7 @@ extension ThemeWallpaper {
     public func importFromString() -> ThemeWallpaper {
         if preset == nil, let image {
             // Need to save image from string and to save its path
-            if let parsed = UIImage(base64Encoded: image),
+            if let parsed = imageFromBase64(image),
                let filename = saveWallpaperFile(image: parsed) {
                 var copy = self
                 copy.image = nil
@@ -122,7 +122,7 @@ extension ThemeWallpaper {
         let preset: String? = if case let WallpaperType.preset(filename, _) = type { filename } else { nil }
         let scale: Float? = if case let WallpaperType.preset(_, scale) = type { scale } else { if case let WallpaperType.image(_, scale, _) = type { scale } else { 1.0 } }
         let scaleType: WallpaperScaleType? = if case let WallpaperType.image(_, _, scaleType) = type { scaleType } else { nil }
-        let image: String? = if case WallpaperType.image = type, let image = type.uiImage { resizeImageToStrSize(image, maxDataSize: 5_000_000) } else { nil }
+        let image: String? = if case WallpaperType.image = type, let image = type.uiImage { resizeImageToStrSizeSync(image, maxDataSize: 5_000_000) } else { nil }
         return ThemeWallpaper (
             preset: preset,
             scale: scale,

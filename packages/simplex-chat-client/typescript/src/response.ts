@@ -12,7 +12,7 @@ export type ChatResponse =
   | CRUserProtoServers
   | CRContactInfo
   | CRGroupMemberInfo
-  | CRNewChatItem
+  | CRNewChatItems
   | CRChatItemStatusUpdated
   | CRChatItemUpdated
   | CRChatItemDeleted
@@ -109,7 +109,7 @@ type ChatResponseTag =
   | "userProtoServers"
   | "contactInfo"
   | "groupMemberInfo"
-  | "newChatItem"
+  | "newChatItems"
   | "chatItemStatusUpdated"
   | "chatItemUpdated"
   | "chatItemDeleted"
@@ -255,10 +255,10 @@ export interface CRGroupMemberInfo extends CR {
   connectionStats_?: ConnectionStats
 }
 
-export interface CRNewChatItem extends CR {
-  type: "newChatItem"
+export interface CRNewChatItems extends CR {
+  type: "newChatItems"
   user: User
-  chatItem: AChatItem
+  chatItems: AChatItem[]
 }
 
 export interface CRChatItemStatusUpdated extends CR {

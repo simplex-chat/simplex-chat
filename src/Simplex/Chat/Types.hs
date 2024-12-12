@@ -52,7 +52,7 @@ import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), 
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -113,6 +113,7 @@ data User = User
     profile :: LocalProfile,
     fullPreferences :: FullPreferences,
     activeUser :: Bool,
+    activeOrder :: Int64,
     viewPwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
@@ -296,6 +297,7 @@ userContactGroupId UserContact {groupId} = groupId
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
+    contactId_ :: Maybe ContactId,
     userContactLinkId :: Int64,
     agentContactConnId :: AgentConnId, -- connection id of user contact
     cReqChatVRange :: VersionRangeChat,
@@ -347,7 +349,7 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
+data ChatOrRequest = CORContact Contact | CORGroup GroupInfo | CORRequest UserContactRequest
 
 type UserName = Text
 
@@ -369,6 +371,7 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
+    businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
     hostConnCustomUserProfileId :: Maybe ProfileId,
@@ -381,6 +384,24 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
+
+data BusinessChatType
+  = BCBusiness -- used on the customer side
+  | BCCustomer -- used on the business side
+  deriving (Eq, Show)
+
+instance TextEncoding BusinessChatType where
+  textEncode = \case
+    BCBusiness -> "business"
+    BCCustomer -> "customer"
+  textDecode = \case
+    "business" -> Just BCBusiness
+    "customer" -> Just BCCustomer
+    _ -> Nothing
+
+instance FromField BusinessChatType where fromField = fromTextField_ textDecode
+
+instance ToField BusinessChatType where toField = toField . textEncode
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
@@ -596,6 +617,7 @@ data GroupInvitation = GroupInvitation
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
+    business :: Maybe BusinessChatInfo,
     groupLinkId :: Maybe GroupLinkId,
     groupSize :: Maybe Int
   }
@@ -606,6 +628,7 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
+    business :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
   deriving (Eq, Show)
@@ -627,6 +650,13 @@ data MemberInfo = MemberInfo
     memberRole :: GroupMemberRole,
     v :: Maybe ChatVersionRange,
     profile :: Profile
+  }
+  deriving (Eq, Show)
+
+data BusinessChatInfo = BusinessChatInfo
+  { chatType :: BusinessChatType,
+    businessId :: MemberId,
+    customerId :: MemberId
   }
   deriving (Eq, Show)
 
@@ -1370,6 +1400,8 @@ aConnId' PendingContactConnection {pccAgentConnId = AgentConnId cId} = cId
 data ConnStatus
   = -- | connection is created by initiating party with agent NEW command (createConnection)
     ConnNew
+  | -- | connection is prepared, to avoid changing keys on invitation links when retrying.
+    ConnPrepared
   | -- | connection is joined by joining party with agent JOIN command (joinConnection)
     ConnJoined
   | -- | initiating party received CONF notification (to be renamed to REQ)
@@ -1398,6 +1430,7 @@ instance ToJSON ConnStatus where
 instance TextEncoding ConnStatus where
   textDecode = \case
     "new" -> Just ConnNew
+    "prepared" -> Just ConnPrepared
     "joined" -> Just ConnJoined
     "requested" -> Just ConnRequested
     "accepted" -> Just ConnAccepted
@@ -1407,6 +1440,7 @@ instance TextEncoding ConnStatus where
     _ -> Nothing
   textEncode = \case
     ConnNew -> "new"
+    ConnPrepared -> "prepared"
     ConnJoined -> "joined"
     ConnRequested -> "requested"
     ConnAccepted -> "accepted"
@@ -1690,6 +1724,10 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
+
+$(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
+
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''Group)
@@ -1700,17 +1738,17 @@ instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
 instance ToField MsgFilter where toField = toField . msgFilterInt
 
-$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "CRData") ''CReqClientData)
+$(JQ.deriveJSON defaultJSON ''CReqClientData)
 
 $(JQ.deriveJSON defaultJSON ''MemberIdRole)
+
+$(JQ.deriveJSON defaultJSON ''MemberInfo)
 
 $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
-
-$(JQ.deriveJSON defaultJSON ''MemberInfo)
 
 $(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 

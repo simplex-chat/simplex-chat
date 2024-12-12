@@ -40,7 +40,7 @@ struct SendMessageView: View {
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
     @State private var progressByTimeout = false
-    @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
+    @UserDefault(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
 
     var body: some View {
         ZStack {
@@ -227,6 +227,7 @@ struct SendMessageView: View {
            !composeState.editing {
             if case .noContextItem = composeState.contextItem,
                !composeState.voicePreview,
+               !composeState.manyMediaPreviews,
                let send = sendLiveMessage,
                let update = updateLiveMessage {
                 Button {

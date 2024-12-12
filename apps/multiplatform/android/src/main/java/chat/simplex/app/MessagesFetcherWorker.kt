@@ -5,9 +5,8 @@ import android.util.Log
 import androidx.work.*
 import chat.simplex.app.SimplexService.Companion.showPassphraseNotification
 import chat.simplex.common.model.ChatController
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.DBMigrationResult
-import chat.simplex.common.platform.chatModel
-import chat.simplex.common.platform.initChatControllerOnStart
 import chat.simplex.common.views.helpers.DatabaseUtils
 import kotlinx.coroutines.*
 import java.util.Date
@@ -30,12 +29,12 @@ object MessagesFetcherWorker {
       .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
       .build()
 
-    WorkManager.getInstance(SimplexApp.context).enqueueUniqueWork(UNIQUE_WORK_TAG, ExistingWorkPolicy.REPLACE, periodicWorkRequest)
+    SimplexApp.context.getWorkManagerInstance().enqueueUniqueWork(UNIQUE_WORK_TAG, ExistingWorkPolicy.REPLACE, periodicWorkRequest)
   }
 
   fun cancelAll() {
     Log.d(TAG, "Worker: canceled all tasks")
-    WorkManager.getInstance(SimplexApp.context).cancelUniqueWork(UNIQUE_WORK_TAG)
+    SimplexApp.context.getWorkManagerInstance().cancelUniqueWork(UNIQUE_WORK_TAG)
   }
 }
 

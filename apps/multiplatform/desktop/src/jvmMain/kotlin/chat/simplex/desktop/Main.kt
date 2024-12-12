@@ -49,38 +49,6 @@ private fun initHaskell() {
 
   platform = object: PlatformInterface {
     @Composable
-    override fun desktopScrollBarComponents(): Triple<Animatable<Float, AnimationVector1D>, Modifier, MutableState<Job>> {
-      val scope = rememberCoroutineScope()
-      val scrollBarAlpha = remember { Animatable(0f) }
-      val scrollJob: MutableState<Job> = remember { mutableStateOf(Job()) }
-      val modifier = remember {
-        Modifier.pointerInput(Unit) {
-          detectCursorMove {
-            scope.launch {
-              scrollBarAlpha.animateTo(1f)
-            }
-            scrollJob.value.cancel()
-            scrollJob.value = scope.launch {
-              delay(1000L)
-              scrollBarAlpha.animateTo(0f)
-            }
-          }
-        }
-      }
-      return Triple(scrollBarAlpha, modifier, scrollJob)
-    }
-
-    @Composable
-    override fun desktopScrollBar(state: LazyListState, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
-      DesktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
-    }
-
-    @Composable
-    override fun desktopScrollBar(state: ScrollState, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
-      DesktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
-    }
-
-    @Composable
     override fun desktopShowAppUpdateNotice() {
       fun showNoticeIfNeeded() {
         if (
@@ -109,7 +77,7 @@ private fun initHaskell() {
 
 private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
   val mainLibs = arrayOf(
-    "libcrypto-1_1-x64.dll",
+    "libcrypto-3-x64.dll",
     "libsimplex.dll",
     "libapp-lib.dll"
   )

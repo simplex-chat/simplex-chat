@@ -231,7 +231,7 @@ fun ChatPreviewView(
   fun chatItemContentPreview(chat: Chat, ci: ChatItem?) {
     val mc = ci?.content?.msgContent
     val provider by remember(chat.id, ci?.id, ci?.file?.fileStatus) {
-      mutableStateOf({ providerForGallery(0, chat.chatItems, ci?.id ?: 0) {} })
+      mutableStateOf({ providerForGallery(chat.chatItems, ci?.id ?: 0) {} })
     }
     val uriHandler = LocalUriHandler.current
     when (mc) {
@@ -256,7 +256,7 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCVoice -> SmallContentPreviewVoice() {
-        CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, smallView = true, longClick = {}) {
+        CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, showTimestamp = true, smallView = true, longClick = {}) {
           val user = chatModel.currentUser.value ?: return@CIVoiceView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
@@ -332,7 +332,7 @@ fun ChatPreviewView(
           chatPreviewTitle()
         }
         Spacer(Modifier.width(8.sp.toDp()))
-        val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
+        val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
         ChatListTimestampView(ts)
       }
       Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
@@ -347,7 +347,7 @@ fun ChatPreviewView(
             chatItemContentPreview(chat, ci)
           }
           if (mc !is MsgContent.MCVoice || !showContentPreview || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
-            Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
+            Box(Modifier.offset(x = if (mc is MsgContent.MCFile && ci.meta.itemDeleted == null) -15.sp.toDp() else 0.dp)) {
               chatPreviewText()
             }
           }

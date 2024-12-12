@@ -46,6 +46,7 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
@@ -66,12 +67,14 @@ import Simplex.Messaging.Version hiding (version)
 -- 7 - update member profiles (1/15/2024)
 -- 8 - compress messages and PQ e2e encryption (2024-03-08)
 -- 9 - batch sending in direct connections (2024-07-24)
+-- 10 - business chats (2024-11-29)
+-- 11 - fix profile update in business chats (2024-12-05)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 9
+currentChatVersion = VersionChat 11
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -110,6 +113,14 @@ pqEncryptionCompressionVersion = VersionChat 8
 batchSend2Version :: VersionChat
 batchSend2Version = VersionChat 9
 
+-- supports differentiating business chats when joining contact addresses
+businessChatsVersion :: VersionChat
+businessChatsVersion = VersionChat 10
+
+-- support updating preferences in business chats (XGrpPrefs message)
+businessChatPrefsVersion :: VersionChat
+businessChatPrefsVersion = VersionChat 11
+
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
   | v < pqdrSMPAgentVersion = initialChatVersion
@@ -124,6 +135,17 @@ data ConnectionEntity
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (sumTypeJSON fstToLower) ''ConnectionEntity)
+
+connEntityInfo :: ConnectionEntity -> String
+connEntityInfo = \case
+  RcvDirectMsgConnection c ct_ -> ctInfo ct_ <> ", status: " <> show (connStatus c)
+  RcvGroupMsgConnection c g m -> mInfo g m <> ", status: " <> show (connStatus c)
+  SndFileConnection c _ft -> "snd file, status: " <> show (connStatus c)
+  RcvFileConnection c _ft -> "rcv file, status: " <> show (connStatus c)
+  UserContactConnection c _uc -> "user address, status: " <> show (connStatus c)
+  where
+    ctInfo = maybe "connection" $ \Contact {contactId} -> "contact " <> show contactId
+    mInfo GroupInfo {groupId} GroupMember {groupMemberId} = "group " <> show groupId <> ", member " <> show groupMemberId
 
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
@@ -283,6 +305,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
+  XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
   XGrpMsgForward :: MemberId -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
@@ -323,6 +346,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpLeave -> True
   XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
   XGrpInfo _ -> True
+  XGrpPrefs _ -> True
   _ -> False
 
 forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMessage 'Json)
@@ -540,21 +564,21 @@ data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInv
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
 -- this limit reserves space for metadata in forwarded messages
--- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
+-- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, - 16 for block encryption ("rounded" to 15602)
 maxEncodedMsgLength :: Int
-maxEncodedMsgLength = 15610
+maxEncodedMsgLength = 15602
 
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
 maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13388
+maxCompressedMsgLength = 13380
 
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
 maxEncodedInfoLength :: Int
-maxEncodedInfoLength = 14702
+maxEncodedInfoLength = 14694
 
 maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10976 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxCompressedInfoLength = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
@@ -705,6 +729,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpLeave_ :: CMEventTag 'Json
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
+  XGrpPrefs_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
   XGrpMsgForward_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
@@ -755,6 +780,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpLeave_ -> "x.grp.leave"
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
+    XGrpPrefs_ -> "x.grp.prefs"
     XGrpDirectInv_ -> "x.grp.direct.inv"
     XGrpMsgForward_ -> "x.grp.msg.forward"
     XInfoProbe_ -> "x.info.probe"
@@ -806,6 +832,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.leave" -> XGrpLeave_
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
+        "x.grp.prefs" -> XGrpPrefs_
         "x.grp.direct.inv" -> XGrpDirectInv_
         "x.grp.msg.forward" -> XGrpMsgForward_
         "x.info.probe" -> XInfoProbe_
@@ -853,6 +880,7 @@ toCMEventTag msg = case msg of
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
+  XGrpPrefs _ -> XGrpPrefs_
   XGrpDirectInv _ _ -> XGrpDirectInv_
   XGrpMsgForward {} -> XGrpMsgForward_
   XInfoProbe _ -> XInfoProbe_
@@ -953,6 +981,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
+      XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
       XGrpMsgForward_ -> XGrpMsgForward <$> p "memberId" <*> p "msg" <*> p "msgTs"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
@@ -1014,6 +1043,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
+      XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
       XGrpMsgForward memberId msg msgTs -> o ["memberId" .= memberId, "msg" .= msg, "msgTs" .= msgTs]
       XInfoProbe probe -> o ["probe" .= probe]

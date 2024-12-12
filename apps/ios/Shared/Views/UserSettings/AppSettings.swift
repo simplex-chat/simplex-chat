@@ -19,9 +19,15 @@ extension AppSettings {
                 val.hostMode = .publicHost
                 val.requiredHostMode = true
             }
-            val.socksProxy = nil
-            setNetCfg(val)
+            if val.socksProxy != nil {
+                val.socksProxy = networkProxy?.toProxyString()
+                setNetCfg(val, networkProxy: networkProxy)
+            } else {
+                val.socksProxy = nil
+                setNetCfg(val, networkProxy: nil)
+            }
         }
+        if let val = networkProxy { networkProxyDefault.set(val) }
         if let val = privacyEncryptLocalFiles { privacyEncryptLocalFilesGroupDefault.set(val) }
         if let val = privacyAskToApproveRelays { privacyAskToApproveRelaysGroupDefault.set(val) }
         if let val = privacyAcceptImages {
@@ -52,17 +58,21 @@ extension AppSettings {
             profileImageCornerRadiusGroupDefault.set(val)
             def.setValue(val, forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
         }
-        if let val = uiColorScheme { def.setValue(val, forKey: DEFAULT_CURRENT_THEME) }
-        if let val = uiDarkColorScheme { def.setValue(val, forKey: DEFAULT_SYSTEM_DARK_THEME) }
-        if let val = uiCurrentThemeIds { def.setValue(val, forKey: DEFAULT_CURRENT_THEME_IDS) }
-        if let val = uiThemes { def.setValue(val.skipDuplicates(), forKey: DEFAULT_THEME_OVERRIDES) }
+        if let val = uiChatItemRoundness { def.setValue(val, forKey: DEFAULT_CHAT_ITEM_ROUNDNESS)}
+        if let val = uiChatItemTail { def.setValue(val, forKey: DEFAULT_CHAT_ITEM_TAIL)}
+        if let val = uiColorScheme { currentThemeDefault.set(val) }
+        if let val = uiDarkColorScheme { systemDarkThemeDefault.set(val) }
+        if let val = uiCurrentThemeIds { currentThemeIdsDefault.set(val) }
+        if let val = uiThemes { themeOverridesDefault.set(val.skipDuplicates()) }
         if let val = oneHandUI { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_ONE_HAND_UI) }
+        if let val = chatBottomBar { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_CHAT_BOTTOM_BAR) }
     }
 
     public static var current: AppSettings {
         let def = UserDefaults.standard
         var c = AppSettings.defaults
         c.networkConfig = getNetCfg()
+        c.networkProxy = networkProxyDefault.get()
         c.privacyEncryptLocalFiles = privacyEncryptLocalFilesGroupDefault.get()
         c.privacyAskToApproveRelays = privacyAskToApproveRelaysGroupDefault.get()
         c.privacyAcceptImages = privacyAcceptImagesGroupDefault.get()
@@ -84,11 +94,14 @@ extension AppSettings {
         c.iosCallKitEnabled = callKitEnabledGroupDefault.get()
         c.iosCallKitCallsInRecents = def.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
         c.uiProfileImageCornerRadius = def.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
+        c.uiChatItemRoundness = def.double(forKey: DEFAULT_CHAT_ITEM_ROUNDNESS)
+        c.uiChatItemTail = def.bool(forKey: DEFAULT_CHAT_ITEM_TAIL)
         c.uiColorScheme = currentThemeDefault.get()
         c.uiDarkColorScheme = systemDarkThemeDefault.get()
         c.uiCurrentThemeIds = currentThemeIdsDefault.get()
         c.uiThemes = themeOverridesDefault.get()
         c.oneHandUI = groupDefaults.bool(forKey: GROUP_DEFAULT_ONE_HAND_UI)
+        c.chatBottomBar = groupDefaults.bool(forKey: GROUP_DEFAULT_CHAT_BOTTOM_BAR)
         return c
     }
 }

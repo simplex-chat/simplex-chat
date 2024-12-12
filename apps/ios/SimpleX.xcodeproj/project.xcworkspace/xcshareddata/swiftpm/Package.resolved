@@ -1,13 +1,22 @@
 {
-  "originHash" : "e2611d1e91fd8071abc106776ba14ee2e395d2ad08a78e073381294abc10f115",
+  "originHash" : "33afc44be5f4225325b3cb940ed71b6cbf3ef97290d348d7b6803697bcd0637d",
   "pins" : [
     {
       "identity" : "codescanner",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/twostraws/CodeScanner",
       "state" : {
-        "revision" : "c27a66149b7483fe42e2ec6aad61d5c3fffe522d",
-        "version" : "2.1.1"
+        "revision" : "34da57fb63b47add20de8a85da58191523ccce57",
+        "version" : "2.5.0"
+      }
+    },
+    {
+      "identity" : "ink",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/johnsundell/ink",
+      "state" : {
+        "revision" : "bcc9f219900a62c4210e6db726035d7f03ae757b",
+        "version" : "0.6.0"
       }
     },
     {
@@ -23,7 +32,6 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kirualex/SwiftyGif",
       "state" : {
-        "branch" : "master",
         "revision" : "5e8619335d394901379c9add5c4c1c2f420b3800"
       }
     },

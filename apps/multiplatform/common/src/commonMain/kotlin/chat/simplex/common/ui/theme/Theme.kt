@@ -1,14 +1,14 @@
 package chat.simplex.common.ui.theme
 
-import androidx.compose.foundation.background
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -587,26 +587,35 @@ data class ThemeModeOverride (
   }
 }
 
-fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, shape: Shape = RectangleShape): Modifier {
-  return if (baseTheme == DefaultTheme.SIMPLEX) {
-    this.background(brush = Brush.linearGradient(
-      listOf(
-        CurrentColors.value.colors.background.darker(0.4f),
-        CurrentColors.value.colors.background.lighter(0.4f)
-      ),
-      Offset(0f, Float.POSITIVE_INFINITY),
-      Offset(Float.POSITIVE_INFINITY, 0f)
-    ), shape = shape)
-  } else {
-    this.background(color = CurrentColors.value.colors.background, shape = shape)
+fun Modifier.themedBackground(baseTheme: DefaultTheme = CurrentColors.value.base, bgLayerSize: MutableState<IntSize>?, bgLayer: GraphicsLayer?/*, shape: Shape = RectangleShape*/): Modifier {
+  return drawBehind {
+    copyBackgroundToAppBar(bgLayerSize, bgLayer) {
+      if (baseTheme == DefaultTheme.SIMPLEX) {
+        drawRect(brush = themedBackgroundBrush())
+      } else {
+        drawRect(CurrentColors.value.colors.background)
+      }
+    }
   }
 }
 
+fun themedBackgroundBrush(): Brush = Brush.linearGradient(
+  listOf(
+    CurrentColors.value.colors.background.darker(0.4f),
+    CurrentColors.value.colors.background.lighter(0.4f)
+  ),
+  Offset(0f, Float.POSITIVE_INFINITY),
+  Offset(Float.POSITIVE_INFINITY, 0f)
+)
+
 val DEFAULT_PADDING = 20.dp
+val DEFAULT_ONBOARDING_HORIZONTAL_PADDING = 25.dp
 val DEFAULT_SPACE_AFTER_ICON = 4.dp
 val DEFAULT_PADDING_HALF = DEFAULT_PADDING / 2
 val DEFAULT_BOTTOM_PADDING = 48.dp
 val DEFAULT_BOTTOM_BUTTON_PADDING = 20.dp
+val DEFAULT_MIN_SECTION_ITEM_HEIGHT = 50.dp
+val DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL = 15.dp
 
 val DEFAULT_START_MODAL_WIDTH = 388.dp
 val DEFAULT_MIN_CENTER_MODAL_WIDTH = 590.dp

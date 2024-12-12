@@ -1,5 +1,57 @@
 # Blog
 
+Dec 10, 2024 [SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
+
+- SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app to improve metadata privacy in SimpleX network.
+- Business chats for better privacy and support of your customers.
+- Better user experience: open on the first unread, jump to quoted messages, see who reacted.
+- Improving notifications in iOS app.
+
+--
+
+Nov 25, 2024 [Servers operated by Flux - true privacy and decentralization for all users](./20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.md)
+
+- Welcome, Flux - the new servers in v6.2-beta.1!
+- What's the problem?
+- Using two operators improves connection privacy.
+- SimpleX decentralization compared with Matrix, Session and Tor.
+- What is next for SimpleX decentralization?
+
+---
+
+Oct 14, 2024 [SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+
+New security audit: Trail of Bits reviewed the cryptographic design of protocols used in SimpleX network and apps.
+
+What's new in v6.1:
+- Better calls: switch audio and video during the call.
+- Better iOS notifications: improved delivery, reduced traffic usage.
+- Better user experience: switch chat profiles, customizable message shapes, forward up to 20 messages.
+
+---
+
+Aug 14, 2024 [SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
+
+SimpleX Chat: vision and funding 2.0: past, present, future.
+
+Announcing the investment from Jack Dorsey and Asymmetric.
+
+What's new in v6.0:
+- Private message routing - now enabled by default
+- New chat experience:
+  - connect to your friends faster.
+  - new reachable interface.
+  - and much more!
+- Improved networking and reduced battery usage
+
+---
+
+Jul 4, 2024 [The Future of Privacy: Enforcing Privacy Standards](./20240704-future-of-privacy-enforcing-privacy-standards.md)
+
+It's time we shift the focus: privacy should be a non-negotiable duty of technology providers, not just a right users must fight to protect, and not something that users can be asked to consent away as a condition of access to a service.
+
+---
+
 Jun 4, 2024 [SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
 
 What's new in v5.8:

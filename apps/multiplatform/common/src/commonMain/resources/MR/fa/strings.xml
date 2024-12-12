@@ -636,8 +636,7 @@
     <string name="all_your_contacts_will_remain_connected_update_sent">تمام مخاطبانتان متصل باقی خواهند ماند. به‌روزرسانی نمایه به مخاطبانتان ارسال خواهد شد.</string>
     <string name="network_disable_socks_info">اگر تایید کنید، سرورهای پیام‌رسانی خواهند توانست نشانی‌ IP، و فراهم‌کننده شما را ببینند - و این که به چه سرورهایی متصل می‌شوید.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور WebRTC ICE صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
-    <string name="network_session_mode_entity_description">یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد.
-\n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد. \n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.]]></string>
     <string name="update_network_session_mode_question">حالت انزوای ترابری به روز شود؟</string>
     <string name="edit_image">ویرایش تصویر</string>
     <string name="create_simplex_address">ایجاد نشانی‌ SimpleX</string>
@@ -733,8 +732,6 @@
     <string name="decentralized">نامتمرکز</string>
     <string name="create_your_profile">نمایه خود را ایجاد کنید</string>
     <string name="how_simplex_works">SimpleX چگونه کار می‌کند</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[اشخاص زیادی پرسیده‌اند: <i>اگر SimpleX هیچ شناسه کاربری ندارد، چگونه می‌تواند پیام‌ها را تحویل دهد؟</i>]]></string>
-    <string name="read_more_in_github">مطالعه بیشتر در مخزن GitHub ما.</string>
     <string name="read_more_in_github_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">مخزن GitHub</font> ما.]]></string>
     <string name="use_chat">استفاده از گپ</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).]]></string>
@@ -777,7 +774,6 @@
     <string name="audio_device_bluetooth">بلوتوث</string>
     <string name="import_database">وارد کردن پایگاه داده</string>
     <string name="people_can_connect_only_via_links_you_share">اشخاص فقط از طریق لینک‌هایی که به اشتراک می‌گذارید می‌توانند به شما متصل شوند.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[شما کنترل می‌کنید پیام‌ها از طریق چه سرورهایی <b>دریافت شوند</b> و از چه سرورهایی به مخاطبان خود پیام می‌فرستید.]]></string>
     <string name="call_already_ended">تماس از پیش پایان یافته!</string>
     <string name="integrity_msg_bad_hash">هش پیام ناصحیح</string>
     <string name="auto_accept_images">پذیرفتن خودکار تصاویر</string>
@@ -946,7 +942,6 @@
     <string name="delete_files_and_media_desc">این عمل قابل برگشت نیست - تمام پرونده‌ها و رسانه دریافتی حذف خواهند شد. عکس‌های با کیفیت پایین باقی خواهند ماند.</string>
     <string name="you_must_use_the_most_recent_version_of_database">شما باید از تازه‌ترین نسخه پایگاه داده گپ خود روی فقط یک دستگاه استفاده کنید، در غیر این صورت ممکن است از بعضی از مخاطب‌ها ‌دیگر پیامی دریافت نکنید.</string>
     <string name="messages_section_title">پیام‌ها</string>
-    <string name="stop_chat_to_enable_database_actions">به منظور فعال‌سازی اقدامات پایگاه داده، گپ را متوقف کنید.</string>
     <string name="enable_automatic_deletion_message">این عمل قابل برگشت نیست - پیام‌های ارسالی و دریافتی قدیمی‌تر از زمان انتخابی حذف خواهند شد. این کار ممکن است چندین دقیقه زمان ببرد.</string>
     <string name="error_changing_message_deletion">خطا در تغییر تنظیمات</string>
     <string name="save_passphrase_in_settings">ذخیره عبارت عبور در تنظیمات</string>
@@ -956,9 +951,6 @@
     <string name="enable_automatic_deletion_question">حذف خودکار پیام فعال شود؟</string>
     <string name="restore_database_alert_confirm">برگرداندن</string>
     <string name="upgrade_and_open_chat">ارتقا و گشودن گپ</string>
-    <string name="chat_archive_header">آرشیو گپ</string>
-    <string name="save_archive">ذخیره آرشیو</string>
-    <string name="delete_archive">حذف آرشیو</string>
     <string name="group_invitation_item_description">دعوت به گروه %1$s</string>
     <string name="join_group_question">به گروه می‌پیوندید؟</string>
     <string name="leave_group_button">ترک</string>
@@ -1092,9 +1084,6 @@
     <string name="mtr_error_no_down_migration">نسخه پایگاه داده از برنامه جدیدتر است، اما بدون جابه‌جایی تنزلی برای: %s</string>
     <string name="mtr_error_different">جابه‌جایی متفاوت در برنامه/پایگاه داده: %s / %s</string>
     <string name="database_migrations">جابه‌جایی‌ها: %s</string>
-    <string name="chat_archive_section">آرشیو گپ</string>
-    <string name="archive_created_on_ts">ایجاد شده در %1$s</string>
-    <string name="delete_chat_archive_question">آرشیو گپ حذف شود؟</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">شما به گروه دعوت شده‌اید. برای متصل شدن به اعضای گروه، به گروه بپیوندید.</string>
     <string name="join_group_incognito_button">پیوستن به صورت ناشناس</string>
     <string name="alert_message_no_group">این گروه دیگر وجود ندارد.</string>
@@ -1425,7 +1414,7 @@
     <string name="disable_sending_recent_history">عدم ارسال تاریخچه به اعضای جدید.</string>
     <string name="group_members_can_send_disappearing">اعضای گروه می‌توانند پیام‌های ناپدید شونده ارسال کنند.</string>
     <string name="group_members_can_send_dms">اعضای گروه می‌توانند پیام‌های مستقیم ارسال کنند.</string>
-    <string name="direct_messages_are_prohibited_in_chat">پیام‌های مستقیم بین اعضا در این گروه ممنوع هستند.</string>
+    <string name="direct_messages_are_prohibited_in_group">پیام‌های مستقیم بین اعضا در این گروه ممنوع هستند.</string>
     <string name="message_deletion_prohibited_in_chat">حذف غیرقابل برگشت در این گروه ممنوع است.</string>
     <string name="voice_messages_are_prohibited">پیام‌های صوتی در این گروه ممنوع هستند.</string>
     <string name="message_reactions_are_prohibited">واکنش‌های پیام در این گروه ممنوع هستند.</string>

@@ -23,12 +23,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -75,7 +75,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -122,7 +122,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(quoteColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -202,7 +202,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionItemView(
         click = {
           withBGApi {
-            openChat(chatRh, forwardedFromItem.chatInfo, chatModel)
+            openChat(chatRh, forwardedFromItem.chatInfo)
             ModalManager.end.closeModals()
           }
         },
@@ -224,7 +224,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     Row(
       Modifier
         .fillMaxWidth()
-        .sizeIn(minHeight = 46.dp)
+        .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
         .padding(PaddingValues(horizontal = DEFAULT_PADDING))
         .clickable { expanded.value = !expanded.value },
       horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -277,20 +277,19 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun HistoryTab() {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
       if (versions.isNotEmpty()) {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.edit_history), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           versions.forEachIndexed { i, ciVersion ->
             ItemVersionView(ciVersion, current = i == 0)
           }
         }
       } else {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_history), color = MaterialTheme.colors.secondary)
           }
@@ -302,11 +301,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
-      SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
       }
@@ -316,8 +314,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun ForwardedFromTab(forwardedFromItem: AChatItem) {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView {
@@ -379,20 +376,19 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
       if (mss.isNotEmpty()) {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.delivery), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           mss.forEach { (member, status, sentViaProxy) ->
             MemberDeliveryStatusView(member, status, sentViaProxy)
           }
         }
       } else {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_info_on_delivery), color = MaterialTheme.colors.secondary)
           }
@@ -482,28 +478,33 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
             selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
           }
         }
-        TabRow(
-          selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
-          backgroundColor = Color.Transparent,
-          contentColor = MaterialTheme.colors.primary,
-        ) {
-          availableTabs.forEach { ciInfoTab ->
-            Tab(
-              selected = selection.value::class == ciInfoTab::class,
-              onClick = {
-                selection.value = ciInfoTab
-              },
-              text = { Text(tabTitle(ciInfoTab), fontSize = 13.sp) },
-              icon = {
-                Icon(
-                  painterResource(tabIcon(ciInfoTab)),
-                  tabTitle(ciInfoTab)
-                )
-              },
-              selectedContentColor = MaterialTheme.colors.primary,
-              unselectedContentColor = MaterialTheme.colors.secondary,
-            )
+        val oneHandUI = remember { appPrefs.oneHandUI.state }
+        Box(Modifier.offset(x = 0.dp, y = if (oneHandUI.value) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)) {
+          TabRow(
+            selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
+            Modifier.height(AppBarHeight * fontSizeSqrtMultiplier),
+            backgroundColor = MaterialTheme.colors.background,
+            contentColor = MaterialTheme.colors.primary,
+          ) {
+            availableTabs.forEach { ciInfoTab ->
+              LeadingIconTab(
+                selected = selection.value::class == ciInfoTab::class,
+                onClick = {
+                  selection.value = ciInfoTab
+                },
+                text = { Text(tabTitle(ciInfoTab), fontSize = 13.sp) },
+                icon = {
+                  Icon(
+                    painterResource(tabIcon(ciInfoTab)),
+                    tabTitle(ciInfoTab)
+                  )
+                },
+                selectedContentColor = MaterialTheme.colors.primary,
+                unselectedContentColor = MaterialTheme.colors.secondary,
+              )
+            }
           }
+          Divider()
         }
       }
     } else {

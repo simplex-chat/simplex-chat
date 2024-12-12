@@ -20,7 +20,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
@@ -35,13 +35,13 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
       Box(Modifier.weight(1f, false)) {
         MergedMarkedDeletedText(ci, revealed)
       }
-      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
+      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
     }
   }
 }
 
 @Composable
-private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<Boolean>) {
+private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>) {
   var i = getChatItemIndexOrNull(chatItem)
   val ciCategory = chatItem.mergeCategory
   val text =  if (!revealed.value && ciCategory != null && i != null) {
@@ -113,7 +113,8 @@ fun PreviewMarkedDeletedItemView() {
     DeletedItemView(
       ChatItem.getSampleData(itemDeleted = CIDeleted.Deleted(Clock.System.now())),
       null,
-      showViaProxy = false
+      showViaProxy = false,
+      showTimestamp = true
     )
   }
 }

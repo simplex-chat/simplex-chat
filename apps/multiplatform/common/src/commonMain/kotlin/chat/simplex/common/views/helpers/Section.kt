@@ -12,7 +12,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
@@ -20,18 +19,17 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SelectableCard
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun SectionView(title: String? = null, padding: PaddingValues = PaddingValues(), content: (@Composable ColumnScope.() -> Unit)) {
+fun SectionView(title: String? = null, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
   Column {
     if (title != null) {
       Text(
         title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
+        modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = headerBottomPadding), fontSize = 12.sp
       )
     }
-    Column(Modifier.padding(padding).fillMaxWidth()) { content() }
+    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
   }
 }
 
@@ -101,13 +99,13 @@ fun <T> SectionViewSelectableCards(
 @Composable
 fun SectionItemView(
   click: (() -> Unit)? = null,
-  minHeight: Dp = 46.dp,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
-    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
   else
-    PaddingValues(horizontal = DEFAULT_PADDING),
+    PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -122,16 +120,31 @@ fun SectionItemView(
 }
 
 @Composable
-fun SectionItemViewLongClickable(
-  click: () -> Unit,
-  longClick: () -> Unit,
-  minHeight: Dp = 46.dp,
+fun SectionItemViewWithoutMinPadding(
+  click: (() -> Unit)? = null,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
   disabled: Boolean = false,
   extraPadding: Boolean = false,
   padding: PaddingValues = if (extraPadding)
     PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
   else
     PaddingValues(horizontal = DEFAULT_PADDING),
+  content: (@Composable RowScope.() -> Unit)
+) {
+  SectionItemView(click, minHeight, disabled, extraPadding, padding, content)
+}
+
+@Composable
+fun SectionItemViewLongClickable(
+  click: () -> Unit,
+  longClick: () -> Unit,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
+  disabled: Boolean = false,
+  extraPadding: Boolean = false,
+  padding: PaddingValues = if (extraPadding)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING, top = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL, bottom = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)
+  else
+    PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL),
   content: (@Composable RowScope.() -> Unit)
 ) {
   val modifier = Modifier
@@ -150,29 +163,10 @@ fun SectionItemViewLongClickable(
 }
 
 @Composable
-fun SectionItemViewWithIcon(
-  click: (() -> Unit)? = null,
-  minHeight: Dp = 46.dp,
-  disabled: Boolean = false,
-  padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING),
-  content: (@Composable RowScope.() -> Unit)
-) {
-  val modifier = Modifier
-    .fillMaxWidth()
-    .sizeIn(minHeight = minHeight)
-  Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    content()
-  }
-}
-
-@Composable
 fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
   onLongClick: (() -> Unit)? = null,
-  minHeight: Dp = 46.dp,
+  minHeight: Dp = DEFAULT_MIN_SECTION_ITEM_HEIGHT,
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING),
   disabled: Boolean = false,
   content: (@Composable RowScope.() -> Unit)
@@ -181,7 +175,7 @@ fun SectionItemViewSpaceBetween(
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (click == null || disabled) modifier.padding(padding) else modifier
+    if (click == null || disabled) modifier.padding(padding).padding(vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL) else modifier
       .combinedClickable(onClick = click, onLongClick = onLongClick).padding(padding)
       .onRightClick { onLongClick?.invoke() },
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -254,9 +248,9 @@ fun SectionDividerSpaced(maxTopPadding: Boolean = false, maxBottomPadding: Boole
   Divider(
     Modifier.padding(
       start = DEFAULT_PADDING_HALF,
-      top = if (maxTopPadding) 37.dp else 27.dp,
+      top = if (maxTopPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp,
       end = DEFAULT_PADDING_HALF,
-      bottom = if (maxBottomPadding) 37.dp else 27.dp)
+      bottom = if (maxBottomPadding) DEFAULT_PADDING + 18.dp else DEFAULT_PADDING + 2.dp)
   )
 }
 

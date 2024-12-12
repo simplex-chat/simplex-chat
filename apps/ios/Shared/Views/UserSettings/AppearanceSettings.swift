@@ -33,6 +33,8 @@ struct AppearanceSettings: View {
     }()
     @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.DARK.themeName
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
+    @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var chatItemRoundness = defaultChatItemRoundness
+    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var chatItemTail = true
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -177,6 +179,14 @@ struct AppearanceSettings: View {
                     } else if currentThemeDefault.get() != DefaultTheme.LIGHT.themeName {
                         ThemeManager.applyTheme(systemDarkThemeDefault.get())
                     }
+                }
+
+                Section(header: Text("Message shape").foregroundColor(theme.colors.secondary)) {
+                    HStack {
+                        Text("Corner")
+                        Slider(value: $chatItemRoundness, in: 0...1, step: 0.05)
+                    }
+                    Toggle("Tail", isOn: $chatItemTail)
                 }
 
                 Section(header: Text("Profile images").foregroundColor(theme.colors.secondary)) {
@@ -357,21 +367,22 @@ struct ChatThemePreview: View {
                 let alice = ChatItem.getSample(1, CIDirection.directRcv, Date.now, NSLocalizedString("Good afternoon!", comment: "message preview"))
                 let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text, chatDir: alice.chatDir))
                 HStack {
-                    ChatItemView(chat: Chat.sampleData, chatItem: alice, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped())
+                    ChatItemView(chat: Chat.sampleData, chatItem: alice)
+                        .modifier(ChatItemClipped(alice, tailVisible: true))
                     Spacer()
                 }
                 HStack {
                     Spacer()
-                    ChatItemView(chat: Chat.sampleData, chatItem: bob, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped())
+                    ChatItemView(chat: Chat.sampleData, chatItem: bob)
+                        .modifier(ChatItemClipped(bob, tailVisible: true))
                         .frame(alignment: .trailing)
                 }
             } else {
                 Rectangle().fill(.clear)
             }
         }
-        .padding(10)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
 
         if let wallpaperType, let wallpaperImage = wallpaperType.image, let backgroundColor, let tintColor {
@@ -572,11 +583,14 @@ struct CustomizeThemeView: View {
                 }
             }
 
-            ImportExportThemeSection(perChat: nil, perUser: nil, save: { theme in
+            ImportExportThemeSection(showFileImporter: $showFileImporter, perChat: nil, perUser: nil)
+        }
+        .modifier(
+            ThemeImporter(isPresented: $showFileImporter) { theme in
                 ThemeManager.saveAndApplyThemeOverrides(theme)
                 saveThemeToDatabase(nil)
-            })
-        }
+            }
+        )
         /// When changing app theme, user overrides are hidden. User overrides will be returned back after closing Appearance screen, see ThemeDestinationPicker()
         .interactiveDismissDisabled(true)
     }
@@ -584,10 +598,9 @@ struct CustomizeThemeView: View {
 
 struct ImportExportThemeSection: View {
     @EnvironmentObject var theme: AppTheme
+    @Binding var showFileImporter: Bool
     var perChat: ThemeModeOverride?
     var perUser: ThemeModeOverrides?
-    var save: (ThemeOverrides) -> Void
-    @State private var showFileImporter = false
 
     var body: some View {
         Section {
@@ -615,39 +628,47 @@ struct ImportExportThemeSection: View {
             } label: {
                 Text("Import theme").foregroundColor(theme.colors.primary)
             }
-            .fileImporter(
-                isPresented: $showFileImporter,
-                allowedContentTypes: [.data/*.plainText*/],
-                allowsMultipleSelection: false
-            ) { result in
-                if case let .success(files) = result, let fileURL = files.first {
-                    do {
-                        var fileSize: Int? = nil
-                        if fileURL.startAccessingSecurityScopedResource() {
-                            let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
-                            fileSize = resourceValues.fileSize
-                        }
-                        if let fileSize = fileSize,
-                           // Same as Android/desktop
-                           fileSize <= 5_500_000 {
-                            if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML("themeId: \(UUID().uuidString)\n" + string) {
-                                save(theme)
-                                logger.error("Saved theme from file")
-                            } else {
-                                logger.error("Error decoding theme file")
-                            }
-                            fileURL.stopAccessingSecurityScopedResource()
-                        } else {
-                            fileURL.stopAccessingSecurityScopedResource()
-                            let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: 5_500_000, countStyle: .binary)
-                            AlertManager.shared.showAlertMsg(
-                                title: "Large file!",
-                                message: "Currently maximum supported file size is \(prettyMaxFileSize)."
-                            )
-                        }
-                    } catch {
-                        logger.error("Appearance fileImporter error \(error.localizedDescription)")
+        }
+    }
+}
+
+struct ThemeImporter: ViewModifier {
+    @Binding var isPresented: Bool
+    var save: (ThemeOverrides) -> Void
+
+    func body(content: Content) -> some View {
+        content.fileImporter(
+            isPresented: $isPresented,
+            allowedContentTypes: [.data/*.plainText*/],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                do {
+                    var fileSize: Int? = nil
+                    if fileURL.startAccessingSecurityScopedResource() {
+                        let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
+                        fileSize = resourceValues.fileSize
                     }
+                    if let fileSize = fileSize,
+                       // Same as Android/desktop
+                       fileSize <= 5_500_000 {
+                        if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML("themeId: \(UUID().uuidString)\n" + string) {
+                            save(theme)
+                            logger.error("Saved theme from file")
+                        } else {
+                            logger.error("Error decoding theme file")
+                        }
+                        fileURL.stopAccessingSecurityScopedResource()
+                    } else {
+                        fileURL.stopAccessingSecurityScopedResource()
+                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: 5_500_000, countStyle: .binary)
+                        AlertManager.shared.showAlertMsg(
+                            title: "Large file!",
+                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
+                        )
+                    }
+                } catch {
+                    logger.error("Appearance fileImporter error \(error.localizedDescription)")
                 }
             }
         }
@@ -797,7 +818,7 @@ struct ThemeDestinationPicker: View {
     @Binding var customizeThemeIsOpen: Bool
 
     var body: some View {
-        let values = [(nil, "All profiles")] + m.users.filter { $0.user.activeUser }.map { ($0.user.userId, $0.user.chatViewName)}
+        let values = [(nil, NSLocalizedString("All profiles", comment: "profile dropdown"))] + m.users.filter { $0.user.activeUser }.map { ($0.user.userId, $0.user.chatViewName)}
 
         if values.contains(where: { (userId, text) in userId == themeUserDestination?.0 }) {
             Picker("Apply to", selection: $themeUserDest) {
