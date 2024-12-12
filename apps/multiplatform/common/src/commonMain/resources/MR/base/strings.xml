@@ -907,6 +907,7 @@
   <string name="show_dev_options">Show:</string>
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
+  <string name="debug_logs">Enable logs</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
   <string name="developer_options_section">Developer options</string>
   <string name="show_internal_errors">Show internal errors</string>
@@ -1338,6 +1339,7 @@
   <string name="chat_database_exported_migrate">You may migrate the exported database.</string>
   <string name="chat_database_exported_not_all_files">Some file(s) were not exported</string>
   <string name="chat_database_exported_continue">Continue</string>
+  <string name="error_saving_database">Error saving database</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>
