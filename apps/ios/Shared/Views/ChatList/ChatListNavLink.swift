@@ -565,6 +565,7 @@ struct ChatListNavLink: View {
 
 struct ChatListTag: View {
     var chat: Chat
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
     
@@ -594,6 +595,10 @@ struct ChatListTag: View {
                             if selected {
                                 untagChat(tagId)
                             } else {
+                                // TODO: Temporary until API is final.
+                                chatTagsIds.forEach { t in
+                                    untagChat(t)
+                                }
                                 tagChat(tagId)
                             }
                         }
@@ -625,6 +630,7 @@ struct ChatListTag: View {
                         .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
                     }
                     updateChatTags(chat: chat, chatTags: chatTags)
+                    dismiss()
                 }
             } catch let error {
                 showAlert(
@@ -653,6 +659,7 @@ struct ChatListTag: View {
                         chatTagsModel.selectedTag = nil
                     }
                     updateChatTags(chat: chat, chatTags: chatTags)
+                    dismiss()
                 }
             } catch let error {
                 showAlert(
@@ -726,7 +733,7 @@ struct EmojiPickerView: UIViewControllerRepresentable {
 
 struct CreateChatListTag: View {
     var chat: Chat
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
     @State private var emoji: Emoji? = nil
@@ -784,7 +791,7 @@ struct CreateChatListTag: View {
                         group.chatTags = chatTags
                         m.updateGroup(group)
                     }
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 }
             } catch let error {
                 showAlert(
