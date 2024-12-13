@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
+import ElegantEmojiPicker
 
 typealias DynamicSizes = (
     rowHeight: CGFloat,
@@ -674,36 +675,52 @@ struct ChatListTag: View {
     }
 }
 
-struct SingleEmojiTextField: View {
-    @Binding var emoji: String
-    @State var lastEmoji: Character? = nil
-    var placeholder: String
+struct EmojiPickerView: UIViewControllerRepresentable {
+    @Binding var selectedEmoji: Emoji?
+    @Binding var showingPicker: Bool
+    @Environment(\.presentationMode) var presentationMode
 
-    var body: some View {
-        TextField(placeholder, text: $emoji)
-            .keyboardType(.default)
-            .multilineTextAlignment(.center)
-            .frame(width: 40)
-            .onChange(of: emoji) { _ in
-                print("changes: \(emoji) \(String(describing: lastEmoji))")
-                var newEmoji = ""
-                
-                if emoji.count > 1 {
-                    let uniqueChars = Set(emoji)
-                    
-                    if uniqueChars.count == 1, let firstChar = emoji.first, isEmoji(firstChar) {
-                        newEmoji = String(firstChar)
-                    } else if let firstValidEmoji = emoji.first(where: { isEmoji($0) && $0 != lastEmoji }) {
-                        newEmoji = String(firstValidEmoji)
-                    }
-                } else if let firstChar = emoji.first, isEmoji(firstChar) {
-                    newEmoji = String(firstChar)
-                }
-                
-                emoji = newEmoji
-                lastEmoji = newEmoji.first
+    class Coordinator: NSObject, ElegantEmojiPickerDelegate, UIAdaptivePresentationControllerDelegate {
+        var parent: EmojiPickerView
+        
+        init(parent: EmojiPickerView) {
+            self.parent = parent
+        }
+        
+        func emojiPicker(_ picker: ElegantEmojiPicker, didSelectEmoji emoji: Emoji?) {
+            parent.selectedEmoji = emoji
+            parent.showingPicker = false
+            picker.dismiss(animated: true)
+        }
+        
+        // Called when the picker is dismissed manually (without selection)
+        func presentationControllerWillDismiss(_ presentationController: UIPresentationController) {
+            parent.showingPicker = false
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        return Coordinator(parent: self)
+    }
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        let config = ElegantConfiguration(showRandom: false, showReset: false, defaultSkinTone: .Light)
+        let picker = ElegantEmojiPicker(delegate: context.coordinator, configuration: config)
+        
+        picker.presentationController?.delegate = context.coordinator
+
+        let viewController = UIViewController()
+        DispatchQueue.main.async {
+            if let topVC = getTopViewController() {
+                topVC.present(picker, animated: true)
             }
-            .opacity(emoji.isEmpty ? 0.4 : 1)
+        }
+        
+        return viewController
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        // No need to update the controller after creation
     }
 }
 
@@ -712,13 +729,26 @@ struct CreateChatListTag: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
-    @State private var emoji: String = ""
+    @State private var emoji: Emoji? = nil
     @State private var name: String = ""
-    
+    @State private var isPickerPresented = false  // Boolean to show picker sheet
+
     var body: some View {
         List {
             HStack {
-                SingleEmojiTextField(emoji: $emoji, placeholder: "🙂")
+                Button {
+                    isPickerPresented.toggle()
+                } label: {
+                    if let emoji {
+                        Text(emoji.emoji)
+                    } else {
+                        Image(systemName: "face.smiling")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 18, height: 18)
+                            .foregroundColor(.secondary)
+                    }
+                }
                 TextField("List name...", text: $name)
             }
 
@@ -727,7 +757,10 @@ struct CreateChatListTag: View {
             } label: {
                 Text("Create list")
             }
-            .disabled(emoji.isEmpty || name.isEmpty)
+            .disabled(name.isEmpty)
+        }
+        if isPickerPresented {
+            EmojiPickerView(selectedEmoji: $emoji, showingPicker: $isPickerPresented)
         }
     }
     
@@ -737,7 +770,7 @@ struct CreateChatListTag: View {
                 let (userTags, chatTags) = try await apiCreateChatTag(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
-                    tag: ChatTagData(emoji: emoji, text: name)
+                    tag: ChatTagData(emoji: emoji?.emoji ?? "😂", text: name)
                 )
                 
                 await MainActor.run {
