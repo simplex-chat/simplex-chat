@@ -2237,4 +2237,6 @@
     <string name="sync_connection_question">修复连接？</string>
     <string name="encryption_renegotiation_in_progress">正进行加密重协商。</string>
     <string name="sync_connection_desc">连接需要加密重协商。</string>
+    <string name="error_saving_database">保存数据库出错</string>
+    <string name="debug_logs">启用日志</string>
 </resources>
