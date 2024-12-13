@@ -2325,4 +2325,6 @@
     <string name="encryption_renegotiation_in_progress">Die Neuverhandlung der Verschlüsselung läuft.</string>
     <string name="sync_connection_confirm">Reparieren</string>
     <string name="sync_connection_question">Verbindung reparieren?</string>
+    <string name="debug_logs">Log-Daten aktivieren</string>
+    <string name="error_saving_database">Fehler beim Speichern der Datenbank</string>
 </resources>
