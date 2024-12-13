@@ -2246,4 +2246,10 @@
     <string name="display_name_requested_to_connect">gevraagd om verbinding te maken</string>
     <string name="onboarding_network_about_operators">Over operatoren</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">Simplex-chat en flux hebben een overeenkomst gemaakt om door flux geëxploiteerde servers in de app op te nemen.</string>
+    <string name="debug_logs">Logs inschakelen</string>
+    <string name="error_saving_database">Fout bij het opslaan van de database</string>
+    <string name="sync_connection_desc">Verbinding vereist heronderhandeling over encryptie.</string>
+    <string name="encryption_renegotiation_in_progress">Er wordt opnieuw onderhandeld over de encryptie.</string>
+    <string name="sync_connection_question">Verbinding herstellen?</string>
+    <string name="sync_connection_confirm">Herstel</string>
 </resources>
