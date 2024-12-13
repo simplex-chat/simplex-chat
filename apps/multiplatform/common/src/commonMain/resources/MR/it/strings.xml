@@ -2253,4 +2253,6 @@
     <string name="sync_connection_confirm">Correggi</string>
     <string name="sync_connection_question">Correggere la connessione?</string>
     <string name="encryption_renegotiation_in_progress">Rinegoziazione della crittografia in corso.</string>
+    <string name="debug_logs">Attiva i log</string>
+    <string name="error_saving_database">Errore di salvataggio del database</string>
 </resources>
