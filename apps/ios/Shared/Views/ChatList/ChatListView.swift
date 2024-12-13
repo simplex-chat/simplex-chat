@@ -754,7 +754,8 @@ struct ChatTagsView: View {
     }
     
     @ViewBuilder private func collapsedTagsFilterView(_ filters: [ChatTagFilter]) -> some View {
-        let presetFilterIsSelected = filters.contains(where: { $0 ==  chatTagsModel.selectedTag })
+        let selectedPresetTag = filters.first(where: { $0 == chatTagsModel.selectedTag })
+        let presetFilterIsSelected = selectedPresetTag != nil || chatTagsModel.selectedTag == nil
         let color: Color = presetFilterIsSelected ? .accentColor : .secondary
         Menu {
             ForEach(filters, id: \.id) { tag in
@@ -768,7 +769,10 @@ struct ChatTagsView: View {
                 }
             }
         } label: {
-            Image(systemName: "list.bullet")
+            Image(systemName: selectedPresetTag?.getIcon(active: true) ?? "list.bullet")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 22, height: 20)
                 .foregroundColor(color)
         }
     }
