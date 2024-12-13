@@ -5425,8 +5425,8 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Advanced settings</source>
         <target state="translated">Configurações avançadas</target>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve" approved="no">
-        <source>All data is private to your device.</source>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve" approved="no">
+        <source>All data is kept private on your device.</source>
         <target state="translated">Toda informação é privada em seu dispositivo.</target>
       </trans-unit>
       <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">

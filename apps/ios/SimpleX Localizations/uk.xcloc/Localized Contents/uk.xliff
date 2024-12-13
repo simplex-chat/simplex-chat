@@ -756,8 +756,8 @@
         <target>Всі дані стираються при введенні.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
-        <source>All data is private to your device.</source>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve">
+        <source>All data is kept private on your device.</source>
         <target>Всі дані є приватними для вашого пристрою.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
