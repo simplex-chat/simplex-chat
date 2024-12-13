@@ -674,6 +674,39 @@ struct ChatListTag: View {
     }
 }
 
+struct SingleEmojiTextField: View {
+    @Binding var emoji: String
+    @State var lastEmoji: Character? = nil
+    var placeholder: String
+
+    var body: some View {
+        TextField(placeholder, text: $emoji)
+            .keyboardType(.default)
+            .multilineTextAlignment(.center)
+            .frame(width: 40)
+            .onChange(of: emoji) { _ in
+                print("changes: \(emoji) \(String(describing: lastEmoji))")
+                var newEmoji = ""
+                
+                if emoji.count > 1 {
+                    let uniqueChars = Set(emoji)
+                    
+                    if uniqueChars.count == 1, let firstChar = emoji.first, isEmoji(firstChar) {
+                        newEmoji = String(firstChar)
+                    } else if let firstValidEmoji = emoji.first(where: { isEmoji($0) && $0 != lastEmoji }) {
+                        newEmoji = String(firstValidEmoji)
+                    }
+                } else if let firstChar = emoji.first, isEmoji(firstChar) {
+                    newEmoji = String(firstChar)
+                }
+                
+                emoji = newEmoji
+                lastEmoji = newEmoji.first
+            }
+            .opacity(emoji.isEmpty ? 0.4 : 1)
+    }
+}
+
 struct CreateChatListTag: View {
     var chat: Chat
     @Environment(\.presentationMode) var presentationMode
@@ -685,27 +718,7 @@ struct CreateChatListTag: View {
     var body: some View {
         List {
             HStack {
-                Menu {
-                    let emojis = allEmojis()
-                    ForEach(emojis, id: \.self) { emj in
-                        Button(action: {
-                            emoji = emj
-                        }) {
-                            Text(emj)
-                                .font(.largeTitle)
-                        }
-                    }
-                } label: {
-                    if emoji.isEmpty {
-                        Image(systemName: "face.smiling")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 18, height: 18)
-                            .foregroundColor(.secondary)
-                    } else {
-                        Text(emoji)
-                    }
-                }
+                SingleEmojiTextField(emoji: $emoji, placeholder: "🙂")
                 TextField("List name...", text: $name)
             }
 
