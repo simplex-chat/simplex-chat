@@ -1455,7 +1455,7 @@
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобільний <b>%s</b> був відключений]]></string>
     <string name="waiting_for_desktop">Очікування робочого столу…</string>
     <string name="v5_4_better_groups_descr">Швидше приєднуйтесь та надійшовні повідомлення.</string>
-    <string name="linked_mobiles">Пов\'язані мобільні</string>
+    <string name="linked_mobiles">Під’єднані мобільні</string>
     <string name="desktop_device">Робочий стіл</string>
     <string name="connected_to_desktop">Підключено до комп\'ютера</string>
     <string name="this_device_name">Назва цього пристрою</string>
@@ -2249,4 +2249,6 @@
     <string name="encryption_renegotiation_in_progress">Виконується повторне узгодження шифрування.</string>
     <string name="sync_connection_confirm">Виправити</string>
     <string name="sync_connection_question">Виправити підключення?</string>
+    <string name="debug_logs">Увімкнути журнали</string>
+    <string name="error_saving_database">Помилка збереження бази даних</string>
 </resources>
