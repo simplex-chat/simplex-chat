@@ -687,6 +687,7 @@ enum ChatTagFilter: Identifiable, Equatable {
 struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
+    @State private var showChatListTagCreate = false
             
     var body: some View {
         HStack {
@@ -698,7 +699,6 @@ struct ChatTagsView: View {
             } else {
                 collapsedTagsFilterView(enabledPresetFilters)
             }
-                
             ForEach(chatTagsModel.tags, id: \.id) { tag in
                 let current = chatTagsModel.selectedTag == tag
                 let color: Color? = current ? .accentColor : nil
@@ -720,14 +720,37 @@ struct ChatTagsView: View {
                     }
                 }
             }
+            
+            if chatTagsModel.tags.isEmpty {
+                Button {
+                    showChatListTagCreate = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
         }.task {
             getChatTags()
         }
         .onChange(of: chatModel.currentUser?.userId) { _ in
             getChatTags()
         }
+        .sheet(isPresented: $showChatListTagCreate) {
+            if #available(iOS 16.0, *) {
+                createChatListTagView()
+                    .presentationDetents([.fraction(0.3)])
+            } else {
+                createChatListTagView()
+            }
+        }
     }
     
+    @ViewBuilder private func createChatListTagView() -> some View {
+        NavigationView {
+            CreateChatListTag()
+                .modifier(ThemedBackground(grouped: true))
+        }
+    }
     
     @ViewBuilder private func expandedPresetTagsFiltersView(_ filters: [ChatTagFilter]) -> some View {
         ForEach(filters, id: \.id) { tag in

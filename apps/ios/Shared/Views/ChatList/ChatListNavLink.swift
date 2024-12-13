@@ -732,72 +732,78 @@ struct EmojiPickerView: UIViewControllerRepresentable {
 }
 
 struct CreateChatListTag: View {
-    var chat: Chat
+    var chat: Chat?
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
     @State private var emoji: Emoji? = nil
     @State private var name: String = ""
-    @State private var isPickerPresented = false  // Boolean to show picker sheet
+    @State private var isPickerPresented = false
 
     var body: some View {
-        List {
-            HStack {
-                Button {
-                    isPickerPresented.toggle()
-                } label: {
-                    if let emoji {
-                        Text(emoji.emoji)
-                    } else {
-                        Image(systemName: "face.smiling")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 18, height: 18)
-                            .foregroundColor(.secondary)
+        VStack {
+            List {
+                HStack {
+                    Button {
+                        isPickerPresented = true
+                    } label: {
+                        if let emoji {
+                            Text(emoji.emoji)
+                        } else {
+                            Image(systemName: "face.smiling")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 18, height: 18)
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    TextField("List name...", text: $name)
                 }
-                TextField("List name...", text: $name)
+                
+                Button {
+                    createChatTag()
+                } label: {
+                    Text("Create list")
+                }
+                .disabled(name.isEmpty)
             }
-
-            Button {
-                createChatTag()
-            } label: {
-                Text("Create list")
+            .listStyle(.insetGrouped)
+            if isPickerPresented {
+                EmojiPickerView(selectedEmoji: $emoji, showingPicker: $isPickerPresented)
             }
-            .disabled(name.isEmpty)
-        }
-        if isPickerPresented {
-            EmojiPickerView(selectedEmoji: $emoji, showingPicker: $isPickerPresented)
         }
     }
     
     private func createChatTag() {
-        Task {
-            do {
-                let (userTags, chatTags) = try await apiCreateChatTag(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    tag: ChatTagData(emoji: emoji?.emoji ?? "😂", text: name)
-                )
-                
-                await MainActor.run {
-                    chatTagsModel.tags = userTags.map {
-                        .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
+        // TODO: Allow creating tag without chat
+        if let chat = chat {
+            Task {
+                do {
+                    let (userTags, chatTags) = try await apiCreateChatTag(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        tag: ChatTagData(emoji: emoji?.emoji ?? "😂", text: name)
+                    )
+                    
+                    await MainActor.run {
+                        chatTagsModel.tags = userTags.map {
+                            .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
+                        }
+                        if var contact = chat.chatInfo.contact {
+                            contact.chatTags = chatTags
+                            m.updateContact(contact)
+                        } else if var group = chat.chatInfo.groupInfo {
+                            group.chatTags = chatTags
+                            m.updateGroup(group)
+                        }
+                        dismiss()
                     }
-                    if var contact = chat.chatInfo.contact {
-                        contact.chatTags = chatTags
-                        m.updateContact(contact)
-                    } else if var group = chat.chatInfo.groupInfo {
-                        group.chatTags = chatTags
-                        m.updateGroup(group)
-                    }
-                    dismiss()
+                } catch let error {
+                    showAlert(
+                        NSLocalizedString("Error creating list", comment: "alert title"),
+                        message: responseError(error)
+                    )
                 }
-            } catch let error {
-                showAlert(
-                    NSLocalizedString("Error creating list", comment: "alert title"),
-                    message: responseError(error)
-                )
             }
         }
     }
