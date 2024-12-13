@@ -4,7 +4,7 @@
   "main": "src/index.js",
   "scripts": {
     "install-tools": "npm install -g node-gyp",
-    "configure": "node-gyp configure",
+    "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
     "rebuild": "node-gyp rebuild",
     "build": "node-gyp build",
     "run": "node src/index.js",
