@@ -836,6 +836,7 @@ struct ChatTagsView: View {
                     self.chatTagsModel.tags = chatTags.map {
                         .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
                     }
+                    self.chatTagsModel.selectedTag = ChatTagsModel.defaultTag
                 }
             } catch let error {
                 AlertManager.shared.showAlertMsg(title: "Error", message: "\(responseError(error))")
