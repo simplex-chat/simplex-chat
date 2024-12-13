@@ -656,7 +656,7 @@ struct ChatListTag: View {
                     }
                     if case let .chatTag(_, _, tagId) = chatTagsModel.selectedTag,
                        !userTags.contains(where: { $0.chatTagId == tagId }) {
-                        chatTagsModel.selectedTag = nil
+                        chatTagsModel.selectedTag = ChatTagsModel.defaultTag
                     }
                     updateChatTags(chat: chat, chatTags: chatTags)
                     dismiss()

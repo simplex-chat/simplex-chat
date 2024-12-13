@@ -103,8 +103,10 @@ class ItemsModel: ObservableObject {
 class ChatTagsModel: ObservableObject {
     static let shared = ChatTagsModel()
     
+    static let defaultTag: ChatTagFilter = .presetTag(icon: "list.bullet", activeIcon: "list.bullet", text: NSLocalizedString("All", comment: "preset chat list"), enabled: true, filter: { c in true })
+    
     let presetTags: [ChatTagFilter] = [
-        .presetTag(icon: "list.bullet", activeIcon: "list.bullet", text: NSLocalizedString("All", comment: "preset chat list"), enabled: true, filter: { c in true }),
+        defaultTag,
         .presetTag(icon: "star", activeIcon: "star.fill", text: NSLocalizedString("Favorite", comment: "preset chat list"), enabled: false, filter: { c in c.chatSettings?.favorite ?? false }),
         .presetTag(icon: "person", activeIcon: "person.fill", text: NSLocalizedString("Contacts", comment: "preset chat list"), enabled: false, filter: { if case .direct = $0 { true } else { false }}),
         .presetTag(icon: "person.2", activeIcon: "person.2.fill", text: NSLocalizedString("Groups", comment: "preset chat list"), enabled: false, filter: { filterGroupChat($0) }),
@@ -112,7 +114,7 @@ class ChatTagsModel: ObservableObject {
     ]
     
     @Published var tags: [ChatTagFilter] = []
-    @Published var selectedTag: ChatTagFilter?
+    @Published var selectedTag: ChatTagFilter = defaultTag
 }
 
 private func filterBusinessChat(_ cInfo: ChatInfo) -> Bool {

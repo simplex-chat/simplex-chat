@@ -448,11 +448,7 @@ struct ChatListView: View {
         }
         
         func filterByTag(_ chat: Chat) -> Bool {
-            if let tag = chatTagsModel.selectedTag {
-                return tag.filter(chat.chatInfo)
-            } else {
-                return true
-            }
+            chatTagsModel.selectedTag.filter(chat.chatInfo)
         }
 
         func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
@@ -802,7 +798,7 @@ struct ChatTagsView: View {
     
     private func setSelectedTag(_ tag: ChatTagFilter) {
         if (chatTagsModel.selectedTag == tag) {
-            chatTagsModel.selectedTag = nil
+            chatTagsModel.selectedTag = ChatTagsModel.defaultTag
         } else {
             chatTagsModel.selectedTag = tag
         }
