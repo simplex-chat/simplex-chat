@@ -1414,4 +1414,25 @@
     <string name="onboarding_network_about_operators">Giới thiệu về các nhà cung cấp</string>
     <string name="add_your_team_members_to_conversations">Thêm các thành viên nhóm của bạn vào các cuộc trò chuyện.</string>
     <string name="business_address">Địa chỉ doanh nghiệp</string>
+    <string name="error_saving_database">Lỗi lưu cơ sở dữ liệu</string>
+    <string name="direct_messages_are_prohibited_in_chat">Tin nhắn trực tiếp giữa các thành viên bị cấm trong cuộc trò chuyện này.</string>
+    <string name="for_chat_profile">Dành cho hồ sơ trò chuyện %s:</string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">Kiểm tra tin nhắn mỗi 10 phút.</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">Ví dụ, nếu liên hệ của bạn nhận tin nhắn thông qua một máy chủ SimpleX Chat, ứng dụng của bạn sẽ gửi chúng qua một máy chủ Flux.</string>
+    <string name="how_it_helps_privacy">Cách nó cải thiện sự riêng tư</string>
+    <string name="invite_to_chat_button">Mời để trò chuyện</string>
+    <string name="button_leave_chat">Rời cuộc trò chuyện</string>
+    <string name="operator_use_for_messages_private_routing">Cho định tuyến riêng tư</string>
+    <string name="v6_2_network_decentralization_enable_flux_reason">để bảo mật siêu dữ liệu tốt hơn.</string>
+    <string name="v6_2_improved_chat_navigation">Đã cải thiện điều hướng trò chuyện</string>
+    <string name="button_delete_chat">Xóa cuộc trò chuyện</string>
+    <string name="for_social_media">Cho mạng xã hội</string>
+    <string name="leave_chat_question">Rời cuộc trò chuyện?</string>
+    <string name="sync_connection_desc">Kết nối yêu cầu thiết lập lại mã hóa.</string>
+    <string name="encryption_renegotiation_in_progress">Đang trong quá trình thiết lập lại mã hóa.</string>
+    <string name="sync_connection_confirm">Sửa</string>
+    <string name="sync_connection_question">Sửa kết nối?</string>
+    <string name="delete_chat_question">Xóa cuộc trò chuyện?</string>
+    <string name="direct_messages_are_prohibited">Tin nhắn trực tiếp giữa các thành viên bị cấm.</string>
+    <string name="debug_logs">Bật logs</string>
 </resources>
