@@ -3,17 +3,29 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
+    "install-tools": "npm install -g node-gyp",
+    "configure": "node-gyp configure",
+    "rebuild": "node-gyp rebuild",
+    "build": "node-gyp build",
+    "run": "node src/index.js",
+    "build-run": "node-gyp build && node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/simplex-chat/simplexjs.git"
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
   },
-  "author": "SimpleX team",
-  "license": "ISC",
+  "keywords": [
+    "messenger",
+    "chat",
+    "privacy",
+    "security"
+  ],
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/simplex-chat/simplexjs/issues"
+    "url": "https://github.com/simplex-chat/simplex-chat/issues"
   },
-  "homepage": "https://github.com/simplex-chat/simplexjs#readme",
+  "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-nodejs#readme",
   "description": ""
 }

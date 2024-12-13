@@ -14,7 +14,7 @@ else
 fi
 
 LIB_EXT=dylib
-LIB=libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT
+LIB=libsimplex.$LIB_EXT
 GHC_LIBS_DIR=$(ghc --print-libdir)
 
 BUILD_DIR=dist-newstyle/build/$ARCH-*/ghc-*/simplex-chat-*
@@ -27,6 +27,7 @@ rm -rf $BUILD_DIR
 cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library'
 
 cd $BUILD_DIR/build
+mv libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT libsimplex.dylib 2> /dev/null || true
 mkdir deps 2> /dev/null || true
 
 # It's not included by default for some reason. Compiled lib tries to find system one but it's not always available
@@ -95,7 +96,7 @@ rm -rf apps/multiplatform/desktop/build/cmake
 
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp -r $BUILD_DIR/build/deps/* apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp $BUILD_DIR/build/$LIB apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
 cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 

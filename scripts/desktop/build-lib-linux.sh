@@ -24,18 +24,19 @@ exports=( $(sed 's/foreign export ccall "chat_migrate_init_key"//' src/Simplex/C
 for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc -l); if [ $count -ne 1 ]; then echo Wrong exports in libsimplex.dll.def. Add \"$elem\" to that file; exit 1; fi ; done
 for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
 
-rm -rf $BUILD_DIR
-cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -flink-rts -threaded' --constraint 'simplexmq +client_library'
+#rm -rf $BUILD_DIR
+cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -optl-Wl,-soname,libsimplex.so -flink-rts -threaded' --constraint 'simplexmq +client_library'
 cd $BUILD_DIR/build
-#patchelf --add-needed libHSrts_thr-ghc${GHC_VERSION}.so libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
-#patchelf --add-rpath '$ORIGIN' libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
+mv libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so libsimplex.so 2> /dev/null || true
+#patchelf --add-needed libHSrts_thr-ghc${GHC_VERSION}.so libsimplex.so
+#patchelf --add-rpath '$ORIGIN' libsimplex.so
 
 # GitHub's Ubuntu 20.04 runner started to set libffi.so.7 as a dependency while Ubuntu 20.04 on user's devices may not have it
 # but libffi.so.8 is shipped as an external library with other libs
-patchelf --replace-needed "libffi.so.7" "libffi.so.8" libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
+patchelf --replace-needed "libffi.so.7" "libffi.so.8" libsimplex.so
 
 mkdir deps 2> /dev/null || true
-ldd libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so | grep "ghc" | cut -d' ' -f 3 | xargs -I {} cp {} ./deps/
+ldd libsimplex.so | grep "ghc" | cut -d' ' -f 3 | xargs -I {} cp {} ./deps/
 
 cd -
 
@@ -44,7 +45,7 @@ rm -rf apps/multiplatform/desktop/build/cmake
 
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp -r $BUILD_DIR/build/deps/* apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp $BUILD_DIR/build/libsimplex.so apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 scripts/desktop/prepare-vlc-linux.sh
 
 links_dir=apps/multiplatform/build/links
