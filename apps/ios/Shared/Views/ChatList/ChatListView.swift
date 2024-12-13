@@ -414,9 +414,9 @@ struct ChatListView: View {
                 let cInfo = chat.chatInfo
                 switch cInfo {
                 case let .direct(contact):
-                    return filterByTag(chat) && !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
+                    return !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
                         s == ""
-                        ? filtered(chat)
+                        ? filterByTag(chat) && filtered(chat)
                         : (viewNameContains(cInfo, s) ||
                            contact.profile.displayName.localizedLowercase.contains(s) ||
                            contact.fullName.localizedLowercase.contains(s))
@@ -424,13 +424,13 @@ struct ChatListView: View {
                 case let .group(gInfo):
                     return s == ""
                     ? filterByTag(chat) && (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
-                    : filterByTag(chat) && viewNameContains(cInfo, s)
+                    : viewNameContains(cInfo, s)
                 case .local:
-                    return filterByTag(chat) && (s == "" || viewNameContains(cInfo, s))
+                    return s == "" ? filterByTag(chat) : viewNameContains(cInfo, s)
                 case .contactRequest:
-                    return filterByTag(chat) && (s == "" || viewNameContains(cInfo, s))
+                    return s == "" ? filterByTag(chat) : viewNameContains(cInfo, s)
                 case let .contactConnection(conn):
-                    return filterByTag(chat) && (s != "" && conn.localAlias.localizedLowercase.contains(s))
+                    return s == "" ? filterByTag(chat) : conn.localAlias.localizedLowercase.contains(s)
                 case .invalidJSON:
                     return false
                 }
@@ -751,7 +751,7 @@ struct ChatTagsView: View {
     
     @ViewBuilder private func collapsedTagsFilterView(_ filters: [ChatTagFilter]) -> some View {
         let selectedPresetTag = filters.first(where: { $0 == chatTagsModel.selectedTag })
-        let presetFilterIsSelected = selectedPresetTag != nil || chatTagsModel.selectedTag == nil
+        let presetFilterIsSelected = selectedPresetTag != nil
         let color: Color = presetFilterIsSelected ? .accentColor : .secondary
         Menu {
             ForEach(filters, id: \.id) { tag in
