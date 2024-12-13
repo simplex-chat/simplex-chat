@@ -84,7 +84,7 @@ actual class FileChooserLauncher actual constructor() {
     }
     if (res == null) {
       onResult(null)
-    } else if (!res.exists()) {
+    } else if (desktopPlatform.isMac() || !res.exists()) { // mac has an alert confirmation if the file exists
       onResult(res.toURI())
     } else {
       showSaveRenameFileAlert(res, onResult)
