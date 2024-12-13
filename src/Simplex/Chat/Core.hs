@@ -23,7 +23,7 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
-import Simplex.Chat.Types
+import Simplex.Chat.Types (User (..), Profile (..), NewUser (..), LocalProfile (..))
 import Simplex.Chat.View (serializeChatResponse)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction, MigrationConfirmation (..))
 import System.Exit (exitFailure)
@@ -45,9 +45,9 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       putStrLn $ "Error opening database: " <> show e
       exitFailure
     run db@ChatDatabase {chatStore} = do
-      u_ <- getSelectActiveUser chatStore
+      u_ <- getSelectActiveUser chatStore opts
       cc <- newChatController db u_ cfg opts False
-      u <- maybe (createActiveUser cc) pure u_
+      u <- maybe (createActiveUser cc opts) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
       runSimplexChat opts u cc chat
 
@@ -65,12 +65,16 @@ sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack 
 sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
 
-getSelectActiveUser :: SQLiteStore -> IO (Maybe User)
-getSelectActiveUser st = do
+getSelectActiveUser :: SQLiteStore -> ChatOpts -> IO (Maybe User)
+getSelectActiveUser st ChatOpts {userDisplayName} = do
   users <- withTransaction st getUsers
-  case find activeUser users of
-    Just u -> pure $ Just u
-    Nothing -> selectUser users
+  case userDisplayName of
+    Just name ->
+      forM (find (\User {localDisplayName} -> localDisplayName == name) users) $ \u ->
+        if activeUser u then pure u else withTransaction st (`setActiveUser` u)
+    Nothing -> case find activeUser users of
+      Just u -> pure $ Just u
+      Nothing -> selectUser users
   where
     selectUser :: [User] -> IO (Maybe User)
     selectUser = \case
@@ -91,8 +95,8 @@ getSelectActiveUser st = do
                     let user = users !! (n - 1)
                      in Just <$> withTransaction st (`setActiveUser` user)
 
-createActiveUser :: ChatController -> IO User
-createActiveUser cc = do
+createActiveUser :: ChatController -> ChatOpts -> IO User
+createActiveUser cc ChatOpts {userDisplayName = name} = do
   putStrLn
     "No user profiles found, it will be created now.\n\
     \Please choose your display name.\n\
@@ -101,7 +105,9 @@ createActiveUser cc = do
   loop
   where
     loop = do
-      displayName <- T.pack <$> getWithPrompt "display name"
+      displayName <- case name of
+        Just n | not (T.null n) -> pure n
+        _ -> T.pack <$> getWithPrompt "display name"
       let profile = Just Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
       execChatCommand' (CreateActiveUser NewUser {profile, pastTimestamp = False}) `runReaderT` cc >>= \case
         CRActiveUser user -> pure user

@@ -85,6 +85,7 @@ mkChatOpts DirectoryOpts {coreOptions} =
   ChatOpts
     { coreOptions,
       deviceName = Nothing,
+      userDisplayName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
