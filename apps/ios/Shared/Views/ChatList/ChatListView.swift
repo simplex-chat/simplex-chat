@@ -714,8 +714,8 @@ struct ChatTagsView: View {
                         HStack(spacing: 4) {
                             Text(emoji)
                             ZStack {
-                                Text(text).fontWeight(.medium).foregroundColor(.clear)
-                                Text(text).fontWeight(current ? .medium : .regular).foregroundColor(color)
+                                Text(text).fontWeight(.semibold).foregroundColor(.clear)
+                                Text(text).fontWeight(current ? .semibold : .regular).foregroundColor(color)
                             }
                         }
                         .onTapGesture {
