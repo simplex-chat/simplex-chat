@@ -2201,4 +2201,16 @@
     <string name="color_secondary">Secundari</string>
     <string name="v6_1_better_security_descr">Protocols de SimpleX revisats per Trail of Bits.</string>
     <string name="scan_from_mobile">Escaneja amb el mòbil</string>
+    <string name="video_descr">Vídeo</string>
+    <string name="info_view_video_button">vídeo</string>
+    <string name="settings_section_title_user_theme">Tema del perfil</string>
+    <string name="profile_password">Contrasenya del perfil</string>
+    <string name="prohibit_calls">No es permeten trucades ni videotrucades.</string>
+    <string name="prohibit_message_reactions">No es permeten reaccions als missatges.</string>
+    <string name="prohibit_sending_disappearing_messages">No es permet l\'enviament de missatges temporals.</string>
+    <string name="prohibit_message_deletion">No es permet l\'eliminació irreversible de missatges.</string>
+    <string name="prohibit_message_reactions_group">No es permeten reaccions als missatges.</string>
+    <string name="prohibit_direct_messages">No es permet l\'enviament de missatges directes als membres.</string>
+    <string name="prohibit_sending_disappearing">No es permet l\'enviament de missatges temporals.</string>
+    <string name="profile_update_will_be_sent_to_contacts">L\'actualització del perfil s\'enviarà als vostres contactes.</string>
 </resources>
