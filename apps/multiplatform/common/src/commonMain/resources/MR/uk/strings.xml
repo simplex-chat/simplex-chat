@@ -228,8 +228,7 @@
     <string name="image_descr_qr_code">QR-код</string>
     <string name="icon_descr_help">довідка</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Якщо ви не можете зустрітися особисто, <b>покажіть QR-код у відеовиклику</b>, або поділіться посиланням.]]></string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профіль чату буде відправлено
-\nвашому контакту</string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профіль буде відправлено \nвашому контакту</string>
     <string name="one_time_link">Одноразове запрошення</string>
     <string name="incorrect_code">Невірний код безпеки!</string>
     <string name="to_verify_compare">Для перевірки end-to-end шифрування порівняйте (або скануйте) код на своїх пристроях.</string>
@@ -271,7 +270,7 @@
     <string name="onboarding_notifications_mode_subtitle">Як це впливає на батарею</string>
     <string name="onboarding_notifications_mode_service">Миттєво</string>
     <string name="call_already_ended">Виклик вже завершено!</string>
-    <string name="your_calls">Ваші виклики</string>
+    <string name="your_calls">Виклики</string>
     <string name="your_ice_servers">Ваші сервери ICE</string>
     <string name="open_verb">Відкрити</string>
     <string name="call_connection_via_relay">через реле</string>
@@ -376,7 +375,7 @@
     <string name="chat_preferences_yes">так</string>
     <string name="contact_preferences">Налаштування контакту</string>
     <string name="v4_2_security_assessment_desc">Безпека SimpleX Chat була перевірена компанією Trail of Bits.</string>
-    <string name="v4_3_irreversible_message_deletion_desc">Ваші контакти можуть дозволити повне видалення повідомлень.</string>
+    <string name="v4_3_irreversible_message_deletion_desc">Ваші контакти можуть дозволити остаточне видалення повідомлень.</string>
     <string name="database_will_be_encrypted">База даних буде зашифрована.</string>
     <string name="keychain_error">Помилка сховища ключів</string>
     <string name="unknown_error">Невідома помилка</string>
@@ -390,7 +389,7 @@
     <string name="network_status">Стан мережі</string>
     <string name="update_network_settings_question">Оновити налаштування мережі\?</string>
     <string name="users_delete_data_only">Локальні дані профілю тільки</string>
-    <string name="incognito_random_profile">Ваш випадковий профіль</string>
+    <string name="incognito_random_profile">Випадковий профіль</string>
     <string name="feature_enabled">ввімкнено</string>
     <string name="feature_enabled_for_you">ввімкнено для вас</string>
     <string name="prohibit_direct_messages">Забороняйте надсилання прямих повідомлень учасникам.</string>
@@ -417,7 +416,7 @@
     <string name="icon_descr_call_missed">Пропущений виклик</string>
     <string name="icon_descr_call_connecting">Підключення виклику</string>
     <string name="privacy_and_security">Конфіденційність і безпека</string>
-    <string name="your_privacy">Ваша конфіденційність</string>
+    <string name="your_privacy">Конфіденційність</string>
     <string name="settings_section_title_settings">НАЛАШТУВАННЯ</string>
     <string name="settings_section_title_help">ДОПОМОГА</string>
     <string name="settings_section_title_support">ПІДТРИМАЙТЕ SIMPLEX CHAT</string>
@@ -443,7 +442,7 @@
     <string name="create_group_link">Створити посилання на групу</string>
     <string name="change_member_role_question">Змінити роль у групі\?</string>
     <string name="error_removing_member">Помилка при вилученні учасника</string>
-    <string name="group_main_profile_sent">Ваш профіль чату буде відправлений учасникам групи</string>
+    <string name="group_main_profile_sent">Ваш профіль буде відправлений учасникам групи</string>
     <string name="full_deletion">Видалення для всіх</string>
     <string name="voice_messages">Голосові повідомлення</string>
     <string name="voice_prohibited_in_this_chat">Голосові повідомлення заборонені в цьому чаті.</string>
@@ -452,8 +451,8 @@
     <string name="shutdown_alert_question">Вимкнути\?</string>
     <string name="share_with_contacts">Поділитися з контактами</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профіль зберігається на вашому пристрої та ділиться лише з вашими контактами. Серверам SimpleX профіль недоступний.</string>
-    <string name="save_and_notify_contacts">Зберегти і повідомити контакти</string>
-    <string name="save_and_notify_group_members">Зберегти і повідомити учасників групи</string>
+    <string name="save_and_notify_contacts">Зберегти та сповістити контакти</string>
+    <string name="save_and_notify_group_members">Зберегти та сповістити учасників</string>
     <string name="exit_without_saving">Вийти без збереження</string>
     <string name="hide_profile">Сховати профіль</string>
     <string name="password_to_show">Пароль для відображення</string>
@@ -464,7 +463,7 @@
     <string name="confirm_passcode">Підтвердити пароль</string>
     <string name="new_passcode">Новий пароль</string>
     <string name="settings_restart_app">Перезапустити</string>
-    <string name="your_chat_database">Ваша база даних чату</string>
+    <string name="your_chat_database">База даних чату</string>
     <string name="chat_is_stopped">Чат зупинено</string>
     <string name="chat_database_section">БАЗА ДАНИХ ЧАТУ</string>
     <string name="new_database_archive">Новий архів бази даних</string>
@@ -554,7 +553,7 @@
     <string name="la_notice_title_simplex_lock">Блокування SimpleX</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Щоб захистити вашу інформацію, увімкніть блокування SimpleX.
 \nВам буде запропоновано завершити аутентифікацію перед увімкненням цієї функції.</string>
-    <string name="auth_log_in_using_credential">Увійти за допомогою своїх облікових даних</string>
+    <string name="auth_log_in_using_credential">Пройдіть аутентифікацію</string>
     <string name="auth_enable_simplex_lock">Увімкнути блокування SimpleX</string>
     <string name="lock_not_enabled">Блокування SimpleX не увімкнено!</string>
     <string name="share_verb">Поділитися</string>
@@ -569,8 +568,8 @@
     <string name="revoke_file__message">Файл буде видалено з серверів.</string>
     <string name="revoke_file__confirm">Відкликати</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">несанкціонована відправка</string>
-    <string name="personal_welcome">Ласкаво просимо, %1$s!</string>
-    <string name="welcome">Ласкаво просимо!</string>
+    <string name="personal_welcome">Вітаємо, %1$s!</string>
+    <string name="welcome">Вітаємо!</string>
     <string name="this_text_is_available_in_settings">Цей текст доступний у налаштуваннях</string>
     <string name="group_preview_you_are_invited">вас запрошено в групу</string>
     <string name="share_message">Поділитися повідомленням…</string>
@@ -639,8 +638,8 @@
     <string name="you_can_create_it_later">Ви можете створити його пізніше</string>
     <string name="your_current_profile">Ваш поточний профіль</string>
     <string name="delete_image">Видалити зображення</string>
-    <string name="save_preferences_question">Зберегти уподобання?</string>
-    <string name="save_and_notify_contact">Зберегти і повідомити контакт</string>
+    <string name="save_preferences_question">Зберегти налаштування?</string>
+    <string name="save_and_notify_contact">Зберегти та сповістити контакт</string>
     <string name="save_profile_password">Зберегти пароль профілю</string>
     <string name="hidden_profile_password">Пароль схованого профілю</string>
     <string name="profile_is_only_shared_with_your_contacts">Профіль обмінюється лише з вашими контактами.</string>
@@ -721,7 +720,7 @@
     <string name="member_role_will_be_changed_with_notification">Роль буде змінено на "%s". Всі учасники групи будуть сповіщені.</string>
     <string name="member_role_will_be_changed_with_invitation">Роль буде змінено на "%s". Учасник отримає нове запрошення.</string>
     <string name="info_row_group">Група</string>
-    <string name="group_welcome_title">Ласкаво просимо</string>
+    <string name="group_welcome_title">Привітальне повідомлення</string>
     <string name="group_profile_is_stored_on_members_devices">Профіль групи зберігається на пристроях учасників, а не на серверах.</string>
     <string name="save_group_profile">Зберегти профіль групи</string>
     <string name="users_delete_with_connections">Профіль і підключення до серверів</string>
@@ -785,7 +784,7 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Ви вже підключені до %1$s через це посилання.</string>
     <string name="settings_section_title_incognito">Режим інкогніто</string>
     <string name="conn_stats_section_title_servers">СЕРВЕРИ</string>
-    <string name="save_welcome_message_question">Зберегти ласкаво просимо?</string>
+    <string name="save_welcome_message_question">Зберегти вітальне повідомлення?</string>
     <string name="receiving_via">Отримання через</string>
     <string name="muted_when_inactive">Приглушено, коли неактивно!</string>
     <string name="delete_profile">Видалити профіль</string>
@@ -1009,7 +1008,7 @@
     <string name="you_can_accept_or_reject_connection">Коли люди просять про з\'єднання, ви можете його прийняти чи відхилити.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Докладніше читайте в <font color="#0088ff">Посібнику користувача</font>.]]></string>
     <string name="simplex_address">SimpleX-адреса</string>
-    <string name="clear_verification">Очистити перевірку</string>
+    <string name="clear_verification">Скинути підтвердження</string>
     <string name="is_verified">%s перевірено</string>
     <string name="is_not_verified">%s не перевірено</string>
     <string name="send_us_an_email">Написати нам ел. листа</string>
@@ -1025,7 +1024,7 @@
     <string name="network_use_onion_hosts_required">Обов\'язково</string>
     <string name="theme_colors_section_title">КОЛЬОРИ ІНТЕРФЕЙСУ</string>
     <string name="create_address_and_let_people_connect">Створіть адресу, щоб дозволити людям підключатися до вас.</string>
-    <string name="your_contacts_will_remain_connected">Ваші контакти залишаться підключеними.</string>
+    <string name="your_contacts_will_remain_connected">Контакти залишатимуться підключеними.</string>
     <string name="create_simplex_address">Створити SimpleX-адресу</string>
     <string name="profile_update_will_be_sent_to_contacts">Оновлення профілю буде відправлено вашим контактам.</string>
     <string name="stop_sharing_address">Зупинити поділ адреси?</string>
@@ -1069,12 +1068,12 @@
     <string name="button_welcome_message">Привітання</string>
     <string name="select_contacts">Вибрати контакти</string>
     <string name="share_address">Поділитися адресою</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Ви можете поділитися посиланням або QR-кодом - будь-хто зможе приєднатися до групи. Ви не втратите членів групи, якщо потім видалите її.</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Ви можете поділитися посиланням або QR-кодом - будь-хто зможе приєднатися до групи. Ви не втратите учасників групи, якщо потім видалите її.</string>
     <string name="you_can_share_this_address_with_your_contacts">Ви можете поділитися цією адресою зі своїми контактами, щоб вони могли підключитися до %s.</string>
     <string name="info_row_local_name">Локальна назва</string>
     <string name="info_row_database_id">Ідентифікатор бази даних</string>
     <string name="group_welcome_preview">Попередній перегляд</string>
-    <string name="enter_welcome_message">Введіть ласкаво просимо…</string>
+    <string name="enter_welcome_message">Введіть привітальне повідомлення…</string>
     <string name="switch_receiving_address">Змінити адресу отримання</string>
     <string name="create_secret_group_title">Створити секретну групу</string>
     <string name="group_is_decentralized">Повністю децентралізовано - видимо тільки для учасників.</string>
@@ -1088,7 +1087,7 @@
     <string name="chat_preferences_you_allow">Ви дозволяєте</string>
     <string name="chat_preferences_no">ні</string>
     <string name="chat_preferences_off">вимк</string>
-    <string name="set_group_preferences">Встановити налаштування групи</string>
+    <string name="set_group_preferences">Налаштування групи</string>
     <string name="your_preferences">Налаштування</string>
     <string name="direct_messages">Прямі повідомлення</string>
     <string name="icon_descr_server_status_error">Помилка</string>
@@ -1109,7 +1108,7 @@
     <string name="button_delete_contact">Видалити контакт</string>
     <string name="text_field_set_contact_placeholder">Встановити ім\'я контакту…</string>
     <string name="choose_file">Файл</string>
-    <string name="from_gallery_button">З галереї</string>
+    <string name="from_gallery_button">Галерея</string>
     <string name="icon_descr_simplex_team">Команда SimpleX</string>
     <string name="contact_wants_to_connect_with_you">хоче підключитися до вас!</string>
     <string name="settings_section_title_experimenta">ЕКСПЕРИМЕНТАЛЬНІ ФУНКЦІЇ</string>
@@ -1646,7 +1645,7 @@
     <string name="migrate_to_device_repeat_import">Повторний імпорт</string>
     <string name="migrate_to_device_finalize_migration">Завершіть міграцію на іншому пристрої.</string>
     <string name="migrate_to_device_apply_onion">Застосувати</string>
-    <string name="migrate_from_device_title">Перенести пристрій</string>
+    <string name="migrate_from_device_title">Міграція пристрою</string>
     <string name="migrate_from_device_to_another_device">Перехід на інший пристрій</string>
     <string name="migrate_from_device_error_exporting_archive">Помилка експорту бази даних чату</string>
     <string name="migrate_from_device_error_saving_settings">Налаштування збереження помилок</string>
@@ -1752,7 +1751,7 @@
     <string name="settings_section_title_profile_images">Зображення профілів</string>
     <string name="settings_section_title_network_connection">Підключення до мережі</string>
     <string name="feature_roles_admins">адміністратори</string>
-    <string name="feature_roles_all_members">всі учасники</string>
+    <string name="feature_roles_all_members">всіх учасників</string>
     <string name="v5_7_new_interface_languages">Литовський інтерфейс</string>
     <string name="permissions_required">Надавати дозволи</string>
     <string name="settings_section_title_chat_colors">Кольори чату</string>
@@ -2059,7 +2058,7 @@
     <string name="migrate_from_device_remove_archive_question">Видалити архів?</string>
     <string name="new_chat_share_profile">Поділитися профілем</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Завантажений архів бази даних буде остаточно видалено з серверів.</string>
-    <string name="switching_profile_error_message">Ваше з\'єднання було перенесено на %s, але виникла несподівана помилка під час перенаправлення на профіль.</string>
+    <string name="switching_profile_error_message">Підключення було перенесено до %s, але під час перенаправлення на профіль сталася непередбачена помилка.</string>
     <string name="system_mode_toast">Режим системи</string>
     <string name="network_proxy_auth_mode_no_auth">Не використовуйте облікові дані з проксі.</string>
     <string name="network_proxy_auth">Аутентифікація проксі</string>
@@ -2208,7 +2207,7 @@
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Пристрої Xiaomi</b>: будь ласка, увімкніть Автозапуск у налаштуваннях системи, щоб сповіщення працювали.]]></string>
     <string name="maximum_message_size_title">Повідомлення занадто велике!</string>
     <string name="maximum_message_size_reached_non_text">Будь ласка, зменшіть розмір повідомлення або видаліть медіа та надішліть знову.</string>
-    <string name="add_your_team_members_to_conversations">Додайте учасників команди до розмов.</string>
+    <string name="add_your_team_members_to_conversations">Додайте учасників команди до розмови.</string>
     <string name="business_address">Бізнес адреса</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Перевіряти повідомлення кожні 10 хвилин.</string>
     <string name="onboarding_notifications_mode_off_desc_short">Без фонової служби</string>
@@ -2239,7 +2238,7 @@
     <string name="maximum_message_size_reached_text">Будь ласка, зменшіть розмір повідомлення та надішліть знову.</string>
     <string name="maximum_message_size_reached_forwarding">Скопіюйте та зменшіть розмір повідомлення для відправки.</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Ви припините отримувати повідомлення з цього чату. Історія чату буде збережена.</string>
-    <string name="chat_main_profile_sent">Ваш профіль чату буде надіслано учасникам чату.</string>
+    <string name="chat_main_profile_sent">Ваш профіль буде надіслано учасникам чату.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Коли увімкнено більше ніж одного оператора, жоден з них не має метаданих, щоб дізнатися, хто спілкується з ким.</string>
     <string name="display_name_accepted_invitation">прийнято запрошення</string>
     <string name="display_name_requested_to_connect">запит на підключення</string>
