@@ -675,9 +675,9 @@
         <target>Añadir mensaje de bienvenida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve" approved="no">
         <source>Add your team members to the conversations.</source>
-        <target>Añade a los miembros de tu equipo a las conversaciones.</target>
+        <target state="translated">Añade a miembros de tu equipo a las conversaciones.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve">
@@ -2927,9 +2927,9 @@ This is your own one-time link!</source>
         <target>¡Introduce la contraseña arriba para mostrar!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter server manually" xml:space="preserve">
+      <trans-unit id="Enter server manually" xml:space="preserve" approved="no">
         <source>Enter server manually</source>
-        <target>Introduce el servidor manualmente</target>
+        <target state="translated">Añadir manualmente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter this device name…" xml:space="preserve">
@@ -6173,9 +6173,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Escanea el código de seguridad desde la aplicación de tu contacto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan server QR code" xml:space="preserve">
+      <trans-unit id="Scan server QR code" xml:space="preserve" approved="no">
         <source>Scan server QR code</source>
-        <target>Escanear código QR del servidor</target>
+        <target state="translated">Escanear código QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search" xml:space="preserve">
@@ -6714,9 +6714,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve" approved="no">
         <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
-        <target>Simplex Chat y Flux han acordado incluir servidores operados por Flux en la aplicación</target>
+        <target state="translated">Simplex Chat y Flux han acordado incluir en la aplicación servidores operados por Flux.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -7712,14 +7712,14 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Usar perfil actual</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use for files" xml:space="preserve">
+      <trans-unit id="Use for files" xml:space="preserve" approved="no">
         <source>Use for files</source>
-        <target>Usar para archivos</target>
+        <target state="translated">Uso para archivos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use for messages" xml:space="preserve">
+      <trans-unit id="Use for messages" xml:space="preserve" approved="no">
         <source>Use for messages</source>
-        <target>Usar para mensajes</target>
+        <target state="translated">Uso para mensajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve" approved="no">
