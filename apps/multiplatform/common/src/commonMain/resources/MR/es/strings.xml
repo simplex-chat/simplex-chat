@@ -329,7 +329,7 @@
     <string name="error_changing_message_deletion">Error al cambiar configuración</string>
     <string name="file_with_path">Archivo: %s</string>
     <string name="failed_to_active_user_title">¡Error al cambiar perfil!</string>
-    <string name="smp_servers_enter_manually">Introduce el servidor manualmente</string>
+    <string name="smp_servers_enter_manually">Añadir manualmente</string>
     <string name="how_to_use_your_servers">Cómo usar los servidores</string>
     <string name="error_stopping_chat">Error al parar SimpleX</string>
     <string name="enter_correct_passphrase">Introduce la contraseña correcta.</string>
@@ -689,7 +689,7 @@
     <string name="security_code">Código de seguridad</string>
     <string name="scan_code_from_contacts_app">Escanea el código de seguridad desde la aplicación de tu contacto.</string>
     <string name="smp_servers_save">Guardar servidores</string>
-    <string name="smp_servers_scan_qr">Escanear código QR del servidor</string>
+    <string name="smp_servers_scan_qr">Escanear código QR</string>
     <string name="smp_servers_preset_server">Servidor predefinido</string>
     <string name="save_and_notify_contact">Guardar y notificar contacto</string>
     <string name="save_preferences_question">¿Guardar preferencias\?</string>
@@ -1579,8 +1579,7 @@
     <string name="remote_ctrl_error_bad_invitation">El ordenador tiene un código de invitación incorrecto</string>
     <string name="remote_ctrl_error_disconnected">El ordenador ha sido desconectado</string>
     <string name="group_member_status_unknown">estado desconocido</string>
-    <string name="database_migration_in_progress">Migración de la base de datos en progreso.
-\nPodría tardar varios minutos.</string>
+    <string name="database_migration_in_progress">Migración de la base de datos en curso. \nPodría tardar varios minutos.</string>
     <string name="remote_ctrl_error_bad_version">El ordenador tiene una versión sin soporte. Por favor, asegúrate de usar la misma versión en ambos dispositivos</string>
     <string name="profile_update_event_contact_name_changed">el contacto %1$s ha cambiado a %2$s</string>
     <string name="profile_update_event_updated_profile">perfil actualizado</string>
@@ -2179,11 +2178,11 @@
     <string name="your_servers">Tus servidores</string>
     <string name="use_servers_of_operator_x">Usar %s</string>
     <string name="operator_use_operator_toggle_description">Usar servidores</string>
-    <string name="operator_use_for_messages">Usar para mensajes</string>
+    <string name="operator_use_for_messages">Uso para mensajes</string>
     <string name="view_conditions">Ver condiciones</string>
     <string name="operator_use_for_messages_receiving">Para recibir</string>
     <string name="operator_use_for_sending">Para enviar</string>
-    <string name="operator_use_for_files">Usar para archivos</string>
+    <string name="operator_use_for_files">Uso para archivos</string>
     <string name="appearance_in_app_bars_alpha">Transparencia</string>
     <string name="view_updated_conditions">Ver condiciones actualizadas</string>
     <string name="connection_error_quota">Mensajes no entregados</string>
@@ -2215,7 +2214,7 @@
     <string name="maximum_message_size_reached_text">Por favor, reduce el tamaño del mensaje y envíalo de nuevo.</string>
     <string name="maximum_message_size_reached_non_text">Por favor, reduce el tamaño del mensaje o elimina los archivos y envíalo de nuevo.</string>
     <string name="maximum_message_size_reached_forwarding">Puedes copiar y reducir el tamaño del mensaje para enviarlo.</string>
-    <string name="add_your_team_members_to_conversations">Añade a los miembros de tu equipo a las conversaciones.</string>
+    <string name="add_your_team_members_to_conversations">Añade a miembros de tu equipo a las conversaciones.</string>
     <string name="onboarding_notifications_mode_battery">Notificaciones y batería</string>
     <string name="invite_to_chat_button">Invitar al chat</string>
     <string name="button_add_friends">Añadir amigos</string>
@@ -2249,11 +2248,11 @@
     <string name="onboarding_notifications_mode_service_desc_short">La aplicación siempre funciona en segundo plano</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Todos los mensajes y archivos son enviados <b>cifrados de extremo a extremo</b> y con seguridad postcuántica en mensajes directos.]]></string>
     <string name="maximum_message_size_title">¡Mensaje demasiado largo!</string>
-    <string name="onboarding_network_operators_simplex_flux_agreement">Simplex Chat y Flux han acordado incluir servidores operados por Flux en la aplicación.</string>
-    <string name="debug_logs">Habilitar los registros</string>
-    <string name="error_saving_database">Error al guardar la base de datos</string>
-    <string name="sync_connection_desc">La conexión requiere una renegociación del cifrado.</string>
+    <string name="onboarding_network_operators_simplex_flux_agreement">Simplex Chat y Flux han acordado incluir en la aplicación servidores operados por Flux.</string>
+    <string name="debug_logs">Activar registros</string>
+    <string name="error_saving_database">Error al guardar base de datos</string>
+    <string name="sync_connection_desc">La conexión requiere renegociar el cifrado.</string>
     <string name="encryption_renegotiation_in_progress">Renegociación de cifrado en curso.</string>
-    <string name="sync_connection_confirm">Arreglar</string>
-    <string name="sync_connection_question">¿Arreglar conexión?</string>
+    <string name="sync_connection_confirm">Reparar</string>
+    <string name="sync_connection_question">¿Reparar conexión?</string>
 </resources>
