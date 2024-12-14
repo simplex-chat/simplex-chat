@@ -543,13 +543,13 @@ startChatController mainApp enableSndFiles = do
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      if mainApp
-        then do
-          startXFTP xftpStartWorkers
-          void $ forkIO $ startFilesToReceive users
-          startCleanupManager
-          void $ forkIO $ startExpireCIs users
-        else when enableSndFiles $ startXFTP xftpStartSndWorkers
+      -- if mainApp
+      --   then do
+      --     startXFTP xftpStartWorkers
+      --     void $ forkIO $ startFilesToReceive users
+      --     startCleanupManager
+      --     void $ forkIO $ startExpireCIs users
+      --   else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
