@@ -688,7 +688,8 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
     @State private var showChatListTagCreate = false
-            
+    @State private var sheet: SomeSheet<AnyView>? = nil
+    
     var body: some View {
         HStack {
             let presetFilters = presetTagFilters()
@@ -717,6 +718,33 @@ struct ChatTagsView: View {
                         .onTapGesture {
                             setSelectedTag(tag)
                         }
+                        .contextMenu {
+                            Button {
+                                sheet = SomeSheet(
+                                    content: {
+                                        AnyView(
+                                            NavigationView {
+                                                ChatListTagEditor(editMode: true, emoji: emoji, name: text)
+                                            }
+                                        )
+                                    },
+                                    id: "list edit sheet"
+                                )
+                            } label: {
+                                Label(
+                                    NSLocalizedString("Edit", comment: "tag action"),
+                                    systemImage: "pencil"
+                                )
+                            }
+                            Button(role: .destructive) {
+                                print("Delete \(text)")
+                            } label: {
+                                Label(
+                                    NSLocalizedString("Delete", comment: "tag action"),
+                                    systemImage: "trash"
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -735,19 +763,18 @@ struct ChatTagsView: View {
         .onChange(of: chatModel.currentUser?.userId) { _ in
             getChatTags()
         }
-        .sheet(isPresented: $showChatListTagCreate) {
+        .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
-                createChatListTagView()
-                    .presentationDetents([.fraction(0.3)])
+                $0.content.presentationDetents([.fraction(0.3)])
             } else {
-                createChatListTagView()
+                $0.content
             }
         }
     }
     
     @ViewBuilder private func createChatListTagView() -> some View {
         NavigationView {
-            CreateChatListTag()
+            ChatListTagEditor()
                 .modifier(ThemedBackground(grouped: true))
         }
     }

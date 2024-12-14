@@ -345,7 +345,7 @@ struct ChatListNavLink: View {
                 AnyView(
                     NavigationView {
                         if chatTagsModel.tags.isEmpty {
-                            CreateChatListTag(chat: chat)
+                            ChatListTagEditor(chat: chat)
                         } else {
                             ChatListTag(chat: chat)
                         }
@@ -574,7 +574,7 @@ struct ChatListTag: View {
     var body: some View {
         List {
             NavigationLink {
-                CreateChatListTag(chat: chat)
+                ChatListTagEditor(chat: chat)
             } label: {
                 Label("Create list", systemImage: "plus")
             }
@@ -683,7 +683,7 @@ struct ChatListTag: View {
 }
 
 struct EmojiPickerView: UIViewControllerRepresentable {
-    @Binding var selectedEmoji: Emoji?
+    @Binding var selectedEmoji: String?
     @Binding var showingPicker: Bool
     @Environment(\.presentationMode) var presentationMode
 
@@ -695,7 +695,7 @@ struct EmojiPickerView: UIViewControllerRepresentable {
         }
         
         func emojiPicker(_ picker: ElegantEmojiPicker, didSelectEmoji emoji: Emoji?) {
-            parent.selectedEmoji = emoji
+            parent.selectedEmoji = emoji?.emoji
             parent.showingPicker = false
             picker.dismiss(animated: true)
         }
@@ -731,13 +731,14 @@ struct EmojiPickerView: UIViewControllerRepresentable {
     }
 }
 
-struct CreateChatListTag: View {
+struct ChatListTagEditor: View {
     var chat: Chat?
+    var editMode = false
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
-    @State private var emoji: Emoji? = nil
-    @State private var name: String = ""
+    @State var emoji: String? = nil
+    @State var name: String = ""
     @State private var isPickerPresented = false
 
     var body: some View {
@@ -748,7 +749,7 @@ struct CreateChatListTag: View {
                         isPickerPresented = true
                     } label: {
                         if let emoji {
-                            Text(emoji.emoji)
+                            Text(emoji)
                         } else {
                             Image(systemName: "face.smiling")
                                 .resizable()
@@ -763,7 +764,7 @@ struct CreateChatListTag: View {
                 Button {
                     createChatTag()
                 } label: {
-                    Text("Create list")
+                    Text(NSLocalizedString(editMode ? "Change list" : "Create List", comment: "list editor button"))
                 }
                 .disabled(name.isEmpty)
             }
@@ -782,7 +783,7 @@ struct CreateChatListTag: View {
                     let (userTags, chatTags) = try await apiCreateChatTag(
                         type: chat.chatInfo.chatType,
                         id: chat.chatInfo.apiId,
-                        tag: ChatTagData(emoji: emoji?.emoji ?? "😂", text: name)
+                        tag: ChatTagData(emoji: emoji ?? "😂", text: name)
                     )
                     
                     await MainActor.run {
