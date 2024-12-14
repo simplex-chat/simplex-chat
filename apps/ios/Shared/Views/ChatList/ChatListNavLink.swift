@@ -573,12 +573,6 @@ struct ChatListTag: View {
     
     var body: some View {
         List {
-            NavigationLink {
-                ChatListTagEditor(chat: chat)
-            } label: {
-                Label("Create list", systemImage: "plus")
-            }
-            
             if !chatTagsModel.tags.isEmpty {
                 ForEach(chatTagsModel.tags) { tag in
                     if case let .chatTag(emoji, text, tagId) = tag {
@@ -607,6 +601,12 @@ struct ChatListTag: View {
                     }
                 }
             }
+            NavigationLink {
+                ChatListTagEditor(chat: chat)
+            } label: {
+                Label("Create list", systemImage: "plus")
+            }
+            
         }
     }
     
@@ -764,7 +764,7 @@ struct ChatListTagEditor: View {
                 Button {
                     createChatTag()
                 } label: {
-                    Text(NSLocalizedString(editMode ? "Change list" : "Create List", comment: "list editor button"))
+                    Text(NSLocalizedString(editMode ? "Change list" : "Create list", comment: "list editor button"))
                 }
                 .disabled(name.isEmpty)
             }
