@@ -718,33 +718,6 @@ struct ChatTagsView: View {
                         .onTapGesture {
                             setSelectedTag(tag)
                         }
-                        .contextMenu {
-                            Button {
-                                sheet = SomeSheet(
-                                    content: {
-                                        AnyView(
-                                            NavigationView {
-                                                ChatListTagEditor(editMode: true, emoji: emoji, name: text)
-                                            }
-                                        )
-                                    },
-                                    id: "list edit sheet"
-                                )
-                            } label: {
-                                Label(
-                                    NSLocalizedString("Edit", comment: "tag action"),
-                                    systemImage: "pencil"
-                                )
-                            }
-                            Button(role: .destructive) {
-                                print("Delete \(text)")
-                            } label: {
-                                Label(
-                                    NSLocalizedString("Delete", comment: "tag action"),
-                                    systemImage: "trash"
-                                )
-                            }
-                        }
                     }
                 }
             }
