@@ -128,6 +128,7 @@ struct ChatListNavLink: View {
                     toggleNtfsButton(chat: chat)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    tagChatButton(chat)
                     if !chat.chatItems.isEmpty {
                         clearChatButton()
                     }
@@ -144,7 +145,6 @@ struct ChatListNavLink: View {
                         deleteLabel
                     }
                     .tint(.red)
-                    tagChatButton(chat)
                 }
                 .frame(height: dynamicRowHeight)
             }
@@ -189,13 +189,13 @@ struct ChatListNavLink: View {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
                 .swipeActions(edge: .trailing) {
+                    tagChatButton(chat)
                     if (groupInfo.membership.memberCurrent) {
                         leaveGroupChatButton(groupInfo)
                     }
                     if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
-                    tagChatButton(chat)
                 }
         default:
             NavLinkPlain(
@@ -211,21 +211,25 @@ struct ChatListNavLink: View {
                 toggleNtfsButton(chat: chat)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                if !chat.chatItems.isEmpty {
+                tagChatButton(chat)
+                let showClearButton = !chat.chatItems.isEmpty
+                let showDeleteGroup = groupInfo.canDelete
+                let showLeaveGroup = groupInfo.membership.memberCurrent
+                let totalNumberOfButtons = 1 + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
+
+                if showClearButton, totalNumberOfButtons <= 3 {
                     clearChatButton()
                 }
-                if (groupInfo.membership.memberCurrent) {
+                if (showLeaveGroup) {
                     leaveGroupChatButton(groupInfo)
                 }
-                if groupInfo.canDelete {
-                    if !groupInfo.membership.memberCurrent {
+                
+                if showDeleteGroup {
+                    if totalNumberOfButtons <= 3 {
                         deleteGroupChatButton(groupInfo)
-                        tagChatButton(chat)
                     } else {
                         moreOptionsButton(chat, groupInfo)
                     }
-                } else {
-                    tagChatButton(chat)
                 }
             }
         }
@@ -323,9 +327,9 @@ struct ChatListNavLink: View {
         Button {
             setTagChatSheet(chat)
         } label: {
-            SwipeLabel(NSLocalizedString("Lists", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
+            SwipeLabel(NSLocalizedString("List", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
         }
-        .tint(Color.indigo)
+        .tint(Color.brown)
     }
     
     private func setTagChatSheet(_ chat: Chat) {
@@ -360,8 +364,8 @@ struct ChatListNavLink: View {
     private func moreOptionsButton(_ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
         Button {
             var buttons: [Alert.Button] = [
-                .default(Text("Lists")) {
-                    setTagChatSheet(chat)
+                .default(Text("Clear")) {
+                    AlertManager.shared.showAlert(clearChatAlert())
                 }
             ]
             
@@ -375,7 +379,7 @@ struct ChatListNavLink: View {
                                
             actionSheet = SomeActionSheet(
                 actionSheet: ActionSheet(
-                    title: Text(""),
+                    title: Text(NSLocalizedString("Clear or delete?", comment: "other options title")),
                     buttons: buttons
                 ),
                 id: "other options"
