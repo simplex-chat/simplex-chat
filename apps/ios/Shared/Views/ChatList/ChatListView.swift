@@ -718,6 +718,18 @@ struct ChatTagsView: View {
                         .onTapGesture {
                             setSelectedTag(tag)
                         }
+                        .onLongPressGesture {
+                            sheet = SomeSheet(
+                                content: {
+                                    AnyView(
+                                        NavigationView {
+                                            ChatListTag()
+                                        }
+                                    )
+                                },
+                                id: "tag list"
+                            )
+                        }
                     }
                 }
             }

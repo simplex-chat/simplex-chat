@@ -567,13 +567,22 @@ struct ChatListNavLink: View {
     }
 }
 
+struct TagEditorNavParams {
+    let chat: Chat?
+    let chatListTag: ChatTagData?
+    let tagId: Int64?
+}
+
 struct ChatListTag: View {
-    var chat: Chat
+    var chat: Chat? = nil
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
+    @State private var tagEditorNavParams: TagEditorNavParams? = nil
+    @State private var navigateToTagEditor = false
     
-    var chatTagsIds: [Int64] { chat.chatInfo.contact?.chatTags ?? chat.chatInfo.groupInfo?.chatTags ?? [] }
+    var chatTagsIds: [Int64] { chat?.chatInfo.contact?.chatTags ?? chat?.chatInfo.groupInfo?.chatTags ?? [] }
     
     var body: some View {
         List {
@@ -587,31 +596,80 @@ struct ChatListTag: View {
                             Text(text)
                                 .padding(.leading, 12)
                             Spacer()
-                            radioButton(selected: selected)
+                            if chat != nil {
+                                radioButton(selected: selected)
+                            }
                         }
                         .onTapGesture {
-                            if selected {
-                                untagChat(tagId)
-                            } else {
-                                // TODO: Temporary until API is final.
-                                chatTagsIds.forEach { t in
-                                    untagChat(t)
+                            if let c = chat {
+                                if selected {
+                                    untagChat(tagId: tagId, chat: c)
+                                } else {
+                                    // TODO: Temporary until API is final.
+                                    chatTagsIds.forEach { t in
+                                        untagChat(tagId: t, chat: c)
+                                    }
+                                    tagChat(tagId: tagId, chat: c)
                                 }
-                                tagChat(tagId)
                             }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button {
+                                showAlert(
+                                    NSLocalizedString("Delete list?", comment: "alert title"),
+                                    message: NSLocalizedString("\(text) will be deleted", comment: "alert message"),
+                                    actions: {[
+                                        UIAlertAction(
+                                            title: NSLocalizedString("Cancel", comment: "alert action"),
+                                            style: .default
+                                        ),
+                                        UIAlertAction(
+                                            title: NSLocalizedString("Delete", comment: "alert action"),
+                                            style: .destructive,
+                                            handler: { _ in
+                                                deleteTag(tagId)
+                                            }
+                                        )
+                                    ]}
+                                )
+                            } label: {
+                                SwipeLabel(NSLocalizedString("Delete", comment: "swipe action"), systemImage: "trash.fill", inverted: false)
+                            }
+                            .tint(.red)
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                navigateToTagEditor = true
+                                tagEditorNavParams = TagEditorNavParams(chat: nil, chatListTag: ChatTagData(emoji: emoji, text: text), tagId: tagId)
+                            } label: {
+                                SwipeLabel(NSLocalizedString("Edit", comment: "swipe action"), systemImage: "pencil", inverted: false)
+                            }
+                            .tint(theme.colors.primary)
                         }
                     } else {
                         EmptyView()
                     }
                 }
             }
-            NavigationLink {
-                ChatListTagEditor(chat: chat)
+            // isActive required since there are 2 possible ways to navigate to editor view. 1 by click, 2 by swipe in any existing tag
+            NavigationLink(isActive: $navigateToTagEditor) {
+                if let params = tagEditorNavParams {
+                    ChatListTagEditor(
+                        chat: params.chat,
+                        tagId: params.tagId,
+                        emoji: params.chatListTag?.emoji,
+                        name: params.chatListTag?.text ?? ""
+                    )
+                }
             } label: {
                 Label("Create list", systemImage: "plus")
             }
-            
+            .onTapGesture {
+                tagEditorNavParams = TagEditorNavParams(chat: chat, chatListTag: nil, tagId: nil)
+                navigateToTagEditor = true
+            }
         }
+        .listStyle(.insetGrouped)
     }
     
     @ViewBuilder private func radioButton(selected: Bool) -> some View {
@@ -620,7 +678,7 @@ struct ChatListTag: View {
             .foregroundStyle(selected ? Color.accentColor : Color(.tertiaryLabel))
     }
     
-    private func tagChat(_ tagId: Int64) {
+    private func tagChat(tagId: Int64, chat: Chat) {
         Task {
             do {
                 let (userTags, chatTags) = try await apiTagChat(
@@ -645,7 +703,7 @@ struct ChatListTag: View {
         }
     }
     
-    private func untagChat(_ tagId: Int64) {
+    private func untagChat(tagId: Int64, chat: Chat) {
         Task {
             do {
                 let (userTags, chatTags) = try await apiUntagChat(
@@ -672,6 +730,34 @@ struct ChatListTag: View {
                 )
             }
 
+        }
+    }
+    
+    private func deleteTag(_ tagId: Int64) {
+        // TODO: Delete tag API
+        Task {
+            await MainActor.run {
+                chatTagsModel.tags = chatTagsModel.tags.filter({ tag in
+                    if case let .chatTag(_, _, id) = tag {
+                        return id != tagId
+                    } else {
+                        return true
+                    }
+                })
+                if case let .chatTag(_, _, stId) = chatTagsModel.selectedTag, stId == tagId {
+                    chatTagsModel.selectedTag = ChatTagsModel.defaultTag
+                }
+                
+                m.chats.forEach { c in
+                    if var contact = c.chatInfo.contact, contact.chatTags.contains(tagId) {
+                        contact.chatTags = contact.chatTags.filter({ $0 != tagId })
+                        m.updateContact(contact)
+                    } else if var group = c.chatInfo.groupInfo, group.chatTags.contains(tagId) {
+                        group.chatTags = group.chatTags.filter({ $0 != tagId })
+                        m.updateGroup(group)
+                    }
+                }
+            }
         }
     }
     
@@ -736,8 +822,8 @@ struct EmojiPickerView: UIViewControllerRepresentable {
 }
 
 struct ChatListTagEditor: View {
-    var chat: Chat?
-    var editMode = false
+    var chat: Chat? = nil
+    var tagId: Int64? = nil
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
@@ -768,7 +854,7 @@ struct ChatListTagEditor: View {
                 Button {
                     createChatTag()
                 } label: {
-                    Text(NSLocalizedString(editMode ? "Change list" : "Create list", comment: "list editor button"))
+                    Text(NSLocalizedString(tagId != nil ? "Change list" : "Create list", comment: "list editor button"))
                 }
                 .disabled(name.isEmpty)
             }
