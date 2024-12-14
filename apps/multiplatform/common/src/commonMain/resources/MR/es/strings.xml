@@ -1881,7 +1881,7 @@
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="servers_info_transport_sessions_section_header">Sesiones de transporte</string>
     <string name="xftp_server">Servidor XFTP</string>
-    <string name="servers_info_proxied_servers_section_footer">No estás conectado a estos servidores. Para enviarles mensajes se usa el enrutamiento privado.</string>
+    <string name="servers_info_proxied_servers_section_footer">No tienes conexión directa a estos servidores. Los mensajes destinados a estos usan enrutamiento privado.</string>
     <string name="all_users">Todos los perfiles</string>
     <string name="servers_info_sessions_connected">Conectadas</string>
     <string name="servers_info_detailed_statistics">Estadísticas detalladas</string>
