@@ -2250,4 +2250,10 @@
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Todos los mensajes y archivos son enviados <b>cifrados de extremo a extremo</b> y con seguridad postcuántica en mensajes directos.]]></string>
     <string name="maximum_message_size_title">¡Mensaje demasiado largo!</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">Simplex Chat y Flux han acordado incluir servidores operados por Flux en la aplicación.</string>
+    <string name="debug_logs">Habilitar los registros</string>
+    <string name="error_saving_database">Error al guardar la base de datos</string>
+    <string name="sync_connection_desc">La conexión requiere una renegociación del cifrado.</string>
+    <string name="encryption_renegotiation_in_progress">Renegociación de cifrado en curso.</string>
+    <string name="sync_connection_confirm">Arreglar</string>
+    <string name="sync_connection_question">¿Arreglar conexión?</string>
 </resources>
