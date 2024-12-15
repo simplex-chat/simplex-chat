@@ -95,26 +95,6 @@ char * encode_to_utf8_chars(JNIEnv *env, jstring string) {
     return (char *) jbytes;
 }
 
-// As a reference: https://stackoverflow.com/a/60002045
-jstring decode_to_utf8_string(JNIEnv *env, char *string) {
-    jobject bb = (*env)->NewDirectByteBuffer(env, (void *)string, strlen(string));
-    jclass cls_charset = (*env)->FindClass(env, "java/nio/charset/Charset");
-    jmethodID mid_charset_forName = (*env)->GetStaticMethodID(env, cls_charset, "forName", "(Ljava/lang/String;)Ljava/nio/charset/Charset;");
-    jobject charset = (*env)->CallStaticObjectMethod(env, cls_charset, mid_charset_forName, (*env)->NewStringUTF(env, "UTF-8"));
-
-    jmethodID mid_decode = (*env)->GetMethodID(env, cls_charset, "decode", "(Ljava/nio/ByteBuffer;)Ljava/nio/CharBuffer;");
-    jobject cb = (*env)->CallObjectMethod(env, charset, mid_decode, bb);
-
-    jclass cls_char_buffer = (*env)->FindClass(env, "java/nio/CharBuffer");
-    jmethodID mid_to_string = (*env)->GetMethodID(env, cls_char_buffer, "toString", "()Ljava/lang/String;");
-    jstring res = (*env)->CallObjectMethod(env, cb, mid_to_string);
-
-    (*env)->DeleteLocalRef(env, bb);
-    (*env)->DeleteLocalRef(env, charset);
-    (*env)->DeleteLocalRef(env, cb);
-    return res;
-}
-
 JNIEXPORT jobjectArray JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey, jstring confirm) {
     const char *_dbPath = (*env)->GetStringUTFChars(env, dbPath, JNI_FALSE);
@@ -227,10 +207,10 @@ Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatWriteImage(JNIEnv *env, jclass clazz, jlong controller, jlong maxSize, jstring path, jobject buffer, jboolean encrypt) {
-    const char *_path = encode_to_utf8_chars(env, path);
+    const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
     jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
     jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
-    jstring res = decode_to_utf8_string(env, chat_write_image((void*)controller, maxSize, _path, buff, capacity, encrypt));
+    jstring res = (*env)->NewStringUTF(env, chat_write_image((void*)controller, maxSize, _path, buff, capacity, encrypt));
     (*env)->ReleaseStringUTFChars(env, path, _path);
     return res;
 }
@@ -300,8 +280,8 @@ Java_chat_simplex_common_platform_CoreKt_chatDecryptFile(JNIEnv *env, jclass cla
 
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatResizeImageToStrSize(JNIEnv *env, jclass clazz, jstring from_path, jlong max_size) {
-    const char *_from_path = encode_to_utf8_chars(env, from_path);
-    jstring res = decode_to_utf8_string(env, chat_resize_image_to_str_size(_from_path, max_size));
+    const char *_from_path = (*env)->GetStringUTFChars(env, from_path, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_resize_image_to_str_size(_from_path, max_size));
     (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
     return res;
 }
