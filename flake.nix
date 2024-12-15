@@ -449,7 +449,11 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
-                  packages."jpeg-turbo".flags.static = true;
+                  packages.jpeg-turbo.flags.static = true;
+                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
+                    (androidPkgs.libjpeg_turbo.override { enableStatic = true; })
+                  ];
+
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
