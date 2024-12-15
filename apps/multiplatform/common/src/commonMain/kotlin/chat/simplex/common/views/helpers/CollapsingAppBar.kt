@@ -84,6 +84,7 @@ class AppBarHandler(
 }
 
 class CollapsingAppBarNestedScrollConnection(): NestedScrollConnection {
+  var scrollTrackingEnabled = true
   var appBarOffset: Float by mutableFloatStateOf(0f)
 
   override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {

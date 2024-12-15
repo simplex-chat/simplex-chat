@@ -11,7 +11,7 @@ import SimpleXChat
 
 let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
-private let noTyping = Text("   ")
+private let noTyping = Text(verbatim: "   ")
 
 private let typingIndicators: [Text] = [
     (typing(.black) + typing() + typing()),
@@ -85,7 +85,7 @@ struct MsgContentView: View {
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
+        (rightToLeft ? Text("\n") : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 }
 
@@ -104,7 +104,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 
     if let i = icon {
-        res = Text(Image(systemName: i)).foregroundColor(secondaryColor) + Text(" ") + res
+        res = Text(Image(systemName: i)).foregroundColor(secondaryColor) + textSpace + res
     }
 
     if let s = sender {

@@ -376,6 +376,16 @@ userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _ _) =
   maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
+testChat :: HasCallStack => Profile -> (HasCallStack => TestCC -> IO ()) -> FilePath -> IO ()
+testChat = testChatCfgOpts testCfg testOpts
+
+testChatCfgOpts :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> (HasCallStack => TestCC -> IO ()) -> FilePath -> IO ()
+testChatCfgOpts cfg opts p test = testChatN cfg opts [p] test_
+  where
+    test_ :: HasCallStack => [TestCC] -> IO ()
+    test_ [tc] = test tc
+    test_ _ = error "expected 1 chat client"
+
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts
 
@@ -423,11 +433,10 @@ smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
       tbqSize = 1,
-      -- serverTbqSize = 1,
-      msgQueueQuota = 16,
       msgStoreType = AMSType SMSMemory,
-      maxJournalMsgCount = 1000,
-      maxJournalStateLines = 1000,
+      msgQueueQuota = 16,
+      maxJournalMsgCount = 24,
+      maxJournalStateLines = 4,
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
@@ -439,6 +448,8 @@ smpServerCfg =
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
       messageExpiration = Just defaultMessageExpiration,
+      expireMessagesOnStart = False,
+      idleQueueInterval = defaultIdleQueueInterval,
       notificationExpiration = defaultNtfExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       smpCredentials =
@@ -524,7 +535,7 @@ serverBracket server f = do
   started <- newEmptyTMVarIO
   bracket
     (forkIOWithUnmask ($ server started))
-    (\t -> killThread t >> waitFor started "stop")
+    (\t -> killThread t >> waitFor started "stop" >> threadDelay 100000)
     (\_ -> waitFor started "start" >> f)
   where
     waitFor started s =

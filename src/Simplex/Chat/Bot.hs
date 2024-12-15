@@ -56,7 +56,7 @@ initializeBotAddress' logAddress cc = do
   where
     showBotAddress uri = do
       when logAddress $ putStrLn $ "Bot's contact address is: " <> B.unpack (strEncode uri)
-      void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {acceptIncognito = False, autoReply = Nothing}
+      void $ sendChatCmd cc $ AddressAutoAccept $ Just AutoAccept {businessAddress = False, acceptIncognito = False, autoReply = Nothing}
 
 sendMessage :: ChatController -> Contact -> Text -> IO ()
 sendMessage cc ct = sendComposedMessage cc ct Nothing . MCText

@@ -7,6 +7,7 @@ import chat.simplex.res.MR
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.io.Closeable
 import java.net.URI
 import kotlin.collections.ArrayList
 
@@ -27,7 +28,9 @@ data class Call(
 
   // When a user has audio call, and then he wants to enable camera but didn't grant permissions for using camera yet,
   // we show permissions view without enabling camera before permissions are granted. After they are granted, enabling camera
-  val wantsToEnableCamera: Boolean = false
+  val wantsToEnableCamera: Boolean = false,
+
+  val androidCallState: Closeable
 ) {
   val encrypted: Boolean get() = localEncrypted && sharedKey != null
   private val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false

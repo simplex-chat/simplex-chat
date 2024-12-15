@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct DatabaseErrorView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @State var status: DBMigrationResult
     @State private var dbKey = ""
     @State private var storedDBKey = kcDatabasePassword.get()
@@ -28,23 +29,39 @@ struct DatabaseErrorView: View {
     }
 
     @ViewBuilder private func databaseErrorView() -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .center, spacing: 20) {
             switch status {
             case let .errorNotADatabase(dbFile):
                 if useKeychain && storedDBKey != nil && storedDBKey != "" {
                     titleText("Wrong database passphrase")
                     Text("Database passphrase is different from saved in the keychain.")
+                        .font(.callout)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 25)
+
                     databaseKeyField(onSubmit: saveAndRunChat)
-                    saveAndOpenButton()
-                    fileNameText(dbFile)
+                    Spacer()
+                    VStack(spacing: 10) {
+                        saveAndOpenButton()
+                        fileNameText(dbFile)
+                    }
                 } else {
                     titleText("Encrypted database")
                     Text("Database passphrase is required to open chat.")
+                        .font(.callout)
+                        .foregroundColor(theme.colors.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 25)
+                        .padding(.bottom, 5)
+
                     if useKeychain {
                         databaseKeyField(onSubmit: saveAndRunChat)
+                        Spacer()
                         saveAndOpenButton()
                     } else {
                         databaseKeyField(onSubmit: { runChat() })
+                        Spacer()
                         openChatButton()
                     }
                 }
@@ -52,73 +69,105 @@ struct DatabaseErrorView: View {
                 switch migrationError {
                 case let .upgrade(upMigrations):
                     titleText("Database upgrade")
-                    Button("Upgrade and open chat") { runChat(confirmMigrations: .yesUp) }
-                    fileNameText(dbFile)
                     migrationsText(upMigrations.map(\.upName))
+                    Spacer()
+                    VStack(spacing: 10) {
+                        Button("Upgrade and open chat") {
+                            runChat(confirmMigrations: .yesUp)
+                        }.buttonStyle(OnboardingButtonStyle(isDisabled: false))
+                        fileNameText(dbFile)
+                    }
                 case let .downgrade(downMigrations):
                     titleText("Database downgrade")
-                    Text("Warning: you may lose some data!").bold()
-                    Button("Downgrade and open chat") { runChat(confirmMigrations: .yesUpDown) }
-                    fileNameText(dbFile)
+                    Text("Warning: you may lose some data!")
+                        .bold()
+                        .padding(.horizontal, 25)
+                        .multilineTextAlignment(.center)
+
                     migrationsText(downMigrations)
+                    Spacer()
+                    VStack(spacing: 10) {
+                        Button("Downgrade and open chat") {
+                            runChat(confirmMigrations: .yesUpDown)
+                        }.buttonStyle(OnboardingButtonStyle(isDisabled: false))
+                        fileNameText(dbFile)
+                    }
                 case let .migrationError(mtrError):
                     titleText("Incompatible database version")
-                    fileNameText(dbFile)
-                    Text("Error: ") + Text(mtrErrorDescription(mtrError))
+                    fileNameText(dbFile, font: .callout)
+                    errorView(Text(mtrErrorDescription(mtrError)))
                 }
             case let .errorSQL(dbFile, migrationSQLError):
                 titleText("Database error")
-                fileNameText(dbFile)
-                Text("Error: \(migrationSQLError)")
+                fileNameText(dbFile, font: .callout)
+                errorView(Text("Error: \(migrationSQLError)"))
             case .errorKeychain:
                 titleText("Keychain error")
-                Text("Cannot access keychain to save database password")
+                errorView(Text("Cannot access keychain to save database password"))
             case .invalidConfirmation:
                 // this can only happen if incorrect parameter is passed
-                Text(String("Invalid migration confirmation")).font(.title)
+                titleText("Invalid migration confirmation")
+                errorView()
+
             case let .unknown(json):
                 titleText("Database error")
-                Text("Unknown database error: \(json)")
+                errorView(Text("Unknown database error: \(json)"))
             case .ok:
                 EmptyView()
             }
             if showRestoreDbButton {
-                Spacer().frame(height: 10)
+                Spacer()
                 Text("The attempt to change database passphrase was not completed.")
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 25)
+                    .font(.footnote)
+
                 restoreDbButton()
             }
         }
-        .padding()
+        .padding(.horizontal, 25)
+        .padding(.top, 75)
+        .padding(.bottom, 25)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear() { showRestoreDbButton = shouldShowRestoreDbButton() }
     }
 
-    private func titleText(_ s: LocalizedStringKey) -> Text {
-        Text(s).font(.title)
+    private func titleText(_ s: LocalizedStringKey) -> some View {
+        Text(s).font(.largeTitle).bold().multilineTextAlignment(.center)
     }
 
-    private func fileNameText(_ f: String) -> Text {
-        Text("File: \((f as NSString).lastPathComponent)")
+    private func fileNameText(_ f: String, font: Font = .caption) -> Text {
+        Text("File: \((f as NSString).lastPathComponent)").font(font)
     }
 
-    private func migrationsText(_ ms: [String]) -> Text {
-        Text("Migrations: \(ms.joined(separator: ", "))")
+    private func migrationsText(_ ms: [String]) -> some View {
+        (Text("Migrations:").font(.subheadline) + Text(verbatim: "\n") + Text(ms.joined(separator: "\n")).font(.caption))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 25)
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
         PassphraseField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit)
+            .padding(.vertical, 10)
+            .padding(.horizontal)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(uiColor: .tertiarySystemFill))
+            )
     }
 
     private func saveAndOpenButton() -> some View {
         Button("Save passphrase and open chat") {
             saveAndRunChat()
         }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func openChatButton() -> some View {
         Button("Open chat") {
             runChat()
         }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func saveAndRunChat() {
@@ -192,8 +241,9 @@ struct DatabaseErrorView: View {
                 secondaryButton: .cancel()
             ))
         } label: {
-            Text("Restore database backup").foregroundColor(.red)
+            Text("Restore database backup")
         }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func restoreDb() {
@@ -207,6 +257,23 @@ struct DatabaseErrorView: View {
                 message: Text(error.localizedDescription)
             ))
         }
+    }
+    
+    private func errorView(_ s: Text? = nil) -> some View {
+        VStack(spacing: 35) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .resizable()
+                .frame(width: 50, height: 50)
+                .foregroundColor(.red)
+            
+            if let text = s {
+                text
+                    .multilineTextAlignment(.center)
+                    .font(.footnote)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
     }
 }
 

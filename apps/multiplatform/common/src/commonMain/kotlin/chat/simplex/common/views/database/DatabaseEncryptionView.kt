@@ -48,6 +48,7 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
   val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.ksDatabasePassword.get() ?: "" else "") }
   val newKey = rememberSaveable { mutableStateOf("") }
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
+  val chatLastStart = remember { mutableStateOf(appPrefs.chatLastStart.get()) }
 
   Box(
     Modifier.fillMaxSize(),
@@ -63,8 +64,9 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
       progressIndicator,
       migration,
       onConfirmEncrypt = {
-        withLongRunningApi {
-          encryptDatabase(
+        // it will try to stop and start the chat in case of: non-migration && successful encryption. In migration the chat will remain stopped
+        stopChatRunBlockStartChat(migration, chatLastStart, progressIndicator, ) {
+          val success = encryptDatabase(
             currentKey = currentKey,
             newKey = newKey,
             confirmNewKey = confirmNewKey,
@@ -74,6 +76,7 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
             progressIndicator = progressIndicator,
             migration = migration
           )
+          success && !migration
         }
       }
     )
@@ -306,7 +309,6 @@ private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean
   alert.invoke()
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun PassphraseField(
   key: MutableState<String>,

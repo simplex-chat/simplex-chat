@@ -174,7 +174,7 @@ private fun ModalData.NewChatSheetLayout(
   val actionButtonsOriginal = listOf(
     Triple(
       painterResource(MR.images.ic_add_link),
-      stringResource(MR.strings.add_contact_tab),
+      stringResource(MR.strings.create_1_time_link),
       addContact,
     ),
     Triple(
@@ -334,7 +334,7 @@ private fun ModalData.NewChatSheetLayout(
 
   @Composable
   fun NonOneHandLazyColumn() {
-    val blankSpaceSize = topPaddingToContent()
+    val blankSpaceSize = topPaddingToContent(false)
     LazyColumnWithScrollBar(
       Modifier.imePadding(),
       state = listState,
@@ -646,7 +646,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     )
 
     Box {
-      val topPaddingToContent = topPaddingToContent()
+      val topPaddingToContent = topPaddingToContent(false)
       LazyColumnWithScrollBar(
         if (!oneHandUI.value) Modifier.imePadding() else Modifier,
         contentPadding = PaddingValues(

@@ -57,7 +57,6 @@
     <string name="keychain_is_storing_securely">Android Keystore é usada para armazenar a senha com segurança - permite que o serviço de notificação funcione.</string>
     <string name="keychain_allows_to_receive_ntfs">A Android Keystore será usada para armazenar a senha com segurança depois que você reiniciar o aplicativo ou alterar a senha - isso permitirá o recebimento de notificações.</string>
     <string name="cannot_access_keychain">Não é possível acessar a Keystore para salvar a senha do banco de dados</string>
-    <string name="chat_archive_section">ARQUIVO DE BATE-PAPO</string>
     <string name="chat_is_stopped_indication">O bate-papo está parado</string>
     <string name="clear_contacts_selection_button">Limpar</string>
     <string name="chat_preferences">Preferências de bate-papo</string>
@@ -81,7 +80,6 @@
     <string name="chat_is_running">O bate-papo está em execução</string>
     <string name="chat_is_stopped">O bate-papo está parado</string>
     <string name="change_database_passphrase_question">Alterar senha do banco de dados\?</string>
-    <string name="chat_archive_header">Arquivo de chat</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">endereço alterado para você</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Você e seu contato podem enviar mensagens temporárias.</string>
     <string name="full_backup">Backup de dados do aplicativo</string>
@@ -180,8 +178,6 @@
     <string name="confirm_new_passphrase">Confirmar nova senha…</string>
     <string name="current_passphrase">Senha atual…</string>
     <string name="database_passphrase_is_required">Senha do banco de dados é necessária para abrir o chat.</string>
-    <string name="delete_archive">Excluir arquivo</string>
-    <string name="delete_chat_archive_question">Excluir arquivo de chat\?</string>
     <string name="rcv_group_event_changed_member_role">cargo alterado de %s para %s</string>
     <string name="rcv_group_event_member_connected">conectado</string>
     <string name="delete_link">Excluir link</string>
@@ -218,7 +214,6 @@
     <string name="connection_error_auth">Erro de conexão (AUTH)</string>
     <string name="display_name_connection_established">conexão estabelecida</string>
     <string name="connection_local_display_name">conexão %1$d</string>
-    <string name="archive_created_on_ts">Criado em %1$s</string>
     <string name="maximum_supported_file_size">Atualmente, o tamanho máximo de arquivo suportado é %1$s.</string>
     <string name="delete_verb">Excluir</string>
     <string name="database_encryption_will_be_updated">Ssnha de criptografia do banco de dados será atualizada e armazenada na Keystore.</string>
@@ -338,7 +333,7 @@
     <string name="settings_experimental_features">Funcionalidades experimentais</string>
     <string name="error_creating_link_for_group">Erro ao criar o link de grupo</string>
     <string name="error_deleting_link_for_group">Erro ao excluir o link de grupo</string>
-    <string name="direct_messages_are_prohibited_in_chat">Mensagens diretas entre membros são proibidas neste grupo.</string>
+    <string name="direct_messages_are_prohibited_in_group">Mensagens diretas entre membros são proibidas neste grupo.</string>
     <string name="ttl_h">%dh</string>
     <string name="ttl_hours">%d horas</string>
     <string name="description_via_contact_address_link_incognito">anônimo via link de endereço de contato</string>
@@ -474,7 +469,6 @@
     <string name="app_version_code">Compilação do aplicativo: %s</string>
     <string name="save_and_notify_contact">Salvar e notificar contato</string>
     <string name="callstate_received_answer">resposta recebida…</string>
-    <string name="read_more_in_github">Leia mais no nosso repositório do GitHub.</string>
     <string name="paste_the_link_you_received">Cole o link que você recebeu</string>
     <string name="onboarding_notifications_mode_off">Quando o aplicativo está em execução</string>
     <string name="onboarding_notifications_mode_periodic">Periódico</string>
@@ -592,7 +586,6 @@
     <string name="markdown_in_messages">Markdown em mensagens</string>
     <string name="smp_servers">Servidores SMP</string>
     <string name="smp_servers_preset_address">Endereço do servidor pré-definido</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Muitos perguntaram:<i> se SimpleX não tem identificadores de usuários, como ele pode mandar mensagens\?</i>]]></string>
     <string name="reject">Rejeitar</string>
     <string name="integrity_msg_skipped">%1$d mensagem(s) ignorada(s)</string>
     <string name="protect_app_screen">Proteger a tela do aplicativo</string>
@@ -685,7 +678,6 @@
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Esta ação não pode ser desfeita - seu perfil, contatos, mensagens e arquivos serão irreversivelmente perdidos.</string>
     <string name="remove_passphrase">Remover</string>
     <string name="wrong_passphrase">Senha do banco de dados incorreta</string>
-    <string name="save_archive">Salvar arquivo</string>
     <string name="restore_passphrase_not_found_desc">Senha não encontrada na Keystore, por favor digite-a manualmente. Isso pode ter ocorrido se você recuperou os dados do app usando uma ferramenta de backup. Se esse não é o caso, por favor, contate os desenvolvedores.</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Você se juntou a este grupo. Conectando-se a um membro convidado do grupo.</string>
     <string name="leave_group_question">Sair do grupo\?</string>
@@ -857,12 +849,10 @@
     <string name="to_start_a_new_chat_help_header">Para começar um novo bate-papo</string>
     <string name="la_notice_turn_on">Ligar</string>
     <string name="welcome">Bem-vindo(a)!</string>
-    <string name="next_generation_of_private_messaging">A próxima geração
-\nde mensageiros privados</string>
+    <string name="next_generation_of_private_messaging">A próxima geração \nde mensageiros privados</string>
     <string name="settings_section_title_socks">PROXY SOCKS</string>
     <string name="database_backup_can_be_restored">A tentativa de alterar a senha do banco de dados não foi concluída.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Pare o bate-papo para exportar, importar ou excluir o banco de dados do chat. Você não poderá receber e enviar mensagens enquanto o chat estiver interrompido.</string>
-    <string name="stop_chat_to_enable_database_actions">Pare o bate-papo para ativar ações no banco de dados.</string>
     <string name="chat_item_ttl_seconds">%s segundo(s)</string>
     <string name="unknown_database_error_with_info">Erro de banco de dados desconhecido: %s</string>
     <string name="unknown_error">Erro desconhecido</string>
@@ -895,7 +885,7 @@
     <string name="you_are_observer">você é um observador</string>
     <string name="voice_message_with_duration">Mensagem de voz (%1$s)</string>
     <string name="share_link">Compartilhar link</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger a privacidade, em vez dos IDs de usuário usados por todas as outras plataformas, SimpleX tem identificadores para filas de mensagens, separados para cada um de seus contatos.</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger a privacidade, SimpleX usa identificadores separados para cada um de seus contatos.</string>
     <string name="icon_descr_video_call">chamada de vídeo</string>
     <string name="show_call_on_lock_screen">Mostrar</string>
     <string name="webrtc_ice_servers">Servidores ICE WebRTC</string>
@@ -1016,11 +1006,10 @@
     <string name="settings_section_title_support">APOIE SIMPLEX CHAT</string>
     <string name="enable_automatic_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas antes do selecionado serão excluídas. Pode levar vários minutos.</string>
     <string name="confirm_database_upgrades">Confirme as atualizações do banco de dados</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens enviadas com <b>criptografia de ponta a ponta em duas camadas</b>.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Somente o cliente dos dispositivos armazenam perfis de usuários, contatos, grupos e mensagens.</string>
     <string name="thank_you_for_installing_simplex">Obrigado por instalar o SimpleX Chat!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A plataforma de mensagens que protege sua privacidade e segurança.</string>
     <string name="invite_prohibited_description">Você está tentando convidar um contato com quem compartilhou um perfil anônimo para o grupo no qual está usando seu perfil principal</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Você controla por meio de qual(is) servidor(es) <b>receber</b> as mensagens, seus contatos controlam os servidores que você usa para enviar mensagens.]]></string>
     <string name="smp_server_test_secure_queue">Fila segura</string>
     <string name="icon_descr_profile_image_placeholder">imagem de perfil temporária</string>
     <string name="error_loading_smp_servers">Erro ao carregar servidores SMP</string>
@@ -2104,4 +2093,5 @@
     <string name="network_proxy_incorrect_config_title">Erro ao salvar proxy</string>
     <string name="network_proxy_password">Senha</string>
     <string name="network_proxy_username">Nome de usuário</string>
+    <string name="network_session_mode_session">Sessão do aplicativo</string>
 </resources>

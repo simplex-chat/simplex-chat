@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -164,7 +165,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
         (True, CISRcvNew) -> do
           let itemId = chatItemId' ci
               chatRef = chatInfoToRef chat
-          void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
+          void $ runReaderT (runExceptT $ processChatCommand (APIChatItemsRead chatRef [itemId])) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =

@@ -194,7 +194,7 @@ private fun ShareList(
       filteredChats(false, mutableStateOf(false), mutableStateOf(null), search, sorted)
     }
   }
-  val topPaddingToContent = topPaddingToContent()
+  val topPaddingToContent = topPaddingToContent(false)
   LazyColumnWithScrollBar(
     modifier = Modifier.then(if (oneHandUI.value) Modifier.consumeWindowInsets(WindowInsets.navigationBars.only(WindowInsetsSides.Vertical)) else Modifier).imePadding(),
     contentPadding = PaddingValues(

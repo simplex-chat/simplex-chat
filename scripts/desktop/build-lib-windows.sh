@@ -36,7 +36,7 @@ mkdir dist-newstyle 2>/dev/null || true
 
 scripts/desktop/prepare-openssl-windows.sh
 
-openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
+openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
 rm -rf $BUILD_DIR 2>/dev/null || true
 # Existence of this directory produces build error: cabal's bug
 rm -rf dist-newstyle/src/direct-sq* 2>/dev/null || true
@@ -47,7 +47,7 @@ echo "    flags: +openssl" >> cabal.project.local
 echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
 echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
 echo "package simplex-chat" >> cabal.project.local
-echo "    ghc-options: -shared -threaded -optl-L$openssl_windows_style_path -optl-lcrypto-1_1-x64 -o libsimplex.dll libsimplex.dll.def" >> cabal.project.local
+echo "    ghc-options: -shared -threaded -optl-L$openssl_windows_style_path -optl-lcrypto-3-x64 -o libsimplex.dll libsimplex.dll.def" >> cabal.project.local
 # Very important! Without it the build fails on linking step since the linker can't find exported symbols.
 # It looks like GHC bug because with such random path the build ends successfully
 sed -i "s/ld.lld.exe/abracadabra.exe/" `ghc --print-libdir`/settings
@@ -57,7 +57,7 @@ rm -rf apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 rm -rf apps/multiplatform/desktop/build/cmake
 
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-cp dist-newstyle/openssl-1.1.1w/libcrypto-1_1-x64.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp dist-newstyle/openssl-3.0.15/libcrypto-3-x64.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp libsimplex.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
 scripts/desktop/prepare-vlc-windows.sh

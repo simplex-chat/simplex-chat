@@ -1,5 +1,24 @@
 # Blog
 
+Dec 10, 2024 [SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
+
+- SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app to improve metadata privacy in SimpleX network.
+- Business chats for better privacy and support of your customers.
+- Better user experience: open on the first unread, jump to quoted messages, see who reacted.
+- Improving notifications in iOS app.
+
+--
+
+Nov 25, 2024 [Servers operated by Flux - true privacy and decentralization for all users](./20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.md)
+
+- Welcome, Flux - the new servers in v6.2-beta.1!
+- What's the problem?
+- Using two operators improves connection privacy.
+- SimpleX decentralization compared with Matrix, Session and Tor.
+- What is next for SimpleX decentralization?
+
+---
+
 Oct 14, 2024 [SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
 
 New security audit: Trail of Bits reviewed the cryptographic design of protocols used in SimpleX network and apps.

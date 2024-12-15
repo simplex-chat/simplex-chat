@@ -115,7 +115,6 @@
         android:launchMode="singleInstance"
         android:supportsPictureInPicture="true"
         android:autoRemoveFromRecents="true"
-        android:screenOrientation="portrait"
         android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"/>
 
     <provider

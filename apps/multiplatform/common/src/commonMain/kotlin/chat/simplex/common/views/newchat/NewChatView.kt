@@ -38,8 +38,7 @@ import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.net.URI
 
 enum class NewChatOption {
@@ -98,7 +97,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
   val tabTitles = NewChatOption.values().map {
     when(it) {
       NewChatOption.INVITE ->
-        stringResource(MR.strings.add_contact_tab)
+        stringResource(MR.strings.one_time_link_short)
       NewChatOption.CONNECT ->
         stringResource(MR.strings.connect_via_link)
     }
@@ -400,7 +399,7 @@ fun ActiveProfilePicker(
         .fillMaxSize()
         .alpha(if (progressByTimeout) 0.6f else 1f)
     ) {
-      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent()), userScrollEnabled = !switchingProfile.value) {
+      LazyColumnWithScrollBar(Modifier.padding(top = topPaddingToContent(false)), userScrollEnabled = !switchingProfile.value) {
         item {
           val oneHandUI = remember { appPrefs.oneHandUI.state }
           if (oneHandUI.value) {
@@ -559,15 +558,14 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
 
     SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
-        withBGApi {
-          val res = verify(rhId, text, close)
-          if (!res) {
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.invalid_qr_code),
-              text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
-            )
-          }
+        val linkVerified = verifyOnly(text)
+        if (!linkVerified) {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.invalid_qr_code),
+            text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
+          )
         }
+        verifyAndConnect(rhId, text, close)
       }
     }
   }
@@ -656,23 +654,25 @@ private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): L
   }
 }
 
-private suspend fun verify(rhId: Long?, text: String?, close: () -> Unit): Boolean {
+private fun verifyOnly(text: String?): Boolean = text != null && strIsSimplexLink(text)
+
+private suspend fun verifyAndConnect(rhId: Long?, text: String?, close: () -> Unit): Boolean {
   if (text != null && strIsSimplexLink(text)) {
-    connect(rhId, text, close)
-    return true
+    return withContext(Dispatchers.Default) {
+      connect(rhId, text, close)
+    }
   }
   return false
 }
 
-private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanup: (() -> Unit)? = null) {
+private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanup: (() -> Unit)? = null): Boolean =
   planAndConnect(
     rhId,
     link,
     close = close,
     cleanup = cleanup,
     incognito = null
-  )
-}
+  ).await()
 
 private fun createInvitation(
   rhId: Long?,

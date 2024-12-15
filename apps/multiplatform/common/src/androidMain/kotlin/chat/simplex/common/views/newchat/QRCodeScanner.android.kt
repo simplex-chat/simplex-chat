@@ -33,6 +33,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.common.util.concurrent.ListenableFuture
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.delay
 import java.util.concurrent.*
 
 // Adapted from learntodroid - https://gist.github.com/learntodroid/8f839be0b29d0378f843af70607bd7f5
@@ -41,13 +42,13 @@ import java.util.concurrent.*
 actual fun QRCodeScanner(
   showQRCodeScanner: MutableState<Boolean>,
   padding: PaddingValues,
-  onBarcode: (String) -> Unit
+  onBarcode: suspend (String) -> Boolean
 ) {
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
-  var preview by remember { mutableStateOf<Preview?>(null) }
-  var lastAnalyzedTimeStamp = 0L
-  var contactLink = ""
+  val preview = remember { mutableStateOf<Preview?>(null) }
+  val contactLink = remember { mutableStateOf("") }
+  val checkingLink = remember { mutableStateOf(false) }
 
   val cameraProviderFuture by produceState<ListenableFuture<ProcessCameraProvider>?>(initialValue = null) {
     value = ProcessCameraProvider.getInstance(context)
@@ -86,28 +87,33 @@ actual fun QRCodeScanner(
           .build()
         val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
         cameraProviderFuture?.addListener({
-          preview = Preview.Builder().build().also {
+          preview.value = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
           }
           val detector: QrCodeDetector<GrayU8> = FactoryFiducial.qrcode(null, GrayU8::class.java)
-          fun getQR(imageProxy: ImageProxy) {
-            val currentTimeStamp = System.currentTimeMillis()
-            if (currentTimeStamp - lastAnalyzedTimeStamp >= TimeUnit.SECONDS.toMillis(1)) {
-              detector.process(imageProxyToGrayU8(imageProxy))
-              val found = detector.detections
-              val qr = found.firstOrNull()
-              if (qr != null) {
-                if (qr.message != contactLink) {
-                  // Make sure link is new and not a repeat
-                  contactLink = qr.message
-                  onBarcode(contactLink)
+          suspend fun getQR(imageProxy: ImageProxy) {
+            if (checkingLink.value) return
+            checkingLink.value = true
+
+            detector.process(imageProxyToGrayU8(imageProxy))
+            val found = detector.detections
+            val qr = found.firstOrNull()
+            if (qr != null) {
+              if (qr.message != contactLink.value) {
+                // Make sure link is new and not a repeat if that link was handled successfully
+                if (onBarcode(qr.message)) {
+                  contactLink.value = qr.message
                 }
+                // just some delay to not spam endlessly with alert in case the user scan something wrong, and it fails fast
+                // (for example, scan user's address while verifying contact code - it prevents alert spam)
+                delay(1000)
               }
             }
+            checkingLink.value = false
             imageProxy.close()
           }
 
-          val imageAnalyzer = ImageAnalysis.Analyzer { proxy -> getQR(proxy) }
+          val imageAnalyzer = ImageAnalysis.Analyzer { proxy -> withApi { getQR(proxy) } }
           val imageAnalysis: ImageAnalysis = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setImageQueueDepth(1)
@@ -115,7 +121,7 @@ actual fun QRCodeScanner(
             .also { it.setAnalyzer(cameraExecutor, imageAnalyzer) }
           try {
             cameraProviderFuture?.get()?.unbindAll()
-            cameraProviderFuture?.get()?.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
+            cameraProviderFuture?.get()?.bindToLifecycle(lifecycleOwner, cameraSelector, preview.value, imageAnalysis)
           } catch (e: Exception) {
             Log.d(TAG, "CameraPreview: ${e.localizedMessage}")
           }

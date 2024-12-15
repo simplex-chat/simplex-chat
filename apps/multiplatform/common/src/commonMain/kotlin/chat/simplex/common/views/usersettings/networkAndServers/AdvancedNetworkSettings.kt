@@ -1,4 +1,4 @@
-package chat.simplex.common.views.usersettings
+package chat.simplex.common.views.usersettings.networkAndServers
 
 import SectionBottomSpacer
 import SectionDividerSpaced
@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import java.text.DecimalFormat
 
@@ -417,7 +418,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(MR.images.ic_arrow_drop_down) else painterResource(MR.images.ic_arrow_drop_up),
-          generalGetString(MR.strings.invite_to_group_button),
+          contentDescription = null,
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )
@@ -477,7 +478,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
         Spacer(Modifier.size(4.dp))
         Icon(
           if (!expanded.value) painterResource(MR.images.ic_arrow_drop_down) else painterResource(MR.images.ic_arrow_drop_up),
-          generalGetString(MR.strings.invite_to_group_button),
+          contentDescription = null,
           modifier = Modifier.padding(start = 8.dp),
           tint = MaterialTheme.colors.secondary
         )

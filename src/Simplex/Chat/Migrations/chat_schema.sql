@@ -127,7 +127,11 @@ CREATE TABLE groups(
   via_group_link_uri_hash BLOB,
   user_member_profile_sent_at TEXT,
   custom_data BLOB,
-  ui_themes TEXT, -- received
+  ui_themes TEXT,
+  business_member_id BLOB NULL,
+  business_chat TEXT NULL,
+  business_xcontact_id BLOB NULL,
+  customer_member_id BLOB NULL, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -309,6 +313,7 @@ CREATE TABLE user_contact_links(
   auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   group_link_id BLOB,
   group_link_member_role TEXT NULL,
+  business_address INTEGER DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -360,7 +365,7 @@ CREATE TABLE pending_group_messages(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE chat_items(
-  chat_item_id INTEGER PRIMARY KEY,
+  chat_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
@@ -399,6 +404,7 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
   via_proxy INTEGER
 );
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
@@ -429,7 +435,6 @@ CREATE TABLE commands(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
-CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE settings(
   settings_id INTEGER PRIMARY KEY,
   chat_item_ttl INTEGER,
@@ -589,6 +594,35 @@ CREATE TABLE note_folders(
   unread_chat INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE app_settings(app_settings TEXT NOT NULL);
+CREATE TABLE server_operators(
+  server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  server_operator_tag TEXT,
+  trade_name TEXT NOT NULL,
+  legal_name TEXT,
+  server_domains TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  smp_role_storage INTEGER NOT NULL DEFAULT 1,
+  smp_role_proxy INTEGER NOT NULL DEFAULT 1,
+  xftp_role_storage INTEGER NOT NULL DEFAULT 1,
+  xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE usage_conditions(
+  usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conditions_commit TEXT NOT NULL UNIQUE,
+  notified_at TEXT,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE operator_usage_conditions(
+  operator_usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  server_operator_id INTEGER REFERENCES server_operators(server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  server_operator_tag TEXT,
+  conditions_commit TEXT NOT NULL,
+  accepted_at TEXT,
+  created_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -598,17 +632,6 @@ CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
 CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
-CREATE INDEX idx_chat_items_groups ON chat_items(
-  user_id,
-  group_id,
-  item_ts,
-  chat_item_id
-);
-CREATE INDEX idx_chat_items_contacts ON chat_items(
-  user_id,
-  contact_id,
-  chat_item_id
-);
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
   user_id,
   contact_id,
@@ -858,25 +881,10 @@ CREATE INDEX idx_chat_items_contacts_created_at on chat_items(
   contact_id,
   created_at
 );
-CREATE INDEX idx_chat_items_contacts_item_status on chat_items(
-  user_id,
-  contact_id,
-  item_status
-);
-CREATE INDEX idx_chat_items_groups_item_status on chat_items(
-  user_id,
-  group_id,
-  item_status
-);
 CREATE INDEX idx_chat_items_notes_created_at on chat_items(
   user_id,
   note_folder_id,
   created_at
-);
-CREATE INDEX idx_chat_items_notes_item_status on chat_items(
-  user_id,
-  note_folder_id,
-  item_status
 );
 CREATE INDEX idx_files_redirect_file_id on files(redirect_file_id);
 CREATE INDEX idx_chat_items_fwd_from_contact_id ON chat_items(
@@ -890,3 +898,34 @@ CREATE INDEX idx_received_probes_group_member_id on received_probes(
   group_member_id
 );
 CREATE INDEX idx_contact_requests_contact_id ON contact_requests(contact_id);
+CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_conditions(
+  server_operator_id
+);
+CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(
+  conditions_commit,
+  server_operator_id
+);
+CREATE INDEX idx_chat_items_contacts ON chat_items(
+  user_id,
+  contact_id,
+  item_status,
+  created_at
+);
+CREATE INDEX idx_chat_items_groups ON chat_items(
+  user_id,
+  group_id,
+  item_status,
+  item_ts
+);
+CREATE INDEX idx_chat_items_groups_item_ts ON chat_items(
+  user_id,
+  group_id,
+  item_ts
+);
+CREATE INDEX idx_chat_items_notes ON chat_items(
+  user_id,
+  note_folder_id,
+  item_status,
+  created_at
+);
+CREATE INDEX idx_groups_business_xcontact_id ON groups(business_xcontact_id);

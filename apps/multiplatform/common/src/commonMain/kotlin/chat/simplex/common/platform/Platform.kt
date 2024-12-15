@@ -10,6 +10,7 @@ import chat.simplex.common.model.ChatId
 import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.ui.theme.CurrentColors
 import kotlinx.coroutines.Job
+import java.io.Closeable
 
 interface PlatformInterface {
   suspend fun androidServiceStart() {}
@@ -26,6 +27,8 @@ interface PlatformInterface {
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}
   fun androidRestartNetworkObserver() {}
+  fun androidCreateActiveCallState(): Closeable = Closeable { }
+  fun androidIsXiaomiDevice(): Boolean = false
   val androidApiLevel: Int? get() = null
   @Composable fun androidLockPortraitOrientation() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true

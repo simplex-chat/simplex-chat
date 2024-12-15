@@ -609,6 +609,7 @@ fun themedBackgroundBrush(): Brush = Brush.linearGradient(
 )
 
 val DEFAULT_PADDING = 20.dp
+val DEFAULT_ONBOARDING_HORIZONTAL_PADDING = 25.dp
 val DEFAULT_SPACE_AFTER_ICON = 4.dp
 val DEFAULT_PADDING_HALF = DEFAULT_PADDING / 2
 val DEFAULT_BOTTOM_PADDING = 48.dp
