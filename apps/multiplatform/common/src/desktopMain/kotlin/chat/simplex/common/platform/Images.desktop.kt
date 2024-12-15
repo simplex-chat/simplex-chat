@@ -29,7 +29,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
   return try {
     ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode(imageString))).toComposeImageBitmap()
   } catch (e: Exception) { // ByteArrayInputStream returns null
-    Log.e(TAG, "base64ToBitmap error: $e for \"$base64ImageString\"")
+    Log.e(TAG, "base64ToBitmap error: $e for input '$base64ImageString' -> '$imageString'")
     errorBitmap()
   }
 }

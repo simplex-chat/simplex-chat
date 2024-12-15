@@ -34,7 +34,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
     BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size).asImageBitmap()
   } catch (e: Exception) {
-    Log.e(TAG, "base64ToBitmap error: $e")
+    Log.e(TAG, "base64ToBitmap error: $e for input '$base64ImageString' -> '$imageString'")
     errorBitmap.asImageBitmap()
   }
 }
@@ -46,7 +46,7 @@ actual fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String {
   compressImageData(image, true).writeTo(output)
   output.flush()
   output.close()
-  var str = chatResizeImageToStrSize(tmpFileName, maxDataSize)
+  var str = chatResizeImageToStrSize(tmpFile.absolutePath, maxDataSize)
   removeFile(tmpFileName)
   return str
 }
