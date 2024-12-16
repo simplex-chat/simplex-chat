@@ -1040,7 +1040,6 @@ tagDirectChat db contactId tId =
 untagDirectChat :: DB.Connection -> User -> ContactId -> ChatTagId -> IO ()
 untagDirectChat db user contactId tId = do
   untagDirectChat' db contactId tId
-  deleteChatTagIfEmpty db user tId
 
 untagDirectChat' :: DB.Connection -> ContactId -> ChatTagId -> IO ()
 untagDirectChat' db contactId tId =

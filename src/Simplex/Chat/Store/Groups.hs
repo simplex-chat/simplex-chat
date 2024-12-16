@@ -2324,7 +2324,6 @@ tagGroupChat db groupId tId =
 untagGroupChat :: DB.Connection -> User -> GroupId -> ChatTagId -> IO ()
 untagGroupChat db user gId tId = do
   untagGroupChat' db gId tId
-  deleteChatTagIfEmpty db user tId
 
 untagGroupChat' :: DB.Connection -> GroupId -> ChatTagId -> IO ()
 untagGroupChat' db groupId tId =
