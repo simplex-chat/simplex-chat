@@ -2093,4 +2093,18 @@
     <string name="network_proxy_password">Senha</string>
     <string name="network_proxy_username">Nome de usuário</string>
     <string name="network_session_mode_session">Sessão do aplicativo</string>
+    <string name="address_or_1_time_link">Endereço ou link de uso único?</string>
+    <string name="address_settings">Configurações de endereço</string>
+    <string name="add_your_team_members_to_conversations">Adicione membros da sua equipe às conversas.</string>
+    <string name="v6_1_better_calls">Melhores ligações</string>
+    <string name="operator_added_message_servers">Servidores de mensagem adicionados</string>
+    <string name="operator_added_xftp_servers">Adicionado servidores de mídia e arquivos</string>
+    <string name="appearance_app_toolbars">Barra de ferramentas</string>
+    <string name="onboarding_notifications_mode_service_desc_short">Aplicativo sempre roda em segundo plano</string>
+    <string name="button_add_friends">Adicionar amigos</string>
+    <string name="operator_conditions_accepted">Condições aceitas</string>
+    <string name="display_name_accepted_invitation">Convite aceito</string>
+    <string name="button_add_team_members">Adicionar membros da equipe</string>
+    <string name="onboarding_network_about_operators">Sobre operadores</string>
+    <string name="accept_conditions">Aceite as condições</string>
 </resources>
