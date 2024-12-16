@@ -890,7 +890,7 @@
     <string name="callstatus_connecting">trucada en connexió…</string>
     <string name="migrate_from_device_creating_archive_link">Creant un enllaç a l\'arxiu</string>
     <string name="connecting_to_desktop">Connectant amb l\'ordinador</string>
-    <string name="v5_3_discover_join_groups_descr">- connexiós al servei de directoris (BETA)!\n- justificants de lliurament (fins a 20 socis).\n- més ràpid i més estable.</string>
+    <string name="v5_3_discover_join_groups_descr">- connexiós al servei de directoris (BETA)!\n - justificants de lliurament (fins a 20 socis).\n - més ràpid i més estable.</string>
     <string name="receipts_contacts_enable_for_all">Habilita per a tothom</string>
     <string name="profile_update_event_contact_name_changed">el contacte %1$s ha canviat a %2$s</string>
     <string name="chat_preferences_contact_allows">El contacte permet</string>
@@ -2213,4 +2213,8 @@
     <string name="prohibit_direct_messages">No es permet l\'enviament de missatges directes als membres.</string>
     <string name="prohibit_sending_disappearing">No es permet l\'enviament de missatges temporals.</string>
     <string name="profile_update_will_be_sent_to_contacts">L\'actualització del perfil s\'enviarà als vostres contactes.</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="strikethrough_text">ratllat</string>
+    <string name="delete_messages_after">Suprimir en</string>
+    <string name="users_delete_profile_for">Eliminar el perfil de xat per</string>
 </resources>
