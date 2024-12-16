@@ -579,7 +579,6 @@ struct ChatListTag: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
     @State private var tagEditorNavParams: TagEditorNavParams? = nil
-    @State private var navigateToTagEditor = false
     
     var chatTagsIds: [Int64] { chat?.chatInfo.contact?.chatTags ?? chat?.chatInfo.groupInfo?.chatTags ?? [] }
     
@@ -639,30 +638,34 @@ struct ChatListTag: View {
                 }
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     Button {
-                        navigateToTagEditor = true
                         tagEditorNavParams = TagEditorNavParams(chat: nil, chatListTag: ChatTagData(emoji: emoji, text: text), tagId: tagId)
                     } label: {
                         SwipeLabel(NSLocalizedString("Edit", comment: "swipe action"), systemImage: "pencil", inverted: false)
                     }
                     .tint(theme.colors.primary)
                 }
+                .background(
+                    // isActive required to navigate to edit view from any possible tag edited in swipe action
+                    NavigationLink(isActive: Binding(get: { tagEditorNavParams != nil }, set: { _ in tagEditorNavParams = nil })) {
+                        if let params = tagEditorNavParams {
+                            ChatListTagEditor(
+                                chat: params.chat,
+                                tagId: params.tagId,
+                                emoji: params.chatListTag?.emoji,
+                                name: params.chatListTag?.text ?? ""
+                            )
+                        }
+                    } label: {
+                        EmptyView()
+                    }
+                    .opacity(0)
+                )
             }
-            // isActive required since there are 2 possible ways to navigate to editor view. 1 by click, 2 by swipe in any existing tag
-            NavigationLink(isActive: $navigateToTagEditor) {
-                if let params = tagEditorNavParams {
-                    ChatListTagEditor(
-                        chat: params.chat,
-                        tagId: params.tagId,
-                        emoji: params.chatListTag?.emoji,
-                        name: params.chatListTag?.text ?? ""
-                    )
-                }
+            
+            NavigationLink {
+                ChatListTagEditor(chat: chat)
             } label: {
                 Label("Create list", systemImage: "plus")
-            }
-            .onTapGesture {
-                tagEditorNavParams = TagEditorNavParams(chat: chat, chatListTag: nil, tagId: nil)
-                navigateToTagEditor = true
             }
         }
         .listStyle(.insetGrouped)
