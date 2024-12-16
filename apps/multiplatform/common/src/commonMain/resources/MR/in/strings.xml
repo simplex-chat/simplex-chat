@@ -2219,4 +2219,8 @@
     <string name="stop_sharing_address">Berhenti berbagi alamat?</string>
     <string name="show_developer_options">Tampilkan opsi pengembang</string>
     <string name="open_port_in_firewall_desc">Untuk mengizinkan aplikasi seluler terhubung ke desktop, buka port ini di firewall Anda, jika Anda mengaktifkannya</string>
+    <string name="strikethrough_text">coret</string>
+    <string name="delete_messages_after">Hapus pesan setelah</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="users_delete_profile_for">Hapus obrolan profil untuk</string>
 </resources>
