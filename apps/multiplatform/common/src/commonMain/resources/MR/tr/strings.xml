@@ -2132,4 +2132,5 @@
     <string name="add_your_team_members_to_conversations">Takım üyelerini konuşmalara ekle</string>
     <string name="onboarding_notifications_mode_service_desc_short">Uygulama her zaman arka planda çalışır</string>
     <string name="onboarding_network_about_operators">Operatörler hakkında</string>
+    <string name="a_plus_b">a+b</string>
 </resources>
