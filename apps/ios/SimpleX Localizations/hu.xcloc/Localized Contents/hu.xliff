@@ -1452,14 +1452,14 @@
         <target>A csevegés fut</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped" xml:space="preserve">
+      <trans-unit id="Chat is stopped" xml:space="preserve" approved="no">
         <source>Chat is stopped</source>
-        <target>A csevegés leállt</target>
+        <target state="translated">A csevegés megállt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
-        <target>A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</target>
+        <target state="translated">A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
@@ -2241,9 +2241,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Cím törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete after" xml:space="preserve">
+      <trans-unit id="Delete after" xml:space="preserve" approved="no">
         <source>Delete after</source>
-        <target>Törlés ennyi idő után</target>
+        <target state="translated">Törlés ennyi idő után:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete all files" xml:space="preserve">
@@ -2366,9 +2366,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Üzenetek törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete messages after" xml:space="preserve">
+      <trans-unit id="Delete messages after" xml:space="preserve" approved="no">
         <source>Delete messages after</source>
-        <target>Üzenetek törlése ennyi idő után</target>
+        <target state="translated">Üzenetek törlése ennyi idő után:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete old database" xml:space="preserve">
@@ -2857,9 +2857,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Titkosított üzenet vagy más esemény</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve" approved="no">
         <source>Encrypted message: app is stopped</source>
-        <target>Titkosított üzenet: az alkalmazás leállt</target>
+        <target state="translated">Titkosított üzenet: az alkalmazás megállt</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
