@@ -432,14 +432,15 @@ struct ChatListView: View {
         VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
         VoiceItemState.smallView = [:]
     }
+
     private func filteredChats() -> [Chat] {
         if let linkChatId = searchChatFilteredBySimplexLink {
-            return chatModel.chats.filter { $0.id == linkChatId}
+            return chatModel.chats.filter { $0.id == linkChatId }
         } else {
             let s = searchString()
-            let chats = s == ""
+            return s == ""
             ? chatModel.chats.filter { chat in
-                return !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card && filtered(chat)
+                !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card && filtered(chat)
             }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
@@ -466,14 +467,12 @@ struct ChatListView: View {
                     return false
                 }
             }
-                        
-            return chats
         }
         
         func searchString() -> String {
             searchShowingSimplexLink ? "" : searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
         }
-        
+
         func filtered(_ chat: Chat) -> Bool {
             switch chatTagsModel.activeFilter {
             case let .presetTag(tag):
