@@ -5636,9 +5636,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Valora la aplicación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reachable chat toolbar" xml:space="preserve">
+      <trans-unit id="Reachable chat toolbar" xml:space="preserve" approved="no">
         <source>Reachable chat toolbar</source>
-        <target>Barra de herramientas accesible</target>
+        <target state="translated">Barra de chat accesible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="React…" xml:space="preserve">
@@ -7752,9 +7752,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Usar enrutamiento privado con servidores desconocidos cuando tu dirección IP no está protegida.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers.</source>
-        <target>Usar enrutamiento privado con servidores de retransmisión desconocidos.</target>
+        <target state="translated">Usar enrutamiento privado con servidores de mensaje desconocidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
