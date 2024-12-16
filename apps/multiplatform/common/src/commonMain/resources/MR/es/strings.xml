@@ -309,7 +309,7 @@
     <string name="error_saving_group_profile">Error al guardar perfil de grupo</string>
     <string name="exit_without_saving">Salir sin guardar</string>
     <string name="file_saved">Archivo guardado</string>
-    <string name="icon_descr_flip_camera">Voltear la cámara</string>
+    <string name="icon_descr_flip_camera">Girar la cámara</string>
     <string name="group_invitation_expired">Invitación de grupo caducada</string>
     <string name="alert_message_group_invitation_expired">La invitación al grupo ya no es válida, ha sido eliminada por el remitente.</string>
     <string name="delete_group_for_self_cannot_undo_warning">El grupo será eliminado para tí. ¡No podrá deshacerse!</string>
@@ -1903,7 +1903,7 @@
     <string name="private_routing_error">Error de enrutamiento privado</string>
     <string name="network_error_broker_host_desc">La dirección del servidor es incompatible con la configuración de red: %1$s.</string>
     <string name="network_error_broker_version_desc">La versión del servidor es incompatible con tu aplicación: %1$s.</string>
-    <string name="appearance_font_size">Tamaño fuente</string>
+    <string name="appearance_font_size">Tamaño de la fuente</string>
     <string name="servers_info_reset_stats_alert_error_title">Error al restablecer las estadísticas</string>
     <string name="servers_info_reset_stats_alert_confirm">Restablecer</string>
     <string name="servers_info_reset_stats_alert_message">Las estadísticas de los servidores serán restablecidas. ¡No podrá deshacerse!</string>
