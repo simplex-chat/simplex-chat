@@ -107,30 +107,6 @@ class ChatTagsModel: ObservableObject {
     @Published var activeFilter: ActiveFilter? = nil
 }
 
-private func filterBusinessChat(_ cInfo: ChatInfo) -> Bool {
-   if case let .group(gInfo) = cInfo  {
-       return switch gInfo.businessChat?.chatType {
-       case .none: false
-       case .business: true
-       case .customer: true
-       }
-   } else {
-       return false
-   }
-}
-
-private func filterGroupChat(_ cInfo: ChatInfo) -> Bool {
-   if case let .group(gInfo) = cInfo  {
-       return switch gInfo.businessChat?.chatType {
-       case .none: true
-       case .business: false
-       case .customer: false
-       }
-   } else {
-       return false
-   }
-}
-
 class NetworkModel: ObservableObject {
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
