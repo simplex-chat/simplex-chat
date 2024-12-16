@@ -369,6 +369,11 @@ struct ChatListView: View {
                 .onChange(of: chatModel.currentUser?.userId) { _ in
                     stopAudioPlayer()
                 }
+                .onChange(of: showUnreadAndFavorites) { show in
+                    if show {
+                        chatTagsModel.selectedTag = ChatTagsModel.defaultTag
+                    }
+                }
                 .onChange(of: scrollToSearchBar) { scrollToSearchBar in
                     if scrollToSearchBar {
                         Task { self.scrollToSearchBar = false }
