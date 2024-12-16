@@ -1436,7 +1436,7 @@
     <string name="connected_desktop">Підключений робочий стіл</string>
     <string name="new_mobile_device">Новий мобільний пристрій</string>
     <string name="multicast_connect_automatically">Підключати автоматично</string>
-    <string name="desktop_address">Адреса робочого столу</string>
+    <string name="desktop_address">Адреса комп\'ютера</string>
     <string name="only_one_device_can_work_at_the_same_time">Одночасно може працювати лише один пристрій</string>
     <string name="v5_4_link_mobile_desktop">Підключіть мобільний і десктопний додатки! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Через безпечний квантовостійкий протокол.</string>
@@ -1446,13 +1446,13 @@
     <string name="new_desktop"><![CDATA[<i>(новий)</i>]]></string>
     <string name="unlink_desktop_question">Відключити комп\'ютер?</string>
     <string name="v5_4_better_groups">Кращі групи</string>
-    <string name="linked_desktop_options">Параметри пов\'язаних робочих столів</string>
+    <string name="linked_desktop_options">Параметри пов\'язаних комп\'ютерів</string>
     <string name="linked_desktops">Підключені комп\'ютери</string>
     <string name="discover_on_network">Виявити через локальну мережу</string>
     <string name="v5_4_incognito_groups">Інкогніто групи</string>
     <string name="this_device">Цей пристрій</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобільний <b>%s</b> був відключений]]></string>
-    <string name="waiting_for_desktop">Очікування робочого столу…</string>
+    <string name="waiting_for_desktop">Очікування комп\'ютера…</string>
     <string name="v5_4_better_groups_descr">Швидше приєднуйтесь та надійшовні повідомлення.</string>
     <string name="linked_mobiles">Під’єднані мобільні</string>
     <string name="desktop_device">Робочий стіл</string>
@@ -1461,7 +1461,7 @@
     <string name="loading_remote_file_title">Завантаження файлу</string>
     <string name="connecting_to_desktop">Підключення до комп\'ютера</string>
     <string name="found_desktop">Знайдено робочий стіл</string>
-    <string name="desktop_devices">Пристрої робочого столу</string>
+    <string name="desktop_devices">Комп\'ютери</string>
     <string name="not_compatible">Не сумісно!</string>
     <string name="link_a_mobile">Зв\'язати з мобільним</string>
     <string name="settings_section_title_use_from_desktop">Використовувати з комп\'ютера</string>
@@ -1478,9 +1478,9 @@
     <string name="disconnect_remote_host">Відключити</string>
     <string name="group_member_role_author">автор</string>
     <string name="connected_to_mobile">Підключено до мобільного</string>
-    <string name="bad_desktop_address">Некоректна адреса робочого столу</string>
-    <string name="paste_desktop_address">Вставити адресу робочого столу</string>
-    <string name="verify_code_with_desktop">Перевірити код з робочим столом</string>
+    <string name="bad_desktop_address">Некоректна адреса комп\'ютера</string>
+    <string name="paste_desktop_address">Вставити адресу комп\'ютера</string>
+    <string name="verify_code_with_desktop">Перевірити код з комп\'ютером</string>
     <string name="scan_qr_code_from_desktop">Сканувати QR-код з комп\'ютера</string>
     <string name="devices">Пристрої</string>
     <string name="multicast_discoverable_via_local_network">Виявлено через локальну мережу</string>
@@ -1657,7 +1657,7 @@
     <string name="migrate_from_device_error_deleting_database">Помилка видалення бази даних</string>
     <string name="migrate_from_device_chat_should_be_stopped">Для того, щоб продовжити, чат слід зупинити.</string>
     <string name="migrate_from_device_stopping_chat">Зупинка чату</string>
-    <string name="migrate_from_device_bytes_uploaded">%s завантажено</string>
+    <string name="migrate_from_device_bytes_uploaded">%s вивантажено</string>
     <string name="migrate_from_device_uploading_archive">Завантаження архіву</string>
     <string name="migrate_from_device_creating_archive_link">Створення архівного посилання</string>
     <string name="migrate_from_device_delete_database_from_device">Видалити базу даних з цього пристрою</string>
@@ -1843,7 +1843,7 @@
     <string name="xftp_servers_configured">Налаштовані XFTP сервери</string>
     <string name="app_check_for_updates_beta">Бета</string>
     <string name="info_row_file_status">Статус файлу</string>
-    <string name="servers_info_messages_sent">Повідомлення надіслано</string>
+    <string name="servers_info_messages_sent">Надіслано повідомлень</string>
     <string name="servers_info_statistics_section_header">Статистика</string>
     <string name="servers_info_previously_connected_servers_section_header">Попередньо підключені сервери</string>
     <string name="file_error_auth">Помилковий ключ або невідома адреса чанка файлу - найбільш імовірно, що файл було видалено.</string>
@@ -1945,8 +1945,8 @@
     <string name="current_user">Поточний профіль</string>
     <string name="servers_info_details">Деталі</string>
     <string name="servers_info_sessions_errors">Помилки</string>
-    <string name="servers_info_subscriptions_section_header">Отримання повідомлення</string>
-    <string name="servers_info_messages_received">Повідомлення отримано</string>
+    <string name="servers_info_subscriptions_section_header">Отримання повідомлень</string>
+    <string name="servers_info_messages_received">Отримані повідомлення</string>
     <string name="servers_info_subscriptions_connections_pending">В очікуванні</string>
     <string name="servers_info_proxied_servers_section_header">Проксіровані сервери</string>
     <string name="servers_info_target">Показувати інформацію для</string>
@@ -1977,8 +1977,8 @@
     <string name="downloaded_files">Завантажені файли</string>
     <string name="upload_errors">Помилки завантаження</string>
     <string name="chunks_deleted">Частини видалені</string>
-    <string name="chunks_downloaded">Частини завантажено</string>
-    <string name="chunks_uploaded">Частини завантажено</string>
+    <string name="chunks_downloaded">Частин завантажено</string>
+    <string name="chunks_uploaded">Частин вивантажено</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Ця посилання було використано на іншому мобільному пристрої, створіть нове посилання на комп\'ютері.</string>
     <string name="copy_error">Помилка копіювання</string>
     <string name="remote_ctrl_connection_stopped_desc">Будь ласка, перевірте, що мобільний пристрій і комп\'ютер підключені до однієї локальної мережі, і що брандмауер комп\'ютера дозволяє з\'єднання.
@@ -2027,7 +2027,7 @@
     <string name="completed">Завершено</string>
     <string name="all_users">Всі профілі</string>
     <string name="servers_info_reset_stats_alert_confirm">Скинути</string>
-    <string name="servers_info_uploaded">Завантажено</string>
+    <string name="servers_info_uploaded">Вивантажено</string>
     <string name="delete_members_messages__question">Видалити %d повідомлень учасників?</string>
     <string name="delete_messages_mark_deleted_warning">Повідомлення будуть позначені для видалення. Одержувач(і) зможуть розкрити ці повідомлення.</string>
     <string name="select_verb">Вибрати</string>
@@ -2250,4 +2250,6 @@
     <string name="sync_connection_question">Виправити підключення?</string>
     <string name="debug_logs">Увімкнути журнали</string>
     <string name="error_saving_database">Помилка збереження бази даних</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="strikethrough_text">закреслити</string>
 </resources>
