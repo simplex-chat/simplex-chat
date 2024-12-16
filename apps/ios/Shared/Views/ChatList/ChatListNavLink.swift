@@ -335,7 +335,7 @@ struct ChatListNavLink: View {
     private func setTagChatSheet(_ chat: Chat) {
         let fraction: Double
 
-        switch chatTagsModel.tags.count {
+        switch chatTagsModel.userTags.count {
         case 0..<4:
             fraction = 0.35
         case 4..<9:
@@ -348,7 +348,7 @@ struct ChatListNavLink: View {
             content: {
                 AnyView(
                     NavigationView {
-                        if chatTagsModel.tags.isEmpty {
+                        if chatTagsModel.userTags.isEmpty {
                             ChatListTagEditor(chat: chat)
                         } else {
                             ChatListTag(chat: chat)
@@ -585,69 +585,66 @@ struct ChatListTag: View {
     
     var body: some View {
         List {
-            if !chatTagsModel.tags.isEmpty {
-                ForEach(chatTagsModel.tags) { tag in
-                    if case let .chatTag(emoji, text, tagId) = tag {
-                        let selected = chatTagsIds.contains(tagId)
-                        
-                        HStack {
-                            Text(emoji)
-                            Text(text)
-                                .padding(.leading, 12)
-                            Spacer()
-                            if chat != nil {
-                                radioButton(selected: selected)
-                            }
-                        }
-                        .onTapGesture {
-                            if let c = chat {
-                                if selected {
-                                    untagChat(tagId: tagId, chat: c)
-                                } else {
-                                    // TODO: Temporary until API is final.
-                                    chatTagsIds.forEach { t in
-                                        untagChat(tagId: t, chat: c)
-                                    }
-                                    tagChat(tagId: tagId, chat: c)
-                                }
-                            }
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button {
-                                showAlert(
-                                    NSLocalizedString("Delete list?", comment: "alert title"),
-                                    message: NSLocalizedString("\(text) will be deleted", comment: "alert message"),
-                                    actions: {[
-                                        UIAlertAction(
-                                            title: NSLocalizedString("Cancel", comment: "alert action"),
-                                            style: .default
-                                        ),
-                                        UIAlertAction(
-                                            title: NSLocalizedString("Delete", comment: "alert action"),
-                                            style: .destructive,
-                                            handler: { _ in
-                                                deleteTag(tagId)
-                                            }
-                                        )
-                                    ]}
-                                )
-                            } label: {
-                                SwipeLabel(NSLocalizedString("Delete", comment: "swipe action"), systemImage: "trash.fill", inverted: false)
-                            }
-                            .tint(.red)
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                navigateToTagEditor = true
-                                tagEditorNavParams = TagEditorNavParams(chat: nil, chatListTag: ChatTagData(emoji: emoji, text: text), tagId: tagId)
-                            } label: {
-                                SwipeLabel(NSLocalizedString("Edit", comment: "swipe action"), systemImage: "pencil", inverted: false)
-                            }
-                            .tint(theme.colors.primary)
-                        }
-                    } else {
-                        EmptyView()
+            ForEach(chatTagsModel.userTags, id: \.id) { tag in
+                let text = tag.chatTagText
+                let emoji = tag.chatTagEmoji
+                let tagId = tag.chatTagId
+                let selected = chatTagsIds.contains(tagId)
+                
+                HStack {
+                    Text(emoji)
+                    Text(text)
+                        .padding(.leading, 12)
+                    Spacer()
+                    if chat != nil {
+                        radioButton(selected: selected)
                     }
+                }
+                .onTapGesture {
+                    if let c = chat {
+                        if selected {
+                            untagChat(tagId: tagId, chat: c)
+                        } else {
+                            // TODO: Temporary until API is final.
+                            chatTagsIds.forEach { t in
+                                untagChat(tagId: t, chat: c)
+                            }
+                            tagChat(tagId: tagId, chat: c)
+                        }
+                    }
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button {
+                        showAlert(
+                            NSLocalizedString("Delete list?", comment: "alert title"),
+                            message: NSLocalizedString("\(text) will be deleted", comment: "alert message"),
+                            actions: {[
+                                UIAlertAction(
+                                    title: NSLocalizedString("Cancel", comment: "alert action"),
+                                    style: .default
+                                ),
+                                UIAlertAction(
+                                    title: NSLocalizedString("Delete", comment: "alert action"),
+                                    style: .destructive,
+                                    handler: { _ in
+                                        deleteTag(tagId)
+                                    }
+                                )
+                            ]}
+                        )
+                    } label: {
+                        SwipeLabel(NSLocalizedString("Delete", comment: "swipe action"), systemImage: "trash.fill", inverted: false)
+                    }
+                    .tint(.red)
+                }
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button {
+                        navigateToTagEditor = true
+                        tagEditorNavParams = TagEditorNavParams(chat: nil, chatListTag: ChatTagData(emoji: emoji, text: text), tagId: tagId)
+                    } label: {
+                        SwipeLabel(NSLocalizedString("Edit", comment: "swipe action"), systemImage: "pencil", inverted: false)
+                    }
+                    .tint(theme.colors.primary)
                 }
             }
             // isActive required since there are 2 possible ways to navigate to editor view. 1 by click, 2 by swipe in any existing tag
@@ -687,9 +684,7 @@ struct ChatListTag: View {
                 )
                 
                 await MainActor.run {
-                    chatTagsModel.tags = userTags.map {
-                        .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
-                    }
+                    chatTagsModel.userTags = userTags
                     updateChatTags(chat: chat, chatTags: chatTags)
                     dismiss()
                 }
@@ -712,12 +707,10 @@ struct ChatListTag: View {
                 )
                 
                 await MainActor.run {
-                    chatTagsModel.tags = userTags.map {
-                        .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
-                    }
-                    if case let .chatTag(_, _, tagId) = chatTagsModel.selectedTag,
-                       !userTags.contains(where: { $0.chatTagId == tagId }) {
-                        chatTagsModel.selectedTag = ChatTagsModel.defaultTag
+                    chatTagsModel.userTags = userTags
+                    if case let .userTag(tag) = chatTagsModel.activeFilter,
+                       !userTags.contains(where: { $0.chatTagId == tag.chatTagId }) {
+                        chatTagsModel.activeFilter = nil
                     }
                     updateChatTags(chat: chat, chatTags: chatTags)
                     dismiss()
@@ -736,17 +729,10 @@ struct ChatListTag: View {
         // TODO: Delete tag API
         Task {
             await MainActor.run {
-                chatTagsModel.tags = chatTagsModel.tags.filter({ tag in
-                    if case let .chatTag(_, _, id) = tag {
-                        return id != tagId
-                    } else {
-                        return true
-                    }
-                })
-                if case let .chatTag(_, _, stId) = chatTagsModel.selectedTag, stId == tagId {
-                    chatTagsModel.selectedTag = ChatTagsModel.defaultTag
+                chatTagsModel.userTags = chatTagsModel.userTags.filter { $0.chatTagId != tagId }
+                if case let .userTag(tag) = chatTagsModel.activeFilter, tagId == tag.chatTagId {
+                    chatTagsModel.activeFilter = nil
                 }
-                
                 m.chats.forEach { c in
                     if var contact = c.chatInfo.contact, contact.chatTags.contains(tagId) {
                         contact.chatTags = contact.chatTags.filter({ $0 != tagId })
@@ -882,9 +868,7 @@ struct ChatListTagEditor: View {
                     )
                     
                     await MainActor.run {
-                        chatTagsModel.tags = userTags.map {
-                            .chatTag(emoji: $0.chatTagEmoji, text: $0.chatTagText, tagId: $0.chatTagId)
-                        }
+                        chatTagsModel.userTags = userTags
                         if var contact = chat.chatInfo.contact {
                             contact.chatTags = chatTags
                             m.updateContact(contact)
@@ -909,9 +893,9 @@ struct ChatListTagEditor: View {
         Task {
             do {
                 await MainActor.run {
-                    chatTagsModel.tags = chatTagsModel.tags.map { tag in
-                        if case let .chatTag(_, _, tId) = tag, tId == tagId {
-                            .chatTag(emoji: chatTagData.emoji, text: chatTagData.text, tagId: tId)
+                    chatTagsModel.userTags = chatTagsModel.userTags.map { tag in
+                        if tag.chatTagId == tagId {
+                            ChatTag(chatTagId: tag.chatTagId, chatTagText: chatTagData.text, chatTagEmoji: chatTagData.emoji)
                         } else {
                             tag
                         }

@@ -4218,6 +4218,14 @@ public struct ChatTag: Decodable, Hashable {
     public var chatTagId: Int64
     public var chatTagText: String
     public var chatTagEmoji: String
+    
+    public var id: Int64 { chatTagId }
+    
+    public init(chatTagId: Int64, chatTagText: String, chatTagEmoji: String) {
+        self.chatTagId = chatTagId
+        self.chatTagText = chatTagText
+        self.chatTagEmoji = chatTagEmoji
+    }
 }
 
 public struct ChatItemInfo: Decodable, Hashable {
