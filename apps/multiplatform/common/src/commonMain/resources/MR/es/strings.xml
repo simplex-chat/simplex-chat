@@ -1783,7 +1783,7 @@
     <string name="srv_error_host">La dirección del servidor es incompatible con la configuración de la red.</string>
     <string name="network_smp_proxy_mode_unprotected">Con IP desprotegida</string>
     <string name="snd_error_auth">Clave incorrecta o conexión desconocida - probablemente esta conexión fue eliminada</string>
-    <string name="network_smp_proxy_mode_unknown_description">Usar enrutamiento privado con servidores de retransmisión desconocidos.</string>
+    <string name="network_smp_proxy_mode_unknown_description">Usar enrutamiento privado con servidores de mensaje desconocidos.</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Enviar mensajes directamente cuando tu dirección IP está protegida y tu servidor o el de destino no admitan enrutamiento privado.</string>
     <string name="file_not_approved_title">¡Servidores desconocidos!</string>
     <string name="file_not_approved_descr">Sin Tor o VPN, tu dirección IP será visible para estos relés XFTP:
@@ -2240,7 +2240,7 @@
     <string name="onboarding_notifications_mode_periodic_desc_short">Comprobar mensajes cada 10 min.</string>
     <string name="onboarding_notifications_mode_off_desc_short">Sin servicio en segundo plano</string>
     <string name="info_row_chat">Chat</string>
-    <string name="chat_bottom_bar">Barra de herramientas accesible</string>
+    <string name="chat_bottom_bar">Barra de chat accesible</string>
     <string name="direct_messages_are_prohibited">Mensajes directos entre miembros no permitidos.</string>
     <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Ya estás conectado con <b>%1$s</b>.]]></string>
     <string name="connect_plan_chat_already_exists">¡El chat ya existe!</string>
