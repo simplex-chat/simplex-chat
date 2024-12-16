@@ -852,7 +852,13 @@ struct ChatListTagEditor: View {
                 }
                 
                 Button {
-                    createChatTag()
+                    if let tId = tagId {
+                        if let em = emoji, !name.isEmpty {
+                            updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: em, text: name))
+                        }
+                    } else {
+                        createChatTag()
+                    }
                 } label: {
                     Text(NSLocalizedString(tagId != nil ? "Change list" : "Create list", comment: "list editor button"))
                 }
@@ -899,6 +905,29 @@ struct ChatListTagEditor: View {
         }
     }
     
+    private func updateChatTag(tagId: Int64, chatTagData: ChatTagData) {
+        // TODO: Create endpoint for edit
+        Task {
+            do {
+                await MainActor.run {
+                    chatTagsModel.tags = chatTagsModel.tags.map { tag in
+                        if case let .chatTag(_, _, tId) = tag, tId == tagId {
+                            .chatTag(emoji: chatTagData.emoji, text: chatTagData.text, tagId: tId)
+                        } else {
+                            tag
+                        }
+                    }
+                    dismiss()
+                }
+            } catch let error {
+                showAlert(
+                    NSLocalizedString("Error creating list", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
+
     func allEmojis() -> [String] {
         var emojis: [String] = []
         for scalar in (0x1F300...0x1FAFF) {
