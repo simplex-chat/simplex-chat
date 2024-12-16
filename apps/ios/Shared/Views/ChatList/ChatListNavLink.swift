@@ -817,7 +817,7 @@ struct EmojiPickerView: UIViewControllerRepresentable {
     }
     
     func makeUIViewController(context: Context) -> UIViewController {
-        let config = ElegantConfiguration(showRandom: false, showReset: false, defaultSkinTone: .Light)
+        let config = ElegantConfiguration(showRandom: false, showReset: true, showClose: false)
         let picker = ElegantEmojiPicker(delegate: context.coordinator, configuration: config)
         
         picker.presentationController?.delegate = context.coordinator
