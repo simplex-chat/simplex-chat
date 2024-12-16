@@ -814,9 +814,6 @@ struct ChatTagsView: View {
             }
         } label: {
             Image(systemName: selectedPresetTag?.getIcon(active: true) ?? "list.bullet")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 22, height: 20)
                 .foregroundColor(color)
         }
     }

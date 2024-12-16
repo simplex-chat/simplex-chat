@@ -329,7 +329,7 @@ struct ChatListNavLink: View {
         } label: {
             SwipeLabel(NSLocalizedString("List", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
         }
-        .tint(Color.brown)
+        .tint(.mint)
     }
     
     private func setTagChatSheet(_ chat: Chat) {
@@ -387,7 +387,6 @@ struct ChatListNavLink: View {
         } label: {
             SwipeLabel(NSLocalizedString("More", comment: "swipe action"), systemImage: "ellipsis", inverted: oneHandUI)
         }
-        .tint(Color.gray)
     }
     
     private func clearNoteFolderButton() -> some View {
