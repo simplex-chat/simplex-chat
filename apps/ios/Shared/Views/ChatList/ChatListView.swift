@@ -153,7 +153,6 @@ struct ChatListView: View {
     @State private var presetTags: [PresetTag] = []
     @StateObject private var chatTagsModel = ChatTagsModel.shared
 
-    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
@@ -438,7 +437,7 @@ struct ChatListView: View {
             return chatModel.chats.filter { $0.id == linkChatId}
         } else {
             let s = searchString()
-            let chats = s == "" && !showUnreadAndFavorites
+            let chats = s == ""
             ? chatModel.chats.filter { chat in
                 return !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card && filtered(chat)
             }
@@ -572,7 +571,6 @@ struct ChatListSearchBar: View {
     @State private var ignoreSearchTextChange = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
-    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -643,16 +641,21 @@ struct ChatListSearchBar: View {
     }
 
     private func toggleFilterButton() -> some View {
-        ZStack {
+        let showUnread = chatTagsModel.activeFilter == .unread
+        return ZStack {
             Color.clear
                 .frame(width: 22, height: 22)
-            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+            Image(systemName: showUnread ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(showUnreadAndFavorites ? theme.colors.primary : theme.colors.secondary)
-                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
+                .foregroundColor(showUnread ? theme.colors.primary : theme.colors.secondary)
+                .frame(width: showUnread ? 22 : 16, height: showUnread ? 22 : 16)
                 .onTapGesture {
-                    showUnreadAndFavorites = !showUnreadAndFavorites
+                    if chatTagsModel.activeFilter == .unread {
+                        chatTagsModel.activeFilter = nil
+                    } else {
+                        chatTagsModel.activeFilter = .unread
+                    }
                 }
         }
     }
