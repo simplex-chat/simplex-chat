@@ -816,6 +816,8 @@ struct ChatTagsView: View {
             Image(systemName: selectedPresetTag?.getIcon(active: true) ?? "list.bullet")
                 .foregroundColor(color)
         }
+        .frame(minWidth: 24)
+        .padding(.horizontal, 2)
     }
     
     private func presetTagFilters() -> [ChatTagFilter] {
