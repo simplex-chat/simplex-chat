@@ -339,7 +339,7 @@
                   ];
                   packages.jpeg-turbo.flags.static-gcc = true;
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
+                    (android32Pkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -454,7 +454,7 @@
                   ];
                   packages.jpeg-turbo.flags.static-gcc = true;
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
+                    (androidPkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
 
                   packages.simplexmq.flags.client_library = true;
