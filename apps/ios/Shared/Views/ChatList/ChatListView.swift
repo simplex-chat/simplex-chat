@@ -732,7 +732,7 @@ struct ChatTagsView: View {
                             content: {
                                 AnyView(
                                     NavigationView {
-                                        ChatListTag()
+                                        ChatListTag(chat: nil, editMode: true)
                                     }
                                 )
                             },

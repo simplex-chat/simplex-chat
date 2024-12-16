@@ -574,6 +574,7 @@ struct TagEditorNavParams {
 
 struct ChatListTag: View {
     var chat: Chat? = nil
+    var editMode: Bool = false
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
@@ -583,7 +584,7 @@ struct ChatListTag: View {
     var chatTagsIds: [Int64] { chat?.chatInfo.contact?.chatTags ?? chat?.chatInfo.groupInfo?.chatTags ?? [] }
     
     var body: some View {
-        List {
+        let v = List {
             ForEach(chatTagsModel.userTags, id: \.id) { tag in
                 let text = tag.chatTagText
                 let emoji = tag.chatTagEmoji
@@ -661,6 +662,7 @@ struct ChatListTag: View {
                     .opacity(0)
                 )
             }
+            .onMove(perform: moveItem)
             
             NavigationLink {
                 ChatListTagEditor(chat: chat)
@@ -669,12 +671,38 @@ struct ChatListTag: View {
             }
         }
         .listStyle(.insetGrouped)
+        
+        if editMode {
+            v.toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    EditButton()
+                }
+            }
+        } else {
+            v
+        }
     }
     
     @ViewBuilder private func radioButton(selected: Bool) -> some View {
         Image(systemName: selected ? "checkmark.circle.fill" : "circle")
             .imageScale(.large)
             .foregroundStyle(selected ? Color.accentColor : Color(.tertiaryLabel))
+    }
+
+    private func moveItem(from source: IndexSet, to destination: Int) {
+        // TODO: API for reordering tags
+        Task {
+            do {
+                await MainActor.run {
+                    chatTagsModel.userTags.move(fromOffsets: source, toOffset: destination)
+                }
+            } catch let error {
+                showAlert(
+                    NSLocalizedString("Error reordering lists", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
     }
     
     private func tagChat(tagId: Int64, chat: Chat) {
