@@ -2216,4 +2216,7 @@
     <string name="debug_logs">Naplózás engedélyezése</string>
     <string name="error_saving_database">Hiba az adatbázis mentésekor</string>
     <string name="strikethrough_text">áthúzott</string>
+    <string name="users_delete_profile_for">Csevegési profil törlése a következőhöz</string>
+    <string name="delete_messages_after">Üzenetek törlése ennyi idő után</string>
+    <string name="a_plus_b">a + b</string>
 </resources>
