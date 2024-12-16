@@ -718,6 +718,16 @@ struct ChatTagsView: View {
                         setActiveFilter(filter: .userTag(tag: tag))
                     }
                     .onLongPressGesture {
+                        let fraction: Double
+
+                        switch chatTagsModel.userTags.count {
+                        case 0..<4:
+                            fraction = 0.35
+                        case 4..<9:
+                            fraction = 0.7
+                        default:
+                            fraction = 1
+                        }
                         sheet = SomeSheet(
                             content: {
                                 AnyView(
@@ -726,7 +736,8 @@ struct ChatTagsView: View {
                                     }
                                 )
                             },
-                            id: "tag list"
+                            id: "tag list",
+                            fraction: fraction
                         )
                     }
                 }
@@ -757,7 +768,7 @@ struct ChatTagsView: View {
         }
         .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
-                $0.content.presentationDetents([.fraction(0.3)])
+                $0.content.presentationDetents([.fraction($0.fraction)])
             } else {
                 $0.content
             }
