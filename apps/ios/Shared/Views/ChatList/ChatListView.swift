@@ -756,6 +756,7 @@ struct ChatTagsView: View {
                     )
                 } label: {
                     Image(systemName: "plus")
+                        .foregroundColor(.secondary)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
