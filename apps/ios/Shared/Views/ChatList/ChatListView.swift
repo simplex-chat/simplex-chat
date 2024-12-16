@@ -692,7 +692,6 @@ enum ChatTagFilter: Identifiable, Equatable {
 struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
-    @State private var showChatListTagCreate = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     
     var body: some View {
@@ -741,7 +740,16 @@ struct ChatTagsView: View {
             
             if chatTagsModel.tags.isEmpty {
                 Button {
-                    showChatListTagCreate = true
+                    sheet = SomeSheet(
+                        content: {
+                            AnyView(
+                                NavigationView {
+                                    ChatListTagEditor()
+                                }
+                            )
+                        },
+                        id: "tag create"
+                    )
                 } label: {
                     Image(systemName: "plus")
                 }
