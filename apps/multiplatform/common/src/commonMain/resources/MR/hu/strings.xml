@@ -15,7 +15,7 @@
     <string name="send_disappearing_message_30_seconds">30 másodperc</string>
     <string name="one_time_link_short">Egyszer használható meghívó-hivatkozás</string>
     <string name="contact_wants_to_connect_via_call">%1$s szeretne kapcsolatba lépni Önnel ezen keresztül:</string>
-    <string name="about_simplex_chat">SimpleX Chat névjegye</string>
+    <string name="about_simplex_chat">A SimpleX Chat névjegye</string>
     <string name="chat_item_ttl_day">1 nap</string>
     <string name="abort_switch_receiving_address">Címváltoztatás megszakítása</string>
     <string name="about_simplex">A SimpleXről</string>
@@ -253,7 +253,7 @@
     <string name="info_row_deleted_at">Törölve ekkor:</string>
     <string name="v4_6_chinese_spanish_interface">Kínai és spanyol kezelőfelület</string>
     <string name="alert_title_cant_invite_contacts">Nem lehet meghívni az ismerősöket!</string>
-    <string name="chat_is_stopped_indication">A csevegés leállt</string>
+    <string name="chat_is_stopped_indication">A csevegés megállt</string>
     <string name="theme_dark">Sötét</string>
     <string name="create_profile">Profil létrehozása</string>
     <string name="rcv_group_event_group_deleted">törölt csoport</string>
@@ -277,7 +277,7 @@
     <string name="delete_messages">Üzenetek törlése</string>
     <string name="clear_chat_menu_action">Kiürítés</string>
     <string name="icon_descr_close_button">Bezárás gomb</string>
-    <string name="chat_is_stopped">A csevegés leállt</string>
+    <string name="chat_is_stopped">A csevegés megállt</string>
     <string name="item_info_current">(jelenlegi)</string>
     <string name="v5_1_custom_themes_descr">Témák személyre szabása és megosztása.</string>
     <string name="delete_chat_profile_question">Csevegési profil törlése?</string>
@@ -556,7 +556,7 @@
     <string name="error_adding_members">Hiba a tag(ok) hozzáadásakor</string>
     <string name="icon_descr_file">Fájl</string>
     <string name="group_members_can_send_files">A tagok küldhetnek fájlokat és médiatartalmakat.</string>
-    <string name="delete_after">Törlés ennyi idő után</string>
+    <string name="delete_after">Törlés ennyi idő után:</string>
     <string name="error_changing_message_deletion">Hiba a beállítás megváltoztatásakor</string>
     <string name="error_updating_link_for_group">Hiba a csoporthivatkozás frissítésekor</string>
     <string name="group_member_status_group_deleted">a csoport törölve</string>
@@ -1495,7 +1495,7 @@
     <string name="tap_to_paste_link">Koppintson ide a hivatkozás beillesztéséhez</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Ismerős hozzáadása</b>: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.]]></string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Csoport létrehozása</b>: új csoport létrehozásához.]]></string>
-    <string name="chat_is_stopped_you_should_transfer_database">A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</string>
     <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem kerülnek elküldésre az új tagok számára.</string>
     <string name="retry_verb">Újrapróbálkozás</string>
     <string name="camera_not_available">A kamera nem elérhető</string>
@@ -2216,7 +2216,7 @@
     <string name="debug_logs">Naplózás engedélyezése</string>
     <string name="error_saving_database">Hiba az adatbázis mentésekor</string>
     <string name="strikethrough_text">áthúzott</string>
-    <string name="users_delete_profile_for">Csevegési profil törlése a következőhöz</string>
-    <string name="delete_messages_after">Üzenetek törlése ennyi idő után</string>
+    <string name="users_delete_profile_for">A következő csevegési profil törlése:</string>
+    <string name="delete_messages_after">Üzenetek törlése ennyi idő után:</string>
     <string name="a_plus_b">a + b</string>
 </resources>
