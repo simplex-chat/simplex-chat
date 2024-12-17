@@ -676,6 +676,7 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
     @State private var sheet: SomeSheet<AnyView>? = nil
+    @State private var chatTagsLoaded: Bool = false
 
     var presetTags: [PresetTag] {
         var matches = Set<PresetTag>()
@@ -692,73 +693,10 @@ struct ChatTagsView: View {
 
     var body: some View {
         HStack {
-            if presetTags.count + chatTagsModel.userTags.count <= 5 {
-                expandedPresetTagsFiltersView()
+            if chatTagsLoaded {
+                tagsView()
             } else {
-                collapsedTagsFilterView()
-            }
-            ForEach(chatTagsModel.userTags, id: \.id) { tag in
-                let current = if case let .userTag(t) = chatTagsModel.activeFilter, t == tag {
-                    true
-                } else {
-                    false
-                }
-                
-                let color: Color = current ? .accentColor : .secondary
-                ZStack {
-                    HStack(spacing: 4) {
-                        Text(tag.chatTagEmoji)
-                        ZStack {
-                            Text(tag.chatTagText).fontWeight(.semibold).foregroundColor(.clear)
-                            Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color)
-                        }
-                    }
-                    .onTapGesture {
-                        setActiveFilter(filter: .userTag(tag: tag))
-                    }
-                    .onLongPressGesture {
-                        let fraction: Double
-
-                        switch chatTagsModel.userTags.count {
-                        case 0..<4:
-                            fraction = 0.35
-                        case 4..<9:
-                            fraction = 0.7
-                        default:
-                            fraction = 1
-                        }
-                        sheet = SomeSheet(
-                            content: {
-                                AnyView(
-                                    NavigationView {
-                                        ChatListTag(chat: nil, editMode: true)
-                                    }
-                                )
-                            },
-                            id: "tag list",
-                            fraction: fraction
-                        )
-                    }
-                }
-            }
-            
-            if chatTagsModel.userTags.isEmpty {
-                Button {
-                    sheet = SomeSheet(
-                        content: {
-                            AnyView(
-                                NavigationView {
-                                    ChatListTagEditor()
-                                }
-                            )
-                        },
-                        id: "tag create"
-                    )
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundColor(.secondary)
-                }
-                .buttonStyle(PlainButtonStyle())
+                tagsViewPlaceholder()
             }
         }.task {
             getChatTags()
@@ -771,6 +709,86 @@ struct ChatTagsView: View {
                 $0.content.presentationDetents([.fraction($0.fraction)])
             } else {
                 $0.content
+            }
+        }
+    }
+    
+    @ViewBuilder private func tagsView() -> some View {
+        if presetTags.count + chatTagsModel.userTags.count <= 5 {
+            expandedPresetTagsFiltersView()
+        } else {
+            collapsedTagsFilterView()
+        }
+        ForEach(chatTagsModel.userTags, id: \.id) { tag in
+            let current = if case let .userTag(t) = chatTagsModel.activeFilter, t == tag {
+                true
+            } else {
+                false
+            }
+            
+            let color: Color = current ? .accentColor : .secondary
+            ZStack {
+                HStack(spacing: 4) {
+                    Text(tag.chatTagEmoji)
+                    ZStack {
+                        Text(tag.chatTagText).fontWeight(.semibold).foregroundColor(.clear)
+                        Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color)
+                    }
+                }
+                .onTapGesture {
+                    setActiveFilter(filter: .userTag(tag: tag))
+                }
+                .onLongPressGesture {
+                    let fraction: Double
+
+                    switch chatTagsModel.userTags.count {
+                    case 0..<4:
+                        fraction = 0.35
+                    case 4..<9:
+                        fraction = 0.7
+                    default:
+                        fraction = 1
+                    }
+                    sheet = SomeSheet(
+                        content: {
+                            AnyView(
+                                NavigationView {
+                                    ChatListTag(chat: nil, editMode: true)
+                                }
+                            )
+                        },
+                        id: "tag list",
+                        fraction: fraction
+                    )
+                }
+            }
+        }
+        
+        if chatTagsModel.userTags.isEmpty {
+            Button {
+                sheet = SomeSheet(
+                    content: {
+                        AnyView(
+                            NavigationView {
+                                ChatListTagEditor()
+                            }
+                        )
+                    },
+                    id: "tag create"
+                )
+            } label: {
+                Image(systemName: "plus")
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    @ViewBuilder private func tagsViewPlaceholder() -> some View {
+        HStack {
+            Text("🙂").foregroundColor(.clear)
+            ZStack {
+                Text("Placeholder").fontWeight(.semibold).foregroundColor(.clear)
             }
         }
     }
@@ -870,14 +888,19 @@ struct ChatTagsView: View {
     private func getChatTags() {
         Task {
             do {
+                chatTagsLoaded = false
                 let chatTags = try await apiGetChatTags()
                 
                 await MainActor.run {
                     self.chatTagsModel.userTags = chatTags
                     self.chatTagsModel.activeFilter = nil
+                    withAnimation {
+                        self.chatTagsLoaded = true
+                    }
                 }
             } catch let error {
                 AlertManager.shared.showAlertMsg(title: "Error", message: "\(responseError(error))")
+                chatTagsLoaded = false
             }
         }
     }
