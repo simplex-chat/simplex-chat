@@ -574,17 +574,18 @@ struct TagEditorNavParams {
 
 struct ChatListTag: View {
     var chat: Chat? = nil
-    var editMode: Bool = false
+    var showEditButton: Bool = false
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var m: ChatModel
+    @State private var editMode = EditMode.inactive
     @State private var tagEditorNavParams: TagEditorNavParams? = nil
     
     var chatTagsIds: [Int64] { chat?.chatInfo.contact?.chatTags ?? chat?.chatInfo.groupInfo?.chatTags ?? [] }
     
     var body: some View {
-        let v = List {
+        List {
             Section {
                 ForEach(chatTagsModel.userTags, id: \.id) { tag in
                     let text = tag.chatTagText
@@ -674,18 +675,28 @@ struct ChatListTag: View {
                 } label: {
                     Label("Create list", systemImage: "plus")
                 }
+            } header: {
+                if showEditButton {
+                    editTagsButton()
+                    .textCase(nil)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
         }
         .listStyle(.insetGrouped)
-        
-        if editMode {
-            v.toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    EditButton()
-                }
+        .environment(\.editMode, $editMode)
+    }
+    
+    private func editTagsButton() -> some View {
+        if editMode.isEditing {
+            Button("Done") {
+                editMode = .inactive
+                dismiss()
             }
         } else {
-            v
+            Button("Edit") {
+                editMode = .active
+            }
         }
     }
     
