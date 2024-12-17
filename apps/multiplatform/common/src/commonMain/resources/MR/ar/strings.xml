@@ -2245,4 +2245,5 @@
     <string name="sync_connection_confirm">إصلاح</string>
     <string name="debug_logs">فعّل السجلات</string>
     <string name="error_saving_database">خطأ في حفظ قاعدة البيانات</string>
+    <string name="strikethrough_text">شطب</string>
 </resources>
