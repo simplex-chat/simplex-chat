@@ -1334,6 +1334,13 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var contactCard: Bool {
+        switch self {
+        case let .direct(contact): contact.activeConn == nil && contact.profile.contactLink != nil && contact.active
+        default: false
+        }
+    }
+    
     public var groupInfo: GroupInfo? {
         switch self {
         case let .group(groupInfo): return groupInfo
@@ -1441,6 +1448,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         switch self {
         case let .direct(contact): return contact.chatSettings
         case let .group(groupInfo): return groupInfo.chatSettings
+        default: return nil
+        }
+    }
+    
+    public var chatTags: [Int64]? {
+        switch self {
+        case let .direct(contact): return contact.chatTags
+        case let .group(groupInfo): return groupInfo.chatTags
         default: return nil
         }
     }
@@ -4217,11 +4232,11 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
 public struct ChatTag: Decodable, Hashable {
     public var chatTagId: Int64
     public var chatTagText: String
-    public var chatTagEmoji: String
+    public var chatTagEmoji: String?
     
     public var id: Int64 { chatTagId }
     
-    public init(chatTagId: Int64, chatTagText: String, chatTagEmoji: String) {
+    public init(chatTagId: Int64, chatTagText: String, chatTagEmoji: String?) {
         self.chatTagId = chatTagId
         self.chatTagText = chatTagText
         self.chatTagEmoji = chatTagEmoji

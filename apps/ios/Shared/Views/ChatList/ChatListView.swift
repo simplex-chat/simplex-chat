@@ -31,27 +31,18 @@ enum UserPickerSheet: Identifiable {
     }
 }
 
-enum PresetTag: Identifiable, Equatable {
-    case contact
-    case group
-    case business
-    case favorite
+enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
+    case favorites = 0
+    case contacts = 1
+    case groups = 2
+    case business = 3
     
-    var id: PresetTag { self }
-    
-    var order: Int {
-        switch self {
-        case .contact: return 0
-        case .group: return 1
-        case .business: return 2
-        case .favorite: return 3
-        }
-    }
+    var id: Int { rawValue }
 }
 
 enum ActiveFilter: Identifiable, Equatable {
-    case presetTag(tag: PresetTag)
-    case userTag(tag: ChatTag)
+    case presetTag(PresetTag)
+    case userTag(ChatTag)
     case unread
     
     var id: String {
@@ -178,7 +169,6 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
         }
-        .environmentObject(chatTagsModel)
         .modifier(
             Sheet(isPresented: $userPickerShown) {
                 UserPicker(userPickerShown: $userPickerShown, activeSheet: $activeUserPickerSheet)
@@ -200,13 +190,12 @@ struct ChatListView: View {
             if #available(iOS 16.0, *) {
                 $0.content
                     .presentationDetents([.fraction($0.fraction)])
-                    .environmentObject(chatTagsModel)
             } else {
                 $0.content
-                    .environmentObject(chatTagsModel)
 
             }
         }
+        .environmentObject(chatTagsModel)
     }
 
     private var chatListView: some View {
@@ -440,31 +429,23 @@ struct ChatListView: View {
             let s = searchString()
             return s == ""
             ? chatModel.chats.filter { chat in
-                !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card && filtered(chat)
+                !chat.chatInfo.chatDeleted && !chat.chatInfo.contactCard && filtered(chat)
             }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
-                switch cInfo {
+                return switch cInfo {
                 case let .direct(contact):
-                    return !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
-                        s == ""
-                        ? filtered(chat)
-                        : (viewNameContains(cInfo, s) ||
-                           contact.profile.displayName.localizedLowercase.contains(s) ||
-                           contact.fullName.localizedLowercase.contains(s))
+                    !contact.chatDeleted && !chat.chatInfo.contactCard && (
+                        ( viewNameContains(cInfo, s) ||
+                          contact.profile.displayName.localizedLowercase.contains(s) ||
+                          contact.fullName.localizedLowercase.contains(s)
+                        )
                     )
-                case let .group(gInfo):
-                    return s == ""
-                    ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
-                    : viewNameContains(cInfo, s)
-                case .local:
-                    return s == "" || viewNameContains(cInfo, s)
-                case .contactRequest:
-                    return s == "" || viewNameContains(cInfo, s)
-                case let .contactConnection(conn):
-                    return s != "" && conn.localAlias.localizedLowercase.contains(s)
-                case .invalidJSON:
-                    return false
+                case .group: viewNameContains(cInfo, s)
+                case .local: viewNameContains(cInfo, s)
+                case .contactRequest: viewNameContains(cInfo, s)
+                case let .contactConnection(conn): conn.localAlias.localizedLowercase.contains(s)
+                case .invalidJSON: false
                 }
             }
         }
@@ -475,22 +456,10 @@ struct ChatListView: View {
 
         func filtered(_ chat: Chat) -> Bool {
             switch chatTagsModel.activeFilter {
-            case let .presetTag(tag):
-                let presetTagMatches = chatPresetTagMatches(chat)
-                return presetTagMatches.contains(tag)
-            case let .userTag(tag):
-                switch chat.chatInfo {
-                case let .direct(contact):
-                    return contact.chatTags.contains(tag.chatTagId)
-                case let .group(gInfo):
-                    return gInfo.chatTags.contains(tag.chatTagId)
-                default:
-                    return false
-                }
-            case .unread:
-                return chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
-            case .none:
-                return true
+            case let .presetTag(tag): presetTagMatchesChat(tag, chat)
+            case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
+            case .unread: chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
+            case .none: true
             }
         }
 
@@ -677,19 +646,7 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var sheet: SomeSheet<AnyView>? = nil
     @State private var chatTagsLoaded: Bool = false
-
-    var presetTags: [PresetTag] {
-        var matches = Set<PresetTag>()
-        for chat in chatModel.chats {
-            matches.formUnion(chatPresetTagMatches(chat))
-            
-            if matches.count == 4 {
-                break
-            }
-        }
-        
-        return Array(matches).sorted(by: { $0.order < $1.order })
-    }
+    var presetTags: [PresetTag] = []
 
     var body: some View {
         HStack {
@@ -721,8 +678,8 @@ struct ChatTagsView: View {
             collapsedTagsFilterView()
         }
         ForEach(chatTagsModel.userTags, id: \.id) { tag in
-            let current = if case let .userTag(t) = chatTagsModel.activeFilter, t == tag {
-                true
+            let current = if case let .userTag(t) = chatTagsModel.activeFilter {
+                t == tag
             } else {
                 false
             }
@@ -730,14 +687,19 @@ struct ChatTagsView: View {
             let color: Color = current ? .accentColor : .secondary
             ZStack {
                 HStack(spacing: 4) {
-                    Text(tag.chatTagEmoji)
+                    if let emoji = tag.chatTagEmoji {
+                        Text(emoji)
+                    } else {
+                        Image(systemName: current ? "tag.fill" : "tag")
+                            .foregroundColor(color)
+                    }
                     ZStack {
                         Text(tag.chatTagText).fontWeight(.semibold).foregroundColor(.clear)
                         Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color)
                     }
                 }
                 .onTapGesture {
-                    setActiveFilter(filter: .userTag(tag: tag))
+                    setActiveFilter(filter: .userTag(tag))
                 }
                 .onLongPressGesture {
                     let fraction: Double
@@ -810,11 +772,11 @@ struct ChatTagsView: View {
         
         ForEach(presetTags, id: \.id) { tag in
             let active = tag == selectedPresetTag
-            let (systemName, text) = presetTagLabel(tag: tag, active: active)
+            let (icon, text) = presetTagLabel(tag: tag, active: active)
             let color: Color = active ? .accentColor : .secondary
 
             HStack {
-                Image(systemName: systemName)
+                Image(systemName: icon)
                     .foregroundColor(color)
                 ZStack {
                     Text(text).fontWeight(.semibold).foregroundColor(.clear)
@@ -822,7 +784,7 @@ struct ChatTagsView: View {
                 }
             }
             .onTapGesture {
-                setActiveFilter(filter: .presetTag(tag: tag))
+                setActiveFilter(filter: .presetTag(tag))
             }
         }
     }
@@ -836,7 +798,7 @@ struct ChatTagsView: View {
         Menu {
             ForEach(presetTags, id: \.id) { tag in
                 Button {
-                    setActiveFilter(filter: .presetTag(tag: tag))
+                    setActiveFilter(filter: .presetTag(tag))
                 } label: {
                     let (systemName, text) = presetTagLabel(tag: tag, active: tag == selectedPresetTag)
                     HStack {
@@ -865,16 +827,11 @@ struct ChatTagsView: View {
     
     private func presetTagLabel(tag: PresetTag?, active: Bool) -> (String, LocalizedStringKey) {
         switch tag {
-        case .contact:
-            return (active ? "person.fill" : "person", LocalizedStringKey("Contacts"))
-        case .group:
-            return (active ? "person.2.fill" : "person.2", LocalizedStringKey("Groups"))
-        case .business:
-            return (active ? "briefcase.fill" : "briefcase", LocalizedStringKey("Businesses"))
-        case .favorite:
-            return (active ? "star.fill" : "star", LocalizedStringKey("Favorites"))
-        case .none:
-            return ("list.bullet", LocalizedStringKey("All"))
+        case .favorites: (active ? "star.fill" : "star", "Favorites")
+        case .contacts: (active ? "person.fill" : "person", "Contacts")
+        case .groups: (active ? "person.2.fill" : "person.2", "Groups")
+        case .business: (active ? "briefcase.fill" : "briefcase", "Businesses")
+        case .none: ("list.bullet", "All")
         }
     }
     
@@ -922,28 +879,41 @@ func chatStoppedIcon() -> some View {
     }
 }
 
-private func chatPresetTagMatches(_ chat: Chat) -> Set<PresetTag> {
-    var matchedPresets = Set<PresetTag>()
-    switch chat.chatInfo {
-    case .direct:
-        matchedPresets.insert(.contact)
-        if chat.chatInfo.chatSettings?.favorite ?? false {
-            matchedPresets.insert(.favorite)
+private func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
+    var matches: Set<PresetTag> = []
+    for chat in chats {
+        for tag in PresetTag.allCases {
+            if presetTagMatchesChat(tag, chat) {
+                matches.insert(tag)
+            }
         }
-    case let .group(groupInfo):
-        if groupInfo.businessChat?.chatType == .business {
-            matchedPresets.insert(.business)
-        } else {
-            matchedPresets.insert(.group)
+        if matches.count == PresetTag.allCases.count {
+            break
         }
-        if chat.chatInfo.chatSettings?.favorite ?? false {
-            matchedPresets.insert(.favorite)
-        }
-    default:
-        break
     }
-    
-    return matchedPresets
+    return Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
+}
+
+private func presetTagMatchesChat(_ tag: PresetTag, _ chat: Chat) -> Bool {
+    switch tag {
+    case .favorites:
+        chat.chatInfo.chatSettings?.favorite == true
+    case .contacts:
+        switch chat.chatInfo {
+        case .direct: true
+        case .contactRequest: true
+        case .contactConnection: true
+        case let .group(groupInfo): groupInfo.businessChat?.chatType == .customer
+        default: false
+        }
+    case .groups:
+        switch chat.chatInfo {
+        case let .group(groupInfo): groupInfo.businessChat == nil
+        default: false
+        }
+    case .business:
+        chat.chatInfo.groupInfo?.businessChat?.chatType == .business
+    }
 }
 
 struct ChatListView_Previews: PreviewProvider {

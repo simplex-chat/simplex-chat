@@ -1194,10 +1194,10 @@ public enum ChatPagination {
 }
 
 public struct ChatTagData: Encodable {
-    public var emoji: String
+    public var emoji: String?
     public var text: String
     
-    public init(emoji: String, text: String) {
+    public init(emoji: String?, text: String) {
         self.emoji = emoji
         self.text = text
     }
