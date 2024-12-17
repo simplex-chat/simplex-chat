@@ -788,7 +788,7 @@ struct ChatTagsView: View {
         HStack {
             Text("🙂").foregroundColor(.clear)
             ZStack {
-                Text("Placeholder").fontWeight(.semibold).foregroundColor(.clear)
+                Text("Create list").fontWeight(.semibold).foregroundColor(.clear)
             }
         }
     }
