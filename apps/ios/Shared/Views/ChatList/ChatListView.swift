@@ -702,6 +702,7 @@ struct ChatTagsView: View {
             getChatTags()
         }
         .onChange(of: chatModel.currentUser?.userId) { _ in
+            chatTagsModel.activeFilter = nil
             getChatTags()
         }
         .sheet(item: $sheet) {
@@ -893,7 +894,11 @@ struct ChatTagsView: View {
                 
                 await MainActor.run {
                     self.chatTagsModel.userTags = chatTags
-                    self.chatTagsModel.activeFilter = nil
+                    if case let .userTag(tag) = self.chatTagsModel.activeFilter {
+                        if !chatTags.contains(tag) {
+                            self.chatTagsModel.activeFilter = nil
+                        }
+                    }
                     withAnimation {
                         self.chatTagsLoaded = true
                     }
