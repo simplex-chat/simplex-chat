@@ -370,7 +370,7 @@ struct ChatListNavLink: View {
             ]
             
             if let gi = groupInfo, gi.canDelete {
-                buttons.append(.default(Text("Delete")) {
+                buttons.append(.destructive(Text("Delete")) {
                     AlertManager.shared.showAlert(deleteGroupAlert(gi))
                 })
             }
