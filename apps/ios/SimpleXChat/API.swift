@@ -203,7 +203,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
                    let jChats = jApiChats["chats"] as? NSArray {
                     let chats = jChats.map { jChat in
                         if let chatData = try? parseChatData(jChat) {
-                            return chatData
+                            return chatData.0
                         }
                         return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted) ?? "")
                     }
@@ -213,8 +213,9 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 if let jApiChat = jResp["apiChat"] as? NSDictionary,
                    let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
                    let jChat = jApiChat["chat"] as? NSDictionary,
-                   let chat = try? parseChatData(jChat) {
-                    return .apiChat(user: user, chat: chat)
+                   let jNavInfo = jApiChat["navInfo"] as? NSDictionary,
+                   let (chat, navInfo) = try? parseChatData(jChat, jNavInfo) {
+                    return .apiChat(user: user, chat: chat, navInfo: navInfo)
                 }
             } else if type == "chatCmdError" {
                 if let jError = jResp["chatCmdError"] as? NSDictionary {
@@ -247,10 +248,11 @@ private func errorJson(_ jDict: NSDictionary) -> String? {
     }
 }
 
-func parseChatData(_ jChat: Any) throws -> ChatData {
+func parseChatData(_ jChat: Any, _ jNavInfo: Any? = nil) throws -> (ChatData, NavigationInfo) {
     let jChatDict = jChat as! NSDictionary
     let chatInfo: ChatInfo = try decodeObject(jChatDict["chatInfo"]!)
     let chatStats: ChatStats = try decodeObject(jChatDict["chatStats"]!)
+    let navInfo: NavigationInfo = jNavInfo == nil ? NavigationInfo() : try decodeObject((jNavInfo as! NSDictionary)["navInfo"]!)
     let jChatItems = jChatDict["chatItems"] as! NSArray
     let chatItems = jChatItems.map { jCI in
         if let ci: ChatItem = try? decodeObject(jCI) {
@@ -262,7 +264,7 @@ func parseChatData(_ jChat: Any) throws -> ChatData {
             json: serializeJSON(jCI, options: .prettyPrinted) ?? ""
         )
     }
-    return ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
+    return (ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats), navInfo)
 }
 
 func decodeObject<T: Decodable>(_ obj: Any) throws -> T {

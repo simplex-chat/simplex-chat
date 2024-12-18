@@ -144,7 +144,7 @@ struct SimpleXApp: App {
             await MainActor.run { chatModel.updateChats(chats) }
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id) {
-                Task { await loadChat(chat: chat, clearItems: false) }
+                Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {
                 await MainActor.run { chatModel.ntfContactRequest = nil }

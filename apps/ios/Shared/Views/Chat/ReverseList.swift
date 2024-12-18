@@ -43,11 +43,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     }
 
     /// Controller, which hosts SwiftUI cells
-    class Controller: UITableViewController {
+    public class Controller: UITableViewController {
         private enum Section { case main }
         var representer: ReverseList
         private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
-        private var itemCount: Int = 0
+        var itemCount: Int = 0
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
@@ -218,13 +218,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     } else {
                         nil
                     }
+                let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) })
+                let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) })
                 let bottomItemId: ChatItem.ID? =
-                    if let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }) {
+                    if let firstVisible {
                         representer.items[firstVisible.item].id
                     } else {
                         nil
                     }
-                return (scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId)
+                return ListState(scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId, firstVisibleItemIndex: firstVisible?.item ?? 0, lastVisibleItemIndex: lastVisible?.item ?? 0)
             }
             return nil
         }
@@ -280,11 +282,21 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     }
 }
 
-typealias ListState = (
-    scrollOffset: Double,
-    topItemDate: Date?,
-    bottomItemId: ChatItem.ID?
-)
+class ListState {
+    let scrollOffset: Double
+    let topItemDate: Date?
+    let bottomItemId: ChatItem.ID?
+    let firstVisibleItemIndex: Int
+    let lastVisibleItemIndex: Int
+
+    init(scrollOffset: Double = 0, topItemDate: Date? = nil, bottomItemId: ChatItem.ID? = nil, firstVisibleItemIndex: Int = 0, lastVisibleItemIndex: Int = 0) {
+        self.scrollOffset = scrollOffset
+        self.topItemDate = topItemDate
+        self.bottomItemId = bottomItemId
+        self.firstVisibleItemIndex = firstVisibleItemIndex
+        self.lastVisibleItemIndex = lastVisibleItemIndex
+    }
+}
 
 /// Manages ``ReverseList`` scrolling
 class ReverseListScrollModel: ObservableObject {

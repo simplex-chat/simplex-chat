@@ -389,7 +389,7 @@ struct ChatView: View {
                 searchText = ""
                 searchMode = false
                 searchFocussed = false
-                Task { await loadChat(chat: chat) }
+                Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId) }
             }
         }
         .padding(.horizontal)
@@ -445,7 +445,7 @@ struct ChatView: View {
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
-                Task { await loadChat(chat: chat, search: searchText) }
+                Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, search: searchText) }
             }
             .onChange(of: im.itemAdded) { added in
                 if added {

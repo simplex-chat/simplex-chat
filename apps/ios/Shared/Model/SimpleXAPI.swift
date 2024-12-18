@@ -320,35 +320,34 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
-    if case let .apiChat(_, chat) = r { return Chat.init(chat) }
+func apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
+    if case let .apiChat(_, chat, navInfo) = r { return (Chat.init(chat), navInfo) }
     throw r
 }
 
 func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
-    if case let .apiChat(_, chat) = r { return chat.chatItems }
+    if case let .apiChat(_, chat, _) = r { return chat.chatItems }
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
-    do {
-        let cInfo = chat.chatInfo
+func loadChat(type: ChatType, id: Int64, search: String = "", clearItems: Bool = true) async {
+//    do {
         let m = ChatModel.shared
         let im = ItemsModel.shared
         m.chatItemStatuses = [:]
         if clearItems {
             await MainActor.run { im.reversedChatItems = [] }
         }
-        let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        await MainActor.run {
-            im.reversedChatItems = chat.chatItems.reversed()
-            m.updateChatInfo(chat.chatInfo)
-        }
-    } catch let error {
-        logger.error("loadChat error: \(responseError(error))")
-    }
+    /*try */await apiLoadMessages(type, id, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })
+//        await MainActor.run {
+//            im.reversedChatItems = chat.chatItems.reversed()
+//            m.updateChatInfo(chat.chatInfo)
+//        }
+//    } catch let error {
+//        logger.error("loadChat error: \(responseError(error))")
+//    }
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {
