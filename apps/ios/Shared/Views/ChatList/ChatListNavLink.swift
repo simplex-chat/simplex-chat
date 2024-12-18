@@ -348,11 +348,14 @@ struct ChatListNavLink: View {
             content: {
                 AnyView(
                     NavigationView {
-                        if chatTagsModel.userTags.isEmpty {
-                            ChatListTagEditor(chat: chat)
-                        } else {
-                            ChatListTag(chat: chat)
+                        Group {
+                            if chatTagsModel.userTags.isEmpty {
+                                ChatListTagEditor(chat: chat)
+                            } else {
+                                ChatListTag(chat: chat)
+                            }
                         }
+                        .modifier(ThemedBackground(grouped: true))
                     }
                 )
             },
