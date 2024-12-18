@@ -835,7 +835,7 @@ struct ChatListTagEditor: View {
         VStack {
             List {
                 let isDuplicateEmojiOrName = chatTagsModel.userTags.contains { tag in
-                    (tag.chatTagEmoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == name
+                    tag.chatTagId != tagId && ((tag.chatTagEmoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == name.trimmingCharacters(in: .whitespaces))
                 }
                 
                 HStack {
