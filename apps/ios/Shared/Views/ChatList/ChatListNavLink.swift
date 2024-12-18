@@ -333,16 +333,10 @@ struct ChatListNavLink: View {
     }
     
     private func setTagChatSheet(_ chat: Chat) {
-        let fraction: Double
-
-        switch chatTagsModel.userTags.count {
-        case 0..<4:
-            fraction = 0.35
-        case 4..<9:
-            fraction = 0.7
-        default:
-            fraction = 1
-        }
+        let screenHeight = UIScreen.main.bounds.height
+        let reservedSpace: Double = 4 * 44 // 2 for padding, 1 for "Create list" and another for extra tag
+        let tagsSpace = Double(max(chatTagsModel.userTags.count, 3)) * 44
+        let fraction = (reservedSpace + tagsSpace) / screenHeight
         
         parentSheet = SomeSheet(
             content: {
@@ -357,7 +351,7 @@ struct ChatListNavLink: View {
                 )
             },
             id: "lists sheet",
-            fraction: fraction
+            fraction: fraction > 0.75 ? 1 : fraction
         )
     }
     
