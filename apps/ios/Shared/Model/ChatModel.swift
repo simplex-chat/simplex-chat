@@ -350,8 +350,10 @@ final class ChatModel: ObservableObject {
     private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
+            ChatTagsModel.shared.presetTags = getPresetTags(self.chats)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
+            ChatTagsModel.shared.presetTags = getPresetTags(self.chats)
         }
     }
 
