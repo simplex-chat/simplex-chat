@@ -222,13 +222,11 @@ struct ChatListView: View {
                 Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(tm)
             }
         }
-        .sheet(item: $sheet) {
+        .sheet(item: $sheet) { sheet in
             if #available(iOS 16.0, *) {
-                $0.content
-                    .presentationDetents([.fraction($0.fraction)])
+                sheet.content.presentationDetents([.fraction(sheet.fraction)])
             } else {
-                $0.content
-                
+                sheet.content
             }
         }
     }

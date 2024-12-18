@@ -600,6 +600,7 @@ struct ChatListTag: View {
                             radioButton(selected: selected)
                         }
                     }
+                    .contentShape(Rectangle())
                     .onTapGesture {
                         if let c = chat {
                             setTag(tagId: selected ? nil : tagId, chat: c)
@@ -609,7 +610,7 @@ struct ChatListTag: View {
                         Button {
                             showAlert(
                                 NSLocalizedString("Delete list?", comment: "alert title"),
-                                message: NSLocalizedString("\(text) will be deleted", comment: "alert message"),
+                                message: NSLocalizedString("All chats will be removed from the list \(text), and the list deleted.", comment: "alert message"),
                                 actions: {[
                                     UIAlertAction(
                                         title: NSLocalizedString("Cancel", comment: "alert action"),
@@ -822,12 +823,13 @@ struct ChatListTagEditor: View {
     @State var emoji: String? = nil
     @State var name: String = ""
     @State private var isPickerPresented = false
+    @State private var tagSaved = false
 
     var body: some View {
         VStack {
             List {
                 let isDuplicateEmojiOrName = chatTagsModel.userTags.contains { tag in
-                    tag.chatTagId != tagId && ((tag.chatTagEmoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == name.trimmingCharacters(in: .whitespaces))
+                    tag.chatTagId != tagId && ((tag.chatTagEmoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == trimmedName)
                 }
                 
                 Section {
@@ -839,9 +841,6 @@ struct ChatListTagEditor: View {
                                 Text(emoji)
                             } else {
                                 Image(systemName: "face.smiling")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 18, height: 18)
                                     .foregroundColor(.secondary)
                             }
                         }
@@ -850,22 +849,22 @@ struct ChatListTagEditor: View {
                     
                     Button {
                         if let tId = tagId {
-                            if !name.isEmpty {
-                                updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: emoji, text: name))
+                            if !trimmedName.isEmpty {
+                                updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: emoji, text: trimmedName))
                             }
                         } else {
                             createChatTag()
                         }
                     } label: {
-                        Text(NSLocalizedString(tagId == nil ? "Create list" : "Change list", comment: "list editor button"))
+                        Text(NSLocalizedString(tagId == nil ? "Create list" : "Save list", comment: "list editor button"))
                     }
-                    .disabled(name.isEmpty || isDuplicateEmojiOrName)
+                    .disabled(trimmedName.isEmpty || (isDuplicateEmojiOrName && !tagSaved))
                 } footer: {
-                    if isDuplicateEmojiOrName {
+                    if isDuplicateEmojiOrName && !tagSaved {
                         HStack {
                             Image(systemName: "exclamationmark.circle")
                                 .foregroundColor(.red)
-                            Text("List name and emoji should be different from other lists")
+                            Text("List name and emoji should be different for all lists.")
                                 .foregroundColor(theme.colors.secondary)
                         }
                     }
@@ -879,14 +878,18 @@ struct ChatListTagEditor: View {
         .modifier(ThemedBackground(grouped: true))
     }
     
+    var trimmedName: String {
+        name.trimmingCharacters(in: .whitespaces)
+    }
+    
     private func createChatTag() {
         Task {
             do {
                 let userTags = try await apiCreateChatTag(
-                    tag: ChatTagData(emoji: emoji , text: name)
+                    tag: ChatTagData(emoji: emoji , text: trimmedName)
                 )
-                
                 await MainActor.run {
+                    tagSaved = true
                     chatTagsModel.userTags = userTags
                     dismiss()
                 }
@@ -904,6 +907,7 @@ struct ChatListTagEditor: View {
             do {
                 try await apiUpdateChatTag(tagId: tagId, tag: ChatTagData(emoji: emoji , text: name))
                 await MainActor.run {
+                    tagSaved = true
                     chatTagsModel.userTags = chatTagsModel.userTags.map { tag in
                         if tag.chatTagId == tagId {
                             ChatTag(chatTagId: tag.chatTagId, chatTagText: chatTagData.text, chatTagEmoji: chatTagData.emoji)
