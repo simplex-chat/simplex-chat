@@ -859,7 +859,7 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chat: Chat) -> Bool {
         chat.chatInfo.chatSettings?.favorite == true
     case .contacts:
         switch chat.chatInfo {
-        case .direct: true
+        case let .direct(contact): !(contact.activeConn == nil && contact.profile.contactLink != nil && contact.active) && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
         case let .group(groupInfo): groupInfo.businessChat?.chatType == .customer
