@@ -79,9 +79,8 @@ module Simplex.Chat.Store.Direct
     setContactCustomData,
     setContactUIThemes,
     setContactChatDeleted,
-    tagDirectChat,
-    untagDirectChat,
     getDirectChatTags,
+    updateDirectChatTags,
   )
 where
 
@@ -1027,6 +1026,14 @@ setContactChatDeleted db User {userId} Contact {contactId} chatDeleted = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET chat_deleted = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (chatDeleted, updatedAt, userId, contactId)
 
+updateDirectChatTags :: DB.Connection -> ContactId -> [ChatTagId] -> IO ()
+updateDirectChatTags db contactId tIds = do
+  currentTags <- getDirectChatTags db contactId
+  let tagsToAdd = filter (`notElem` currentTags) tIds
+      tagsToDelete = filter (`notElem` tIds) currentTags
+  forM_ tagsToDelete $ untagDirectChat db contactId
+  forM_ tagsToAdd $ tagDirectChat db contactId
+
 tagDirectChat :: DB.Connection -> ContactId -> ChatTagId -> IO ()
 tagDirectChat db contactId tId =
   DB.execute
@@ -1037,12 +1044,8 @@ tagDirectChat db contactId tId =
     |]
     (contactId, tId)
 
-untagDirectChat :: DB.Connection -> User -> ContactId -> ChatTagId -> IO ()
-untagDirectChat db user contactId tId = do
-  untagDirectChat' db contactId tId
-
-untagDirectChat' :: DB.Connection -> ContactId -> ChatTagId -> IO ()
-untagDirectChat' db contactId tId =
+untagDirectChat :: DB.Connection -> ContactId -> ChatTagId -> IO ()
+untagDirectChat db contactId tId =
   DB.execute
     db
     [sql|

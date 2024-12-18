@@ -375,28 +375,32 @@ func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: Ch
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
-func apiCreateChatTag(type: ChatType, id: Int64, tag: ChatTagData) async throws -> ([ChatTag], [Int64]) {
-    let r = await chatSendCmd(.apiCreateChatTag(type: type, id: id, tag: tag))
+func apiCreateChatTag(tag: ChatTagData) async throws -> [ChatTag] {
+    let r = await chatSendCmd(.apiCreateChatTag(tag: tag))
+    if case let .chatTags(_, userTags) = r {
+        return userTags
+    }
+    throw r
+}
+
+func apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64]) async throws -> ([ChatTag], [Int64]) {
+    let r = await chatSendCmd(.apiSetChatTags(type: type, id: id, tagIds: tagIds))
     if case let .tagsUpdated(_, userTags, chatTags) = r {
         return (userTags, chatTags)
     }
     throw r
 }
 
-func apiTagChat(type: ChatType, id: Int64, tagId: Int64) async throws -> ([ChatTag], [Int64]) {
-    let r = await chatSendCmd(.apiTagChat(type: type, id: id, tagId: tagId))
-    if case let .tagsUpdated(_, userTags, chatTags) = r {
-        return (userTags, chatTags)
-    }
-    throw r
+func apiDeleteChatTag(tagId: Int64) async throws  {
+    try await sendCommandOkResp(.apiDeleteChatTag(tagId: tagId))
 }
 
-func apiUntagChat(type: ChatType, id: Int64, tagId: Int64) async throws -> ([ChatTag], [Int64]) {
-    let r = await chatSendCmd(.apiUntagChat(type: type, id: id, tagId: tagId))
-    if case let .chatUntagged(_, userTags, chatTags) = r {
-        return (userTags, chatTags)
-    }
-    throw r
+func apiUpdateChatTag(tagId: Int64, tag: ChatTagData) async throws  {
+    try await sendCommandOkResp(.apiUpdateChatTag(tagId: tagId, tagData: tag))
+}
+
+func apiReorderChatTags(tagIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
 func apiSendMessages(type: ChatType, id: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {

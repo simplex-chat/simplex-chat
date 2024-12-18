@@ -45,9 +45,11 @@ public enum ChatCommand {
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
     case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
-    case apiCreateChatTag(type: ChatType, id: Int64, tag: ChatTagData)
-    case apiTagChat(type: ChatType, id: Int64, tagId: Int64)
-    case apiUntagChat(type: ChatType, id: Int64, tagId: Int64)
+    case apiCreateChatTag(tag: ChatTagData)
+    case apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64])
+    case apiDeleteChatTag(tagId: Int64)
+    case apiUpdateChatTag(tagId: Int64, tagData: ChatTagData)
+    case apiReorderChatTags(tagIds: [Int64])
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
@@ -211,9 +213,11 @@ public enum ChatCommand {
                 let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
                 return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
-            case let .apiCreateChatTag(type, id, tag): return "/_create tag \(ref(type, id)) \(encodeJSON(tag))"
-            case let .apiTagChat(type, id, tagId): return "/_tag \(ref(type, id)) \(tagId)"
-            case let .apiUntagChat(type, id, tagId): return "/_untag \(ref(type, id)) \(tagId)"
+            case let .apiCreateChatTag(tag): return "/_create tag \(encodeJSON(tag))"
+            case let .apiSetChatTags(type, id, tagIds): return "/_tags \(ref(type, id)) \(tagIds.map({ "\($0)" }).joined(separator: ","))"
+            case let .apiDeleteChatTag(tagId): return "/_delete tag \(tagId)"
+            case let .apiUpdateChatTag(tagId, tagData): return "/_update tag \(tagId) \(encodeJSON(tagData))"
+            case let .apiReorderChatTags(tagIds): return "/_reorder tags \(tagIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiCreateChatItems(noteFolderId, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
@@ -381,8 +385,10 @@ public enum ChatCommand {
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
             case .apiSendMessages: return "apiSendMessages"
             case .apiCreateChatTag: return "apiCreateChatTag"
-            case .apiTagChat: return "apiTagChat"
-            case .apiUntagChat: return "apiUntagChat"
+            case .apiSetChatTags: return "apiSetChatTags"
+            case .apiDeleteChatTag: return "apiDeleteChatTag"
+            case .apiUpdateChatTag: return "apiUpdateChatTag"
+            case .apiReorderChatTags: return "apiReorderChatTags"
             case .apiCreateChatItems: return "apiCreateChatItems"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
@@ -604,7 +610,6 @@ public enum ChatResponse: Decodable, Error {
     case groupMemberCode(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionCode: String)
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case tagsUpdated(user: UserRef, userTags: [ChatTag], chatTags: [Int64])
-    case chatUntagged(user: UserRef, userTags: [ChatTag], chatTags: [Int64])
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
@@ -784,7 +789,6 @@ public enum ChatResponse: Decodable, Error {
             case .groupMemberCode: return "groupMemberCode"
             case .connectionVerified: return "connectionVerified"
             case .tagsUpdated: return "tagsUpdated"
-            case .chatUntagged: return "chatUntagged"
             case .invitation: return "invitation"
             case .connectionIncognitoUpdated: return "connectionIncognitoUpdated"
             case .connectionUserChanged: return "connectionUserChanged"
@@ -962,7 +966,6 @@ public enum ChatResponse: Decodable, Error {
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
             case let .tagsUpdated(u, userTags, chatTags): return withUser(u, "userTags: \(String(describing: userTags))\nchatTags: \(String(describing: chatTags))")
-            case let .chatUntagged(u, userTags, chatTags): return withUser(u, "userTags: \(String(describing: userTags))\nchatTags: \(String(describing: chatTags))")
             case let .invitation(u, connReqInvitation, connection): return withUser(u, "connReqInvitation: \(connReqInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\newUserId: \(String(describing: newUser.userId))")

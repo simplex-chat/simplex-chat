@@ -608,15 +608,7 @@ struct ChatListTag: View {
                     }
                     .onTapGesture {
                         if let c = chat {
-                            if selected {
-                                untagChat(tagId: tagId, chat: c)
-                            } else {
-                                // TODO: Temporary until API is final.
-                                chatTagsIds.forEach { t in
-                                    untagChat(tagId: t, chat: c)
-                                }
-                                tagChat(tagId: tagId, chat: c)
-                            }
+                            setTag(tagId: selected ? nil : tagId, chat: c)
                         }
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -707,11 +699,14 @@ struct ChatListTag: View {
     }
 
     private func moveItem(from source: IndexSet, to destination: Int) {
-        // TODO: API for reordering tags
         Task {
             do {
+                var tags = chatTagsModel.userTags
+                tags.move(fromOffsets: source, toOffset: destination)
+                try await apiReorderChatTags(tagIds: tags.map { $0.chatTagId })
+                
                 await MainActor.run {
-                    chatTagsModel.userTags.move(fromOffsets: source, toOffset: destination)
+                    chatTagsModel.userTags = tags
                 }
             } catch let error {
                 showAlert(
@@ -722,60 +717,40 @@ struct ChatListTag: View {
         }
     }
     
-    private func tagChat(tagId: Int64, chat: Chat) {
+    private func setTag(tagId: Int64?, chat: Chat) {
         Task {
             do {
-                let (userTags, chatTags) = try await apiTagChat(
+                let tagIds: [Int64] = if let t = tagId { [t] } else {[]}
+                let (userTags, chatTags) = try await apiSetChatTags(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
-                    tagId: tagId
+                    tagIds: tagIds
                 )
                 
                 await MainActor.run {
                     chatTagsModel.userTags = userTags
-                    updateChatTags(chat: chat, chatTags: chatTags)
-                    dismiss()
-                }
-            } catch let error {
-                showAlert(
-                    NSLocalizedString("Error adding chat to list", comment: "alert title"),
-                    message: responseError(error)
-                )
-            }
-        }
-    }
-    
-    private func untagChat(tagId: Int64, chat: Chat) {
-        Task {
-            do {
-                let (userTags, chatTags) = try await apiUntagChat(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    tagId: tagId
-                )
-                
-                await MainActor.run {
-                    chatTagsModel.userTags = userTags
-                    if case let .userTag(tag) = chatTagsModel.activeFilter,
-                       !userTags.contains(where: { $0.chatTagId == tag.chatTagId }) {
-                        chatTagsModel.activeFilter = nil
+                    if var contact = chat.chatInfo.contact {
+                        contact.chatTags = chatTags
+                        m.updateContact(contact)
+                    } else if var group = chat.chatInfo.groupInfo {
+                        group.chatTags = chatTags
+                        m.updateGroup(group)
                     }
-                    updateChatTags(chat: chat, chatTags: chatTags)
                     dismiss()
                 }
             } catch let error {
                 showAlert(
-                    NSLocalizedString("Error removing chat from list", comment: "alert title"),
+                    NSLocalizedString("Error saving chat list", comment: "alert title"),
                     message: responseError(error)
                 )
             }
-
         }
     }
     
     private func deleteTag(_ tagId: Int64) {
-        // TODO: Delete tag API
         Task {
+            try await apiDeleteChatTag(tagId: tagId)
+
             await MainActor.run {
                 chatTagsModel.userTags = chatTagsModel.userTags.filter { $0.chatTagId != tagId }
                 if case let .userTag(tag) = chatTagsModel.activeFilter, tagId == tag.chatTagId {
@@ -791,16 +766,6 @@ struct ChatListTag: View {
                     }
                 }
             }
-        }
-    }
-    
-    private func updateChatTags(chat: Chat, chatTags: [Int64]) {
-        if var contact = chat.chatInfo.contact {
-            contact.chatTags = chatTags
-            m.updateContact(contact)
-        } else if var group = chat.chatInfo.groupInfo {
-            group.chatTags = chatTags
-            m.updateGroup(group)
         }
     }
 }
@@ -886,8 +851,8 @@ struct ChatListTagEditor: View {
                 
                 Button {
                     if let tId = tagId {
-                        if let em = emoji, !name.isEmpty {
-                            updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: em, text: name))
+                        if !name.isEmpty {
+                            updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: emoji, text: name))
                         }
                     } else {
                         createChatTag()
@@ -905,41 +870,29 @@ struct ChatListTagEditor: View {
     }
     
     private func createChatTag() {
-        // TODO: Allow creating tag without chat
-        if let chat = chat {
-            Task {
-                do {
-                    let (userTags, chatTags) = try await apiCreateChatTag(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        tag: ChatTagData(emoji: emoji ?? "😂", text: name)
-                    )
-                    
-                    await MainActor.run {
-                        chatTagsModel.userTags = userTags
-                        if var contact = chat.chatInfo.contact {
-                            contact.chatTags = chatTags
-                            m.updateContact(contact)
-                        } else if var group = chat.chatInfo.groupInfo {
-                            group.chatTags = chatTags
-                            m.updateGroup(group)
-                        }
-                        dismiss()
-                    }
-                } catch let error {
-                    showAlert(
-                        NSLocalizedString("Error creating list", comment: "alert title"),
-                        message: responseError(error)
-                    )
+        Task {
+            do {
+                let userTags = try await apiCreateChatTag(
+                    tag: ChatTagData(emoji: emoji , text: name)
+                )
+                
+                await MainActor.run {
+                    chatTagsModel.userTags = userTags
+                    dismiss()
                 }
+            } catch let error {
+                showAlert(
+                    NSLocalizedString("Error creating list", comment: "alert title"),
+                    message: responseError(error)
+                )
             }
         }
     }
     
     private func updateChatTag(tagId: Int64, chatTagData: ChatTagData) {
-        // TODO: Create endpoint for edit
         Task {
             do {
+                try await apiUpdateChatTag(tagId: tagId, tag: ChatTagData(emoji: emoji , text: name))
                 await MainActor.run {
                     chatTagsModel.userTags = chatTagsModel.userTags.map { tag in
                         if tag.chatTagId == tagId {

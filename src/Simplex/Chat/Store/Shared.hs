@@ -593,15 +593,15 @@ groupInfoQuery =
     JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
   |]
 
-createChatTag :: DB.Connection -> User -> Text -> Text -> IO ChatTagId
+createChatTag :: DB.Connection -> User -> Maybe Text -> Text -> IO ChatTagId
 createChatTag db User {userId} emoji text = do
   DB.execute
     db
     [sql|
-      INSERT INTO chat_tags (user_id, chat_tag_emoji, chat_tag_text)
-      VALUES (?,?,?)
+      INSERT INTO chat_tags (user_id, chat_tag_emoji, chat_tag_text, tag_order)
+      VALUES (?,?,?, COALESCE((SELECT MAX(tag_order) + 1 FROM chat_tags WHERE user_id = ?), 1))
     |]
-    (userId, emoji, text)
+    (userId, emoji, text, userId)
   insertedRowId db
 
 deleteChatTag :: DB.Connection -> User -> ChatTagId -> IO ()
@@ -614,14 +614,32 @@ deleteChatTag db User {userId} tId =
     |]
     (userId, tId)
 
-getTagChatsCount :: DB.Connection -> ChatTagId -> IO Int
-getTagChatsCount db tId =
-  fromOnly . head <$> DB.query db "SELECT COUNT(*) FROM chat_tags_chats WHERE chat_tag_id = ?" (Only tId)
+updateChatTag :: DB.Connection -> User -> ChatTagId -> Maybe Text -> Text -> IO ()
+updateChatTag db User {userId} tId emoji text =
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_tags
+      SET chat_tag_emoji = ?, chat_tag_text = ?
+      WHERE user_id = ? AND chat_tag_id = ?
+    |]
+    (emoji, text, userId, tId)
 
-deleteChatTagIfEmpty :: DB.Connection -> User -> ChatTagId -> IO ()
-deleteChatTagIfEmpty db user ctId = do
-  tagChatsCount <- getTagChatsCount db ctId
-  when (tagChatsCount == 0) $ deleteChatTag db user ctId
+updateChatTagOrder :: DB.Connection -> User -> ChatTagId -> Int -> IO ()
+updateChatTagOrder db User {userId} tId order =
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_tags
+      SET tag_order = ?
+      WHERE user_id = ? AND chat_tag_id = ?
+    |]
+    (order, userId, tId)
+
+reorderChatTags :: DB.Connection -> User -> [ChatTagId] -> IO ()
+reorderChatTags db user tIds =
+  forM_ (zip [1 ..] tIds) $ \(order, tId) ->
+    updateChatTagOrder db user tId order
 
 getUserChatTags :: DB.Connection -> User -> IO [ChatTag]
 getUserChatTags db User {userId} =
@@ -632,8 +650,9 @@ getUserChatTags db User {userId} =
         SELECT chat_tag_id, chat_tag_emoji, chat_tag_text
         FROM chat_tags
         WHERE user_id = ?
+        ORDER BY tag_order
       |]
       (Only userId)
   where
-    toChatTag :: (ChatTagId, Text, Text) -> ChatTag
+    toChatTag :: (ChatTagId, Maybe Text, Text) -> ChatTag
     toChatTag (chatTagId, chatTagEmoji, chatTagText) = ChatTag {chatTagId, chatTagEmoji, chatTagText}

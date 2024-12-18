@@ -300,9 +300,11 @@ data ChatCommand
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
-  | APICreateChatTag ChatRef ChatTagData
-  | APITagChat ChatRef ChatTagId
-  | APIUntagChat ChatRef ChatTagId
+  | APICreateChatTag ChatTagData
+  | APISetChatTags ChatRef [ChatTagId]
+  | APIDeleteChatTag ChatTagId
+  | APIUpdateChatTag ChatTagId ChatTagData
+  | APIReorderChatTags (NonEmpty ChatTagId)
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
@@ -623,7 +625,6 @@ data ChatResponse
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
-  | CRChatUntagged {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
   | CRNewChatItems {user :: User, chatItems :: [AChatItem]}
   | CRChatItemsStatusesUpdated {user :: User, chatItems :: [AChatItem]}
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
@@ -1076,13 +1077,13 @@ instance FromJSON ComposedMessage where
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
 data ChatTagData = ChatTagData
-  { emoji :: Text,
+  { emoji :: Maybe Text,
     text :: Text
   }
   deriving (Show)
 
 instance FromJSON ChatTagData where
-  parseJSON (J.Object v) = ChatTagData <$> v .: "emoji" <*> v .: "text"
+  parseJSON (J.Object v) = ChatTagData <$> v .:? "emoji" <*> v .: "text"
   parseJSON invalid = JT.prependFailure "bad ChatTagData, " (JT.typeMismatch "Object" invalid)
 
 data NtfConn = NtfConn

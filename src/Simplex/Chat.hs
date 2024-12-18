@@ -898,32 +898,26 @@ processChatCommand' vr = \case
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APICreateChatTag (ChatRef cType chatId) (ChatTagData emoji text) -> withUser $ \user -> withFastStore $ \db -> case cType of
+  APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore $ \db -> do
+    _ <- liftIO $ createChatTag db user emoji text
+    CRChatTags user <$> liftIO (getUserChatTags db user)
+  APISetChatTags (ChatRef cType chatId) tagIds -> withUser $ \user -> withFastStore $ \db -> case cType of
     CTDirect -> do
-      tId <- liftIO $ createChatTag db user emoji text
-      liftIO $ tagDirectChat db chatId tId
+      liftIO $ updateDirectChatTags db chatId tagIds
       CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
     CTGroup -> do
-      tId <- liftIO $ createChatTag db user emoji text
-      liftIO $ tagGroupChat db chatId tId
+      liftIO $ updateGroupChatTags db chatId tagIds
       CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APITagChat (ChatRef cType chatId) tId -> withUser $ \user -> withFastStore $ \db -> case cType of
-    CTDirect -> do
-      liftIO $ tagDirectChat db chatId tId
-      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
-    CTGroup -> do
-      liftIO $ tagGroupChat db chatId tId
-      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
-    _ -> pure $ chatCmdError (Just user) "not supported"
-  APIUntagChat (ChatRef cType chatId) tId -> withUser $ \user -> withFastStore $ \db -> case cType of
-    CTDirect -> do
-      liftIO $ untagDirectChat db user chatId tId
-      CRChatUntagged user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
-    CTGroup -> do
-      liftIO $ untagGroupChat db user chatId tId
-      CRChatUntagged user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
-    _ -> pure $ chatCmdError (Just user) "not supported"
+  APIDeleteChatTag tagId -> withUser $ \user -> do
+    withFastStore $ \db -> liftIO $ deleteChatTag db user tagId
+    ok user
+  APIUpdateChatTag tagId (ChatTagData emoji text) -> withUser $ \user -> do
+    withFastStore $ \db -> liftIO $ updateChatTag db user tagId emoji text
+    ok user
+  APIReorderChatTags tagIds -> withUser $ \user -> do
+    withFastStore $ \db -> liftIO $ reorderChatTags db user (L.toList tagIds)
+    ok user
   APICreateChatItems folderId cms -> withUser $ \user ->
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
@@ -8433,9 +8427,11 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
-      "/_create tag " *> (APICreateChatTag <$> chatRefP <* A.space <*> jsonP),
-      "/_tag " *> (APITagChat <$> chatRefP <* A.space <*> A.decimal),
-      "/_untag " *> (APIUntagChat <$> chatRefP <* A.space <*> A.decimal),
+      "/_create tag " *> (APICreateChatTag <$> jsonP),
+      "/_tags " *> (APISetChatTags <$> chatRefP <* A.space <*> A.sepBy1 A.decimal (A.char ',')),
+      "/_delete tag " *> (APIDeleteChatTag <$> A.decimal),
+      "/_update tag " *> (APIUpdateChatTag <$> A.decimal <* A.space <*> jsonP),
+      "/_reorder tags " *> (APIReorderChatTags <$> strP),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
