@@ -213,8 +213,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 if let jApiChat = jResp["apiChat"] as? NSDictionary,
                    let user: UserRef = try? decodeObject(jApiChat["user"] as Any),
                    let jChat = jApiChat["chat"] as? NSDictionary,
-                   let jNavInfo = jApiChat["navInfo"] as? NSDictionary,
-                   let (chat, navInfo) = try? parseChatData(jChat, jNavInfo) {
+                   let (chat, navInfo) = try? parseChatData(jChat, jApiChat["navInfo"] as? NSDictionary) {
                     return .apiChat(user: user, chat: chat, navInfo: navInfo)
                 }
             } else if type == "chatCmdError" {

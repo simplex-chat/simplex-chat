@@ -322,7 +322,7 @@ let loadItemsPerPage = 50
 
 func apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
     let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
-    if case let .apiChat(_, chat, navInfo) = r { return (Chat.init(chat), navInfo) }
+    if case let .apiChat(_, chat, navInfo) = r { return (Chat.init(chat), navInfo ?? NavigationInfo()) }
     throw r
 }
 

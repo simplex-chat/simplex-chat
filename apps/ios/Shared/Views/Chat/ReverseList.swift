@@ -13,13 +13,17 @@ import SimpleXChat
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
+    @Binding var revealedItems: Set<Int64>
+    @Binding var unreadCount: Int
 
     @Binding var scrollState: ReverseListScrollModel.State
 
     /// Closure, that returns user interface for a given item
-    let content: (ChatItem) -> Content
+    /// Index, merged item
+    let content: (Int, MergedItem) -> Content
 
-    let loadPage: () -> Void
+    // pagination, visibleItemIndexesNonReversed
+    let loadItems: (ChatPagination, @escaping () -> ClosedRange<Int>) -> Void
 
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
@@ -46,13 +50,19 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     public class Controller: UITableViewController {
         private enum Section { case main }
         var representer: ReverseList
-        private var dataSource: UITableViewDiffableDataSource<Section, ChatItem>!
-        var itemCount: Int = 0
+        private var dataSource: UITableViewDiffableDataSource<Section, MergedItem>!
+        var itemCount: Int {
+            get {
+                mergedItems.items.count
+            }
+        }
+        private var mergedItems: MergedItems
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
             self.representer = representer
+            self.mergedItems = MergedItems.create(representer.items, representer.unreadCount, Set(), ItemsModel.shared.chatState)
             super.init(style: .plain)
 
             // 1. Style
@@ -75,20 +85,22 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
 
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, ChatItem>(
+            self.dataSource = UITableViewDiffableDataSource<Section, MergedItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if indexPath.item > self.itemCount - 8 {
-                    self.representer.loadPage()
+                    logger.debug("LALAL ITEM \(indexPath.item)")
+                    let pagination = ChatPagination.last(count: 0)
+                    self.representer.loadItems(pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.mergedItems)) })
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
-                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(item) }
+                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(indexPath.item, item) }
                         .margins(.all, 0)
                         .minSize(height: 1) // Passing zero will result in system default of 44 points being used
                 } else {
                     if let cell = cell as? HostingCell<Content> {
-                        cell.set(content: self.representer.content(item), parent: self)
+                        cell.set(content: self.representer.content(indexPath.item, item), parent: self)
                     } else {
                         fatalError("Unexpected Cell Type for: \(item)")
                     }
@@ -185,22 +197,23 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func update(items: [ChatItem]) {
-            var snapshot = NSDiffableDataSourceSnapshot<Section, ChatItem>()
+            let wasCount = itemCount
+            self.mergedItems = MergedItems.create(items, representer.unreadCount, representer.revealedItems, ItemsModel.shared.chatState)
+            var snapshot = NSDiffableDataSourceSnapshot<Section, MergedItem>()
             snapshot.appendSections([.main])
-            snapshot.appendItems(items)
+            snapshot.appendItems(mergedItems.items)
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
-                animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
+                animatingDifferences: wasCount != 0 && abs(mergedItems.items.count - wasCount) == 1
             )
             // Sets content offset on initial load
-            if itemCount == 0 {
+            if wasCount == 0 {
                 tableView.setContentOffset(
                     CGPoint(x: 0, y: -InvertedTableView.inset),
                     animated: false
                 )
             }
-            itemCount = items.count
             updateFloatingButtons.send()
         }
 

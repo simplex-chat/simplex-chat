@@ -563,7 +563,7 @@ public enum ChatResponse: Decodable, Error {
     case chatStopped
     case chatSuspended
     case apiChats(user: UserRef, chats: [ChatData])
-    case apiChat(user: UserRef, chat: ChatData, navInfo: NavigationInfo)
+    case apiChat(user: UserRef, chat: ChatData, navInfo: NavigationInfo?)
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
     case serverOperatorConditions(conditions: ServerOperatorConditions)
@@ -1977,6 +1977,11 @@ public struct ChatSettings: Codable, Hashable {
 public struct NavigationInfo: Decodable {
     public var afterUnread: Int = 0
     public var afterTotal: Int = 0
+
+    public init(afterUnread: Int = 0, afterTotal: Int = 0) {
+        self.afterUnread = afterUnread
+        self.afterTotal = afterTotal
+    }
 }
 
 public enum MsgFilter: String, Codable, Hashable {

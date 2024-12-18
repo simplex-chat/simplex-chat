@@ -15,7 +15,7 @@ struct MergedItems {
     // chat item id, index in list
     let indexInParentItems: Dictionary<Int64, Int>
 
-    static func create(_ items: [ChatItem], _ unreadCount: Binding<Int>, _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
+    static func create(_ items: [ChatItem], _ unreadCount: Int, _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
         if items.isEmpty {
             return MergedItems(items: [], splits: [], indexInParentItems: [:])
         }
@@ -30,7 +30,7 @@ struct MergedItems {
         var unclosedSplitIndex: Int? = nil
         var unclosedSplitIndexInParent: Int? = nil
         var visibleItemIndexInParent = -1
-        var unreadBefore = unreadCount.wrappedValue - chatState.unreadAfterNewestLoaded
+        var unreadBefore = unreadCount - chatState.unreadAfterNewestLoaded
         var lastRevealedIdsInMergedItems: BoxedValue<[Int64]>? = nil
         var lastRangeInReversedForMergedItems: BoxedValue<ClosedRange<Int>>? = nil
         var recent: MergedItem? = nil
@@ -42,14 +42,14 @@ struct MergedItems {
             let itemIsSplit = itemSplits.contains(item.id)
 
             if item.id == unreadAfterItemId {
-                unreadBefore = unreadCount.wrappedValue - chatState.unreadAfter
+                unreadBefore = unreadCount - chatState.unreadAfter
             }
             if item.isRcvNew {
                 unreadBefore -= 1
             }
 
             let revealed = item.mergeCategory == nil || revealedItems.contains(item.id)
-            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, unreadIds, _) = recent, mergeCategory == category, let first = items.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
+            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, _, _) = recent, mergeCategory == category, let first = items.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
                 let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
                 recent!.appendItem(listItem)
 
@@ -67,11 +67,11 @@ struct MergedItems {
                 let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
                 if item.mergeCategory != nil {
                     if item.mergeCategory != prev?.mergeCategory || lastRevealedIdsInMergedItems == nil {
-                        lastRevealedIdsInMergedItems?.boxedValue = revealedItems.contains(item.id) ? [item.id] : []
-                    } else if revealed, var lastRevealedIdsInMergedItems {
+                        lastRevealedIdsInMergedItems = BoxedValue(revealedItems.contains(item.id) ? [item.id] : [])
+                    } else if revealed, let lastRevealedIdsInMergedItems {
                         lastRevealedIdsInMergedItems.boxedValue.append(item.id)
                     }
-                    lastRangeInReversedForMergedItems?.boxedValue = index ... index
+                    lastRangeInReversedForMergedItems = BoxedValue(index ... index)
                     recent = MergedItem.grouped(
                         items: [listItem],
                         revealed: revealed,
@@ -114,7 +114,7 @@ struct MergedItems {
 }
 
 
-enum MergedItem {
+enum MergedItem: Hashable {
     // the item that is always single, cannot be grouped and always revealed
     case single(
         item: ListItem,
@@ -158,8 +158,8 @@ enum MergedItem {
         }
     }
 
-    func reveal(reveal: Bool, revealedItems: Binding<Set<Int64>>) {
-        if case .grouped(let items, let revealed, var revealedIdsWithinGroup, let rangeInReversed, let mergeCategory, let unreadIds, let startIndexInReversedItems) = self {
+    func reveal(_ reveal: Bool, _ revealedItems: Binding<Set<Int64>>) {
+        if case .grouped(let items, _, let revealedIdsWithinGroup, _, _, _, _) = self {
             var newRevealed = revealedItems.wrappedValue
             var i = 0
             if reveal {
@@ -226,7 +226,7 @@ struct SplitRange {
     let indexRangeInParentItems: ClosedRange<Int>
 }
 
-struct ListItem {
+struct ListItem: Hashable {
     let item: ChatItem
     let prevItem: ChatItem?
     let nextItem: ChatItem?
@@ -278,7 +278,15 @@ class ActiveChatState {
     }
 }
 
-class BoxedValue<T> {
+class BoxedValue<T: Hashable>: Hashable {
+    static func == (lhs: BoxedValue<T>, rhs: BoxedValue<T>) -> Bool {
+        lhs.boxedValue == rhs.boxedValue
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine("\(self)")
+    }
+
     var boxedValue : T
     init(_ value: T) {
         self.boxedValue = value
@@ -286,7 +294,7 @@ class BoxedValue<T> {
 }
 
 extension ReverseList.Controller {
-    func visibleItemIndexesNonReversed(_ mergedItems: Binding<MergedItems>, _ scrollModel: ReverseListScrollModel) -> ClosedRange<Int> {
+    func visibleItemIndexesNonReversed(_ mergedItems: Binding<MergedItems>) -> ClosedRange<Int> {
         let zero = 0 ... 0
         if itemCount == 0 {
             return zero
