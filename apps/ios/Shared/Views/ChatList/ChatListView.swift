@@ -405,19 +405,23 @@ struct ChatListView: View {
     }
     
     @ViewBuilder private func noChatsView() -> some View {
-        switch chatTagsModel.activeFilter {
-        case .presetTag: Text("No filtered chats") // this should not happen
-        case let .userTag(tag): Text("No chats in list \(tag.chatTagText)")
-        case .unread:
-            Button {
-                chatTagsModel.activeFilter = nil
-            } label: {
-                HStack {
-                    Image(systemName: "line.3.horizontal.decrease")
-                    Text("No unread chats")
+        if searchString().isEmpty {
+            switch chatTagsModel.activeFilter {
+            case .presetTag: Text("No filtered chats") // this should not happen
+            case let .userTag(tag): Text("No chats in list \(tag.chatTagText)")
+            case .unread:
+                Button {
+                    chatTagsModel.activeFilter = nil
+                } label: {
+                    HStack {
+                        Image(systemName: "line.3.horizontal.decrease")
+                        Text("No unread chats")
+                    }
                 }
+            case .none: Text("No chats")
             }
-        case .none: Text(searchString() == "" ? "No chats" : "No chats found")
+        } else {
+            Text("No chats found")
         }
     }
 
