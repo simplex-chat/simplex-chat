@@ -185,15 +185,6 @@ struct ChatListView: View {
                 }
             }
         }
-        .sheet(item: $sheet) {
-            if #available(iOS 16.0, *) {
-                $0.content
-                    .presentationDetents([.fraction($0.fraction)])
-            } else {
-                $0.content
-                
-            }
-        }
         .environmentObject(chatTagsModel)
     }
     
@@ -229,6 +220,15 @@ struct ChatListView: View {
         .safeAreaInset(edge: .bottom) {
             if oneHandUI {
                 Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(tm)
+            }
+        }
+        .sheet(item: $sheet) {
+            if #available(iOS 16.0, *) {
+                $0.content
+                    .presentationDetents([.fraction($0.fraction)])
+            } else {
+                $0.content
+                
             }
         }
     }
@@ -329,7 +329,8 @@ struct ChatListView: View {
                             searchFocussed: $searchFocussed,
                             searchText: $searchText,
                             searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                            parentSheet: $sheet
                         )
                         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                         .listRowSeparator(.hidden)
@@ -557,13 +558,14 @@ struct ChatListSearchBar: View {
     @Binding var searchText: String
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
+    @Binding var parentSheet: SomeSheet<AnyView>?
     @State private var ignoreSearchTextChange = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         VStack(spacing: 12) {
-            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView() }
+            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView(parentSheet: $parentSheet) }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
@@ -665,18 +667,11 @@ struct ChatListSearchBar: View {
 struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
-    @State private var sheet: SomeSheet<AnyView>? = nil
+    @Binding var parentSheet: SomeSheet<AnyView>?
 
     var body: some View {
         HStack {
             tagsView()
-        }
-        .sheet(item: $sheet) {
-            if #available(iOS 16.0, *) {
-                $0.content.presentationDetents([.fraction($0.fraction)])
-            } else {
-                $0.content
-            }
         }
     }
     
@@ -723,11 +718,12 @@ struct ChatTagsView: View {
                     default:
                         fraction = 1
                     }
-                    sheet = SomeSheet(
+                    parentSheet = SomeSheet(
                         content: {
                             AnyView(
                                 NavigationView {
                                     ChatListTag(chat: nil, showEditButton: true)
+                                        .modifier(ThemedBackground(grouped: true))
                                 }
                             )
                         },
@@ -739,7 +735,7 @@ struct ChatTagsView: View {
         }
         
         Button {
-            sheet = SomeSheet(
+            parentSheet = SomeSheet(
                 content: {
                     AnyView(
                         NavigationView {

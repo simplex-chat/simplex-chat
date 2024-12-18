@@ -348,12 +348,10 @@ struct ChatListNavLink: View {
             content: {
                 AnyView(
                     NavigationView {
-                        Group {
-                            if chatTagsModel.userTags.isEmpty {
-                                ChatListTagEditor(chat: chat)
-                            } else {
-                                ChatListTag(chat: chat)
-                            }
+                        if chatTagsModel.userTags.isEmpty {
+                            ChatListTagEditor(chat: chat)
+                        } else {
+                            ChatListTag(chat: chat)
                         }
                     }
                 )
@@ -677,9 +675,8 @@ struct ChatListTag: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
-        .environment(\.editMode, $editMode)
         .modifier(ThemedBackground(grouped: true))
+        .environment(\.editMode, $editMode)
     }
     
     private func editTagsButton() -> some View {
@@ -880,13 +877,12 @@ struct ChatListTagEditor: View {
                     }
                 }
             }
-            .listStyle(.insetGrouped)
-            .modifier(ThemedBackground())
 
             if isPickerPresented {
                 EmojiPickerView(selectedEmoji: $emoji, showingPicker: $isPickerPresented)
             }
         }
+        .modifier(ThemedBackground(grouped: true))
     }
     
     private func createChatTag() {
