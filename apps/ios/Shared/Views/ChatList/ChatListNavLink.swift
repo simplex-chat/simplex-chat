@@ -827,7 +827,6 @@ struct ChatListTagEditor: View {
     var tagId: Int64? = nil
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
-    @EnvironmentObject var m: ChatModel
     @State var emoji: String? = nil
     @State var name: String = ""
     @State private var isPickerPresented = false
