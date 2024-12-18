@@ -26,6 +26,7 @@ CREATE INDEX idx_chat_tags_user_id ON chat_tags(user_id);
 CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_text ON chat_tags(user_id, chat_tag_text);
 CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_emoji ON chat_tags(user_id, chat_tag_emoji);
 
+CREATE INDEX idx_chat_tags_chats_chat_tag_id ON chat_tags_chats(chat_tag_id);
 CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_contact_id ON chat_tags_chats(contact_id, chat_tag_id);
 CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_group_id ON chat_tags_chats(group_id, chat_tag_id);
 |]
@@ -37,8 +38,9 @@ DROP INDEX idx_chat_tags_user_id;
 DROP INDEX idx_chat_tags_user_id_chat_tag_text;
 DROP INDEX idx_chat_tags_user_id_chat_tag_emoji;
 
-DROP INDEX idx_chat_tags_chats_contact_id;
-DROP INDEX idx_chat_tags_chats_group_id;
+DROP INDEX idx_chat_tags_chats_chat_tag_id;
+DROP INDEX idx_chat_tags_chats_chat_tag_id_contact_id;
+DROP INDEX idx_chat_tags_chats_chat_tag_id_group_id;
 
 DROP TABLE chat_tags_chats;
 DROP TABLE chat_tags;

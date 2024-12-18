@@ -950,6 +950,7 @@ CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_emoji ON chat_tags(
   user_id,
   chat_tag_emoji
 );
+CREATE INDEX idx_chat_tags_chats_chat_tag_id ON chat_tags_chats(chat_tag_id);
 CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_contact_id ON chat_tags_chats(
   contact_id,
   chat_tag_id
