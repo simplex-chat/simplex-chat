@@ -105,6 +105,7 @@ class ChatTagsModel: ObservableObject {
     
     @Published var userTags: [ChatTag] = []
     @Published var activeFilter: ActiveFilter? = nil
+    @Published var presetTags: [PresetTag] = []
 }
 
 class NetworkModel: ObservableObject {

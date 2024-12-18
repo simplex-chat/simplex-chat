@@ -141,7 +141,6 @@ struct ChatListView: View {
     @State private var scrollToSearchBar = false
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
-    @State private var presetTags: [PresetTag] = []
     @StateObject private var chatTagsModel = ChatTagsModel.shared
     
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
@@ -664,10 +663,6 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var sheet: SomeSheet<AnyView>? = nil
 
-    var presetTags: [PresetTag] {
-        getPresetTags(chatModel.chats)
-    }
-
     var body: some View {
         HStack {
             tagsView()
@@ -682,8 +677,8 @@ struct ChatTagsView: View {
     }
     
     @ViewBuilder private func tagsView() -> some View {
-        if presetTags.count > 1 {
-            if presetTags.count + chatTagsModel.userTags.count <= 3 {
+        if chatTagsModel.presetTags.count > 1 {
+            if chatTagsModel.presetTags.count + chatTagsModel.userTags.count <= 3 {
                 expandedPresetTagsFiltersView()
             } else {
                 collapsedTagsFilterView()
@@ -776,8 +771,7 @@ struct ChatTagsView: View {
         } else {
             nil
         }
-        
-        ForEach(presetTags, id: \.id) { tag in
+        ForEach(chatTagsModel.presetTags, id: \.id) { tag in
             let active = tag == selectedPresetTag
             let (icon, text) = presetTagLabel(tag: tag, active: active)
             let color: Color = active ? .accentColor : .secondary
@@ -813,7 +807,7 @@ struct ChatTagsView: View {
                     }
                 }
             }
-            ForEach(presetTags, id: \.id) { tag in
+            ForEach(chatTagsModel.presetTags, id: \.id) { tag in
                 Button {
                     setActiveFilter(filter: .presetTag(tag))
                 } label: {
@@ -866,7 +860,7 @@ func chatStoppedIcon() -> some View {
     }
 }
 
-private func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
+func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
     var matches: Set<PresetTag> = []
     for chat in chats {
         for tag in PresetTag.allCases {
@@ -879,7 +873,6 @@ private func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
         }
     }
     
-    print("matches \(matches)")
     return Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
 }
 
