@@ -100,6 +100,30 @@ class ItemsModel: ObservableObject {
     }
 }
 
+class ChatTagsModel: ObservableObject {
+    static let shared = ChatTagsModel()
+    
+    @Published var userTags: [ChatTag] = []
+    @Published var activeFilter: ActiveFilter? = nil
+    @Published var presetTags: [PresetTag] = []
+}
+
+func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
+    var matches: Set<PresetTag> = []
+    for chat in chats {
+        for tag in PresetTag.allCases {
+            if presetTagMatchesChat(tag, chat) {
+                matches.insert(tag)
+            }
+        }
+        if matches.count == PresetTag.allCases.count {
+            break
+        }
+    }
+    
+    return Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
+}
+
 class NetworkModel: ObservableObject {
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
@@ -342,8 +366,10 @@ final class ChatModel: ObservableObject {
     private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
+            ChatTagsModel.shared.presetTags = getPresetTags(self.chats)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
+            ChatTagsModel.shared.presetTags = getPresetTags(self.chats)
         }
     }
 

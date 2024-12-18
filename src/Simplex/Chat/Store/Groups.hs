@@ -122,8 +122,7 @@ module Simplex.Chat.Store.Groups
     updateUserMemberProfileSentAt,
     setGroupCustomData,
     setGroupUIThemes,
-    tagGroupChat,
-    untagGroupChat,
+    updateGroupChatTags,
     getGroupChatTags,
   )
 where
@@ -2311,6 +2310,14 @@ setGroupUIThemes db User {userId} GroupInfo {groupId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (uiThemes, updatedAt, userId, groupId)
 
+updateGroupChatTags :: DB.Connection -> GroupId -> [ChatTagId] -> IO ()
+updateGroupChatTags db gId tIds = do
+  currentTags <- getGroupChatTags db gId
+  let tagsToAdd = filter (`notElem` currentTags) tIds
+      tagsToDelete = filter (`notElem` tIds) currentTags
+  forM_ tagsToDelete $ untagGroupChat db gId
+  forM_ tagsToAdd $ tagGroupChat db gId
+
 tagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
 tagGroupChat db groupId tId =
   DB.execute
@@ -2321,13 +2328,8 @@ tagGroupChat db groupId tId =
     |]
     (groupId, tId)
 
-untagGroupChat :: DB.Connection -> User -> GroupId -> ChatTagId -> IO ()
-untagGroupChat db user gId tId = do
-  untagGroupChat' db gId tId
-  deleteChatTagIfEmpty db user tId
-
-untagGroupChat' :: DB.Connection -> GroupId -> ChatTagId -> IO ()
-untagGroupChat' db groupId tId =
+untagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
+untagGroupChat db groupId tId =
   DB.execute
     db
     [sql|

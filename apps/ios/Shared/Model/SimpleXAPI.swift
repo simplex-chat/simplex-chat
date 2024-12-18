@@ -318,6 +318,21 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     throw r
 }
 
+func apiGetChatTags() throws -> [ChatTag] {
+    let userId = try currentUserId("apiGetChatTags")
+    return try apiChatTagsResponse(chatSendCmdSync(.apiGetChatTags(userId: userId)))
+}
+
+func apiGetChatTagsAsync() async throws -> [ChatTag] {
+    let userId = try currentUserId("apiGetChatTags")
+    return try apiChatTagsResponse(await chatSendCmd(.apiGetChatTags(userId: userId)))
+}
+
+private func apiChatTagsResponse(_ r: ChatResponse) throws -> [ChatTag] {
+    if case let .chatTags(_, chats) = r { return chats }
+    throw r
+}
+
 let loadItemsPerPage = 50
 
 func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
@@ -366,6 +381,34 @@ func apiPlanForwardChatItems(type: ChatType, id: Int64, itemIds: [Int64]) async 
 func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
     let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
+}
+
+func apiCreateChatTag(tag: ChatTagData) async throws -> [ChatTag] {
+    let r = await chatSendCmd(.apiCreateChatTag(tag: tag))
+    if case let .chatTags(_, userTags) = r {
+        return userTags
+    }
+    throw r
+}
+
+func apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64]) async throws -> ([ChatTag], [Int64]) {
+    let r = await chatSendCmd(.apiSetChatTags(type: type, id: id, tagIds: tagIds))
+    if case let .tagsUpdated(_, userTags, chatTags) = r {
+        return (userTags, chatTags)
+    }
+    throw r
+}
+
+func apiDeleteChatTag(tagId: Int64) async throws  {
+    try await sendCommandOkResp(.apiDeleteChatTag(tagId: tagId))
+}
+
+func apiUpdateChatTag(tagId: Int64, tag: ChatTagData) async throws  {
+    try await sendCommandOkResp(.apiUpdateChatTag(tagId: tagId, tagData: tag))
+}
+
+func apiReorderChatTags(tagIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
 func apiSendMessages(type: ChatType, id: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
@@ -1746,24 +1789,37 @@ func getUserChatData() throws {
     m.userAddress = try apiGetUserAddress()
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
+    let tags = try apiGetChatTags()
     m.updateChats(chats)
+    let tm = ChatTagsModel.shared
+    tm.activeFilter = nil
+    tm.userTags = tags
+    tm.presetTags = getPresetTags(m.chats)
 }
 
 private func getUserChatDataAsync() async throws {
     let m = ChatModel.shared
+    let tm = ChatTagsModel.shared
     if m.currentUser != nil {
         let userAddress = try await apiGetUserAddressAsync()
         let chatItemTTL = try await getChatItemTTLAsync()
         let chats = try await apiGetChatsAsync()
+        let tags = try await apiGetChatTagsAsync()
         await MainActor.run {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
             m.updateChats(chats)
+            tm.activeFilter = nil
+            tm.userTags = tags
+            tm.presetTags = getPresetTags(m.chats)
         }
     } else {
         await MainActor.run {
             m.userAddress = nil
             m.updateChats([])
+            tm.activeFilter = nil
+            tm.userTags = []
+            tm.presetTags = []
         }
     }
 }

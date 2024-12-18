@@ -31,6 +31,29 @@ enum UserPickerSheet: Identifiable {
     }
 }
 
+enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
+    case favorites = 0
+    case contacts = 1
+    case groups = 2
+    case business = 3
+    
+    var id: Int { rawValue }
+}
+
+enum ActiveFilter: Identifiable, Equatable {
+    case presetTag(PresetTag)
+    case userTag(ChatTag)
+    case unread
+    
+    var id: String {
+        switch self {
+        case let .presetTag(tag): "preset \(tag.id)"
+        case let .userTag(tag): "user \(tag.chatTagId)"
+        case .unread: "unread"
+        }
+    }
+}
+
 class SaveableSettings: ObservableObject {
     @Published var servers: ServerSettings = ServerSettings(currUserServers: [], userServers: [], serverErrors: [])
 }
@@ -117,13 +140,14 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var scrollToSearchBar = false
     @State private var userPickerShown: Bool = false
-
-    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
+    @State private var sheet: SomeSheet<AnyView>? = nil
+    @StateObject private var chatTagsModel = ChatTagsModel.shared
+    
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
-
+    
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody.scrollDismissesKeyboard(.immediately)
@@ -131,7 +155,7 @@ struct ChatListView: View {
             viewBody
         }
     }
-
+    
     private var viewBody: some View {
         ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
             NavStackCompat(
@@ -161,8 +185,18 @@ struct ChatListView: View {
                 }
             }
         }
+        .sheet(item: $sheet) {
+            if #available(iOS 16.0, *) {
+                $0.content
+                    .presentationDetents([.fraction($0.fraction)])
+            } else {
+                $0.content
+                
+            }
+        }
+        .environmentObject(chatTagsModel)
     }
-
+    
     private var chatListView: some View {
         let tm = ToolbarMaterial.material(toolbarMaterial)
         return withToolbar(tm) {
@@ -198,14 +232,14 @@ struct ChatListView: View {
             }
         }
     }
-
+    
     static var hasHomeIndicator: Bool = {
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let window = windowScene.windows.first {
             window.safeAreaInsets.bottom > 0
         } else { false }
     }()
-
+    
     @ViewBuilder func withToolbar(_ material: Material, content: () -> some View) -> some View {
         if #available(iOS 16.0, *) {
             if oneHandUI {
@@ -226,13 +260,13 @@ struct ChatListView: View {
             }
         }
     }
-
+    
     @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
         ToolbarItem(placement: .principal) { SubsStatusIndicator() }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
-
+    
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItem(placement: .bottomBar) {
@@ -247,7 +281,7 @@ struct ChatListView: View {
             .onTapGesture { scrollToSearchBar = true }
         }
     }
-
+    
     @ToolbarContentBuilder var bottomToolbarGroup: some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItemGroup(placement: .bottomBar) {
@@ -258,7 +292,7 @@ struct ChatListView: View {
             trailingToolbarItem.padding(.bottom, padding)
         }
     }
-
+    
     @ViewBuilder var leadingToolbarItem: some View {
         let user = chatModel.currentUser ?? User.sampleData
         ZStack(alignment: .topTrailing) {
@@ -275,7 +309,7 @@ struct ChatListView: View {
             userPickerShown = true
         }
     }
-
+    
     @ViewBuilder var trailingToolbarItem: some View {
         switch chatModel.chatRunning {
         case .some(true): NewChatMenuButton()
@@ -283,7 +317,7 @@ struct ChatListView: View {
         case .none: EmptyView()
         }
     }
-
+    
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
         ZStack {
@@ -306,7 +340,7 @@ struct ChatListView: View {
                     }
                     if #available(iOS 16.0, *) {
                         ForEach(cs, id: \.viewId) { chat in
-                            ChatListNavLink(chat: chat)
+                            ChatListNavLink(chat: chat, parentSheet: $sheet)
                                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                                 .padding(.trailing, -16)
                                 .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
@@ -318,7 +352,7 @@ struct ChatListView: View {
                             VStack(spacing: .zero) {
                                 Divider()
                                     .padding(.leading, 16)
-                                ChatListNavLink(chat: chat)
+                                ChatListNavLink(chat: chat,  parentSheet: $sheet)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 6)
                             }
@@ -363,79 +397,92 @@ struct ChatListView: View {
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats")
+                noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
         }
     }
+    
+    @ViewBuilder private func noChatsView() -> some View {
+        switch chatTagsModel.activeFilter {
+        case .presetTag: Text("No filtered chats") // this should not happen
+        case let .userTag(tag): Text("No chats in list \(tag.chatTagText)")
+        case .unread:
+            Button {
+                chatTagsModel.activeFilter = nil
+            } label: {
+                HStack {
+                    Image(systemName: "line.3.horizontal.decrease")
+                    Text("No unread chats")
+                }
+            }
+        case .none: Text(searchString() == "" ? "No chats" : "No chats found")
+        }
+    }
 
+    
     private func unreadBadge(size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
             .foregroundColor(theme.colors.primary)
     }
-
+    
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat)
         }
     }
-
+    
     func stopAudioPlayer() {
         VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
         VoiceItemState.smallView = [:]
     }
-
+    
     private func filteredChats() -> [Chat] {
         if let linkChatId = searchChatFilteredBySimplexLink {
             return chatModel.chats.filter { $0.id == linkChatId }
         } else {
             let s = searchString()
-            return s == "" && !showUnreadAndFavorites
+            return s == ""
             ? chatModel.chats.filter { chat in
-                !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card
+                !chat.chatInfo.chatDeleted && !chat.chatInfo.contactCard && filtered(chat)
             }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
-                switch cInfo {
+                return switch cInfo {
                 case let .direct(contact):
-                    return !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
-                        s == ""
-                        ? filtered(chat)
-                        : (viewNameContains(cInfo, s) ||
-                           contact.profile.displayName.localizedLowercase.contains(s) ||
-                           contact.fullName.localizedLowercase.contains(s))
+                    !contact.chatDeleted && !chat.chatInfo.contactCard && (
+                        ( viewNameContains(cInfo, s) ||
+                          contact.profile.displayName.localizedLowercase.contains(s) ||
+                          contact.fullName.localizedLowercase.contains(s)
+                        )
                     )
-                case let .group(gInfo):
-                    return s == ""
-                    ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
-                    : viewNameContains(cInfo, s)
-                case .local:
-                    return s == "" || viewNameContains(cInfo, s)
-                case .contactRequest:
-                    return s == "" || viewNameContains(cInfo, s)
-                case let .contactConnection(conn):
-                    return s != "" && conn.localAlias.localizedLowercase.contains(s)
-                case .invalidJSON:
-                    return false
+                case .group: viewNameContains(cInfo, s)
+                case .local: viewNameContains(cInfo, s)
+                case .contactRequest: viewNameContains(cInfo, s)
+                case let .contactConnection(conn): conn.localAlias.localizedLowercase.contains(s)
+                case .invalidJSON: false
                 }
             }
         }
-
-        func searchString() -> String {
-            searchShowingSimplexLink ? "" : searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        }
-
+        
         func filtered(_ chat: Chat) -> Bool {
-            (chat.chatInfo.chatSettings?.favorite ?? false) ||
-            chat.chatStats.unreadChat ||
-            (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
+            switch chatTagsModel.activeFilter {
+            case let .presetTag(tag): presetTagMatchesChat(tag, chat)
+            case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
+            case .unread: chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
+            case .none: true
+            }
         }
-
+        
         func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
             cInfo.chatViewName.localizedLowercase.contains(s)
         }
+    }
+    
+    func searchString() -> String {
+        searchShowingSimplexLink ? "" : searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
     }
 }
 
@@ -500,6 +547,7 @@ struct SubsStatusIndicator: View {
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -508,10 +556,10 @@ struct ChatListSearchBar: View {
     @State private var ignoreSearchTextChange = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
-    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
+            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView() }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
@@ -578,16 +626,21 @@ struct ChatListSearchBar: View {
     }
 
     private func toggleFilterButton() -> some View {
-        ZStack {
+        let showUnread = chatTagsModel.activeFilter == .unread
+        return ZStack {
             Color.clear
                 .frame(width: 22, height: 22)
-            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+            Image(systemName: showUnread ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(showUnreadAndFavorites ? theme.colors.primary : theme.colors.secondary)
-                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
+                .foregroundColor(showUnread ? theme.colors.primary : theme.colors.secondary)
+                .frame(width: showUnread ? 22 : 16, height: showUnread ? 22 : 16)
                 .onTapGesture {
-                    showUnreadAndFavorites = !showUnreadAndFavorites
+                    if chatTagsModel.activeFilter == .unread {
+                        chatTagsModel.activeFilter = nil
+                    } else {
+                        chatTagsModel.activeFilter = .unread
+                    }
                 }
         }
     }
@@ -605,6 +658,190 @@ struct ChatListSearchBar: View {
     }
 }
 
+struct ChatTagsView: View {
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
+    @EnvironmentObject var chatModel: ChatModel
+    @State private var sheet: SomeSheet<AnyView>? = nil
+
+    var body: some View {
+        HStack {
+            tagsView()
+        }
+        .sheet(item: $sheet) {
+            if #available(iOS 16.0, *) {
+                $0.content.presentationDetents([.fraction($0.fraction)])
+            } else {
+                $0.content
+            }
+        }
+    }
+    
+    @ViewBuilder private func tagsView() -> some View {
+        if chatTagsModel.presetTags.count > 1 {
+            if chatTagsModel.presetTags.count + chatTagsModel.userTags.count <= 3 {
+                expandedPresetTagsFiltersView()
+            } else {
+                collapsedTagsFilterView()
+            }
+        }
+        ForEach(chatTagsModel.userTags, id: \.id) { tag in
+            let current = if case let .userTag(t) = chatTagsModel.activeFilter {
+                t == tag
+            } else {
+                false
+            }
+            
+            let color: Color = current ? .accentColor : .secondary
+            ZStack {
+                HStack(spacing: 4) {
+                    if let emoji = tag.chatTagEmoji {
+                        Text(emoji)
+                    } else {
+                        Image(systemName: current ? "tag.fill" : "tag")
+                            .foregroundColor(color)
+                    }
+                    ZStack {
+                        Text(tag.chatTagText).fontWeight(.semibold).foregroundColor(.clear)
+                        Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color)
+                    }
+                }
+                .onTapGesture {
+                    setActiveFilter(filter: .userTag(tag))
+                }
+                .onLongPressGesture {
+                    let fraction: Double
+
+                    switch chatTagsModel.userTags.count {
+                    case 0..<4:
+                        fraction = 0.35
+                    case 4..<9:
+                        fraction = 0.7
+                    default:
+                        fraction = 1
+                    }
+                    sheet = SomeSheet(
+                        content: {
+                            AnyView(
+                                NavigationView {
+                                    ChatListTag(chat: nil, showEditButton: true)
+                                }
+                            )
+                        },
+                        id: "tag list",
+                        fraction: fraction
+                    )
+                }
+            }
+        }
+        
+        Button {
+            sheet = SomeSheet(
+                content: {
+                    AnyView(
+                        NavigationView {
+                            ChatListTagEditor()
+                        }
+                    )
+                },
+                id: "tag create"
+            )
+        } label: {
+            if chatTagsModel.userTags.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "plus")
+                    Text("Add list")
+                }
+            } else {
+                Image(systemName: "plus")
+            }
+        }
+        .foregroundColor(.secondary)
+    }
+    
+    @ViewBuilder private func expandedPresetTagsFiltersView() -> some View {
+        let selectedPresetTag: PresetTag? = if case let .presetTag(tag) = chatTagsModel.activeFilter {
+            tag
+        } else {
+            nil
+        }
+        ForEach(chatTagsModel.presetTags, id: \.id) { tag in
+            let active = tag == selectedPresetTag
+            let (icon, text) = presetTagLabel(tag: tag, active: active)
+            let color: Color = active ? .accentColor : .secondary
+
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                ZStack {
+                    Text(text).fontWeight(.semibold).foregroundColor(.clear)
+                    Text(text).fontWeight(active ? .semibold : .regular).foregroundColor(color)
+                }
+            }
+            .onTapGesture {
+                setActiveFilter(filter: .presetTag(tag))
+            }
+        }
+    }
+    
+    @ViewBuilder private func collapsedTagsFilterView() -> some View {
+        let selectedPresetTag: PresetTag? = if case let .presetTag(tag) = chatTagsModel.activeFilter {
+            tag
+        } else {
+            nil
+        }
+        Menu {
+            if selectedPresetTag != nil {
+                Button {
+                    chatTagsModel.activeFilter = nil
+                } label: {
+                    HStack {
+                        Image(systemName: "list.bullet")
+                        Text("All")
+                    }
+                }
+            }
+            ForEach(chatTagsModel.presetTags, id: \.id) { tag in
+                Button {
+                    setActiveFilter(filter: .presetTag(tag))
+                } label: {
+                    let (systemName, text) = presetTagLabel(tag: tag, active: tag == selectedPresetTag)
+                    HStack {
+                        Image(systemName: systemName)
+                        Text(text)
+                    }
+                }
+            }
+        } label: {
+            if let tag = selectedPresetTag {
+                let (systemName, _) = presetTagLabel(tag: tag, active: true)
+                Image(systemName: systemName)
+                    .foregroundColor(.accentColor)
+            } else {
+                Image(systemName: "list.bullet")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(minWidth: 28)
+    }
+    
+    private func presetTagLabel(tag: PresetTag, active: Bool) -> (String, LocalizedStringKey) {
+        switch tag {
+        case .favorites: (active ? "star.fill" : "star", "Favorites")
+        case .contacts: (active ? "person.fill" : "person", "Contacts")
+        case .groups: (active ? "person.2.fill" : "person.2", "Groups")
+        case .business: (active ? "briefcase.fill" : "briefcase", "Businesses")
+        }
+    }
+    
+    private func setActiveFilter(filter: ActiveFilter) {
+        if filter != chatTagsModel.activeFilter {
+            chatTagsModel.activeFilter = filter
+        } else {
+            chatTagsModel.activeFilter = nil
+        }
+    }
+}
+
 func chatStoppedIcon() -> some View {
     Button {
         AlertManager.shared.showAlertMsg(
@@ -613,6 +850,28 @@ func chatStoppedIcon() -> some View {
         )
     } label: {
         Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
+    }
+}
+
+func presetTagMatchesChat(_ tag: PresetTag, _ chat: Chat) -> Bool {
+    switch tag {
+    case .favorites:
+        chat.chatInfo.chatSettings?.favorite == true
+    case .contacts:
+        switch chat.chatInfo {
+        case .direct: true
+        case .contactRequest: true
+        case .contactConnection: true
+        case let .group(groupInfo): groupInfo.businessChat?.chatType == .customer
+        default: false
+        }
+    case .groups:
+        switch chat.chatInfo {
+        case let .group(groupInfo): groupInfo.businessChat == nil
+        default: false
+        }
+    case .business:
+        chat.chatInfo.groupInfo?.businessChat?.chatType == .business
     }
 }
 

@@ -1334,6 +1334,13 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var contactCard: Bool {
+        switch self {
+        case let .direct(contact): contact.activeConn == nil && contact.profile.contactLink != nil && contact.active
+        default: false
+        }
+    }
+    
     public var groupInfo: GroupInfo? {
         switch self {
         case let .group(groupInfo): return groupInfo
@@ -1444,6 +1451,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         default: return nil
         }
     }
+    
+    public var chatTags: [Int64]? {
+        switch self {
+        case let .direct(contact): return contact.chatTags
+        case let .group(groupInfo): return groupInfo.chatTags
+        default: return nil
+        }
+    }
 
     var createdAt: Date {
         switch self {
@@ -1545,6 +1560,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
+    public var chatTags: [Int64]
     public var uiThemes: ThemeModeOverrides?
     public var chatDeleted: Bool
     
@@ -1615,6 +1631,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         createdAt: .now,
         updatedAt: .now,
         contactGrpInvSent: false,
+        chatTags: [],
         chatDeleted: false
     )
 }
@@ -1910,6 +1927,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
     public var localAlias: String { "" }
+    public var chatTags: [Int64]
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -1932,7 +1950,8 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         hostConnCustomUserProfileId: nil,
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
-        updatedAt: .now
+        updatedAt: .now,
+        chatTags: []
     )
 }
 
@@ -4207,6 +4226,20 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
         return lhs.comparisonValue < rhs.comparisonValue
+    }
+}
+
+public struct ChatTag: Decodable, Hashable {
+    public var chatTagId: Int64
+    public var chatTagText: String
+    public var chatTagEmoji: String?
+    
+    public var id: Int64 { chatTagId }
+    
+    public init(chatTagId: Int64, chatTagText: String, chatTagEmoji: String?) {
+        self.chatTagId = chatTagId
+        self.chatTagText = chatTagText
+        self.chatTagEmoji = chatTagEmoji
     }
 }
 

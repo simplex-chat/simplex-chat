@@ -1644,7 +1644,7 @@ data CommandData = CommandData
 data ChatTag = ChatTag
   { chatTagId :: Int64,
     chatTagText :: Text,
-    chatTagEmoji :: Text
+    chatTagEmoji :: Maybe Text
   }
   deriving (Show)
 
