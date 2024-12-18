@@ -113,6 +113,7 @@ func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
     for chat in chats {
         for tag in PresetTag.allCases {
             if presetTagMatchesChat(tag, chat) {
+                print("match")
                 matches.insert(tag)
             }
         }
@@ -884,6 +885,7 @@ final class ChatModel: ObservableObject {
     func removeChat(_ id: String) {
         withAnimation {
             chats.removeAll(where: { $0.id == id })
+            ChatTagsModel.shared.presetTags = getPresetTags(chats)
         }
     }
 
