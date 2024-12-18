@@ -13,32 +13,30 @@ CREATE TABLE chat_tags (
   user_id INTEGER REFERENCES users,
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
-  tag_order INTEGER NOT NULL,
-  CONSTRAINT unique_user_tag_text UNIQUE (user_id, chat_tag_text),
-  CONSTRAINT unique_user_tag_emoji UNIQUE (user_id, chat_tag_emoji)
+  tag_order INTEGER NOT NULL
 );
 
 CREATE TABLE chat_tags_chats (
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE, -- NULL for groups
   group_id INTEGER REFERENCES groups ON DELETE CASCADE, -- NULL for contacts
-  chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE,
-  CONSTRAINT unique_tag_group UNIQUE (chat_tag_id, group_id),
-  CONSTRAINT unique_tag_contact UNIQUE (chat_tag_id, contact_id)
+  chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
 
 CREATE INDEX idx_chat_tags_user_id ON chat_tags(user_id);
-CREATE INDEX idx_chat_tags_chat_tag_id ON chat_tags(chat_tag_id);
-CREATE INDEX idx_chat_tags_user_id_chat_tag_id ON chat_tags(user_id, chat_tag_id);
-CREATE INDEX idx_chat_tags_chats_contact_id ON chat_tags_chats(contact_id);
-CREATE INDEX idx_chat_tags_chats_group_id ON chat_tags_chats(group_id);
+CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_text ON chat_tags(user_id, chat_tag_text);
+CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_emoji ON chat_tags(user_id, chat_tag_emoji);
+
+CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_contact_id ON chat_tags_chats(contact_id, chat_tag_id);
+CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_group_id ON chat_tags_chats(group_id, chat_tag_id);
 |]
 
 down_m20241206_chat_tags :: Query
 down_m20241206_chat_tags =
   [sql|
 DROP INDEX idx_chat_tags_user_id;
-DROP INDEX idx_chat_tags_chat_tag_id;
-DROP INDEX idx_chat_tags_user_id_chat_tag_id;
+DROP INDEX idx_chat_tags_user_id_chat_tag_text;
+DROP INDEX idx_chat_tags_user_id_chat_tag_emoji;
+
 DROP INDEX idx_chat_tags_chats_contact_id;
 DROP INDEX idx_chat_tags_chats_group_id;
 
