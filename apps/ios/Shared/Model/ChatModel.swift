@@ -113,7 +113,6 @@ func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
     for chat in chats {
         for tag in PresetTag.allCases {
             if presetTagMatchesChat(tag, chat) {
-                print("match")
                 matches.insert(tag)
             }
         }
