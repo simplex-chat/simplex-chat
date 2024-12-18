@@ -23,6 +23,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
+import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -131,6 +132,7 @@ class AppPreferences {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val chatStopped = mkBoolPreference(SHARED_PREFS_CHAT_STOPPED, false)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
+  val logLevel = mkEnumPreference(SHARED_PREFS_LOG_LEVEL, LogLevel.WARNING) { LogLevel.entries.firstOrNull { it.name == this } }
   val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
   val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
@@ -211,6 +213,9 @@ class AppPreferences {
   // Note that this situation can only happen if passphrase for the first database is incorrect because, otherwise, backend will re-create second database automatically
   val newDatabaseInitialized = mkBoolPreference(SHARED_PREFS_NEW_DATABASE_INITIALIZED, false)
 
+  /** after importing new database, this flag will be set and unset only after importing app settings in [initChatController] */
+  val shouldImportAppSettings = mkBoolPreference(SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS, false)
+
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
   val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
@@ -254,6 +259,7 @@ class AppPreferences {
   val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
 
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, true)
+  val chatBottomBar = mkBoolPreference(SHARED_PREFS_CHAT_BOTTOM_BAR, true)
 
   val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
     laNoticeShown to false,
@@ -388,6 +394,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
+    private const val SHARED_PREFS_LOG_LEVEL = "LogLevel"
     private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
     private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
@@ -425,8 +432,10 @@ class AppPreferences {
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE = "InitializationVectorSelfDestructPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_NEW_DATABASE_INITIALIZED = "NewDatabaseInitialized"
+    private const val SHARED_PREFS_SHOULD_IMPORT_APP_SETTINGS = "ShouldImportAppSettings"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_ONE_HAND_UI = "OneHandUI"
+    private const val SHARED_PREFS_CHAT_BOTTOM_BAR = "ChatBottomBar"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
@@ -434,7 +443,6 @@ class AppPreferences {
     private const val SHARED_PREFS_CURRENT_THEME_IDs = "CurrentThemeIds"
     private const val SHARED_PREFS_SYSTEM_DARK_THEME = "SystemDarkTheme"
     private const val SHARED_PREFS_THEMES_OLD = "Themes"
-    private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
     private const val SHARED_PREFS_CHAT_ITEM_ROUNDNESS = "ChatItemRoundness"
     private const val SHARED_PREFS_CHAT_ITEM_TAIL = "ChatItemTail"
@@ -890,8 +898,27 @@ object ChatController {
 
   private suspend fun processSendMessageCmd(rh: Long?, cmd: CC): List<AChatItem>? {
     val r = sendCmd(rh, cmd)
-    return when (r) {
-      is CR.NewChatItems -> r.chatItems
+    return when {
+      r is CR.NewChatItems -> r.chatItems
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiSendMessages -> {
+        val mc = cmd.composedMessages.last().msgContent
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.maximum_message_size_title),
+          if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
+            generalGetString(MR.strings.maximum_message_size_reached_non_text)
+          } else {
+            generalGetString(MR.strings.maximum_message_size_reached_text)
+          }
+        )
+        null
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg && cmd is CC.ApiForwardChatItems -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.maximum_message_size_title),
+          generalGetString(MR.strings.maximum_message_size_reached_forwarding)
+        )
+        null
+      }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("processSendMessageCmd", generalGetString(MR.strings.error_sending_message), r)
@@ -939,7 +966,21 @@ object ChatController {
 
   suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
-    if (r is CR.ChatItemUpdated) return r.chatItem
+    when {
+      r is CR.ChatItemUpdated -> return r.chatItem
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.maximum_message_size_title),
+          if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
+            generalGetString(MR.strings.maximum_message_size_reached_non_text)
+          } else {
+            generalGetString(MR.strings.maximum_message_size_reached_text)
+          }
+        )
+        return null
+      }
+    }
+
     Log.e(TAG, "apiUpdateChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -948,6 +989,14 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiChatItemReaction(type, id, itemId, add, reaction))
     if (r is CR.ChatItemReaction) return r.reaction.chatReaction.chatItem
     Log.e(TAG, "apiUpdateChatItem bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiGetReactionMembers(rh: Long?, groupId: Long, itemId: Long, reaction: MsgReaction): List<MemberReaction>? {
+    val userId = currentUserId("apiGetReactionMembers")
+    val r = sendCmd(rh, CC.ApiGetReactionMembers(userId, groupId, itemId, reaction))
+    if (r is CR.ReactionMembers) return r.memberReactions
+    Log.e(TAG, "apiGetReactionMembers bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -2389,9 +2438,7 @@ object ChatController {
           ) {
             receiveFile(rhId, r.user, file.fileId, auto = true)
           }
-          if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
-            ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
-          }
+          ntfManager.notifyMessageReceived(rhId, r.user, cInfo, cItem)
         }
       }
       is CR.ChatItemsStatusesUpdated ->
@@ -2405,7 +2452,7 @@ object ChatController {
           }
         }
       is CR.ChatItemUpdated ->
-        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
+        chatItemUpdateNotify(rhId, r.user, r.chatItem)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           withChats {
@@ -2479,6 +2526,19 @@ object ChatController {
             chatModel.replaceConnReqView(hostConn.id, "#${r.groupInfo.groupId}")
             removeChat(rhId, hostConn.id)
           }
+        }
+      }
+      is CR.BusinessLinkConnecting -> {
+        if (!active(r.user)) return
+
+        withChats {
+          updateGroup(rhId, r.groupInfo)
+        }
+        if (chatModel.chatId.value == r.fromContact.id) {
+          openGroupChat(rhId, r.groupInfo.groupId)
+        }
+        withChats {
+          removeChat(rhId, r.fromContact.id)
         }
       }
       is CR.JoinedGroupMemberConnecting ->
@@ -2890,9 +2950,17 @@ object ChatController {
   }
 
   private suspend fun chatItemSimpleUpdate(rh: Long?, user: UserLike, aChatItem: AChatItem) {
+    if (activeUser(rh, user)) {
+      val cInfo = aChatItem.chatInfo
+      val cItem = aChatItem.chatItem
+      withChats { upsertChatItem(rh, cInfo, cItem) }
+    }
+  }
+
+  private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
-    val notify = { ntfManager.notifyMessageReceived(user, cInfo, cItem) }
+    val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       notify()
     } else if (withChats { upsertChatItem(rh, cInfo, cItem) }) {
@@ -3092,6 +3160,7 @@ sealed class CC {
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
+  class ApiGetReactionMembers(val userId: Long, val groupId: Long, val itemId: Long, val reaction: MsgReaction): CC()
   class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val chatItemIds: List<Long>): CC()
   class ApiForwardChatItems(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemIds: List<Long>, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
@@ -3253,6 +3322,7 @@ sealed class CC {
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
+    is ApiGetReactionMembers -> "/_reaction members $userId #$groupId $itemId ${json.encodeToString(reaction)}"
     is ApiForwardChatItems -> {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_forward ${chatRef(toChatType, toChatId)} ${chatRef(fromChatType, fromChatId)} ${itemIds.joinToString(",")} ttl=${ttlStr}"
@@ -3409,6 +3479,7 @@ sealed class CC {
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
     is ApiChatItemReaction -> "apiChatItemReaction"
+    is ApiGetReactionMembers -> "apiGetReactionMembers"
     is ApiForwardChatItems -> "apiForwardChatItems"
     is ApiPlanForwardChatItems -> "apiPlanForwardChatItems"
     is ApiNewGroup -> "apiNewGroup"
@@ -3600,14 +3671,13 @@ enum class ServerProtocol {
 @Serializable
 enum class OperatorTag {
   @SerialName("simplex") SimpleX,
-  @SerialName("flux") Flux,
-  @SerialName("xyz") XYZ,
-  @SerialName("demo") Demo
+  @SerialName("flux") Flux
 }
 
 data class ServerOperatorInfo(
   val description: List<String>,
   val website: String,
+  val selfhost: Pair<String, String>? = null,
   val logo: ImageResource,
   val largeLogo: ImageResource,
   val logoDarkMode: ImageResource,
@@ -3627,31 +3697,17 @@ val operatorsInfo: Map<OperatorTag, ServerOperatorInfo> = mapOf(
   ),
   OperatorTag.Flux to ServerOperatorInfo(
     description = listOf(
-      "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes.",
-      "Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all."
+      "Flux is the largest decentralized cloud, based on a global network of user-operated nodes.",
+      "Flux offers a powerful, scalable, and affordable cutting edge technology platform for all.",
+      "Flux operates servers in SimpleX network to improve its privacy and decentralization."
     ),
     website = "https://runonflux.com",
+    selfhost = "Self-host SimpleX servers on Flux" to "https://home.runonflux.io/apps/marketplace?q=simplex",
     logo = MR.images.flux_logo_symbol,
     largeLogo = MR.images.flux_logo,
     logoDarkMode = MR.images.flux_logo_symbol,
     largeLogoDarkMode = MR.images.flux_logo_light
   ),
-  OperatorTag.XYZ to ServerOperatorInfo(
-    description = listOf("XYZ servers"),
-    website = "XYZ website",
-    logo = MR.images.shield,
-    largeLogo = MR.images.logo,
-    logoDarkMode = MR.images.shield,
-    largeLogoDarkMode = MR.images.logo_light
-  ),
-  OperatorTag.Demo to ServerOperatorInfo(
-    description = listOf("Demo operator"),
-    website = "Demo website",
-    logo = MR.images.decentralized,
-    largeLogo = MR.images.logo,
-    logoDarkMode = MR.images.decentralized_light,
-    largeLogoDarkMode = MR.images.logo_light
-  )
 )
 
 @Serializable
@@ -3731,7 +3787,7 @@ data class ServerOperator(
   companion object {
     val dummyOperatorInfo = ServerOperatorInfo(
       description = listOf("Default"),
-      website = "Default",
+      website = "https://simplex.chat",
       logo = MR.images.decentralized,
       largeLogo = MR.images.logo,
       logoDarkMode = MR.images.decentralized_light,
@@ -3748,30 +3804,6 @@ data class ServerOperator(
       enabled = true,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
-    )
-
-    val sampleData2 = ServerOperator(
-      operatorId = 2,
-      operatorTag = OperatorTag.XYZ,
-      tradeName = "XYZ",
-      legalName = null,
-      serverDomains = listOf("xyz.com"),
-      conditionsAcceptance = ConditionsAcceptance.Required(deadline = null),
-      enabled = false,
-      smpRoles = ServerRoles(storage = false, proxy = true),
-      xftpRoles = ServerRoles(storage = false, proxy = true)
-    )
-
-    val sampleData3 = ServerOperator(
-      operatorId = 3,
-      operatorTag = OperatorTag.Demo,
-      tradeName = "Demo",
-      legalName = null,
-      serverDomains = listOf("demo.com"),
-      conditionsAcceptance = ConditionsAcceptance.Required(deadline = null),
-      enabled = false,
-      smpRoles = ServerRoles(storage = true, proxy = false),
-      xftpRoles = ServerRoles(storage = true, proxy = false)
     )
   }
 
@@ -4945,7 +4977,7 @@ enum class GroupFeature: Feature {
         }
         DirectMessages -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_dms)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.direct_messages_are_prohibited_in_chat)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.direct_messages_are_prohibited)
         }
         FullDelete -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_delete)
@@ -5391,7 +5423,6 @@ sealed class CR {
   @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("sentInvitationToContact") class SentInvitationToContact(val user: UserRef, val contact: Contact, val customUserProfile: Profile?): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
-  @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeletedByContact") class ContactDeletedByContact(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("chatCleared") class ChatCleared(val user: UserRef, val chatInfo: ChatInfo): CR()
@@ -5429,6 +5460,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
+  @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()
   @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
   @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val itemsCount: Int, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation? = null): CR()
   // group events
@@ -5436,6 +5468,7 @@ sealed class CR {
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
   @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
+  @Serializable @SerialName("businessLinkConnecting") class BusinessLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember, val fromContact: Contact): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
@@ -5574,7 +5607,6 @@ sealed class CR {
     is SentInvitation -> "sentInvitation"
     is SentInvitationToContact -> "sentInvitationToContact"
     is ContactAlreadyExists -> "contactAlreadyExists"
-    is ContactRequestAlreadyAccepted -> "contactRequestAlreadyAccepted"
     is ContactDeleted -> "contactDeleted"
     is ContactDeletedByContact -> "contactDeletedByContact"
     is ChatCleared -> "chatCleared"
@@ -5610,12 +5642,14 @@ sealed class CR {
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
+    is ReactionMembers -> "reactionMembers"
     is ChatItemsDeleted -> "chatItemsDeleted"
     is ForwardPlan -> "forwardPlan"
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
     is GroupLinkConnecting -> "groupLinkConnecting"
+    is BusinessLinkConnecting -> "businessLinkConnecting"
     is UserDeletedMember -> "userDeletedMember"
     is LeftMemberUser -> "leftMemberUser"
     is GroupMembers -> "groupMembers"
@@ -5747,7 +5781,6 @@ sealed class CR {
     is SentInvitation -> withUser(user, json.encodeToString(connection))
     is SentInvitationToContact -> withUser(user, json.encodeToString(contact))
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
-    is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
     is ContactDeletedByContact -> withUser(user, json.encodeToString(contact))
     is ChatCleared -> withUser(user, json.encodeToString(chatInfo))
@@ -5783,12 +5816,14 @@ sealed class CR {
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
+    is ReactionMembers -> withUser(user, "memberReactions: ${json.encodeToString(memberReactions)}")
     is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
     is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")
+    is BusinessLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember\nfromContact: $fromContact")
     is UserDeletedMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is LeftMemberUser -> withUser(user, json.encodeToString(groupInfo))
     is GroupMembers -> withUser(user, json.encodeToString(group))
@@ -6060,11 +6095,16 @@ class UserContactLinkRec(val connReqContact: String, val autoAccept: AutoAccept?
 }
 
 @Serializable
-class AutoAccept(val acceptIncognito: Boolean, val autoReply: MsgContent?) {
+class AutoAccept(val businessAddress: Boolean, val acceptIncognito: Boolean, val autoReply: MsgContent?) {
   companion object {
     fun cmdString(autoAccept: AutoAccept?): String {
       if (autoAccept == null) return "off"
-      val s = "on" + if (autoAccept.acceptIncognito) " incognito=on" else ""
+      var s = "on"
+      if (autoAccept.acceptIncognito) {
+        s += " incognito=on"
+      } else if (autoAccept.businessAddress) {
+        s += " business"
+      }
       val msg = autoAccept.autoReply ?: return s
       return s + " " + msg.cmdString
     }
@@ -6339,6 +6379,7 @@ sealed class StoreError {
       is HostMemberIdNotFound -> "hostMemberIdNotFound"
       is ContactNotFoundByFileId -> "contactNotFoundByFileId"
       is NoGroupSndStatus -> "noGroupSndStatus"
+      is LargeMsg -> "largeMsg"
     }
 
   @Serializable @SerialName("duplicateName") object DuplicateName: StoreError()
@@ -6398,6 +6439,7 @@ sealed class StoreError {
   @Serializable @SerialName("hostMemberIdNotFound") class HostMemberIdNotFound(val groupId: Long): StoreError()
   @Serializable @SerialName("contactNotFoundByFileId") class ContactNotFoundByFileId(val fileId: Long): StoreError()
   @Serializable @SerialName("noGroupSndStatus") class NoGroupSndStatus(val itemId: Long, val groupMemberId: Long): StoreError()
+  @Serializable @SerialName("largeMsg") object LargeMsg: StoreError()
 }
 
 @Serializable
@@ -6425,7 +6467,7 @@ sealed class SQLiteError {
 @Serializable
 sealed class AgentErrorType {
   val string: String get() = when (this) {
-    is CMD -> "CMD ${cmdErr.string}"
+    is CMD -> "CMD ${cmdErr.string} $errContext"
     is CONN -> "CONN ${connErr.string}"
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
@@ -6438,7 +6480,7 @@ sealed class AgentErrorType {
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
   }
-  @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
+  @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val serverAddress: String, val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
@@ -6816,7 +6858,8 @@ data class AppSettings(
   var uiDarkColorScheme: String? = null,
   var uiCurrentThemeIds: Map<String, String>? = null,
   var uiThemes: List<ThemeOverrides>? = null,
-  var oneHandUI: Boolean? = null
+  var oneHandUI: Boolean? = null,
+  var chatBottomBar: Boolean? = null
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -6851,6 +6894,7 @@ data class AppSettings(
     if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
     if (oneHandUI != def.oneHandUI) { empty.oneHandUI = oneHandUI }
+    if (chatBottomBar != def.chatBottomBar) { empty.chatBottomBar = chatBottomBar }
     return empty
   }
 
@@ -6895,7 +6939,8 @@ data class AppSettings(
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
-    oneHandUI?.let { def.oneHandUI.set(if (appPlatform.isAndroid) it else false) }
+    oneHandUI?.let { def.oneHandUI.set(it) }
+    chatBottomBar?.let { if (appPlatform.isAndroid) def.chatBottomBar.set(it) else def.chatBottomBar.set(true) }
   }
 
   companion object {
@@ -6930,7 +6975,8 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
-        oneHandUI = true
+        oneHandUI = true,
+        chatBottomBar = true,
       )
 
     val current: AppSettings
@@ -6966,7 +7012,8 @@ data class AppSettings(
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
-          oneHandUI = def.oneHandUI.get()
+          oneHandUI = def.oneHandUI.get(),
+          chatBottomBar = def.chatBottomBar.get()
         )
     }
   }

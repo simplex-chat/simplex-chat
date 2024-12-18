@@ -108,7 +108,6 @@
     <string name="about_simplex">Tietoja SimpleX:stä</string>
     <string name="decentralized">Hajautettu</string>
     <string name="icon_descr_audio_off">Ääni pois päältä</string>
-    <string name="chat_archive_section">ARKISTO</string>
     <string name="change_role">Vaihda rooli</string>
     <string name="full_deletion">Poista kaikilta</string>
     <string name="empty_chat_profile_is_created">Luodaan tyhjä chat-profiili annetulla nimellä, ja sovellus avautuu normaalisti.</string>
@@ -168,9 +167,6 @@
     <string name="theme_dark">Tumma</string>
     <string name="la_auth_failed">Tunnistautuminen epäonnistui</string>
     <string name="smp_servers_preset_add">Lisää esiasetettuja palvelimia</string>
-    <string name="chat_archive_header">Arkisto</string>
-    <string name="delete_chat_archive_question">Poista keskusteluarkisto\?</string>
-    <string name="archive_created_on_ts">Luotu %1$s</string>
     <string name="rcv_group_event_group_deleted">poistettu ryhmä</string>
     <string name="group_member_status_connecting">yhdistää</string>
     <string name="group_member_status_accepted">yhdistäminen (hyväksytty)</string>
@@ -255,8 +251,7 @@
     <string name="button_delete_contact">Poista kontakti</string>
     <string name="above_then_preposition_continuation">Yllä, sitten:</string>
     <string name="network_session_mode_user">Keskustelujen profiili</string>
-    <string name="network_session_mode_entity_description"><b>Jokaiselle kontaktille ja ryhmän jäsenelle</b> käytetään erillistä TCP-yhteyttä (ja SOCKS-tunnistetietoja).
-\n<b>Huomaa</b>: jos sinulla on useita yhteyksiä, akun ja data-liikenteen määrä voi olla huomattavasti korkeampi ja jotkin yhteydet voivat epäonnistua.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[<b>Jokaiselle kontaktille ja ryhmän jäsenelle</b> käytetään erillistä TCP-yhteyttä (ja SOCKS-tunnistetietoja). \n<b>Huomaa</b>: jos sinulla on useita yhteyksiä, akun ja data-liikenteen määrä voi olla huomattavasti korkeampi ja jotkin yhteydet voivat epäonnistua.]]></string>
     <string name="icon_descr_audio_call">Äänipuhelu</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Paras akulle</b>. Saat ilmoituksia vain, kun sovellus on käynnissä (EI taustapalvelua).]]></string>
     <string name="ttl_hours">%d tuntia</string>
@@ -326,7 +321,6 @@
     <string name="database_downgrade">Tietokannan alentaminen</string>
     <string name="database_upgrade">Tietokannan päivitys</string>
     <string name="database_will_be_encrypted">Tietokanta salataan.</string>
-    <string name="delete_archive">Poista arkisto</string>
     <string name="group_member_status_intro_invitation">yhdistäminen (esittelykutsu)</string>
     <string name="info_row_deleted_at">Poistettu klo</string>
     <string name="change_verb">Muuta</string>
@@ -345,7 +339,7 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">Sekä sinä että kontaktisi voivat käyttää viestireaktioita.</string>
     <string name="both_you_and_your_contacts_can_delete">Sekä sinä että kontaktisi voitte peruuttamattomasti poistaa lähetetyt viestit.</string>
     <string name="both_you_and_your_contact_can_make_calls">Sekä sinä että kontaktisi voitte soittaa puheluita.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.</string>
+    <string name="direct_messages_are_prohibited_in_group">Yksityisviestit jäsenten välillä ovat kiellettyjä tässä ryhmässä.</string>
     <string name="v4_5_transport_isolation_descr">Chat-profiilin (oletus) tai yhteyden (BETA) perusteella.</string>
     <string name="feature_cancelled_item">peruttu %s</string>
     <string name="ttl_day">%d päivä</string>
@@ -662,7 +656,6 @@
     <string name="network_option_ping_interval">PING-väli</string>
     <string name="users_delete_with_connections">Profiili- ja palvelinyhteydet</string>
     <string name="set_group_preferences">Aseta ryhmän asetukset</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Monet ovat kysyneet: <i>jos SimpleX ei sisällä käyttäjätunnuksia, kuinka se voi toimittaa viestejä\?</i>]]></string>
     <string name="conn_stats_section_title_servers">PALVELIMET</string>
     <string name="save_and_notify_contact">Tallenna ja ilmoita kontaktille</string>
     <string name="save_and_notify_contacts">Tallenna ja ilmoita kontakteille</string>
@@ -673,7 +666,6 @@
     <string name="self_destruct_passcode">Itsetuhoutuva pääsykoodi</string>
     <string name="restart_the_app_to_use_imported_chat_database">Käynnistä sovellus uudelleen käyttääksesi tuotua keskustelutietokantaa.</string>
     <string name="old_database_archive">Vanha tietokanta-arkisto</string>
-    <string name="stop_chat_to_enable_database_actions">Pysäytä keskustelu, jotta tietokantatoiminnot voidaan ottaa käyttöön.</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Luo uusi keskusteluprofiili käynnistämällä sovellus uudelleen.</string>
     <string name="messages_section_title">Viestit</string>
     <string name="chat_item_ttl_none">ei koskaan</string>
@@ -840,7 +832,6 @@
     <string name="read_more_in_github_with_link"><![CDATA[Lue lisää <font color="#0088ff">GitHub-arkistostamme</font>.]]></string>
     <string name="onboarding_notifications_mode_periodic">Säännölliset</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Vain asiakaslaitteet tallentavat käyttäjäprofiileja, yhteystietoja, ryhmiä ja viestejä, jotka on lähetetty <b>2-kerroksisella päästä päähän -salauksella</b>.]]></string>
-    <string name="read_more_in_github">Lue lisää GitHub-tietovarastostamme.</string>
     <string name="paste_the_link_you_received">Liitä vastaanotettu linkki</string>
     <string name="relay_server_protects_ip">Välityspalvelin suojaa IP-osoitteesi, mutta se voi tarkkailla puhelun kestoa.</string>
     <string name="open_simplex_chat_to_accept_call">Avaa SimpleX Chat hyväksyäksesi puhelun</string>
@@ -969,7 +960,6 @@
     <string name="smp_server_test_secure_queue">Turvallinen jono</string>
     <string name="restore_passphrase_not_found_desc">Tunnuslausetta ei löydy Keystoresta, kirjoita se manuaalisesti. Tämä on saattanut tapahtua, jos olet palauttanut sovelluksen tiedot varmuuskopiointityökalulla. Jos näin ei ole, ota yhteyttä kehittäjiin.</string>
     <string name="restore_database_alert_desc">Anna edellinen salasana tietokannan varmuuskopion palauttamisen jälkeen. Tätä toimintoa ei voi kumota.</string>
-    <string name="save_archive">Tallenna arkisto</string>
     <string name="non_fatal_errors_occured_during_import">Tuonnin aikana tapahtui joitakin ei-vakavia virheitä – saatat nähdä Chat-konsolissa lisätietoja.</string>
     <string name="info_row_updated_at">Tietue päivitetty klo</string>
     <string name="info_row_moderated_at">Moderoitu klo</string>
@@ -1057,7 +1047,6 @@
     <string name="waiting_for_file">Odottaa tiedostoa</string>
     <string name="to_start_a_new_chat_help_header">Aloita uusi keskustelu</string>
     <string name="using_simplex_chat_servers">Käyttää SimpleX Chat -palvelimia.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Sinä päätät, minkä palvelimien kautta viestit <b>vastaanotetaan</b>, kontaktiesi – palvelimet, joita käytät viestien lähettämiseen.]]></string>
     <string name="your_privacy">Yksityisyytesi</string>
     <string name="snd_group_event_member_deleted">poistit %1$s</string>
     <string name="chat_preferences_yes">kyllä</string>

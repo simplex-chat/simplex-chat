@@ -742,9 +742,6 @@
 "changing address…" = "промяна на адреса…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Архив на чата";
-
-/* No comment provided by engineer. */
 "Chat console" = "Конзола";
 
 /* No comment provided by engineer. */
@@ -921,7 +918,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Свързване с настолно устройство";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "свързване…";
 
 /* No comment provided by engineer. */
@@ -1034,9 +1031,6 @@
 
 /* copied message info */
 "Created at: %@" = "Създаден на: %@";
-
-/* No comment provided by engineer. */
-"Created on %@" = "Създаден на %@";
 
 /* No comment provided by engineer. */
 "Creating archive link" = "Създаване на архивен линк";
@@ -1162,12 +1156,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "Изтрий и уведоми контакт";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Изтрий архив";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "Изтриване на архива на чата?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Изтрий чат профила";
@@ -1311,7 +1299,7 @@
 "Direct messages" = "Лични съобщения";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Личните съобщения между членовете са забранени в тази група.";
+"Direct messages between members are prohibited." = "Личните съобщения между членовете са забранени в тази група.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Деактивиране (запазване на промените)";
@@ -1335,7 +1323,7 @@
 "Disappearing messages are prohibited in this chat." = "Изчезващите съобщения са забранени в този чат.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Изчезващите съобщения са забранени в тази група.";
+"Disappearing messages are prohibited." = "Изчезващите съобщения са забранени в тази група.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Изчезва в";
@@ -1582,9 +1570,6 @@
 "Error accepting contact request" = "Грешка при приемане на заявка за контакт";
 
 /* No comment provided by engineer. */
-"Error accessing database file" = "Грешка при достъпа до файла с базата данни";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "Грешка при добавяне на член(ове)";
 
 /* No comment provided by engineer. */
@@ -1801,7 +1786,7 @@
 "Files and media" = "Файлове и медия";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Файловете и медията са забранени в тази група.";
+"Files and media are prohibited." = "Файловете и медията са забранени в тази група.";
 
 /* No comment provided by engineer. */
 "Files and media not allowed" = "Файлове и медия не са разрешени";
@@ -1919,27 +1904,6 @@
 
 /* No comment provided by engineer. */
 "Group links" = "Групови линкове";
-
-/* No comment provided by engineer. */
-"Group members can add message reactions." = "Членовете на групата могат да добавят реакции към съобщенията.";
-
-/* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Членовете на групата могат необратимо да изтриват изпратените съобщения. (24 часа)";
-
-/* No comment provided by engineer. */
-"Group members can send direct messages." = "Членовете на групата могат да изпращат лични съобщения.";
-
-/* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Членовете на групата могат да изпращат изчезващи съобщения.";
-
-/* No comment provided by engineer. */
-"Group members can send files and media." = "Членовете на групата могат да изпращат файлове и медия.";
-
-/* No comment provided by engineer. */
-"Group members can send SimpleX links." = "Членовете на групата могат да изпращат SimpleX линкове.";
-
-/* No comment provided by engineer. */
-"Group members can send voice messages." = "Членовете на групата могат да изпращат гласови съобщения.";
 
 /* notification */
 "Group message:" = "Групово съобщение:";
@@ -2218,7 +2182,7 @@
 "Irreversible message deletion is prohibited in this chat." = "Необратимото изтриване на съобщения е забранено в този чат.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "Необратимото изтриване на съобщения е забранено в тази група.";
+"Irreversible message deletion is prohibited." = "Необратимото изтриване на съобщения е забранено в тази група.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Позволява да имате много анонимни връзки без споделени данни между тях в един чат профил .";
@@ -2391,6 +2355,27 @@
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Членът ще бъде премахнат от групата - това не може да бъде отменено!";
 
+/* No comment provided by engineer. */
+"Members can add message reactions." = "Членовете на групата могат да добавят реакции към съобщенията.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Членовете на групата могат необратимо да изтриват изпратените съобщения. (24 часа)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Членовете на групата могат да изпращат лични съобщения.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Членовете на групата могат да изпращат изчезващи съобщения.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Членовете на групата могат да изпращат файлове и медия.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Членовете на групата могат да изпращат SimpleX линкове.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Членовете на групата могат да изпращат гласови съобщения.";
+
 /* item status text */
 "Message delivery error" = "Грешка при доставката на съобщението";
 
@@ -2407,7 +2392,7 @@
 "Message reactions are prohibited in this chat." = "Реакциите на съобщения са забранени в този чат.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Реакциите на съобщения са забранени в тази група.";
+"Message reactions are prohibited." = "Реакциите на съобщения са забранени в тази група.";
 
 /* notification */
 "message received" = "получено съобщение";
@@ -2545,9 +2530,6 @@
 "New contact:" = "Нов контакт:";
 
 /* No comment provided by engineer. */
-"New database archive" = "Нов архив на база данни";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "Ново настолно приложение!";
 
 /* No comment provided by engineer. */
@@ -2659,9 +2641,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Стара база данни";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Стар архив на база данни";
 
 /* group pref value */
 "on" = "включено";
@@ -3160,7 +3139,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Запази (и уведоми контактите)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Запази и уведоми контакта";
 
 /* No comment provided by engineer. */
@@ -3168,9 +3147,6 @@
 
 /* No comment provided by engineer. */
 "Save and update group profile" = "Запази и актуализирай профила на групата";
-
-/* No comment provided by engineer. */
-"Save archive" = "Запази архив";
 
 /* No comment provided by engineer. */
 "Save group profile" = "Запази профила на групата";
@@ -3181,7 +3157,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Запази паролата в Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Запази настройките?";
 
 /* No comment provided by engineer. */
@@ -3474,7 +3450,7 @@
 "SimpleX links" = "SimpleX линкове";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "SimpleX линкове са забранени в тази група.";
+"SimpleX links are prohibited." = "SimpleX линкове са забранени в тази група.";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "SimpleX линковете не са разрешени";
@@ -3535,9 +3511,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "Спри чата";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Спрете чата, за да активирате действията с базата данни";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Спрете чата, за да експортирате, импортирате или изтриете чат базата данни. Няма да можете да получавате и изпращате съобщения, докато чатът е спрян.";
@@ -4014,7 +3987,7 @@
 "Voice messages are prohibited in this chat." = "Гласовите съобщения са забранени в този чат.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Гласовите съобщения са забранени в тази група.";
+"Voice messages are prohibited." = "Гласовите съобщения са забранени в тази група.";
 
 /* No comment provided by engineer. */
 "Voice messages not allowed" = "Гласовите съобщения не са разрешени";

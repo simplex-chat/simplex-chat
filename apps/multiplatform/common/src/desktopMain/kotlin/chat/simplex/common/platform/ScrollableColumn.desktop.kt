@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import kotlin.math.*
@@ -35,6 +36,7 @@ actual fun LazyColumnWithScrollBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  chatBottomBar: State<Boolean>,
   fillMaxSize: Boolean,
   content: LazyListScope.() -> Unit
 ) {
@@ -91,7 +93,7 @@ actual fun LazyColumnWithScrollBar(
   val modifier = if (fillMaxSize) Modifier.fillMaxSize().then(modifier) else modifier
   Box(Modifier.copyViewToAppBar(remember { appPrefs.appearanceBarsBlurRadius.state }.value, LocalAppBarHandler.current?.graphicsLayer).nestedScroll(connection)) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset)
+    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset, chatBottomBar)
   }
 }
 
@@ -106,6 +108,7 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  chatBottomBar: State<Boolean>,
   content: LazyListScope.() -> Unit
 ) {
   val scope = rememberCoroutineScope()
@@ -132,7 +135,7 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   val scrollBarDraggingState = remember { mutableStateOf(false) }
   Box {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset)
+    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset, chatBottomBar)
   }
 }
 
@@ -143,15 +146,16 @@ private fun ScrollBar(
   scrollBarAlpha: Animatable<Float, AnimationVector1D>,
   scrollJob: MutableState<Job>,
   scrollBarDraggingState: MutableState<Boolean>,
-  additionalBarHeight: State<Dp>?
+  additionalBarHeight: State<Dp>?,
+  chatBottomBar: State<Boolean>,
 ) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val padding = if (additionalBarHeight != null) {
-    PaddingValues(top = if (oneHandUI.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier, bottom = additionalBarHeight.value)
+    PaddingValues(top = if (oneHandUI.value && chatBottomBar.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier, bottom = additionalBarHeight.value)
   } else if (reverseLayout) {
     PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier)
   } else {
-    PaddingValues(top = if (oneHandUI.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier)
+    PaddingValues(top = if (oneHandUI.value && chatBottomBar.value) 0.dp else AppBarHeight * fontSizeSqrtMultiplier)
   }
   Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.CenterEnd) {
     DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
@@ -206,7 +210,7 @@ actual fun ColumnWithScrollBar(
   }
   val modifier = if (fillMaxSize) Modifier.fillMaxSize().then(modifier) else modifier
   Box(Modifier.nestedScroll(connection)) {
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
+    val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
     val padding = if (oneHandUI.value) PaddingValues(bottom = AppBarHeight * fontSizeSqrtMultiplier) else PaddingValues(top = AppBarHeight * fontSizeSqrtMultiplier)
     Column(
       if (maxIntrinsicSize) {

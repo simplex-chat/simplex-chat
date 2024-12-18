@@ -154,6 +154,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
     deletions' -> ttyUser u [sShow (length deletions') <> " messages deleted"]
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
+  CRReactionMembers u memberReactions -> ttyUser u $ viewReactionMembers memberReactions
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
@@ -203,12 +204,15 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
   CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
+  CRAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
+  CRBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
   CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
+  CRBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
@@ -847,6 +851,9 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
+viewReactionMembers :: [MemberReaction] -> [StyledString]
+viewReactionMembers memberReactions = [sShow (length memberReactions) <> " member(s) reacted"]
+
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
   quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection quoteDir then ">>" else ">"
@@ -975,9 +982,14 @@ simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simpl
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
-  Just AutoAccept {acceptIncognito, autoReply} ->
-    ("auto_accept on" <> if acceptIncognito then ", incognito" else "")
+  Just AutoAccept {businessAddress, acceptIncognito, autoReply} ->
+    ("auto_accept on" <> aaInfo)
       : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+    where
+      aaInfo
+        | businessAddress = ", business"
+        | acceptIncognito = ", incognito"
+        | otherwise = ""
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
@@ -1012,6 +1024,9 @@ viewAcceptingContactRequest :: Contact -> [StyledString]
 viewAcceptingContactRequest ct
   | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
   | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
+
+viewAcceptingBusinessRequest :: GroupInfo -> [StyledString]
+viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request..."]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
@@ -1226,7 +1241,7 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
     viewServers p srvs
       | maybe True (\ServerOperator {enabled} -> enabled) operator =
           ["  " <> protocolName p <> " servers" <> maybe "" ((" " <>) . viewRoles) operator]
-            <> map (plain . ("    " <> ) . viewServer) srvs
+            <> map (plain . ("    " <>) . viewServer) srvs
       | otherwise = []
       where
         viewServer UserServer {server, preset, tested, enabled} = safeDecodeUtf8 (strEncode server) <> serverInfo
@@ -1279,7 +1294,7 @@ viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsA
   viewOpIdTag op
     <> tradeName
     <> maybe "" parens legalName
-    <> (", domains: "  <> T.intercalate ", " serverDomains)
+    <> (", domains: " <> T.intercalate ", " serverDomains)
     <> (", servers: " <> viewOpEnabled op)
     <> (", conditions: " <> viewOpConditions conditionsAcceptance)
 
@@ -1656,13 +1671,16 @@ viewConnectionPlan = \case
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
-    GLPConnectingProhibit (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPConnectingProhibit (Just g) -> [grpOrBiz g <> " link: connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
     GLPKnown g ->
-      [ grpLink ("known group " <> ttyGroup' g),
+      [ grpOrBiz g <> " link: known " <> grpOrBiz g <> " " <> ttyGroup' g,
         "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
       ]
     where
       grpLink = ("group link: " <>)
+      grpOrBiz GroupInfo {businessChat} = case businessChat of
+        Just _ -> "business"
+        Nothing -> "group"
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

@@ -431,7 +431,7 @@
 "All data is erased when it is entered." = "Toutes les données sont effacées lorsqu'il est saisi.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Toutes les données restent confinées dans votre appareil.";
+"All data is kept private on your device." = "Toutes les données restent confinées dans votre appareil.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Tous les membres du groupe resteront connectés.";
@@ -871,9 +871,6 @@
 "changing address…" = "changement d'adresse…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "Archives du chat";
-
-/* No comment provided by engineer. */
 "Chat colors" = "Couleurs de chat";
 
 /* No comment provided by engineer. */
@@ -1104,7 +1101,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "Connexion au bureau";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "connexion…";
 
 /* No comment provided by engineer. */
@@ -1252,9 +1249,6 @@
 "Created at: %@" = "Créé à : %@";
 
 /* No comment provided by engineer. */
-"Created on %@" = "Créé le %@";
-
-/* No comment provided by engineer. */
 "Creating archive link" = "Création d'un lien d'archive";
 
 /* No comment provided by engineer. */
@@ -1399,12 +1393,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "Supprimer et en informer le contact";
-
-/* No comment provided by engineer. */
-"Delete archive" = "Supprimer l'archive";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "Supprimer l'archive du chat ?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "Supprimer le profil de chat";
@@ -1584,7 +1572,7 @@
 "Direct messages" = "Messages directs";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "Les messages directs entre membres sont interdits dans ce groupe.";
+"Direct messages between members are prohibited." = "Les messages directs entre membres sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Désactiver (conserver les remplacements)";
@@ -1611,7 +1599,7 @@
 "Disappearing messages are prohibited in this chat." = "Les messages éphémères sont interdits dans cette discussion.";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "Les messages éphémères sont interdits dans ce groupe.";
+"Disappearing messages are prohibited." = "Les messages éphémères sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
 "Disappears at" = "Disparaîtra le";
@@ -1883,9 +1871,6 @@
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Erreur de validation de la demande de contact";
-
-/* No comment provided by engineer. */
-"Error accessing database file" = "Erreur d'accès au fichier de la base de données";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Erreur lors de l'ajout de membre·s";
@@ -2161,7 +2146,7 @@
 "Files and media" = "Fichiers et médias";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "Les fichiers et les médias sont interdits dans ce groupe.";
+"Files and media are prohibited." = "Les fichiers et les médias sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
 "Files and media not allowed" = "Fichiers et médias non autorisés";
@@ -2315,27 +2300,6 @@
 
 /* No comment provided by engineer. */
 "Group links" = "Liens de groupe";
-
-/* No comment provided by engineer. */
-"Group members can add message reactions." = "Les membres du groupe peuvent ajouter des réactions aux messages.";
-
-/* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés. (24 heures)";
-
-/* No comment provided by engineer. */
-"Group members can send direct messages." = "Les membres du groupe peuvent envoyer des messages directs.";
-
-/* No comment provided by engineer. */
-"Group members can send disappearing messages." = "Les membres du groupes peuvent envoyer des messages éphémères.";
-
-/* No comment provided by engineer. */
-"Group members can send files and media." = "Les membres du groupe peuvent envoyer des fichiers et des médias.";
-
-/* No comment provided by engineer. */
-"Group members can send SimpleX links." = "Les membres du groupe peuvent envoyer des liens SimpleX.";
-
-/* No comment provided by engineer. */
-"Group members can send voice messages." = "Les membres du groupe peuvent envoyer des messages vocaux.";
 
 /* notification */
 "Group message:" = "Message du groupe :";
@@ -2632,7 +2596,7 @@
 "Irreversible message deletion is prohibited in this chat." = "La suppression irréversible de message est interdite dans ce chat.";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "La suppression irréversible de messages est interdite dans ce groupe.";
+"Irreversible message deletion is prohibited." = "La suppression irréversible de messages est interdite dans ce groupe.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Cela permet d'avoir plusieurs connections anonymes sans aucune données partagées entre elles sur un même profil.";
@@ -2821,6 +2785,27 @@
 "Member will be removed from group - this cannot be undone!" = "Ce membre sera retiré du groupe - impossible de revenir en arrière !";
 
 /* No comment provided by engineer. */
+"Members can add message reactions." = "Les membres du groupe peuvent ajouter des réactions aux messages.";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés. (24 heures)";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "Les membres du groupe peuvent envoyer des messages directs.";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "Les membres du groupes peuvent envoyer des messages éphémères.";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "Les membres du groupe peuvent envoyer des fichiers et des médias.";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "Les membres du groupe peuvent envoyer des liens SimpleX.";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "Les membres du groupe peuvent envoyer des messages vocaux.";
+
+/* No comment provided by engineer. */
 "Menus" = "Menus";
 
 /* No comment provided by engineer. */
@@ -2854,7 +2839,7 @@
 "Message reactions are prohibited in this chat." = "Les réactions aux messages sont interdites dans ce chat.";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "Les réactions aux messages sont interdites dans ce groupe.";
+"Message reactions are prohibited." = "Les réactions aux messages sont interdites dans ce groupe.";
 
 /* notification */
 "message received" = "message reçu";
@@ -3025,9 +3010,6 @@
 "New contact:" = "Nouveau contact :";
 
 /* No comment provided by engineer. */
-"New database archive" = "Nouvelle archive de base de données";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "Nouvelle application de bureau !";
 
 /* No comment provided by engineer. */
@@ -3166,9 +3148,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "Ancienne base de données";
-
-/* No comment provided by engineer. */
-"Old database archive" = "Archives de l'ancienne base de données";
 
 /* group pref value */
 "on" = "on";
@@ -3784,7 +3763,7 @@
 /* alert button */
 "Save (and notify contacts)" = "Enregistrer (et en informer les contacts)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "Enregistrer et en informer le contact";
 
 /* No comment provided by engineer. */
@@ -3797,9 +3776,6 @@
 "Save and update group profile" = "Enregistrer et mettre à jour le profil du groupe";
 
 /* No comment provided by engineer. */
-"Save archive" = "Enregistrer l'archive";
-
-/* No comment provided by engineer. */
 "Save group profile" = "Enregistrer le profil du groupe";
 
 /* No comment provided by engineer. */
@@ -3808,7 +3784,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Enregistrer la phrase secrète dans la Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "Enregistrer les préférences ?";
 
 /* No comment provided by engineer. */
@@ -4215,7 +4191,7 @@
 "SimpleX links" = "Liens SimpleX";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "Les liens SimpleX sont interdits dans ce groupe.";
+"SimpleX links are prohibited." = "Les liens SimpleX sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "Les liens SimpleX ne sont pas autorisés";
@@ -4306,9 +4282,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "Arrêter le chat";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Arrêter le chat pour permettre des actions sur la base de données";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Arrêtez le chat pour exporter, importer ou supprimer la base de données du chat. Vous ne pourrez pas recevoir et envoyer de messages pendant que le chat est arrêté.";
@@ -4899,7 +4872,7 @@
 "Voice messages are prohibited in this chat." = "Les messages vocaux sont interdits dans ce chat.";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "Les messages vocaux sont interdits dans ce groupe.";
+"Voice messages are prohibited." = "Les messages vocaux sont interdits dans ce groupe.";
 
 /* No comment provided by engineer. */
 "Voice messages not allowed" = "Les messages vocaux ne sont pas autorisés";

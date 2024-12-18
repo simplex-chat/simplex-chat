@@ -39,7 +39,7 @@ object DatabaseUtils {
     }
   }
 
-  private fun hasAtLeastOneDatabase(rootDir: String): Boolean =
+  fun hasAtLeastOneDatabase(rootDir: String): Boolean =
     File(rootDir + File.separator + chatDatabaseFileName).exists() || File(rootDir + File.separator + agentDatabaseFileName).exists()
 
   fun hasOnlyOneDatabase(rootDir: String): Boolean =

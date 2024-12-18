@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
@@ -573,7 +574,8 @@ fun startChatCall(remoteHostId: Long?, chatInfo: ChatInfo, media: CallMediaType)
     if (chatInfo is ChatInfo.Direct) {
       val contactInfo = chatModel.controller.apiContactInfo(remoteHostId, chatInfo.contact.contactId)
       val profile = contactInfo?.second ?: chatModel.currentUser.value?.profile?.toProfile() ?: return@withBGApi
-      chatModel.activeCall.value = Call(remoteHostId = remoteHostId, contact = chatInfo.contact, callUUID = null, callState = CallState.WaitCapabilities, initialCallType = media, userProfile = profile)
+      activeCall.value?.androidCallState?.close()
+      chatModel.activeCall.value = Call(remoteHostId = remoteHostId, contact = chatInfo.contact, callUUID = null, callState = CallState.WaitCapabilities, initialCallType = media, userProfile = profile, androidCallState = platform.androidCreateActiveCallState())
       chatModel.showCallView.value = true
       chatModel.callCommand.add(WCallCommand.Capabilities(media))
     }
@@ -658,37 +660,42 @@ fun ChatLayout(
       Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
         val remoteHostId = remember { remoteHostId }.value
         val chatInfo = remember { chatInfo }.value
+        val oneHandUI = remember { appPrefs.oneHandUI.state }
+        val chatBottomBar = remember { appPrefs.chatBottomBar.state }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chatInfo != null) {
             Box(Modifier.fillMaxSize()) {
-              ChatItemsList(
-                remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
-                useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadMessages, deleteMessage, deleteMessages,
-                receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
-                updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
-                setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
-              )
+              // disables scrolling to top of chat item on click inside the bubble
+              CompositionLocalProvider(LocalBringIntoViewSpec provides object : BringIntoViewSpec {
+                override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
+              }) {
+                ChatItemsList(
+                  remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
+                  useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages,
+                  receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
+                  updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
+                  setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
+                )
+              }
             }
           }
-          val oneHandUI = remember { appPrefs.oneHandUI.state }
           Box(
             Modifier
               .layoutId(CHAT_COMPOSE_LAYOUT_ID)
               .align(Alignment.BottomCenter)
               .imePadding()
               .navigationBarsPadding()
-              .then(if (oneHandUI.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
+              .then(if (oneHandUI.value && chatBottomBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
           ) {
             composeView()
           }
         }
-        val oneHandUI = remember { appPrefs.oneHandUI.state }
-        if (oneHandUI.value) {
+        if (oneHandUI.value && chatBottomBar.value) {
           StatusBarBackground()
         } else {
           NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
         }
-        Box(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
+        Box(if (oneHandUI.value && chatBottomBar.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
           if (selectedChatItems.value == null) {
             if (chatInfo != null) {
               ChatInfoToolbar(chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
@@ -856,12 +863,13 @@ fun BoxScope.ChatInfoToolbar(
     }
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val chatBottomBar = remember { appPrefs.chatBottomBar.state }
   DefaultAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch.value,
-    onTop = !oneHandUI.value,
+    onTop = !oneHandUI.value || !chatBottomBar.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = { barButtons.forEach { it() } }
   )
@@ -873,11 +881,11 @@ fun BoxScope.ChatInfoToolbar(
       showMenu,
       modifier = Modifier.onSizeChanged { with(density) {
         width.value = it.width.toDp().coerceAtLeast(250.dp)
-        if (oneHandUI.value && (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 30)) height.value = it.height.toDp()
+        if (oneHandUI.value && chatBottomBar.value && (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 30)) height.value = it.height.toDp()
       } },
-      offset = DpOffset(-width.value, if (oneHandUI.value) -height.value else AppBarHeight)
+      offset = DpOffset(-width.value, if (oneHandUI.value && chatBottomBar.value) -height.value else AppBarHeight)
     ) {
-      if (oneHandUI.value) {
+      if (oneHandUI.value && chatBottomBar.value) {
         menuItems.asReversed().forEach { it() }
       } else {
         menuItems.forEach { it() }
@@ -936,6 +944,7 @@ fun BoxScope.ChatItemsList(
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
+  showChatInfo: () -> Unit,
   loadMessages: suspend (ChatId, ChatPagination, ActiveChatState, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
@@ -964,7 +973,7 @@ fun BoxScope.ChatItemsList(
   val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
   val mergedItems = remember { derivedStateOf { MergedItems.create(reversedChatItems.value, unreadCount, revealedItems.value, chatModel.chatState) } }
-  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
+  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent(true).roundToPx() })
   /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
    * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
    * */
@@ -981,6 +990,7 @@ fun BoxScope.ChatItemsList(
   })
   val maxHeight = remember { derivedStateOf { listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
   val loadingMoreItems = remember { mutableStateOf(false) }
+  val animatedScrollingInProgress = remember { mutableStateOf(false) }
   val ignoreLoadingRequests = remember(remoteHostId) { mutableSetOf<Long>() }
   if (!loadingMoreItems.value) {
     PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
@@ -1001,7 +1011,7 @@ fun BoxScope.ChatItemsList(
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
   val scope = rememberCoroutineScope()
-  val scrollToItem: (Long) -> Unit = remember { scrollToItem(loadingMoreItems, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages) }
+  val scrollToItem: (Long) -> Unit = remember { scrollToItem(searchValue, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages) }
   val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem) }
 
   LoadLastItems(loadingMoreItems, remoteHostId, chatInfo)
@@ -1062,7 +1072,7 @@ fun BoxScope.ChatItemsList(
                   highlightedItems.value = setOf()
                 }
             }
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1264,10 +1274,11 @@ fun BoxScope.ChatItemsList(
     state = listState.value,
     reverseLayout = true,
     contentPadding = PaddingValues(
-      top = topPaddingToContent(),
+      top = topPaddingToContent(true),
       bottom = composeViewHeight.value
     ),
-    additionalBarOffset = composeViewHeight
+    additionalBarOffset = composeViewHeight,
+    chatBottomBar = remember { appPrefs.chatBottomBar.state }
   ) {
     val mergedItemsValue = mergedItems.value
     itemsIndexed(mergedItemsValue.items, key = { _, merged -> keyForItem(merged.newest().item) }) { index, merged ->
@@ -1310,13 +1321,22 @@ fun BoxScope.ChatItemsList(
       }
     }
   }
-  FloatingButtons(loadingMoreItems, mergedItems, unreadCount, maxHeight, composeViewHeight, remoteHostId, chatInfo, searchValue, markChatRead, listState)
-  FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent()).align(Alignment.TopCenter), mergedItems, listState)
+  FloatingButtons(loadingMoreItems, animatedScrollingInProgress, mergedItems, unreadCount, maxHeight, composeViewHeight, searchValue, markChatRead, listState)
+  FloatingDate(Modifier.padding(top = 10.dp + topPaddingToContent(true)).align(Alignment.TopCenter), mergedItems, listState)
 
   LaunchedEffect(Unit) {
     snapshotFlow { listState.value.isScrollInProgress }
       .collect {
         chatViewScrollState.value = it
+      }
+  }
+  LaunchedEffect(Unit) {
+    snapshotFlow { listState.value.isScrollInProgress }
+      .filter { !it }
+      .collect {
+        if (animatedScrollingInProgress.value) {
+          animatedScrollingInProgress.value = false
+        }
       }
   }
 }
@@ -1396,18 +1416,17 @@ private fun NotifyChatListOnFinishingComposition(
 @Composable
 fun BoxScope.FloatingButtons(
   loadingMoreItems: MutableState<Boolean>,
+  animatedScrollingInProgress: MutableState<Boolean>,
   mergedItems: State<MergedItems>,
   unreadCount: State<Int>,
   maxHeight: State<Int>,
   composeViewHeight: State<Dp>,
-  remoteHostId: Long?,
-  chatInfo: ChatInfo,
   searchValue: State<String>,
   markChatRead: () -> Unit,
   listState: State<LazyListState>
 ) {
   val scope = rememberCoroutineScope()
-  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
+  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent(true).roundToPx() })
   val bottomUnreadCount = remember {
     derivedStateOf {
       if (unreadCount.value == 0) return@derivedStateOf 0
@@ -1437,8 +1456,14 @@ fun BoxScope.FloatingButtons(
     bottomUnreadCount,
     showBottomButtonWithCounter,
     showBottomButtonWithArrow,
+    animatedScrollingInProgress,
     composeViewHeight,
-    onClick = { scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) } } }
+    onClick = {
+      scope.launch {
+        animatedScrollingInProgress.value = true
+        tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(0) }
+      }
+    }
   )
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
@@ -1447,13 +1472,17 @@ fun BoxScope.FloatingButtons(
   val showDropDown = remember { mutableStateOf(false) }
 
   TopEndFloatingButton(
-    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent()).align(Alignment.TopEnd),
+    Modifier.padding(end = DEFAULT_PADDING, top = 24.dp + topPaddingToContent(true)).align(Alignment.TopEnd),
     topUnreadCount,
+    animatedScrollingInProgress,
     onClick = {
       val index = mergedItems.value.items.indexOfLast { it.hasUnread() }
       if (index != -1) {
         // scroll to the top unread item
-        scope.launch { tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(index + 1, -maxHeight.value) } }
+        scope.launch {
+          animatedScrollingInProgress.value = true
+          tryBlockAndSetLoadingMore(loadingMoreItems) { listState.value.animateScrollToItem(index + 1, -maxHeight.value) }
+        }
       }
     },
     onLongClick = { showDropDown.value = true }
@@ -1465,7 +1494,7 @@ fun BoxScope.FloatingButtons(
     DefaultDropdownMenu(
       showDropDown,
       modifier = Modifier.onSizeChanged { with(density) { width.value = it.width.toDp().coerceAtLeast(250.dp) } },
-      offset = DpOffset(-DEFAULT_PADDING - width.value, 24.dp + fabSize + topPaddingToContent())
+      offset = DpOffset(-DEFAULT_PADDING - width.value, 24.dp + fabSize + topPaddingToContent(true))
     ) {
       ItemAction(
         generalGetString(MR.strings.mark_read),
@@ -1593,10 +1622,11 @@ fun MemberImage(member: GroupMember) {
 private fun TopEndFloatingButton(
   modifier: Modifier = Modifier,
   unreadCount: State<Int>,
+  animatedScrollingInProgress: State<Boolean>,
   onClick: () -> Unit,
   onLongClick: () -> Unit
 ) {
-  if (unreadCount.value > 0) {
+  if (remember { derivedStateOf { unreadCount.value > 0 && !animatedScrollingInProgress.value } }.value) {
     val interactionSource = interactionSourceWithDetection(onClick, onLongClick)
     FloatingActionButton(
       {}, // no action here
@@ -1615,9 +1645,10 @@ private fun TopEndFloatingButton(
 }
 
 @Composable
-fun topPaddingToContent(): Dp {
+fun topPaddingToContent(chatView: Boolean): Dp {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  return if (oneHandUI.value) {
+  val chatBottomBar = remember { appPrefs.chatBottomBar.state }
+  return if (oneHandUI.value && (!chatView || chatBottomBar.value)) {
     WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
   } else {
     AppBarHeight * fontSizeSqrtMultiplier + WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -1634,7 +1665,7 @@ private fun FloatingDate(
   val nearBottomIndex = remember(chatModel.chatId) { mutableStateOf(if (isNearBottom.value) -1 else 0) }
   val showDate = remember(chatModel.chatId) { mutableStateOf(false) }
   val density = LocalDensity.current.density
-  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent().roundToPx() })
+  val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent(true).roundToPx() })
   val fontSizeSqrtMultiplier = fontSizeSqrtMultiplier
   val lastVisibleItemDate = remember {
     derivedStateOf {
@@ -1834,7 +1865,9 @@ private fun lastFullyVisibleIemInListState(topPaddingToContentPx: State<Int>, de
 }
 
 private fun scrollToItem(
+  searchValue: State<String>,
   loadingMoreItems: MutableState<Boolean>,
+  animatedScrollingInProgress: MutableState<Boolean>,
   highlightedItems: MutableState<Set<Long>>,
   chatInfo: State<ChatInfo>,
   maxHeight: State<Int>,
@@ -1847,6 +1880,8 @@ private fun scrollToItem(
   withApi {
     try {
       var index = mergedItems.value.indexInParentItems[itemId] ?: -1
+      // Don't try to load messages while in search
+      if (index == -1 && searchValue.value.isNotBlank()) return@withApi
       // setting it to 'loading' even if the item is loaded because in rare cases when the resulting item is near the top, scrolling to
       // it will trigger loading more items and will scroll to incorrect position (because of trimming)
       loadingMoreItems.value = true
@@ -1870,6 +1905,7 @@ private fun scrollToItem(
          highlightedItems.value = setOf(itemId)
         } else {
           withContext(scope.coroutineContext) {
+            animatedScrollingInProgress.value = true
             listState.value.animateScrollToItem(min(reversedChatItems.value.lastIndex, index + 1), -maxHeight.value)
             highlightedItems.value = setOf(itemId)
           }
@@ -1931,10 +1967,11 @@ private fun BoxScope.BottomEndFloatingButton(
   unreadCount: State<Int>,
   showButtonWithCounter: State<Boolean>,
   showButtonWithArrow: State<Boolean>,
+  animatedScrollingInProgress: State<Boolean>,
   composeViewHeight: State<Dp>,
   onClick: () -> Unit
 ) = when {
-  showButtonWithCounter.value -> {
+  showButtonWithCounter.value && !animatedScrollingInProgress.value -> {
     FloatingActionButton(
       onClick = onClick,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
@@ -1948,7 +1985,7 @@ private fun BoxScope.BottomEndFloatingButton(
       )
     }
   }
-  showButtonWithArrow.value -> {
+  showButtonWithArrow.value && !animatedScrollingInProgress.value -> {
     FloatingActionButton(
       onClick = onClick,
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),

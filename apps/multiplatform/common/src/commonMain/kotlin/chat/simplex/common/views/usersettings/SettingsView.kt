@@ -109,7 +109,7 @@ fun SettingsLayout(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chat_database)) {
-      DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
+      DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
     }
 
@@ -408,6 +408,7 @@ fun PreferenceToggleWithIcon(
   text: String,
   icon: Painter? = null,
   iconColor: Color? = MaterialTheme.colors.secondary,
+  disabled: Boolean = false,
   checked: Boolean,
   extraPadding: Boolean = false,
   onChange: (Boolean) -> Unit = {},
@@ -418,6 +419,7 @@ fun PreferenceToggleWithIcon(
       onCheckedChange = {
         onChange(it)
       },
+      enabled = !disabled
     )
   }
 }

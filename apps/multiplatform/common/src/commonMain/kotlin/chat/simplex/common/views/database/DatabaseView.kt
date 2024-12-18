@@ -26,41 +26,43 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
 import java.io.*
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
 
 @Composable
-fun DatabaseView(
-  m: ChatModel,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
-) {
-  val currentRemoteHost by remember { chatModel.currentRemoteHost }
+fun DatabaseView() {
+  val m = chatModel
   val progressIndicator = remember { mutableStateOf(false) }
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
-  val chatArchiveName = remember { mutableStateOf(prefs.chatArchiveName.get()) }
-  val chatArchiveTime = remember { mutableStateOf(prefs.chatArchiveTime.get()) }
   val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
+  val stopped = remember { m.chatRunning }.value == false
   val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
-    val file = chatArchiveFile.value
-    if (file != null && to != null) {
-      copyFileToFile(File(file), to) {
-        chatArchiveFile.value = null
-      }
+    val archive = chatArchiveFile.value
+    if (archive != null && to != null) {
+      copyFileToFile(File(archive), to) {}
+    }
+    // delete no matter the database was exported or canceled the export process
+    if (archive != null) {
+      File(archive).delete()
+      chatArchiveFile.value = null
     }
   }
   val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
-      importArchiveAlert(m, to, appFilesCountAndSize, progressIndicator) {
-        startChat(m, chatLastStart, m.chatDbChanged)
+      importArchiveAlert {
+        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
+          importArchive(to, appFilesCountAndSize, progressIndicator)
+          true
+        }
       }
     }
   }
@@ -71,27 +73,40 @@ fun DatabaseView(
     val user = m.currentUser.value
     val rhId = user?.remoteHostId
     DatabaseLayout(
-      currentRemoteHost = currentRemoteHost,
       progressIndicator.value,
-      remember { m.chatRunning }.value != false,
-      m.chatDbChanged.value,
+      stopped,
       useKeychain.value,
       m.chatDbEncrypted.value,
       m.controller.appPrefs.storeDBPassphrase.state.value,
       m.controller.appPrefs.initialRandomDBPassphrase,
       importArchiveLauncher,
-      chatArchiveName,
-      chatArchiveTime,
-      chatLastStart,
       appFilesCountAndSize,
       chatItemTTL,
       user,
       m.users,
       startChat = { startChat(m, chatLastStart, m.chatDbChanged, progressIndicator) },
       stopChatAlert = { stopChatAlert(m, progressIndicator) },
-      exportArchive = { exportArchive(m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
-      deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
-      deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(appFilesCountAndSize) },
+      exportArchive = {
+        stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
+          exportArchive(m, progressIndicator, chatArchiveFile, saveArchiveLauncher)
+        }
+      },
+      deleteChatAlert = {
+        deleteChatAlert {
+          stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
+            deleteChat(m, progressIndicator)
+            true
+          }
+        }
+      },
+      deleteAppFilesAndMedia = {
+        deleteFilesAndMediaAlert {
+          stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
+            deleteFiles(appFilesCountAndSize)
+            true
+          }
+        }
+      },
       onChatItemTTLSelected = {
         val oldValue = chatItemTTL.value
         chatItemTTL.value = it
@@ -101,7 +116,6 @@ fun DatabaseView(
           setCiTTL(m, rhId, chatItemTTL, progressIndicator, appFilesCountAndSize)
         }
       },
-      showSettingsModal,
       disconnectAllHosts = {
         val connected = chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }
         connected.forEachIndexed { index, h ->
@@ -128,18 +142,13 @@ fun DatabaseView(
 
 @Composable
 fun DatabaseLayout(
-  currentRemoteHost: RemoteHostInfo?,
   progressIndicator: Boolean,
-  runChat: Boolean,
-  chatDbChanged: Boolean,
+  stopped: Boolean,
   useKeyChain: Boolean,
   chatDbEncrypted: Boolean?,
   passphraseSaved: Boolean,
   initialRandomDBPassphrase: SharedPreference<Boolean>,
   importArchiveLauncher: FileChooserLauncher,
-  chatArchiveName: MutableState<String?>,
-  chatArchiveTime: MutableState<Instant?>,
-  chatLastStart: MutableState<Instant?>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   chatItemTTL: MutableState<ChatItemTTL>,
   currentUser: User?,
@@ -150,11 +159,9 @@ fun DatabaseLayout(
   deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
   onChatItemTTLSelected: (ChatItemTTL) -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   disconnectAllHosts: () -> Unit,
 ) {
-  val stopped = !runChat
-  val operationsDisabled = (!stopped || progressIndicator) && !chatModel.desktopNoUserNoRemote
+  val operationsDisabled = progressIndicator && !chatModel.desktopNoUserNoRemote
 
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_chat_database))
@@ -178,21 +185,18 @@ fun DatabaseLayout(
     }
     val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
+      // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
+      // - database was stopped after migration and the app relaunched
+      // - something wrong happened with database operations and the database couldn't be launched when it should
       SectionView(stringResource(MR.strings.run_chat_section)) {
         if (!toggleEnabled) {
           SectionItemView(disconnectAllHosts) {
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
           }
         }
-        RunChatSetting(runChat, stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
+        RunChatSetting(stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
-      SectionTextFooter(
-        if (stopped) {
-          stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
-        } else {
-          stringResource(MR.strings.stop_chat_to_enable_database_actions)
-        }
-      )
+      if (stopped) SectionTextFooter(stringResource(MR.strings.you_must_use_the_most_recent_version_of_database))
       SectionDividerSpaced(maxTopPadding = true)
     }
 
@@ -207,7 +211,7 @@ fun DatabaseLayout(
         if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
         else painterResource(MR.images.ic_lock),
         stringResource(MR.strings.database_passphrase),
-        click = showSettingsModal() { DatabaseEncryptionView(it, false) },
+        click = { ModalManager.start.showModal { DatabaseEncryptionView(chatModel, false) } },
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
@@ -225,6 +229,9 @@ fun DatabaseLayout(
         click = {
           if (initialRandomDBPassphrase.get()) {
             exportProhibitedAlert()
+            ModalManager.start.showModal {
+              DatabaseEncryptionView(chatModel, false)
+            }
           } else {
             exportArchive()
           }
@@ -241,18 +248,6 @@ fun DatabaseLayout(
         iconColor = Color.Red,
         disabled = operationsDisabled
       )
-      val chatArchiveNameVal = chatArchiveName.value
-      val chatArchiveTimeVal = chatArchiveTime.value
-      val chatLastStartVal = chatLastStart.value
-      if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
-        val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
-        SettingsActionItem(
-          painterResource(MR.images.ic_inventory_2),
-          title,
-          click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
-          disabled = operationsDisabled
-        )
-      }
       SettingsActionItem(
         painterResource(MR.images.ic_delete_forever),
         stringResource(MR.strings.delete_database),
@@ -333,7 +328,6 @@ private fun TtlOptions(current: State<ChatItemTTL>, enabled: State<Boolean>, onS
 
 @Composable
 fun RunChatSetting(
-  runChat: Boolean,
   stopped: Boolean,
   enabled: Boolean,
   startChat: () -> Unit,
@@ -346,7 +340,7 @@ fun RunChatSetting(
     iconColor = if (stopped) Color.Red else MaterialTheme.colors.primary,
   ) {
     DefaultSwitch(
-      checked = runChat,
+      checked = !stopped,
       onCheckedChange = { runChatSwitch ->
         if (runChatSwitch) {
           startChat()
@@ -359,12 +353,12 @@ fun RunChatSetting(
   }
 }
 
-@Composable
-fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
-  return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
-}
-
-fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>, progressIndicator: MutableState<Boolean>? = null) {
+fun startChat(
+  m: ChatModel,
+  chatLastStart: MutableState<Instant?>,
+  chatDbChanged: MutableState<Boolean>,
+  progressIndicator: MutableState<Boolean>? = null
+) {
   withLongRunningApi {
     try {
       progressIndicator?.value = true
@@ -469,6 +463,40 @@ suspend fun stopChatAsync(m: ChatModel) {
   controller.appPrefs.chatStopped.set(true)
 }
 
+fun stopChatRunBlockStartChat(
+  stopped: Boolean,
+  chatLastStart: MutableState<Instant?>,
+  progressIndicator: MutableState<Boolean>,
+  block: suspend () -> Boolean
+) {
+  // if the chat was running, the sequence is: stop chat, run block, start chat.
+  // Otherwise, just run block and do nothing - the toggle will be visible anyway and the user can start the chat or not
+  if (stopped) {
+    withLongRunningApi {
+      try {
+        block()
+      } catch (e: Throwable) {
+        Log.e(TAG, e.stackTraceToString())
+      }
+    }
+  } else {
+    authStopChat(chatModel, progressIndicator) {
+      withLongRunningApi {
+        // if it throws, let's start chat again anyway
+        val canStart = try {
+          block()
+        } catch (e: Throwable) {
+          Log.e(TAG, e.stackTraceToString())
+          true
+        }
+        if (canStart) {
+          startChat(chatModel, chatLastStart, chatModel.chatDbChanged, progressIndicator)
+        }
+      }
+    }
+  }
+}
+
 suspend fun deleteChatAsync(m: ChatModel) {
   m.controller.apiDeleteStorage()
   DatabaseUtils.ksDatabasePassword.remove()
@@ -495,6 +523,7 @@ fun deleteChatDatabaseFilesAndState() {
   wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
   appPrefs.newDatabaseInitialized.set(false)
+  chatModel.desktopOnboardingRandomPassword.value = false
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null
 
@@ -511,47 +540,42 @@ fun deleteChatDatabaseFilesAndState() {
   ntfManager.cancelAllNotifications()
 }
 
-private fun exportArchive(
+private suspend fun exportArchive(
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,
-  chatArchiveName: MutableState<String?>,
-  chatArchiveTime: MutableState<Instant?>,
   chatArchiveFile: MutableState<String?>,
   saveArchiveLauncher: FileChooserLauncher
-) {
+): Boolean {
   progressIndicator.value = true
-  withLongRunningApi {
-    try {
-      val (archiveFile, archiveErrors) = exportChatArchive(m, null, chatArchiveName, chatArchiveTime, chatArchiveFile)
-      chatArchiveFile.value = archiveFile
-      if (archiveErrors.isEmpty()) {
-        saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
-      } else {
-        showArchiveExportedWithErrorsAlert(generalGetString(MR.strings.chat_database_exported_save), archiveErrors) {
-          withLongRunningApi {
-            saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
-          }
+  try {
+    val (archiveFile, archiveErrors) = exportChatArchive(m, null, chatArchiveFile)
+    chatArchiveFile.value = archiveFile
+    if (archiveErrors.isEmpty()) {
+      saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
+    } else {
+      showArchiveExportedWithErrorsAlert(generalGetString(MR.strings.chat_database_exported_save), archiveErrors) {
+        withLongRunningApi {
+          saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
         }
       }
-      progressIndicator.value = false
-    } catch (e: Error) {
-      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_exporting_chat_database), e.toString())
-      progressIndicator.value = false
     }
+    progressIndicator.value = false
+  } catch (e: Throwable) {
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_exporting_chat_database), e.toString())
+    progressIndicator.value = false
   }
+  return false
 }
 
 suspend fun exportChatArchive(
   m: ChatModel,
   storagePath: File?,
-  chatArchiveName: MutableState<String?>,
-  chatArchiveTime: MutableState<Instant?>,
   chatArchiveFile: MutableState<String?>
 ): Pair<String, List<ArchiveError>> {
   val archiveTime = Clock.System.now()
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
   val archiveName = "simplex-chat.$ts.zip"
-  val archivePath = "${(storagePath ?: filesDir).absolutePath}${File.separator}$archiveName"
+  val archivePath = "${(storagePath ?: databaseExportDir).absolutePath}${File.separator}$archiveName"
   val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
   // Settings should be saved before changing a passphrase, otherwise the database needs to be migrated first
   if (!m.chatDbChanged.value) {
@@ -560,42 +584,37 @@ suspend fun exportChatArchive(
   wallpapersDir.mkdirs()
   val archiveErrors = m.controller.apiExportArchive(config)
   if (storagePath == null) {
-    deleteOldArchive(m)
+    deleteOldChatArchive()
     m.controller.appPrefs.chatArchiveName.set(archiveName)
     m.controller.appPrefs.chatArchiveTime.set(archiveTime)
   }
-  chatArchiveName.value = archiveName
-  chatArchiveTime.value = archiveTime
   chatArchiveFile.value = archivePath
   return archivePath to archiveErrors
 }
 
-private fun deleteOldArchive(m: ChatModel) {
-  val chatArchiveName = m.controller.appPrefs.chatArchiveName.get()
+// Deprecated. Remove in the end of 2025. All unused archives should be deleted for the most users til then.
+/** Remove [AppPreferences.chatArchiveName] and [AppPreferences.chatArchiveTime] as well */
+fun deleteOldChatArchive() {
+  val chatArchiveName = chatModel.controller.appPrefs.chatArchiveName.get()
   if (chatArchiveName != null) {
-    val file = File("${filesDir.absolutePath}${File.separator}$chatArchiveName")
-    val fileDeleted = file.delete()
-    if (fileDeleted) {
-      m.controller.appPrefs.chatArchiveName.set(null)
-      m.controller.appPrefs.chatArchiveTime.set(null)
+    val file1 = File("${filesDir.absolutePath}${File.separator}$chatArchiveName")
+    val file2 = File("${databaseExportDir.absolutePath}${File.separator}$chatArchiveName")
+    val fileDeleted = file1.delete() || file2.delete()
+    if (fileDeleted || (!file1.exists() && !file2.exists())) {
+      chatModel.controller.appPrefs.chatArchiveName.set(null)
+      chatModel.controller.appPrefs.chatArchiveTime.set(null)
     } else {
       Log.e(TAG, "deleteOldArchive file.delete() error")
     }
   }
 }
 
-private fun importArchiveAlert(
-  m: ChatModel,
-  importedArchiveURI: URI,
-  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
-  progressIndicator: MutableState<Boolean>,
-  startChat: () -> Unit,
-) {
+private fun importArchiveAlert(onConfirm: () -> Unit, ) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.import_database_question),
     text = generalGetString(MR.strings.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
     confirmText = generalGetString(MR.strings.import_database_confirmation),
-    onConfirm = { importArchive(m, importedArchiveURI, appFilesCountAndSize, progressIndicator, startChat) },
+    onConfirm = onConfirm,
     destructive = true,
   )
 }
@@ -622,52 +641,53 @@ private fun archiveErrorsText(errs: List<ArchiveError>): String = "\n" + errs.ma
   }
 }.joinToString(separator = "\n")
 
-private fun importArchive(
-  m: ChatModel,
+suspend fun importArchive(
   importedArchiveURI: URI,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   progressIndicator: MutableState<Boolean>,
-  startChat: () -> Unit,
-) {
+): Boolean {
+  val m = chatModel
   progressIndicator.value = true
   val archivePath = saveArchiveFromURI(importedArchiveURI)
   if (archivePath != null) {
-    withLongRunningApi {
+    try {
+      m.controller.apiDeleteStorage()
+      wallpapersDir.mkdirs()
       try {
-        m.controller.apiDeleteStorage()
-        wallpapersDir.mkdirs()
-        try {
-          val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
-          val archiveErrors = m.controller.apiImportArchive(config)
-          DatabaseUtils.ksDatabasePassword.remove()
-          appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
-          if (archiveErrors.isEmpty()) {
-            operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
-            }
-            if (chatModel.localUserCreated.value == false) {
-              chatModel.chatRunning.value = false
-              startChat()
-            }
-          } else {
-            operationEnded(m, progressIndicator) {
-              showArchiveImportedWithErrorsAlert(archiveErrors)
-            }
-          }
-        } catch (e: Error) {
+        val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
+        val archiveErrors = m.controller.apiImportArchive(config)
+        appPrefs.shouldImportAppSettings.set(true)
+        DatabaseUtils.ksDatabasePassword.remove()
+        appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
+        if (archiveErrors.isEmpty()) {
           operationEnded(m, progressIndicator) {
-            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
+          }
+          if (chatModel.localUserCreated.value == false) {
+            chatModel.chatRunning.value = false
+          }
+        } else {
+          operationEnded(m, progressIndicator) {
+            showArchiveImportedWithErrorsAlert(archiveErrors)
           }
         }
+        return true
       } catch (e: Error) {
         operationEnded(m, progressIndicator) {
-          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
         }
-      } finally {
-        File(archivePath).delete()
       }
+    } catch (e: Error) {
+      operationEnded(m, progressIndicator) {
+        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
+      }
+    } finally {
+      File(archivePath).delete()
     }
+  } else {
+    progressIndicator.value = false
   }
+  return false
 }
 
 private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
@@ -677,40 +697,42 @@ private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
     if (inputStream != null && archiveName != null) {
       val archivePath = "$databaseExportDir${File.separator}$archiveName"
       val destFile = File(archivePath)
-      Files.copy(inputStream, destFile.toPath())
+      Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
       archivePath
     } else {
       Log.e(TAG, "saveArchiveFromURI null inputStream")
       null
     }
   } catch (e: Exception) {
-    Log.e(TAG, "saveArchiveFromURI error: ${e.message}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_database), e.stackTraceToString())
+    Log.e(TAG, "saveArchiveFromURI error: ${e.stackTraceToString()}")
     null
   }
 }
 
-private fun deleteChatAlert(m: ChatModel, progressIndicator: MutableState<Boolean>) {
+private fun deleteChatAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_chat_profile_question),
     text = generalGetString(MR.strings.delete_chat_profile_action_cannot_be_undone_warning),
     confirmText = generalGetString(MR.strings.delete_verb),
-    onConfirm = { deleteChat(m, progressIndicator) },
+    onConfirm = onConfirm,
     destructive = true,
   )
 }
 
-private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
+private suspend fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
+  if (!DatabaseUtils.hasAtLeastOneDatabase(dataDir.absolutePath)) {
+    return
+  }
   progressIndicator.value = true
-  withBGApi {
-    try {
-      deleteChatAsync(m)
-      operationEnded(m, progressIndicator) {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_deleted), generalGetString(MR.strings.restart_the_app_to_create_a_new_chat_profile))
-      }
-    } catch (e: Error) {
-      operationEnded(m, progressIndicator) {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
-      }
+  try {
+    deleteChatAsync(m)
+    operationEnded(m, progressIndicator) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_deleted), generalGetString(MR.strings.restart_the_app_to_create_a_new_chat_profile))
+    }
+  } catch (e: Throwable) {
+    operationEnded(m, progressIndicator) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_database), e.toString())
     }
   }
 }
@@ -759,12 +781,12 @@ private fun afterSetCiTTL(
   }
 }
 
-private fun deleteFilesAndMediaAlert(appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
+private fun deleteFilesAndMediaAlert(onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_files_and_media_question),
     text = generalGetString(MR.strings.delete_files_and_media_desc),
     confirmText = generalGetString(MR.strings.delete_verb),
-    onConfirm = { deleteFiles(appFilesCountAndSize) },
+    onConfirm = onConfirm,
     destructive = true
   )
 }
@@ -789,18 +811,13 @@ private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean
 fun PreviewDatabaseLayout() {
   SimpleXTheme {
     DatabaseLayout(
-      currentRemoteHost = null,
       progressIndicator = false,
-      runChat = true,
-      chatDbChanged = false,
+      stopped = false,
       useKeyChain = false,
       chatDbEncrypted = false,
       passphraseSaved = false,
       initialRandomDBPassphrase = SharedPreference({ true }, {}),
       importArchiveLauncher = rememberFileChooserLauncher(true) {},
-      chatArchiveName = remember { mutableStateOf("dummy_archive") },
-      chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
-      chatLastStart = remember { mutableStateOf(Clock.System.now()) },
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
       currentUser = User.sampleData,
@@ -810,7 +827,6 @@ fun PreviewDatabaseLayout() {
       exportArchive = {},
       deleteChatAlert = {},
       deleteAppFilesAndMedia = {},
-      showSettingsModal = { {} },
       onChatItemTTLSelected = {},
       disconnectAllHosts = {},
     )

@@ -49,6 +49,7 @@ public enum ChatCommand {
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
+    case apiGetReactionMembers(userId: Int64, groupId: Int64, itemId: Int64, reaction: MsgReaction)
     case apiPlanForwardChatItems(toChatType: ChatType, toChatId: Int64, itemIds: [Int64])
     case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?)
     case apiGetNtfToken
@@ -212,6 +213,7 @@ public enum ChatCommand {
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
+            case let .apiGetReactionMembers(userId, groupId, itemId, reaction): return "/_reaction members \(userId) #\(groupId) \(itemId) \(encodeJSON(reaction))"
             case let .apiPlanForwardChatItems(type, id, itemIds): return "/_forward plan \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiForwardChatItems(toChatType, toChatId, fromChatType, fromChatId, itemIds, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
@@ -375,6 +377,7 @@ public enum ChatCommand {
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
+            case .apiGetReactionMembers: return "apiGetReactionMembers"
             case .apiPlanForwardChatItems: return "apiPlanForwardChatItems"
             case .apiForwardChatItems: return "apiForwardChatItems"
             case .apiGetNtfToken: return "apiGetNtfToken"
@@ -595,7 +598,6 @@ public enum ChatResponse: Decodable, Error {
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
-    case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
     case contactDeletedByContact(user: UserRef, contact: Contact)
     case chatCleared(user: UserRef, chatInfo: ChatInfo)
@@ -629,6 +631,7 @@ public enum ChatResponse: Decodable, Error {
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
+    case reactionMembers(user: UserRef, memberReactions: [MemberReaction])
     case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     case contactsList(user: UserRef, contacts: [Contact])
     // group events
@@ -636,6 +639,7 @@ public enum ChatResponse: Decodable, Error {
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
     case groupLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
+    case businessLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember, fromContact: Contact)
     case userDeletedMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(user: UserRef, groupInfo: GroupInfo)
     case groupMembers(user: UserRef, group: Group)
@@ -771,7 +775,6 @@ public enum ChatResponse: Decodable, Error {
             case .sentInvitation: return "sentInvitation"
             case .sentInvitationToContact: return "sentInvitationToContact"
             case .contactAlreadyExists: return "contactAlreadyExists"
-            case .contactRequestAlreadyAccepted: return "contactRequestAlreadyAccepted"
             case .contactDeleted: return "contactDeleted"
             case .contactDeletedByContact: return "contactDeletedByContact"
             case .chatCleared: return "chatCleared"
@@ -805,12 +808,14 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
+            case .reactionMembers: return "reactionMembers"
             case .chatItemsDeleted: return "chatItemsDeleted"
             case .contactsList: return "contactsList"
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
             case .userAcceptedGroupSent: return "userAcceptedGroupSent"
             case .groupLinkConnecting: return "groupLinkConnecting"
+            case .businessLinkConnecting: return "businessLinkConnecting"
             case .userDeletedMember: return "userDeletedMember"
             case .leftMemberUser: return "leftMemberUser"
             case .groupMembers: return "groupMembers"
@@ -945,7 +950,6 @@ public enum ChatResponse: Decodable, Error {
             case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
-            case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeletedByContact(u, contact): return withUser(u, String(describing: contact))
             case let .chatCleared(u, chatInfo): return withUser(u, String(describing: chatInfo))
@@ -983,6 +987,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
+            case let .reactionMembers(u, reaction): return withUser(u, "memberReactions: \(String(describing: reaction))")
             case let .chatItemsDeleted(u, items, byUser):
                 let itemsString = items.map { item in
                     "deletedChatItem:\n\(String(describing: item.deletedChatItem))\ntoChatItem:\n\(String(describing: item.toChatItem))" }.joined(separator: "\n")
@@ -992,6 +997,7 @@ public enum ChatResponse: Decodable, Error {
             case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
             case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
             case let .groupLinkConnecting(u, groupInfo, hostMember): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))")
+            case let .businessLinkConnecting(u, groupInfo, hostMember, fromContact): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))\nfromContact: \(String(describing: fromContact))")
             case let .userDeletedMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
             case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupMembers(u, group): return withUser(u, String(describing: group))
@@ -1210,13 +1216,12 @@ public enum ServerProtocol: String, Decodable {
 public enum OperatorTag: String, Codable {
     case simplex = "simplex"
     case flux = "flux"
-    case xyz = "xyz"
-    case demo = "demo"
 }
 
-public struct ServerOperatorInfo: Decodable {
+public struct ServerOperatorInfo {
     public var description: [String]
-    public var website: String
+    public var website: URL
+    public var selfhost: (text: String, link: URL)? = nil
     public var logo: String
     public var largeLogo: String
     public var logoDarkMode: String
@@ -1226,10 +1231,10 @@ public struct ServerOperatorInfo: Decodable {
 public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     .simplex: ServerOperatorInfo(
         description: [
-            "SimpleX Chat is the first communication network that has no user profile IDs of any kind, not even random numbers or keys that identify the users.",
+            "SimpleX Chat is the first communication network that has no user profile IDs of any kind, not even random numbers or identity keys.",
             "SimpleX Chat Ltd develops the communication software for SimpleX network."
         ],
-        website: "https://simplex.chat",
+        website: URL(string: "https://simplex.chat")!,
         logo: "decentralized",
         largeLogo: "logo",
         logoDarkMode: "decentralized-light",
@@ -1237,31 +1242,17 @@ public let operatorsInfo: Dictionary<OperatorTag, ServerOperatorInfo> = [
     ),
     .flux: ServerOperatorInfo(
         description: [
-            "Flux is the largest decentralized cloud infrastructure, leveraging a global network of user-operated computational nodes.",
-            "Flux offers a powerful, scalable, and affordable platform designed to support individuals, businesses, and cutting-edge technologies like AI. With high uptime and worldwide distribution, Flux ensures reliable, accessible cloud computing for all."
+            "Flux is the largest decentralized cloud, based on a global network of user-operated nodes.",
+            "Flux offers a powerful, scalable, and affordable cutting edge technology platform for all.",
+            "Flux operates servers in SimpleX network to improve its privacy and decentralization."
         ],
-        website: "https://runonflux.com",
+        website: URL(string: "https://runonflux.com")!,
+        selfhost: (text: "Self-host SimpleX servers on Flux", link: URL(string: "https://home.runonflux.io/apps/marketplace?q=simplex")!),
         logo: "flux_logo_symbol",
         largeLogo: "flux_logo",
         logoDarkMode: "flux_logo_symbol",
         largeLogoDarkMode: "flux_logo-light"
     ),
-    .xyz: ServerOperatorInfo(
-        description: ["XYZ servers"],
-        website: "XYZ website",
-        logo: "shield",
-        largeLogo: "logo",
-        logoDarkMode: "shield",
-        largeLogoDarkMode: "logo-light"
-    ),
-    .demo: ServerOperatorInfo(
-        description: ["Demo operator"],
-        website: "Demo website",
-        logo: "decentralized",
-        largeLogo: "logo",
-        logoDarkMode: "decentralized-light",
-        largeLogoDarkMode: "logo-light"
-    )
 ]
 
 public struct UsageConditions: Decodable {
@@ -1356,7 +1347,7 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
 
     public static let dummyOperatorInfo = ServerOperatorInfo(
         description: ["Default"],
-        website: "Default",
+        website: URL(string: "https://simplex.chat")!,
         logo: "decentralized",
         largeLogo: "logo",
         logoDarkMode: "decentralized-light",
@@ -1381,30 +1372,6 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         enabled: true,
         smpRoles: ServerRoles(storage: true, proxy: true),
         xftpRoles: ServerRoles(storage: true, proxy: true)
-    )
-
-    public static var sampleData2 = ServerOperator(
-        operatorId: 2,
-        operatorTag: .xyz,
-        tradeName: "XYZ",
-        legalName: nil,
-        serverDomains: ["xyz.com"],
-        conditionsAcceptance: .required(deadline: nil),
-        enabled: false,
-        smpRoles: ServerRoles(storage: false, proxy: true),
-        xftpRoles: ServerRoles(storage: false, proxy: true)
-    )
-
-    public static var sampleData3 = ServerOperator(
-        operatorId: 3,
-        operatorTag: .demo,
-        tradeName: "Demo",
-        legalName: nil,
-        serverDomains: ["demo.com"],
-        conditionsAcceptance: .required(deadline: nil),
-        enabled: false,
-        smpRoles: ServerRoles(storage: true, proxy: false),
-        xftpRoles: ServerRoles(storage: true, proxy: false)
     )
 }
 
@@ -2106,17 +2073,24 @@ public struct UserContactLink: Decodable, Hashable {
 }
 
 public struct AutoAccept: Codable, Hashable {
+    public var businessAddress: Bool
     public var acceptIncognito: Bool
     public var autoReply: MsgContent?
 
-    public init(acceptIncognito: Bool, autoReply: MsgContent? = nil) {
+    public init(businessAddress: Bool, acceptIncognito: Bool, autoReply: MsgContent? = nil) {
+        self.businessAddress = businessAddress
         self.acceptIncognito = acceptIncognito
         self.autoReply = autoReply
     }
 
     static func cmdString(_ autoAccept: AutoAccept?) -> String {
         guard let autoAccept = autoAccept else { return "off" }
-        let s = "on" + (autoAccept.acceptIncognito ? " incognito=on" : "")
+        var s = "on"
+        if autoAccept.acceptIncognito {
+            s += " incognito=on"
+        } else if autoAccept.businessAddress {
+            s += " business"
+        }
         guard let msg = autoAccept.autoReply else { return s }
         return s + " " + msg.cmdString
     }
@@ -2651,6 +2625,7 @@ public struct AppSettings: Codable, Equatable {
     public var uiCurrentThemeIds: [String: String]? = nil
     public var uiThemes: [ThemeOverrides]? = nil
     public var oneHandUI: Bool? = nil
+    public var chatBottomBar: Bool? = nil
     
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -2685,6 +2660,7 @@ public struct AppSettings: Codable, Equatable {
         if uiCurrentThemeIds != def.uiCurrentThemeIds { empty.uiCurrentThemeIds = uiCurrentThemeIds }
         if uiThemes != def.uiThemes { empty.uiThemes = uiThemes }
         if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
+        if chatBottomBar != def.chatBottomBar { empty.chatBottomBar = chatBottomBar }
         return empty
     }
 
@@ -2719,7 +2695,8 @@ public struct AppSettings: Codable, Equatable {
             uiDarkColorScheme: DefaultTheme.SIMPLEX.themeName,
             uiCurrentThemeIds: nil as [String: String]?,
             uiThemes: nil as [ThemeOverrides]?,
-            oneHandUI: false
+            oneHandUI: true,
+            chatBottomBar: true
         )
     }
 }

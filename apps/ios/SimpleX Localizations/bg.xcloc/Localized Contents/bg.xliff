@@ -566,6 +566,10 @@
         <target>За SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="About operators" xml:space="preserve">
+        <source>About operators</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
         <source>Accent</source>
         <note>No comment provided by engineer.</note>
@@ -618,6 +622,10 @@
         <target>Добавете адрес към вашия профил, така че вашите контакти да могат да го споделят с други хора. Актуализацията на профила ще бъде изпратена до вашите контакти.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add friends" xml:space="preserve">
+        <source>Add friends</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
         <source>Add profile</source>
         <target>Добави профил</target>
@@ -633,6 +641,10 @@
         <target>Добави сървъри чрез сканиране на QR кодове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add team members" xml:space="preserve">
+        <source>Add team members</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
         <source>Add to another device</source>
         <target>Добави към друго устройство</target>
@@ -641,6 +653,10 @@
       <trans-unit id="Add welcome message" xml:space="preserve">
         <source>Add welcome message</source>
         <target>Добави съобщение при посрещане</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve">
+        <source>Add your team members to the conversations.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Added media &amp; file servers" xml:space="preserve">
@@ -715,8 +731,8 @@
         <target>Всички данни се изтриват при въвеждане.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
-        <source>All data is private to your device.</source>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve">
+        <source>All data is kept private on your device.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -1183,6 +1199,14 @@
         <target>Български, финландски, тайландски и украински - благодарение на потребителите и [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Business address" xml:space="preserve">
+        <source>Business address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Business chats" xml:space="preserve">
+        <source>Business chats</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
         <target>Чрез чат профил (по подразбиране) или [чрез връзка](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (БЕТА).</target>
@@ -1268,6 +1292,10 @@
         <target>Промени</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Change chat profiles" xml:space="preserve">
+        <source>Change chat profiles</source>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
         <target>Промяна на паролата на базата данни?</target>
@@ -1314,13 +1342,16 @@
         <note>authentication reason
    set passcode view</note>
       </trans-unit>
-      <trans-unit id="Change user profiles" xml:space="preserve">
-        <source>Change user profiles</source>
-        <note>authentication reason</note>
+      <trans-unit id="Chat" xml:space="preserve">
+        <source>Chat</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat archive" xml:space="preserve">
-        <source>Chat archive</source>
-        <target>Архив на чата</target>
+      <trans-unit id="Chat already exists" xml:space="preserve">
+        <source>Chat already exists</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat already exists!" xml:space="preserve">
+        <source>Chat already exists!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve">
@@ -1391,6 +1422,14 @@
       </trans-unit>
       <trans-unit id="Chat theme" xml:space="preserve">
         <source>Chat theme</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for all members - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve">
+        <source>Chat will be deleted for you - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1498,8 +1537,8 @@
         <source>Conditions are accepted for the operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions are already accepted for following operator(s): **%@**." xml:space="preserve">
-        <source>Conditions are already accepted for following operator(s): **%@**.</source>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions of use" xml:space="preserve">
@@ -1895,11 +1934,6 @@ This is your own one-time link!</source>
         <target>Създаден на: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Created on %@" xml:space="preserve">
-        <source>Created on %@</source>
-        <target>Създаден на %@</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Creating archive link" xml:space="preserve">
         <source>Creating archive link</source>
         <target>Създаване на архивен линк</target>
@@ -2108,14 +2142,8 @@ This is your own one-time link!</source>
         <target>Изтрий и уведоми контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete archive" xml:space="preserve">
-        <source>Delete archive</source>
-        <target>Изтрий архив</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Delete chat archive?" xml:space="preserve">
-        <source>Delete chat archive?</source>
-        <target>Изтриване на архива на чата?</target>
+      <trans-unit id="Delete chat" xml:space="preserve">
+        <source>Delete chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2126,6 +2154,10 @@ This is your own one-time link!</source>
       <trans-unit id="Delete chat profile?" xml:space="preserve">
         <source>Delete chat profile?</source>
         <target>Изтриване на чат профила?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete chat?" xml:space="preserve">
+        <source>Delete chat?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete connection" xml:space="preserve">
@@ -2380,8 +2412,12 @@ This is your own one-time link!</source>
         <target>Лични съобщения</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve">
-        <source>Direct messages between members are prohibited in this group.</source>
+      <trans-unit id="Direct messages between members are prohibited in this chat." xml:space="preserve">
+        <source>Direct messages between members are prohibited in this chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Direct messages between members are prohibited." xml:space="preserve">
+        <source>Direct messages between members are prohibited.</source>
         <target>Личните съобщения между членовете са забранени в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2419,8 +2455,8 @@ This is your own one-time link!</source>
         <target>Изчезващите съобщения са забранени в този чат.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages are prohibited in this group." xml:space="preserve">
-        <source>Disappearing messages are prohibited in this group.</source>
+      <trans-unit id="Disappearing messages are prohibited." xml:space="preserve">
+        <source>Disappearing messages are prohibited.</source>
         <target>Изчезващите съобщения са забранени в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -2792,11 +2828,6 @@ This is your own one-time link!</source>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
         <source>Error accepting contact request</source>
         <target>Грешка при приемане на заявка за контакт</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Error accessing database file" xml:space="preserve">
-        <source>Error accessing database file</source>
-        <target>Грешка при достъпа до файла с базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
@@ -3247,8 +3278,8 @@ This is your own one-time link!</source>
         <target>Файлове и медия</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this group." xml:space="preserve">
-        <source>Files and media are prohibited in this group.</source>
+      <trans-unit id="Files and media are prohibited." xml:space="preserve">
+        <source>Files and media are prohibited.</source>
         <target>Файловете и медията са забранени в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3501,41 +3532,6 @@ Error: %2$@</source>
       <trans-unit id="Group links" xml:space="preserve">
         <source>Group links</source>
         <target>Групови линкове</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve">
-        <source>Group members can add message reactions.</source>
-        <target>Членовете на групата могат да добавят реакции към съобщенията.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
-        <source>Group members can irreversibly delete sent messages. (24 hours)</source>
-        <target>Членовете на групата могат необратимо да изтриват изпратените съобщения. (24 часа)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send SimpleX links." xml:space="preserve">
-        <source>Group members can send SimpleX links.</source>
-        <target>Членовете на групата могат да изпращат SimpleX линкове.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send direct messages." xml:space="preserve">
-        <source>Group members can send direct messages.</source>
-        <target>Членовете на групата могат да изпращат лични съобщения.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send disappearing messages." xml:space="preserve">
-        <source>Group members can send disappearing messages.</source>
-        <target>Членовете на групата могат да изпращат изчезващи съобщения.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send files and media." xml:space="preserve">
-        <source>Group members can send files and media.</source>
-        <target>Членовете на групата могат да изпращат файлове и медия.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group members can send voice messages." xml:space="preserve">
-        <source>Group members can send voice messages.</source>
-        <target>Членовете на групата могат да изпращат гласови съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -3930,6 +3926,10 @@ More improvements are coming soon!</source>
         <target>Покани членове</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invite to chat" xml:space="preserve">
+        <source>Invite to chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
         <source>Invite to group</source>
         <target>Покани в групата</target>
@@ -3945,8 +3945,8 @@ More improvements are coming soon!</source>
         <target>Необратимото изтриване на съобщения е забранено в този чат.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Irreversible message deletion is prohibited in this group." xml:space="preserve">
-        <source>Irreversible message deletion is prohibited in this group.</source>
+      <trans-unit id="Irreversible message deletion is prohibited." xml:space="preserve">
+        <source>Irreversible message deletion is prohibited.</source>
         <target>Необратимото изтриване на съобщения е забранено в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4086,6 +4086,14 @@ This is your link for group %@!</source>
         <target>Напусни</target>
         <note>swipe action</note>
       </trans-unit>
+      <trans-unit id="Leave chat" xml:space="preserve">
+        <source>Leave chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Leave chat?" xml:space="preserve">
+        <source>Leave chat?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
         <source>Leave group</source>
         <target>Напусни групата</target>
@@ -4213,6 +4221,10 @@ This is your link for group %@!</source>
         <source>Member inactive</source>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
+        <source>Member role will be changed to "%@". All chat members will be notified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
         <target>Ролята на члена ще бъде променена на "%@". Всички членове на групата ще бъдат уведомени.</target>
@@ -4223,9 +4235,48 @@ This is your link for group %@!</source>
         <target>Ролята на члена ще бъде променена на "%@". Членът ще получи нова покана.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member will be removed from chat - this cannot be undone!" xml:space="preserve">
+        <source>Member will be removed from chat - this cannot be undone!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
         <target>Членът ще бъде премахнат от групата - това не може да бъде отменено!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can add message reactions." xml:space="preserve">
+        <source>Members can add message reactions.</source>
+        <target>Членовете на групата могат да добавят реакции към съобщенията.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+        <source>Members can irreversibly delete sent messages. (24 hours)</source>
+        <target>Членовете на групата могат необратимо да изтриват изпратените съобщения. (24 часа)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
+        <source>Members can send SimpleX links.</source>
+        <target>Членовете на групата могат да изпращат SimpleX линкове.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send direct messages." xml:space="preserve">
+        <source>Members can send direct messages.</source>
+        <target>Членовете на групата могат да изпращат лични съобщения.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+        <source>Members can send disappearing messages.</source>
+        <target>Членовете на групата могат да изпращат изчезващи съобщения.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send files and media." xml:space="preserve">
+        <source>Members can send files and media.</source>
+        <target>Членовете на групата могат да изпращат файлове и медия.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can send voice messages." xml:space="preserve">
+        <source>Members can send voice messages.</source>
+        <target>Членовете на групата могат да изпращат гласови съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
@@ -4273,8 +4324,8 @@ This is your link for group %@!</source>
         <target>Реакциите на съобщения са забранени в този чат.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
-        <source>Message reactions are prohibited in this group.</source>
+      <trans-unit id="Message reactions are prohibited." xml:space="preserve">
+        <source>Message reactions are prohibited.</source>
         <target>Реакциите на съобщения са забранени в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4533,11 +4584,6 @@ This is your link for group %@!</source>
         <target>Нов контакт:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New database archive" xml:space="preserve">
-        <source>New database archive</source>
-        <target>Нов архив на база данни</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="New desktop app!" xml:space="preserve">
         <source>New desktop app!</source>
         <target>Ново настолно приложение!</target>
@@ -4746,11 +4792,6 @@ This is your link for group %@!</source>
         <target>Стара база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Old database archive" xml:space="preserve">
-        <source>Old database archive</source>
-        <target>Стар архив на база данни</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
         <source>One-time invitation link</source>
         <target>Линк за еднократна покана</target>
@@ -4773,6 +4814,10 @@ Requires compatible VPN.</source>
       <trans-unit id="Onion hosts will not be used." xml:space="preserve">
         <source>Onion hosts will not be used.</source>
         <target>Няма се използват Onion хостове.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+        <source>Only chat owners can change preferences.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
@@ -4899,6 +4944,10 @@ Requires compatible VPN.</source>
       <trans-unit id="Operator server" xml:space="preserve">
         <source>Operator server</source>
         <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="Or import archive file" xml:space="preserve">
+        <source>Or import archive file</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or paste archive link" xml:space="preserve">
         <source>Or paste archive link</source>
@@ -5149,6 +5198,10 @@ Error: %@</source>
         <target>Поверителност и сигурност</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Privacy for your customers." xml:space="preserve">
+        <source>Privacy for your customers.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
         <target>Поверителността преосмислена</target>
@@ -5293,10 +5346,6 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Proxy requires password" xml:space="preserve">
         <source>Proxy requires password</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Push Notifications" xml:space="preserve">
-        <source>Push Notifications</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -5703,14 +5752,6 @@ Enable in *Network &amp; servers* settings.</source>
         <target>По-безопасни групи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Same conditions will apply to operator **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator **%@**.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Same conditions will apply to operator(s): **%@**." xml:space="preserve">
-        <source>Same conditions will apply to operator(s): **%@**.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>Запази</target>
@@ -5725,7 +5766,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save and notify contact" xml:space="preserve">
         <source>Save and notify contact</source>
         <target>Запази и уведоми контакта</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
@@ -5739,11 +5780,6 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save and update group profile" xml:space="preserve">
         <source>Save and update group profile</source>
         <target>Запази и актуализирай профила на групата</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
-        <source>Save archive</source>
-        <target>Запази архив</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save group profile" xml:space="preserve">
@@ -5764,7 +5800,7 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save preferences?" xml:space="preserve">
         <source>Save preferences?</source>
         <target>Запази настройките?</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Save profile password" xml:space="preserve">
         <source>Save profile password</source>
@@ -6344,6 +6380,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>SimpleX Адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
+        <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
         <source>SimpleX Chat security was audited by Trail of Bits.</source>
         <target>Сигурността на SimpleX Chat беше одитирана от Trail of Bits.</target>
@@ -6402,8 +6442,8 @@ Enable in *Network &amp; servers* settings.</source>
         <target>SimpleX линкове</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="SimpleX links are prohibited in this group." xml:space="preserve">
-        <source>SimpleX links are prohibited in this group.</source>
+      <trans-unit id="SimpleX links are prohibited." xml:space="preserve">
+        <source>SimpleX links are prohibited.</source>
         <target>SimpleX линкове са забранени в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6517,11 +6557,6 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Stop chat" xml:space="preserve">
         <source>Stop chat</source>
         <target>Спри чата</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
-        <source>Stop chat to enable database actions</source>
-        <target>Спрете чата, за да активирате действията с базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
@@ -6639,6 +6674,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Направи снимка</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
+        <source>Tap Create SimpleX address in the menu to create it later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -6805,6 +6844,14 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
         <source>The profile is only shared with your contacts.</source>
         <target>Профилът се споделя само с вашите контакти.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator **%@**.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
+        <source>The same conditions will apply to operator(s): **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The second preset operator in the app!" xml:space="preserve">
@@ -7440,8 +7487,8 @@ To connect, please ask your contact to create another connection link and check 
         <target>Гласовите съобщения са забранени в този чат.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Voice messages are prohibited in this group." xml:space="preserve">
-        <source>Voice messages are prohibited in this group.</source>
+      <trans-unit id="Voice messages are prohibited." xml:space="preserve">
+        <source>Voice messages are prohibited.</source>
         <target>Гласовите съобщения са забранени в тази група.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -7627,6 +7674,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вече сте вече свързани с %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You are already connected with %@." xml:space="preserve">
+        <source>You are already connected with %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
         <source>You are already connecting to %@.</source>
         <target>Вече се свързвате с %@.</target>
@@ -7693,10 +7744,6 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can configure servers via settings." xml:space="preserve">
         <source>You can configure servers via settings.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="You can create it in user picker." xml:space="preserve">
-        <source>You can create it in user picker.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
@@ -7895,6 +7942,10 @@ Repeat connection request?</source>
         <target>Все още ще получавате обаждания и известия от заглушени профили, когато са активни.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
+        <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
         <source>You will stop receiving messages from this group. Chat history will be preserved.</source>
         <target>Ще спрете да получавате съобщения от тази група. Историята на чата ще бъде запазена.</target>
@@ -8074,6 +8125,10 @@ Repeat connection request?</source>
         <source>accepted call</source>
         <target>обаждането прието</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="accepted invitation" xml:space="preserve">
+        <source>accepted invitation</source>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
         <source>admin</source>
@@ -8261,7 +8316,7 @@ Repeat connection request?</source>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>свързване…</target>
-        <note>chat list item title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
@@ -8744,6 +8799,10 @@ Repeat connection request?</source>
         <source>removed you</source>
         <target>ви острани</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="requested to connect" xml:space="preserve">
+        <source>requested to connect</source>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
         <source>saved</source>

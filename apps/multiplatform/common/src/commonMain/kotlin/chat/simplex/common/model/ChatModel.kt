@@ -1467,6 +1467,7 @@ data class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val businessChat: BusinessChatInfo? = null,
   val fullGroupPreferences: FullGroupPreferences,
   val membership: GroupMember,
   val hostConnCustomUserProfileId: Long? = null,
@@ -1497,7 +1498,7 @@ data class GroupInfo (
   override val image get() = groupProfile.image
   override val localAlias get() = ""
 
-  val canEdit: Boolean
+  val isOwner: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
 
   val canDelete: Boolean
@@ -1541,6 +1542,19 @@ data class GroupProfile (
       fullName = "My Team"
     )
   }
+}
+
+@Serializable
+data class BusinessChatInfo (
+  val chatType: BusinessChatType,
+  val businessId: String,
+  val customerId: String,
+)
+
+@Serializable
+enum class BusinessChatType {
+  @SerialName("business") Business,
+  @SerialName("customer") Customer,
 }
 
 @Serializable
@@ -1881,8 +1895,9 @@ class PendingContactConnection(
       generalGetString(MR.strings.display_name_connection_established)
     } else {
       generalGetString(
-        if (initiated && !viaContactUri) MR.strings.display_name_invited_to_connect
-        else MR.strings.display_name_connecting
+        if (viaContactUri) MR.strings.display_name_requested_to_connect
+        else if (initiated) MR.strings.display_name_invited_to_connect
+        else MR.strings.display_name_accepted_invitation
       )
     }
   }
@@ -1960,6 +1975,12 @@ class AChatItem (
 class ACIReaction(
   val chatInfo: ChatInfo,
   val chatReaction: CIReaction
+)
+
+@Serializable
+data class MemberReaction(
+  val groupMember: GroupMember,
+  val reactionTs: Instant
 )
 
 @Serializable

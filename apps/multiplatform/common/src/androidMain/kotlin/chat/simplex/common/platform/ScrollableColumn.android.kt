@@ -14,6 +14,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chatlist.NavigationBarBackground
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.flow.filter
 import kotlin.math.absoluteValue
 
@@ -28,6 +29,7 @@ actual fun LazyColumnWithScrollBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  chatBottomBar: State<Boolean>,
   fillMaxSize: Boolean,
   content: LazyListScope.() -> Unit
 ) {
@@ -90,6 +92,7 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  chatBottomBar: State<Boolean>,
   content: LazyListScope.() -> Unit
 ) {
   val state = state ?: rememberLazyListState()
@@ -124,7 +127,7 @@ actual fun ColumnWithScrollBar(
         }
       }
   }
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUI = remember { derivedStateOf { if (appPrefs.onboardingStage.state.value == OnboardingStage.OnboardingComplete) appPrefs.oneHandUI.state.value else false } }
   Box(Modifier.fillMaxHeight()) {
     Column(
       if (maxIntrinsicSize) {

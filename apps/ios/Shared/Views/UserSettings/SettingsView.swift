@@ -39,6 +39,7 @@ let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
+let DEFAULT_SHOULD_IMPORT_APP_SETTINGS = "shouldImportAppSettings"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
 let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
@@ -192,6 +193,8 @@ let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.sta
 let showDeleteConversationNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE)
 let showDeleteContactNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONTACT_NOTICE)
 
+/// after importing new database, this flag will be set and unset only after importing app settings in `initializeChat` */
+let shouldImportAppSettingsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOULD_IMPORT_APP_SETTINGS)
 let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME, withDefault: DefaultTheme.SYSTEM_THEME_NAME)
 let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME, withDefault: DefaultTheme.DARK.themeName)
 let currentThemeIdsDefault = CodableDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:] )

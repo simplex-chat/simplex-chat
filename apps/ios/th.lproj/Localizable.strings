@@ -565,9 +565,6 @@
 "changing address…" = "กำลังเปลี่ยนที่อยู่…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "ที่เก็บแชทถาวร";
-
-/* No comment provided by engineer. */
 "Chat console" = "คอนโซลแชท";
 
 /* No comment provided by engineer. */
@@ -684,7 +681,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์... (ข้อผิดพลาด: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "กำลังเชื่อมต่อ…";
 
 /* No comment provided by engineer. */
@@ -770,9 +767,6 @@
 
 /* No comment provided by engineer. */
 "Create your profile" = "สร้างโปรไฟล์ของคุณ";
-
-/* No comment provided by engineer. */
-"Created on %@" = "สร้างเมื่อ %@";
 
 /* No comment provided by engineer. */
 "creator" = "ผู้สร้าง";
@@ -886,12 +880,6 @@
 
 /* No comment provided by engineer. */
 "Delete all files" = "ลบไฟล์ทั้งหมด";
-
-/* No comment provided by engineer. */
-"Delete archive" = "ลบที่เก็บถาวร";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "ลบที่เก็บแชทถาวร?";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "ลบโปรไฟล์แชท";
@@ -1017,7 +1005,7 @@
 "Direct messages" = "ข้อความโดยตรง";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้";
+"Direct messages between members are prohibited." = "ข้อความโดยตรงระหว่างสมาชิกเป็นสิ่งต้องห้ามในกลุ่มนี้";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "ปิดใช้งาน (เก็บการแทนที่)";
@@ -1038,7 +1026,7 @@
 "Disappearing messages are prohibited in this chat." = "ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในแชทนี้";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในกลุ่มนี้";
+"Disappearing messages are prohibited." = "ข้อความที่จะหายไปหลังเวลาที่กําหนด (disappearing message) เป็นสิ่งต้องห้ามในกลุ่มนี้";
 
 /* No comment provided by engineer. */
 "Disappears at" = "หายไปที่";
@@ -1224,9 +1212,6 @@
 "Error accepting contact request" = "เกิดข้อผิดพลาดในการรับคำขอติดต่อ";
 
 /* No comment provided by engineer. */
-"Error accessing database file" = "เกิดข้อผิดพลาดในการเข้าถึงไฟล์ฐานข้อมูล";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "เกิดข้อผิดพลาดในการเพิ่มสมาชิก";
 
 /* No comment provided by engineer. */
@@ -1401,7 +1386,7 @@
 "Files and media" = "ไฟล์และสื่อ";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "ไฟล์และสื่อเป็นสิ่งต้องห้ามในกลุ่มนี้";
+"Files and media are prohibited." = "ไฟล์และสื่อเป็นสิ่งต้องห้ามในกลุ่มนี้";
 
 /* No comment provided by engineer. */
 "Files and media prohibited!" = "ไฟล์และสื่อต้องห้าม!";
@@ -1483,24 +1468,6 @@
 
 /* No comment provided by engineer. */
 "Group links" = "ลิงค์กลุ่ม";
-
-/* No comment provided by engineer. */
-"Group members can add message reactions." = "สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้";
-
-/* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร";
-
-/* No comment provided by engineer. */
-"Group members can send direct messages." = "สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้";
-
-/* No comment provided by engineer. */
-"Group members can send disappearing messages." = "สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้";
-
-/* No comment provided by engineer. */
-"Group members can send files and media." = "สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ";
-
-/* No comment provided by engineer. */
-"Group members can send voice messages." = "สมาชิกกลุ่มสามารถส่งข้อความเสียง";
 
 /* notification */
 "Group message:" = "ข้อความกลุ่ม:";
@@ -1728,7 +1695,7 @@
 "Irreversible message deletion is prohibited in this chat." = "ไม่สามารถลบข้อความแบบแก้ไขไม่ได้ในแชทนี้";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "การลบข้อความแบบแก้ไขไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้";
+"Irreversible message deletion is prohibited." = "การลบข้อความแบบแก้ไขไม่ได้เป็นสิ่งที่ห้ามในกลุ่มนี้";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "อนุญาตให้มีการเชื่อมต่อที่ไม่ระบุตัวตนจำนวนมากโดยไม่มีข้อมูลที่ใช้ร่วมกันระหว่างกันในโปรไฟล์การแชทเดียว";
@@ -1868,6 +1835,24 @@
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "สมาชิกจะถูกลบออกจากกลุ่ม - ไม่สามารถยกเลิกได้!";
 
+/* No comment provided by engineer. */
+"Members can add message reactions." = "สมาชิกกลุ่มสามารถเพิ่มการแสดงปฏิกิริยาต่อข้อความได้";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "สมาชิกกลุ่มสามารถลบข้อความที่ส่งแล้วอย่างถาวร";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "สมาชิกกลุ่มสามารถส่งข้อความโดยตรงได้";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "สมาชิกกลุ่มสามารถส่งข้อความที่จะหายไปหลังจากเวลาที่กำหนดหลังการอ่าน (disappearing messages) ได้";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "สมาชิกกลุ่มสามารถส่งไฟล์และสื่อ";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "สมาชิกกลุ่มสามารถส่งข้อความเสียง";
+
 /* item status text */
 "Message delivery error" = "ข้อผิดพลาดในการส่งข้อความ";
 
@@ -1884,7 +1869,7 @@
 "Message reactions are prohibited in this chat." = "ห้ามแสดงปฏิกิริยาบนข้อความในแชทนี้";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "ปฏิกิริยาบนข้อความเป็นสิ่งต้องห้ามในกลุ่มนี้";
+"Message reactions are prohibited." = "ปฏิกิริยาบนข้อความเป็นสิ่งต้องห้ามในกลุ่มนี้";
 
 /* notification */
 "message received" = "ข้อความที่ได้รับ";
@@ -1969,9 +1954,6 @@
 
 /* notification */
 "New contact:" = "คำขอติดต่อใหม่:";
-
-/* No comment provided by engineer. */
-"New database archive" = "ฐานข้อมูลใหม่สำหรับการเก็บถาวร";
 
 /* No comment provided by engineer. */
 "New display name" = "ชื่อที่แสดงใหม่";
@@ -2070,9 +2052,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "ฐานข้อมูลเก่า";
-
-/* No comment provided by engineer. */
-"Old database archive" = "คลังฐานข้อมูลเก่า";
 
 /* group pref value */
 "on" = "เปิด";
@@ -2460,7 +2439,7 @@
 /* alert button */
 "Save (and notify contacts)" = "บันทึก (และแจ้งผู้ติดต่อ)";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "บันทึกและแจ้งผู้ติดต่อ";
 
 /* No comment provided by engineer. */
@@ -2468,9 +2447,6 @@
 
 /* No comment provided by engineer. */
 "Save and update group profile" = "บันทึกและอัปเดตโปรไฟล์กลุ่ม";
-
-/* No comment provided by engineer. */
-"Save archive" = "บันทึกไฟล์เก็บถาวร";
 
 /* No comment provided by engineer. */
 "Save group profile" = "บันทึกโปรไฟล์กลุ่ม";
@@ -2481,7 +2457,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "บันทึกข้อความรหัสผ่านใน Keychain";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "บันทึกการตั้งค่า?";
 
 /* No comment provided by engineer. */
@@ -2748,9 +2724,6 @@
 
 /* No comment provided by engineer. */
 "Stop" = "หยุด";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "หยุดการแชทเพื่อเปิดใช้งานการดำเนินการกับฐานข้อมูล";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "หยุดแชทเพื่อส่งออก นำเข้า หรือลบฐานข้อมูลแชท คุณจะไม่สามารถรับและส่งข้อความได้ในขณะที่การแชทหยุดลง";
@@ -3098,7 +3071,7 @@
 "Voice messages are prohibited in this chat." = "ห้ามส่งข้อความเสียงในแชทนี้";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "ข้อความเสียงเป็นสิ่งต้องห้ามในกลุ่มนี้";
+"Voice messages are prohibited." = "ข้อความเสียงเป็นสิ่งต้องห้ามในกลุ่มนี้";
 
 /* No comment provided by engineer. */
 "Voice messages prohibited!" = "ห้ามข้อความเสียง!";

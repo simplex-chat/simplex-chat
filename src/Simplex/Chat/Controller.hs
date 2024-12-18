@@ -304,11 +304,12 @@ data ChatCommand
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
+  | APIGetReactionMembers UserId GroupId ChatItemId MsgReaction
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
-  | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
+  | APIChatRead ChatRef
   | APIChatItemsRead ChatRef (NonEmpty ChatItemId)
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef ChatDeleteMode -- currently delete mode settings are only applied to direct chats
@@ -621,6 +622,7 @@ data ChatResponse
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
+  | CRReactionMembers {user :: User, memberReactions :: [MemberReaction]}
   | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
@@ -637,6 +639,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CRBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
@@ -663,8 +666,10 @@ data ChatResponse
   | CRUserContactLinkDeleted {user :: User}
   | CRReceivedContactRequest {user :: User, contactRequest :: UserContactRequest}
   | CRAcceptingContactRequest {user :: User, contact :: Contact}
+  | CRAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
   | CRContactAlreadyExists {user :: User, contact :: Contact}
   | CRContactRequestAlreadyAccepted {user :: User, contact :: Contact}
+  | CRBusinessRequestAlreadyAccepted {user :: User, groupInfo :: GroupInfo}
   | CRLeftMemberUser {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeletedUser {user :: User, groupInfo :: GroupInfo}
   | CRForwardPlan {user :: User, itemsCount :: Int, chatItemIds :: [ChatItemId], forwardConfirmation :: Maybe ForwardConfirmation}

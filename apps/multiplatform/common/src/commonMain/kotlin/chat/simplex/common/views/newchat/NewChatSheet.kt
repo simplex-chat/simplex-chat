@@ -334,7 +334,7 @@ private fun ModalData.NewChatSheetLayout(
 
   @Composable
   fun NonOneHandLazyColumn() {
-    val blankSpaceSize = topPaddingToContent()
+    val blankSpaceSize = topPaddingToContent(false)
     LazyColumnWithScrollBar(
       Modifier.imePadding(),
       state = listState,
@@ -646,7 +646,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats
     )
 
     Box {
-      val topPaddingToContent = topPaddingToContent()
+      val topPaddingToContent = topPaddingToContent(false)
       LazyColumnWithScrollBar(
         if (!oneHandUI.value) Modifier.imePadding() else Modifier,
         contentPadding = PaddingValues(

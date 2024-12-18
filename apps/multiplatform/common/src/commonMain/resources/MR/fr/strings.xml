@@ -321,7 +321,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.</string>
     <string name="network_enable_socks_info">Accéder aux serveurs via un proxy SOCKS sur le port %d \? Le proxy doit être démarré avant d\'activer cette option.</string>
     <string name="network_use_onion_hosts">Utiliser les hôtes .onions</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Vous contrôlez par quel·s serveur·s vous pouvez <b>transmettre</b> ainsi que par quel·s serveur·s vous pouvez <b>recevoir</b> les messages de vos contacts.]]></string>
     <string name="your_settings">Vos paramètres</string>
     <string name="chat_lock">SimpleX Lock</string>
     <string name="chat_console">Console du chat</string>
@@ -372,7 +371,6 @@
     <string name="callstate_connecting">connexion…</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">N\'importe qui peut heberger un serveur.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Pour protéger votre vie privée, au lieu d\'IDs utilisés par toutes les autres plateformes, SimpleX possède des IDs pour les queues de messages, distinctes pour chacun de vos contacts.</string>
-    <string name="read_more_in_github">Plus d\'informations sur notre GitHub.</string>
     <string name="paste_the_link_you_received">Collez le lien que vous avez reçu</string>
     <string name="use_chat">Utiliser le chat</string>
     <string name="onboarding_notifications_mode_title">Notifications privées</string>
@@ -440,8 +438,7 @@
     <string name="callstate_waiting_for_confirmation">en attente de confirmation…</string>
     <string name="callstate_connected">connecté</string>
     <string name="callstate_ended">terminé</string>
-    <string name="next_generation_of_private_messaging">La nouvelle génération
-\nde messagerie privée</string>
+    <string name="next_generation_of_private_messaging">La nouvelle génération \nde messagerie privée</string>
     <string name="privacy_redefined">La vie privée redéfinie</string>
     <string name="first_platform_without_user_ids">Aucun identifiant d\'utilisateur.</string>
     <string name="immune_to_spam_and_abuse">Protégé du spam</string>
@@ -451,7 +448,6 @@
     <string name="make_private_connection">Établir une connexion privée</string>
     <string name="how_it_works">Comment ça fonctionne</string>
     <string name="how_simplex_works">Comment SimpleX fonctionne</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Beaucoup se demandent : <i>si SimpleX n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.]]></string>
     <string name="read_more_in_github_with_link"><![CDATA[Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. L\'app vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>
@@ -475,7 +471,6 @@
     <string name="restore_passphrase_not_found_desc">La phrase secrète n\'a pas été trouvée dans le Keystore, veuillez la saisir manuellement. Cela a pu se produire si vous avez restauré les données de l\'app à l\'aide d\'un outil de sauvegarde. Si ce n\'est pas le cas, veuillez contacter les développeurs.</string>
     <string name="restore_database_alert_desc">Veuillez entrer le mot de passe précédent après avoir restauré la sauvegarde de la base de données. Cette action ne peut pas être annulée.</string>
     <string name="database_restore_error">Erreur de restauration de la base de données</string>
-    <string name="archive_created_on_ts">Créé le %1$s</string>
     <string name="encrypted_video_call">appel vidéo (chiffrement de bout en bout)</string>
     <string name="audio_call_no_encryption">appel audio (sans chiffrement)</string>
     <string name="encrypted_audio_call">appel audio (chiffrement de bout en bout)</string>
@@ -622,7 +617,6 @@
     <string name="error_importing_database">Erreur lors de l\'importation de la base de données du chat</string>
     <string name="chat_database_imported">Base de données du chat importée</string>
     <string name="delete_chat_profile_question">Supprimer le profil du chat \?</string>
-    <string name="stop_chat_to_enable_database_actions">Arrêter le chat pour agir sur la base de données.</string>
     <string name="delete_files_and_media_question">Supprimer les fichiers et médias \?</string>
     <string name="delete_files_and_media_desc">Cette action ne peut être annulée - tous les fichiers et médias reçus et envoyés seront supprimés. Les photos à faible résolution seront conservées.</string>
     <string name="no_received_app_files">Aucun fichier reçu ou envoyé</string>
@@ -653,11 +647,6 @@
     <string name="restore_database_alert_confirm">Restaurer</string>
     <string name="chat_is_stopped_indication">Le chat est arrêté</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Vous pouvez lancer le chat via les Paramètres / la Base de données de l\'app ou en la redémarrant.</string>
-    <string name="chat_archive_header">Archives du chat</string>
-    <string name="chat_archive_section">ARCHIVE DU CHAT</string>
-    <string name="save_archive">Enregistrer l\'archive</string>
-    <string name="delete_archive">Supprimer l\'archive</string>
-    <string name="delete_chat_archive_question">Supprimer l\'archive du chat \?</string>
     <string name="group_invitation_item_description">Invitation au groupe %1$s</string>
     <string name="join_group_question">Rejoindre le groupe \?</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Vous êtes invité·e dans un groupe. Rejoignez le pour vous connecter avec ses membres.</string>
@@ -865,7 +854,7 @@
     <string name="prohibit_sending_disappearing">Interdire l’envoi de messages éphémères.</string>
     <string name="prohibit_message_deletion">Interdire la suppression irréversible des messages.</string>
     <string name="group_members_can_send_dms">Les membres du groupe peuvent envoyer des messages directs.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Les messages directs entre membres sont interdits dans ce groupe.</string>
+    <string name="direct_messages_are_prohibited_in_group">Les messages directs entre membres sont interdits dans ce groupe.</string>
     <string name="v4_4_live_messages_desc">Les destinataires voient les mises à jour au fur et à mesure que vous les tapez.</string>
     <string name="v4_4_verify_connection_security">Vérifier la sécurité de la connexion</string>
     <string name="v4_4_verify_connection_security_desc">Comparez les codes de sécurité avec vos contacts.</string>
@@ -916,8 +905,7 @@
     <string name="users_delete_with_connections">Profil et connexions au serveur</string>
     <string name="network_session_mode_transport_isolation">Transport isolé</string>
     <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolement du transport \?</string>
-    <string name="network_session_mode_entity_description">Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>.
-\n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>. \n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.]]></string>
     <string name="network_session_mode_user">Profil de chat</string>
     <string name="users_add">Ajouter un profil</string>
     <string name="users_delete_data_only">Données de profil local uniquement</string>

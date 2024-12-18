@@ -413,7 +413,7 @@
 "All data is erased when it is entered." = "所有数据在输入后将被删除。";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "所有数据都是您设备的私有数据.";
+"All data is kept private on your device." = "所有数据都是您设备的私有数据.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "所有群组成员将保持连接。";
@@ -832,9 +832,6 @@
 "changing address…" = "更改地址…";
 
 /* No comment provided by engineer. */
-"Chat archive" = "聊天档案";
-
-/* No comment provided by engineer. */
 "Chat colors" = "聊天颜色";
 
 /* No comment provided by engineer. */
@@ -1062,7 +1059,7 @@
 /* No comment provided by engineer. */
 "Connecting to desktop" = "正连接到桌面";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "连接中……";
 
 /* No comment provided by engineer. */
@@ -1207,9 +1204,6 @@
 "Created at: %@" = "创建于：%@";
 
 /* No comment provided by engineer. */
-"Created on %@" = "创建于 %@";
-
-/* No comment provided by engineer. */
 "Creating archive link" = "正在创建存档链接";
 
 /* No comment provided by engineer. */
@@ -1351,12 +1345,6 @@
 
 /* No comment provided by engineer. */
 "Delete and notify contact" = "删除并通知联系人";
-
-/* No comment provided by engineer. */
-"Delete archive" = "删除档案";
-
-/* No comment provided by engineer. */
-"Delete chat archive?" = "删除聊天档案？";
 
 /* No comment provided by engineer. */
 "Delete chat profile" = "删除聊天资料";
@@ -1533,7 +1521,7 @@
 "Direct messages" = "私信";
 
 /* No comment provided by engineer. */
-"Direct messages between members are prohibited in this group." = "此群中禁止成员之间私信。";
+"Direct messages between members are prohibited." = "此群中禁止成员之间私信。";
 
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "禁用（保留覆盖）";
@@ -1560,7 +1548,7 @@
 "Disappearing messages are prohibited in this chat." = "此聊天中禁止显示限时消息。";
 
 /* No comment provided by engineer. */
-"Disappearing messages are prohibited in this group." = "该组禁止限时消息。";
+"Disappearing messages are prohibited." = "该组禁止限时消息。";
 
 /* No comment provided by engineer. */
 "Disappears at" = "消失于";
@@ -1828,9 +1816,6 @@
 "Error accepting contact request" = "接受联系人请求错误";
 
 /* No comment provided by engineer. */
-"Error accessing database file" = "访问数据库文件错误";
-
-/* No comment provided by engineer. */
 "Error adding member(s)" = "添加成员错误";
 
 /* No comment provided by engineer. */
@@ -2089,7 +2074,7 @@
 "Files and media" = "文件和媒体";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this group." = "此群组中禁止文件和媒体。";
+"Files and media are prohibited." = "此群组中禁止文件和媒体。";
 
 /* No comment provided by engineer. */
 "Files and media not allowed" = "不允许文件和媒体";
@@ -2228,27 +2213,6 @@
 
 /* No comment provided by engineer. */
 "Group links" = "群组链接";
-
-/* No comment provided by engineer. */
-"Group members can add message reactions." = "群组成员可以添加信息回应。";
-
-/* No comment provided by engineer. */
-"Group members can irreversibly delete sent messages. (24 hours)" = "群组成员可以不可撤回地删除已发送的消息";
-
-/* No comment provided by engineer. */
-"Group members can send direct messages." = "群组成员可以私信。";
-
-/* No comment provided by engineer. */
-"Group members can send disappearing messages." = "群组成员可以发送限时消息。";
-
-/* No comment provided by engineer. */
-"Group members can send files and media." = "群组成员可以发送文件和媒体。";
-
-/* No comment provided by engineer. */
-"Group members can send SimpleX links." = "群成员可发送 SimpleX 链接。";
-
-/* No comment provided by engineer. */
-"Group members can send voice messages." = "群组成员可以发送语音消息。";
 
 /* notification */
 "Group message:" = "群组消息：";
@@ -2539,7 +2503,7 @@
 "Irreversible message deletion is prohibited in this chat." = "此聊天中禁止不可撤回消息移除。";
 
 /* No comment provided by engineer. */
-"Irreversible message deletion is prohibited in this group." = "此群组中禁止不可撤回消息移除。";
+"Irreversible message deletion is prohibited." = "此群组中禁止不可撤回消息移除。";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "它允许在一个聊天资料中有多个匿名连接，而它们之间没有任何共享数据。";
@@ -2728,6 +2692,27 @@
 "Member will be removed from group - this cannot be undone!" = "成员将被移出群组——此操作无法撤消！";
 
 /* No comment provided by engineer. */
+"Members can add message reactions." = "群组成员可以添加信息回应。";
+
+/* No comment provided by engineer. */
+"Members can irreversibly delete sent messages. (24 hours)" = "群组成员可以不可撤回地删除已发送的消息";
+
+/* No comment provided by engineer. */
+"Members can send direct messages." = "群组成员可以私信。";
+
+/* No comment provided by engineer. */
+"Members can send disappearing messages." = "群组成员可以发送限时消息。";
+
+/* No comment provided by engineer. */
+"Members can send files and media." = "群组成员可以发送文件和媒体。";
+
+/* No comment provided by engineer. */
+"Members can send SimpleX links." = "群成员可发送 SimpleX 链接。";
+
+/* No comment provided by engineer. */
+"Members can send voice messages." = "群组成员可以发送语音消息。";
+
+/* No comment provided by engineer. */
 "Menus" = "菜单";
 
 /* No comment provided by engineer. */
@@ -2761,7 +2746,7 @@
 "Message reactions are prohibited in this chat." = "该聊天禁用了消息回应。";
 
 /* No comment provided by engineer. */
-"Message reactions are prohibited in this group." = "该群组禁用了消息回应。";
+"Message reactions are prohibited." = "该群组禁用了消息回应。";
 
 /* notification */
 "message received" = "消息已收到";
@@ -2926,9 +2911,6 @@
 "New contact:" = "新联系人：";
 
 /* No comment provided by engineer. */
-"New database archive" = "新数据库存档";
-
-/* No comment provided by engineer. */
 "New desktop app!" = "全新桌面应用！";
 
 /* No comment provided by engineer. */
@@ -3052,9 +3034,6 @@
 
 /* No comment provided by engineer. */
 "Old database" = "旧的数据库";
-
-/* No comment provided by engineer. */
-"Old database archive" = "旧数据库存档";
 
 /* group pref value */
 "on" = "开启";
@@ -3655,7 +3634,7 @@
 /* alert button */
 "Save (and notify contacts)" = "保存（并通知联系人）";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Save and notify contact" = "保存并通知联系人";
 
 /* No comment provided by engineer. */
@@ -3668,9 +3647,6 @@
 "Save and update group profile" = "保存和更新组配置文件";
 
 /* No comment provided by engineer. */
-"Save archive" = "保存存档";
-
-/* No comment provided by engineer. */
 "Save group profile" = "保存群组资料";
 
 /* No comment provided by engineer. */
@@ -3679,7 +3655,7 @@
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "在钥匙串中保存密码";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Save preferences?" = "保存偏好设置？";
 
 /* No comment provided by engineer. */
@@ -4068,7 +4044,7 @@
 "SimpleX links" = "SimpleX 链接";
 
 /* No comment provided by engineer. */
-"SimpleX links are prohibited in this group." = "此群禁止 SimpleX 链接。";
+"SimpleX links are prohibited." = "此群禁止 SimpleX 链接。";
 
 /* No comment provided by engineer. */
 "SimpleX links not allowed" = "不允许SimpleX 链接";
@@ -4150,9 +4126,6 @@
 
 /* No comment provided by engineer. */
 "Stop chat" = "停止聊天程序";
-
-/* No comment provided by engineer. */
-"Stop chat to enable database actions" = "停止聊天以启用数据库操作";
 
 /* No comment provided by engineer. */
 "Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，您将无法收发消息。";
@@ -4719,7 +4692,7 @@
 "Voice messages are prohibited in this chat." = "语音信息在此聊天中被禁止。";
 
 /* No comment provided by engineer. */
-"Voice messages are prohibited in this group." = "语音信息在该群组中被禁用。";
+"Voice messages are prohibited." = "语音信息在该群组中被禁用。";
 
 /* No comment provided by engineer. */
 "Voice messages not allowed" = "不允许语音消息";

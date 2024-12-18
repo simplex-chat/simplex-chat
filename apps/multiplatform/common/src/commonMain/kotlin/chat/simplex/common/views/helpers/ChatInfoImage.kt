@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.unit.*
+import chat.simplex.common.model.BusinessChatType
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
@@ -30,7 +31,12 @@ import kotlin.math.max
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
   val icon =
     when (chatInfo) {
-      is ChatInfo.Group -> MR.images.ic_supervised_user_circle_filled
+      is ChatInfo.Group ->
+        when (chatInfo.groupInfo.businessChat?.chatType) {
+          BusinessChatType.Business -> MR.images.ic_work_filled_padded
+          BusinessChatType.Customer -> MR.images.ic_account_circle_filled
+          null -> MR.images.ic_supervised_user_circle_filled
+        }
       is ChatInfo.Local -> MR.images.ic_folder_filled
       else -> MR.images.ic_account_circle_filled
     }

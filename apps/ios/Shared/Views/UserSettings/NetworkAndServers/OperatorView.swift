@@ -331,9 +331,12 @@ struct OperatorInfoView: View {
                             Text(d)
                         }
                     }
+                    Link(serverOperator.info.website.absoluteString, destination: serverOperator.info.website)
                 }
-                Section {
-                    Link("\(serverOperator.info.website)", destination: URL(string: serverOperator.info.website)!)
+                if let selfhost = serverOperator.info.selfhost {
+                    Section {
+                        Link(selfhost.text, destination: selfhost.link)
+                    }
                 }
             }
         }
@@ -421,7 +424,6 @@ struct SingleOperatorUsageConditionsView: View {
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
     var operatorIndex: Int
-    @State private var usageConditionsNavLinkActive: Bool = false
 
     var body: some View {
         viewBody()
@@ -433,52 +435,45 @@ struct SingleOperatorUsageConditionsView: View {
 
             // In current UI implementation this branch doesn't get shown - as conditions can't be opened from inside operator once accepted
             VStack(alignment: .leading, spacing: 20) {
-                Group {
-                    viewHeader()
-                    ConditionsTextView()
-                        .padding(.bottom)
-                        .padding(.bottom)
-                }
-                .padding(.horizontal)
+                viewHeader()
+                ConditionsTextView()
             }
+            .padding(.bottom)
+            .padding(.bottom)
+            .padding(.horizontal)
             .frame(maxHeight: .infinity)
 
         } else if !operatorsWithConditionsAccepted.isEmpty {
 
             NavigationView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Group {
-                        viewHeader()
-                        Text("Conditions are already accepted for following operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
-                        Text("Same conditions will apply to operator **\(userServers[operatorIndex].operator_.legalName_)**.")
-                        conditionsAppliedToOtherOperatorsText()
-                        usageConditionsNavLinkButton()
+                    viewHeader()
+                    Text("Conditions are already accepted for these operator(s): **\(operatorsWithConditionsAccepted.map { $0.legalName_ }.joined(separator: ", "))**.")
+                    Text("The same conditions will apply to operator **\(userServers[operatorIndex].operator_.legalName_)**.")
+                    conditionsAppliedToOtherOperatorsText()
+                    Spacer()
 
-                        Spacer()
-
-                        acceptConditionsButton()
-                            .padding(.bottom)
-                            .padding(.bottom)
-                    }
-                    .padding(.horizontal)
+                    acceptConditionsButton()
+                    usageConditionsNavLinkButton()
                 }
+                .padding(.bottom)
+                .padding(.bottom)
+                .padding(.horizontal)
                 .frame(maxHeight: .infinity)
             }
 
         } else {
 
             VStack(alignment: .leading, spacing: 20) {
-                Group {
-                    viewHeader()
-                    Text("To use the servers of **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
-                    conditionsAppliedToOtherOperatorsText()
-                    ConditionsTextView()
-                    acceptConditionsButton()
-                        .padding(.bottom)
-                        .padding(.bottom)
-                }
-                .padding(.horizontal)
+                viewHeader()
+                Text("To use the servers of **\(userServers[operatorIndex].operator_.legalName_)**, accept conditions of use.")
+                conditionsAppliedToOtherOperatorsText()
+                ConditionsTextView()
+                acceptConditionsButton()
+                    .padding(.bottom)
+                    .padding(.bottom)
             }
+            .padding(.horizontal)
             .frame(maxHeight: .infinity)
 
         }
@@ -545,31 +540,16 @@ struct SingleOperatorUsageConditionsView: View {
     }
 
     private func usageConditionsNavLinkButton() -> some View {
-        ZStack {
-            Button {
-                usageConditionsNavLinkActive = true
-            } label: {
-                Text("View conditions")
-            }
-
-            NavigationLink(isActive: $usageConditionsNavLinkActive) {
-                usageConditionsDestinationView()
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
+        NavigationLink("View conditions") {
+            ConditionsTextView()
+                .padding()
+                .navigationTitle("Conditions of use")
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
+                .modifier(ThemedBackground(grouped: true))
         }
-    }
-
-    private func usageConditionsDestinationView() -> some View {
-        ConditionsTextView()
-            .padding()
-            .padding(.bottom)
-            .navigationTitle("Conditions of use")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar { ToolbarItem(placement: .navigationBarTrailing, content: conditionsLinkButton) }
-            .modifier(ThemedBackground(grouped: true))
+        .font(.callout)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 

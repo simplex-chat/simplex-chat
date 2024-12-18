@@ -445,6 +445,13 @@ func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, re
     throw r
 }
 
+func apiGetReactionMembers(groupId: Int64, itemId: Int64, reaction: MsgReaction) async throws -> [MemberReaction] {
+    let userId = try currentUserId("apiGetReactionMemebers")
+    let r = await chatSendCmd(.apiGetReactionMembers(userId: userId, groupId: groupId, itemId: itemId, reaction: reaction ))
+    if case let .reactionMembers(_, memberReactions) = r { return memberReactions }
+    throw r
+}
+
 func apiDeleteChatItems(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
     if case let .chatItemsDeleted(_, items, _) = r { return items }
@@ -511,7 +518,14 @@ func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFail
     throw r
 }
 
-func getServerOperators() throws -> ServerOperatorConditions {
+func getServerOperators() async throws -> ServerOperatorConditions {
+    let r = await chatSendCmd(.apiGetServerOperators)
+    if case let .serverOperatorConditions(conditions) = r { return conditions }
+    logger.error("getServerOperators error: \(String(describing: r))")
+    throw r
+}
+
+func getServerOperatorsSync() throws -> ServerOperatorConditions {
     let r = chatSendCmdSync(.apiGetServerOperators)
     if case let .serverOperatorConditions(conditions) = r { return conditions }
     logger.error("getServerOperators error: \(String(describing: r))")
@@ -1591,7 +1605,16 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
-    m.conditions = try getServerOperators()
+    m.conditions = try getServerOperatorsSync()
+    if shouldImportAppSettingsDefault.get() {
+        do {
+            let appSettings = try apiGetAppSettings(settings: AppSettings.current.prepareForExport())
+            appSettings.importIntoApp()
+            shouldImportAppSettingsDefault.set(false)
+        } catch {
+            logger.error("Error while importing app settings: \(error)")
+        }
+    }
     if m.currentUser == nil {
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
@@ -1996,6 +2019,18 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.dismissConnReqView(hostConn.id)
                 m.removeChat(hostConn.id)
             }
+        }
+    case let .businessLinkConnecting(user, groupInfo, _, fromContact):
+        if !active(user) { return }
+
+        await MainActor.run {
+            m.updateGroup(groupInfo)
+        }
+        if m.chatId == fromContact.id {
+            ItemsModel.shared.loadOpenChat(groupInfo.id)
+        }
+        await MainActor.run {
+            m.removeChat(fromContact.id)
         }
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
         if active(user) {

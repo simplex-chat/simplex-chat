@@ -156,7 +156,7 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
   LazyColumnWithScrollBar (
     reverseLayout = true,
     contentPadding = PaddingValues(
-      top = topPaddingToContent(),
+      top = topPaddingToContent(false),
       bottom = composeViewHeight.value
     ),
     state = listState,
