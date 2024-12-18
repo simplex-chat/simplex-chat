@@ -711,7 +711,7 @@ struct ChatTagsView: View {
                     let screenHeight = UIScreen.main.bounds.height
                     let reservedSpace: Double = 4 * 44 // 2 for padding, 1 for "Create list" and another for extra tag
                     let tagsSpace = Double(max(chatTagsModel.userTags.count, 3)) * 44
-                    let fraction = (reservedSpace + tagsSpace) / screenHeight
+                    let fraction = min((reservedSpace + tagsSpace) / screenHeight, 0.62)
 
                     parentSheet = SomeSheet(
                         content: {
@@ -723,7 +723,7 @@ struct ChatTagsView: View {
                             )
                         },
                         id: "tag list",
-                        fraction: fraction > 0.75 ? 1 : fraction
+                        fraction: fraction
                     )
                 }
             }
