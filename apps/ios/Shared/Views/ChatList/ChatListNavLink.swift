@@ -834,6 +834,10 @@ struct ChatListTagEditor: View {
     var body: some View {
         VStack {
             List {
+                let isDuplicateEmojiOrName = chatTagsModel.userTags.contains { tag in
+                    (tag.chatTagEmoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == name
+                }
+                
                 HStack {
                     Button {
                         isPickerPresented = true
@@ -849,6 +853,16 @@ struct ChatListTagEditor: View {
                         }
                     }
                     TextField("List name...", text: $name)
+                    if isDuplicateEmojiOrName {
+                        Spacer()
+                        Image(systemName: "exclamationmark.circle")
+                            .foregroundColor(.red)
+                            .onTapGesture {
+                                showAlert(
+                                    NSLocalizedString("Invalid list!", comment: "alert title"),
+                                    message: NSLocalizedString("List name and emoji should be different from other lists", comment: "alert message"))
+                            }
+                    }
                 }
                 
                 Button {
@@ -862,7 +876,7 @@ struct ChatListTagEditor: View {
                 } label: {
                     Text(NSLocalizedString(tagId == nil ? "Create list" : "Change list", comment: "list editor button"))
                 }
-                .disabled(name.isEmpty)
+                .disabled(name.isEmpty || isDuplicateEmojiOrName)
             }
             .listStyle(.insetGrouped)
             .modifier(ThemedBackground(grouped: true))
