@@ -313,15 +313,23 @@ func apiGetChatsAsync() async throws -> [ChatData] {
     return try apiChatsResponse(await chatSendCmd(.apiGetChats(userId: userId)))
 }
 
-func apiGetChatTags() async throws -> [ChatTag] {
-    let userId = try currentUserId("apiGetChatTags")
-    let r = await chatSendCmd(.apiGetChatTags(userId: userId))
-    if case let .chatTags(_, chatTags) = r { return chatTags }
+private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
+    if case let .apiChats(_, chats) = r { return chats }
     throw r
 }
 
-private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
-    if case let .apiChats(_, chats) = r { return chats }
+func apiGetChatTags() throws -> [ChatTag] {
+    let userId = try currentUserId("apiGetChatTags")
+    return try apiChatTagsResponse(chatSendCmdSync(.apiGetChatTags(userId: userId)))
+}
+
+func apiGetChatTagsAsync() async throws -> [ChatTag] {
+    let userId = try currentUserId("apiGetChatTags")
+    return try apiChatTagsResponse(await chatSendCmd(.apiGetChatTags(userId: userId)))
+}
+
+private func apiChatTagsResponse(_ r: ChatResponse) throws -> [ChatTag] {
+    if case let .chatTags(_, chats) = r { return chats }
     throw r
 }
 
@@ -1781,24 +1789,34 @@ func getUserChatData() throws {
     m.userAddress = try apiGetUserAddress()
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
+    let tags = try apiGetChatTags()
     m.updateChats(chats)
+    let tm = ChatTagsModel.shared
+    tm.activeFilter = nil
+    tm.userTags = tags
 }
 
 private func getUserChatDataAsync() async throws {
     let m = ChatModel.shared
+    let tm = ChatTagsModel.shared
     if m.currentUser != nil {
         let userAddress = try await apiGetUserAddressAsync()
         let chatItemTTL = try await getChatItemTTLAsync()
         let chats = try await apiGetChatsAsync()
+        let tags = try await apiGetChatTagsAsync()
         await MainActor.run {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
             m.updateChats(chats)
+            tm.activeFilter = nil
+            tm.userTags = tags
         }
     } else {
         await MainActor.run {
             m.userAddress = nil
             m.updateChats([])
+            tm.activeFilter = nil
+            tm.userTags = []
         }
     }
 }

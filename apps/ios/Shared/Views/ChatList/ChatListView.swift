@@ -663,7 +663,6 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
     @State private var sheet: SomeSheet<AnyView>? = nil
-    @State private var chatTagsLoaded: Bool = false
 
     var presetTags: [PresetTag] {
         getPresetTags(chatModel.chats)
@@ -671,17 +670,7 @@ struct ChatTagsView: View {
 
     var body: some View {
         HStack {
-            if chatTagsLoaded {
-                tagsView()
-            } else {
-                tagsViewPlaceholder()
-            }
-        }.task {
-            getChatTags()
-        }
-        .onChange(of: chatModel.currentUser?.userId) { _ in
-            chatTagsModel.activeFilter = nil
-            getChatTags()
+            tagsView()
         }
         .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
@@ -774,15 +763,6 @@ struct ChatTagsView: View {
         .foregroundColor(.secondary)
     }
     
-    @ViewBuilder private func tagsViewPlaceholder() -> some View {
-        HStack {
-            Text("🙂").foregroundColor(.clear)
-            ZStack {
-                Text("Create list").fontWeight(.semibold).foregroundColor(.clear)
-            }
-        }
-    }
-    
     @ViewBuilder private func createChatListTagView() -> some View {
         NavigationView {
             ChatListTagEditor()
@@ -873,30 +853,6 @@ struct ChatTagsView: View {
             chatTagsModel.activeFilter = nil
         }
     }
-    
-    private func getChatTags() {
-        Task {
-            do {
-                chatTagsLoaded = false
-                let chatTags = try await apiGetChatTags()
-                
-                await MainActor.run {
-                    self.chatTagsModel.userTags = chatTags
-                    if case let .userTag(tag) = self.chatTagsModel.activeFilter {
-                        if !chatTags.contains(tag) {
-                            self.chatTagsModel.activeFilter = nil
-                        }
-                    }
-                    withAnimation {
-                        self.chatTagsLoaded = true
-                    }
-                }
-            } catch let error {
-                AlertManager.shared.showAlertMsg(title: "Error", message: "\(responseError(error))")
-                chatTagsLoaded = false
-            }
-        }
-    }
 }
 
 func chatStoppedIcon() -> some View {
@@ -922,6 +878,8 @@ private func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
             break
         }
     }
+    
+    print("matches \(matches)")
     return Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
 }
 
