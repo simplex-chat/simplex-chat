@@ -827,6 +827,7 @@ struct ChatListTagEditor: View {
     var tagId: Int64? = nil
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
+    @EnvironmentObject var theme: AppTheme
     @State var emoji: String? = nil
     @State var name: String = ""
     @State private var isPickerPresented = false
@@ -838,48 +839,49 @@ struct ChatListTagEditor: View {
                     tag.chatTagId != tagId && ((tag.chatTagEmoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == name.trimmingCharacters(in: .whitespaces))
                 }
                 
-                HStack {
-                    Button {
-                        isPickerPresented = true
-                    } label: {
-                        if let emoji {
-                            Text(emoji)
-                        } else {
-                            Image(systemName: "face.smiling")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 18, height: 18)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    TextField("List name...", text: $name)
-                    if isDuplicateEmojiOrName {
-                        Spacer()
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundColor(.red)
-                            .onTapGesture {
-                                showAlert(
-                                    NSLocalizedString("Invalid list!", comment: "alert title"),
-                                    message: NSLocalizedString("List name and emoji should be different from other lists", comment: "alert message"))
+                Section {
+                    HStack {
+                        Button {
+                            isPickerPresented = true
+                        } label: {
+                            if let emoji {
+                                Text(emoji)
+                            } else {
+                                Image(systemName: "face.smiling")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 18, height: 18)
+                                    .foregroundColor(.secondary)
                             }
-                    }
-                }
-                
-                Button {
-                    if let tId = tagId {
-                        if !name.isEmpty {
-                            updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: emoji, text: name))
                         }
-                    } else {
-                        createChatTag()
+                        TextField("List name...", text: $name)
                     }
-                } label: {
-                    Text(NSLocalizedString(tagId == nil ? "Create list" : "Change list", comment: "list editor button"))
+                    
+                    Button {
+                        if let tId = tagId {
+                            if !name.isEmpty {
+                                updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: emoji, text: name))
+                            }
+                        } else {
+                            createChatTag()
+                        }
+                    } label: {
+                        Text(NSLocalizedString(tagId == nil ? "Create list" : "Change list", comment: "list editor button"))
+                    }
+                    .disabled(name.isEmpty || isDuplicateEmojiOrName)
+                } footer: {
+                    if isDuplicateEmojiOrName {
+                        HStack {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundColor(.red)
+                            Text("List name and emoji should be different from other lists")
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    }
                 }
-                .disabled(name.isEmpty || isDuplicateEmojiOrName)
             }
             .listStyle(.insetGrouped)
-            .modifier(ThemedBackground(grouped: true))
+            .modifier(ThemedBackground())
 
             if isPickerPresented {
                 EmojiPickerView(selectedEmoji: $emoji, showingPicker: $isPickerPresented)
