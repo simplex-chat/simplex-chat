@@ -108,6 +108,22 @@ class ChatTagsModel: ObservableObject {
     @Published var presetTags: [PresetTag] = []
 }
 
+func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
+    var matches: Set<PresetTag> = []
+    for chat in chats {
+        for tag in PresetTag.allCases {
+            if presetTagMatchesChat(tag, chat) {
+                matches.insert(tag)
+            }
+        }
+        if matches.count == PresetTag.allCases.count {
+            break
+        }
+    }
+    
+    return Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
+}
+
 class NetworkModel: ObservableObject {
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]

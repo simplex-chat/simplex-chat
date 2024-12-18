@@ -758,13 +758,6 @@ struct ChatTagsView: View {
         .foregroundColor(.secondary)
     }
     
-    @ViewBuilder private func createChatListTagView() -> some View {
-        NavigationView {
-            ChatListTagEditor()
-                .modifier(ThemedBackground(grouped: true))
-        }
-    }
-    
     @ViewBuilder private func expandedPresetTagsFiltersView() -> some View {
         let selectedPresetTag: PresetTag? = if case let .presetTag(tag) = chatTagsModel.activeFilter {
             tag
@@ -860,23 +853,7 @@ func chatStoppedIcon() -> some View {
     }
 }
 
-func getPresetTags(_ chats: [Chat]) -> [PresetTag] {
-    var matches: Set<PresetTag> = []
-    for chat in chats {
-        for tag in PresetTag.allCases {
-            if presetTagMatchesChat(tag, chat) {
-                matches.insert(tag)
-            }
-        }
-        if matches.count == PresetTag.allCases.count {
-            break
-        }
-    }
-    
-    return Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
-}
-
-private func presetTagMatchesChat(_ tag: PresetTag, _ chat: Chat) -> Bool {
+func presetTagMatchesChat(_ tag: PresetTag, _ chat: Chat) -> Bool {
     switch tag {
     case .favorites:
         chat.chatInfo.chatSettings?.favorite == true

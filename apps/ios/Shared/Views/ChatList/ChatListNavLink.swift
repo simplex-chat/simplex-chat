@@ -355,7 +355,6 @@ struct ChatListNavLink: View {
                                 ChatListTag(chat: chat)
                             }
                         }
-                        .modifier(ThemedBackground(grouped: true))
                     }
                 )
             },
@@ -680,6 +679,7 @@ struct ChatListTag: View {
         }
         .listStyle(.insetGrouped)
         .environment(\.editMode, $editMode)
+        .modifier(ThemedBackground(grouped: true))
     }
     
     private func editTagsButton() -> some View {
@@ -866,6 +866,8 @@ struct ChatListTagEditor: View {
                 .disabled(name.isEmpty)
             }
             .listStyle(.insetGrouped)
+            .modifier(ThemedBackground(grouped: true))
+
             if isPickerPresented {
                 EmojiPickerView(selectedEmoji: $emoji, showingPicker: $isPickerPresented)
             }
