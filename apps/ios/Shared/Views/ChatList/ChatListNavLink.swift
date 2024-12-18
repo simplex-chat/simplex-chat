@@ -604,6 +604,8 @@ struct ChatListTag: View {
                     .onTapGesture {
                         if let c = chat {
                             setTag(tagId: selected ? nil : tagId, chat: c)
+                        } else {
+                            tagEditorNavParams = TagEditorNavParams(chat: nil, chatListTag: ChatTagData(emoji: emoji, text: text), tagId: tagId)
                         }
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -820,16 +822,19 @@ struct ChatListTagEditor: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var theme: AppTheme
-    @State var emoji: String? = nil
-    @State var name: String = ""
+    var emoji: String?
+    var name: String = ""
+    @State private var newEmoji: String?
+    @State private var newName: String = ""
     @State private var isPickerPresented = false
-    @State private var tagSaved = false
+    @State private var saving: Bool?
 
     var body: some View {
         VStack {
             List {
                 let isDuplicateEmojiOrName = chatTagsModel.userTags.contains { tag in
-                    tag.chatTagId != tagId && ((tag.chatTagEmoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == trimmedName)
+                    tag.chatTagId != tagId &&
+                    ((emoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == trimmedName)
                 }
                 
                 Section {
@@ -844,23 +849,22 @@ struct ChatListTagEditor: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        TextField("List name...", text: $name)
+                        TextField("List name...", text: $newName)
                     }
                     
                     Button {
+                        saving = true
                         if let tId = tagId {
-                            if !trimmedName.isEmpty {
-                                updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: emoji, text: trimmedName))
-                            }
+                            updateChatTag(tagId: tId, chatTagData: ChatTagData(emoji: newEmoji, text: trimmedName))
                         } else {
                             createChatTag()
                         }
                     } label: {
                         Text(NSLocalizedString(tagId == nil ? "Create list" : "Save list", comment: "list editor button"))
                     }
-                    .disabled(trimmedName.isEmpty || (isDuplicateEmojiOrName && !tagSaved))
+                    .disabled(saving != nil || (trimmedName == name && newEmoji == emoji) || trimmedName.isEmpty || isDuplicateEmojiOrName)
                 } footer: {
-                    if isDuplicateEmojiOrName && !tagSaved {
+                    if isDuplicateEmojiOrName && saving != false { // if not saved already, to prevent flickering
                         HStack {
                             Image(systemName: "exclamationmark.circle")
                                 .foregroundColor(.red)
@@ -872,32 +876,39 @@ struct ChatListTagEditor: View {
             }
 
             if isPickerPresented {
-                EmojiPickerView(selectedEmoji: $emoji, showingPicker: $isPickerPresented)
+                EmojiPickerView(selectedEmoji: $newEmoji, showingPicker: $isPickerPresented)
             }
         }
         .modifier(ThemedBackground(grouped: true))
+        .onAppear {
+            newEmoji = emoji
+            newName = name
+        }
     }
     
     var trimmedName: String {
-        name.trimmingCharacters(in: .whitespaces)
+        newName.trimmingCharacters(in: .whitespaces)
     }
     
     private func createChatTag() {
         Task {
             do {
                 let userTags = try await apiCreateChatTag(
-                    tag: ChatTagData(emoji: emoji , text: trimmedName)
+                    tag: ChatTagData(emoji: newEmoji , text: trimmedName)
                 )
                 await MainActor.run {
-                    tagSaved = true
+                    saving = false
                     chatTagsModel.userTags = userTags
                     dismiss()
                 }
             } catch let error {
-                showAlert(
-                    NSLocalizedString("Error creating list", comment: "alert title"),
-                    message: responseError(error)
-                )
+                await MainActor.run {
+                    saving = nil
+                    showAlert(
+                        NSLocalizedString("Error creating list", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
             }
         }
     }
@@ -905,23 +916,28 @@ struct ChatListTagEditor: View {
     private func updateChatTag(tagId: Int64, chatTagData: ChatTagData) {
         Task {
             do {
-                try await apiUpdateChatTag(tagId: tagId, tag: ChatTagData(emoji: emoji , text: name))
+                try await apiUpdateChatTag(tagId: tagId, tag: chatTagData)
                 await MainActor.run {
-                    tagSaved = true
-                    chatTagsModel.userTags = chatTagsModel.userTags.map { tag in
-                        if tag.chatTagId == tagId {
-                            ChatTag(chatTagId: tag.chatTagId, chatTagText: chatTagData.text, chatTagEmoji: chatTagData.emoji)
-                        } else {
-                            tag
+                    saving = false
+                    for i in 0..<chatTagsModel.userTags.count {
+                        if chatTagsModel.userTags[i].chatTagId == tagId {
+                            chatTagsModel.userTags[i] = ChatTag(
+                                chatTagId: tagId,
+                                chatTagText: chatTagData.text,
+                                chatTagEmoji: chatTagData.emoji
+                            )
                         }
                     }
                     dismiss()
                 }
             } catch let error {
-                showAlert(
-                    NSLocalizedString("Error creating list", comment: "alert title"),
-                    message: responseError(error)
-                )
+                await MainActor.run {
+                    saving = nil
+                    showAlert(
+                        NSLocalizedString("Error creating list", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
             }
         }
     }
