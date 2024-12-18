@@ -903,10 +903,10 @@ processChatCommand' vr = \case
     CRChatTags user <$> liftIO (getUserChatTags db user)
   APISetChatTags (ChatRef cType chatId) tagIds -> withUser $ \user -> withFastStore $ \db -> case cType of
     CTDirect -> do
-      liftIO $ updateDirectChatTags db chatId tagIds
+      liftIO $ updateDirectChatTags db chatId (maybe [] L.toList tagIds)
       CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
     CTGroup -> do
-      liftIO $ updateGroupChatTags db chatId tagIds
+      liftIO $ updateGroupChatTags db chatId (maybe [] L.toList tagIds)
       CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatTag tagId -> withUser $ \user -> do
@@ -8428,7 +8428,7 @@ chatCommandP =
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_create tag " *> (APICreateChatTag <$> jsonP),
-      "/_tags " *> (APISetChatTags <$> chatRefP <* A.space <*> A.sepBy1 A.decimal (A.char ',')),
+      "/_tags " *> (APISetChatTags <$> chatRefP <*> optional _strP),
       "/_delete tag " *> (APIDeleteChatTag <$> A.decimal),
       "/_update tag " *> (APIUpdateChatTag <$> A.decimal <* A.space <*> jsonP),
       "/_reorder tags " *> (APIReorderChatTags <$> strP),

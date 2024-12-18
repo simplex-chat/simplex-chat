@@ -301,7 +301,7 @@ data ChatCommand
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
-  | APISetChatTags ChatRef [ChatTagId]
+  | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
   | APIDeleteChatTag ChatTagId
   | APIUpdateChatTag ChatTagId ChatTagData
   | APIReorderChatTags (NonEmpty ChatTagId)
