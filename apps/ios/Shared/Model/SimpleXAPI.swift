@@ -320,16 +320,15 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 
 func apiGetChatTags() throws -> [ChatTag] {
     let userId = try currentUserId("apiGetChatTags")
-    return try apiChatTagsResponse(chatSendCmdSync(.apiGetChatTags(userId: userId)))
+    let r = chatSendCmdSync(.apiGetChatTags(userId: userId))
+    if case let .chatTags(_, tags) = r { return tags }
+    throw r
 }
 
 func apiGetChatTagsAsync() async throws -> [ChatTag] {
     let userId = try currentUserId("apiGetChatTags")
-    return try apiChatTagsResponse(await chatSendCmd(.apiGetChatTags(userId: userId)))
-}
-
-private func apiChatTagsResponse(_ r: ChatResponse) throws -> [ChatTag] {
-    if case let .chatTags(_, chats) = r { return chats }
+    let r = await chatSendCmd(.apiGetChatTags(userId: userId))
+    if case let .chatTags(_, tags) = r { return tags }
     throw r
 }
 

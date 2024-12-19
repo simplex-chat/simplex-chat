@@ -631,8 +631,8 @@ CREATE TABLE chat_tags(
   tag_order INTEGER NOT NULL
 );
 CREATE TABLE chat_tags_chats(
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE, -- NULL for groups
-  group_id INTEGER REFERENCES groups ON DELETE CASCADE, -- NULL for contacts
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
