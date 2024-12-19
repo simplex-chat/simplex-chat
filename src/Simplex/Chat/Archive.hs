@@ -60,7 +60,7 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
     errs <-
       forM filesPath $ \fp ->
-        copyValidDirectoryFiles entrySelectorError fp $ dir </> archiveFilesFolder
+        moveOrCopyValidFiles entrySelectorError copyFile fp $ dir </> archiveFilesFolder
     forM_ assetsPath $ \fp ->
       copyDirectoryFiles (fp </> wallpapersFolder) $ dir </> archiveAssetsFolder </> wallpapersFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
@@ -76,21 +76,29 @@ importArchive cfg@ArchiveConfig {archivePath} =
     fs@StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
     liftIO $ closeSQLiteStore `withStores` fs
     backup `withDBs` fs
-    copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
-    copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
-    errs <- copyFiles (dir </> archiveFilesFolder) filesPath
-    errs' <- copyFiles (dir </> archiveAssetsFolder </> wallpapersFolder) ((</> wallpapersFolder) <$> assetsPath)
+    canMove <- liftIO $ moveOrCopyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
+    let move = if canMove then renameFile else copyFile
+    liftIO $ move (dir </> archiveAgentDbFile) $ dbFilePath agentStore
+    errs <- moveFiles move (dir </> archiveFilesFolder) filesPath
+    errs' <- moveFiles move (dir </> archiveAssetsFolder </> wallpapersFolder) ((</> wallpapersFolder) <$> assetsPath)
     pure $ errs <> errs'
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
-    copyFiles fromDir = \case
+    moveFiles move fromDir = \case
       Just fp ->
         ifM
           (doesDirectoryExist fromDir)
-          (copyDirectoryFiles fromDir fp)
+          (moveOrCopyFiles move fromDir fp)
           (pure [])
           `E.catch` \(e :: E.SomeException) -> pure [AEImport $ show e]
       _ -> pure []
+    -- This function attempts to move the file first, and if move fails it copies it.
+    -- When move is possible, this reduces the storage usage when importing chat database.
+    -- Some systems have temporary folder on another drive making move impossible.
+    moveOrCopyFile :: FilePath -> FilePath -> IO Bool
+    moveOrCopyFile from to =
+      (renameFile from to $> True)
+        `E.catch` \(_ :: SomeException) -> copyFile from to $> False
 
 withTempDir :: ArchiveConfig -> (String -> (FilePath -> CM' a) -> CM' a)
 withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
@@ -98,10 +106,13 @@ withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   _ -> withSystemTempDirectory
 
 copyDirectoryFiles :: FilePath -> FilePath -> CM' [ArchiveError]
-copyDirectoryFiles fromDir toDir = copyValidDirectoryFiles (\_ -> pure Nothing) fromDir toDir
+copyDirectoryFiles = moveOrCopyFiles copyFile
 
-copyValidDirectoryFiles :: (FilePath -> IO (Maybe String)) -> FilePath -> FilePath -> CM' [ArchiveError]
-copyValidDirectoryFiles isFileError fromDir toDir = do
+moveOrCopyFiles :: (FilePath -> FilePath -> IO ()) -> FilePath -> FilePath -> CM' [ArchiveError]
+moveOrCopyFiles = moveOrCopyValidFiles (\_ -> pure Nothing)
+
+moveOrCopyValidFiles :: (FilePath -> IO (Maybe String)) -> (FilePath -> FilePath -> IO ()) -> FilePath -> FilePath -> CM' [ArchiveError]
+moveOrCopyValidFiles isFileError moveOrCopy fromDir toDir = do
   createDirectoryIfMissing True toDir
   fs <- listDirectory fromDir
   foldM copyFileCatchError [] fs
@@ -117,7 +128,7 @@ copyValidDirectoryFiles isFileError fromDir toDir = do
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn
-      whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
+      whenM (doesFileExist f') $ liftIO $ moveOrCopy f' $ toDir </> fn
 
 deleteStorage :: CM ()
 deleteStorage = do
