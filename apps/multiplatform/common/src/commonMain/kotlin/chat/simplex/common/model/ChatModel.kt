@@ -3844,6 +3844,13 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
 }
 
 @Serializable
+class ChatTag(
+  val chatTagId: Long,
+  val chatTagText: String,
+  val chatTagEmoji: String?
+)
+
+@Serializable
 class ChatItemInfo(
   val itemVersions: List<ChatItemVersion>,
   val memberDeliveryStatuses: List<MemberDeliveryStatus>?,

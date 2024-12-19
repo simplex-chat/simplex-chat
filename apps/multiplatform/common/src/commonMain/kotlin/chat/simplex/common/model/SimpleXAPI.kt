@@ -891,6 +891,28 @@ object ChatController {
     return null
   }
 
+  suspend fun apiCreateChatTag(rh: Long?, tag: ChatTagData): List<ChatTag>? {
+    val r = sendCmd(rh, CC.ApiCreateChatTag(tag))
+    if (r is CR.ChatTags) return r.userTags
+    Log.e(TAG, "apiCreateChatTag bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_creating_chat_tags), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiSetChatTags(rh: Long?, type: ChatType, id: Long, tagIds: List<Long>): Pair<List<ChatTag>, List<Long>>? {
+    val r = sendCmd(rh, CC.ApiSetChatTags(type, id, tagIds))
+    if (r is CR.TagsUpdated) return r.userTags to r.chatTags
+    Log.e(TAG, "apiSetChatTags bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_updating_chat_tags), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiDeleteChatTag(rh: Long?, tagId: Long) = sendCommandOkResp(rh, CC.ApiDeleteChatTag(tagId))
+
+  suspend fun apiUpdateChatTag(rh: Long?, tagId: Long, tag: ChatTagData) = sendCommandOkResp(rh, CC.ApiUpdateChatTag(tagId, tag))
+
+  suspend fun apiReorderChatTags(rh: Long?, tagIds: List<Long>) = sendCommandOkResp(rh, CC.ApiReorderChatTags(tagIds))
+
   suspend fun apiSendMessages(rh: Long?, type: ChatType, id: Long, live: Boolean = false, ttl: Int? = null, composedMessages: List<ComposedMessage>): List<AChatItem>? {
     val cmd = CC.ApiSendMessages(type, id, live, ttl, composedMessages)
     return processSendMessageCmd(rh, cmd)
@@ -3151,10 +3173,16 @@ sealed class CC {
   class TestStorageEncryption(val key: String): CC()
   class ApiSaveSettings(val settings: AppSettings): CC()
   class ApiGetSettings(val settings: AppSettings): CC()
+  class ApiGetChatTags(val userId: Long): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
+  class ApiCreateChatTag(val tag: ChatTagData): CC()
+  class ApiSetChatTags(val type: ChatType, val id: Long, val tagIds: List<Long>): CC()
+  class ApiDeleteChatTag(val tagId: Long): CC()
+  class ApiUpdateChatTag(val tagId: Long, val tagData: ChatTagData): CC()
+  class ApiReorderChatTags(val tagIds: List<Long>): CC()
   class ApiCreateChatItems(val noteFolderId: Long, val composedMessages: List<ComposedMessage>): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
@@ -3306,6 +3334,7 @@ sealed class CC {
     is TestStorageEncryption -> "/db test key $key"
     is ApiSaveSettings -> "/_save app settings ${json.encodeToString(settings)}"
     is ApiGetSettings -> "/_get app settings ${json.encodeToString(settings)}"
+    is ApiGetChatTags -> "/_get tags $userId"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id)} $itemId"
@@ -3314,6 +3343,11 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_send ${chatRef(type, id)} live=${onOff(live)} ttl=${ttlStr} json $msgs"
     }
+    is ApiCreateChatTag -> "/_create tag ${json.encodeToString(tag)}"
+    is ApiSetChatTags -> "/_tags ${chatRef(type, id)} ${tagIds.joinToString(",")}"
+    is ApiDeleteChatTag -> "/_delete tag $tagId"
+    is ApiUpdateChatTag -> "/_update tag $tagId ${json.encodeToString(tagData)}"
+    is ApiReorderChatTags -> "/_reorder tags ${tagIds.joinToString(",")}"
     is ApiCreateChatItems -> {
       val msgs = json.encodeToString(composedMessages)
       "/_create *$noteFolderId json $msgs"
@@ -3470,10 +3504,16 @@ sealed class CC {
     is TestStorageEncryption -> "testStorageEncryption"
     is ApiSaveSettings -> "apiSaveSettings"
     is ApiGetSettings -> "apiGetSettings"
+    is ApiGetChatTags -> "apiGetChatTags"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessages -> "apiSendMessages"
+    is ApiCreateChatTag -> "apiCreateChatTag"
+    is ApiSetChatTags -> "apiSetChatTags"
+    is ApiDeleteChatTag -> "apiDeleteChatTag"
+    is ApiUpdateChatTag -> "apiUpdateChatTag"
+    is ApiReorderChatTags -> "apiReorderChatTags"
     is ApiCreateChatItems -> "apiCreateChatItems"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
@@ -3655,6 +3695,9 @@ sealed class ChatPagination {
 
 @Serializable
 class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent)
+
+@Serializable
+class ChatTagData(val emoji: String?, val text: String)
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
@@ -5389,6 +5432,7 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat, val navInfo: NavigationInfo = NavigationInfo()): CR()
+  @Serializable @SerialName("chatTags") class ChatTags(val user: UserRef, val userTags: List<ChatTag>): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
@@ -5415,6 +5459,7 @@ sealed class CR {
   @Serializable @SerialName("contactCode") class ContactCode(val user: UserRef, val contact: Contact, val connectionCode: String): CR()
   @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
   @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: UserRef, val verified: Boolean, val expectedCode: String): CR()
+  @Serializable @SerialName("tagsUpdated") class TagsUpdated(val user: UserRef, val userTags: List<ChatTag>, val chatTags: List<Long>): CR()
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connReqInvitation: String, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
@@ -5573,6 +5618,7 @@ sealed class CR {
     is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
+    is ChatTags -> "chatTags"
     is ApiChatItemInfo -> "chatItemInfo"
     is ServerTestResult -> "serverTestResult"
     is ServerOperatorConditions -> "serverOperatorConditions"
@@ -5599,6 +5645,7 @@ sealed class CR {
     is ContactCode -> "contactCode"
     is GroupMemberCode -> "groupMemberCode"
     is ConnectionVerified -> "connectionVerified"
+    is TagsUpdated -> "tagsUpdated"
     is Invitation -> "invitation"
     is ConnectionIncognitoUpdated -> "connectionIncognitoUpdated"
     is ConnectionUserChanged -> "ConnectionUserChanged"
@@ -5747,6 +5794,7 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, "chat: ${json.encodeToString(chat)}\nnavInfo: ${navInfo}")
+    is ChatTags -> withUser(user, "userTags: ${json.encodeToString(userTags)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ServerOperatorConditions -> "conditions: ${json.encodeToString(conditions)}"
@@ -5773,6 +5821,7 @@ sealed class CR {
     is ContactCode -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode")
     is GroupMemberCode -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode")
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
+    is TagsUpdated -> withUser(user, "userTags: ${json.encodeToString(userTags)}\nchatTags: ${json.encodeToString(chatTags)}")
     is Invitation -> withUser(user, "connReqInvitation: $connReqInvitation\nconnection: $connection")
     is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
     is ConnectionUserChanged -> withUser(user, "fromConnection: ${json.encodeToString(fromConnection)}\ntoConnection: ${json.encodeToString(toConnection)}\nnewUser: ${json.encodeToString(newUser)}" )
