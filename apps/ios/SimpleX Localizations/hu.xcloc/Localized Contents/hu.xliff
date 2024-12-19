@@ -6263,9 +6263,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Küldés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve">
+      <trans-unit id="Send a live message - it will update for the recipient(s) as you type it" xml:space="preserve" approved="no">
         <source>Send a live message - it will update for the recipient(s) as you type it</source>
-        <target>Élő üzenet küldése - a címzett(ek) számára frissül, ahogy beírja</target>
+        <target state="translated">Élő üzenet küldése - az üzenet a címzett(ek) számára valós időben frissül, ahogy Ön beírja az üzenetet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
