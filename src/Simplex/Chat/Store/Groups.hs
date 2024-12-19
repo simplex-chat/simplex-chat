@@ -132,6 +132,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (second)
+import Data.Bitraversable (bitraverse)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
@@ -251,8 +252,8 @@ setGroupLinkMemberRole db User {userId} userContactLinkId memberRole =
   DB.execute db "UPDATE user_contact_links SET group_link_member_role = ? WHERE user_id = ? AND user_contact_link_id = ?" (memberRole, userId, userContactLinkId)
 
 getGroupAndMember :: DB.Connection -> User -> Int64 -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-getGroupAndMember db User {userId, userContactId} groupMemberId vr =
-  ExceptT . firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
+getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
+  gm <- ExceptT . firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
     DB.query
       db
       [sql|
@@ -287,10 +288,11 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr =
         WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (userId, groupMemberId, userId, userContactId)
+  liftIO $ bitraverse (addGroupChatTags db) pure gm
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
     toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
-      let groupInfo = toGroupInfo vr userContactId groupInfoRow
+      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection vr connRow})
 
@@ -628,8 +630,8 @@ getUserGroups db vr user@User {userId} = do
   rights <$> mapM (runExceptT . getGroup db vr user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
-getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
-  map (toGroupInfo vr userContactId)
+getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
+  g_ <- map (toGroupInfo vr userContactId [])
     <$> DB.query
       db
       [sql|
@@ -647,6 +649,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
           AND (gp.display_name LIKE '%' || ? || '%' OR gp.full_name LIKE '%' || ? || '%' OR gp.description LIKE '%' || ? || '%')
       |]
       (userId, userContactId, search, search, search)
+  mapM (addGroupChatTags db) g_
   where
     search = fromMaybe "" search_
 
@@ -1366,8 +1369,8 @@ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
 getViaGroupMember :: DB.Connection -> VersionRangeChat -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
-getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
-  maybeFirstRow toGroupAndMember $
+getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
+  gm_ <- maybeFirstRow toGroupAndMember $
     DB.query
       db
       [sql|
@@ -1403,10 +1406,11 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
         WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ? AND ct.deleted = 0
       |]
       (userId, userId, contactId, userContactId)
+  mapM (bitraverse (addGroupChatTags db) pure) gm_
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
     toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
-      let groupInfo = toGroupInfo vr userContactId groupInfoRow
+      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection vr connRow})
 
@@ -1501,15 +1505,13 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
       GroupProfile {displayName, fullName, description, image, groupPreferences}
 
 getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfo db vr User {userId, userContactId} groupId = do
-  info <-
-    ExceptT . firstRow (toGroupInfo vr userContactId) (SEGroupNotFound groupId) $
-      DB.query
-        db
-        (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-        (groupId, userId, userContactId)
-  chatTags <- liftIO $ getGroupChatTags db groupId
-  pure (info :: GroupInfo) {chatTags}
+getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
+  chatTags <- getGroupChatTags db groupId
+  firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
+    DB.query
+      db
+      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+      (groupId, userId, userContactId)
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
@@ -2337,7 +2339,3 @@ untagGroupChat db groupId tId =
       WHERE group_id = ? AND chat_tag_id = ?
     |]
     (groupId, tId)
-
-getGroupChatTags :: DB.Connection -> GroupId -> IO [ChatTagId]
-getGroupChatTags db groupId =
-  map fromOnly <$> DB.query db "SELECT chat_tag_id FROM chat_tags_chats WHERE group_id = ?" (Only groupId)

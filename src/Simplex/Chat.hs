@@ -897,25 +897,25 @@ processChatCommand' vr = \case
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore $ \db -> do
-    _ <- liftIO $ createChatTag db user emoji text
-    CRChatTags user <$> liftIO (getUserChatTags db user)
-  APISetChatTags (ChatRef cType chatId) tagIds -> withUser $ \user -> withFastStore $ \db -> case cType of
+  APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
+    _ <- createChatTag db user emoji text
+    CRChatTags user <$> getUserChatTags db user
+  APISetChatTags (ChatRef cType chatId) tagIds -> withUser $ \user -> withFastStore' $ \db -> case cType of
     CTDirect -> do
-      liftIO $ updateDirectChatTags db chatId (maybe [] L.toList tagIds)
-      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getDirectChatTags db chatId)
+      updateDirectChatTags db chatId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> getUserChatTags db user <*> getDirectChatTags db chatId
     CTGroup -> do
-      liftIO $ updateGroupChatTags db chatId (maybe [] L.toList tagIds)
-      CRTagsUpdated user <$> liftIO (getUserChatTags db user) <*> liftIO (getGroupChatTags db chatId)
+      updateGroupChatTags db chatId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> getUserChatTags db user <*> getGroupChatTags db chatId
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatTag tagId -> withUser $ \user -> do
-    withFastStore $ \db -> liftIO $ deleteChatTag db user tagId
+    withFastStore' $ \db -> deleteChatTag db user tagId
     ok user
   APIUpdateChatTag tagId (ChatTagData emoji text) -> withUser $ \user -> do
-    withFastStore $ \db -> liftIO $ updateChatTag db user tagId emoji text
+    withFastStore' $ \db -> updateChatTag db user tagId emoji text
     ok user
   APIReorderChatTags tagIds -> withUser $ \user -> do
-    withFastStore $ \db -> liftIO $ reorderChatTags db user (L.toList tagIds)
+    withFastStore' $ \db -> reorderChatTags db user $ L.toList tagIds
     ok user
   APICreateChatItems folderId cms -> withUser $ \user ->
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)

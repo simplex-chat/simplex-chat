@@ -182,8 +182,8 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash = do
           (userId, cReqHash)
 
 getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> IO (Maybe Contact)
-getContactByConnReqHash db vr user@User {userId} cReqHash =
-  maybeFirstRow (toContact vr user) $
+getContactByConnReqHash db vr user@User {userId} cReqHash = do
+  ct_ <- maybeFirstRow (toContact vr user []) $
     DB.query
       db
       [sql|
@@ -203,6 +203,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash =
         LIMIT 1
       |]
       (userId, cReqHash, CSActive)
+  mapM (addDirectChatTags db) ct_
 
 createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
 createDirectConnection db User {userId} acId cReq pccConnStatus incognitoProfile subMode chatV pqSup = do
@@ -639,8 +640,8 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
             )
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
-    getContact' xContactId =
-      maybeFirstRow (toContact vr user) $
+    getContact' xContactId = do
+      ct_ <- maybeFirstRow (toContact vr user []) $
         DB.query
           db
           [sql|
@@ -660,13 +661,15 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
             LIMIT 1
           |]
           (userId, xContactId)
+      mapM (addDirectChatTags db) ct_
     getGroupInfo' :: XContactId -> IO (Maybe GroupInfo)
-    getGroupInfo' xContactId =
-      maybeFirstRow (toGroupInfo vr userContactId) $
+    getGroupInfo' xContactId = do
+      g_ <- maybeFirstRow (toGroupInfo vr userContactId []) $
         DB.query
           db
           (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
           (xContactId, userId, userContactId)
+      mapM (addGroupChatTags db) g_
     getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
     getContactRequestByXContactId xContactId =
       maybeFirstRow toContactRequest $
@@ -846,14 +849,12 @@ getContactIdByName db User {userId} cName =
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, cName)
 
 getContact :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Contact
-getContact db vr user contactId = do
-  ct <- getContact_ db vr user contactId False
-  chatTags <- liftIO $ getDirectChatTags db contactId
-  pure (ct :: Contact) {chatTags}
+getContact db vr user contactId = getContact_ db vr user contactId False
 
 getContact_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
-getContact_ db vr user@User {userId} contactId deleted =
-  ExceptT . firstRow (toContact vr user) (SEContactNotFound contactId) $
+getContact_ db vr user@User {userId} contactId deleted = do
+  chatTags <- liftIO $ getDirectChatTags db contactId
+  ExceptT . firstRow (toContact vr user chatTags) (SEContactNotFound contactId) $
     DB.query
       db
       [sql|
@@ -1056,3 +1057,8 @@ untagDirectChat db contactId tId =
 
 getDirectChatTags :: DB.Connection -> ContactId -> IO [ChatTagId]
 getDirectChatTags db contactId = map fromOnly <$> DB.query db "SELECT chat_tag_id FROM chat_tags_chats WHERE contact_id = ?" (Only contactId)
+
+addDirectChatTags :: DB.Connection -> Contact -> IO Contact
+addDirectChatTags db ct = do
+  chatTags <- getDirectChatTags db $ contactId' ct
+  pure (ct :: Contact) {chatTags}

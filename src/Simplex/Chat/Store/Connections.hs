@@ -21,6 +21,8 @@ where
 import Control.Applicative ((<|>))
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
+import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
 import Database.SQLite.Simple (Only (..), (:.) (..))
@@ -114,8 +116,8 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
        in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags = [], uiThemes, chatDeleted, customData}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
-    getGroupAndMember_ groupMemberId c = ExceptT $ do
-      firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
+    getGroupAndMember_ groupMemberId c = do
+      gm <- ExceptT $ firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
         DB.query
           db
           [sql|
@@ -141,9 +143,10 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
           (groupMemberId, userId, userContactId)
+      liftIO $ bitraverse (addGroupChatTags db) pure gm
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember c (groupInfoRow :. memberRow) =
-      let groupInfo = toGroupInfo vr userContactId groupInfoRow
+      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
     getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer

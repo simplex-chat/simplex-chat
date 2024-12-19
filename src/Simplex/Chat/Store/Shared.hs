@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Shared where
 
@@ -391,14 +392,14 @@ type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Mayb
 
 type ContactRow = Only ContactId :. ContactRow'
 
-toContact :: VersionRangeChat -> User -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)) :. connRow) =
+toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
+toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags = [], uiThemes, chatDeleted, customData}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, uiThemes, chatDeleted, customData}
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =
@@ -552,14 +553,14 @@ type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageD
 
 type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
 
-toGroupInfo :: VersionRangeChat -> Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. businessRow :. (uiThemes, customData) :. userMemberRow) =
+toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. businessRow :. (uiThemes, customData) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
       businessChat = toBusinessChatInfo businessRow
-   in GroupInfo {groupId, localDisplayName, groupProfile, businessChat, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, chatTags = [], uiThemes, customData}
+   in GroupInfo {groupId, localDisplayName, groupProfile, businessChat, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, chatTags, uiThemes, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
@@ -656,3 +657,12 @@ getUserChatTags db User {userId} =
   where
     toChatTag :: (ChatTagId, Maybe Text, Text) -> ChatTag
     toChatTag (chatTagId, chatTagEmoji, chatTagText) = ChatTag {chatTagId, chatTagEmoji, chatTagText}
+
+getGroupChatTags :: DB.Connection -> GroupId -> IO [ChatTagId]
+getGroupChatTags db groupId =
+  map fromOnly <$> DB.query db "SELECT chat_tag_id FROM chat_tags_chats WHERE group_id = ?" (Only groupId)
+
+addGroupChatTags :: DB.Connection -> GroupInfo -> IO GroupInfo
+addGroupChatTags db g@GroupInfo {groupId} = do
+  chatTags <- getGroupChatTags db groupId
+  pure (g :: GroupInfo) {chatTags}
