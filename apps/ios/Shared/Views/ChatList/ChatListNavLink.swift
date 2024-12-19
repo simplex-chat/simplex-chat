@@ -834,7 +834,7 @@ struct ChatListTagEditor: View {
             List {
                 let isDuplicateEmojiOrName = chatTagsModel.userTags.contains { tag in
                     tag.chatTagId != tagId &&
-                    ((emoji != nil && tag.chatTagEmoji == emoji) || tag.chatTagText == trimmedName)
+                    ((newEmoji != nil && tag.chatTagEmoji == newEmoji) || tag.chatTagText == trimmedName)
                 }
                 
                 Section {
@@ -842,8 +842,8 @@ struct ChatListTagEditor: View {
                         Button {
                             isPickerPresented = true
                         } label: {
-                            if let emoji {
-                                Text(emoji)
+                            if let newEmoji {
+                                Text(newEmoji)
                             } else {
                                 Image(systemName: "face.smiling")
                                     .foregroundColor(.secondary)
