@@ -1145,7 +1145,7 @@
     <string name="ntf_channel_calls">Дзвінки чату SimpleX</string>
     <string name="settings_notifications_mode_title">Служба сповіщень</string>
     <string name="settings_notification_preview_mode_title">Показати попередній перегляд</string>
-    <string name="settings_notification_preview_title">Попередній перегляд сповіщень</string>
+    <string name="settings_notification_preview_title">Перегляд сповіщень</string>
     <string name="notifications_mode_off">Запускається, коли додаток відкритий</string>
     <string name="notifications_mode_periodic">Запускається періодично</string>
     <string name="notification_preview_mode_message">Текст повідомлення</string>
