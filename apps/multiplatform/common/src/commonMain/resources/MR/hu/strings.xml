@@ -1458,7 +1458,7 @@
     <string name="v4_4_french_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblate-en!</string>
     <string name="receipts_section_groups">Kis csoportok (max. 20 tag)</string>
     <string name="connection_you_accepted_will_be_cancelled">Az Ön által elfogadott kérelem vissza lesz vonva!</string>
-    <string name="send_live_message_desc">Élő üzenet küldése - a címzett(ek) számára frissül, ahogy beírja</string>
+    <string name="send_live_message_desc">Élő üzenet küldése - az üzenet a címzett(ek) számára valós időben frissül, ahogy Ön beírja az üzenetet</string>
     <string name="settings_section_title_delivery_receipts">A KÉZBESÍTÉSI JELENTÉSEKET A KÖVETKEZŐ CÍMRE KELL KÜLDENI</string>
     <string name="alert_text_msg_bad_id">A következő üzenet azonosítója hibás (kisebb vagy egyenlő az előzővel).\nEz valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</string>
     <string name="this_device_name_shared_with_mobile">Az eszköz neve megosztásra kerül a társított hordozható eszközön használt alkalmazással.</string>
