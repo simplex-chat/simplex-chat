@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -33,10 +35,8 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
-import chat.simplex.common.views.mkValidName
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
-import chat.simplex.common.views.showInvalidNameAlert
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
@@ -46,6 +46,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
+
+enum class PresetTag { FAVORITES, CONTACTS, GROUPS, BUSINESS }
+
+sealed class ActiveFilter {
+  data class PresetTagFilter(val tag: PresetTag) : ActiveFilter()
+  data class UserTagFilter(val tag: ChatTag) : ActiveFilter()
+  data object Unread: ActiveFilter()
+}
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
   ModalManager.start.closeModals()
@@ -791,10 +799,13 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ) {
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            ChatTagsView()
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         } else {
+          ChatTagsView()
+          Divider()
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
         }
       }
@@ -856,6 +867,64 @@ private fun ChatListFeatureCards() {
     }
     if (!oneHandUICardShown.value && oneHandUI.value) {
       ToggleChatListCard()
+    }
+  }
+}
+
+@Composable
+private fun ChatTagsView() {
+  val userTags = remember { chatModel.userTags }
+  val activeFilter = remember { chatModel.activeChatTagFilter }
+  val rhId = chatModel.remoteHostId()
+
+  LazyRow {
+    items(userTags.value) { tag ->
+      val current = when (val af = activeFilter.value) {
+        is ActiveFilter.UserTagFilter -> af.tag == tag
+        else -> false
+      }
+      Row(
+        Modifier
+          .padding(4.dp)
+          .clip(RoundedCornerShape(8.dp))
+          .padding(horizontal = 4.dp, vertical = 4.dp)
+          .combinedClickable(
+            onClick = {
+              chatModel.activeChatTagFilter.value = ActiveFilter.UserTagFilter(tag)
+            },
+            onLongClick = {
+              ModalManager.start.showModalCloseable { close ->
+                ChatListTag(rhId = rhId, close = close)
+              }
+            }
+          ),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+      ) {
+        if (tag.chatTagEmoji != null) {
+          Text(
+            tag.chatTagEmoji
+          )
+        } else {
+          Icon(
+            painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
+            null,
+            Modifier.size(20.dp),
+            tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+          )
+        }
+        Box {
+          Text(
+            tag.chatTagText,
+            color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+            fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
+          )
+          Text(
+            tag.chatTagText,
+            color = Color.Transparent,
+            fontWeight = FontWeight.SemiBold
+          )
+        }
+      }
     }
   }
 }

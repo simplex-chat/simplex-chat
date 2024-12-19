@@ -624,6 +624,7 @@ object ChatController {
       val chats = apiGetChats(rhId)
       updateChats(chats)
     }
+    chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
   }
 
   private fun startReceiver() {
@@ -879,7 +880,7 @@ object ChatController {
     return emptyList()
   }
 
-  suspend fun apiGetChatTags(rh: Long?): List<ChatTag>?{
+  private suspend fun apiGetChatTags(rh: Long?): List<ChatTag>?{
     val userId = currentUserId("apiGetChatTags")
     val r = sendCmd(rh, CC.ApiGetChatTags(userId))
 

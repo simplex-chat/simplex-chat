@@ -1,6 +1,9 @@
 package chat.simplex.common.views.chatlist
 
+import SectionCustomFooter
+import SectionDivider
 import SectionItemView
+import TextIconSpaced
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -12,20 +15,28 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.*
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.group.deleteGroupDialog
-import chat.simplex.common.views.chat.group.leaveGroupDialog
+import chat.simplex.common.views.chat.group.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.contacts.onRequestAccepted
 import chat.simplex.common.views.helpers.*
@@ -33,7 +44,6 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
-import kotlin.math.min
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
@@ -252,6 +262,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
     ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+    ItemListAction(chat, showMenu)
     ClearChatAction(chat, showMenu)
   }
   DeleteContactAction(chat, chatModel, showMenu)
@@ -291,6 +302,7 @@ fun GroupMenuItems(
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+      ItemListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
@@ -332,6 +344,28 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
     painterResource(MR.images.ic_mark_chat_unread),
     onClick = {
       markChatUnread(chat, chatModel)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
+fun ItemListAction(
+  chat: Chat,
+  showMenu: MutableState<Boolean>
+) {
+  val userTags = remember { chatModel.userTags }
+  ItemAction(
+    stringResource(MR.strings.list_menu),
+    painterResource(MR.images.ic_label),
+    onClick = {
+      ModalManager.start.showModalCloseable { close ->
+        if (userTags.value.isEmpty()) {
+          ChatListTagEditor(rhId = chat.remoteHostId, close = close)
+        } else {
+          ChatListTag(rhId = chat.remoteHostId, chat = chat, close = close)
+        }
+      }
       showMenu.value = false
     }
   )
@@ -508,6 +542,247 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     },
     color = Color.Red
   )
+}
+
+@Composable
+fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit) {
+  val userTags = remember { chatModel.userTags }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
+  val chatTagIds = derivedStateOf {
+    when (val cInfo = chat?.chatInfo) {
+      is ChatInfo.Direct -> cInfo.contact.chatTags
+      is ChatInfo.Group -> cInfo.groupInfo.chatTags
+      else -> emptyList()
+    }
+  }
+
+  LazyColumnWithScrollBar(
+    contentPadding = if (oneHandUI.value) {
+      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+    } else {
+      PaddingValues(top = topPaddingToContent(false))
+    },
+    state = listState
+  ) {
+    items(userTags.value) { tag ->
+      SectionItemView({
+        ModalManager.start.showModalCloseable { close ->
+          ChatListTagEditor(
+            rhId = rhId,
+            tagId = tag.chatTagId,
+            close = close,
+            emoji = tag.chatTagEmoji,
+            name = tag.chatTagText
+          )
+        }
+      }) {
+        val selected = chatTagIds.value.contains(tag.chatTagId)
+        if (tag.chatTagEmoji != null) {
+          Text(
+            tag.chatTagEmoji
+          )
+        } else {
+          Icon(painterResource(MR.images.ic_label), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        }
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(
+          tag.chatTagText,
+          color = MenuTextColor,
+          fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
+        )
+        if (selected) {
+          Spacer(Modifier.weight(1f))
+          Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        }
+      }
+
+      SectionDivider()
+    }
+    item {
+      SectionItemView({
+        ModalManager.start.showModalCloseable { close ->
+          ChatListTagEditor(rhId = rhId, close = close)
+        }
+      }) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
+      }
+    }
+  }
+}
+
+@Composable
+fun ChatListTagEditor(
+  rhId: Long?,
+  tagId: Long? = null,
+  emoji: String? = null,
+  name: String = "",
+  close: () -> Unit
+) {
+  val userTags = remember { chatModel.userTags }
+  val newEmoji = remember { mutableStateOf(emoji) }
+  val newName = remember { mutableStateOf(name) }
+  val saving = remember { mutableStateOf<Boolean?>(null) }
+  val trimmedName = remember { derivedStateOf { newName.value.trim() } }
+  val isDuplicateEmojiOrName = remember {
+    derivedStateOf {
+      userTags.value.any { tag ->
+        tag.chatTagId != tagId &&
+            ((newEmoji.value != null && tag.chatTagEmoji == newEmoji.value) || tag.chatTagText == trimmedName.value)
+      }
+    }
+  }
+
+  fun createChatTag() {
+    saving.value = true
+    withBGApi {
+      try {
+        val updatedTags = chatModel.controller.apiCreateChatTag(rhId, ChatTagData(newEmoji.value, trimmedName.value))
+        if (updatedTags != null) {
+          userTags.value = updatedTags
+        } else {
+          saving.value = null
+          return@withBGApi
+        }
+        saving.value = false
+        close()
+      } catch (e: Exception) {
+        Log.d(TAG, "ChatListTagEditor createChatTag tag error: ${e.message}")
+        saving.value = null
+      }
+    }
+  }
+
+  fun updateChatTag() {
+    saving.value = true
+    withBGApi {
+      try {
+        if (chatModel.controller.apiUpdateChatTag(rhId, tagId!!, ChatTagData(newEmoji.value, trimmedName.value))) {
+          userTags.value = userTags.value.map { tag ->
+            if (tag.chatTagId == tagId) {
+              tag.copy(chatTagEmoji = newEmoji.value, chatTagText = trimmedName.value)
+            } else {
+              tag
+            }
+          }
+        } else {
+          saving.value = null
+          return@withBGApi
+        }
+        saving.value = false
+        close()
+      } catch (e: Exception) {
+        Log.d(TAG, "ChatListTagEditor updateChatTag tag error: ${e.message}")
+        saving.value = null
+      }
+    }
+  }
+
+  println("ChatListTagEditor: disabled: ${saving.value == true ||
+      (trimmedName.value == name && newEmoji.value == emoji) ||
+      trimmedName.value.isEmpty() ||
+      isDuplicateEmojiOrName.value}")
+
+  ColumnWithScrollBar {
+    SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      ChatListNameTextField(newName, isDuplicateEmojiOrName = isDuplicateEmojiOrName)
+    }
+    val disabled =  saving.value == true ||
+        (trimmedName.value == name && newEmoji.value == emoji) ||
+        trimmedName.value.isEmpty() ||
+        isDuplicateEmojiOrName.value
+
+    SectionItemView(click = { if (tagId == null) createChatTag() else updateChatTag() }, disabled = disabled) {
+      Text(
+        generalGetString(if (tagId == null) MR.strings.create_list else MR.strings.save_list),
+        color = if (disabled) colors.secondary else colors.primary
+      )
+    }
+    if (isDuplicateEmojiOrName.value && saving.value != false) {
+      SectionCustomFooter {
+        Row(
+          Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(
+            painterResource(MR.images.ic_error),
+            contentDescription = stringResource(MR.strings.error),
+            tint = Color.Red,
+            modifier = Modifier
+              .size(19.sp.toDp())
+              .offset(x = 2.sp.toDp())
+          )
+          TextIconSpaced()
+          Text(
+            generalGetString(MR.strings.duplicated_list_error),
+            color = MaterialTheme.colors.secondary,
+            lineHeight = 18.sp,
+            fontSize = 14.sp
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun ChatListNameTextField(name: MutableState<String>, isDuplicateEmojiOrName: State<Boolean>) {
+  var focused by rememberSaveable { mutableStateOf(false) }
+  val focusRequester = remember { FocusRequester() }
+  val strokeColor by remember {
+    derivedStateOf {
+      if (isDuplicateEmojiOrName.value) {
+        Color.Red
+      } else {
+        if (focused) {
+          CurrentColors.value.colors.secondary.copy(alpha = 0.6f)
+        } else {
+          CurrentColors.value.colors.secondary.copy(alpha = 0.3f)
+        }
+      }
+    }
+  }
+
+  val modifier = Modifier
+    .fillMaxWidth()
+    .heightIn(min = 50.dp)
+    .onFocusChanged { focused = it.isFocused }
+  Column(
+    Modifier
+      .fillMaxWidth(),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    BasicTextField(
+      value = name.value,
+      onValueChange = { name.value = it },
+      modifier = modifier.focusRequester(focusRequester),
+      textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
+      singleLine = true,
+      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+      decorationBox = @Composable { innerTextField ->
+        TextFieldDefaults.TextFieldDecorationBox(
+          value = name.value,
+          innerTextField = innerTextField,
+          placeholder = {
+            Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp))
+          },
+          contentPadding = PaddingValues(),
+          label = null,
+          visualTransformation = VisualTransformation.None,
+          leadingIcon = null,
+          singleLine = true,
+          enabled = true,
+          isError = false,
+          interactionSource = remember { MutableInteractionSource() },
+          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
+        )
+      }
+
+    )
+    Divider(color = strokeColor)
+  }
 }
 
 @Composable

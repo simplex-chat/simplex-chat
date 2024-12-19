@@ -13,6 +13,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chatlist.ActiveFilter
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
@@ -80,6 +81,10 @@ object ChatModel {
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
   val groupMembersIndexes = mutableStateMapOf<Long, Int>()
+
+  // Chat Tags
+  val userTags = mutableStateOf(emptyList<ChatTag>())
+  val activeChatTagFilter = mutableStateOf<ActiveFilter?>(null)
 
   // false: default placement, true: floating window.
   // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
@@ -1232,6 +1237,7 @@ data class Contact(
   val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
+  val chatTags: List<Long>,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
@@ -1315,6 +1321,7 @@ data class Contact(
       contactGrpInvSent = false,
       chatDeleted = false,
       uiThemes = null,
+      chatTags = emptyList()
     )
   }
 }
@@ -1476,6 +1483,7 @@ data class GroupInfo (
   override val updatedAt: Instant,
   val chatTs: Instant?,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatTags: List<Long>
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -1520,6 +1528,7 @@ data class GroupInfo (
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
       uiThemes = null,
+      chatTags = emptyList()
     )
   }
 }
@@ -3844,7 +3853,7 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
 }
 
 @Serializable
-class ChatTag(
+data class ChatTag(
   val chatTagId: Long,
   val chatTagText: String,
   val chatTagEmoji: String?
