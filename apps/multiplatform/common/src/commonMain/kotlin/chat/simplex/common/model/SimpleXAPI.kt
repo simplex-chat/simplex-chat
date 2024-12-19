@@ -879,6 +879,16 @@ object ChatController {
     return emptyList()
   }
 
+  suspend fun apiGetChatTags(rh: Long?): List<ChatTag>?{
+    val userId = currentUserId("apiGetChatTags")
+    val r = sendCmd(rh, CC.ApiGetChatTags(userId))
+
+    if (r is CR.ChatTags) return r.userTags
+    Log.e(TAG, "apiGetChatTags bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_chat_tags), "${r.responseType}: ${r.details}")
+    return null
+  }
+
   suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
     if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo

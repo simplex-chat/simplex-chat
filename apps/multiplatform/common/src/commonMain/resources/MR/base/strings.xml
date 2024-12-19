@@ -189,7 +189,8 @@
   <string name="possible_slow_function_title">Slow function</string>
   <string name="possible_slow_function_desc">Execution of function takes too long time: %1$d seconds: %2$s</string>
   <string name="error_updating_chat_tags">Error updating chat list</string>
-  <string name="error_creating_chat_tags">Error creating list</string>
+  <string name="error_creating_chat_tags">Error creating chat list</string>
+  <string name="error_loading_chat_tags">Error loading chat lists</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
