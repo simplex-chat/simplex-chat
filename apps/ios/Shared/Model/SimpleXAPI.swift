@@ -1794,7 +1794,7 @@ func getUserChatData() throws {
     let tm = ChatTagsModel.shared
     tm.activeFilter = nil
     tm.userTags = tags
-    tm.presetTags = getPresetTags(m.chats)
+    updatePresetTags(m.chats)
 }
 
 private func getUserChatDataAsync() async throws {
@@ -1811,7 +1811,7 @@ private func getUserChatDataAsync() async throws {
             m.updateChats(chats)
             tm.activeFilter = nil
             tm.userTags = tags
-            tm.presetTags = getPresetTags(m.chats)
+            updatePresetTags(m.chats)
         }
     } else {
         await MainActor.run {
