@@ -17,8 +17,8 @@ CREATE TABLE chat_tags (
 );
 
 CREATE TABLE chat_tags_chats (
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE, -- NULL for groups
-  group_id INTEGER REFERENCES groups ON DELETE CASCADE, -- NULL for contacts
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
 
