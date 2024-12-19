@@ -16,6 +16,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
+    @State var mergedItems: MergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, 0, [], ItemsModel.shared.chatState)
     @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
@@ -431,27 +432,27 @@ struct ChatView: View {
 
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
-        let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state) { index, mergedItem in
+            let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
+            ReverseList(items: im.reversedChatItems, mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state) { index, mergedItem in
                 let ci = switch mergedItem {
                 case let .single(item, _): item.item
-                case let .grouped(items, _, _, _, _, _, _): items.last!.item
+                case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item
                 }
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
-                                ? voiceNoFrame
-                                    ? (g.size.width - 28) - 42
-                                    : (g.size.width - 28) * 0.84 - 42
-                                : voiceNoFrame
-                                    ? (g.size.width - 32)
-                                    : (g.size.width - 32) * 0.84
+                ? voiceNoFrame
+                ? (g.size.width - 28) - 42
+                : (g.size.width - 28) * 0.84 - 42
+                : voiceNoFrame
+                ? (g.size.width - 32)
+                : (g.size.width - 32) * 0.84
                 return ChatItemWithMenu(
+                    chat: $chat,
                     index: index,
                     isLastItem: index == mergedItems.items.count - 1,
-                    chat: $chat,
                     chatItem: ci,
-                    item: mergedItem,
+                    merged: mergedItem,
                     maxWidth: maxWidth,
                     composeState: $composeState,
                     selectedMember: $selectedMember,
@@ -463,6 +464,18 @@ struct ChatView: View {
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadItems: { pagination, visibleItemIndexesNonReversed in
                 loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
+            }
+            .onAppear {
+                mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+            }
+            .onChange(of: im.reversedChatItems) { items in
+                mergedItems = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+            }
+            .onChange(of: revealedItems) { revealed in
+                mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealed, ItemsModel.shared.chatState)
+            }
+            .onChange(of: chat.chatStats.unreadCount) { unreadCount in
+                mergedItems = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
@@ -587,6 +600,7 @@ struct ChatView: View {
                          .background(.thinMaterial)
                          .clipShape(Capsule())
                          .opacity(model.isDateVisible ? 1 : 0)
+                         .padding(.vertical, 4)
                 }
                 VStack {
                     let unreadAbove = model.totalUnread - model.unreadBelow
@@ -930,24 +944,57 @@ struct ChatView: View {
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
 
-        func getItemSeparation(_ chatItem: ChatItem, at i: Int?) -> ItemSeparation {
-            let im = ItemsModel.shared
-            if let i, i > 0 && im.reversedChatItems.count >= i {
-                let nextItem = im.reversedChatItems[i - 1]
-                let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
-                return (
-                    timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(nextItem.meta.itemTs),
-                    largeGap: largeGap,
-                    date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: nextItem.meta.itemTs) ? nil : nextItem.meta.itemTs
-                )
+        func getItemSeparation(_ chatItem: ChatItem, _ prevItem: ChatItem?) -> ItemSeparation {
+            guard let prevItem else {
+                return ItemSeparation(timestamp: true, largeGap: true, date: nil)
+            }
+
+            let sameMemberAndDirection = if case .groupRcv(let prevGroupMember) = prevItem.chatDir, case .groupRcv(let groupMember) = chatItem.chatDir {
+                groupMember.groupMemberId == prevGroupMember.groupMemberId
             } else {
-                return (timestamp: true, largeGap: true, date: nil)
+                chatItem.chatDir.sent == prevItem.chatDir.sent
+            }
+            let largeGap = !sameMemberAndDirection || prevItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
+
+            return ItemSeparation(
+                timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
+                largeGap: largeGap,
+                date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: prevItem.meta.itemTs) ? nil : prevItem.meta.itemTs
+            )
+        }
+
+        func getItemSeparationLargeGap(_ chatItem: ChatItem, _ nextItem: ChatItem?) -> Bool {
+            guard let nextItem else {
+                return true
+            }
+
+            let sameMemberAndDirection = if case .groupRcv(let nextGroupMember) = nextItem.chatDir, case .groupRcv(let groupMember) = chatItem.chatDir {
+                groupMember.groupMemberId == nextGroupMember.groupMemberId
+            } else {
+                chatItem.chatDir.sent == nextItem.chatDir.sent
+            }
+            return !sameMemberAndDirection || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
+        }
+
+        func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
+            let oldIsGroupRcv = switch older?.chatDir {
+            case .groupRcv: true
+            default: false
+            }
+            let sameMember = switch (older?.chatDir, current.chatDir) {
+            case (.groupRcv(let oldMember), .groupRcv(let member)):
+                oldMember.memberId == member.memberId
+            default:
+                false
+            }
+            if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+                return true
+            } else {
+                return false
             }
         }
 
         var body: some View {
-            let currIndex = m.getChatItemIndex(chatItem)
-            let ciCategory = chatItem.mergeCategory
             let im = ItemsModel.shared
 
             let last = isLastItem ? im.reversedChatItems.last : nil
@@ -958,34 +1005,39 @@ struct ChatView: View {
             } else {
                 nil
             }
+            let showAvatar = if case .grouped = merged { shouldShowAvatar(item, listItem.nextItem) } else { true }
             let itemSeparation: ItemSeparation
-            let prevItemSeparationLargeGap: Boolean
-            let single = switch merged { case .single: true; default: false }
-            //                if single || revealed {
-            //                    let prev = listItem.prevItem
-            //                    itemSeparation = getItemSeparation(item, prev)
-            //                    let nextForGap = if (item.mergeCategory != nil && item.mergeCategory == prev?.mergeCategory) || isLastItem { nil } else { listItem.nextItem }
-            //                    prevItemSeparationLargeGap = if nextForGap == nil { false } else { getItemSeparationLargeGap(nextForGap, item) }
-            //                } else {
-            //                    itemSeparation = getItemSeparation(item, nil)
-            //                    prevItemSeparationLargeGap = false
-            //                }
-            Group {
-                VStack(spacing: 0) {
-                    chatItemView(item, range, listItem.prevItem, itemSeparation)
-                    //                                if let date = timeSeparation.date {
-                    //                                    DateSeparator(date: date).padding(8)
-                    //                                }
-                        .overlay {
-                            if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        let checked = selected.contains(chatItem.id)
-                                        selectUnselectChatItem(select: !checked, chatItem)
-                                    }
-                            }
+            let prevItemSeparationLargeGap: Bool
+            let single = switch merged {
+            case .single: true
+            default: false
+            }
+            if single || revealed {
+                let prev = listItem.prevItem
+                itemSeparation = getItemSeparation(item, prev)
+                let nextForGap = (item.mergeCategory != nil && item.mergeCategory == prev?.mergeCategory) || isLastItem ? nil : listItem.nextItem
+                prevItemSeparationLargeGap = if let nextForGap { getItemSeparationLargeGap(nextForGap, item) } else { false }
+            } else {
+                itemSeparation = getItemSeparation(item, nil)
+                prevItemSeparationLargeGap = false
+            }
+            return VStack(spacing: 0) {
+                if let last {
+                    DateSeparator(date: last.meta.itemTs).padding(8)
+                }
+                chatItemListView(index == 0, range, showAvatar, item, itemSeparation, prevItemSeparationLargeGap)
+                    .overlay {
+                        if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    let checked = selected.contains(chatItem.id)
+                                    selectUnselectChatItem(select: !checked, chatItem)
+                                }
                         }
+                    }
+                if let date = itemSeparation.date {
+                    DateSeparator(date: date).padding(8)
                 }
             }
             .onAppear {
@@ -1075,20 +1127,27 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ itemSeparation: ItemSeparation) -> some View {
+        @ViewBuilder func chatItemListView(
+            _ itemAtZeroIndexInWholeList: Bool,
+            _ range: ClosedRange<Int>?,
+            _ showAvatar: Bool,
+            _ ci: ChatItem,
+            _ itemSeparation: ItemSeparation,
+            _ previousItemSeparationLargeGap: Bool
+        ) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
             if case let .groupRcv(member) = ci.chatDir,
                case .group = chat.chatInfo {
-                let (prevMember, memCount): (GroupMember?, Int) =
-                if let range = range {
-                    m.getPrevHiddenMember(member, range)
-                } else {
-                    (nil, 1)
-                }
-                if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
+                if showAvatar {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
                             Group {
+                                let (prevMember, memCount): (GroupMember?, Int) =
+                                if let range = range {
+                                    m.getPrevHiddenMember(member, range)
+                                } else {
+                                    (nil, 1)
+                                }
                                 if memCount == 1 && member.memberRole > .member {
                                     Group {
                                         if #available(iOS 16.0, *) {

@@ -13,6 +13,7 @@ import SimpleXChat
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let items: Array<ChatItem>
+    @Binding var mergedItems: MergedItems
     @Binding var revealedItems: Set<Int64>
     @Binding var unreadCount: Int
 
@@ -53,16 +54,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private var dataSource: UITableViewDiffableDataSource<Section, MergedItem>!
         var itemCount: Int {
             get {
-                mergedItems.items.count
+                representer.mergedItems.items.count
             }
         }
-        private var mergedItems: MergedItems
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
             self.representer = representer
-            self.mergedItems = MergedItems.create(representer.items, representer.unreadCount, Set(), ItemsModel.shared.chatState)
             super.init(style: .plain)
 
             // 1. Style
@@ -91,7 +90,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 if indexPath.item > self.itemCount - 8 {
                     logger.debug("LALAL ITEM \(indexPath.item)")
                     let pagination = ChatPagination.last(count: 0)
-                    self.representer.loadItems(pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.mergedItems)) })
+                    self.representer.loadItems(pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
@@ -197,15 +196,16 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func update(items: [ChatItem]) {
-            let wasCount = itemCount
-            self.mergedItems = MergedItems.create(items, representer.unreadCount, representer.revealedItems, ItemsModel.shared.chatState)
+            let wasCount = dataSource.snapshot().numberOfItems
+            logger.debug("LALAL WAS \(wasCount) will be \(self.representer.mergedItems.items.count)")
+            //self.representer.mergedItems = MergedItems.create(items, representer.unreadCount, representer.revealedItems, ItemsModel.shared.chatState)
             var snapshot = NSDiffableDataSourceSnapshot<Section, MergedItem>()
             snapshot.appendSections([.main])
-            snapshot.appendItems(mergedItems.items)
+            snapshot.appendItems(representer.mergedItems.items)
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
-                animatingDifferences: wasCount != 0 && abs(mergedItems.items.count - wasCount) == 1
+                animatingDifferences: wasCount != 0 && abs(representer.mergedItems.items.count - wasCount) == 1
             )
             // Sets content offset on initial load
             if wasCount == 0 {
@@ -223,11 +223,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         func getListState() -> ListState? {
             if let visibleRows = tableView.indexPathsForVisibleRows,
-                visibleRows.last?.item ?? 0 < representer.items.count {
+               visibleRows.last?.item ?? 0 < representer.mergedItems.items.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
                 let topItemDate: Date? =
                     if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
-                        representer.items[lastVisible.item].meta.itemTs
+                        representer.mergedItems.items[lastVisible.item].oldest().item.meta.itemTs
                     } else {
                         nil
                     }
@@ -235,7 +235,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) })
                 let bottomItemId: ChatItem.ID? =
                     if let firstVisible {
-                        representer.items[firstVisible.item].id
+                        representer.mergedItems.items[firstVisible.item].newest().item.id
                     } else {
                         nil
                     }

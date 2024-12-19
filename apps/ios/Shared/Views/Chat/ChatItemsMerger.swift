@@ -49,12 +49,12 @@ struct MergedItems {
             }
 
             let revealed = item.mergeCategory == nil || revealedItems.contains(item.id)
-            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, _, _) = recent, mergeCategory == category, let first = items.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
+            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, unreadIds, _) = recent, mergeCategory == category, let first = items.boxedValue.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
                 let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
-                recent!.appendItem(listItem)
+                items.boxedValue.append(listItem)
 
                 if item.isRcvNew {
-                    recent!.insertUnreadId(item.id)
+                    unreadIds.boxedValue.insert(item.id)
                 }
                 if let lastRevealedIdsInMergedItems, let lastRangeInReversedForMergedItems {
                     if revealed {
@@ -73,12 +73,12 @@ struct MergedItems {
                     }
                     lastRangeInReversedForMergedItems = BoxedValue(index ... index)
                     recent = MergedItem.grouped(
-                        items: [listItem],
+                        items: BoxedValue([listItem]),
                         revealed: revealed,
                         revealedIdsWithinGroup: lastRevealedIdsInMergedItems!,
                         rangeInReversed: lastRangeInReversedForMergedItems!,
                         mergeCategory: item.mergeCategory,
-                        unreadIds: item.isRcvNew ? Set(arrayLiteral: item.id) : Set(),
+                        unreadIds: BoxedValue(item.isRcvNew ? Set(arrayLiteral: item.id) : Set()),
                         startIndexInReversedItems: index
                     )
                 } else {
@@ -126,7 +126,7 @@ enum MergedItem: Hashable {
      *  of [Grouped] item with all grouped items inside [items]. In other words, number of [MergedItem] will always be equal to number of
      *  visible rows in ChatView LazyColumn  */
     case grouped (
-        items: [ListItem],
+        items: BoxedValue<[ListItem]>,
         revealed: Bool,
         // it stores ids for all consecutive revealed items from the same group in order to hide them all on user's action
         // it's the same list instance for all Grouped items within revealed group
@@ -134,37 +134,17 @@ enum MergedItem: Hashable {
         revealedIdsWithinGroup: BoxedValue<[Int64]>,
         rangeInReversed: BoxedValue<ClosedRange<Int>>,
         mergeCategory: CIMergeCategory?,
-        unreadIds: Set<Int64>,
+        unreadIds: BoxedValue<Set<Int64>>,
         startIndexInReversedItems: Int
     )
-
-    mutating func appendItem(_ item: ListItem) {
-        switch self {
-        case let .grouped(items, revealed, revealedIdsWithinGroup, rangeInReversed, mergeCategory, unreadIds, startIndexInReversedItems):
-            var newItems = items
-            newItems.append(item)
-            self = .grouped(items: newItems, revealed: revealed, revealedIdsWithinGroup: revealedIdsWithinGroup, rangeInReversed: rangeInReversed, mergeCategory: mergeCategory, unreadIds: unreadIds, startIndexInReversedItems: startIndexInReversedItems)
-        case .single: ()
-        }
-    }
-
-    mutating func insertUnreadId(_ id: Int64) {
-        switch self {
-        case let .grouped(items, revealed, revealedIdsWithinGroup, rangeInReversed, mergeCategory, unreadIds, startIndexInReversedItems):
-            var newUnreadIds = unreadIds
-            newUnreadIds.insert(id)
-            self = .grouped(items: items, revealed: revealed, revealedIdsWithinGroup: revealedIdsWithinGroup, rangeInReversed: rangeInReversed, mergeCategory: mergeCategory, unreadIds: newUnreadIds, startIndexInReversedItems: startIndexInReversedItems)
-        case .single: ()
-        }
-    }
 
     func reveal(_ reveal: Bool, _ revealedItems: Binding<Set<Int64>>) {
         if case .grouped(let items, _, let revealedIdsWithinGroup, _, _, _, _) = self {
             var newRevealed = revealedItems.wrappedValue
             var i = 0
             if reveal {
-                while i < items.count {
-                    newRevealed.insert(items[i].item.id)
+                while i < items.boxedValue.count {
+                    newRevealed.insert(items.boxedValue[i].item.id)
                     i += 1
                 }
             } else {
@@ -190,28 +170,28 @@ enum MergedItem: Hashable {
     func hasUnread() -> Bool {
         switch self {
         case let .single(item, _): item.item.isRcvNew
-        case let .grouped(_, _, _, _, _, unreadIds, _): !unreadIds.isEmpty
+        case let .grouped(_, _, _, _, _, unreadIds, _): !unreadIds.boxedValue.isEmpty
         }
     }
 
     func newest() -> ListItem {
         switch self {
         case let .single(item, _): item
-        case let .grouped(items, _, _, _, _, _, _): items[0]
+        case let .grouped(items, _, _, _, _, _, _): items.boxedValue[0]
         }
     }
 
     func oldest() -> ListItem {
         switch self {
         case let .single(item, _): item
-        case let .grouped(items, _, _, _, _, _, _): items[items.count - 1]
+        case let .grouped(items, _, _, _, _, _, _): items.boxedValue[items.boxedValue.count - 1]
         }
     }
 
     func lastIndexInReversed() -> Int {
         switch self {
         case .single: startIndexInReversedItems
-        case let .grouped(items, _, _, _, _, _, _): startIndexInReversedItems + items.count - 1
+        case let .grouped(items, _, _, _, _, _, _): startIndexInReversedItems + items.boxedValue.count - 1
         }
     }
 }
