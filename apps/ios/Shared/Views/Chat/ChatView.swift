@@ -459,7 +459,11 @@ struct ChatView: View {
                     showChatInfoSheet: $showChatInfoSheet,
                     revealedItems: $revealedItems,
                     selectedChatItems: $selectedChatItems,
-                    forwardedChatItems: $forwardedChatItems
+                    forwardedChatItems: $forwardedChatItems,
+                    reveal: { reveal in
+                        mergedItem.reveal(reveal, $revealedItems)
+                        mergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    }
                 )
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadItems: { pagination, visibleItemIndexesNonReversed in
@@ -939,6 +943,8 @@ struct ChatView: View {
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
+
+        var reveal: (Bool) -> Void
 
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
@@ -1645,7 +1651,7 @@ struct ChatView: View {
         private func hideButton() -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    merged.reveal(false, $revealedItems)
+                    reveal(false)
                 }
             } label: {
                 Label(
@@ -1720,7 +1726,7 @@ struct ChatView: View {
         private func revealButton(_ ci: ChatItem) -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    merged.reveal(true, $revealedItems)
+                    reveal(true)
                 }
             } label: {
                 Label(
@@ -1733,7 +1739,7 @@ struct ChatView: View {
         private func expandButton() -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    merged.reveal(true, $revealedItems)
+                    reveal(true)
                 }
             } label: {
                 Label(
@@ -1746,7 +1752,7 @@ struct ChatView: View {
         private func shrinkButton() -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    merged.reveal(false, $revealedItems)
+                    reveal(false)
                 }
             } label: {
                 Label (
