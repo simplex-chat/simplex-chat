@@ -100,6 +100,34 @@ class ItemsModel: ObservableObject {
     }
 }
 
+class ChatTagsModel: ObservableObject {
+    static let shared = ChatTagsModel()
+    
+    @Published var userTags: [ChatTag] = []
+    @Published var activeFilter: ActiveFilter? = nil
+    @Published var presetTags: [PresetTag] = []
+}
+
+func updatePresetTags(_ chats: [Chat]) {
+    var matches: Set<PresetTag> = []
+    for chat in chats {
+        for tag in PresetTag.allCases {
+            if presetTagMatchesChat(tag, chat) {
+                matches.insert(tag)
+            }
+        }
+        if matches.count == PresetTag.allCases.count {
+            break
+        }
+    }
+    
+    let tm = ChatTagsModel.shared
+    if case let .presetTag(tag) = tm.activeFilter, !matches.contains(tag) {
+        tm.activeFilter = nil
+    }
+    tm.presetTags = Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
+}
+
 class NetworkModel: ObservableObject {
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
@@ -342,8 +370,10 @@ final class ChatModel: ObservableObject {
     private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
+            updatePresetTags(self.chats)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
+            updatePresetTags(self.chats)
         }
     }
 
@@ -858,6 +888,7 @@ final class ChatModel: ObservableObject {
     func removeChat(_ id: String) {
         withAnimation {
             chats.removeAll(where: { $0.id == id })
+            updatePresetTags(chats)
         }
     }
 
