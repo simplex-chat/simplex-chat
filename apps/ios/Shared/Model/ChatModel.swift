@@ -53,7 +53,11 @@ class ItemsModel: ObservableObject {
     var itemAdded = false {
         willSet { publisher.send() }
     }
-    
+
+    // set listener here that will be notified on every add/delete of a chat item
+    var chatItemsChangesListener: ChatItemsChangesListener? = nil
+    let chatState = ActiveChatState()
+
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
     @Published var isLoading = false
@@ -82,19 +86,19 @@ class ItemsModel: ObservableObject {
                 await MainActor.run { showLoadingProgress = true }
             } catch {}
         }
+        let type = ChatType(rawValue: String(chatId.prefix(1)))!
+        let id = Int64(chatId.suffix(chatId.count - 1))!
         Task {
-            if let chat = ChatModel.shared.getChat(chatId) {
-                await MainActor.run { self.isLoading = true }
-//                try? await Task.sleep(nanoseconds: 5000_000000)
-                await loadChat(chat: chat)
-                navigationTimeout.cancel()
-                progressTimeout.cancel()
-                await MainActor.run {
-                    self.isLoading = false
-                    self.showLoadingProgress = false
-                    willNavigate()
-                    ChatModel.shared.chatId = chatId
-                }
+            await MainActor.run { self.isLoading = true }
+            //                try? await Task.sleep(nanoseconds: 5000_000000)
+            await loadChat(type: type, id: id)
+            navigationTimeout.cancel()
+            progressTimeout.cancel()
+            await MainActor.run {
+                self.isLoading = false
+                self.showLoadingProgress = false
+                willNavigate()
+//                ChatModel.shared.chatId = id
             }
         }
     }
@@ -895,6 +899,15 @@ final class ChatModel: ObservableObject {
             _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
+}
+
+protocol ChatItemsChangesListener {
+    // pass null itemIds if the whole chat now read
+    func read(_ itemIds: Set<Int64>?, _ newItems: [ChatItem])
+    func added(_ item: (Int64, Bool), _ index: Int)
+    // itemId, index in old chatModel.chatItems (before the update), isRcvNew (is item unread or not)
+    func removed(_ itemIds: [(Int64, Int, Bool)], _ newItems: [ChatItem])
+    func cleared()
 }
 
 struct ShowingInvitation {
