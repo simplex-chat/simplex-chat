@@ -963,19 +963,6 @@ struct ChatView: View {
             )
         }
 
-        func getItemSeparationLargeGap(_ chatItem: ChatItem, _ nextItem: ChatItem?) -> Bool {
-            guard let nextItem else {
-                return true
-            }
-
-            let sameMemberAndDirection = if case .groupRcv(let nextGroupMember) = nextItem.chatDir, case .groupRcv(let groupMember) = chatItem.chatDir {
-                groupMember.groupMemberId == nextGroupMember.groupMemberId
-            } else {
-                chatItem.chatDir.sent == nextItem.chatDir.sent
-            }
-            return !sameMemberAndDirection || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
-        }
-
         func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
             let oldIsGroupRcv = switch older?.chatDir {
             case .groupRcv: true
@@ -1016,16 +1003,14 @@ struct ChatView: View {
                 let prev = listItem.prevItem
                 itemSeparation = getItemSeparation(item, prev)
                 let nextForGap = (item.mergeCategory != nil && item.mergeCategory == prev?.mergeCategory) || isLastItem ? nil : listItem.nextItem
-                prevItemSeparationLargeGap = if let nextForGap { getItemSeparationLargeGap(nextForGap, item) } else { false }
             } else {
                 itemSeparation = getItemSeparation(item, nil)
-                prevItemSeparationLargeGap = false
             }
             return VStack(spacing: 0) {
                 if let last {
                     DateSeparator(date: last.meta.itemTs).padding(8)
                 }
-                chatItemListView(index == 0, range, showAvatar, item, itemSeparation, prevItemSeparationLargeGap)
+                chatItemListView(range, showAvatar, item, itemSeparation)
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
@@ -1128,12 +1113,10 @@ struct ChatView: View {
         }
 
         @ViewBuilder func chatItemListView(
-            _ itemAtZeroIndexInWholeList: Bool,
             _ range: ClosedRange<Int>?,
             _ showAvatar: Bool,
             _ ci: ChatItem,
-            _ itemSeparation: ItemSeparation,
-            _ previousItemSeparationLargeGap: Bool
+            _ itemSeparation: ItemSeparation
         ) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
             if case let .groupRcv(member) = ci.chatDir,
