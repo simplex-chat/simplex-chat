@@ -470,6 +470,9 @@ struct DatabaseView: View {
         _ migration: Bool
     ) async -> Bool {
         if archivePath.startAccessingSecurityScopedResource() {
+            defer {
+                archivePath.stopAccessingSecurityScopedResource()
+            }
             await MainActor.run {
                 progressIndicator.wrappedValue = true
             }
@@ -481,7 +484,6 @@ struct DatabaseView: View {
                     let archiveErrors = try await apiImportArchive(config: config)
                     shouldImportAppSettingsDefault.set(true)
                     _ = kcDatabasePassword.remove()
-                    archivePath.stopAccessingSecurityScopedResource()
                     if archiveErrors.isEmpty {
                         await operationEnded(.archiveImported, progressIndicator, alert)
                         return true
@@ -490,13 +492,11 @@ struct DatabaseView: View {
                         return migration
                     }
                 } catch let error {
-                    archivePath.stopAccessingSecurityScopedResource()
                     await operationEnded(.error(title: "Error importing chat database", error: responseError(error)), progressIndicator, alert)
                 }
             } catch let error {
                 await operationEnded(.error(title: "Error deleting chat database", error: responseError(error)), progressIndicator, alert)
             }
-            archivePath.stopAccessingSecurityScopedResource()
         } else {
             showAlert("Error accessing database file")
         }
