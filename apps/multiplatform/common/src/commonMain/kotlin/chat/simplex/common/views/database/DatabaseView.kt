@@ -60,8 +60,7 @@ fun DatabaseView() {
     if (to != null) {
       importArchiveAlert {
         stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
-          importArchive(to, appFilesCountAndSize, progressIndicator)
-          true
+          importArchive(to, appFilesCountAndSize, progressIndicator, false)
         }
       }
     }
@@ -645,6 +644,7 @@ suspend fun importArchive(
   importedArchiveURI: URI,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   progressIndicator: MutableState<Boolean>,
+  migration: Boolean
 ): Boolean {
   val m = chatModel
   progressIndicator.value = true
@@ -666,12 +666,13 @@ suspend fun importArchive(
           if (chatModel.localUserCreated.value == false) {
             chatModel.chatRunning.value = false
           }
+          return true
         } else {
           operationEnded(m, progressIndicator) {
             showArchiveImportedWithErrorsAlert(archiveErrors)
           }
+          return migration
         }
-        return true
       } catch (e: Error) {
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
