@@ -173,8 +173,9 @@
         <source>(</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=")" xml:space="preserve">
+      <trans-unit id=")" xml:space="preserve" approved="no">
         <source>)</source>
+        <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
@@ -228,12 +229,14 @@
         <source>\*bold*</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=", " xml:space="preserve">
+      <trans-unit id=", " xml:space="preserve" approved="no">
         <source>, </source>
+        <target state="translated">, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="." xml:space="preserve">
+      <trans-unit id="." xml:space="preserve" approved="no">
         <source>.</source>
+        <target state="translated">.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve" approved="no">
@@ -265,8 +268,9 @@
         <target state="translated">6</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=": " xml:space="preserve">
+      <trans-unit id=": " xml:space="preserve" approved="no">
         <source>: </source>
+        <target state="translated">: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A new contact" xml:space="preserve" approved="no">
@@ -365,16 +369,19 @@
         <target state="translated">관리자는 그룹에 가입할 수 있는 링크를 만들 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Advanced network settings" xml:space="preserve">
+      <trans-unit id="Advanced network settings" xml:space="preserve" approved="no">
         <source>Advanced network settings</source>
+        <target state="translated">고급 네트워크 설정</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
+        <target state="translated">모든 채팅과 메세지가 삭제됩니다. - 수정 불가능!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All group members will remain connected." xml:space="preserve">
+      <trans-unit id="All group members will remain connected." xml:space="preserve" approved="no">
         <source>All group members will remain connected.</source>
+        <target state="translated">모든 그룹 구성원은 연결 상태를 유지합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
@@ -4144,6 +4151,34 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="%lld group events" xml:space="preserve" approved="no">
         <source>%lld group events</source>
         <target state="translated">%lld개의 그룹 이벤트</target>
+      </trans-unit>
+      <trans-unit id="All app data is deleted." xml:space="preserve" approved="no">
+        <source>All app data is deleted.</source>
+        <target state="translated">모든 앱 데이터가 삭제됩니다.</target>
+      </trans-unit>
+      <trans-unit id="All data is erased when it is entered." xml:space="preserve" approved="no">
+        <source>All data is erased when it is entered.</source>
+        <target state="translated">입력하면 모든 데이터가 삭제됩니다.</target>
+      </trans-unit>
+      <trans-unit id="0 sec" xml:space="preserve" approved="no">
+        <source>0 sec</source>
+        <target state="translated">0 초</target>
+      </trans-unit>
+      <trans-unit id="(this device v%@)" xml:space="preserve" approved="no">
+        <source>(this device v%@)</source>
+        <target state="translated">(이 장치 v%@)</target>
+      </trans-unit>
+      <trans-unit id="(new)" xml:space="preserve" approved="no">
+        <source>(new)</source>
+        <target state="translated">(새로운)</target>
+      </trans-unit>
+      <trans-unit id="Advanced settings" xml:space="preserve" approved="no">
+        <source>Advanced settings</source>
+        <target state="translated">고급 설정</target>
+      </trans-unit>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve" approved="no">
+        <source>All data is kept private on your device.</source>
+        <target state="translated">모든 데이터는 기기에서 비공개로 유지됩니다.</target>
       </trans-unit>
     </body>
   </file>
