@@ -36,6 +36,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.apiDeleteChatTag
 import chat.simplex.common.model.ChatController.apiSetChatTags
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel.markChatTagRead
+import chat.simplex.common.model.ChatModel.updateChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -554,13 +556,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
   val saving = remember { mutableStateOf(false) }
-  val chatTagIds = derivedStateOf {
-    when (val cInfo = chat?.chatInfo) {
-      is ChatInfo.Direct -> cInfo.contact.chatTags
-      is ChatInfo.Group -> cInfo.groupInfo.chatTags
-      else -> emptyList()
-    }
-  }
+  val chatTagIds = derivedStateOf { chat?.chatInfo?.chatTags ?: emptyList() }
 
   LazyColumnWithScrollBar(
     contentPadding = if (oneHandUI.value) {
@@ -891,6 +887,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
       if (success) {
         withChats {
           replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+          markChatTagRead(chat)
         }
       }
     }
@@ -910,7 +907,9 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     )
     if (success) {
       withChats {
+        val wasUnread = chat.isUnread
         replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+        updateChatTagRead(chat, wasUnread)
       }
     }
   }
@@ -1160,6 +1159,8 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       else -> false
     }
     if (res && newChatInfo != null) {
+      val wasFavorite = chatInfo.chatSettings?.favorite ?: false
+      chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withChats {
         updateChatInfo(remoteHostId, newChatInfo)
       }
@@ -1223,7 +1224,7 @@ private fun deleteTag(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) 
       val tagId = tag.chatTagId
       if (apiDeleteChatTag(rhId, tagId)) {
         chatModel.userTags.value = chatModel.userTags.value.filter { it.chatTagId != tagId }
-        if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTagFilter(tag)) {
+        if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
           chatModel.activeChatTagFilter.value = null
         }
         chatModel.chats.value.forEach { c ->

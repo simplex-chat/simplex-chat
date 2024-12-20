@@ -625,6 +625,7 @@ object ChatController {
       updateChats(chats)
     }
     chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
+    chatModel.updateChatTags(rhId)
   }
 
   private fun startReceiver() {

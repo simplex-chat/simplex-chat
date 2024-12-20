@@ -13,7 +13,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chatlist.ActiveFilter
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
@@ -85,6 +85,8 @@ object ChatModel {
   // Chat Tags
   val userTags = mutableStateOf(emptyList<ChatTag>())
   val activeChatTagFilter = mutableStateOf<ActiveFilter?>(null)
+  var presetTags = mutableStateMapOf<PresetTagKind, Int>()
+  var unreadTags = mutableStateMapOf<Long, Int>()
 
   // false: default placement, true: floating window.
   // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
@@ -201,6 +203,101 @@ object ChatModel {
     }
   }
 
+  fun updateChatTags(rhId: Long?) {
+    val newPresetTags = mutableStateMapOf<PresetTagKind, Int>()
+    val newUnreadTags = mutableStateMapOf<Long, Int>()
+
+    for (chat in chats.value.filter { it.remoteHostId == rhId }) {
+      for (tag in PresetTagKind.entries) {
+        if (presetTagMatchesChat(tag, chat.chatInfo)) {
+          newPresetTags[tag] = (newPresetTags[tag] ?: 0) + 1
+        }
+      }
+      if (chat.isUnread) {
+        val chatTags: List<Long> = when (val cInfo = chat.chatInfo) {
+          is ChatInfo.Direct -> cInfo.contact.chatTags
+          is ChatInfo.Group -> cInfo.groupInfo.chatTags
+          else -> emptyList()
+        }
+        chatTags.forEach { tag ->
+          newUnreadTags[tag] = (newUnreadTags[tag] ?: 0) + 1
+        }
+      }
+    }
+
+    if (activeChatTagFilter.value is ActiveFilter.PresetTag &&
+      (newPresetTags[(activeChatTagFilter.value as ActiveFilter.PresetTag).tag] ?: 0) == 0) {
+      activeChatTagFilter.value = null
+    }
+
+    presetTags.clear()
+    presetTags.putAll(newPresetTags)
+    unreadTags.clear()
+    unreadTags.putAll(newUnreadTags)
+  }
+
+  fun updateChatFavorite(favorite: Boolean, wasFavorite: Boolean) {
+    val count = presetTags[PresetTagKind.FAVORITES]
+
+    if (favorite && !wasFavorite) {
+      presetTags[PresetTagKind.FAVORITES] = (count ?: 0) + 1
+    } else if (!favorite && wasFavorite && count != null) {
+      presetTags[PresetTagKind.FAVORITES] = maxOf(0, count - 1)
+      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.FAVORITES) && (presetTags[PresetTagKind.FAVORITES] ?: 0) == 0) {
+        activeChatTagFilter.value = null
+      }
+    }
+  }
+
+  fun addPresetChatTags(chatInfo: ChatInfo) {
+    for (tag in PresetTagKind.entries) {
+      if (presetTagMatchesChat(tag, chatInfo)) {
+        presetTags[tag] = (presetTags[tag] ?: 0) + 1
+      }
+    }
+  }
+
+  fun removePresetChatTags(chatInfo: ChatInfo) {
+    for (tag in PresetTagKind.entries) {
+      if (presetTagMatchesChat(tag, chatInfo)) {
+        val count = presetTags[tag]
+        if (count != null) {
+          presetTags[tag] = maxOf(0, count - 1)
+        }
+      }
+    }
+  }
+
+  fun markChatTagRead(chat: Chat) {
+    if (chat.isUnread) {
+      chat.chatInfo.chatTags?.let { tags ->
+        markChatTagRead_(chat, tags)
+      }
+    }
+  }
+
+  fun updateChatTagRead(chat: Chat, wasUnread: Boolean) {
+    val tags = chat.chatInfo.chatTags ?: return
+    val nowUnread = chat.isUnread
+
+    if (nowUnread && !wasUnread) {
+      tags.forEach { tag ->
+        unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
+      }
+    } else if (!nowUnread && wasUnread) {
+      markChatTagRead_(chat, tags)
+    }
+  }
+
+  private fun markChatTagRead_(chat: Chat, tags: List<Long>) {
+    for (tag in tags) {
+      val count = unreadTags[tag]
+      if (count != null) {
+        unreadTags[tag] = maxOf(0, count - 1)
+      }
+    }
+  }
+
   // toList() here is to prevent ConcurrentModificationException that is rarely happens but happens
   fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
   // TODO pass rhId?
@@ -285,6 +382,7 @@ object ChatModel {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf()))
+        addPresetChatTags(cInfo)
       }
     }
 
@@ -334,6 +432,7 @@ object ChatModel {
           }
           else -> cItem
         }
+        val wasUnread = chat.isUnread
         chats[i] = chat.copy(
           chatItems = arrayListOf(newPreviewItem),
           chatStats =
@@ -344,6 +443,8 @@ object ChatModel {
           else
             chat.chatStats
         )
+        updateChatTagRead(chat, wasUnread)
+
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
           reorderChat(chats[i], 0)
         } else {
@@ -460,6 +561,7 @@ object ChatModel {
       if (i >= 0) {
         decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount)
         chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
+        markChatTagRead(chats[i])
       }
       // clear current chat
       if (chatId.value == cInfo.id) {
@@ -527,11 +629,13 @@ object ChatModel {
         val chat = chats[chatIdx]
         val lastId = chat.chatItems.lastOrNull()?.id
         if (lastId != null) {
+          val wasUnread = chat.isUnread
           val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
           decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount)
           )
+          updateChatTagRead(chat, wasUnread)
         }
       }
     }
@@ -542,16 +646,29 @@ object ChatModel {
 
       val chat = chats[chatIndex]
       val unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0)
+      val wasUnread = chat.isUnread
       decreaseUnreadCounter(rhId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
       chats[chatIndex] = chat.copy(
         chatStats = chat.chatStats.copy(
           unreadCount = unreadCount,
         )
       )
+      updateChatTagRead(chat, wasUnread)
     }
 
     fun removeChat(rhId: Long?, id: String) {
-      chats.removeAll { it.id == id && it.remoteHostId == rhId }
+      var removed: ChatInfo? = null
+      chats.removeAll {
+        val found = it.id == id && it.remoteHostId == rhId
+        if (found) {
+          removed = it.chatInfo
+        }
+        found
+      }
+
+      removed?.let {
+        removePresetChatTags(it)
+      }
     }
 
     suspend fun upsertGroupMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember): Boolean {
@@ -982,6 +1099,8 @@ data class Chat(
     else -> false
   }
 
+  val isUnread: Boolean get() = chatStats.unreadCount > 0 || chatStats.unreadChat
+
   val id: String get() = chatInfo.id
 
   fun groupFeatureEnabled(feature: GroupFeature): Boolean =
@@ -1194,6 +1313,12 @@ sealed class ChatInfo: SomeChat, NamedChat {
       else -> false
     }
 
+  val chatTags: List<Long>?
+    get() = when (this) {
+      is Direct -> contact.chatTags
+      is Group -> groupInfo.chatTags
+      else -> null
+    }
 }
 
 @Serializable

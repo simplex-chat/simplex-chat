@@ -1,7 +1,7 @@
 package chat.simplex.common.views.chatlist
 
+import TextIconSpaced
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -15,7 +15,6 @@ import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -47,11 +46,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
-enum class PresetTag { FAVORITES, CONTACTS, GROUPS, BUSINESS }
+enum class PresetTagKind { FAVORITES, CONTACTS, GROUPS, BUSINESS }
 
 sealed class ActiveFilter {
-  data class PresetTagFilter(val tag: PresetTag) : ActiveFilter()
-  data class UserTagFilter(val tag: ChatTag) : ActiveFilter()
+  data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
+  data class UserTag(val tag: ChatTag) : ActiveFilter()
   data object Unread: ActiveFilter()
 }
 
@@ -834,7 +833,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
     Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.Center) {
-      Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
+      NoChatsView(searchText = searchText)
     }
   }
   if (oneHandUI.value) {
@@ -856,6 +855,37 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         appPrefs.addressCreationCardShown.set(true)
       }
     }
+  }
+}
+
+@Composable
+private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
+  val activeFilter = remember { chatModel.activeChatTagFilter }.value
+
+  if (searchText.value.text.trim().isEmpty()) {
+    when (activeFilter) {
+      is ActiveFilter.PresetTag -> Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary) // this should not happen
+      is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary)
+      is ActiveFilter.Unread -> {
+          Row(
+            Modifier.clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Icon(
+              painterResource(MR.images.ic_filter_list),
+              null,
+              tint = MaterialTheme.colors.secondary
+            )
+            Text(generalGetString(MR.strings.no_unread_chats), color = MaterialTheme.colors.secondary)
+          }
+      }
+      null -> {
+        Text(generalGetString(MR.strings.no_chats), color = MaterialTheme.colors.secondary)
+      }
+    }
+  } else {
+    Text(generalGetString(MR.strings.no_chats_found), color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -893,7 +923,7 @@ private fun ChatTagsView() {
   LazyRow {
     items(userTags.value) { tag ->
       val current = when (val af = activeFilter.value) {
-        is ActiveFilter.UserTagFilter -> af.tag == tag
+        is ActiveFilter.UserTag -> af.tag == tag
         else -> false
       }
       val interactionSource = remember { MutableInteractionSource() }
@@ -905,10 +935,10 @@ private fun ChatTagsView() {
           .padding(horizontal = 4.dp, vertical = 4.dp)
           .combinedClickable(
             onClick = {
-              if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTagFilter(tag)) {
+              if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
                 chatModel.activeChatTagFilter.value = null
               } else {
-                chatModel.activeChatTagFilter.value = ActiveFilter.UserTagFilter(tag)
+                chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
               }
             },
             onLongClick = { showChatTagList() },
@@ -987,31 +1017,27 @@ fun filteredChats(
 
 private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
-    is ActiveFilter.PresetTagFilter -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo)
-    is ActiveFilter.UserTagFilter -> when (chat.chatInfo) {
-      is ChatInfo.Direct -> chat.chatInfo.contact.chatTags.contains(activeFilter.tag.chatTagId)
-      is ChatInfo.Group -> chat.chatInfo.groupInfo.chatTags.contains(activeFilter.tag.chatTagId)
-      else -> false
-    }
+    is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo)
+    is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
     is ActiveFilter.Unread -> chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
     else -> true
   }
 
-fun presetTagMatchesChat(tag: PresetTag, chatInfo: ChatInfo): Boolean =
+fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo): Boolean =
   when (tag) {
-    PresetTag.FAVORITES -> chatInfo.chatSettings?.favorite == true
-    PresetTag.CONTACTS -> when (chatInfo) {
+    PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
+    PresetTagKind.CONTACTS -> when (chatInfo) {
       is ChatInfo.Direct -> !(chatInfo.contact.activeConn == null && chatInfo.contact.profile.contactLink != null && chatInfo.contact.active) && !chatInfo.contact.chatDeleted
       is ChatInfo.ContactRequest -> true
       is ChatInfo.ContactConnection -> true
       is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Customer
       else -> false
     }
-    PresetTag.GROUPS -> when (chatInfo) {
+    PresetTagKind.GROUPS -> when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.businessChat == null
       else -> false
     }
-    PresetTag.BUSINESS -> when (chatInfo) {
+    PresetTagKind.BUSINESS -> when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Business
       else -> false
     }
