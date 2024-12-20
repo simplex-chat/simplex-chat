@@ -472,7 +472,7 @@ struct ChatListView: View {
         
         func filtered(_ chat: Chat) -> Bool {
             switch chatTagsModel.activeFilter {
-            case let .presetTag(tag): presetTagMatchesChat(tag, chat)
+            case let .presetTag(tag): presetTagMatchesChat(tag, chat.chatInfo)
             case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
             case .unread: chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
             case .none: true
@@ -665,6 +665,7 @@ struct ChatListSearchBar: View {
 struct ChatTagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var parentSheet: SomeSheet<AnyView>?
 
     var body: some View {
@@ -681,13 +682,13 @@ struct ChatTagsView: View {
                 collapsedTagsFilterView()
             }
         }
+        let selectedTag: ChatTag? = if case let .userTag(tag) = chatTagsModel.activeFilter {
+            tag
+        } else {
+            nil
+        }
         ForEach(chatTagsModel.userTags, id: \.id) { tag in
-            let current = if case let .userTag(t) = chatTagsModel.activeFilter {
-                t == tag
-            } else {
-                false
-            }
-            
+            let current = tag == selectedTag
             let color: Color = current ? .accentColor : .secondary
             ZStack {
                 HStack(spacing: 4) {
@@ -698,8 +699,9 @@ struct ChatTagsView: View {
                             .foregroundColor(color)
                     }
                     ZStack {
-                        Text(tag.chatTagText).fontWeight(.semibold).foregroundColor(.clear)
-                        Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color)
+                        let badge = Text(verbatim: (chatTagsModel.unreadTags[tag.chatTagId] ?? 0) > 0 ? " ●" : "").font(.footnote)
+                        (Text(tag.chatTagText).fontWeight(.semibold) + badge).foregroundColor(.clear)
+                        Text(tag.chatTagText).fontWeight(current ? .semibold : .regular).foregroundColor(color) + badge.foregroundColor(theme.colors.primary)
                     }
                 }
                 .onTapGesture {
@@ -757,21 +759,23 @@ struct ChatTagsView: View {
         } else {
             nil
         }
-        ForEach(chatTagsModel.presetTags, id: \.id) { tag in
-            let active = tag == selectedPresetTag
-            let (icon, text) = presetTagLabel(tag: tag, active: active)
-            let color: Color = active ? .accentColor : .secondary
-
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .foregroundColor(color)
-                ZStack {
-                    Text(text).fontWeight(.semibold).foregroundColor(.clear)
-                    Text(text).fontWeight(active ? .semibold : .regular).foregroundColor(color)
+        ForEach(PresetTag.allCases, id: \.id) { tag in
+            if (chatTagsModel.presetTags[tag] ?? 0) > 0 {
+                let active = tag == selectedPresetTag
+                let (icon, text) = presetTagLabel(tag: tag, active: active)
+                let color: Color = active ? .accentColor : .secondary
+                
+                HStack(spacing: 4) {
+                    Image(systemName: icon)
+                        .foregroundColor(color)
+                    ZStack {
+                        Text(text).fontWeight(.semibold).foregroundColor(.clear)
+                        Text(text).fontWeight(active ? .semibold : .regular).foregroundColor(color)
+                    }
                 }
-            }
-            .onTapGesture {
-                setActiveFilter(filter: .presetTag(tag))
+                .onTapGesture {
+                    setActiveFilter(filter: .presetTag(tag))
+                }
             }
         }
     }
@@ -793,14 +797,16 @@ struct ChatTagsView: View {
                     }
                 }
             }
-            ForEach(chatTagsModel.presetTags, id: \.id) { tag in
-                Button {
-                    setActiveFilter(filter: .presetTag(tag))
-                } label: {
-                    let (systemName, text) = presetTagLabel(tag: tag, active: tag == selectedPresetTag)
-                    HStack {
-                        Image(systemName: systemName)
-                        Text(text)
+            ForEach(PresetTag.allCases, id: \.id) { tag in
+                if (chatTagsModel.presetTags[tag] ?? 0) > 0 {
+                    Button {
+                        setActiveFilter(filter: .presetTag(tag))
+                    } label: {
+                        let (systemName, text) = presetTagLabel(tag: tag, active: tag == selectedPresetTag)
+                        HStack {
+                            Image(systemName: systemName)
+                            Text(text)
+                        }
                     }
                 }
             }
@@ -846,12 +852,12 @@ func chatStoppedIcon() -> some View {
     }
 }
 
-func presetTagMatchesChat(_ tag: PresetTag, _ chat: Chat) -> Bool {
+func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo) -> Bool {
     switch tag {
     case .favorites:
-        chat.chatInfo.chatSettings?.favorite == true
+        chatInfo.chatSettings?.favorite == true
     case .contacts:
-        switch chat.chatInfo {
+        switch chatInfo {
         case let .direct(contact): !(contact.activeConn == nil && contact.profile.contactLink != nil && contact.active) && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
@@ -859,12 +865,12 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chat: Chat) -> Bool {
         default: false
         }
     case .groups:
-        switch chat.chatInfo {
+        switch chatInfo {
         case let .group(groupInfo): groupInfo.businessChat == nil
         default: false
         }
     case .business:
-        chat.chatInfo.groupInfo?.businessChat?.chatType == .business
+        chatInfo.groupInfo?.businessChat?.chatType == .business
     }
 }
 
