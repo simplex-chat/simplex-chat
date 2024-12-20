@@ -587,13 +587,13 @@ struct DatabaseView: View {
     }
 }
 
-private func archiveImportedAlertText() -> (String, String) {
+func archiveImportedAlertText() -> (String, String) {
     (
         NSLocalizedString("Chat database imported", comment: ""),
         NSLocalizedString("Restart the app to use imported chat database", comment: "")
     )
 }
-private func archiveImportedWithErrorsAlertText(errs: [ArchiveError]) -> (String, String) {
+func archiveImportedWithErrorsAlertText(errs: [ArchiveError]) -> (String, String) {
     (
         NSLocalizedString("Chat database imported", comment: ""),
         NSLocalizedString("Restart the app to use imported chat database", comment: "") + "\n" + NSLocalizedString("Some non-fatal errors occurred during import:", comment: "") + archiveErrorsText(errs)

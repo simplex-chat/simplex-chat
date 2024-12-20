@@ -96,6 +96,7 @@ struct MigrateToDevice: View {
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateToDeviceViewAlert?
+    @State private var databaseAlert: DatabaseAlert? = nil
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
     // Prevent from hiding the view until migration is finished or app deleted
@@ -178,6 +179,20 @@ struct MigrateToDevice: View {
                 return Alert(title: Text(title), message: Text(error))
             }
         }
+        .alert(item: $databaseAlert) { item in
+            switch item {
+            case .archiveImported:
+                let (title, message) = archiveImportedAlertText()
+                return Alert(title: Text(title), message: Text(message))
+            case let .archiveImportedWithErrors(errs):
+                let (title, message) = archiveImportedWithErrorsAlertText(errs: errs)
+                return Alert(title: Text(title), message: Text(message))
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text(error))
+            default: // not expected this branch to be called because this alert is used only for importArchive purpose
+                return Alert(title: Text("Error"))
+            }
+        }
         .interactiveDismissDisabled(backDisabled)
     }
 
@@ -243,7 +258,7 @@ struct MigrateToDevice: View {
         ) { result in
             if case let .success(files) = result, let fileURL = files.first {
                 Task {
-                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, Binding.constant(nil))
+                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, $databaseAlert)
                     if success {
                         DatabaseView.startChat(
                             Binding.constant(false),
