@@ -16,6 +16,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+    PRIVACY.md
     cabal.project
 
 flag swift
