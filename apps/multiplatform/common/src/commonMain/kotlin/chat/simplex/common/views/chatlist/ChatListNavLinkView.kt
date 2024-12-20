@@ -1,6 +1,9 @@
 package chat.simplex.common.views.chatlist
 
+import SectionCustomFooter
+import SectionDivider
 import SectionItemView
+import TextIconSpaced
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -12,20 +15,34 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.*
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.apiDeleteChatTag
+import chat.simplex.common.model.ChatController.apiSetChatTags
+import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel.markChatTagRead
+import chat.simplex.common.model.ChatModel.updateChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.group.deleteGroupDialog
-import chat.simplex.common.views.chat.group.leaveGroupDialog
+import chat.simplex.common.views.chat.group.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.contacts.onRequestAccepted
 import chat.simplex.common.views.helpers.*
@@ -33,7 +50,6 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
-import kotlin.math.min
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
@@ -252,6 +268,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
     ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+    ItemListAction(chat, showMenu)
     ClearChatAction(chat, showMenu)
   }
   DeleteContactAction(chat, chatModel, showMenu)
@@ -291,6 +308,7 @@ fun GroupMenuItems(
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+      ItemListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
@@ -332,6 +350,28 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
     painterResource(MR.images.ic_mark_chat_unread),
     onClick = {
       markChatUnread(chat, chatModel)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
+fun ItemListAction(
+  chat: Chat,
+  showMenu: MutableState<Boolean>
+) {
+  val userTags = remember { chatModel.userTags }
+  ItemAction(
+    stringResource(MR.strings.list_menu),
+    painterResource(MR.images.ic_label),
+    onClick = {
+      ModalManager.start.showModalCloseable { close ->
+        if (userTags.value.isEmpty()) {
+          ChatListTagEditor(rhId = chat.remoteHostId, chat = chat, close = close)
+        } else {
+          ChatListTag(rhId = chat.remoteHostId, chat = chat, close = close)
+        }
+      }
       showMenu.value = false
     }
   )
@@ -511,6 +551,262 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
 }
 
 @Composable
+fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit) {
+  val userTags = remember { chatModel.userTags }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
+  val saving = remember { mutableStateOf(false) }
+  val chatTagIds = derivedStateOf { chat?.chatInfo?.chatTags ?: emptyList() }
+
+  LazyColumnWithScrollBar(
+    contentPadding = if (oneHandUI.value) {
+      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+    } else {
+      PaddingValues(top = topPaddingToContent(false))
+    },
+    state = listState
+  ) {
+    items(userTags.value) { tag ->
+      val showMenu = remember { mutableStateOf(false) }
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+          .combinedClickable(
+            enabled = !saving.value,
+            onClick = {
+              if (chat == null) {
+                ModalManager.start.showModalCloseable { close ->
+                  ChatListTagEditor(
+                    rhId = rhId,
+                    tagId = tag.chatTagId,
+                    close = close,
+                    emoji = tag.chatTagEmoji,
+                    name = tag.chatTagText
+                  )
+                }
+              } else {
+                setTag(rhId = rhId, tagId = tag.chatTagId, chat = chat, saving = saving, close = close)
+              }
+            },
+            onLongClick = { showMenu.value = true },
+            interactionSource = remember { MutableInteractionSource() },
+            indication = LocalIndication.current
+          )
+          .onRightClick { showMenu.value = true }
+          .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        val selected = chatTagIds.value.contains(tag.chatTagId)
+        if (tag.chatTagEmoji != null) {
+          Text(
+            tag.chatTagEmoji
+          )
+        } else {
+          Icon(painterResource(MR.images.ic_label), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        }
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(
+          tag.chatTagText,
+          color = MenuTextColor,
+          fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
+        )
+        if (selected) {
+          Spacer(Modifier.weight(1f))
+          Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        }
+        DefaultDropdownMenu(showMenu, dropdownMenuItems = {
+          EditChatTagAction(rhId, tag, showMenu)
+          DeleteChatTagAction(rhId, tag, showMenu, saving)
+        })
+      }
+
+      SectionDivider()
+    }
+    item {
+      SectionItemView({
+        ModalManager.start.showModalCloseable { close ->
+          ChatListTagEditor(rhId = rhId, close = close)
+        }
+      }) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
+      }
+    }
+  }
+}
+
+@Composable
+fun ChatListTagEditor(
+  rhId: Long?,
+  chat: Chat? = null,
+  tagId: Long? = null,
+  emoji: String? = null,
+  name: String = "",
+  close: () -> Unit
+) {
+  val userTags = remember { chatModel.userTags }
+  val newEmoji = remember { mutableStateOf(emoji) }
+  val newName = remember { mutableStateOf(name) }
+  val saving = remember { mutableStateOf<Boolean?>(null) }
+  val trimmedName = remember { derivedStateOf { newName.value.trim() } }
+  val isDuplicateEmojiOrName = remember {
+    derivedStateOf {
+      userTags.value.any { tag ->
+        tag.chatTagId != tagId &&
+            ((newEmoji.value != null && tag.chatTagEmoji == newEmoji.value) || tag.chatTagText == trimmedName.value)
+      }
+    }
+  }
+
+  fun createChatTag() {
+    saving.value = true
+    withBGApi {
+      try {
+        val updatedTags = chatModel.controller.apiCreateChatTag(rhId, ChatTagData(newEmoji.value, trimmedName.value))
+        if (updatedTags != null) {
+          userTags.value = updatedTags
+          saving.value = false
+          close()
+        } else {
+          saving.value = null
+        }
+      } catch (e: Exception) {
+        Log.d(TAG, "ChatListTagEditor createChatTag tag error: ${e.message}")
+        saving.value = null
+      }
+    }
+  }
+
+  fun updateChatTag() {
+    saving.value = true
+    withBGApi {
+      try {
+        if (chatModel.controller.apiUpdateChatTag(rhId, tagId!!, ChatTagData(newEmoji.value, trimmedName.value))) {
+          userTags.value = userTags.value.map { tag ->
+            if (tag.chatTagId == tagId) {
+              tag.copy(chatTagEmoji = newEmoji.value, chatTagText = trimmedName.value)
+            } else {
+              tag
+            }
+          }
+        } else {
+          saving.value = null
+          return@withBGApi
+        }
+        saving.value = false
+        close()
+      } catch (e: Exception) {
+        Log.d(TAG, "ChatListTagEditor updateChatTag tag error: ${e.message}")
+        saving.value = null
+      }
+    }
+  }
+
+  val showError = derivedStateOf { isDuplicateEmojiOrName.value && saving.value != false }
+
+  ColumnWithScrollBar {
+    SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      ChatListNameTextField(newName, showError = showError)
+    }
+    val disabled = saving.value == true ||
+        (trimmedName.value == name && newEmoji.value == emoji) ||
+        trimmedName.value.isEmpty() ||
+        isDuplicateEmojiOrName.value
+
+    SectionItemView(click = { if (tagId == null) createChatTag() else updateChatTag() }, disabled = disabled) {
+      Text(
+        generalGetString(if (tagId == null) MR.strings.create_list else MR.strings.save_list),
+        color = if (disabled) colors.secondary else colors.primary
+      )
+    }
+    if (isDuplicateEmojiOrName.value && saving.value != false) {
+      SectionCustomFooter {
+        Row(
+          Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Icon(
+            painterResource(MR.images.ic_error),
+            contentDescription = stringResource(MR.strings.error),
+            tint = Color.Red,
+            modifier = Modifier
+              .size(19.sp.toDp())
+              .offset(x = 2.sp.toDp())
+          )
+          TextIconSpaced()
+          Text(
+            generalGetString(MR.strings.duplicated_list_error),
+            color = MaterialTheme.colors.secondary,
+            lineHeight = 18.sp,
+            fontSize = 14.sp
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
+  var focused by rememberSaveable { mutableStateOf(false) }
+  val focusRequester = remember { FocusRequester() }
+  val strokeColor by remember {
+    derivedStateOf {
+      if (showError.value) {
+        Color.Red
+      } else {
+        if (focused) {
+          CurrentColors.value.colors.secondary.copy(alpha = 0.6f)
+        } else {
+          CurrentColors.value.colors.secondary.copy(alpha = 0.3f)
+        }
+      }
+    }
+  }
+
+  val modifier = Modifier
+    .fillMaxWidth()
+    .heightIn(min = 50.dp)
+    .onFocusChanged { focused = it.isFocused }
+  Column(
+    Modifier
+      .fillMaxWidth(),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    BasicTextField(
+      value = name.value,
+      onValueChange = { name.value = it },
+      modifier = modifier.focusRequester(focusRequester),
+      textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
+      singleLine = true,
+      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+      decorationBox = @Composable { innerTextField ->
+        TextFieldDefaults.TextFieldDecorationBox(
+          value = name.value,
+          innerTextField = innerTextField,
+          placeholder = {
+            Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp))
+          },
+          contentPadding = PaddingValues(),
+          label = null,
+          visualTransformation = VisualTransformation.None,
+          leadingIcon = null,
+          singleLine = true,
+          enabled = true,
+          isError = false,
+          interactionSource = remember { MutableInteractionSource() },
+          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
+        )
+      }
+
+    )
+    Divider(color = strokeColor)
+  }
+}
+
+@Composable
 private fun InvalidDataView() {
   Row {
     ProfileImage(72.dp, null, MR.images.ic_account_circle_filled, MaterialTheme.colors.secondary)
@@ -531,6 +827,40 @@ private fun InvalidDataView() {
       Spacer(Modifier.height(height))
     }
   }
+}
+
+@Composable
+private fun DeleteChatTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.delete_chat_list_menu_action),
+    painterResource(MR.images.ic_delete),
+    onClick = {
+      deleteChatTagDialog(rhId, tag, saving)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+private fun EditChatTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.edit_chat_list_menu_action),
+    painterResource(MR.images.ic_edit),
+    onClick = {
+      showMenu.value = false
+      ModalManager.start.showModalCloseable { close ->
+        ChatListTagEditor(
+          rhId = rhId,
+          tagId = tag.chatTagId,
+          close = close,
+          emoji = tag.chatTagEmoji,
+          name = tag.chatTagText
+        )
+      }
+    },
+    color = MenuTextColor
+  )
 }
 
 fun markChatRead(c: Chat, chatModel: ChatModel) {
@@ -557,6 +887,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
       if (success) {
         withChats {
           replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+          markChatTagRead(chat)
         }
       }
     }
@@ -576,7 +907,9 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     )
     if (success) {
       withChats {
+        val wasUnread = chat.isUnread
         replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+        updateChatTagRead(chat, wasUnread)
       }
     }
   }
@@ -826,6 +1159,8 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       else -> false
     }
     if (res && newChatInfo != null) {
+      val wasFavorite = chatInfo.chatSettings?.favorite ?: false
+      chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withChats {
         updateChatInfo(remoteHostId, newChatInfo)
       }
@@ -839,6 +1174,116 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
     }
   }
 }
+
+private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, saving: MutableState<Boolean>, close: () -> Unit) {
+  withBGApi {
+    val tagIds: List<Long> = if (tagId == null) {
+      emptyList()
+    } else {
+      listOf(tagId)
+    }
+
+    try {
+      saving.value = true
+      val result = apiSetChatTags(rh = rhId, type = chat.chatInfo.chatType, id = chat.chatInfo.apiId, tagIds = tagIds)
+
+      if (result != null) {
+        chatModel.userTags.value = result.first
+        when (val cInfo = chat.chatInfo) {
+          is ChatInfo.Direct -> {
+            val contact = cInfo.contact.copy(chatTags = result.second)
+            withChats {
+              updateContact(rhId, contact)
+            }
+          }
+
+          is ChatInfo.Group -> {
+            val group = cInfo.groupInfo.copy(chatTags = result.second)
+            withChats {
+              updateGroup(rhId, group)
+            }
+          }
+
+          else -> {}
+        }
+        close()
+      }
+      saving.value = false
+    } catch (e: Exception) {
+      Log.d(TAG, "createChatTag error: ${e.message}")
+      saving.value = false
+    }
+  }
+}
+
+private fun deleteTag(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) {
+  withBGApi {
+    saving.value = true
+
+    try {
+      val tagId = tag.chatTagId
+      if (apiDeleteChatTag(rhId, tagId)) {
+        chatModel.userTags.value = chatModel.userTags.value.filter { it.chatTagId != tagId }
+        if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
+          chatModel.activeChatTagFilter.value = null
+        }
+        chatModel.chats.value.forEach { c ->
+          when (val cInfo = c.chatInfo) {
+            is ChatInfo.Direct -> {
+              val contact = cInfo.contact.copy(chatTags = cInfo.contact.chatTags.filter { it != tagId })
+              withChats {
+                updateContact(rhId, contact)
+              }
+            }
+            is ChatInfo.Group -> {
+              val group = cInfo.groupInfo.copy(chatTags = cInfo.groupInfo.chatTags.filter { it != tagId })
+              withChats {
+                updateGroup(rhId, group)
+              }
+            }
+            else -> {}
+          }
+        }
+      }
+
+    } catch (e: Exception) {
+      Log.d(TAG, "deleteTag error: ${e.message}")
+    } finally {
+      saving.value = false
+    }
+  }
+}
+
+private fun deleteChatTagDialog(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.delete_chat_list_question),
+    text = String.format(generalGetString(MR.strings.delete_chat_list_warning), tag.chatTagText),
+    buttons = {
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        deleteTag(rhId, tag, saving)
+      }) {
+        Text(
+          generalGetString(MR.strings.confirm_verb),
+          Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          color = colors.error
+        )
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(
+          stringResource(MR.strings.cancel_verb),
+          Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          color = colors.primary
+        )
+      }
+    }
+  )
+}
+
 
 @Composable
 expect fun ChatListNavLinkLayout(

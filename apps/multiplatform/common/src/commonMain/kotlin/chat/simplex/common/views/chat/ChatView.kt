@@ -31,6 +31,7 @@ import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.markChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -2106,6 +2107,7 @@ private fun markUnreadChatAsRead(chatId: String) {
     if (success) {
       withChats {
         replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        markChatTagRead(chat)
       }
     }
   }
