@@ -847,6 +847,9 @@ processChatCommand' vr = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
+  APIGetChatTags userId -> withUserId' userId $ \user -> do
+    tags <- withFastStore' (`getUserChatTags` user)
+    pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
@@ -894,6 +897,26 @@ processChatCommand' vr = \case
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
+    _ <- createChatTag db user emoji text
+    CRChatTags user <$> getUserChatTags db user
+  APISetChatTags (ChatRef cType chatId) tagIds -> withUser $ \user -> withFastStore' $ \db -> case cType of
+    CTDirect -> do
+      updateDirectChatTags db chatId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> getUserChatTags db user <*> getDirectChatTags db chatId
+    CTGroup -> do
+      updateGroupChatTags db chatId (maybe [] L.toList tagIds)
+      CRTagsUpdated user <$> getUserChatTags db user <*> getGroupChatTags db chatId
+    _ -> pure $ chatCmdError (Just user) "not supported"
+  APIDeleteChatTag tagId -> withUser $ \user -> do
+    withFastStore' $ \db -> deleteChatTag db user tagId
+    ok user
+  APIUpdateChatTag tagId (ChatTagData emoji text) -> withUser $ \user -> do
+    withFastStore' $ \db -> updateChatTag db user tagId emoji text
+    ok user
+  APIReorderChatTags tagIds -> withUser $ \user -> do
+    withFastStore' $ \db -> reorderChatTags db user $ L.toList tagIds
+    ok user
   APICreateChatItems folderId cms -> withUser $ \user ->
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
@@ -8391,6 +8414,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
+      "/_get tags " *> (APIGetChatTags <$> A.decimal),
       "/_get chats "
         *> ( APIGetChats
               <$> A.decimal
@@ -8402,6 +8426,11 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
+      "/_create tag " *> (APICreateChatTag <$> jsonP),
+      "/_tags " *> (APISetChatTags <$> chatRefP <*> optional _strP),
+      "/_delete tag " *> (APIDeleteChatTag <$> A.decimal),
+      "/_update tag " *> (APIUpdateChatTag <$> A.decimal <* A.space <*> jsonP),
+      "/_reorder tags " *> (APIReorderChatTags <$> strP),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),

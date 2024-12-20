@@ -186,7 +186,7 @@ struct NewChatSheet: View {
     }
 }
 
-func chatContactType(chat: Chat) -> ContactType {
+func chatContactType(_ chat: Chat) -> ContactType {
     switch chat.chatInfo {
     case .contactRequest:
         return .request
@@ -207,7 +207,7 @@ func chatContactType(chat: Chat) -> ContactType {
 
 private func filterContactTypes(chats: [Chat], contactTypes: [ContactType]) -> [Chat] {
     return chats.filter { chat in
-        contactTypes.contains(chatContactType(chat: chat))
+        contactTypes.contains(chatContactType(chat))
     }
 }
 
@@ -279,8 +279,8 @@ struct ContactsList: View {
     }
     
     private func chatsByTypeComparator(chat1: Chat, chat2: Chat) -> Bool {
-        let chat1Type = chatContactType(chat: chat1)
-        let chat2Type = chatContactType(chat: chat2)
+        let chat1Type = chatContactType(chat1)
+        let chat2Type = chatContactType(chat2)
 
         if chat1Type.rawValue < chat2Type.rawValue {
             return true

@@ -21,7 +21,7 @@ struct AddressCreationCard: View {
     var body: some View {
         let addressExists = chatModel.userAddress != nil
         let chats = chatModel.chats.filter { chat in
-            !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card
+            !chat.chatInfo.chatDeleted && !chat.chatInfo.contactCard
         }
         ZStack(alignment: .topTrailing) {
             HStack(alignment: .top, spacing: 16) {
