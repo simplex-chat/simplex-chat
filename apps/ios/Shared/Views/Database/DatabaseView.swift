@@ -542,6 +542,8 @@ struct DatabaseView: View {
             } else if case .chatDeleted = dbAlert {
                 let (title, message) = chatDeletedAlertText()
                 showAlert(title, message: message, actions: { [okAlertActionWaiting] })
+            } else if case let .error(title, error) = dbAlert {
+                showAlert("\(title)", message: error, actions: { [okAlertActionWaiting] })
             } else {
                 alert.wrappedValue = dbAlert
                 cont.resume()
