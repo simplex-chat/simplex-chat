@@ -293,7 +293,6 @@ xftpSndFileRedirect user ftId vfd = do
 dummyFileDescr :: FileDescr
 dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
 
-
 cancelFilesInProgress :: User -> [CIFileInfo] -> CM ()
 cancelFilesInProgress user filesInfo = do
   let filesInfo' = filter (not . fileEnded) filesInfo
@@ -359,7 +358,6 @@ deleteFilesLocally files =
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> CM ()) -> CM ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
-
 
 deleteDirectCIs :: User -> Contact -> [CChatItem 'CTDirect] -> Bool -> Bool -> CM ChatResponse
 deleteDirectCIs user ct items byUser timed = do
@@ -620,7 +618,6 @@ cleanupACIFile (AChatItem _ _ _ ChatItem {file = Just CIFile {fileSource = Just 
   fsFilePath <- lift $ toFSFilePath filePath
   removeFile fsFilePath `catchChatError` \_ -> pure ()
 cleanupACIFile _ = pure ()
-
 
 getKnownAgentServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> User -> CM (NonEmpty (ServerCfg p))
 getKnownAgentServers p user = do
