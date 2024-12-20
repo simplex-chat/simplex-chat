@@ -262,8 +262,7 @@ struct DatabaseView: View {
                     message: Text("Your current chat database will be DELETED and REPLACED with the imported one.") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
                     primaryButton: .destructive(Text("Import")) {
                         stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator) {
-                            _ = await DatabaseView.importArchive(fileURL, $progressIndicator, $alert)
-                            return true
+                            await DatabaseView.importArchive(fileURL, $progressIndicator, $alert, false)
                         }
                     },
                     secondaryButton: .cancel()
@@ -467,9 +466,13 @@ struct DatabaseView: View {
     static func importArchive(
         _ archivePath: URL,
         _ progressIndicator: Binding<Bool>,
-        _ alert: Binding<DatabaseAlert?>
+        _ alert: Binding<DatabaseAlert?>,
+        _ migration: Bool
     ) async -> Bool {
         if archivePath.startAccessingSecurityScopedResource() {
+            defer {
+                archivePath.stopAccessingSecurityScopedResource()
+            }
             await MainActor.run {
                 progressIndicator.wrappedValue = true
             }
@@ -483,17 +486,17 @@ struct DatabaseView: View {
                     _ = kcDatabasePassword.remove()
                     if archiveErrors.isEmpty {
                         await operationEnded(.archiveImported, progressIndicator, alert)
+                        return true
                     } else {
                         await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors), progressIndicator, alert)
+                        return migration
                     }
-                    return true
                 } catch let error {
                     await operationEnded(.error(title: "Error importing chat database", error: responseError(error)), progressIndicator, alert)
                 }
             } catch let error {
                 await operationEnded(.error(title: "Error deleting chat database", error: responseError(error)), progressIndicator, alert)
             }
-            archivePath.stopAccessingSecurityScopedResource()
         } else {
             showAlert("Error accessing database file")
         }
@@ -542,6 +545,8 @@ struct DatabaseView: View {
             } else if case .chatDeleted = dbAlert {
                 let (title, message) = chatDeletedAlertText()
                 showAlert(title, message: message, actions: { [okAlertActionWaiting] })
+            } else if case let .error(title, error) = dbAlert {
+                showAlert("\(title)", message: error, actions: { [okAlertActionWaiting] })
             } else {
                 alert.wrappedValue = dbAlert
                 cont.resume()
@@ -587,13 +592,13 @@ struct DatabaseView: View {
     }
 }
 
-private func archiveImportedAlertText() -> (String, String) {
+func archiveImportedAlertText() -> (String, String) {
     (
         NSLocalizedString("Chat database imported", comment: ""),
         NSLocalizedString("Restart the app to use imported chat database", comment: "")
     )
 }
-private func archiveImportedWithErrorsAlertText(errs: [ArchiveError]) -> (String, String) {
+func archiveImportedWithErrorsAlertText(errs: [ArchiveError]) -> (String, String) {
     (
         NSLocalizedString("Chat database imported", comment: ""),
         NSLocalizedString("Restart the app to use imported chat database", comment: "") + "\n" + NSLocalizedString("Some non-fatal errors occurred during import:", comment: "") + archiveErrorsText(errs)
