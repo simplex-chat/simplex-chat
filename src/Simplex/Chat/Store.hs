@@ -14,8 +14,8 @@ module Simplex.Chat.Store
 where
 
 import Data.ByteArray (ScrubbedBytes)
-import Simplex.Chat.Store.Migrations
 import Simplex.Chat.Store.Profiles
+import Simplex.Chat.Store.SQLite.Migrations
 import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, MigrationError, SQLiteStore (..), createSQLiteStore, withTransaction)
 

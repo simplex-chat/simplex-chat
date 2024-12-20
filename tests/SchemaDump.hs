@@ -22,7 +22,7 @@ testDB :: FilePath
 testDB = "tests/tmp/test_chat.db"
 
 appSchema :: FilePath
-appSchema = "src/Simplex/Chat/Migrations/chat_schema.sql"
+appSchema = "src/Simplex/Chat/Store/SQLite/Migrations/chat_schema.sql"
 
 -- Some indexes found by `.lint fkey-indexes` are not added to schema, explanation:
 --
@@ -38,7 +38,7 @@ appSchema = "src/Simplex/Chat/Migrations/chat_schema.sql"
 --   EXPLAIN QUERY PLAN DELETE FROM group_members;
 --   (uses idx_connections_group_member)
 appLint :: FilePath
-appLint = "src/Simplex/Chat/Migrations/chat_lint.sql"
+appLint = "src/Simplex/Chat/Store/SQLite/Migrations/chat_lint.sql"
 
 testSchema :: FilePath
 testSchema = "tests/tmp/test_agent_schema.sql"
