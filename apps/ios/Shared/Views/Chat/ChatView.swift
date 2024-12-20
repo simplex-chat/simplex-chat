@@ -465,12 +465,14 @@ struct ChatView: View {
                         mergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
                     }
                 )
+                .environmentObject(theme) // crashes without this line when scrolling to the first unread in ReverseList
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadItems: { pagination, visibleItemIndexesNonReversed in
                 loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
             }
             .onAppear {
                 mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                loadLastItems($loadingItems, chat.chatInfo)
             }
             .onChange(of: im.reversedChatItems) { items in
                 mergedItems = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
@@ -480,6 +482,9 @@ struct ChatView: View {
             }
             .onChange(of: chat.chatStats.unreadCount) { unreadCount in
                 mergedItems = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
+            }
+            .onChange(of: chat.id) { _ in
+                loadLastItems($loadingItems, chat.chatInfo)
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
@@ -1032,6 +1037,8 @@ struct ChatView: View {
                 }
             }
             .onAppear {
+                // LALAL
+                return ()
                 if markedRead {
                     return
                 } else {

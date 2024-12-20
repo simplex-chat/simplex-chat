@@ -60,6 +60,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
+        private var scrollToRowOnAppear = 0
+
         init(representer: ReverseList) {
             self.representer = representer
             super.init(style: .plain)
@@ -156,6 +158,31 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             NotificationCenter.default.post(name: .chatViewWillBeginScrolling, object: nil)
         }
 
+        /// depending on tableView layout phase conditions, it can already have known size or not. Not possible to correctly scroll to required
+        /// item if the size is unknown
+        func scrollToRowWhenKnowSize(_ row: Int) {
+            //            logger.debug("LALAL WILL SCROLL TO \(self.scrollToRowOnAppear)")
+            if row > 0 && tableView.visibleSize.height > 0 {
+                //                logger.debug("LALAL OFFSET before \(self.tableView.contentOffset.y), visible \(self.tableView.visibleSize.height) \(self.tableView.frame.height) \(self.view.frame.height) \(self.tableView.indexPathsForVisibleRows!)")
+                //tableView.setContentOffset(CGPointMake(0, tableView.contentOffset.y - tableView.visibleSize.height), animated: false)
+                tableView.scrollToRow(at: IndexPath(item: min(tableView.numberOfRows(inSection: 0) - 1, row), section: 0), at: .bottom, animated: false)
+                // Without this small scroll position is not correct pixel-to-pixel.
+                // Only needed when viewDidAppear has not been called yet because in there clipsToBounds is applied
+                if tableView.clipsToBounds {
+                    tableView.setContentOffset(CGPointMake(0, tableView.contentOffset.y - 5), animated: false)
+                }
+                //                logger.debug("LALAL OFFSET after \(self.tableView.contentOffset.y) \(self.tableView.indexPathsForVisibleRows!)")
+                scrollToRowOnAppear = 0
+            } else {
+                scrollToRowOnAppear = row
+            }
+        }
+
+        override public func viewIsAppearing(_ animated: Bool) {
+            super.viewIsAppearing(animated)
+            scrollToRowWhenKnowSize(scrollToRowOnAppear)
+        }
+
         override func viewDidAppear(_ animated: Bool) {
             tableView.clipsToBounds = false
             parent?.viewIfLoaded?.clipsToBounds = false
@@ -196,23 +223,67 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func update(items: [ChatItem]) {
-            let wasCount = dataSource.snapshot().numberOfItems
+            var prevSnapshot = dataSource.snapshot()
+            let wasCount = prevSnapshot.numberOfItems
+            let insertedOneNewestItem = wasCount != 0 && representer.mergedItems.items.count - wasCount == 1 && prevSnapshot.itemIdentifiers.first! == self.representer.mergedItems.items[1]
             logger.debug("LALAL WAS \(wasCount) will be \(self.representer.mergedItems.items.count)")
             //self.representer.mergedItems = MergedItems.create(items, representer.unreadCount, representer.revealedItems, ItemsModel.shared.chatState)
-            var snapshot = NSDiffableDataSourceSnapshot<Section, MergedItem>()
-            snapshot.appendSections([.main])
-            snapshot.appendItems(representer.mergedItems.items)
+            let snapshot: NSDiffableDataSourceSnapshot<Section, MergedItem>
+            if insertedOneNewestItem {
+                prevSnapshot.insertItems([representer.mergedItems.items.first!], beforeItem: prevSnapshot.itemIdentifiers.first!)
+                snapshot = prevSnapshot
+            } else {
+                var snap = NSDiffableDataSourceSnapshot<Section, MergedItem>()
+                snap.appendSections([.main])
+                snap.appendItems(representer.mergedItems.items)
+
+                if snap.itemIdentifiers == prevSnapshot.itemIdentifiers {
+                    logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
+                    return
+                }
+
+                snapshot = snap
+            }
             dataSource.defaultRowAnimation = .none
-            dataSource.apply(
-                snapshot,
-                animatingDifferences: wasCount != 0 && abs(representer.mergedItems.items.count - wasCount) == 1
-            )
+            let wasContentHeight = tableView.contentSize.height
+            let wasOffset = tableView.contentOffset.y
+            let countDiff = max(0, snapshot.numberOfItems - prevSnapshot.numberOfItems)
             // Sets content offset on initial load
             if wasCount == 0 {
-                tableView.setContentOffset(
-                    CGPoint(x: 0, y: -InvertedTableView.inset),
-                    animated: false
+                dataSource.apply(
+                    snapshot,
+                    animatingDifferences: insertedOneNewestItem
                 )
+                if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { merged in merged.hasUnread() }) {
+                    scrollToRowWhenKnowSize(firstUnreadItem)
+                } else {
+                    tableView.setContentOffset(
+                        CGPoint(x: 0, y: -InvertedTableView.inset),
+                        animated: false
+                    )
+                }
+            } else if wasCount != snapshot.numberOfItems {
+                tableView.beginUpdates()
+                dataSource.apply(
+                    snapshot,
+                    animatingDifferences: false
+                )
+//                tableView.scrollToRow(
+//                    at: IndexPath(row: countDiff, section: 0),
+//                    at: .top,
+//                    animated: false
+//                )
+                tableView.endUpdates()
+//                if snapshot.itemIdentifiers[0].newest().item.id == prevSnapshot.itemIdentifiers[0].newest().item.id {
+//                    // added new items to top
+//                } else {
+//                    // added new items to bottom
+//                    logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight))")
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+//                        self.tableView.setContentOffset(CGPointMake(0, self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), animated: false)
+//                    }
+//                }
+
             }
             updateFloatingButtons.send()
         }

@@ -198,6 +198,7 @@
 		8C8118722C220B5B00E6FC94 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 8C8118712C220B5B00E6FC94 /* Yams */; };
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
+		8CAD466F2D15A8100078D18F /* ChatScrollHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CAD466E2D15A8100078D18F /* ChatScrollHelpers.swift */; };
 		8CAEF1502D11A6A000240F00 /* ChatItemsLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CAEF14F2D11A6A000240F00 /* ChatItemsLoader.swift */; };
 		8CB15EA02CFDA30600C28209 /* ChatItemsMerger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB15E9F2CFDA30600C28209 /* ChatItemsMerger.swift */; };
 		8CB3476C2CF5CFFA006787A5 /* Ink in Frameworks */ = {isa = PBXBuildFile; productRef = 8CB3476B2CF5CFFA006787A5 /* Ink */; };
@@ -549,6 +550,7 @@
 		8C852B072C1086D100BA61E8 /* Color.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Color.swift; sourceTree = "<group>"; };
 		8C86EBE42C0DAE4F00E12243 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeModeEditor.swift; sourceTree = "<group>"; };
+		8CAD466E2D15A8100078D18F /* ChatScrollHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatScrollHelpers.swift; sourceTree = "<group>"; };
 		8CAEF14F2D11A6A000240F00 /* ChatItemsLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemsLoader.swift; sourceTree = "<group>"; };
 		8CB15E9F2CFDA30600C28209 /* ChatItemsMerger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemsMerger.swift; sourceTree = "<group>"; };
 		8CB3476D2CF5F58B006787A5 /* ConditionsWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsWebView.swift; sourceTree = "<group>"; };
@@ -750,6 +752,7 @@
 				8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */,
 				8CB15E9F2CFDA30600C28209 /* ChatItemsMerger.swift */,
 				8CAEF14F2D11A6A000240F00 /* ChatItemsLoader.swift */,
+				8CAD466E2D15A8100078D18F /* ChatScrollHelpers.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -1507,6 +1510,7 @@
 				5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */,
 				5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */,
 				6407BA83295DA85D0082BA18 /* CIInvalidJSONView.swift in Sources */,
+				8CAD466F2D15A8100078D18F /* ChatScrollHelpers.swift in Sources */,
 				644EFFDE292BCD9D00525D5B /* ComposeVoiceView.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 				64D0C2C029F9688300B38D5F /* UserAddressView.swift in Sources */,
