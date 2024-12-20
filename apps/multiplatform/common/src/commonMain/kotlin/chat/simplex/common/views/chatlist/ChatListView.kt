@@ -898,7 +898,11 @@ private fun ChatTagsView() {
           .padding(horizontal = 4.dp, vertical = 4.dp)
           .combinedClickable(
             onClick = {
-              chatModel.activeChatTagFilter.value = ActiveFilter.UserTagFilter(tag)
+              if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTagFilter(tag)) {
+                chatModel.activeChatTagFilter.value = null
+              } else {
+                chatModel.activeChatTagFilter.value = ActiveFilter.UserTagFilter(tag)
+              }
             },
             onLongClick = { showChatTagList() },
             interactionSource = interactionSource,

@@ -635,6 +635,10 @@
   <string name="save_list">Save list</string>
   <string name="list_name_field_placeholder">List name...</string>
   <string name="duplicated_list_error">List name and emoji should be different for all lists.</string>
+  <string name="delete_chat_list_menu_action">Delete</string>
+  <string name="delete_chat_list_question">Delete list?</string>
+  <string name="delete_chat_list_warning">All chats will be removed from the list %s, and the list deleted</string>
+  <string name="edit_chat_list_menu_action">Edit</string>
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_a_contact">You invited a contact</string>
