@@ -258,7 +258,7 @@ struct MigrateToDevice: View {
         ) { result in
             if case let .success(files) = result, let fileURL = files.first {
                 Task {
-                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, $databaseAlert)
+                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, $databaseAlert, true)
                     if success {
                         DatabaseView.startChat(
                             Binding.constant(false),

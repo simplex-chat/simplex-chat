@@ -262,7 +262,7 @@ struct DatabaseView: View {
                     message: Text("Your current chat database will be DELETED and REPLACED with the imported one.") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
                     primaryButton: .destructive(Text("Import")) {
                         stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator) {
-                            await DatabaseView.importArchive(fileURL, $progressIndicator, $alert)
+                            await DatabaseView.importArchive(fileURL, $progressIndicator, $alert, false)
                         }
                     },
                     secondaryButton: .cancel()
@@ -466,7 +466,8 @@ struct DatabaseView: View {
     static func importArchive(
         _ archivePath: URL,
         _ progressIndicator: Binding<Bool>,
-        _ alert: Binding<DatabaseAlert?>
+        _ alert: Binding<DatabaseAlert?>,
+        _ migration: Bool
     ) async -> Bool {
         if archivePath.startAccessingSecurityScopedResource() {
             await MainActor.run {
@@ -480,14 +481,16 @@ struct DatabaseView: View {
                     let archiveErrors = try await apiImportArchive(config: config)
                     shouldImportAppSettingsDefault.set(true)
                     _ = kcDatabasePassword.remove()
+                    archivePath.stopAccessingSecurityScopedResource()
                     if archiveErrors.isEmpty {
                         await operationEnded(.archiveImported, progressIndicator, alert)
+                        return true
                     } else {
                         await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors), progressIndicator, alert)
+                        return migration
                     }
-                    archivePath.stopAccessingSecurityScopedResource()
-                    return true
                 } catch let error {
+                    archivePath.stopAccessingSecurityScopedResource()
                     await operationEnded(.error(title: "Error importing chat database", error: responseError(error)), progressIndicator, alert)
                 }
             } catch let error {
