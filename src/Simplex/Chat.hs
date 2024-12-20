@@ -29,10 +29,10 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol
-import Simplex.Chat.Shared
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types

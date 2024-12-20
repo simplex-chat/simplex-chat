@@ -14,7 +14,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
-module Simplex.Chat.AgentReceiveLoop where
+module Simplex.Chat.Library.Subscriber where
 
 import Control.Logger.Simple
 import Control.Monad
@@ -48,7 +48,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
-import Simplex.Chat.Shared
+import Simplex.Chat.Library.Internal
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct
