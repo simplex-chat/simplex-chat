@@ -877,12 +877,20 @@ private fun ChatTagsView() {
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val rhId = chatModel.remoteHostId()
 
+  fun showChatTagList () {
+    ModalManager.start.showModalCloseable { close ->
+      ChatListTag(rhId = rhId, close = close)
+    }
+  }
+
   LazyRow {
     items(userTags.value) { tag ->
       val current = when (val af = activeFilter.value) {
         is ActiveFilter.UserTagFilter -> af.tag == tag
         else -> false
       }
+      val interactionSource = remember { MutableInteractionSource() }
+
       Row(
         Modifier
           .padding(4.dp)
@@ -892,12 +900,11 @@ private fun ChatTagsView() {
             onClick = {
               chatModel.activeChatTagFilter.value = ActiveFilter.UserTagFilter(tag)
             },
-            onLongClick = {
-              ModalManager.start.showModalCloseable { close ->
-                ChatListTag(rhId = rhId, close = close)
-              }
-            }
-          ),
+            onLongClick = { showChatTagList() },
+            interactionSource = interactionSource,
+            indication = LocalIndication.current
+          )
+          .onRightClick { showChatTagList() },
         horizontalArrangement = Arrangement.spacedBy(4.dp),
       ) {
         if (tag.chatTagEmoji != null) {
