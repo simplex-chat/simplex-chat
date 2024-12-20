@@ -262,8 +262,7 @@ struct DatabaseView: View {
                     message: Text("Your current chat database will be DELETED and REPLACED with the imported one.") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
                     primaryButton: .destructive(Text("Import")) {
                         stopChatRunBlockStartChat(m.chatRunning == false, $progressIndicator) {
-                            _ = await DatabaseView.importArchive(fileURL, $progressIndicator, $alert)
-                            return true
+                            await DatabaseView.importArchive(fileURL, $progressIndicator, $alert)
                         }
                     },
                     secondaryButton: .cancel()
@@ -486,6 +485,7 @@ struct DatabaseView: View {
                     } else {
                         await operationEnded(.archiveImportedWithErrors(archiveErrors: archiveErrors), progressIndicator, alert)
                     }
+                    archivePath.stopAccessingSecurityScopedResource()
                     return true
                 } catch let error {
                     await operationEnded(.error(title: "Error importing chat database", error: responseError(error)), progressIndicator, alert)
