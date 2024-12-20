@@ -35,6 +35,9 @@ library
       Simplex.Chat.Core
       Simplex.Chat.Files
       Simplex.Chat.Help
+      Simplex.Chat.Library.Commands
+      Simplex.Chat.Library.Internal
+      Simplex.Chat.Library.Subscriber
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
       Simplex.Chat.Messages.Batch

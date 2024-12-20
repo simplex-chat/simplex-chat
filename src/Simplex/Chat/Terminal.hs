@@ -14,10 +14,11 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
-import Simplex.Chat (_defaultNtfServers, defaultChatConfig, operatorSimpleXChat)
+import Simplex.Chat (defaultChatConfig, operatorSimpleXChat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
+import Simplex.Chat.Library.Commands (_defaultNtfServers)
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
