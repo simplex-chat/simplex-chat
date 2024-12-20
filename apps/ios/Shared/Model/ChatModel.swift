@@ -105,27 +105,84 @@ class ChatTagsModel: ObservableObject {
     
     @Published var userTags: [ChatTag] = []
     @Published var activeFilter: ActiveFilter? = nil
-    @Published var presetTags: [PresetTag] = []
-}
-
-func updatePresetTags(_ chats: [Chat]) {
-    var matches: Set<PresetTag> = []
-    for chat in chats {
-        for tag in PresetTag.allCases {
-            if presetTagMatchesChat(tag, chat) {
-                matches.insert(tag)
+    @Published var presetTags: [PresetTag:Int] = [:]
+    @Published var unreadTags: [Int64:Int] = [:]
+    
+    func updateChatTags(_ chats: [Chat]) {
+        let tm = ChatTagsModel.shared
+        var newPresetTags: [PresetTag:Int] = [:]
+        var newUnreadTags: [Int64:Int] = [:]
+        for chat in chats {
+            for tag in PresetTag.allCases {
+                if presetTagMatchesChat(tag, chat.chatInfo) {
+                    newPresetTags[tag] = (newPresetTags[tag] ?? 0) + 1
+                }
+            }
+            if chat.isUnread, let tags = chat.chatInfo.chatTags {
+                for tag in tags {
+                    newUnreadTags[tag] = (newUnreadTags[tag] ?? 0) + 1
+                }
             }
         }
-        if matches.count == PresetTag.allCases.count {
-            break
+        if case let .presetTag(tag) = tm.activeFilter, (newPresetTags[tag] ?? 0 == 0) {
+            activeFilter = nil
+        }
+        presetTags = newPresetTags
+        unreadTags = newUnreadTags
+    }
+
+    func updateChatFavorite(favorite: Bool, wasFavorite: Bool) {
+        let count = presetTags[.favorites]
+        if favorite && !wasFavorite {
+            presetTags[.favorites] = (count ?? 0) + 1
+        } else if !favorite && wasFavorite, let count {
+            presetTags[.favorites] = max(0, count - 1)
+        }
+    }
+
+    func addPresetChatTags(_ chatInfo: ChatInfo) {
+        for tag in PresetTag.allCases {
+            if presetTagMatchesChat(tag, chatInfo) {
+                presetTags[tag] = (presetTags[tag] ?? 0) + 1
+            }
+        }
+    }
+
+    func removePresetChatTags(_ chatInfo: ChatInfo) {
+        for tag in PresetTag.allCases {
+            if presetTagMatchesChat(tag, chatInfo) {
+                if let count = presetTags[tag] {
+                    presetTags[tag] = max(0, count - 1)
+                }
+            }
         }
     }
     
-    let tm = ChatTagsModel.shared
-    if case let .presetTag(tag) = tm.activeFilter, !matches.contains(tag) {
-        tm.activeFilter = nil
+    func markChatTagRead(_ chat: Chat) -> Void {
+        if chat.isUnread, let tags = chat.chatInfo.chatTags {
+            markChatTagRead_(chat, tags)
+        }
     }
-    tm.presetTags = Array(matches).sorted(by: { $0.rawValue < $1.rawValue })
+    
+    func updateChatTagRead(_ chat: Chat, wasUnread: Bool) -> Void {
+        guard let tags = chat.chatInfo.chatTags else { return }
+        let nowUnread = chat.isUnread
+        if nowUnread && !wasUnread {
+            for tag in tags {
+                unreadTags[tag] = (unreadTags[tag] ?? 0) + 1
+            }
+        } else if !nowUnread && wasUnread {
+            markChatTagRead_(chat, tags)
+        }
+    }
+
+    private func markChatTagRead_(_ chat: Chat, _ tags: [Int64]) -> Void {
+        for tag in tags {
+            if let count = unreadTags[tag] {
+                unreadTags[tag] = max(0, count - 1)
+            }
+        }
+    }
 }
 
 class NetworkModel: ObservableObject {
@@ -370,10 +427,9 @@ final class ChatModel: ObservableObject {
     private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
-            updatePresetTags(self.chats)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
-            updatePresetTags(self.chats)
+            ChatTagsModel.shared.addPresetChatTags(cInfo)
         }
     }
 
@@ -596,6 +652,7 @@ final class ChatModel: ObservableObject {
         _updateChat(cInfo.id) { chat in
             self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
             self.updateFloatingButtons(unreadCount: 0)
+            ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
         }
         // update current chat
@@ -634,7 +691,9 @@ final class ChatModel: ObservableObject {
                     // update preview
                     let markedCount = chat.chatStats.unreadCount - unreadBelow
                     if markedCount > 0 {
+                        let wasUnread = chat.isUnread
                         chat.chatStats.unreadCount -= markedCount
+                        ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
                         self.decreaseUnreadCounter(user: self.currentUser!, by: markedCount)
                         self.updateFloatingButtons(unreadCount: chat.chatStats.unreadCount)
                     }
@@ -647,7 +706,9 @@ final class ChatModel: ObservableObject {
 
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
+            let wasUnread = chat.isUnread
             chat.chatStats.unreadChat = unreadChat
+            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
         }
     }
 
@@ -656,6 +717,7 @@ final class ChatModel: ObservableObject {
         if let chat = getChat(cInfo.id) {
             self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
             chat.chatItems = []
+            ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
             chat.chatInfo = cInfo
         }
@@ -782,7 +844,9 @@ final class ChatModel: ObservableObject {
     }
 
     func changeUnreadCounter(_ chatIndex: Int, by count: Int) {
+        let wasUnread = chats[chatIndex].isUnread
         chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount + count
+        ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
         changeUnreadCounter(user: currentUser!, by: count)
     }
 
@@ -887,8 +951,10 @@ final class ChatModel: ObservableObject {
 
     func removeChat(_ id: String) {
         withAnimation {
-            chats.removeAll(where: { $0.id == id })
-            updatePresetTags(chats)
+            if let i = getChatIndex(id) {
+                let removed = chats.remove(at: i)
+                ChatTagsModel.shared.removePresetChatTags(removed.chatInfo)
+            }
         }
     }
 
@@ -986,6 +1052,10 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         }
     }
 
+    var isUnread: Bool {
+        chatStats.unreadCount > 0 || chatStats.unreadChat
+    }
+    
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }

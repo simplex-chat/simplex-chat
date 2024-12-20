@@ -2007,6 +2007,8 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
         do {
             try await apiSetChatSettings(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatSettings: chatSettings)
             await MainActor.run {
+                let wasFavorite = chat.chatInfo.chatSettings?.favorite ?? false
+                ChatTagsModel.shared.updateChatFavorite(favorite: chatSettings.favorite, wasFavorite: wasFavorite)
                 switch chat.chatInfo {
                 case var .direct(contact):
                     contact.chatSettings = chatSettings
