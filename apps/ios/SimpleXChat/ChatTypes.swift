@@ -2010,6 +2010,14 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var activeConn: Connection?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var ready: Bool { get { activeConn?.connStatus == .ready } }
+    public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
+    public var sendMsgEnabled: Bool { get {
+        sndReady
+        && memberCurrent
+        && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
+        && !(activeConn?.connDisabled ?? true)
+    } }
     public var displayName: String {
         get {
             let p = memberProfile
