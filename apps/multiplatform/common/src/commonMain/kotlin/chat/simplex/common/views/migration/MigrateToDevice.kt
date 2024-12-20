@@ -239,7 +239,7 @@ private fun ArchiveImportView(progressIndicator: MutableState<Boolean>, close: (
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
       withLongRunningApi {
-        val success = importArchive(to, mutableStateOf(0 to 0), progressIndicator)
+        val success = importArchive(to, mutableStateOf(0 to 0), progressIndicator, true)
         if (success) {
           startChat(
             chatModel,
