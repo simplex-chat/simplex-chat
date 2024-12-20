@@ -20,6 +20,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Simplex.Chat
+import Simplex.Chat.API
 import Simplex.Chat.Controller
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles

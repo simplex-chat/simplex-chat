@@ -36,7 +36,8 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
-import Simplex.Chat (defaultChatConfig, maxImageSize)
+import Simplex.Chat (defaultChatConfig)
+import Simplex.Chat.API (maxImageSize)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help

@@ -25,6 +25,7 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
+import Simplex.Chat.API
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Options

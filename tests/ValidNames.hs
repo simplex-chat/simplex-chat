@@ -1,6 +1,6 @@
 module ValidNames where
 
-import Simplex.Chat
+import Simplex.Chat.API
 import Test.Hspec
 
 validNameTests :: Spec

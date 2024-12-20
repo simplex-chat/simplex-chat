@@ -10,7 +10,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate)
 import qualified Data.Text as T
 import System.Directory (copyFile, doesFileExist, removeFile)
-import Simplex.Chat (fixedImagePreview)
+import Simplex.Chat.API (fixedImagePreview)
 import Simplex.Chat.Types (ImageData (..))
 import Test.Hspec hiding (it)
 

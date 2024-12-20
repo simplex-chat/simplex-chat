@@ -26,6 +26,9 @@ flag swift
 library
   exposed-modules:
       Simplex.Chat
+      Simplex.Chat.API
+      Simplex.Chat.AgentReceiveLoop
+      Simplex.Chat.Shared
       Simplex.Chat.AppSettings
       Simplex.Chat.Archive
       Simplex.Chat.Bot
