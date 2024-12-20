@@ -35,7 +35,7 @@ import Foreign.StablePtr
 import Foreign.Storable (poke)
 import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
-import Simplex.Chat.API
+import Simplex.ChatAPI
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Mobile.File

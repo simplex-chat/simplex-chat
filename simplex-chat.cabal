@@ -26,7 +26,6 @@ flag swift
 library
   exposed-modules:
       Simplex.Chat
-      Simplex.Chat.API
       Simplex.Chat.AgentReceiveLoop
       Simplex.Chat.Shared
       Simplex.Chat.AppSettings
@@ -201,6 +200,7 @@ library
       Simplex.Chat.Types.Util
       Simplex.Chat.Util
       Simplex.Chat.View
+      Simplex.ChatAPI
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

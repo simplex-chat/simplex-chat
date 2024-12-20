@@ -21,7 +21,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import Simplex.Chat.API (execChatCommand, processChatCommand)
+import Simplex.ChatAPI (execChatCommand, processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages

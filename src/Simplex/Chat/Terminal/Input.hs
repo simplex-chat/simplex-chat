@@ -29,7 +29,7 @@ import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Weak (deRefWeak)
-import Simplex.Chat.API
+import Simplex.ChatAPI
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
