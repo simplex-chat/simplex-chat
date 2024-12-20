@@ -417,6 +417,10 @@
   <string name="forward_files_missing_desc">%1$d file(s) were deleted.</string>
   <string name="forward_files_not_accepted_receive_files">Download</string>
   <string name="forward_files_messages_deleted_after_selection_title">%1$s messages not forwarded</string>
+  <string name="chat_list_favorites">Favorites</string>
+  <string name="chat_list_contacts">Contacts</string>
+  <string name="chat_list_groups">Groups</string>
+  <string name="chat_list_businesses">Businesses</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
