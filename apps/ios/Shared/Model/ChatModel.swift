@@ -124,7 +124,7 @@ class ChatTagsModel: ObservableObject {
                 }
             }
         }
-        if case let .presetTag(tag) = tm.activeFilter, (newPresetTags[tag] ?? 0 == 0) {
+        if case let .presetTag(tag) = tm.activeFilter, (newPresetTags[tag] ?? 0) == 0 {
             activeFilter = nil
         }
         presetTags = newPresetTags
@@ -137,6 +137,9 @@ class ChatTagsModel: ObservableObject {
             presetTags[.favorites] = (count ?? 0) + 1
         } else if !favorite && wasFavorite, let count {
             presetTags[.favorites] = max(0, count - 1)
+            if case .presetTag(.favorites) = activeFilter, (presetTags[.favorites] ?? 0) == 0 {
+                activeFilter = nil
+            }
         }
     }
 
