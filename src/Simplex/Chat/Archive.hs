@@ -26,7 +26,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
-import Simplex.Chat.Util ()
+import Simplex.Chat.Util (crossDeviceRenameFile)
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, keyString, sqlString, storeKey)
 import Simplex.Messaging.Util
@@ -170,7 +170,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
     exported = (<> ".exported")
     removeExported f = whenM (doesFileExist $ exported f) $ removeFile (exported f)
     moveExported SQLiteStore {dbFilePath = f, dbKey} = do
-      renameFile (exported f) f
+      crossDeviceRenameFile (exported f) f
       atomically $ writeTVar dbKey $ storeKey key' (fromMaybe False keepKey)
     export f = do
       withDB f (`SQL.exec` exportSQL) DBErrorExport
