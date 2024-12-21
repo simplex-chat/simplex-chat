@@ -1146,7 +1146,7 @@
     <string name="alert_text_msg_bad_id">Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der vorherigen).
 \nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d Nachrichten konnten nicht entschlüsselt werden.</string>
-    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht unterscheidet sich.</string>
+    <string name="alert_text_msg_bad_hash">Der Hash der vorherigen Nachricht unterscheidet sich.\"</string>
     <string name="you_can_turn_on_lock">Sie können die SimpleX-Sperre über die Einstellungen aktivieren.</string>
     <string name="network_socks_proxy_settings">SOCKS-Proxy-Einstellungen</string>
     <string name="la_lock_mode_system">System-Authentifizierung</string>
@@ -2327,4 +2327,5 @@
     <string name="sync_connection_question">Verbindung reparieren?</string>
     <string name="debug_logs">Log-Daten aktivieren</string>
     <string name="error_saving_database">Fehler beim Speichern der Datenbank</string>
+    <string name="connection_not_ready">Verbindung noch nicht bereit.</string>
 </resources>
