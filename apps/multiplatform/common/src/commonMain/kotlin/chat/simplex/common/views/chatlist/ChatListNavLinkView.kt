@@ -899,6 +899,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   if (chat.chatStats.unreadChat) return
 
   withApi {
+    val wasUnread = chat.isUnread
     val success = chatModel.controller.apiChatUnread(
       chat.remoteHostId,
       chat.chatInfo.chatType,
@@ -907,7 +908,6 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     )
     if (success) {
       withChats {
-        val wasUnread = chat.isUnread
         replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
         updateChatTagRead(chat, wasUnread)
       }

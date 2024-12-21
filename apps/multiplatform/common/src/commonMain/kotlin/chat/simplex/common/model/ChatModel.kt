@@ -443,7 +443,7 @@ object ChatModel {
           else
             chat.chatStats
         )
-        updateChatTagRead(chat, wasUnread)
+        updateChatTagRead(chats[i], wasUnread)
 
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
           reorderChat(chats[i], 0)
@@ -635,7 +635,7 @@ object ChatModel {
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount)
           )
-          updateChatTagRead(chat, wasUnread)
+          updateChatTagRead(chats[chatIdx], wasUnread)
         }
       }
     }
@@ -653,7 +653,7 @@ object ChatModel {
           unreadCount = unreadCount,
         )
       )
-      updateChatTagRead(chat, wasUnread)
+      updateChatTagRead(chats[chatIndex], wasUnread)
     }
 
     fun removeChat(rhId: Long?, id: String) {

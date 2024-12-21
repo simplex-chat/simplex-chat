@@ -17,7 +17,7 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -916,6 +916,7 @@ private fun ChatTagsView() {
   val userTags = remember { chatModel.userTags }
   val presetTags = remember { chatModel.presetTags }
   val activeFilter = remember { chatModel.activeChatTagFilter }
+  val unreadTags = remember { chatModel.unreadTags }
   val rhId = chatModel.remoteHostId()
 
   fun showChatTagList () {
@@ -927,7 +928,7 @@ private fun ChatTagsView() {
   LazyRow(modifier = Modifier.padding(4.dp)) {
     if (presetTags.size > 1) {
       if (presetTags.size + userTags.value.size <= 3) {
-        items(PresetTagKind.entries.filter { t -> (chatModel.presetTags[t] ?: 0) > 0 }) { tag ->
+        items(PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }) { tag ->
           ExpandedTagFilterView(tag)
         }
       } else {
@@ -976,17 +977,33 @@ private fun ChatTagsView() {
           )
         }
         Box {
+          val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+          val invisibleText = buildAnnotatedString {
+            append(tag.chatTagText)
+            withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+              append(badgeText)
+            }
+          }
           Text(
-            tag.chatTagText,
-            color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-            fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
-          )
-          Text(
-            tag.chatTagText,
+            text = invisibleText,
+            fontWeight = FontWeight.SemiBold,
             color = Color.Transparent,
-            fontWeight = FontWeight.SemiBold
+          )
+
+          // Visible text with styles
+          val visibleText = buildAnnotatedString {
+            append(tag.chatTagText)
+            withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+              append(badgeText)
+            }
+          }
+          Text(
+            text = visibleText,
+            fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           )
         }
+
       }
     }
   }
@@ -1038,6 +1055,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
 @Composable
 private fun CollapsedTagsFilterView() {
   val activeFilter = remember { chatModel.activeChatTagFilter }
+  val presetTags = remember { chatModel.presetTags }
   val showMenu = remember { mutableStateOf(false) }
 
   val selectedPresetTag = when (val af = activeFilter.value) {
@@ -1077,7 +1095,7 @@ private fun CollapsedTagsFilterView() {
         )
       }
       PresetTagKind.entries.forEach { tag ->
-        if ((chatModel.presetTags[tag] ?: 0) > 0) {
+        if ((presetTags[tag] ?: 0) > 0) {
           ItemPresetFilterAction(tag, tag == selectedPresetTag, showMenu)
         }
       }
