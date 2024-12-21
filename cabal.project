@@ -67,5 +67,5 @@ source-repository-package
 source-repository-package
     type: git
     location: https://gitlab.com/dpwiz/hs-jpeg-turbo
-    tag: 002938d04da59453a27710ed7286319b29b09137
+    tag: f1bc073427e60341a3359e2345c1683d17ea2a35
     subdir: JuicyPixels-jpeg-turbo jpeg-turbo
