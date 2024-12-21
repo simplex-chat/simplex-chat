@@ -131,6 +131,11 @@ jobs:
           echo "    extra-include-dirs: /opt/homebrew/opt/openssl@3.0/include" >> cabal.project.local
           echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@3.0/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
+          echo ""                                                                >> cabal.project.local
+          echo "package jpeg-turbo"                                              >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/libjpeg-turbo/include" >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/libjpeg-turbo/lib"         >> cabal.project.local
+          echo "    flags: +static"                                              >> cabal.project.local
 
       - name: Unix prepare cabal.project.local for Mac
         if: matrix.os == 'macos-13'
@@ -145,6 +150,11 @@ jobs:
           echo "    extra-include-dirs: /usr/local/opt/openssl@3.0/include"    >> cabal.project.local
           echo "    extra-lib-dirs: /usr/local/opt/openssl@3.0/lib"            >> cabal.project.local
           echo "    flags: +openssl"                                           >> cabal.project.local
+          echo ""                                                              >> cabal.project.local
+          echo "package jpeg-turbo"                                            >> cabal.project.local
+          echo "    extra-include-dirs: /usr/local/opt/libjpeg-turbo/include"  >> cabal.project.local
+          echo "    extra-lib-dirs: /usr/local/opt/libjpeg-turbo/lib"          >> cabal.project.local
+          echo "    flags: +static"                                            >> cabal.project.local
 
       - name: Install AppImage dependencies
         if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
@@ -165,6 +175,9 @@ jobs:
           echo "ignore-project: False"    >> cabal.project.local
           echo "package direct-sqlcipher" >> cabal.project.local
           echo "    flags: +openssl"      >> cabal.project.local
+          echo ""                         >> cabal.project.local
+          echo "package jpeg-turbo"       >> cabal.project.local
+          echo "    flags: +static-gcc"   >> cabal.project.local
 
       - name: Unix build CLI
         id: unix_cli_build
@@ -346,6 +359,8 @@ jobs:
           echo "    flags: +openssl" >> cabal.project.local
           echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+          echo "package jpeg-turbo" >> cabal.project.local
+          echo "    flags: +pkgconfig" >> cabal.project.local
 
           rm -rf dist-newstyle/src/direct-sq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
