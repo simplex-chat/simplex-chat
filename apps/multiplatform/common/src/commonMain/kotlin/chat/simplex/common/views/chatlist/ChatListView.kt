@@ -926,15 +926,15 @@ private fun ChatTagsView() {
 
   LazyRow(modifier = Modifier.padding(4.dp)) {
     if (presetTags.size > 1) {
-      // if (presetTags.size + userTags.value.size <= 3) {
-          items(PresetTagKind.entries.filter { t -> (chatModel.presetTags[t] ?: 0) > 0 }) { tag ->
-            ExpandedTagFilterView(tag)
-          }
-      //} else {
-        //item {
-
-        //}
-     // }
+      if (presetTags.size + userTags.value.size <= 3) {
+        items(PresetTagKind.entries.filter { t -> (chatModel.presetTags[t] ?: 0) > 0 }) { tag ->
+          ExpandedTagFilterView(tag)
+        }
+      } else {
+        item {
+          CollapsedTagsFilterView()
+        }
+      }
     }
 
     items(userTags.value) { tag ->
@@ -1012,12 +1012,13 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
           chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(tag)
         }
       },
+    verticalAlignment = Alignment.CenterVertically
   ) {
-      Icon(
-        painterResource(icon),
-        stringResource(text),
-        tint = color
-      )
+    Icon(
+      painterResource(icon),
+      stringResource(text),
+      tint = color
+    )
     Box {
       Text(
         stringResource(text),
@@ -1043,6 +1044,45 @@ private fun CollapsedTagsFilterView() {
     is ActiveFilter.PresetTag -> af.tag
     else -> null
   }
+
+  Column(Modifier
+    .clickable { showMenu.value = true }
+    .padding(4.dp)
+  ) {
+    if (selectedPresetTag != null) {
+      val (icon, text) = presetTagLabel(selectedPresetTag, true)
+
+      Icon(
+        painterResource(icon),
+        stringResource(text),
+        tint = MaterialTheme.colors.secondary
+      )
+    } else {
+      Icon(
+        painterResource(MR.images.ic_menu),
+        stringResource(MR.strings.chat_list_all),
+        tint = MaterialTheme.colors.secondary
+      )
+    }
+
+    DefaultDropdownMenu(showMenu = showMenu) {
+      if (selectedPresetTag != null) {
+        ItemAction(
+          stringResource(MR.strings.chat_list_all),
+          painterResource(MR.images.ic_menu),
+          onClick = {
+            chatModel.activeChatTagFilter.value = null
+            showMenu.value = false
+          }
+        )
+      }
+      PresetTagKind.entries.forEach { tag ->
+        if ((chatModel.presetTags[tag] ?: 0) > 0) {
+          ItemPresetFilterAction(tag, tag == selectedPresetTag, showMenu)
+        }
+      }
+    }
+  }
 }
 
 @Composable
@@ -1057,6 +1097,7 @@ fun ItemPresetFilterAction(
     painterResource(icon),
     onClick = {
       chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(presetTag)
+      showMenu.value = false
     }
   )
 }
