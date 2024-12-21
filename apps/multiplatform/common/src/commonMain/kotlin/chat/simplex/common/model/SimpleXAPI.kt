@@ -6032,6 +6032,9 @@ class ConnectionStats(
 
   val ratchetSyncSendProhibited: Boolean get() =
     listOf(RatchetSyncState.Required, RatchetSyncState.Started, RatchetSyncState.Agreed).contains(ratchetSyncState)
+
+  val ratchetSyncInProgress: Boolean get() =
+    listOf(RatchetSyncState.Started, RatchetSyncState.Agreed).contains(ratchetSyncState)
 }
 
 @Serializable

@@ -10,6 +10,7 @@ copyright: 2020-22 simplex.chat
 category: Web, System, Services, Cryptography
 extra-source-files:
   - README.md
+  - PRIVACY.md
   - cabal.project
 
 dependencies:

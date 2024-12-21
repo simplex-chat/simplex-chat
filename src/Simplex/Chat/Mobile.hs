@@ -38,6 +38,7 @@ import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEnco
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Image (readResizeable, resizeImageToSize)
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
