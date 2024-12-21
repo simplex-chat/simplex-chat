@@ -229,7 +229,7 @@
     <string name="v4_5_transport_isolation_descr">按聊天资料（默认）或按连接（BETA）。</string>
     <string name="smp_servers_check_address">检查服务器地址并重试。</string>
     <string name="clear_verification">清除验证</string>
-    <string name="icon_descr_close_button">关闭按键</string>
+    <string name="icon_descr_close_button">关闭</string>
     <string name="configure_ICE_servers">配置 ICE 服务器</string>
     <string name="confirm_verb">确认</string>
     <string name="auth_confirm_credential">确认你的证书</string>
@@ -1059,7 +1059,7 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">当你或你的连接使用旧数据库备份时，可能会发生这种情况。</string>
     <string name="decryption_error">解密错误</string>
     <string name="alert_text_fragment_please_report_to_developers">请向开发者报告。</string>
-    <string name="alert_text_msg_bad_hash">上一条消息的散列不同。</string>
+    <string name="alert_text_msg_bad_hash">上一条消息的散列不同。\"</string>
     <string name="alert_text_msg_bad_id">下一条消息的 ID 不正确（小于或等于上一条）。
 \n它可能是由于某些错误或连接被破坏才发生。</string>
     <string name="stop_file__action">停止文件</string>
@@ -2086,7 +2086,7 @@
     <string name="network_session_mode_server">服务器</string>
     <string name="call_desktop_permission_denied_safari">打开 Safari 设置/网站/麦克风，接着在 localhost 选择“允许”。</string>
     <string name="call_desktop_permission_denied_title">要进行通话，请允许使用设备麦克风。结束通话并尝试再次呼叫。</string>
-    <string name="call_desktop_permission_denied_chrome">单击地址附近的\"信息\"按钮允许使用麦克风。</string>
+    <string name="call_desktop_permission_denied_chrome">单击地址栏附近的“信息”按钮允许使用麦克风。</string>
     <string name="network_session_mode_server_description">每个服务器都会使用新的 SOCKS5 凭据。</string>
     <string name="v6_1_message_dates_descr">更好的消息日期。</string>
     <string name="v6_1_better_security">更佳的安全性✅</string>
@@ -2239,4 +2239,5 @@
     <string name="sync_connection_desc">连接需要加密重协商。</string>
     <string name="error_saving_database">保存数据库出错</string>
     <string name="debug_logs">启用日志</string>
+    <string name="connection_not_ready">连接未就绪。</string>
 </resources>
