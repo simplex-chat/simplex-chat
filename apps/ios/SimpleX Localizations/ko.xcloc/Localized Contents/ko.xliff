@@ -149,16 +149,19 @@
         <target state="translated">%lldh</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldk" xml:space="preserve">
+      <trans-unit id="%lldk" xml:space="preserve" approved="no">
         <source>%lldk</source>
+        <target state="translated">%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldm" xml:space="preserve">
+      <trans-unit id="%lldm" xml:space="preserve" approved="no">
         <source>%lldm</source>
+        <target state="translated">%lldm</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldmth" xml:space="preserve">
+      <trans-unit id="%lldmth" xml:space="preserve" approved="no">
         <source>%lldmth</source>
+        <target state="translated">%lldmth</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%llds" xml:space="preserve">
@@ -169,8 +172,9 @@
         <source>%lldw</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(" xml:space="preserve">
+      <trans-unit id="(" xml:space="preserve" approved="no">
         <source>(</source>
+        <target state="translated">(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=")" xml:space="preserve" approved="no">
@@ -384,156 +388,188 @@
         <target state="translated">모든 그룹 구성원은 연결 상태를 유지합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
+        <target state="translated">모든 메세지가 삭제됩니다 - 수정할 수 없습니다! 메세지는 오직 당신만을 위해 삭제될 것입니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow" xml:space="preserve">
+      <trans-unit id="Allow" xml:space="preserve" approved="no">
         <source>Allow</source>
+        <target state="translated">승인</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
+      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
+        <target state="translated">연락처가 메세지를 허용하는 경우에만 메세지 삭제를 허용합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
         <source>Allow irreversible message deletion only if your contact allows it to you.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
+      <trans-unit id="Allow sending direct messages to members." xml:space="preserve" approved="no">
         <source>Allow sending direct messages to members.</source>
+        <target state="translated">회원에게 직접 메시지를 보낼 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
+      <trans-unit id="Allow sending disappearing messages." xml:space="preserve" approved="no">
         <source>Allow sending disappearing messages.</source>
+        <target state="translated">사라지는 메시지를 보내는 것을 허용합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow to irreversibly delete sent messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send voice messages." xml:space="preserve">
+      <trans-unit id="Allow to send voice messages." xml:space="preserve" approved="no">
         <source>Allow to send voice messages.</source>
+        <target state="translated">음성 메세지를 보낼 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow voice messages only if your contact allows them.</source>
+        <target state="translated">연락처가 음성 메세지를 허용하는 경우에만 음성 메세지를 허용합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow voice messages?" xml:space="preserve">
+      <trans-unit id="Allow voice messages?" xml:space="preserve" approved="no">
         <source>Allow voice messages?</source>
+        <target state="translated">음성 메세지를 허용 하겠습니까?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to irreversibly delete sent messages." xml:space="preserve">
         <source>Allow your contacts to irreversibly delete sent messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve" approved="no">
         <source>Allow your contacts to send disappearing messages.</source>
+        <target state="translated">연락처가 사라지는 메시지를 보낼 수 있도록 허용합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve" approved="no">
         <source>Allow your contacts to send voice messages.</source>
+        <target state="translated">연락처가 음성 메시지를 보낼 수 있도록 허용합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Already connected?" xml:space="preserve">
+      <trans-unit id="Already connected?" xml:space="preserve" approved="no">
         <source>Already connected?</source>
+        <target state="translated">이미 연결되었나요?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Always use relay" xml:space="preserve">
+      <trans-unit id="Always use relay" xml:space="preserve" approved="no">
         <source>Always use relay</source>
+        <target state="translated">항상 릴레이 사용</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Answer call" xml:space="preserve">
+      <trans-unit id="Answer call" xml:space="preserve" approved="no">
         <source>Answer call</source>
+        <target state="translated">응답 전화</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App build: %@" xml:space="preserve">
+      <trans-unit id="App build: %@" xml:space="preserve" approved="no">
         <source>App build: %@</source>
+        <target state="translated">앱 빌드: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App icon" xml:space="preserve">
+      <trans-unit id="App icon" xml:space="preserve" approved="no">
         <source>App icon</source>
+        <target state="translated">앱 아이콘</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version" xml:space="preserve">
+      <trans-unit id="App version" xml:space="preserve" approved="no">
         <source>App version</source>
+        <target state="translated">앱 버전</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version: v%@" xml:space="preserve">
+      <trans-unit id="App version: v%@" xml:space="preserve" approved="no">
         <source>App version: v%@</source>
+        <target state="translated">앱 버전: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Appearance" xml:space="preserve">
+      <trans-unit id="Appearance" xml:space="preserve" approved="no">
         <source>Appearance</source>
+        <target state="translated">출석</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Attach" xml:space="preserve">
+      <trans-unit id="Attach" xml:space="preserve" approved="no">
         <source>Attach</source>
+        <target state="translated">첨부</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve" approved="no">
         <source>Audio &amp; video calls</source>
+        <target state="translated">음성 &amp; 영상 통화</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio and video calls" xml:space="preserve">
+      <trans-unit id="Audio and video calls" xml:space="preserve" approved="no">
         <source>Audio and video calls</source>
+        <target state="translated">음성 및 영상 통화</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication failed" xml:space="preserve">
+      <trans-unit id="Authentication failed" xml:space="preserve" approved="no">
         <source>Authentication failed</source>
+        <target state="translated">인증 실패</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve">
+      <trans-unit id="Authentication is required before the call is connected, but you may miss calls." xml:space="preserve" approved="no">
         <source>Authentication is required before the call is connected, but you may miss calls.</source>
+        <target state="translated">통화가 연결되기 전에 인증이 필요하지만, 통화를 놓칠 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Authentication unavailable" xml:space="preserve">
+      <trans-unit id="Authentication unavailable" xml:space="preserve" approved="no">
         <source>Authentication unavailable</source>
+        <target state="translated">인증 사용 불가</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept contact requests" xml:space="preserve">
+      <trans-unit id="Auto-accept contact requests" xml:space="preserve" approved="no">
         <source>Auto-accept contact requests</source>
+        <target state="translated">연락처 요청 자동 수락</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept images" xml:space="preserve">
+      <trans-unit id="Auto-accept images" xml:space="preserve" approved="no">
         <source>Auto-accept images</source>
+        <target state="translated">이미지 자동 수락</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Automatically" xml:space="preserve">
         <source>Automatically</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Back" xml:space="preserve">
+      <trans-unit id="Back" xml:space="preserve" approved="no">
         <source>Back</source>
+        <target state="translated">뒤로가기</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages." xml:space="preserve">
         <source>Both you and your contact can irreversibly delete sent messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Both you and your contact can send disappearing messages." xml:space="preserve" approved="no">
         <source>Both you and your contact can send disappearing messages.</source>
+        <target state="translated">당신과 당신의 연락처 모두 사라지는 메시지를 보낼 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
+      <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve" approved="no">
         <source>Both you and your contact can send voice messages.</source>
+        <target state="translated">당신과 당신의 연락처 모두 음성 메시지를 보낼 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
+      <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve" approved="no">
         <source>By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</source>
+        <target state="translated">채팅 프로필(기본값) 또는 [연결](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Call already ended!" xml:space="preserve">
+      <trans-unit id="Call already ended!" xml:space="preserve" approved="no">
         <source>Call already ended!</source>
+        <target state="translated">통화가 이미 종료되었습니다!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Calls" xml:space="preserve">
+      <trans-unit id="Calls" xml:space="preserve" approved="no">
         <source>Calls</source>
+        <target state="translated">통화</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't delete user profile!" xml:space="preserve">
@@ -545,8 +581,9 @@
         <target state="translated">주소를 초대할 수 없습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contacts!" xml:space="preserve">
+      <trans-unit id="Can't invite contacts!" xml:space="preserve" approved="no">
         <source>Can't invite contacts!</source>
+        <target state="translated">연락처를 초대할 수 없습니다!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve" approved="no">
@@ -569,8 +606,9 @@
         <target state="translated">변경</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change database passphrase?" xml:space="preserve">
+      <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
         <source>Change database passphrase?</source>
+        <target state="translated">데이터베이스 암호 변경?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve" approved="no">
@@ -598,16 +636,19 @@
         <target state="translated">채팅 기록 보관함</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat console" xml:space="preserve">
+      <trans-unit id="Chat console" xml:space="preserve" approved="no">
         <source>Chat console</source>
+        <target state="translated">채팅 콘솔</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database" xml:space="preserve">
+      <trans-unit id="Chat database" xml:space="preserve" approved="no">
         <source>Chat database</source>
+        <target state="translated">채팅 데이터베이스</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database deleted" xml:space="preserve">
+      <trans-unit id="Chat database deleted" xml:space="preserve" approved="no">
         <source>Chat database deleted</source>
+        <target state="translated">채팅 데이터베이스 삭제</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database imported" xml:space="preserve" approved="no">
@@ -615,80 +656,98 @@
         <target state="translated">채팅 데이터베이스를 가져옴</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is running" xml:space="preserve">
+      <trans-unit id="Chat is running" xml:space="preserve" approved="no">
         <source>Chat is running</source>
+        <target state="translated">채팅이 실행 중입니다</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped" xml:space="preserve">
+      <trans-unit id="Chat is stopped" xml:space="preserve" approved="no">
         <source>Chat is stopped</source>
+        <target state="translated">채팅이 중단되었습니다</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat preferences" xml:space="preserve">
+      <trans-unit id="Chat preferences" xml:space="preserve" approved="no">
         <source>Chat preferences</source>
+        <target state="translated">채팅 환경설정</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats" xml:space="preserve">
+      <trans-unit id="Chats" xml:space="preserve" approved="no">
         <source>Chats</source>
+        <target state="translated">채팅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Check server address and try again." xml:space="preserve">
+      <trans-unit id="Check server address and try again." xml:space="preserve" approved="no">
         <source>Check server address and try again.</source>
+        <target state="translated">서버 주소를 확인한 후 다시 시도합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
+      <trans-unit id="Chinese and Spanish interface" xml:space="preserve" approved="no">
         <source>Chinese and Spanish interface</source>
+        <target state="translated">중국어 및 스페인어 환경</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose file" xml:space="preserve">
+      <trans-unit id="Choose file" xml:space="preserve" approved="no">
         <source>Choose file</source>
+        <target state="translated">파일 선택</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose from library" xml:space="preserve">
+      <trans-unit id="Choose from library" xml:space="preserve" approved="no">
         <source>Choose from library</source>
+        <target state="translated">라이브러리에서 선택</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear" xml:space="preserve">
+      <trans-unit id="Clear" xml:space="preserve" approved="no">
         <source>Clear</source>
+        <target state="translated">정리</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear conversation" xml:space="preserve">
+      <trans-unit id="Clear conversation" xml:space="preserve" approved="no">
         <source>Clear conversation</source>
+        <target state="translated">대화 삭제</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear conversation?" xml:space="preserve">
+      <trans-unit id="Clear conversation?" xml:space="preserve" approved="no">
         <source>Clear conversation?</source>
+        <target state="translated">대화 삭제?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear verification" xml:space="preserve">
+      <trans-unit id="Clear verification" xml:space="preserve" approved="no">
         <source>Clear verification</source>
+        <target state="translated">인증 삭제</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Colors" xml:space="preserve">
         <source>Colors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Compare security codes with your contacts." xml:space="preserve">
+      <trans-unit id="Compare security codes with your contacts." xml:space="preserve" approved="no">
         <source>Compare security codes with your contacts.</source>
+        <target state="translated">보안 코드를 연락처와 비교합니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configure ICE servers" xml:space="preserve">
+      <trans-unit id="Configure ICE servers" xml:space="preserve" approved="no">
         <source>Configure ICE servers</source>
+        <target state="translated">ICE 서버 구성</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm" xml:space="preserve">
+      <trans-unit id="Confirm" xml:space="preserve" approved="no">
         <source>Confirm</source>
+        <target state="translated">확인</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm new passphrase…" xml:space="preserve">
+      <trans-unit id="Confirm new passphrase…" xml:space="preserve" approved="no">
         <source>Confirm new passphrase…</source>
+        <target state="translated">새 암호 확인…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm password" xml:space="preserve">
+      <trans-unit id="Confirm password" xml:space="preserve" approved="no">
         <source>Confirm password</source>
+        <target state="translated">비밀번호 확인</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect" xml:space="preserve">
+      <trans-unit id="Connect" xml:space="preserve" approved="no">
         <source>Connect</source>
+        <target state="translated">연결</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Connect via contact link?" xml:space="preserve">
@@ -699,8 +758,9 @@
         <source>Connect via group link?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via link" xml:space="preserve">
+      <trans-unit id="Connect via link" xml:space="preserve" approved="no">
         <source>Connect via link</source>
+        <target state="translated">링크를 통해 연결</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via link / QR code" xml:space="preserve">
@@ -711,132 +771,156 @@
         <source>Connect via one-time link?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting server…" xml:space="preserve">
+      <trans-unit id="Connecting server…" xml:space="preserve" approved="no">
         <source>Connecting to server…</source>
+        <target state="translated">서버에 연결중…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
+      <trans-unit id="Connecting server… (error: %@)" xml:space="preserve" approved="no">
         <source>Connecting to server… (error: %@)</source>
+        <target state="translated">서버에 연결중...(오류: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection" xml:space="preserve">
+      <trans-unit id="Connection" xml:space="preserve" approved="no">
         <source>Connection</source>
+        <target state="translated">연결</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection error" xml:space="preserve">
+      <trans-unit id="Connection error" xml:space="preserve" approved="no">
         <source>Connection error</source>
+        <target state="translated">연결 오류</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection error (AUTH)" xml:space="preserve">
+      <trans-unit id="Connection error (AUTH)" xml:space="preserve" approved="no">
         <source>Connection error (AUTH)</source>
+        <target state="translated">연결 에러 (인증)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request" xml:space="preserve">
         <source>Connection request</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection request sent!" xml:space="preserve">
+      <trans-unit id="Connection request sent!" xml:space="preserve" approved="no">
         <source>Connection request sent!</source>
+        <target state="translated">연결 요청이 전송되었습니다!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection timeout" xml:space="preserve">
+      <trans-unit id="Connection timeout" xml:space="preserve" approved="no">
         <source>Connection timeout</source>
+        <target state="translated">연결 시간초과</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact allows" xml:space="preserve">
+      <trans-unit id="Contact allows" xml:space="preserve" approved="no">
         <source>Contact allows</source>
+        <target state="translated">연락 가능</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact already exists" xml:space="preserve">
+      <trans-unit id="Contact already exists" xml:space="preserve" approved="no">
         <source>Contact already exists</source>
+        <target state="translated">연결이 이미 존재</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact and all messages will be deleted - this cannot be undone!" xml:space="preserve">
         <source>Contact and all messages will be deleted - this cannot be undone!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact hidden:" xml:space="preserve">
+      <trans-unit id="Contact hidden:" xml:space="preserve" approved="no">
         <source>Contact hidden:</source>
+        <target state="translated">숨겨진 연락처:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Contact is connected" xml:space="preserve">
+      <trans-unit id="Contact is connected" xml:space="preserve" approved="no">
         <source>Contact is connected</source>
+        <target state="translated">연락처가 연결되었습니다</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Contact is not connected yet!" xml:space="preserve">
         <source>Contact is not connected yet!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact name" xml:space="preserve">
+      <trans-unit id="Contact name" xml:space="preserve" approved="no">
         <source>Contact name</source>
+        <target state="translated">연락처 이름</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact preferences" xml:space="preserve">
+      <trans-unit id="Contact preferences" xml:space="preserve" approved="no">
         <source>Contact preferences</source>
+        <target state="translated">연락처 선호도</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact requests" xml:space="preserve">
         <source>Contact requests</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve">
+      <trans-unit id="Contacts can mark messages for deletion; you will be able to view them." xml:space="preserve" approved="no">
         <source>Contacts can mark messages for deletion; you will be able to view them.</source>
+        <target state="translated">연락처는 메세지를 삭제하도록 표시할 수 있으며, 이를 확인할 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Copy" xml:space="preserve">
+      <trans-unit id="Copy" xml:space="preserve" approved="no">
         <source>Copy</source>
+        <target state="translated">복사</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Core built at: %@" xml:space="preserve">
         <source>Core built at: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Core version: v%@" xml:space="preserve">
+      <trans-unit id="Core version: v%@" xml:space="preserve" approved="no">
         <source>Core version: v%@</source>
+        <target state="translated">코어 버전: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create" xml:space="preserve">
+      <trans-unit id="Create" xml:space="preserve" approved="no">
         <source>Create</source>
+        <target state="translated">생성</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create address" xml:space="preserve">
         <source>Create address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group link" xml:space="preserve">
+      <trans-unit id="Create group link" xml:space="preserve" approved="no">
         <source>Create group link</source>
+        <target state="translated">그룹 링크 생성</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create link" xml:space="preserve">
+      <trans-unit id="Create link" xml:space="preserve" approved="no">
         <source>Create link</source>
+        <target state="translated">링크 생성</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
         <source>Create one-time invitation link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create queue" xml:space="preserve">
+      <trans-unit id="Create queue" xml:space="preserve" approved="no">
         <source>Create queue</source>
+        <target state="translated">큐 생성</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create secret group" xml:space="preserve">
+      <trans-unit id="Create secret group" xml:space="preserve" approved="no">
         <source>Create secret group</source>
+        <target state="translated">비밀 그룹 생성</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create your profile" xml:space="preserve">
+      <trans-unit id="Create your profile" xml:space="preserve" approved="no">
         <source>Create your profile</source>
+        <target state="translated">프로필 생성</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created on %@" xml:space="preserve">
         <source>Created on %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current passphrase…" xml:space="preserve">
+      <trans-unit id="Current passphrase…" xml:space="preserve" approved="no">
         <source>Current passphrase…</source>
+        <target state="translated">현재 암호…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
         <source>Currently maximum supported file size is %@.</source>
+        <target state="translated">현재 지원되는 최대 파일 크기는 %@입니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Dark" xml:space="preserve">
@@ -2067,8 +2151,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Open user profiles</source>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Anybody can host servers." xml:space="preserve">
+      <trans-unit id="Anybody can host servers." xml:space="preserve" approved="no">
         <source>Anybody can host servers.</source>
+        <target state="translated">누구나 서버를 호스팅할 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." xml:space="preserve">
@@ -4179,6 +4264,682 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="All data is kept private on your device." xml:space="preserve" approved="no">
         <source>All data is kept private on your device.</source>
         <target state="translated">모든 데이터는 기기에서 비공개로 유지됩니다.</target>
+      </trans-unit>
+      <trans-unit id="All profiles" xml:space="preserve" approved="no">
+        <source>All profiles</source>
+        <target state="translated">전체 프로필</target>
+      </trans-unit>
+      <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
+        <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
+        <target state="translated">모든 연락처, 대화 및 파일은 안전하게 암호화되어 구성된 XFTP 릴레이에 청크로 업로드됩니다.</target>
+      </trans-unit>
+      <trans-unit id="Allow calls only if your contact allows them." xml:space="preserve" approved="no">
+        <source>Allow calls only if your contact allows them.</source>
+        <target state="translated">허용된 연락처만 통화가 가능합니다.</target>
+      </trans-unit>
+      <trans-unit id="Allow calls?" xml:space="preserve" approved="no">
+        <source>Allow calls?</source>
+        <target state="translated">통화 허용?</target>
+      </trans-unit>
+      <trans-unit id="Allow downgrade" xml:space="preserve" approved="no">
+        <source>Allow downgrade</source>
+        <target state="translated">강등 허용</target>
+      </trans-unit>
+      <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve" approved="no">
+        <source>Allow irreversible message deletion only if your contact allows it to you. (24 hours)</source>
+        <target state="translated">연락처가 허용하는 경우에만 수정 불가능한 메세지 삭제를 허용합니다. (24시간)</target>
+      </trans-unit>
+      <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
+        <source>Allow to send files and media.</source>
+        <target state="translated">파일과 미디어를 전송할 수 있습니다.</target>
+      </trans-unit>
+      <trans-unit id="Archiving database" xml:space="preserve" approved="no">
+        <source>Archiving database</source>
+        <target state="translated">보관된 데이터베이스</target>
+      </trans-unit>
+      <trans-unit id="Better calls" xml:space="preserve" approved="no">
+        <source>Better calls</source>
+        <target state="translated">더 나은 통화</target>
+      </trans-unit>
+      <trans-unit id="Block" xml:space="preserve" approved="no">
+        <source>Block</source>
+        <target state="translated">차단</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for enabled operators after 30 days." xml:space="preserve" approved="no">
+        <source>Conditions will be accepted for enabled operators after 30 days.</source>
+        <target state="translated">30일 후에 활성화된 운영자에 대한 조건이 수락될 것입니다.</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted on: %@." xml:space="preserve" approved="no">
+        <source>Conditions will be accepted on: %@.</source>
+        <target state="translated">조건은 다음과 같습니다: %@.</target>
+      </trans-unit>
+      <trans-unit id="Connect via one-time link" xml:space="preserve" approved="no">
+        <source>Connect via one-time link</source>
+        <target state="translated">일회성 링크를 통해 연결</target>
+      </trans-unit>
+      <trans-unit id="Connected desktop" xml:space="preserve" approved="no">
+        <source>Connected desktop</source>
+        <target state="translated">데스크톱과 연결됨</target>
+      </trans-unit>
+      <trans-unit id="Connected servers" xml:space="preserve" approved="no">
+        <source>Connected servers</source>
+        <target state="translated">연결된 서버</target>
+      </trans-unit>
+      <trans-unit id="Connection security" xml:space="preserve" approved="no">
+        <source>Connection security</source>
+        <target state="translated">연결 보안</target>
+      </trans-unit>
+      <trans-unit id="Connection terminated" xml:space="preserve" approved="no">
+        <source>Connection terminated</source>
+        <target state="translated">종료된 연결</target>
+      </trans-unit>
+      <trans-unit id="Connection with desktop stopped" xml:space="preserve" approved="no">
+        <source>Connection with desktop stopped</source>
+        <target state="translated">데스크톱과의 연결이 중지됨</target>
+      </trans-unit>
+      <trans-unit id="Current conditions text couldn't be loaded, you can review conditions via this link:" xml:space="preserve" approved="no">
+        <source>Current conditions text couldn't be loaded, you can review conditions via this link:</source>
+        <target state="translated">현재 조건 텍스트를 로드할 수 없습니다. 이 링크를 통해 조건을 검토할 수 있습니다:</target>
+      </trans-unit>
+      <trans-unit id="Bad desktop address" xml:space="preserve" approved="no">
+        <source>Bad desktop address</source>
+        <target state="translated">잘못된 데스크톱 주소</target>
+      </trans-unit>
+      <trans-unit id="Camera not available" xml:space="preserve" approved="no">
+        <source>Camera not available</source>
+        <target state="translated">카메라가 사용 불가능합니다</target>
+      </trans-unit>
+      <trans-unit id="Custom time" xml:space="preserve" approved="no">
+        <source>Custom time</source>
+        <target state="translated">사용자 지정 시간</target>
+      </trans-unit>
+      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
+        <source>Allow to irreversibly delete sent messages. (24 hours)</source>
+        <target state="translated">보낸 메시지를 되돌릴 수 없도록 삭제합니다. (24시간)</target>
+      </trans-unit>
+      <trans-unit id="Allow message reactions." xml:space="preserve" approved="no">
+        <source>Allow message reactions.</source>
+        <target state="translated">메세지 응답 허용.</target>
+      </trans-unit>
+      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
+        <source>Allow your contacts adding message reactions.</source>
+        <target state="translated">연락처가 메세지 응답을 추가하도록 허용합니다.</target>
+      </trans-unit>
+      <trans-unit id="Already connecting!" xml:space="preserve" approved="no">
+        <source>Already connecting!</source>
+        <target state="translated">이미 연결 중입니다!</target>
+      </trans-unit>
+      <trans-unit id="Already joining the group!" xml:space="preserve" approved="no">
+        <source>Already joining the group!</source>
+        <target state="translated">그룹에 참가하는 중입니다!</target>
+      </trans-unit>
+      <trans-unit id="Archive and upload" xml:space="preserve" approved="no">
+        <source>Archive and upload</source>
+        <target state="translated">기록 및 업로드</target>
+      </trans-unit>
+      <trans-unit id="Chat colors" xml:space="preserve" approved="no">
+        <source>Chat colors</source>
+        <target state="translated">채팅 색깔</target>
+      </trans-unit>
+      <trans-unit id="Chat list" xml:space="preserve" approved="no">
+        <source>Chat list</source>
+        <target state="translated">채팅 목록</target>
+      </trans-unit>
+      <trans-unit id="Completed" xml:space="preserve" approved="no">
+        <source>Completed</source>
+        <target state="translated">완료됨</target>
+      </trans-unit>
+      <trans-unit id="Copy error" xml:space="preserve" approved="no">
+        <source>Copy error</source>
+        <target state="translated">복사 오류</target>
+      </trans-unit>
+      <trans-unit id="Create SimpleX address" xml:space="preserve" approved="no">
+        <source>Create SimpleX address</source>
+        <target state="translated">SimpleX 주소 생성</target>
+      </trans-unit>
+      <trans-unit id="Creating link…" xml:space="preserve" approved="no">
+        <source>Creating link…</source>
+        <target state="translated">생성 링크…</target>
+      </trans-unit>
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
+        <source>Blocked by admin</source>
+        <target state="translated">관리자에 의해 차단됨</target>
+      </trans-unit>
+      <trans-unit id="Connect to desktop" xml:space="preserve" approved="no">
+        <source>Connect to desktop</source>
+        <target state="translated">데스크톱에 연결</target>
+      </trans-unit>
+      <trans-unit id="Created at" xml:space="preserve" approved="no">
+        <source>Created at</source>
+        <target state="translated">에 생성됨</target>
+      </trans-unit>
+      <trans-unit id="Created at: %@" xml:space="preserve" approved="no">
+        <source>Created at: %@</source>
+        <target state="translated">생성 위치: %@</target>
+      </trans-unit>
+      <trans-unit id="Change self-destruct passcode" xml:space="preserve" approved="no">
+        <source>Change self-destruct passcode</source>
+        <target state="translated">자기-파괴 비밀번호 변경</target>
+      </trans-unit>
+      <trans-unit id="Create file" xml:space="preserve" approved="no">
+        <source>Create file</source>
+        <target state="translated">파일 생성</target>
+      </trans-unit>
+      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
+        <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
+        <target state="translated">연락처가 보낸 메세지를 되돌릴 수 없도록 삭제할 수 있도록 허용합니다. (24시간)</target>
+      </trans-unit>
+      <trans-unit id="App data migration" xml:space="preserve" approved="no">
+        <source>App data migration</source>
+        <target state="translated">앱 데이터 이동</target>
+      </trans-unit>
+      <trans-unit id="Apply to" xml:space="preserve" approved="no">
+        <source>Apply to</source>
+        <target state="translated">적용 대상</target>
+      </trans-unit>
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
+        <source>Block for all</source>
+        <target state="translated">모두를 위한 차단</target>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
+        <source>Both you and your contact can add message reactions.</source>
+        <target state="translated">당신과 당신의 연락처 모두 메세지 반응을 추가할 수 있습니다.</target>
+      </trans-unit>
+      <trans-unit id="Calls prohibited!" xml:space="preserve" approved="no">
+        <source>Calls prohibited!</source>
+        <target state="translated">통화 금지!</target>
+      </trans-unit>
+      <trans-unit id="Change self-destruct mode" xml:space="preserve" approved="no">
+        <source>Change self-destruct mode</source>
+        <target state="translated">자기-파괴 모드 변경</target>
+      </trans-unit>
+      <trans-unit id="Contacts" xml:space="preserve" approved="no">
+        <source>Contacts</source>
+        <target state="translated">연락처</target>
+      </trans-unit>
+      <trans-unit id="Create group" xml:space="preserve" approved="no">
+        <source>Create group</source>
+        <target state="translated">그룹 생성</target>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can make calls." xml:space="preserve" approved="no">
+        <source>Both you and your contact can make calls.</source>
+        <target state="translated">당신과 당신의 연락처 모두 전화를 걸 수 있습니다.</target>
+      </trans-unit>
+      <trans-unit id="App passcode" xml:space="preserve" approved="no">
+        <source>App passcode</source>
+        <target state="translated">앱 비밀번호</target>
+      </trans-unit>
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
+        <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
+        <target state="translated">당신의 모든 연락은 연결되어 있습니다. 프로필 업데이트가 모든 연락으로 전송됩니다.</target>
+      </trans-unit>
+      <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve" approved="no">
+        <source>App encrypts new local files (except videos).</source>
+        <target state="translated">앱은 새로운 로컬 파일을 암호화합니다 (동영상 제외).</target>
+      </trans-unit>
+      <trans-unit id="Chat preferences were changed." xml:space="preserve" approved="no">
+        <source>Chat preferences were changed.</source>
+        <target state="translated">채팅 환경설정이 변경되었습니다.</target>
+      </trans-unit>
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
+        <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target state="translated">[데스크톱 앱]에 새로운 프로필 생성(https://simplex.chat/downloads/).💻</target>
+      </trans-unit>
+      <trans-unit id="Contact is deleted." xml:space="preserve" approved="no">
+        <source>Contact is deleted.</source>
+        <target state="translated">연락처가 삭제되었습니다.</target>
+      </trans-unit>
+      <trans-unit id="Continue" xml:space="preserve" approved="no">
+        <source>Continue</source>
+        <target state="translated">계속</target>
+      </trans-unit>
+      <trans-unit id="Current Passcode" xml:space="preserve" approved="no">
+        <source>Current Passcode</source>
+        <target state="translated">현재 비밀번호</target>
+      </trans-unit>
+      <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve" approved="no">
+        <source>An empty chat profile with the provided name is created, and the app opens as usual.</source>
+        <target state="translated">제공된 이름으로 빈 채팅 프로필이 생성되고 앱이 정상적으로 열립니다.</target>
+      </trans-unit>
+      <trans-unit id="Allow your contacts to call you." xml:space="preserve" approved="no">
+        <source>Allow your contacts to call you.</source>
+        <target state="translated">연락처가 전화할 수 있도록 허용합니다.</target>
+      </trans-unit>
+      <trans-unit id="Allow sharing" xml:space="preserve" approved="no">
+        <source>Allow sharing</source>
+        <target state="translated">공유 허용</target>
+      </trans-unit>
+      <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
+        <source>Always use private routing.</source>
+        <target state="translated">항상 개인 경로를 사용합니다.</target>
+      </trans-unit>
+      <trans-unit id="Better user experience" xml:space="preserve" approved="no">
+        <source>Better user experience</source>
+        <target state="translated">더 나은 사용자 경험</target>
+      </trans-unit>
+      <trans-unit id="Change lock mode" xml:space="preserve" approved="no">
+        <source>Change lock mode</source>
+        <target state="translated">잠금 모드 변경</target>
+      </trans-unit>
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
+        <source>Allow message reactions only if your contact allows them.</source>
+        <target state="translated">연락처가 메세지 응답을 허용하는 경우에만 메세지 응답을 허용합니다.</target>
+      </trans-unit>
+      <trans-unit id="Better security ✅" xml:space="preserve" approved="no">
+        <source>Better security ✅</source>
+        <target state="translated">더 나은 안전✅</target>
+      </trans-unit>
+      <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
+        <source>Both you and your contact can irreversibly delete sent messages. (24 hours)</source>
+        <target state="translated">당신과 당신의 연락처 모두 보낸 메세지를 되돌릴 수 없습니다. (24시간)</target>
+      </trans-unit>
+      <trans-unit id="Confirm contact deletion?" xml:space="preserve" approved="no">
+        <source>Confirm contact deletion?</source>
+        <target state="translated">연락처 삭제를 확인하시겠습니까?</target>
+      </trans-unit>
+      <trans-unit id="Can't call contact" xml:space="preserve" approved="no">
+        <source>Can't call contact</source>
+        <target state="translated">연락처에 전화할 수 없습니다</target>
+      </trans-unit>
+      <trans-unit id="Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" xml:space="preserve" approved="no">
+        <source>Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!</source>
+        <target state="translated">불가리아어, 핀란드어, 태국어, 우크라이나어 - 사용자 여러분과 [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)에 감사드립니다!</target>
+      </trans-unit>
+      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve" approved="no">
+        <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
+        <target state="translated">용량 초과 - 수신자가 이전에 보낸 메세지를 받지 못했습니다.</target>
+      </trans-unit>
+      <trans-unit id="Chat" xml:space="preserve" approved="no">
+        <source>Chat</source>
+        <target state="translated">채팅</target>
+      </trans-unit>
+      <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve" approved="no">
+        <source>Connect to yourself?
+This is your own one-time link!</source>
+        <target state="translated">자신에게 연결할까요?
+이것은 당신만의 일회성 링크입니다!</target>
+      </trans-unit>
+      <trans-unit id="Choose _Migrate from another device_ on the new device and scan QR code." xml:space="preserve" approved="no">
+        <source>Choose _Migrate from another device_ on the new device and scan QR code.</source>
+        <target state="translated">새 기기에서 _다른 기기에서 이동_을 선택하고 QR 코드를 스캔합니다.</target>
+      </trans-unit>
+      <trans-unit id="Connecting to desktop" xml:space="preserve" approved="no">
+        <source>Connecting to desktop</source>
+        <target state="translated">데스크톱에 연결중</target>
+      </trans-unit>
+      <trans-unit id="Connect with %@" xml:space="preserve" approved="no">
+        <source>Connect with %@</source>
+        <target state="translated">%@와 연결</target>
+      </trans-unit>
+      <trans-unit id="Archived contacts" xml:space="preserve" approved="no">
+        <source>Archived contacts</source>
+        <target state="translated">보관된 연락처</target>
+      </trans-unit>
+      <trans-unit id="Better message dates." xml:space="preserve" approved="no">
+        <source>Better message dates.</source>
+        <target state="translated">더 나은 메세지 날짜.</target>
+      </trans-unit>
+      <trans-unit id="Better networking" xml:space="preserve" approved="no">
+        <source>Better networking</source>
+        <target state="translated">더 나은 네트워킹</target>
+      </trans-unit>
+      <trans-unit id="Check messages when allowed." xml:space="preserve" approved="no">
+        <source>Check messages when allowed.</source>
+        <target state="translated">허용될 때 메시지를 확인합니다.</target>
+      </trans-unit>
+      <trans-unit id="Compare file" xml:space="preserve" approved="no">
+        <source>Compare file</source>
+        <target state="translated">파일 비교</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be automatically accepted for enabled operators on: %@." xml:space="preserve" approved="no">
+        <source>Conditions will be automatically accepted for enabled operators on: %@.</source>
+        <target state="translated">다음 조건은 활성화된 운영자에 대해 자동으로 수락됩니다: %@.</target>
+      </trans-unit>
+      <trans-unit id="Confirm upload" xml:space="preserve" approved="no">
+        <source>Confirm upload</source>
+        <target state="translated">업로드 확인</target>
+      </trans-unit>
+      <trans-unit id="Connect incognito" xml:space="preserve" approved="no">
+        <source>Connect incognito</source>
+        <target state="translated">비밀 연결</target>
+      </trans-unit>
+      <trans-unit id="Connect to your friends faster." xml:space="preserve" approved="no">
+        <source>Connect to your friends faster.</source>
+        <target state="translated">친구들과 더 빨리 연결하세요.</target>
+      </trans-unit>
+      <trans-unit id="Connect to yourself?" xml:space="preserve" approved="no">
+        <source>Connect to yourself?</source>
+        <target state="translated">자신과 연결할까요?</target>
+      </trans-unit>
+      <trans-unit id="Created" xml:space="preserve" approved="no">
+        <source>Created</source>
+        <target state="translated">생성됨</target>
+      </trans-unit>
+      <trans-unit id="Creating archive link" xml:space="preserve" approved="no">
+        <source>Creating archive link</source>
+        <target state="translated">기록 링크 생성하기</target>
+      </trans-unit>
+      <trans-unit id="Auto-accept" xml:space="preserve" approved="no">
+        <source>Auto-accept</source>
+        <target state="translated">자동 수락</target>
+      </trans-unit>
+      <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve" approved="no">
+        <source>All new messages from %@ will be hidden!</source>
+        <target state="translated">%@로부터의 모든 새 메세지가 숨겨집니다!</target>
+      </trans-unit>
+      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
+        <source>Auto-accept settings</source>
+        <target state="translated">자동-수락 설정</target>
+      </trans-unit>
+      <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">
+        <source>Archive contacts to chat later.</source>
+        <target state="translated">나중에 채팅할 연락처를 보관합니다.</target>
+      </trans-unit>
+      <trans-unit id="Background" xml:space="preserve" approved="no">
+        <source>Background</source>
+        <target state="translated">배경</target>
+      </trans-unit>
+      <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
+        <source>Bad message hash</source>
+        <target state="translated">잘못된 메세지 hash</target>
+      </trans-unit>
+      <trans-unit id="Better groups" xml:space="preserve" approved="no">
+        <source>Better groups</source>
+        <target state="translated">더 나은 그룹</target>
+      </trans-unit>
+      <trans-unit id="Better messages" xml:space="preserve" approved="no">
+        <source>Better messages</source>
+        <target state="translated">더 나은 메세지</target>
+      </trans-unit>
+      <trans-unit id="Chunks downloaded" xml:space="preserve" approved="no">
+        <source>Chunks downloaded</source>
+        <target state="translated">다운로드된 청크</target>
+      </trans-unit>
+      <trans-unit id="Chunks deleted" xml:space="preserve" approved="no">
+        <source>Chunks deleted</source>
+        <target state="translated">삭제된 청크</target>
+      </trans-unit>
+      <trans-unit id="Chunks uploaded" xml:space="preserve" approved="no">
+        <source>Chunks uploaded</source>
+        <target state="translated">업로드 된 청크</target>
+      </trans-unit>
+      <trans-unit id="Corner" xml:space="preserve" approved="no">
+        <source>Corner</source>
+        <target state="translated">코너</target>
+      </trans-unit>
+      <trans-unit id="Correct name to %@?" xml:space="preserve" approved="no">
+        <source>Correct name to %@?</source>
+        <target state="translated">%@의 정확한 이름은?</target>
+      </trans-unit>
+      <trans-unit id="Create a group using a random profile." xml:space="preserve" approved="no">
+        <source>Create a group using a random profile.</source>
+        <target state="translated">랜덤 프로필을 사용하여 그룹을 만듭니다.</target>
+      </trans-unit>
+      <trans-unit id="Authentication cancelled" xml:space="preserve" approved="no">
+        <source>Authentication cancelled</source>
+        <target state="translated">인증 취소</target>
+      </trans-unit>
+      <trans-unit id="Confirm Passcode" xml:space="preserve" approved="no">
+        <source>Confirm Passcode</source>
+        <target state="translated">비밀번호 확인</target>
+      </trans-unit>
+      <trans-unit id="Confirm database upgrades" xml:space="preserve" approved="no">
+        <source>Confirm database upgrades</source>
+        <target state="translated">데이터베이스 업그레이드 확인</target>
+      </trans-unit>
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
+        <source>Blur media</source>
+        <target state="translated">가려진 미디어</target>
+      </trans-unit>
+      <trans-unit id="Block group members" xml:space="preserve" approved="no">
+        <source>Block group members</source>
+        <target state="translated">그룹 구성원 차단</target>
+      </trans-unit>
+      <trans-unit id="Connected" xml:space="preserve" approved="no">
+        <source>Connected</source>
+        <target state="translated">연결됨</target>
+      </trans-unit>
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
+        <source>All messages will be deleted - this cannot be undone!</source>
+        <target state="translated">모든 메세지가 삭제됩니다 - 수정할 수 없습니다!</target>
+      </trans-unit>
+      <trans-unit id="All your contacts will remain connected." xml:space="preserve" approved="no">
+        <source>All your contacts will remain connected.</source>
+        <target state="translated">당신의 모든 연락은 계속 연결되어 있습니다.</target>
+      </trans-unit>
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve" approved="no">
+        <source>Allow to send SimpleX links.</source>
+        <target state="translated">SinpleX 링크 전송 허용.</target>
+      </trans-unit>
+      <trans-unit id="Bad message ID" xml:space="preserve" approved="no">
+        <source>Bad message ID</source>
+        <target state="translated">잘못된 메세지 ID</target>
+      </trans-unit>
+      <trans-unit id="Black" xml:space="preserve" approved="no">
+        <source>Black</source>
+        <target state="translated">블랙</target>
+      </trans-unit>
+      <trans-unit id="Block member" xml:space="preserve" approved="no">
+        <source>Block member</source>
+        <target state="translated">차단 구성원</target>
+      </trans-unit>
+      <trans-unit id="Connected to desktop" xml:space="preserve" approved="no">
+        <source>Connected to desktop</source>
+        <target state="translated">데스크톱과 연결됨</target>
+      </trans-unit>
+      <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve" approved="no">
+        <source>App passcode is replaced with self-destruct passcode.</source>
+        <target state="translated">앱 비밀번호는 자체-파괴 비밀번호로 대체됩니다.</target>
+      </trans-unit>
+      <trans-unit id="Apply" xml:space="preserve" approved="no">
+        <source>Apply</source>
+        <target state="translated">적용</target>
+      </trans-unit>
+      <trans-unit id="Better notifications" xml:space="preserve" approved="no">
+        <source>Better notifications</source>
+        <target state="translated">더 나은 공지</target>
+      </trans-unit>
+      <trans-unit id="Block member?" xml:space="preserve" approved="no">
+        <source>Block member?</source>
+        <target state="translated">차단 멤버?</target>
+      </trans-unit>
+      <trans-unit id="Blur for better privacy." xml:space="preserve" approved="no">
+        <source>Blur for better privacy.</source>
+        <target state="translated">더 나은 개인정보를 위해 흐림.</target>
+      </trans-unit>
+      <trans-unit id="Business address" xml:space="preserve" approved="no">
+        <source>Business address</source>
+        <target state="translated">사업체 주소</target>
+      </trans-unit>
+      <trans-unit id="Business chats" xml:space="preserve" approved="no">
+        <source>Business chats</source>
+        <target state="translated">비즈니스 채팅</target>
+      </trans-unit>
+      <trans-unit id="Can't call member" xml:space="preserve" approved="no">
+        <source>Can't call member</source>
+        <target state="translated">회원에게 전화할 수 없습니다</target>
+      </trans-unit>
+      <trans-unit id="Can't message member" xml:space="preserve" approved="no">
+        <source>Can't message member</source>
+        <target state="translated">멤버에게 메세지를 보낼 수 없습니다</target>
+      </trans-unit>
+      <trans-unit id="Cancel migration" xml:space="preserve" approved="no">
+        <source>Cancel migration</source>
+        <target state="translated">이동 취소</target>
+      </trans-unit>
+      <trans-unit id="Change chat profiles" xml:space="preserve" approved="no">
+        <source>Change chat profiles</source>
+        <target state="translated">채팅 프로필 변경</target>
+      </trans-unit>
+      <trans-unit id="Chat already exists" xml:space="preserve" approved="no">
+        <source>Chat already exists</source>
+        <target state="translated">채팅이 이미 존재합니다</target>
+      </trans-unit>
+      <trans-unit id="Chat already exists!" xml:space="preserve" approved="no">
+        <source>Chat already exists!</source>
+        <target state="translated">채팅이 이미 존재합니다!</target>
+      </trans-unit>
+      <trans-unit id="Chat database exported" xml:space="preserve" approved="no">
+        <source>Chat database exported</source>
+        <target state="translated">채팅 데이터베이스 내보내기</target>
+      </trans-unit>
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
+        <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <target state="translated">채팅이 중지되었습니다. 이미 다른 장치에서 이 데이터베이스를 사용하고 있다면 채팅을 시작하기 전에 다시 전송해야 합니다.</target>
+      </trans-unit>
+      <trans-unit id="Chat migrated!" xml:space="preserve" approved="no">
+        <source>Chat migrated!</source>
+        <target state="translated">채팅 이동!</target>
+      </trans-unit>
+      <trans-unit id="Chat theme" xml:space="preserve" approved="no">
+        <source>Chat theme</source>
+        <target state="translated">채팅 테마</target>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
+        <source>Chat will be deleted for all members - this cannot be undone!</source>
+        <target state="translated">채팅은 모든 회원에게 삭제됩니다 - 이는 되돌릴 수 없습니다!</target>
+      </trans-unit>
+      <trans-unit id="Chat profile" xml:space="preserve" approved="no">
+        <source>Chat profile</source>
+        <target state="translated">채팅 프로필</target>
+      </trans-unit>
+      <trans-unit id="Chat will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
+        <source>Chat will be deleted for you - this cannot be undone!</source>
+        <target state="translated">채팅은 삭제됩니다 - 되돌릴 수 없습니다!</target>
+      </trans-unit>
+      <trans-unit id="Check messages every 20 min." xml:space="preserve" approved="no">
+        <source>Check messages every 20 min.</source>
+        <target state="translated">20분마다 메시지를 확인합니다.</target>
+      </trans-unit>
+      <trans-unit id="Color chats with the new themes." xml:space="preserve" approved="no">
+        <source>Color chats with the new themes.</source>
+        <target state="translated">새로운 테마로 채팅을 색칠하세요.</target>
+      </trans-unit>
+      <trans-unit id="Color mode" xml:space="preserve" approved="no">
+        <source>Color mode</source>
+        <target state="translated">색깔 모드</target>
+      </trans-unit>
+      <trans-unit id="Clear private notes?" xml:space="preserve" approved="no">
+        <source>Clear private notes?</source>
+        <target state="translated">개인 메모를 지우시겠습니까?</target>
+      </trans-unit>
+      <trans-unit id="Conditions accepted on: %@." xml:space="preserve" approved="no">
+        <source>Conditions accepted on: %@.</source>
+        <target state="translated">조건이 수락됨: %@.</target>
+      </trans-unit>
+      <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions are accepted for the operator(s): **%@**.</source>
+        <target state="translated">운영자의 조건이 허용됩니다: **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Conditions of use" xml:space="preserve" approved="no">
+        <source>Conditions of use</source>
+        <target state="translated">이용 조건</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions will be accepted for operator(s): **%@**.</source>
+        <target state="translated">운영자 조건이 수락됩니다: **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions will be accepted for the operator(s): **%@**.</source>
+        <target state="translated">운영자 조건이 수락됩니다.: **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
+        <source>Confirm that you remember database passphrase to migrate it.</source>
+        <target state="translated">이동하는데에 필요한 데이터베이스 비밀번호를 기억하는지 확인합니다.</target>
+      </trans-unit>
+      <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve" approved="no">
+        <source>Connect to yourself?
+This is your own SimpleX address!</source>
+        <target state="translated">자신과 연결할까요?
+이것은 당신의 SimpleX 주소입니다!</target>
+      </trans-unit>
+      <trans-unit id="Connect via contact address" xml:space="preserve" approved="no">
+        <source>Connect via contact address</source>
+        <target state="translated">연락처 주소로 연결</target>
+      </trans-unit>
+      <trans-unit id="Connecting" xml:space="preserve" approved="no">
+        <source>Connecting</source>
+        <target state="translated">연결중</target>
+      </trans-unit>
+      <trans-unit id="Connecting to contact, please wait or check later!" xml:space="preserve" approved="no">
+        <source>Connecting to contact, please wait or check later!</source>
+        <target state="translated">연락처에 연결 중이니 기다려 주시거나 나중에 확인해 주세요!</target>
+      </trans-unit>
+      <trans-unit id="Connection and servers status." xml:space="preserve" approved="no">
+        <source>Connection and servers status.</source>
+        <target state="translated">연결 및 서버 상태.</target>
+      </trans-unit>
+      <trans-unit id="Connection notifications" xml:space="preserve" approved="no">
+        <source>Connection notifications</source>
+        <target state="translated">연결 공지</target>
+      </trans-unit>
+      <trans-unit id="Connections" xml:space="preserve" approved="no">
+        <source>Connections</source>
+        <target state="translated">연결</target>
+      </trans-unit>
+      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
+        <source>Contact will be deleted - this cannot be undone!</source>
+        <target state="translated">연락처가 삭제됩니다 - 취소할 수 없습니다!</target>
+      </trans-unit>
+      <trans-unit id="Conversation deleted!" xml:space="preserve" approved="no">
+        <source>Conversation deleted!</source>
+        <target state="translated">대화가 삭제되었습니다!</target>
+      </trans-unit>
+      <trans-unit id="Create 1-time link" xml:space="preserve" approved="no">
+        <source>Create 1-time link</source>
+        <target state="translated">일회성 링크 생성</target>
+      </trans-unit>
+      <trans-unit id="Create profile" xml:space="preserve" approved="no">
+        <source>Create profile</source>
+        <target state="translated">프로필 생성</target>
+      </trans-unit>
+      <trans-unit id="Audio/video calls" xml:space="preserve" approved="no">
+        <source>Audio/video calls</source>
+        <target state="translated">음성/영상 통화</target>
+      </trans-unit>
+      <trans-unit id="Audio/video calls are prohibited." xml:space="preserve" approved="no">
+        <source>Audio/video calls are prohibited.</source>
+        <target state="translated">음성/영상 통화는 금지되어 있습니다.</target>
+      </trans-unit>
+      <trans-unit id="App session" xml:space="preserve" approved="no">
+        <source>App session</source>
+        <target state="translated">앱 세션</target>
+      </trans-unit>
+      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
+        <source>Block member for all?</source>
+        <target state="translated">모두를 위한 차단 멤버?</target>
+      </trans-unit>
+      <trans-unit id="Cannot forward message" xml:space="preserve" approved="no">
+        <source>Cannot forward message</source>
+        <target state="translated">메세지를 전달할 수 없습니다</target>
+      </trans-unit>
+      <trans-unit id="Confirm network settings" xml:space="preserve" approved="no">
+        <source>Confirm network settings</source>
+        <target state="translated">네트워크 설정 확인</target>
+      </trans-unit>
+      <trans-unit id="Connect automatically" xml:space="preserve" approved="no">
+        <source>Connect automatically</source>
+        <target state="translated">자동으로 연결</target>
+      </trans-unit>
+      <trans-unit id="Confirm files from unknown servers." xml:space="preserve" approved="no">
+        <source>Confirm files from unknown servers.</source>
+        <target state="translated">알 수 없는 서버에서 파일을 확인합니다.</target>
+      </trans-unit>
+      <trans-unit id="Conditions are already accepted for these operator(s): **%@**." xml:space="preserve" approved="no">
+        <source>Conditions are already accepted for these operator(s): **%@**.</source>
+        <target state="translated">이 운영자들에 대한 조건은 이미 받아들여지고 있습니다: **%@**.</target>
+      </trans-unit>
+      <trans-unit id="Contact deleted!" xml:space="preserve" approved="no">
+        <source>Contact deleted!</source>
+        <target state="translated">연락처 삭제!</target>
+      </trans-unit>
+      <trans-unit id="Current profile" xml:space="preserve" approved="no">
+        <source>Current profile</source>
+        <target state="translated">현재 프로필</target>
+      </trans-unit>
+      <trans-unit id="Customizable message shape." xml:space="preserve" approved="no">
+        <source>Customizable message shape.</source>
+        <target state="translated">사용자 지정 가능한 메세지 형태.</target>
       </trans-unit>
     </body>
   </file>
