@@ -924,7 +924,6 @@ private fun ChatTagsView() {
     }
   }
 
-
   LazyRow(modifier = Modifier.padding(4.dp)) {
     if (presetTags.size > 1) {
       // if (presetTags.size + userTags.value.size <= 3) {
@@ -1131,9 +1130,9 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo): Boolean =
 private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResource, StringResource> =
   when (tag) {
     PresetTagKind.FAVORITES -> (if (active) MR.images.ic_star_filled else MR.images.ic_star) to MR.strings.chat_list_favorites
-    PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person else MR.images.ic_person) to MR.strings.chat_list_contacts
-    PresetTagKind.GROUPS -> (if (active) MR.images.ic_group else MR.images.ic_group) to MR.strings.chat_list_groups
-    PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled_padded else MR.images.ic_work) to MR.strings.chat_list_businesses
+    PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
+    PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
+    PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
   }
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
