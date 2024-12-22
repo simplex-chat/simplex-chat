@@ -920,8 +920,15 @@ private fun ChatTagsView() {
   val rhId = chatModel.remoteHostId()
 
   fun showChatTagList () {
-    ModalManager.start.showModalCloseable { close ->
-      ChatListTag(rhId = rhId, close = close)
+    ModalManager.start.showCustomModal { close ->
+      val editMode = remember { stateGetOrPut("editMode") { false } }
+      ModalView(close, showClose = true, endButtons = {
+        TextButton(onClick = { editMode.value = !editMode.value }) {
+          Text(stringResource(if (editMode.value) MR.strings.cancel_verb else MR.strings.edit_verb))
+        }
+      }) {
+        ChatListTag(rhId = rhId, close = close, editMode = editMode)
+      }
     }
   }
 

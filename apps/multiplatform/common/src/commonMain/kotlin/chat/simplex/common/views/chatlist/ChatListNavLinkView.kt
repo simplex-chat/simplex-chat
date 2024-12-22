@@ -4,11 +4,10 @@ import SectionCustomFooter
 import SectionDivider
 import SectionItemView
 import TextIconSpaced
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -22,9 +21,9 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.*
 import androidx.compose.ui.focus.*
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -551,14 +550,36 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
 }
 
 @Composable
-fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit) {
+fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: MutableState<Boolean> = remember { mutableStateOf(false) }) {
   val userTags = remember { chatModel.userTags }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
   val saving = remember { mutableStateOf(false) }
   val chatTagIds = derivedStateOf { chat?.chatInfo?.chatTags ?: emptyList() }
 
+  fun reorderTags(tagIds: List<Long>) {
+    saving.value = true
+    withBGApi {
+      try {
+        chatModel.controller.apiReorderChatTags(rhId, tagIds)
+      } catch (e: Exception) {
+        Log.d(TAG, "ChatListTag reorderTags error: ${e.message}")
+      }
+      finally {
+        saving.value = false
+      }
+    }
+  }
+
+  val dragDropState =
+    rememberDragDropState(listState) { fromIndex, toIndex ->
+      userTags.value = userTags.value.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+      reorderTags(userTags.value.map { it.chatTagId })
+    }
+
+
   LazyColumnWithScrollBar(
+    modifier = Modifier.dragContainer(dragDropState),
     contentPadding = if (oneHandUI.value) {
       PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
     } else {
@@ -566,72 +587,86 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit) {
     },
     state = listState
   ) {
-    items(userTags.value) { tag ->
-      val showMenu = remember { mutableStateOf(false) }
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-          .combinedClickable(
-            enabled = !saving.value,
-            onClick = {
-              if (chat == null) {
-                ModalManager.start.showModalCloseable { close ->
-                  ChatListTagEditor(
-                    rhId = rhId,
-                    tagId = tag.chatTagId,
-                    close = close,
-                    emoji = tag.chatTagEmoji,
-                    name = tag.chatTagText
-                  )
-                }
-              } else {
-                setTag(rhId = rhId, tagId = tag.chatTagId, chat = chat, saving = saving, close = close)
-              }
-            },
-            onLongClick = { showMenu.value = true },
-            interactionSource = remember { MutableInteractionSource() },
-            indication = LocalIndication.current
-          )
-          .onRightClick { showMenu.value = true }
-          .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        val selected = chatTagIds.value.contains(tag.chatTagId)
-        if (tag.chatTagEmoji != null) {
-          Text(
-            tag.chatTagEmoji
-          )
-        } else {
-          Icon(painterResource(MR.images.ic_label), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-        }
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          tag.chatTagText,
-          color = MenuTextColor,
-          fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
-        )
-        if (selected) {
-          Spacer(Modifier.weight(1f))
-          Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-        }
-        DefaultDropdownMenu(showMenu, dropdownMenuItems = {
-          EditChatTagAction(rhId, tag, showMenu)
-          DeleteChatTagAction(rhId, tag, showMenu, saving)
-        })
-      }
+    itemsIndexed(userTags.value, key = { _, item -> item.chatTagId }) { index, tag ->
+      DraggableItem(dragDropState, index) { isDragging ->
+        val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
 
-      SectionDivider()
-    }
-    item {
-      SectionItemView({
-        ModalManager.start.showModalCloseable { close ->
-          ChatListTagEditor(rhId = rhId, close = close)
+        Card(
+          elevation = elevation,
+        ) {
+          Column {
+            val showMenu = remember { mutableStateOf(false) }
+            Row(
+              Modifier
+                .fillMaxWidth()
+                .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+                .combinedClickable(
+                  enabled = !saving.value,
+                  onClick = {
+                    if (chat == null) {
+                      ModalManager.start.showModalCloseable { close ->
+                        ChatListTagEditor(
+                          rhId = rhId,
+                          tagId = tag.chatTagId,
+                          close = close,
+                          emoji = tag.chatTagEmoji,
+                          name = tag.chatTagText
+                        )
+                      }
+                    } else {
+                      setTag(rhId = rhId, tagId = tag.chatTagId, chat = chat, saving = saving, close = close)
+                    }
+                  },
+                  onLongClick = if (editMode.value) null else { { showMenu.value = true } },
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = LocalIndication.current
+                )
+                .onRightClick { showMenu.value = true }
+                .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              val selected = chatTagIds.value.contains(tag.chatTagId)
+              if (tag.chatTagEmoji != null) {
+                Text(
+                  tag.chatTagEmoji
+                )
+              } else {
+                Icon(painterResource(MR.images.ic_label), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+              }
+              Spacer(Modifier.padding(horizontal = 4.dp))
+              Text(
+                tag.chatTagText,
+                color = MenuTextColor,
+                fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
+              )
+              if (selected) {
+                Spacer(Modifier.weight(1f))
+                Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+              } else if (editMode.value) {
+                Spacer(Modifier.weight(1f))
+                Icon(painterResource(MR.images.ic_sort), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
+              }
+              DefaultDropdownMenu(showMenu, dropdownMenuItems = {
+                EditChatTagAction(rhId, tag, showMenu)
+                DeleteChatTagAction(rhId, tag, showMenu, saving)
+              })
+            }
+            SectionDivider()
+          }
         }
-      }) {
-        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
+      }
+    }
+    if (!editMode.value) {
+      item {
+        SectionItemView({
+          ModalManager.start.showModalCloseable { close ->
+            ChatListTagEditor(rhId = rhId, close = close)
+          }
+        }) {
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
+          Spacer(Modifier.padding(horizontal = 4.dp))
+          Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
+        }
       }
     }
   }
