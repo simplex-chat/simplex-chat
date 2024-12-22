@@ -1267,7 +1267,7 @@
     <string name="network_option_protocol_timeout_per_kb">KB あたりのプロトコル タイムアウト</string>
     <string name="group_members_can_send_files">グループメンバーはファイルやメディアを送信できます。</string>
     <string name="abort_switch_receiving_address">アドレス変更の中止</string>
-    <string name="files_are_prohibited_in_group">このグループでは、ファイルとメディアは禁止されています。</string>
+    <string name="files_are_prohibited_in_group">ファイルとメディアは禁止されています。</string>
     <string name="shutdown_alert_question">終了しますか？</string>
     <string name="shutdown_alert_desc">アプリを再起動するまで通知は機能しません。</string>
     <string name="v5_2_favourites_filter_descr">未読とお気に入りをフィルターします。</string>
@@ -1961,4 +1961,5 @@
     <string name="toolbar_settings">設定</string>
     <string name="servers_info_missing">情報がありません、リロードしてください</string>
     <string name="smp_server">SMPサーバ</string>
+    <string name="info_view_message_button">メッセージ</string>
 </resources>
