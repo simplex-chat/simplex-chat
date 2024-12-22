@@ -118,7 +118,7 @@ class ChatTagsModel: ObservableObject {
                     newPresetTags[tag] = (newPresetTags[tag] ?? 0) + 1
                 }
             }
-            if chat.isUnread, let tags = chat.chatInfo.chatTags {
+            if chat.unreadTag, let tags = chat.chatInfo.chatTags {
                 for tag in tags {
                     newUnreadTags[tag] = (newUnreadTags[tag] ?? 0) + 1
                 }
@@ -162,14 +162,14 @@ class ChatTagsModel: ObservableObject {
     }
     
     func markChatTagRead(_ chat: Chat) -> Void {
-        if chat.isUnread, let tags = chat.chatInfo.chatTags {
+        if chat.unreadTag, let tags = chat.chatInfo.chatTags {
             markChatTagRead_(chat, tags)
         }
     }
     
     func updateChatTagRead(_ chat: Chat, wasUnread: Bool) -> Void {
         guard let tags = chat.chatInfo.chatTags else { return }
-        let nowUnread = chat.isUnread
+        let nowUnread = chat.unreadTag
         if nowUnread && !wasUnread {
             for tag in tags {
                 unreadTags[tag] = (unreadTags[tag] ?? 0) + 1
@@ -694,7 +694,7 @@ final class ChatModel: ObservableObject {
                     // update preview
                     let markedCount = chat.chatStats.unreadCount - unreadBelow
                     if markedCount > 0 {
-                        let wasUnread = chat.isUnread
+                        let wasUnread = chat.unreadTag
                         chat.chatStats.unreadCount -= markedCount
                         ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
                         self.decreaseUnreadCounter(user: self.currentUser!, by: markedCount)
@@ -709,7 +709,7 @@ final class ChatModel: ObservableObject {
 
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
-            let wasUnread = chat.isUnread
+            let wasUnread = chat.unreadTag
             chat.chatStats.unreadChat = unreadChat
             ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
         }
@@ -847,7 +847,7 @@ final class ChatModel: ObservableObject {
     }
 
     func changeUnreadCounter(_ chatIndex: Int, by count: Int) {
-        let wasUnread = chats[chatIndex].isUnread
+        let wasUnread = chats[chatIndex].unreadTag
         chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount + count
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
         changeUnreadCounter(user: currentUser!, by: count)
@@ -1055,8 +1055,8 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
         }
     }
 
-    var isUnread: Bool {
-        chatStats.unreadCount > 0 || chatStats.unreadChat
+    var unreadTag: Bool {
+        chatInfo.ntfsEnabled && (chatStats.unreadCount > 0 || chatStats.unreadChat)
     }
     
     var id: ChatId { get { chatInfo.id } }
