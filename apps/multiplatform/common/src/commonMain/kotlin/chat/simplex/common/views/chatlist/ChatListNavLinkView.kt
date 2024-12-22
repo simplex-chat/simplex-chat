@@ -577,7 +577,6 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
       reorderTags(userTags.value.map { it.chatTagId })
     }
 
-
   LazyColumnWithScrollBar(
     modifier = Modifier.dragContainer(dragDropState),
     contentPadding = if (oneHandUI.value) {
@@ -610,11 +609,15 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                           tagId = tag.chatTagId,
                           close = close,
                           emoji = tag.chatTagEmoji,
-                          name = tag.chatTagText
+                          name = tag.chatTagText,
                         )
                       }
                     } else {
-                      setTag(rhId = rhId, tagId = tag.chatTagId, chat = chat, saving = saving, close = close)
+                      saving.value = true
+                      setChatTag(rhId = rhId, tagId = tag.chatTagId, chat = chat, close = {
+                        saving.value = false
+                        close()
+                      })
                     }
                   },
                   onLongClick = if (editMode.value) null else { { showMenu.value = true } },
@@ -660,7 +663,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
       item {
         SectionItemView({
           ModalManager.start.showModalCloseable { close ->
-            ChatListTagEditor(rhId = rhId, close = close)
+            ChatListTagEditor(rhId = rhId, close = close, chat = chat)
           }
         }) {
           Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
@@ -701,14 +704,26 @@ fun ChatListTagEditor(
       try {
         val updatedTags = chatModel.controller.apiCreateChatTag(rhId, ChatTagData(newEmoji.value, trimmedName.value))
         if (updatedTags != null) {
-          userTags.value = updatedTags
           saving.value = false
+          userTags.value = updatedTags
           close()
         } else {
           saving.value = null
+          return@withBGApi
+        }
+
+        if (chat != null) {
+          val createdTag = updatedTags.firstOrNull() { it.chatTagText == trimmedName.value && it.chatTagEmoji == newEmoji.value }
+
+          if (createdTag != null) {
+            setChatTag(rhId, createdTag.chatTagId, chat, close = {
+              saving.value = false
+              close()
+            })
+          }
         }
       } catch (e: Exception) {
-        Log.d(TAG, "ChatListTagEditor createChatTag tag error: ${e.message}")
+        Log.d(TAG, "createChatTag tag error: ${e.message}")
         saving.value = null
       }
     }
@@ -752,7 +767,7 @@ fun ChatListTagEditor(
 
     SectionItemView(click = { if (tagId == null) createChatTag() else updateChatTag() }, disabled = disabled) {
       Text(
-        generalGetString(if (tagId == null) MR.strings.create_list else MR.strings.save_list),
+        generalGetString(if (chat != null ) MR.strings.add_to_list else if (tagId == null) MR.strings.create_list else MR.strings.save_list),
         color = if (disabled) colors.secondary else colors.primary
       )
     }
@@ -1210,7 +1225,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
   }
 }
 
-private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, saving: MutableState<Boolean>, close: () -> Unit) {
+private fun setChatTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {
   withBGApi {
     val tagIds: List<Long> = if (tagId == null) {
       emptyList()
@@ -1219,7 +1234,6 @@ private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, saving: MutableState<B
     }
 
     try {
-      saving.value = true
       val result = apiSetChatTags(rh = rhId, type = chat.chatInfo.chatType, id = chat.chatInfo.apiId, tagIds = tagIds)
 
       if (result != null) {
@@ -1243,10 +1257,8 @@ private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, saving: MutableState<B
         }
         close()
       }
-      saving.value = false
     } catch (e: Exception) {
-      Log.d(TAG, "createChatTag error: ${e.message}")
-      saving.value = false
+      Log.d(TAG, "setChatTag error: ${e.message}")
     }
   }
 }
