@@ -947,7 +947,6 @@ private fun ChatTagsView() {
 
       Row(
         Modifier
-          .padding(4.dp)
           .combinedClickable(
             onClick = {
               if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
@@ -960,7 +959,8 @@ private fun ChatTagsView() {
             interactionSource = interactionSource,
             indication = LocalIndication.current
           )
-          .onRightClick { showChatTagList() },
+          .onRightClick { showChatTagList() }
+          .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
@@ -1004,6 +1004,26 @@ private fun ChatTagsView() {
           )
         }
 
+      }
+    }
+
+    item {
+      Box(
+        Modifier.clickable {
+          ModalManager.start.showModalCloseable { close ->
+            ChatListTagEditor(rhId = rhId, close = close)
+          }
+        }.padding(4.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        if (userTags.value.isEmpty()) {
+          Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+            Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
+          }
+        } else {
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+        }
       }
     }
   }

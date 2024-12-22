@@ -422,6 +422,7 @@
   <string name="chat_list_groups">Groups</string>
   <string name="chat_list_businesses">Businesses</string>
   <string name="chat_list_all">All</string>
+  <string name="chat_list_add_list">Add list</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
