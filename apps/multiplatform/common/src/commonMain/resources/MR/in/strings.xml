@@ -434,7 +434,7 @@
     <string name="icon_descr_call_progress">Panggilan berlangsung</string>
     <string name="icon_descr_call_connecting">Menghubungkan panggilan</string>
     <string name="alert_title_skipped_messages">Pesan yang terlewati</string>
-    <string name="alert_text_msg_bad_hash">Hash dari pesan sebelumnya berbeda.</string>
+    <string name="alert_text_msg_bad_hash">Hash dari pesan sebelumnya berbeda.\"</string>
     <string name="privacy_and_security">Privasi &amp; keamanan</string>
     <string name="encrypt_local_files">Enkripsi berkas lokal</string>
     <string name="auto_accept_images">Terima gambar otomatis</string>
@@ -2223,4 +2223,5 @@
     <string name="delete_messages_after">Hapus pesan setelah</string>
     <string name="a_plus_b">a + b</string>
     <string name="users_delete_profile_for">Hapus obrolan profil untuk</string>
+    <string name="connection_not_ready">Koneksi belum siap</string>
 </resources>
