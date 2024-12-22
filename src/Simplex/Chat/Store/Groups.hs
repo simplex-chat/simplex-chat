@@ -122,6 +122,8 @@ module Simplex.Chat.Store.Groups
     updateUserMemberProfileSentAt,
     setGroupCustomData,
     setGroupUIThemes,
+    updateGroupChatTags,
+    getGroupChatTags,
   )
 where
 
@@ -130,6 +132,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (second)
+import Data.Bitraversable (bitraverse)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
@@ -249,8 +252,8 @@ setGroupLinkMemberRole db User {userId} userContactLinkId memberRole =
   DB.execute db "UPDATE user_contact_links SET group_link_member_role = ? WHERE user_id = ? AND user_contact_link_id = ?" (memberRole, userId, userContactLinkId)
 
 getGroupAndMember :: DB.Connection -> User -> Int64 -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-getGroupAndMember db User {userId, userContactId} groupMemberId vr =
-  ExceptT . firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
+getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
+  gm <- ExceptT . firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
     DB.query
       db
       [sql|
@@ -285,10 +288,11 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr =
         WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (userId, groupMemberId, userId, userContactId)
+  liftIO $ bitraverse (addGroupChatTags db) pure gm
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
     toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
-      let groupInfo = toGroupInfo vr userContactId groupInfoRow
+      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection vr connRow})
 
@@ -333,6 +337,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           updatedAt = currentTs,
           chatTs = Just currentTs,
           userMemberProfileSentAt = Just currentTs,
+          chatTags = [],
           uiThemes = Nothing,
           customData = Nothing
         }
@@ -401,6 +406,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   updatedAt = currentTs,
                   chatTs = Just currentTs,
                   userMemberProfileSentAt = Just currentTs,
+                  chatTags = [],
                   uiThemes = Nothing,
                   customData = Nothing
                 },
@@ -624,8 +630,8 @@ getUserGroups db vr user@User {userId} = do
   rights <$> mapM (runExceptT . getGroup db vr user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
-getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
-  map (toGroupInfo vr userContactId)
+getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
+  g_ <- map (toGroupInfo vr userContactId [])
     <$> DB.query
       db
       [sql|
@@ -643,6 +649,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
           AND (gp.display_name LIKE '%' || ? || '%' OR gp.full_name LIKE '%' || ? || '%' OR gp.description LIKE '%' || ? || '%')
       |]
       (userId, userContactId, search, search, search)
+  mapM (addGroupChatTags db) g_
   where
     search = fromMaybe "" search_
 
@@ -1362,8 +1369,8 @@ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
 
 getViaGroupMember :: DB.Connection -> VersionRangeChat -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
-getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
-  maybeFirstRow toGroupAndMember $
+getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
+  gm_ <- maybeFirstRow toGroupAndMember $
     DB.query
       db
       [sql|
@@ -1399,10 +1406,11 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} =
         WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ? AND ct.deleted = 0
       |]
       (userId, userId, contactId, userContactId)
+  mapM (bitraverse (addGroupChatTags db) pure) gm_
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
     toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
-      let groupInfo = toGroupInfo vr userContactId groupInfoRow
+      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection vr connRow})
 
@@ -1482,22 +1490,24 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
   updateGroupProfile db user g' p'
   where
     getGroupProfile =
-      ExceptT $ firstRow toGroupProfile (SEGroupNotFound groupId) $
-        DB.query
-          db
-          [sql|
+      ExceptT $
+        firstRow toGroupProfile (SEGroupNotFound groupId) $
+          DB.query
+            db
+            [sql|
             SELECT gp.display_name, gp.full_name, gp.description, gp.image, gp.preferences
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
             WHERE g.group_id = ?
           |]
-          (Only groupId)
+            (Only groupId)
     toGroupProfile (displayName, fullName, description, image, groupPreferences) =
       GroupProfile {displayName, fullName, description, image, groupPreferences}
 
 getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfo db vr User {userId, userContactId} groupId =
-  ExceptT . firstRow (toGroupInfo vr userContactId) (SEGroupNotFound groupId) $
+getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
+  chatTags <- getGroupChatTags db groupId
+  firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
     DB.query
       db
       (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
@@ -2053,7 +2063,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, chatTags = [], uiThemes = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -2090,7 +2100,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, chatTags = [], uiThemes = Nothing, chatDeleted = False, customData = Nothing}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where
@@ -2301,3 +2311,31 @@ setGroupUIThemes :: DB.Connection -> User -> GroupInfo -> Maybe UIThemeEntityOve
 setGroupUIThemes db User {userId} GroupInfo {groupId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (uiThemes, updatedAt, userId, groupId)
+
+updateGroupChatTags :: DB.Connection -> GroupId -> [ChatTagId] -> IO ()
+updateGroupChatTags db gId tIds = do
+  currentTags <- getGroupChatTags db gId
+  let tagsToAdd = filter (`notElem` currentTags) tIds
+      tagsToDelete = filter (`notElem` tIds) currentTags
+  forM_ tagsToDelete $ untagGroupChat db gId
+  forM_ tagsToAdd $ tagGroupChat db gId
+
+tagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
+tagGroupChat db groupId tId =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO chat_tags_chats (group_id, chat_tag_id)
+      VALUES (?,?)
+    |]
+    (groupId, tId)
+
+untagGroupChat :: DB.Connection -> GroupId -> ChatTagId -> IO ()
+untagGroupChat db groupId tId =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_tags_chats
+      WHERE group_id = ? AND chat_tag_id = ?
+    |]
+    (groupId, tId)

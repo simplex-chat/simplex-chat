@@ -21,11 +21,12 @@ import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction, MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), SQLiteStore, withTransaction)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
