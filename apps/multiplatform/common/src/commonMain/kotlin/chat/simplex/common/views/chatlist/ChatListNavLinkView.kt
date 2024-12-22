@@ -949,7 +949,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   if (chat.chatStats.unreadChat) return
 
   withApi {
-    val wasUnread = chat.isUnread
+    val wasUnread = chat.unreadTag
     val success = chatModel.controller.apiChatUnread(
       chat.remoteHostId,
       chat.chatInfo.chatType,
@@ -1209,6 +1209,8 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       else -> false
     }
     if (res && newChatInfo != null) {
+      val chat = chatModel.getChat(chatInfo.id)
+      val wasUnread = chat?.unreadTag ?: false
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withChats {
@@ -1216,6 +1218,9 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       }
       if (chatSettings.enableNtfs != MsgFilter.All) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
+      }
+      if (chat != null) {
+        chatModel.updateChatTagRead(chat, wasUnread)
       }
       val current = currentState?.value
       if (current != null) {

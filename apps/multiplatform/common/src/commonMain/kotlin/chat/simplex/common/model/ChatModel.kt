@@ -213,7 +213,7 @@ object ChatModel {
           newPresetTags[tag] = (newPresetTags[tag] ?: 0) + 1
         }
       }
-      if (chat.isUnread) {
+      if (chat.unreadTag) {
         val chatTags: List<Long> = when (val cInfo = chat.chatInfo) {
           is ChatInfo.Direct -> cInfo.contact.chatTags
           is ChatInfo.Group -> cInfo.groupInfo.chatTags
@@ -269,7 +269,7 @@ object ChatModel {
   }
 
   fun markChatTagRead(chat: Chat) {
-    if (chat.isUnread) {
+    if (chat.unreadTag) {
       chat.chatInfo.chatTags?.let { tags ->
         markChatTagRead_(chat, tags)
       }
@@ -278,7 +278,7 @@ object ChatModel {
 
   fun updateChatTagRead(chat: Chat, wasUnread: Boolean) {
     val tags = chat.chatInfo.chatTags ?: return
-    val nowUnread = chat.isUnread
+    val nowUnread = chat.unreadTag
 
     if (nowUnread && !wasUnread) {
       tags.forEach { tag ->
@@ -432,7 +432,7 @@ object ChatModel {
           }
           else -> cItem
         }
-        val wasUnread = chat.isUnread
+        val wasUnread = chat.unreadTag
         chats[i] = chat.copy(
           chatItems = arrayListOf(newPreviewItem),
           chatStats =
@@ -629,7 +629,7 @@ object ChatModel {
         val chat = chats[chatIdx]
         val lastId = chat.chatItems.lastOrNull()?.id
         if (lastId != null) {
-          val wasUnread = chat.isUnread
+          val wasUnread = chat.unreadTag
           val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
           decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
@@ -646,7 +646,7 @@ object ChatModel {
 
       val chat = chats[chatIndex]
       val unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0)
-      val wasUnread = chat.isUnread
+      val wasUnread = chat.unreadTag
       decreaseUnreadCounter(rhId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
       chats[chatIndex] = chat.copy(
         chatStats = chat.chatStats.copy(
@@ -1099,7 +1099,7 @@ data class Chat(
     else -> false
   }
 
-  val isUnread: Boolean get() = chatStats.unreadCount > 0 || chatStats.unreadChat
+  val unreadTag: Boolean get() = chatInfo.ntfsEnabled && (chatStats.unreadCount > 0 || chatStats.unreadChat)
 
   val id: String get() = chatInfo.id
 
