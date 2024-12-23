@@ -1,12 +1,12 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -184,17 +184,28 @@ fun CIFileView(
     }
   }
 
+  val showOpenSaveMenu = rememberSaveable { mutableStateOf(false) }
   Row(
     Modifier
       .combinedClickable(
-        onClick = { fileAction() },
+        onClick = {
+          if (appPlatform.isAndroid && file?.fileSource != null && getLoadedFilePath(file) != null) {
+            showOpenSaveMenu.value = true
+          } else {
+            fileAction()
+          }
+        },
         onLongClick = { showMenu.value = true }
       )
       .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
-    //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
+    val ext = file?.fileSource?.filePath?.substringAfterLast(".")
+    if (appPlatform.isAndroid && file?.fileSource != null && getLoadedFilePath(file) != null && !ext.isNullOrEmpty()) {
+      val encrypted = file.fileSource.cryptoArgs != null
+      AndroidSaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, openFile = { openFile(file.fileSource) }, saveFile = { fileAction() })
+    }
     fileIndicator()
     if (!smallView) {
       val metaReserve = if (edited)
@@ -222,6 +233,9 @@ fun CIFileView(
 }
 
 fun fileSizeValid(file: CIFile): Boolean = file.fileSize <= getMaxFileSize(file.fileProtocol)
+
+@Composable
+expect fun AndroidSaveOrOpenFileMenu(showMenu: MutableState<Boolean>, encrypted: Boolean, ext: String, openFile: () -> Unit, saveFile: () -> Unit)
 
 @Composable
 fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
