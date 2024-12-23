@@ -932,7 +932,7 @@ private fun ChatTagsView() {
     }
   }
 
-  LazyRow(modifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF).sizeIn(minHeight = 35.dp), verticalAlignment = Alignment.CenterVertically) {
+  LazyRow(modifier = Modifier.padding(horizontal = 14.dp).sizeIn(minHeight = 35.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
     if (presetTags.size > 1) {
       if (presetTags.size + userTags.value.size <= 3) {
         items(PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }) { tag ->
@@ -969,7 +969,7 @@ private fun ChatTagsView() {
           )
           .onRightClick { showChatTagList() }
           .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
       ) {
         if (tag.chatTagEmoji != null) {
@@ -984,6 +984,7 @@ private fun ChatTagsView() {
             tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
           )
         }
+        Spacer(Modifier.width(4.dp))
         Box {
           val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
           val invisibleText = buildAnnotatedString {
@@ -1017,17 +1018,18 @@ private fun ChatTagsView() {
         ModalManager.start.showModalCloseable { close ->
           ChatListTagEditor(rhId = rhId, close = close)
         }
-      }.padding(4.dp)
+      }
 
     item {
       if (userTags.value.isEmpty()) {
-        Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
           Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+          Spacer(Modifier.width(2.dp))
           Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
         }
       } else {
         Icon(
-          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier), tint = MaterialTheme.colors.secondary
+          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(4.dp), tint = MaterialTheme.colors.secondary
         )
       }
     }
@@ -1046,7 +1048,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
 
   Row(
     modifier = Modifier
-      .clip(shape = RoundedCornerShape(percent = 22))
+      .clip(shape = RoundedCornerShape(percent = 50))
       .clickable {
         if (activeFilter.value == ActiveFilter.PresetTag(tag)) {
           chatModel.activeChatTagFilter.value = null
@@ -1057,13 +1059,14 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
       .padding(4.dp)
     ,
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(4.dp)
+    horizontalArrangement = Arrangement.Center
   ) {
     Icon(
       painterResource(icon),
       stringResource(text),
       tint = color
     )
+    Spacer(Modifier.width(4.dp))
     Box {
       Text(
         stringResource(text),
