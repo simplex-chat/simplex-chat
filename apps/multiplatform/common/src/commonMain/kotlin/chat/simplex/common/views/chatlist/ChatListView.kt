@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
@@ -837,7 +838,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
-    Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
       NoChatsView(searchText = searchText)
     }
   }
@@ -869,8 +870,8 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
 
   if (searchText.value.text.trim().isEmpty()) {
     when (activeFilter) {
-      is ActiveFilter.PresetTag -> Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary) // this should not happen
-      is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary)
+      is ActiveFilter.PresetTag -> Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center) // this should not happen
+      is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
       is ActiveFilter.Unread -> {
           Row(
             Modifier.clip(shape = RoundedCornerShape(percent = 50)).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
@@ -882,15 +883,15 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
               null,
               tint = MaterialTheme.colors.secondary
             )
-            Text(generalGetString(MR.strings.no_unread_chats), color = MaterialTheme.colors.secondary)
+            Text(generalGetString(MR.strings.no_unread_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
           }
       }
       null -> {
-        Text(generalGetString(MR.strings.no_chats), color = MaterialTheme.colors.secondary)
+        Text(generalGetString(MR.strings.no_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
       }
     }
   } else {
-    Text(generalGetString(MR.strings.no_chats_found), color = MaterialTheme.colors.secondary)
+    Text(generalGetString(MR.strings.no_chats_found), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
   }
 }
 
