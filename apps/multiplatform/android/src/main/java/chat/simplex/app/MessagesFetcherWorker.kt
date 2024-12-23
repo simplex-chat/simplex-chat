@@ -32,8 +32,10 @@ object MessagesFetcherWorker {
     SimplexApp.context.getWorkManagerInstance().enqueueUniqueWork(UNIQUE_WORK_TAG, ExistingWorkPolicy.REPLACE, periodicWorkRequest)
   }
 
-  fun cancelAll() {
-    Log.d(TAG, "Worker: canceled all tasks")
+  fun cancelAll(withLog: Boolean = true) {
+    if (withLog) {
+      Log.d(TAG, "Worker: canceled all tasks")
+    }
     SimplexApp.context.getWorkManagerInstance().cancelUniqueWork(UNIQUE_WORK_TAG)
   }
 }
