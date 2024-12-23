@@ -17,6 +17,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -86,12 +87,14 @@ actual fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, e
 @Composable
 private fun EmojiPicker(close: (String?) -> Unit) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val topPaddingToContent = topPaddingToContent(false)
+
   Column (
     modifier = Modifier.fillMaxSize().navigationBarsPadding().padding(
       start = DEFAULT_PADDING_HALF,
       end = DEFAULT_PADDING_HALF,
-      bottom = if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp,
-      top = if (oneHandUI.value) DEFAULT_PADDING else (AppBarHeight * fontSizeSqrtMultiplier) + DEFAULT_PADDING
+      top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
+      bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
     ),
   ) {
     AndroidView(
