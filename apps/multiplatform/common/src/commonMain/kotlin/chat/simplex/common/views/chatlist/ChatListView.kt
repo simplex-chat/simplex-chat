@@ -813,9 +813,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         } else {
-          ChatTagsView()
-          Divider()
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+          ChatTagsView()
         }
       }
     }

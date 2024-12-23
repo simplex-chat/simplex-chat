@@ -686,6 +686,8 @@ fun ModalData.ChatListTagEditor(
   close: () -> Unit
 ) {
   val userTags = remember { chatModel.userTags }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val keyboardState by getKeyboardState()
   val newEmoji = remember { stateGetOrPutNullable("chatTagEmoji") { emoji } }
   val newName = remember { stateGetOrPut("chatTagName") { name } }
   val saving = remember { mutableStateOf<Boolean?>(null) }
@@ -758,6 +760,9 @@ fun ModalData.ChatListTagEditor(
   val showError = derivedStateOf { isDuplicateEmojiOrName.value && saving.value != false }
 
   ColumnWithScrollBar {
+    if (oneHandUI.value) {
+      Spacer(Modifier.weight(1f))
+    }
     ChatTagInput(newName, showError, newEmoji)
     val disabled = saving.value == true ||
         (trimmedName.value == name && newEmoji.value == emoji) ||
@@ -766,32 +771,31 @@ fun ModalData.ChatListTagEditor(
 
     SectionItemView(click = { if (tagId == null) createChatTag() else updateChatTag() }, disabled = disabled) {
       Text(
-        generalGetString(if (chat != null ) MR.strings.add_to_list else if (tagId == null) MR.strings.create_list else MR.strings.save_list),
+        generalGetString(if (chat != null) MR.strings.add_to_list else if (tagId == null) MR.strings.create_list else MR.strings.save_list),
         color = if (disabled) colors.secondary else colors.primary
       )
     }
-    if (isDuplicateEmojiOrName.value && saving.value != false) {
-      SectionCustomFooter {
-        Row(
-          Modifier.fillMaxWidth(),
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Icon(
-            painterResource(MR.images.ic_error),
-            contentDescription = stringResource(MR.strings.error),
-            tint = Color.Red,
-            modifier = Modifier
-              .size(19.sp.toDp())
-              .offset(x = 2.sp.toDp())
-          )
-          TextIconSpaced()
-          Text(
-            generalGetString(MR.strings.duplicated_list_error),
-            color = MaterialTheme.colors.secondary,
-            lineHeight = 18.sp,
-            fontSize = 14.sp
-          )
-        }
+    val showError = isDuplicateEmojiOrName.value && saving.value != false
+    SectionCustomFooter {
+      Row(
+        Modifier.fillMaxWidth().padding(bottom = if (keyboardState == KeyboardState.Opened) 0.dp else DEFAULT_PADDING),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Icon(
+          painterResource(MR.images.ic_error),
+          contentDescription = stringResource(MR.strings.error),
+          tint = if (showError) Color.Red else Color.Transparent,
+          modifier = Modifier
+            .size(19.sp.toDp())
+            .offset(x = 2.sp.toDp())
+        )
+        TextIconSpaced()
+        Text(
+          generalGetString(MR.strings.duplicated_list_error),
+          color = if (showError) colors.secondary else Color.Transparent,
+          lineHeight = 18.sp,
+          fontSize = 14.sp
+        )
       }
     }
   }
