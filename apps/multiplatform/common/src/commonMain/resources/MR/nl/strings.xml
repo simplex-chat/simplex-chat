@@ -1448,7 +1448,7 @@
     <string name="linked_mobiles">Gekoppelde mobiele apparaten</string>
     <string name="desktop_device">Desktop</string>
     <string name="connected_to_desktop">Verbonden met desktop</string>
-    <string name="this_device_name">Deze apparaatnaam</string>
+    <string name="this_device_name">Naam van dit apparaat</string>
     <string name="loading_remote_file_title">Het bestand laden</string>
     <string name="connecting_to_desktop">Verbinding maken met desktop</string>
     <string name="desktop_devices">Desktop apparaten</string>
@@ -2252,4 +2252,5 @@
     <string name="encryption_renegotiation_in_progress">Er wordt opnieuw onderhandeld over de encryptie.</string>
     <string name="sync_connection_question">Verbinding herstellen?</string>
     <string name="sync_connection_confirm">Herstel</string>
+    <string name="connection_not_ready">Verbinding nog niet klaar</string>
 </resources>
