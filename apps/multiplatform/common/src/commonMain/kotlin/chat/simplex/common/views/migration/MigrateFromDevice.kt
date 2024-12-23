@@ -450,6 +450,7 @@ private fun MutableState<MigrationFromState>.stopChat() {
       try {
         controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
         state = if (appPreferences.initialRandomDBPassphrase.get()) MigrationFromState.PassphraseNotSet else MigrationFromState.PassphraseConfirmation
+        platform.androidChatStopped()
       } catch (e: Exception) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.migrate_from_device_error_saving_settings),
@@ -655,6 +656,7 @@ private suspend fun startChatAndDismiss(dismiss: Boolean = true) {
     } else if (user != null) {
       startChat(user)
     }
+    platform.androidChatStartedAfterBeingOff()
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.error_starting_chat),
