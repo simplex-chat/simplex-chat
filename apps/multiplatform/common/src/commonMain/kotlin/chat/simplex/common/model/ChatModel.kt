@@ -1709,6 +1709,13 @@ data class GroupMember (
   var activeConn: Connection? = null
 ): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
+  val ready get() = activeConn?.connStatus == ConnStatus.Ready
+  val sndReady get() = ready || activeConn?.connStatus == ConnStatus.SndReady
+  val sendMsgEnabled get() =
+    sndReady
+        && memberCurrent
+        && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false)
+        && !(activeConn?.connDisabled ?: true)
   override val displayName: String
     get() {
       val p = memberProfile

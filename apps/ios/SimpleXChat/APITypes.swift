@@ -2034,6 +2034,10 @@ public struct ConnectionStats: Decodable, Hashable {
     public var ratchetSyncSendProhibited: Bool {
         [.required, .started, .agreed].contains(ratchetSyncState)
     }
+
+    public var ratchetSyncInProgress: Bool {
+        [.started, .agreed].contains(ratchetSyncState)
+    }
 }
 
 public struct RcvQueueInfo: Codable, Hashable {

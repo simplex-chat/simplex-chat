@@ -89,28 +89,33 @@ fun GroupMemberInfoView(
         }
       },
       createMemberContact = {
-        if (connectionStats != null) {
-          if (connectionStats.ratchetSyncState == RatchetSyncState.Ok) {
-            withBGApi {
-              progressIndicator = true
-              val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
-              if (memberContact != null) {
-                val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
-                withChats {
-                  addChat(memberChat)
-                  openLoadedChat(memberChat)
-                }
-                closeAll()
-                chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
+        if (member.sendMsgEnabled) {
+          withBGApi {
+            progressIndicator = true
+            val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
+            if (memberContact != null) {
+              val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
+              withChats {
+                addChat(memberChat)
+                openLoadedChat(memberChat)
               }
-              progressIndicator = false
+              closeAll()
+              chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
             }
-          } else if (connectionStats.ratchetSyncAllowed) {
+            progressIndicator = false
+          }
+        } else if (connectionStats != null) {
+          if (connectionStats.ratchetSyncAllowed) {
             showFixConnectionAlert(syncConnection = { syncMemberConnection() })
-          } else {
+          } else if (connectionStats.ratchetSyncInProgress) {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.cant_send_message_to_member_alert_title),
               generalGetString(MR.strings.encryption_renegotiation_in_progress)
+            )
+          } else {
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.cant_send_message_to_member_alert_title),
+              generalGetString(MR.strings.connection_not_ready)
             )
           }
         }
@@ -366,7 +371,11 @@ fun GroupMemberInfoLayout(
           if (contactId != null) {
             OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contactId) }) // legacy - only relevant for direct contacts created when joining group
           } else {
-            OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { createMemberContact() })
+            OpenChatButton(
+              modifier = Modifier.fillMaxWidth(0.33f),
+              disabledLook = !(member.sendMsgEnabled || (member.activeConn?.connectionStats?.ratchetSyncAllowed ?: false)),
+              onClick = { createMemberContact() }
+            )
           }
           InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
             showSendMessageToEnableCallsAlert()
@@ -437,12 +446,12 @@ fun GroupMemberInfoLayout(
       SectionDividerSpaced()
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
         SwitchAddressButton(
-          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || cStats.ratchetSyncSendProhibited,
+          disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || !member.sendMsgEnabled,
           switchAddress = switchMemberAddress
         )
         if (cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null }) {
           AbortSwitchAddressButton(
-            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch } || cStats.ratchetSyncSendProhibited,
+            disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null && !it.canAbortSwitch } || !member.sendMsgEnabled,
             abortSwitchAddress = abortSwitchMemberAddress
           )
         }
@@ -602,6 +611,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(
   modifier: Modifier,
+  disabledLook: Boolean = false,
   onClick: () -> Unit
 ) {
   InfoViewActionButton(
@@ -609,7 +619,7 @@ fun OpenChatButton(
     icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_message_button),
     disabled = false,
-    disabledLook = false,
+    disabledLook = disabledLook,
     onClick = onClick
   )
 }

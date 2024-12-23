@@ -568,7 +568,6 @@ struct TagEditorNavParams {
 
 struct ChatListTag: View {
     var chat: Chat? = nil
-    var showEditButton: Bool = false
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
@@ -603,7 +602,7 @@ struct ChatListTag: View {
                     .contentShape(Rectangle())
                     .onTapGesture {
                         if let c = chat {
-                            setTag(tagId: selected ? nil : tagId, chat: c)
+                            setChatTag(tagId: selected ? nil : tagId, chat: c) { dismiss() }
                         } else {
                             tagEditorNavParams = TagEditorNavParams(chat: nil, chatListTag: ChatTagData(emoji: emoji, text: text), tagId: tagId)
                         }
@@ -665,7 +664,7 @@ struct ChatListTag: View {
                     Label("Create list", systemImage: "plus")
                 }
             } header: {
-                if showEditButton {
+                if chat == nil {
                     editTagsButton()
                     .textCase(nil)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -714,36 +713,6 @@ struct ChatListTag: View {
         }
     }
     
-    private func setTag(tagId: Int64?, chat: Chat) {
-        Task {
-            do {
-                let tagIds: [Int64] = if let t = tagId { [t] } else {[]}
-                let (userTags, chatTags) = try await apiSetChatTags(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    tagIds: tagIds
-                )
-                
-                await MainActor.run {
-                    chatTagsModel.userTags = userTags
-                    if var contact = chat.chatInfo.contact {
-                        contact.chatTags = chatTags
-                        m.updateContact(contact)
-                    } else if var group = chat.chatInfo.groupInfo {
-                        group.chatTags = chatTags
-                        m.updateGroup(group)
-                    }
-                    dismiss()
-                }
-            } catch let error {
-                showAlert(
-                    NSLocalizedString("Error saving chat list", comment: "alert title"),
-                    message: responseError(error)
-                )
-            }
-        }
-    }
-    
     private func deleteTag(_ tagId: Int64) {
         Task {
             try await apiDeleteChatTag(tagId: tagId)
@@ -763,6 +732,37 @@ struct ChatListTag: View {
                     }
                 }
             }
+        }
+    }
+}
+
+private func setChatTag(tagId: Int64?, chat: Chat, closeSheet: @escaping () -> Void) {
+    Task {
+        do {
+            let tagIds: [Int64] = if let t = tagId { [t] } else {[]}
+            let (userTags, chatTags) = try await apiSetChatTags(
+                type: chat.chatInfo.chatType,
+                id: chat.chatInfo.apiId,
+                tagIds: tagIds
+            )
+            
+            await MainActor.run {
+                let m = ChatModel.shared
+                ChatTagsModel.shared.userTags = userTags
+                if var contact = chat.chatInfo.contact {
+                    contact.chatTags = chatTags
+                    m.updateContact(contact)
+                } else if var group = chat.chatInfo.groupInfo {
+                    group.chatTags = chatTags
+                    m.updateGroup(group)
+                }
+                closeSheet()
+            }
+        } catch let error {
+            showAlert(
+                NSLocalizedString("Error saving chat list", comment: "alert title"),
+                message: responseError(error)
+            )
         }
     }
 }
@@ -817,11 +817,11 @@ struct EmojiPickerView: UIViewControllerRepresentable {
 }
 
 struct ChatListTagEditor: View {
-    var chat: Chat? = nil
-    var tagId: Int64? = nil
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var theme: AppTheme
+    var chat: Chat? = nil
+    var tagId: Int64? = nil
     var emoji: String?
     var name: String = ""
     @State private var newEmoji: String?
@@ -860,7 +860,13 @@ struct ChatListTagEditor: View {
                             createChatTag()
                         }
                     } label: {
-                        Text(NSLocalizedString(tagId == nil ? "Create list" : "Save list", comment: "list editor button"))
+                        Text(
+                            chat != nil
+                            ? "Add to list"
+                            : tagId == nil
+                            ? "Create list"
+                            : "Save list"
+                        )
                     }
                     .disabled(saving != nil || (trimmedName == name && newEmoji == emoji) || trimmedName.isEmpty || isDuplicateEmojiOrName)
                 } footer: {
@@ -893,13 +899,18 @@ struct ChatListTagEditor: View {
     private func createChatTag() {
         Task {
             do {
+                let text = trimmedName
                 let userTags = try await apiCreateChatTag(
-                    tag: ChatTagData(emoji: newEmoji , text: trimmedName)
+                    tag: ChatTagData(emoji: newEmoji , text: text)
                 )
                 await MainActor.run {
                     saving = false
                     chatTagsModel.userTags = userTags
-                    dismiss()
+                }
+                if let chat, let tag = userTags.first(where: { $0.chatTagText == text && $0.chatTagEmoji == newEmoji}) {
+                    setChatTag(tagId: tag.chatTagId, chat: chat) { dismiss() }
+                } else {
+                    await MainActor.run { dismiss() }
                 }
             } catch let error {
                 await MainActor.run {

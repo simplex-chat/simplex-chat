@@ -1002,6 +1002,7 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
     when {
       r is CR.ChatItemUpdated -> return r.chatItem
+      r is CR.ChatItemNotChanged -> return r.chatItem
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.maximum_message_size_title),
@@ -6093,6 +6094,9 @@ class ConnectionStats(
 
   val ratchetSyncSendProhibited: Boolean get() =
     listOf(RatchetSyncState.Required, RatchetSyncState.Started, RatchetSyncState.Agreed).contains(ratchetSyncState)
+
+  val ratchetSyncInProgress: Boolean get() =
+    listOf(RatchetSyncState.Started, RatchetSyncState.Agreed).contains(ratchetSyncState)
 }
 
 @Serializable
