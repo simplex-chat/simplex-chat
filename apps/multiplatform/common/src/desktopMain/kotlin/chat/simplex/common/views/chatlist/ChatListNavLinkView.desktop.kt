@@ -1,11 +1,11 @@
 package chat.simplex.common.views.chatlist
 
 import SectionDivider
+import SectionItemView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,6 +14,7 @@ import androidx.compose.ui.node.DelegatableNode
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 
 object NoIndication : IndicationNodeFactory {
@@ -64,5 +65,12 @@ actual fun ChatListNavLinkLayout(
     Divider()
   } else {
     SectionDivider()
+  }
+}
+
+@Composable
+actual fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>) {
+  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    ChatListNameTextField(name, showError = showError)
   }
 }

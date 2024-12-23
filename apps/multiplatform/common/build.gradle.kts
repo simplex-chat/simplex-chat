@@ -139,6 +139,9 @@ android {
     kotlin.sourceSets["commonMain"].resources.exclude("/MR/fonts/NotoColorEmoji-Regular.ttf")
   }
 }
+dependencies {
+  implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
+}
 
 multiplatformResources {
   multiplatformResourcesPackage = "chat.simplex.res"

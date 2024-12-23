@@ -676,7 +676,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
 }
 
 @Composable
-fun ChatListTagEditor(
+fun ModalData.ChatListTagEditor(
   rhId: Long?,
   chat: Chat? = null,
   tagId: Long? = null,
@@ -685,7 +685,7 @@ fun ChatListTagEditor(
   close: () -> Unit
 ) {
   val userTags = remember { chatModel.userTags }
-  val newEmoji = remember { mutableStateOf(emoji) }
+  val newEmoji = remember { stateGetOrPutNullable("chatTagEmoji") { emoji } }
   val newName = remember { mutableStateOf(name) }
   val saving = remember { mutableStateOf<Boolean?>(null) }
   val trimmedName = remember { derivedStateOf { newName.value.trim() } }
@@ -757,9 +757,7 @@ fun ChatListTagEditor(
   val showError = derivedStateOf { isDuplicateEmojiOrName.value && saving.value != false }
 
   ColumnWithScrollBar {
-    SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-      ChatListNameTextField(newName, showError = showError)
-    }
+    ChatTagInput(newName, showError, newEmoji)
     val disabled = saving.value == true ||
         (trimmedName.value == name && newEmoji.value == emoji) ||
         trimmedName.value.isEmpty() ||
@@ -799,7 +797,7 @@ fun ChatListTagEditor(
 }
 
 @Composable
-private fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
+fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
   var focused by rememberSaveable { mutableStateOf(false) }
   val focusRequester = remember { FocusRequester() }
   val strokeColor by remember {
@@ -912,6 +910,9 @@ private fun EditChatTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<
     color = MenuTextColor
   )
 }
+
+@Composable
+expect fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>)
 
 fun markChatRead(c: Chat, chatModel: ChatModel) {
   var chat = c
