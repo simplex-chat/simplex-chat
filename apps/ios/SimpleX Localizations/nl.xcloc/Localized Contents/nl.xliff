@@ -7298,9 +7298,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze chat wordt beschermd door quantum bestendige end-to-end codering.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
-      <trans-unit id="This device name" xml:space="preserve">
+      <trans-unit id="This device name" xml:space="preserve" approved="no">
         <source>This device name</source>
-        <target>Deze apparaatnaam</target>
+        <target state="translated">Naam van dit apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
