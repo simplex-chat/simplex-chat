@@ -591,7 +591,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
 
         Card(
           elevation = elevation,
-          backgroundColor = Color.Transparent,
+          backgroundColor = if (isDragging) colors.surface else Color.Unspecified
         ) {
           Column {
             val showMenu = remember { mutableStateOf(false) }
