@@ -14,8 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.BasicTextField
@@ -578,7 +577,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
     }
 
   LazyColumnWithScrollBar(
-    modifier = Modifier.dragContainer(dragDropState),
+    modifier = if (editMode.value) Modifier.dragContainer(dragDropState) else Modifier,
     contentPadding = if (oneHandUI.value) {
       PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
     } else {
@@ -592,9 +591,12 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
 
         Card(
           elevation = elevation,
+          backgroundColor = Color.Transparent,
         ) {
           Column {
             val showMenu = remember { mutableStateOf(false) }
+            val selected = chatTagIds.value.contains(tag.chatTagId)
+
             Row(
               Modifier
                 .fillMaxWidth()
@@ -614,7 +616,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                       }
                     } else {
                       saving.value = true
-                      setChatTag(rhId = rhId, tagId = tag.chatTagId, chat = chat, close = {
+                      setChatTag(rhId = rhId, tagId = if (selected) null else tag.chatTagId, chat = chat, close = {
                         saving.value = false
                         close()
                       })
@@ -628,7 +630,6 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                 .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
               verticalAlignment = Alignment.CenterVertically
             ) {
-              val selected = chatTagIds.value.contains(tag.chatTagId)
               if (tag.chatTagEmoji != null) {
                 Text(
                   tag.chatTagEmoji
@@ -686,7 +687,7 @@ fun ModalData.ChatListTagEditor(
 ) {
   val userTags = remember { chatModel.userTags }
   val newEmoji = remember { stateGetOrPutNullable("chatTagEmoji") { emoji } }
-  val newName = remember { mutableStateOf(name) }
+  val newName = remember { stateGetOrPut("chatTagName") { name } }
   val saving = remember { mutableStateOf<Boolean?>(null) }
   val trimmedName = remember { derivedStateOf { newName.value.trim() } }
   val isDuplicateEmojiOrName = remember {

@@ -932,7 +932,7 @@ private fun ChatTagsView() {
     }
   }
 
-  LazyRow(modifier = Modifier.padding(4.dp)) {
+  LazyRow(modifier = Modifier.padding(horizontal = DEFAULT_PADDING_HALF).sizeIn(minHeight = 35.dp), verticalAlignment = Alignment.CenterVertically) {
     if (presetTags.size > 1) {
       if (presetTags.size + userTags.value.size <= 3) {
         items(PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }) { tag ->
