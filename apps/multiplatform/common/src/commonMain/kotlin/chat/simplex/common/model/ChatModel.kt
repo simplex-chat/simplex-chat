@@ -289,6 +289,21 @@ object ChatModel {
     }
   }
 
+  fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
+    if (chat.unreadTag) {
+      oldTags?.forEach { t ->
+        val oldCount = unreadTags[t]
+        if (oldCount != null) {
+          unreadTags[t] = maxOf(0, oldCount - 1)
+        }
+      }
+
+      newTags.forEach { t ->
+        unreadTags[t] = (unreadTags[t] ?: 0) + 1
+      }
+    }
+  }
+
   private fun markChatTagRead_(chat: Chat, tags: List<Long>) {
     for (tag in tags) {
       val count = unreadTags[tag]

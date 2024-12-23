@@ -1235,8 +1235,9 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       if (chatSettings.enableNtfs != MsgFilter.All) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
       }
-      if (chat != null) {
-        chatModel.updateChatTagRead(chat, wasUnread)
+      val updatedChat = chatModel.getChat(chatInfo.id)
+      if (updatedChat != null) {
+        chatModel.updateChatTagRead(updatedChat, wasUnread)
       }
       val current = currentState?.value
       if (current != null) {
@@ -1258,6 +1259,7 @@ private fun setChatTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit)
       val result = apiSetChatTags(rh = rhId, type = chat.chatInfo.chatType, id = chat.chatInfo.apiId, tagIds = tagIds)
 
       if (result != null) {
+        val oldTags = chat.chatInfo.chatTags
         chatModel.userTags.value = result.first
         when (val cInfo = chat.chatInfo) {
           is ChatInfo.Direct -> {
@@ -1276,6 +1278,7 @@ private fun setChatTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit)
 
           else -> {}
         }
+        chatModel.moveChatTagUnread(chat, oldTags, result.second)
         close()
       }
     } catch (e: Exception) {
