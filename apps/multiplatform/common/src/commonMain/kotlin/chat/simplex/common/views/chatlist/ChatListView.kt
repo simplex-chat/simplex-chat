@@ -808,6 +808,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ) {
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            Divider()
             ChatTagsView()
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
@@ -815,6 +816,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
           ChatTagsView()
+          Divider()
         }
       }
     }
@@ -922,7 +924,7 @@ private fun ChatTagsView() {
     ModalManager.start.showCustomModal { close ->
       val editMode = remember { stateGetOrPut("editMode") { false } }
       ModalView(close, showClose = true, endButtons = {
-        TextButton(onClick = { editMode.value = !editMode.value }) {
+        TextButton(onClick = { editMode.value = !editMode.value }, modifier = Modifier.clip(shape = RoundedCornerShape(percent = 50))) {
           Text(stringResource(if (editMode.value) MR.strings.cancel_verb else MR.strings.edit_verb))
         }
       }) {
