@@ -563,8 +563,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
         chatModel.controller.apiReorderChatTags(rhId, tagIds)
       } catch (e: Exception) {
         Log.d(TAG, "ChatListTag reorderTags error: ${e.message}")
-      }
-      finally {
+      } finally {
         saving.value = false
       }
     }
@@ -575,16 +574,34 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
       userTags.value = userTags.value.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
       reorderTags(userTags.value.map { it.chatTagId })
     }
+  val topPaddingToContent = topPaddingToContent(false)
 
   LazyColumnWithScrollBar(
     modifier = if (editMode.value) Modifier.dragContainer(dragDropState) else Modifier,
-    contentPadding = if (oneHandUI.value) {
-      PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
-    } else {
-      PaddingValues(top = topPaddingToContent(false))
-    },
-    state = listState
+    contentPadding = PaddingValues(
+      top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
+      bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+    ),
+    state = listState,
+    verticalArrangement = if (oneHandUI.value) Arrangement.Bottom else Arrangement.Top,
   ) {
+    @Composable fun CreateList() {
+      SectionItemView({
+        ModalManager.start.showModalCloseable { close ->
+          ChatListTagEditor(rhId = rhId, close = close, chat = chat)
+        }
+      }) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
+      }
+    }
+
+    if (oneHandUI.value && !editMode.value) {
+      item {
+        CreateList()
+      }
+    }
     itemsIndexed(userTags.value, key = { _, item -> item.chatTagId }) { index, tag ->
       DraggableItem(dragDropState, index) { isDragging ->
         val elevation by animateDpAsState(if (isDragging) 4.dp else 0.dp)
@@ -622,7 +639,9 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                       })
                     }
                   },
-                  onLongClick = if (editMode.value) null else { { showMenu.value = true } },
+                  onLongClick = if (editMode.value) null else {
+                    { showMenu.value = true }
+                  },
                   interactionSource = remember { MutableInteractionSource() },
                   indication = LocalIndication.current
                 )
@@ -660,17 +679,9 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
         }
       }
     }
-    if (!editMode.value) {
+    if (!oneHandUI.value && !editMode.value) {
       item {
-        SectionItemView({
-          ModalManager.start.showModalCloseable { close ->
-            ChatListTagEditor(rhId = rhId, close = close, chat = chat)
-          }
-        }) {
-          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
-          Spacer(Modifier.padding(horizontal = 4.dp))
-          Text(stringResource(MR.strings.create_list), color = MaterialTheme.colors.primary)
-        }
+        CreateList()
       }
     }
   }
@@ -775,7 +786,7 @@ fun ModalData.ChatListTagEditor(
         color = if (disabled) colors.secondary else colors.primary
       )
     }
-    val showError = isDuplicateEmojiOrName.value && saving.value != false
+    val showErrorMessage = isDuplicateEmojiOrName.value && saving.value != false
     SectionCustomFooter {
       Row(
         Modifier.fillMaxWidth().padding(bottom = if (keyboardState == KeyboardState.Opened) 0.dp else DEFAULT_PADDING),
@@ -784,7 +795,7 @@ fun ModalData.ChatListTagEditor(
         Icon(
           painterResource(MR.images.ic_error),
           contentDescription = stringResource(MR.strings.error),
-          tint = if (showError) Color.Red else Color.Transparent,
+          tint = if (showErrorMessage) Color.Red else Color.Transparent,
           modifier = Modifier
             .size(19.sp.toDp())
             .offset(x = 2.sp.toDp())
@@ -792,7 +803,7 @@ fun ModalData.ChatListTagEditor(
         TextIconSpaced()
         Text(
           generalGetString(MR.strings.duplicated_list_error),
-          color = if (showError) colors.secondary else Color.Transparent,
+          color = if (showErrorMessage) colors.secondary else Color.Transparent,
           lineHeight = 18.sp,
           fontSize = 14.sp
         )
