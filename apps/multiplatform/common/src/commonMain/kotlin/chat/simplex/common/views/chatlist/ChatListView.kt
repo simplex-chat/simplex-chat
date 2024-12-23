@@ -862,6 +862,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       }
     }
   }
+
+  LaunchedEffect(activeFilter.value) {
+    searchText.value = TextFieldValue("")
+  }
 }
 
 @Composable
