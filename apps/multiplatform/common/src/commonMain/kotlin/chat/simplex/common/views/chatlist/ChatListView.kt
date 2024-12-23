@@ -938,6 +938,7 @@ private fun ChatTagsView() {
       }
     }
   }
+  val rowSizeModifier = Modifier.sizeIn(minHeight = 35.dp * fontSizeSqrtMultiplier)
 
   ChatTagsRow {
     if (presetTags.size > 1) {
@@ -946,7 +947,9 @@ private fun ChatTagsView() {
           ExpandedTagFilterView(tag)
         }
       } else {
-        CollapsedTagsFilterView()
+        Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
+          CollapsedTagsFilterView()
+        }
       }
     }
 
@@ -957,68 +960,70 @@ private fun ChatTagsView() {
       }
       val interactionSource = remember { MutableInteractionSource() }
 
-      Row(
-        Modifier
-          .clip(shape = RoundedCornerShape(percent = 50))
-          .combinedClickable(
-            onClick = {
-              if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
-                chatModel.activeChatTagFilter.value = null
-              } else {
-                chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
+      Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
+        Row(
+          Modifier
+            .clip(shape = RoundedCornerShape(percent = 50))
+            .combinedClickable(
+              onClick = {
+                if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
+                  chatModel.activeChatTagFilter.value = null
+                } else {
+                  chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
+                }
+              },
+              onLongClick = { showChatTagList() },
+              interactionSource = interactionSource,
+              indication = LocalIndication.current
+            )
+            .onRightClick { showChatTagList() }
+            .padding(4.dp),
+          horizontalArrangement = Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          if (tag.chatTagEmoji != null) {
+            Text(
+              tag.chatTagEmoji
+            )
+          } else {
+            Icon(
+              painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
+              null,
+              Modifier.size(20.dp),
+              tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+            )
+          }
+          Spacer(Modifier.width(4.dp))
+          Box {
+            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val invisibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                append(badgeText)
               }
-            },
-            onLongClick = { showChatTagList() },
-            interactionSource = interactionSource,
-            indication = LocalIndication.current
-          )
-          .onRightClick { showChatTagList() }
-          .padding(4.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        if (tag.chatTagEmoji != null) {
-          Text(
-            tag.chatTagEmoji
-          )
-        } else {
-          Icon(
-            painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
-            null,
-            Modifier.size(20.dp),
-            tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
-          )
-        }
-        Spacer(Modifier.width(4.dp))
-        Box {
-          val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
-          val invisibleText = buildAnnotatedString {
-            append(tag.chatTagText)
-            withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
-              append(badgeText)
             }
-          }
-          Text(
-            text = invisibleText,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.Transparent,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-          )
-          // Visible text with styles
-          val visibleText = buildAnnotatedString {
-            append(tag.chatTagText)
-            withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
-              append(badgeText)
+            Text(
+              text = invisibleText,
+              fontWeight = FontWeight.SemiBold,
+              color = Color.Transparent,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            // Visible text with styles
+            val visibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+                append(badgeText)
+              }
             }
+            Text(
+              text = visibleText,
+              fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
+              color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
           }
-          Text(
-            text = visibleText,
-            fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-          )
         }
       }
     }
@@ -1029,16 +1034,18 @@ private fun ChatTagsView() {
         }
       }
 
-    if (userTags.value.isEmpty()) {
-      Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
-        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
-        Spacer(Modifier.width(2.dp))
-        Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
+    Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
+      if (userTags.value.isEmpty()) {
+        Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+          Spacer(Modifier.width(2.dp))
+          Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
+        }
+      } else {
+        Icon(
+          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(4.dp), tint = MaterialTheme.colors.secondary
+        )
       }
-    } else {
-      Icon(
-        painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(4.dp), tint = MaterialTheme.colors.secondary
-      )
     }
   }
 }
@@ -1050,7 +1057,6 @@ private fun ChatTagsRow(content: @Composable() (() -> Unit)) {
     Row(
       modifier = Modifier
         .padding(horizontal = 14.dp)
-        .sizeIn(minHeight = 35.dp)
         .horizontalScroll(rememberScrollState()),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(2.dp)
