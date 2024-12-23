@@ -691,6 +691,7 @@ private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit)
     if (user != null) {
       startChat(user)
     }
+    platform.androidChatStartedAfterBeingOff()
     hideView(close)
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_to_device_chat_migrated), generalGetString(MR.strings.migrate_to_device_finalize_migration))
   } catch (e: Exception) {
