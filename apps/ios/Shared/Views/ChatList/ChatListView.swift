@@ -717,7 +717,7 @@ struct ChatTagsView: View {
                         content: {
                             AnyView(
                                 NavigationView {
-                                    ChatListTag(chat: nil, showEditButton: true)
+                                    ChatListTag(chat: nil)
                                         .modifier(ThemedBackground(grouped: true))
                                 }
                             )
