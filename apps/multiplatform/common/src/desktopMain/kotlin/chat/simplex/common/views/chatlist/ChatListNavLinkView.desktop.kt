@@ -82,24 +82,21 @@ actual fun ChatListNavLinkLayout(
 @Composable
 actual fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>) {
   SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    EmojiInput(emoji)
+    SingleEmojiInput(emoji)
     ChatListNameTextField(name, showError = showError)
   }
 }
 
 @Composable
-private fun EmojiInput(
+private fun SingleEmojiInput(
   emoji: MutableState<String?>
 ) {
   TextField(
     value = emoji.value?.let { TextFieldValue(it) } ?: TextFieldValue(""),
     onValueChange = { newValue ->
-      val limitedText = newValue.text.takeIf { it.isNotEmpty() }?.substring(0, newValue.text.offsetByCodePoints(0, 1)) ?: ""
-      if (isShortEmoji(limitedText)) {
-        emoji.value = limitedText
-      } else {
-        emoji.value = null
-      }
+      if (newValue.text == emoji.value) return@TextField
+      val newValueClamped = newValue.text.replace(emoji.value ?: "", "")
+      emoji.value = if (isShortEmoji(newValueClamped)) newValueClamped else null
     },
     singleLine = true,
     maxLines = 1,
