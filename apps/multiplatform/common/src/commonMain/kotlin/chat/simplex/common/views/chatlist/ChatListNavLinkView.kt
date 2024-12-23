@@ -864,9 +864,8 @@ fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>)
           colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
         )
       }
-
     )
-    Divider(color = strokeColor)
+    Divider(color = strokeColor, thickness = if (focused) 2.dp else 1.dp)
   }
 }
 
