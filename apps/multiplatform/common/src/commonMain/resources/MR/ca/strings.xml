@@ -1248,7 +1248,7 @@
     <string name="icon_descr_call_pending_sent">Trucada pendent</string>
     <string name="icon_descr_sound_muted">So silenciat</string>
     <string name="alert_title_skipped_messages">Missatges omesos</string>
-    <string name="alert_text_msg_bad_hash">El hash del missatge anterior és diferent.</string>
+    <string name="alert_text_msg_bad_hash">El hash del missatge anterior és diferent.\"</string>
     <string name="alert_text_msg_bad_id">L\'identificador del missatge següent és incorrecte (menor o igual a l\'anterior).\nPot passar per algun error o quan la connexió està compromesa.</string>
     <string name="alert_text_fragment_please_report_to_developers">Informeu-ho als desenvolupadors.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Pot passar quan tu o el teu contacte feu servir la còpia de seguretat de la base de dades antiga.</string>
@@ -2217,4 +2217,5 @@
     <string name="strikethrough_text">ratllat</string>
     <string name="delete_messages_after">Suprimir en</string>
     <string name="users_delete_profile_for">Eliminar el perfil de xat per</string>
+    <string name="connection_not_ready">La connexió no està preparada.</string>
 </resources>
