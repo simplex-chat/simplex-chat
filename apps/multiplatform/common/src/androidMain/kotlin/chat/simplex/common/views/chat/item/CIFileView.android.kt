@@ -19,7 +19,7 @@ actual fun AndroidSaveOrOpenFileMenu(showMenu: MutableState<Boolean>, encrypted:
     if (defaultApp != null) {
       ItemAction(
         stringResource(MR.strings.open_in_app).format(defaultApp.name),
-        painterResource(if (encrypted) MR.images.ic_lock_open_right else MR.images.ic_download),
+        painterResource(MR.images.ic_open_in_new),
         color = MaterialTheme.colors.primary,
         onClick = {
           openFile()
@@ -29,7 +29,7 @@ actual fun AndroidSaveOrOpenFileMenu(showMenu: MutableState<Boolean>, encrypted:
     }
     ItemAction(
       stringResource(MR.strings.save_verb),
-      painterResource(MR.images.ic_draft_filled),
+      painterResource(if (encrypted) MR.images.ic_lock_open_right else MR.images.ic_download),
       color = MaterialTheme.colors.primary,
       onClick = {
         saveFile()
