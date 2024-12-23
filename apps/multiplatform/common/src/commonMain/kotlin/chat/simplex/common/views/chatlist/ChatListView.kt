@@ -22,6 +22,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
@@ -920,7 +921,7 @@ private fun ChatTagsView() {
   val unreadTags = remember { chatModel.unreadTags }
   val rhId = chatModel.remoteHostId()
 
-  fun showChatTagList () {
+  fun showChatTagList() {
     ModalManager.start.showCustomModal { close ->
       val editMode = remember { stateGetOrPut("editMode") { false } }
       ModalView(close, showClose = true, endButtons = {
@@ -933,20 +934,18 @@ private fun ChatTagsView() {
     }
   }
 
-  LazyRow(modifier = Modifier.padding(horizontal = 14.dp).sizeIn(minHeight = 35.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+  ChatTagsRow {
     if (presetTags.size > 1) {
       if (presetTags.size + userTags.value.size <= 3) {
-        items(PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }) { tag ->
+        PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
           ExpandedTagFilterView(tag)
         }
       } else {
-        item {
-          CollapsedTagsFilterView()
-        }
+        CollapsedTagsFilterView()
       }
     }
 
-    items(userTags.value) { tag ->
+    userTags.value.forEach { tag ->
       val current = when (val af = activeFilter.value) {
         is ActiveFilter.UserTag -> af.tag == tag
         else -> false
@@ -998,6 +997,8 @@ private fun ChatTagsView() {
             text = invisibleText,
             fontWeight = FontWeight.SemiBold,
             color = Color.Transparent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
           )
           // Visible text with styles
           val visibleText = buildAnnotatedString {
@@ -1010,6 +1011,8 @@ private fun ChatTagsView() {
             text = visibleText,
             fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
             color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
           )
         }
       }
@@ -1021,19 +1024,36 @@ private fun ChatTagsView() {
         }
       }
 
-    item {
-      if (userTags.value.isEmpty()) {
-        Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
-          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
-          Spacer(Modifier.width(2.dp))
-          Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
-        }
-      } else {
-        Icon(
-          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(4.dp), tint = MaterialTheme.colors.secondary
-        )
+    if (userTags.value.isEmpty()) {
+      Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+        Spacer(Modifier.width(2.dp))
+        Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
       }
+    } else {
+      Icon(
+        painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(4.dp), tint = MaterialTheme.colors.secondary
+      )
     }
+  }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChatTagsRow(content: @Composable() (() -> Unit)) {
+  if (appPlatform.isAndroid) {
+    Row(
+      modifier = Modifier
+        .padding(horizontal = 14.dp)
+        .sizeIn(minHeight = 35.dp)
+        .horizontalScroll(rememberScrollState()),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+      content()
+    }
+  } else {
+    FlowRow(modifier = Modifier.padding(horizontal = 14.dp)) { content() }
   }
 }
 
