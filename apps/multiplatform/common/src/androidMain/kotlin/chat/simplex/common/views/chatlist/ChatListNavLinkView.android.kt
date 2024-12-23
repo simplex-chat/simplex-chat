@@ -4,10 +4,12 @@ import SectionItemView
 import android.view.ViewGroup
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.emoji2.emojipicker.EmojiPickerView
@@ -53,7 +55,9 @@ actual fun ChatListNavLinkLayout(
 @Composable
 actual fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>) {
   SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
-    Box(Modifier.clickable {
+    Box(Modifier
+      .clip(shape = CircleShape)
+      .clickable {
         ModalManager.start.showModalCloseable { close ->
           EmojiPicker(close = {
             close()

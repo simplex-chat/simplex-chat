@@ -871,7 +871,7 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
       is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary)
       is ActiveFilter.Unread -> {
           Row(
-            Modifier.clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
+            Modifier.clip(shape = RoundedCornerShape(percent = 50)).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
@@ -954,6 +954,7 @@ private fun ChatTagsView() {
 
       Row(
         Modifier
+          .clip(shape = RoundedCornerShape(percent = 50))
           .combinedClickable(
             onClick = {
               if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
@@ -996,7 +997,6 @@ private fun ChatTagsView() {
             fontWeight = FontWeight.SemiBold,
             color = Color.Transparent,
           )
-
           // Visible text with styles
           val visibleText = buildAnnotatedString {
             append(tag.chatTagText)
@@ -1010,27 +1010,25 @@ private fun ChatTagsView() {
             color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           )
         }
-
       }
     }
+    val plusClickModifier = Modifier
+      .clickable {
+        ModalManager.start.showModalCloseable { close ->
+          ChatListTagEditor(rhId = rhId, close = close)
+        }
+      }.padding(4.dp)
 
     item {
-      Box(
-        Modifier.clickable {
-          ModalManager.start.showModalCloseable { close ->
-            ChatListTagEditor(rhId = rhId, close = close)
-          }
-        }.padding(4.dp),
-        contentAlignment = Alignment.Center
-      ) {
-        if (userTags.value.isEmpty()) {
-          Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
-            Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
-          }
-        } else {
+      if (userTags.value.isEmpty()) {
+        Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
           Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+          Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
         }
+      } else {
+        Icon(
+          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier), tint = MaterialTheme.colors.secondary
+        )
       }
     }
   }
@@ -1048,15 +1046,18 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
 
   Row(
     modifier = Modifier
-      .padding(4.dp)
+      .clip(shape = RoundedCornerShape(percent = 22))
       .clickable {
         if (activeFilter.value == ActiveFilter.PresetTag(tag)) {
           chatModel.activeChatTagFilter.value = null
         } else {
           chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(tag)
         }
-      },
-    verticalAlignment = Alignment.CenterVertically
+      }
+      .padding(4.dp)
+    ,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
     Icon(
       painterResource(icon),
@@ -1091,6 +1092,7 @@ private fun CollapsedTagsFilterView() {
   }
 
   Column(Modifier
+    .clip(shape = CircleShape)
     .clickable { showMenu.value = true }
     .padding(4.dp)
   ) {
