@@ -115,7 +115,8 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, uiThemes, chatDeleted, customData}
+          -- TODO [ttl]
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, chatItemTTL = Nothing, uiThemes, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = do
       gm <- ExceptT $ firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
