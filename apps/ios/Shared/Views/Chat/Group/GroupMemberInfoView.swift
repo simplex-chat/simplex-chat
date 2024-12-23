@@ -20,6 +20,9 @@ struct GroupMemberInfoView: View {
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var connectionLoaded: Bool = false
+    @State private var knownContactChat: Chat? = nil
+    @State private var knownContact: Contact? = nil
+    @State private var knownContactConnectionStats: ConnectionStats? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @State private var sheet: PlanAndConnectActionSheet?
@@ -119,8 +122,8 @@ struct GroupMemberInfoView: View {
                             } label: {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }
-                            if let contactId = member.memberContactId {
-                                if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                            if member.memberContactId != nil {
+                                if knownContactChat == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                                     connectViaAddressButton(contactLink)
                                 }
                             } else {
@@ -159,7 +162,7 @@ struct GroupMemberInfoView: View {
                             }
                             .disabled(
                                 connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
-                                || connStats.ratchetSyncSendProhibited
+                                || !member.sendMsgEnabled
                             )
                             if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                                 Button("Abort changing address") {
@@ -167,7 +170,7 @@ struct GroupMemberInfoView: View {
                                 }
                                 .disabled(
                                     connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
-                                    || connStats.ratchetSyncSendProhibited
+                                    || !member.sendMsgEnabled
                                 )
                             }
                             smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
@@ -229,6 +232,18 @@ struct GroupMemberInfoView: View {
                     }
                     logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
                 }
+                if let contactId = member.memberContactId, let (contactChat, contact) = knownDirectChat(contactId) {
+                    knownContactChat = contactChat
+                    knownContact = contact
+                    do {
+                        let (stats, _) = try await apiContactInfo(contactChat.chatInfo.apiId)
+                        await MainActor.run {
+                            knownContactConnectionStats = stats
+                        }
+                    } catch let error {
+                        logger.error("apiContactInfo error: \(responseError(error))")
+                    }
+                }
             }
             .onChange(of: newRole) { newRole in
                 if newRole != member.memberRole {
@@ -274,15 +289,15 @@ struct GroupMemberInfoView: View {
         GeometryReader { g in
             let buttonWidth = g.size.width / 4
             HStack(alignment: .center, spacing: 8) {
-                if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
+                if let chat = knownContactChat, let contact = knownContact {
                     knownDirectChatButton(chat, width: buttonWidth)
-                    AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                    VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                    AudioCallButton(chat: chat, contact: contact, connectionStats: $knownContactConnectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                    VideoButton(chat: chat, contact: contact, connectionStats: $knownContactConnectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                 } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
                     } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
-                        createMemberContactButton(width: buttonWidth)
+                        createMemberContactButton(member, width: buttonWidth)
                     }
                     InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
                     }
@@ -364,27 +379,68 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    func createMemberContactButton(width: CGFloat) -> some View {
-        InfoViewButton(image: "message.fill", title: "message", width: width) {
-            progressIndicator = true
-            Task {
-                do {
-                    let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
-                    await MainActor.run {
-                        progressIndicator = false
-                        chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                        ItemsModel.shared.loadOpenChat(memberContact.id) {
-                            dismissAllSheets(animated: true)
+    func createMemberContactButton(_ member: GroupMember, width: CGFloat) -> some View {
+        InfoViewButton(
+            image: "message.fill",
+            title: "message",
+            disabledLook:
+                !(
+                    member.sendMsgEnabled ||
+                    (member.activeConn?.connectionStats?.ratchetSyncAllowed ?? false)
+                ),
+            width: width
+        ) {
+            if member.sendMsgEnabled {
+                progressIndicator = true
+                Task {
+                    do {
+                        let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
+                        await MainActor.run {
+                            progressIndicator = false
+                            chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
+                            ItemsModel.shared.loadOpenChat(memberContact.id) {
+                                dismissAllSheets(animated: true)
+                            }
+                            NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
                         }
-                        NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
+                    } catch let error {
+                        logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
+                        let a = getErrorAlert(error, "Error creating member contact")
+                        await MainActor.run {
+                            progressIndicator = false
+                            alert = .error(title: a.title, error: a.message)
+                        }
                     }
-                } catch let error {
-                    logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error creating member contact")
-                    await MainActor.run {
-                        progressIndicator = false
-                        alert = .error(title: a.title, error: a.message)
-                    }
+                }
+            } else if let connStats = connectionStats {
+                if connStats.ratchetSyncAllowed {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: Alert(
+                            title: Text("Fix connection?"),
+                            message: Text("Connection requires encryption renegotiation."),
+                            primaryButton: .default(Text("Fix")) {
+                                syncMemberConnection(force: false)
+                            },
+                            secondaryButton: .cancel()
+                        ),
+                        id: "can't message member, fix connection"
+                    ))
+                } else if connStats.ratchetSyncInProgress {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't message member",
+                            message: "Encryption renegotiation in progress."
+                        ),
+                        id: "can't message member, encryption renegotiation in progress"
+                    ))
+                } else {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't message member",
+                            message: "Connection not ready."
+                        ),
+                        id: "can't message member, connection not ready"
+                    ))
                 }
             }
         }
