@@ -624,6 +624,8 @@ getUpdateServerOperators db presetOps newUser = do
   print condsToAdd
   mapM_ insertConditions condsToAdd
   latestAcceptedConds_ <- getLatestAcceptedConditions db
+  print "999"
+  print latestAcceptedConds_
   ops <- updatedServerOperators presetOps <$> getServerOperators_ db
   forM ops $ traverse $ mapM $ \(ASO _ op) ->
     -- traverse for tuple, mapM for Maybe
