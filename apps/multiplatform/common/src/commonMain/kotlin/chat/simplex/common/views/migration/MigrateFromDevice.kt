@@ -174,7 +174,7 @@ private fun SectionByState(
     is MigrationFromState.UploadProgress -> migrationState.UploadProgressView(s.uploadedBytes, s.totalBytes, s.ctrl, s.user, tempDatabaseFile, chatReceiver, s.archivePath)
     is MigrationFromState.UploadFailed -> migrationState.UploadFailedView(s.totalBytes, s.archivePath, chatReceiver.value)
     is MigrationFromState.LinkCreation -> LinkCreationView()
-    is MigrationFromState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl)
+    is MigrationFromState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl, chatReceiver.value)
     is MigrationFromState.Finished -> migrationState.FinishedView(s.chatDeletion)
   }
 }
@@ -335,7 +335,7 @@ private fun LinkCreationView() {
 }
 
 @Composable
-private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
   SectionView {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_close),
@@ -356,7 +356,7 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
           confirmText = generalGetString(MR.strings.continue_to_next_step),
           destructive = true,
           onConfirm = {
-            finishMigration(fileId, ctrl)
+            finishMigration(fileId, ctrl, chatReceiver)
           }
         )
       }
@@ -450,6 +450,7 @@ private fun MutableState<MigrationFromState>.stopChat() {
       try {
         controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
         state = if (appPreferences.initialRandomDBPassphrase.get()) MigrationFromState.PassphraseNotSet else MigrationFromState.PassphraseConfirmation
+        platform.androidChatStopped()
       } catch (e: Exception) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.migrate_from_device_error_saving_settings),
@@ -617,9 +618,11 @@ private fun cancelMigration(fileId: Long, ctrl: ChatCtrl) {
   }
 }
 
-private fun MutableState<MigrationFromState>.finishMigration(fileId: Long, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.finishMigration(fileId: Long, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
   withBGApi {
     cancelUploadedArchive(fileId, ctrl)
+    chatReceiver?.stopAndCleanUp()
+    getMigrationTempFilesDirectory().deleteRecursively()
     state = MigrationFromState.Finished(false)
   }
 }
@@ -655,6 +658,7 @@ private suspend fun startChatAndDismiss(dismiss: Boolean = true) {
     } else if (user != null) {
       startChat(user)
     }
+    platform.androidChatStartedAfterBeingOff()
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.error_starting_chat),
