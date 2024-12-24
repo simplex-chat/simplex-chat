@@ -623,7 +623,7 @@ CREATE TABLE operator_usage_conditions(
   accepted_at TEXT,
   created_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
-  auto_accepted BLOB INTEGER DEFAULT 0
+  auto_accepted INTEGER DEFAULT 0
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

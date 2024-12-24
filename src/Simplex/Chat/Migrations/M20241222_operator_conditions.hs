@@ -8,7 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20241222_operator_conditions :: Query
 m20241222_operator_conditions =
   [sql|
-ALTER TABLE operator_usage_conditions ADD COLUMN auto_accepted BLOB INTEGER DEFAULT 0;
+ALTER TABLE operator_usage_conditions ADD COLUMN auto_accepted INTEGER DEFAULT 0;
 |]
 
 down_m20241222_operator_conditions :: Query
