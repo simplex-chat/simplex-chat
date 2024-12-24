@@ -12,7 +12,6 @@ actual fun SaveOrOpenFileMenu(
   ext: String,
   encryptedUri: URI,
   fileSource: CryptoFile,
-  openFile: () -> Unit,
   saveFile: () -> Unit
 ) {
 

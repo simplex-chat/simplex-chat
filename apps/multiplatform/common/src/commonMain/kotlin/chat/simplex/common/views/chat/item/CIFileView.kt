@@ -185,6 +185,12 @@ fun CIFileView(
   }
 
   val showOpenSaveMenu = rememberSaveable { mutableStateOf(false) }
+  val ext = file?.fileSource?.filePath?.substringAfterLast(".")
+  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null && !ext.isNullOrEmpty()) getLoadedFilePath(file) else null
+  if (loadedFilePath != null && file?.fileSource != null && ext != null) {
+    val encrypted = file.fileSource.cryptoArgs != null
+    SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
+  }
   Row(
     Modifier
       .combinedClickable(
@@ -201,12 +207,6 @@ fun CIFileView(
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
-    val ext = file?.fileSource?.filePath?.substringAfterLast(".")
-    val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null && !ext.isNullOrEmpty()) getLoadedFilePath(file) else null
-    if (loadedFilePath != null && file?.fileSource != null && ext != null) {
-      val encrypted = file.fileSource.cryptoArgs != null
-      SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
-    }
     fileIndicator()
     if (!smallView) {
       val metaReserve = if (edited)

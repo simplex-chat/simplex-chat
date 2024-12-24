@@ -880,12 +880,14 @@ fun ItemAction(text: String, icon: ImageBitmap, textColor: Color = Color.Unspeci
           .fillMaxWidth()
           .weight(1F)
           .padding(end = 15.dp),
-        color = finalColor
+        color = finalColor,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
       )
       if (iconColor == Color.Unspecified) {
         Image(icon, text, Modifier.size(22.dp))
       } else {
-        Icon(icon, text, tint = iconColor)
+        Icon(icon, text, Modifier.size(22.dp), tint = iconColor)
       }
     }
   }
