@@ -11,13 +11,19 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -340,6 +346,63 @@ private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bool
 
 @Composable
 expect fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>)
+
+@Composable
+fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
+  var focused by rememberSaveable { mutableStateOf(false) }
+  val focusRequester = remember { FocusRequester() }
+  val strokeColor by remember {
+    derivedStateOf {
+      if (showError.value) {
+        Color.Red
+      } else {
+        if (focused) {
+          CurrentColors.value.colors.secondary.copy(alpha = 0.6f)
+        } else {
+          CurrentColors.value.colors.secondary.copy(alpha = 0.3f)
+        }
+      }
+    }
+  }
+
+  val modifier = Modifier
+    .fillMaxWidth()
+    .heightIn(min = 50.dp)
+    .onFocusChanged { focused = it.isFocused }
+  Column(
+    Modifier
+      .fillMaxWidth(),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    BasicTextField(
+      value = name.value,
+      onValueChange = { name.value = it },
+      modifier = modifier.focusRequester(focusRequester),
+      textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
+      singleLine = true,
+      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+      decorationBox = @Composable { innerTextField ->
+        TextFieldDefaults.TextFieldDecorationBox(
+          value = name.value,
+          innerTextField = innerTextField,
+          placeholder = {
+            Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp))
+          },
+          contentPadding = PaddingValues(),
+          label = null,
+          visualTransformation = VisualTransformation.None,
+          leadingIcon = null,
+          singleLine = true,
+          enabled = true,
+          isError = false,
+          interactionSource = remember { MutableInteractionSource() },
+          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
+        )
+      }
+    )
+    Divider(color = strokeColor, thickness = if (focused) 2.dp else 1.dp)
+  }
+}
 
 private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {
   withBGApi {

@@ -540,63 +540,6 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
 }
 
 @Composable
-fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
-  var focused by rememberSaveable { mutableStateOf(false) }
-  val focusRequester = remember { FocusRequester() }
-  val strokeColor by remember {
-    derivedStateOf {
-      if (showError.value) {
-        Color.Red
-      } else {
-        if (focused) {
-          CurrentColors.value.colors.secondary.copy(alpha = 0.6f)
-        } else {
-          CurrentColors.value.colors.secondary.copy(alpha = 0.3f)
-        }
-      }
-    }
-  }
-
-  val modifier = Modifier
-    .fillMaxWidth()
-    .heightIn(min = 50.dp)
-    .onFocusChanged { focused = it.isFocused }
-  Column(
-    Modifier
-      .fillMaxWidth(),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    BasicTextField(
-      value = name.value,
-      onValueChange = { name.value = it },
-      modifier = modifier.focusRequester(focusRequester),
-      textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
-      singleLine = true,
-      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
-      decorationBox = @Composable { innerTextField ->
-        TextFieldDefaults.TextFieldDecorationBox(
-          value = name.value,
-          innerTextField = innerTextField,
-          placeholder = {
-            Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp))
-          },
-          contentPadding = PaddingValues(),
-          label = null,
-          visualTransformation = VisualTransformation.None,
-          leadingIcon = null,
-          singleLine = true,
-          enabled = true,
-          isError = false,
-          interactionSource = remember { MutableInteractionSource() },
-          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
-        )
-      }
-    )
-    Divider(color = strokeColor, thickness = if (focused) 2.dp else 1.dp)
-  }
-}
-
-@Composable
 private fun InvalidDataView() {
   Row {
     ProfileImage(72.dp, null, MR.images.ic_account_circle_filled, MaterialTheme.colors.secondary)
