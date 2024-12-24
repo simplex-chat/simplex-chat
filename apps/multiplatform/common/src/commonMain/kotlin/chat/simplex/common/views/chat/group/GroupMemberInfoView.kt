@@ -8,6 +8,7 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -528,13 +529,20 @@ fun GroupMemberInfoHeader(member: GroupMember) {
         Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
       }
     )
+    val clipboard = LocalClipboardManager.current
+    val copyNameToClipboard = {
+      val nameToCopy = member.displayName + (if (member.fullName == "" || member.fullName == member.displayName) "" else " / ${member.fullName}")
+      clipboard.setText(AnnotatedString(nameToCopy))
+      showToast(generalGetString(MR.strings.copied))
+    }
     Text(
       text,
       inlineContent = inlineContent,
       style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       textAlign = TextAlign.Center,
       maxLines = 3,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
     )
     if (member.fullName != "" && member.fullName != member.displayName) {
       Text(
@@ -542,7 +550,8 @@ fun GroupMemberInfoHeader(member: GroupMember) {
         color = MaterialTheme.colors.onBackground,
         textAlign = TextAlign.Center,
         maxLines = 4,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
       )
     }
   }
