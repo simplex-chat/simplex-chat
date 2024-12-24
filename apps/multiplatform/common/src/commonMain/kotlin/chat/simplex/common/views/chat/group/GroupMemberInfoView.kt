@@ -531,8 +531,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     )
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = {
-      val nameToCopy = member.displayName + (if (member.fullName == "" || member.fullName == member.displayName) "" else " / ${member.fullName}")
-      clipboard.setText(AnnotatedString(nameToCopy))
+      clipboard.setText(AnnotatedString(member.displayName))
       showToast(generalGetString(MR.strings.copied))
     }
     Text(

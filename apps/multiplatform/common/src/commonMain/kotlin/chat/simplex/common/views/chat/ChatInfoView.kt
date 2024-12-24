@@ -699,8 +699,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
     )
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = {
-      val nameToCopy = cInfo.displayName + (if (cInfo.fullName == "" || cInfo.fullName == cInfo.displayName || cInfo.fullName == contact.profile.displayName) "" else " / ${cInfo.fullName}")
-      clipboard.setText(AnnotatedString(nameToCopy))
+      clipboard.setText(AnnotatedString(contact.profile.displayName))
       showToast(generalGetString(MR.strings.copied))
     }
     Text(

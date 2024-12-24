@@ -451,8 +451,7 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = {
-      val nameToCopy = cInfo.displayName + (if (cInfo.fullName == "" || cInfo.fullName == cInfo.displayName) "" else " / ${cInfo.fullName}")
-      clipboard.setText(AnnotatedString(nameToCopy))
+      clipboard.setText(AnnotatedString(cInfo.displayName))
       showToast(generalGetString(MR.strings.copied))
     }
     Text(
