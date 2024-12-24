@@ -257,7 +257,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
     ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-    ItemListAction(chat, showMenu)
+    TagListAction(chat, showMenu)
     ClearChatAction(chat, showMenu)
   }
   DeleteContactAction(chat, chatModel, showMenu)
@@ -297,7 +297,7 @@ fun GroupMenuItems(
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-      ItemListAction(chat, showMenu)
+      TagListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
@@ -345,7 +345,7 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
 }
 
 @Composable
-fun ItemListAction(
+fun TagListAction(
   chat: Chat,
   showMenu: MutableState<Boolean>
 ) {

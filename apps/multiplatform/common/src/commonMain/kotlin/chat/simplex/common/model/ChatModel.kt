@@ -85,8 +85,8 @@ object ChatModel {
   // Chat Tags
   val userTags = mutableStateOf(emptyList<ChatTag>())
   val activeChatTagFilter = mutableStateOf<ActiveFilter?>(null)
-  var presetTags = mutableStateMapOf<PresetTagKind, Int>()
-  var unreadTags = mutableStateMapOf<Long, Int>()
+  val presetTags = mutableStateMapOf<PresetTagKind, Int>()
+  val unreadTags = mutableStateMapOf<Long, Int>()
 
   // false: default placement, true: floating window.
   // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
@@ -204,8 +204,8 @@ object ChatModel {
   }
 
   fun updateChatTags(rhId: Long?) {
-    val newPresetTags = mutableStateMapOf<PresetTagKind, Int>()
-    val newUnreadTags = mutableStateMapOf<Long, Int>()
+    val newPresetTags = mutableMapOf<PresetTagKind, Int>()
+    val newUnreadTags = mutableMapOf<Long, Int>()
 
     for (chat in chats.value.filter { it.remoteHostId == rhId }) {
       for (tag in PresetTagKind.entries) {

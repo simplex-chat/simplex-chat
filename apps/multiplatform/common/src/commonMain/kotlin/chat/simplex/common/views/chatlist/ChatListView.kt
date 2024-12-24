@@ -810,13 +810,13 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
             Divider()
-            ChatTagsView()
+            TagsView()
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-          ChatTagsView()
+          TagsView()
           Divider()
         }
       }
@@ -871,7 +871,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
 private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
   val activeFilter = remember { chatModel.activeChatTagFilter }.value
 
-  if (searchText.value.text.trim().isEmpty()) {
+  if (searchText.value.text.isBlank()) {
     when (activeFilter) {
       is ActiveFilter.PresetTag -> Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center) // this should not happen
       is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
@@ -918,14 +918,14 @@ private fun ChatListFeatureCards() {
 }
 
 @Composable
-private fun ChatTagsView() {
+private fun TagsView() {
   val userTags = remember { chatModel.userTags }
   val presetTags = remember { chatModel.presetTags }
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val unreadTags = remember { chatModel.unreadTags }
   val rhId = chatModel.remoteHostId()
 
-  fun showChatTagList() {
+  fun showTagList() {
     ModalManager.start.showCustomModal { close ->
       val editMode = remember { stateGetOrPut("editMode") { false } }
       ModalView(close, showClose = true, endButtons = {
@@ -939,7 +939,7 @@ private fun ChatTagsView() {
   }
   val rowSizeModifier = Modifier.sizeIn(minHeight = 35.dp * fontSizeSqrtMultiplier)
 
-  ChatTagsRow {
+  TagsRow {
     if (presetTags.size > 1) {
       if (presetTags.size + userTags.value.size <= 3) {
         PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
@@ -971,11 +971,11 @@ private fun ChatTagsView() {
                   chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
                 }
               },
-              onLongClick = { showChatTagList() },
+              onLongClick = { showTagList() },
               interactionSource = interactionSource,
               indication = LocalIndication.current
             )
-            .onRightClick { showChatTagList() }
+            .onRightClick { showTagList() }
             .padding(4.dp),
           horizontalArrangement = Arrangement.Center,
           verticalAlignment = Alignment.CenterVertically
@@ -1051,7 +1051,7 @@ private fun ChatTagsView() {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChatTagsRow(content: @Composable() (() -> Unit)) {
+private fun TagsRow(content: @Composable() (() -> Unit)) {
   if (appPlatform.isAndroid) {
     Row(
       modifier = Modifier
