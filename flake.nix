@@ -220,6 +220,83 @@
                       > $out/nix-support/hydra-build-products
                 '';
               };
+
+              "armv7a-android:test:simplex-chat" = (drv' {
+                pkgs' = android32Pkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.openssl = true;
+                  packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                    (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
+                  ];
+                  packages.direct-sqlcipher.patches = [
+                    ./scripts/nix/direct-sqlcipher-android-log.patch
+                  ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
+                  ];
+                }];
+              }).simplex-chat.components.library.override {
+                smallAddressSpace = true; enableShared = false;
+                # for android we build a shared library, passing these arguments is a bit tricky, as
+                # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
+                # template haskell cross compilation. Thus we just pass them as linker options (-optl).
+                #
+                # changed
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "--enable-tests" ];
+                postInstall = ''
+                  set -x
+                  ${pkgs.tree}/bin/tree $out
+                  mkdir -p $out/_pkg
+                  # copy over includes, we might want those, but maybe not.
+                  # cp -r $out/lib/*/*/include $out/_pkg/
+                  # find the libHS...ghc-X.Y.Z.a static library; this is the
+                  # rolled up one with all dependencies included.
+                  #
+                  # changed
+                  cabal list-bin simplex-chat-test
+                  cp $(cabal list-bin simplex-chat-test) $out/_pkg
+                  # find ./dist -name "lib*.so" -exec cp {} $out/_pkg \;
+                  # find ./dist -name "libHS*-ghc*.a" -exec cp {} $out/_pkg \;
+                  # find ${android32FFI}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${android32Pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  # find ${android32Pkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  #
+                  # disabled
+                  # echo ${android32Pkgs.openssl.override { enableKTLS = false; }}
+                  #
+                  # disabled
+                  # find ${(android32Pkgs.openssl.override { enableKTLS = false; }).out}/lib -name "*.so" -exec cp {} $out/_pkg \;
+
+                  # remove the .1 and other version suffixes from .so's. Androids linker
+                  # doesn't play nice with them.
+                  #
+                  # disabled
+                  # for lib in $out/_pkg/*.so; do
+                  #  for dep in $(${pkgs.patchelf}/bin/patchelf --print-needed "$lib"); do
+                  #    if [[ "''${dep##*.so}" ]]; then
+                  #      echo "$lib : $dep -> ''${dep%%.so*}.so"
+                  #      chmod +w "$lib"
+                  #      ${pkgs.patchelf}/bin/patchelf --replace-needed "$dep" "''${dep%%.so*}.so" "$lib"
+                  #    fi
+                  #  done
+                  # done
+
+                  # for lib in $out/_pkg/*.so; do
+                  #  chmod +w "$lib"
+                  #  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so "$lib"
+                  #  [[ "$lib" != *libsimplex.so ]] && ${pkgs.patchelf}/bin/patchelf --set-soname "$(basename -a $lib)" "$lib"
+                  # done
+
+                  ${pkgs.tree}/bin/tree $out/_pkg
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-armv7a-simplex-tests.zip *)
+                  rm -fR $out/_pkg
+                  mkdir -p $out/nix-support
+                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
+                      > $out/nix-support/hydra-build-products
+                '';
+              };
+
               "aarch64-android:lib:simplex-chat" = (drv' {
                 pkgs' = androidPkgs;
                 extra-modules = [{
