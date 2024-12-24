@@ -1311,7 +1311,7 @@ viewOpIdTag ServerOperator {operatorId, operatorTag} = case operatorId of
 
 viewOpConditions :: ConditionsAcceptance -> Text
 viewOpConditions = \case
-  CAAccepted ts -> viewCond "accepted" ts
+  CAAccepted ts _ -> viewCond "accepted" ts
   CARequired ts -> viewCond "required" ts
   where
     viewCond w ts = w <> maybe "" (parens . tshow) ts
