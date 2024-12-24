@@ -36,7 +36,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: MutableState<Boolean> = remember { mutableStateOf(false) }) {
+fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: MutableState<Boolean> = remember { mutableStateOf(false) }) {
   if (remember { editMode }.value) {
     BackHandler {
       editMode.value = false
@@ -80,7 +80,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
     @Composable fun CreateList() {
       SectionItemView({
         ModalManager.start.showModalCloseable { close ->
-          ChatListTagEditor(rhId = rhId, close = close, chat = chat)
+          TagListEditor(rhId = rhId, close = close, chat = chat)
         }
       }) {
         Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.create_list), tint = MaterialTheme.colors.primary)
@@ -115,7 +115,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                   onClick = {
                     if (chat == null) {
                       ModalManager.start.showModalCloseable { close ->
-                        ChatListTagEditor(
+                        TagListEditor(
                           rhId = rhId,
                           tagId = tag.chatTagId,
                           close = close,
@@ -125,7 +125,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                       }
                     } else {
                       saving.value = true
-                      setChatTag(rhId = rhId, tagId = if (selected) null else tag.chatTagId, chat = chat, close = {
+                      setTag(rhId = rhId, tagId = if (selected) null else tag.chatTagId, chat = chat, close = {
                         saving.value = false
                         close()
                       })
@@ -162,8 +162,8 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                 Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
               }
               DefaultDropdownMenu(showMenu, dropdownMenuItems = {
-                EditChatTagAction(rhId, tag, showMenu)
-                DeleteChatTagAction(rhId, tag, showMenu, saving)
+                EditTagAction(rhId, tag, showMenu)
+                DeleteTagAction(rhId, tag, showMenu, saving)
               })
             }
             SectionDivider()
@@ -180,7 +180,7 @@ fun ChatListTag(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
 }
 
 @Composable
-fun ModalData.ChatListTagEditor(
+fun ModalData.TagListEditor(
   rhId: Long?,
   chat: Chat? = null,
   tagId: Long? = null,
@@ -204,7 +204,7 @@ fun ModalData.ChatListTagEditor(
     }
   }
 
-  fun createChatTag() {
+  fun createTag() {
     saving.value = true
     withBGApi {
       try {
@@ -222,7 +222,7 @@ fun ModalData.ChatListTagEditor(
           val createdTag = updatedTags.firstOrNull() { it.chatTagText == trimmedName.value && it.chatTagEmoji == newEmoji.value }
 
           if (createdTag != null) {
-            setChatTag(rhId, createdTag.chatTagId, chat, close = {
+            setTag(rhId, createdTag.chatTagId, chat, close = {
               saving.value = false
               close()
             })
@@ -235,7 +235,7 @@ fun ModalData.ChatListTagEditor(
     }
   }
 
-  fun updateChatTag() {
+  fun updateTag() {
     saving.value = true
     withBGApi {
       try {
@@ -272,7 +272,7 @@ fun ModalData.ChatListTagEditor(
         trimmedName.value.isEmpty() ||
         isDuplicateEmojiOrName.value
 
-    SectionItemView(click = { if (tagId == null) createChatTag() else updateChatTag() }, disabled = disabled) {
+    SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled) {
       Text(
         generalGetString(if (chat != null) MR.strings.add_to_list else if (tagId == null) MR.strings.create_list else MR.strings.save_list),
         color = if (disabled) colors.secondary else colors.primary
@@ -305,12 +305,12 @@ fun ModalData.ChatListTagEditor(
 }
 
 @Composable
-private fun DeleteChatTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
+private fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.delete_chat_list_menu_action),
     painterResource(MR.images.ic_delete),
     onClick = {
-      deleteChatTagDialog(rhId, tag, saving)
+      deleteTagDialog(rhId, tag, saving)
       showMenu.value = false
     },
     color = Color.Red
@@ -318,14 +318,14 @@ private fun DeleteChatTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableStat
 }
 
 @Composable
-private fun EditChatTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
+private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.edit_chat_list_menu_action),
     painterResource(MR.images.ic_edit),
     onClick = {
       showMenu.value = false
       ModalManager.start.showModalCloseable { close ->
-        ChatListTagEditor(
+        TagListEditor(
           rhId = rhId,
           tagId = tag.chatTagId,
           close = close,
@@ -341,7 +341,7 @@ private fun EditChatTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<
 @Composable
 expect fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>)
 
-private fun setChatTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {
+private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {
   withBGApi {
     val tagIds: List<Long> = if (tagId == null) {
       emptyList()
@@ -419,7 +419,7 @@ private fun deleteTag(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) 
   }
 }
 
-private fun deleteChatTagDialog(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) {
+private fun deleteTagDialog(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_chat_list_question),
     text = String.format(generalGetString(MR.strings.delete_chat_list_warning), tag.chatTagText),

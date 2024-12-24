@@ -1,10 +1,6 @@
 package chat.simplex.common.views.chatlist
 
-import SectionCustomFooter
-import SectionDivider
 import SectionItemView
-import TextIconSpaced
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -14,9 +10,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,9 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.apiDeleteChatTag
-import chat.simplex.common.model.ChatController.apiSetChatTags
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.markChatTagRead
 import chat.simplex.common.model.ChatModel.updateChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
@@ -365,9 +356,9 @@ fun ItemListAction(
     onClick = {
       ModalManager.start.showModalCloseable { close ->
         if (userTags.value.isEmpty()) {
-          ChatListTagEditor(rhId = chat.remoteHostId, chat = chat, close = close)
+          TagListEditor(rhId = chat.remoteHostId, chat = chat, close = close)
         } else {
-          ChatListTag(rhId = chat.remoteHostId, chat = chat, close = close)
+          TagListView(rhId = chat.remoteHostId, chat = chat, close = close)
         }
       }
       showMenu.value = false

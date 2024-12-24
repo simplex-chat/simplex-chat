@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -934,7 +933,7 @@ private fun ChatTagsView() {
           Text(stringResource(if (editMode.value) MR.strings.cancel_verb else MR.strings.edit_verb))
         }
       }) {
-        ChatListTag(rhId = rhId, close = close, editMode = editMode)
+        TagListView(rhId = rhId, close = close, editMode = editMode)
       }
     }
   }
@@ -1030,7 +1029,7 @@ private fun ChatTagsView() {
     val plusClickModifier = Modifier
       .clickable {
         ModalManager.start.showModalCloseable { close ->
-          ChatListTagEditor(rhId = rhId, close = close)
+          TagListEditor(rhId = rhId, close = close)
         }
       }
 
