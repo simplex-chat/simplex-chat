@@ -768,7 +768,12 @@ acceptConditions db condId opIds acceptedAt = do
   UsageConditions {conditionsCommit} <- getUsageConditionsById_ db condId
   operators <- mapM getServerOperator_ opIds
   let ts = Just acceptedAt
-  liftIO $ forM_ operators $ \op -> acceptConditions_ db op conditionsCommit ts
+  liftIO $ forM_ operators $ \op -> do
+    print 333
+    print op
+    print conditionsCommit
+    acceptConditions_ db op conditionsCommit ts
+    print 444
   where
     getServerOperator_ opId =
       ExceptT $
