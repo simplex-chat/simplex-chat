@@ -167,7 +167,7 @@ conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
     conditionsDeadline = addUTCTime (31 * nominalDay)
 
 data ConditionsAcceptance
-  = CAAccepted {acceptedAt :: Maybe UTCTime}
+  = CAAccepted {acceptedAt :: Maybe UTCTime, autoAccepted :: Bool}
   | CARequired {deadline :: Maybe UTCTime}
   deriving (Show)
 

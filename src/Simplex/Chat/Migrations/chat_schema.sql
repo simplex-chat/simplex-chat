@@ -622,6 +622,8 @@ CREATE TABLE operator_usage_conditions(
   conditions_commit TEXT NOT NULL,
   accepted_at TEXT,
   created_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  auto_accepted INTEGER DEFAULT 0
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
