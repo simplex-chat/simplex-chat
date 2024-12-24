@@ -4,28 +4,34 @@ import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.*
+import androidx.compose.ui.focus.*
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.markChatTagRead
+import chat.simplex.common.model.ChatModel.updateChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.group.deleteGroupDialog
-import chat.simplex.common.views.chat.group.leaveGroupDialog
+import chat.simplex.common.views.chat.group.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.contacts.onRequestAccepted
 import chat.simplex.common.views.helpers.*
@@ -33,7 +39,6 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
-import kotlin.math.min
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
@@ -252,6 +257,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
     ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+    TagListAction(chat, showMenu)
     ClearChatAction(chat, showMenu)
   }
   DeleteContactAction(chat, chatModel, showMenu)
@@ -291,6 +297,7 @@ fun GroupMenuItems(
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+      TagListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
@@ -332,6 +339,28 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
     painterResource(MR.images.ic_mark_chat_unread),
     onClick = {
       markChatUnread(chat, chatModel)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
+fun TagListAction(
+  chat: Chat,
+  showMenu: MutableState<Boolean>
+) {
+  val userTags = remember { chatModel.userTags }
+  ItemAction(
+    stringResource(MR.strings.list_menu),
+    painterResource(MR.images.ic_label),
+    onClick = {
+      ModalManager.start.showModalCloseable { close ->
+        if (userTags.value.isEmpty()) {
+          TagListEditor(rhId = chat.remoteHostId, chat = chat, close = close)
+        } else {
+          TagListView(rhId = chat.remoteHostId, chat = chat, close = close)
+        }
+      }
       showMenu.value = false
     }
   )
@@ -557,6 +586,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
       if (success) {
         withChats {
           replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+          markChatTagRead(chat)
         }
       }
     }
@@ -568,6 +598,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   if (chat.chatStats.unreadChat) return
 
   withApi {
+    val wasUnread = chat.unreadTag
     val success = chatModel.controller.apiChatUnread(
       chat.remoteHostId,
       chat.chatInfo.chatType,
@@ -577,6 +608,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withChats {
         replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+        updateChatTagRead(chat, wasUnread)
       }
     }
   }
@@ -826,11 +858,19 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       else -> false
     }
     if (res && newChatInfo != null) {
+      val chat = chatModel.getChat(chatInfo.id)
+      val wasUnread = chat?.unreadTag ?: false
+      val wasFavorite = chatInfo.chatSettings?.favorite ?: false
+      chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withChats {
         updateChatInfo(remoteHostId, newChatInfo)
       }
       if (chatSettings.enableNtfs != MsgFilter.All) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
+      }
+      val updatedChat = chatModel.getChat(chatInfo.id)
+      if (updatedChat != null) {
+        chatModel.updateChatTagRead(updatedChat, wasUnread)
       }
       val current = currentState?.value
       if (current != null) {
