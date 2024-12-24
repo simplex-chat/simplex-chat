@@ -184,7 +184,7 @@ fun CIFileView(
     }
   }
 
-  val showOpenSaveMenu = rememberSaveable { mutableStateOf(false) }
+  val showOpenSaveMenu = rememberSaveable(file?.fileId) { mutableStateOf(false) }
   val ext = file?.fileSource?.filePath?.substringAfterLast(".")
   val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null && !ext.isNullOrEmpty()) getLoadedFilePath(file) else null
   if (loadedFilePath != null && file?.fileSource != null && ext != null) {
@@ -195,7 +195,7 @@ fun CIFileView(
     Modifier
       .combinedClickable(
         onClick = {
-          if (appPlatform.isAndroid && file?.fileSource != null && getLoadedFilePath(file) != null) {
+          if (appPlatform.isAndroid && loadedFilePath != null) {
             showOpenSaveMenu.value = true
           } else {
             fileAction()
