@@ -231,7 +231,6 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
-                  packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
                   ];
