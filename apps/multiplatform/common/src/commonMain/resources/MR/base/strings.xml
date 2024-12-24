@@ -482,7 +482,7 @@
   <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
   <string name="file_error">File error</string>
   <string name="temporary_file_error">Temporary file error</string>
-  <string name="open_in_app">Open in %s</string>
+  <string name="open_with_app">Open with %s</string>
 
   <!-- Voice messages -->
   <string name="voice_message">Voice message</string>

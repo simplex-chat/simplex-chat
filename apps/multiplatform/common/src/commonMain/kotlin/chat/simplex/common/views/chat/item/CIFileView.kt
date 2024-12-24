@@ -202,9 +202,10 @@ fun CIFileView(
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
     val ext = file?.fileSource?.filePath?.substringAfterLast(".")
-    if (appPlatform.isAndroid && file?.fileSource != null && getLoadedFilePath(file) != null && !ext.isNullOrEmpty()) {
+    val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null && !ext.isNullOrEmpty()) getLoadedFilePath(file) else null
+    if (loadedFilePath != null && file?.fileSource != null && ext != null) {
       val encrypted = file.fileSource.cryptoArgs != null
-      AndroidSaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, openFile = { openFile(file.fileSource) }, saveFile = { fileAction() })
+      SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
     }
     fileIndicator()
     if (!smallView) {
@@ -235,7 +236,14 @@ fun CIFileView(
 fun fileSizeValid(file: CIFile): Boolean = file.fileSize <= getMaxFileSize(file.fileProtocol)
 
 @Composable
-expect fun AndroidSaveOrOpenFileMenu(showMenu: MutableState<Boolean>, encrypted: Boolean, ext: String, openFile: () -> Unit, saveFile: () -> Unit)
+expect fun SaveOrOpenFileMenu(
+  showMenu: MutableState<Boolean>,
+  encrypted: Boolean,
+  ext: String,
+  encryptedUri: URI,
+  fileSource: CryptoFile,
+  saveFile: () -> Unit
+)
 
 @Composable
 fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =

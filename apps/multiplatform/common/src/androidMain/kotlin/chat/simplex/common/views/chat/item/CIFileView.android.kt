@@ -2,30 +2,48 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.ImageBitmap
+import chat.simplex.common.model.CryptoFile
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.DefaultDropdownMenu
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-
-private data class OpenDefaultApp(
-  val name: String,
-  val intent: String
-)
+import java.net.URI
 
 @Composable
-actual fun AndroidSaveOrOpenFileMenu(showMenu: MutableState<Boolean>, encrypted: Boolean, ext: String, openFile: () -> Unit, saveFile: () -> Unit) {
-  val defaultApp = remember { getDefaultApp(ext) }
+actual fun SaveOrOpenFileMenu(
+  showMenu: MutableState<Boolean>,
+  encrypted: Boolean,
+  ext: String,
+  encryptedUri: URI,
+  fileSource: CryptoFile,
+  saveFile: () -> Unit
+) {
+  val defaultApp = remember(encryptedUri.toString()) { queryDefaultAppForExtension(ext, encryptedUri) }
   DefaultDropdownMenu(showMenu) {
     if (defaultApp != null) {
-      ItemAction(
-        stringResource(MR.strings.open_in_app).format(defaultApp.name),
-        painterResource(MR.images.ic_open_in_new),
-        color = MaterialTheme.colors.primary,
-        onClick = {
-          openFile()
-          showMenu.value = false
-        }
-      )
+      if (!defaultApp.isSystemChooser) {
+        ItemAction(
+          stringResource(MR.strings.open_with_app).format(defaultApp.name),
+          defaultApp.icon,
+          textColor = MaterialTheme.colors.primary,
+          onClick = {
+            openOrShareFile("", fileSource, justOpen = true, useChooser = false)
+            showMenu.value = false
+          }
+        )
+      } else {
+        ItemAction(
+          stringResource(MR.strings.open_with_app).format("…"),
+          painterResource(MR.images.ic_open_in_new),
+          color = MaterialTheme.colors.primary,
+          onClick = {
+            openOrShareFile("", fileSource, justOpen = true, useChooser = false)
+            showMenu.value = false
+          }
+        )
+      }
     }
     ItemAction(
       stringResource(MR.strings.save_verb),
@@ -37,8 +55,4 @@ actual fun AndroidSaveOrOpenFileMenu(showMenu: MutableState<Boolean>, encrypted:
       }
     )
   }
-}
-
-private fun getDefaultApp(ext: String): OpenDefaultApp? {
-  return OpenDefaultApp("LALAL", "")
 }
