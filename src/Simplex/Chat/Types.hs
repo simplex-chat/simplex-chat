@@ -179,6 +179,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     chatTags :: [ChatTagId],
+    chatItemTTL :: Maybe Int,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
@@ -374,6 +375,7 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
+    localAlias :: Text,
     businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
@@ -384,6 +386,7 @@ data GroupInfo = GroupInfo
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
     chatTags :: [ChatTagId],
+    chatItemTTL :: Maybe Int,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }

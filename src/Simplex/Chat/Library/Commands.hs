@@ -178,6 +178,7 @@ startChatController mainApp enableSndFiles = do
       forM_ users $ \user -> do
         ttl <- fromRight Nothing <$> runExceptT (withStore' (`getChatItemTTL` user))
         forM_ ttl $ \_ -> do
+          -- TODO [ttl] check if any of the chats for this user has TTL enabled
           startExpireCIThread user
           setExpireCIFlag user True
 
@@ -1346,12 +1347,14 @@ processChatCommand' vr = \case
     currentTs <- liftIO getCurrentTime
     acceptConditions db condId opIds currentTs
     CRServerOperatorConditions <$> getServerOperators db
+  APISetChatTTL _userId _newTTL_ _chatRef -> pure $ chatCmdError Nothing "not supported"
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
         case newTTL_ of
           Nothing -> do
             withFastStore' $ \db -> setChatItemTTL db user newTTL_
+            -- TODO [ttl] check if any of the chats for this user has TTL enabled
             lift $ setExpireCIFlag user False
           Just newTTL -> do
             oldTTL <- withFastStore' (`getChatItemTTL` user)
@@ -3449,6 +3452,7 @@ expireChatItems user@User {userId} ttl sync = do
           expireFlags <- asks expireCIFlags
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
+    -- TODO [ttl] use contact's TTL (0 to disable TTL when user's is enabled)
     processContact :: UTCTime -> Contact -> CM ()
     processContact expirationDate ct = do
       lift waitChatStartedAndActivated
@@ -3456,6 +3460,7 @@ expireChatItems user@User {userId} ttl sync = do
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+    -- TODO [ttl] use group's TTL (0 to disable TTL when user's is enabled)
     processGroup :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
     processGroup vr expirationDate createdAtCutoff gInfo = do
       lift waitChatStartedAndActivated
@@ -3611,6 +3616,7 @@ chatCommandP =
       "/_conditions" $> APIGetUsageConditions,
       "/_conditions_notified " *> (APISetConditionsNotified <$> A.decimal),
       "/_accept_conditions " *> (APIAcceptConditions <$> A.decimal <*> _strP),
+      "/_ttl " *> (APISetChatTTL <$> A.decimal <* A.space <*> chatRefP <* A.space <*> ciTTLDecimal),
       "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
       "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),

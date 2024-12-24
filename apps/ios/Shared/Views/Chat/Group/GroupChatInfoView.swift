@@ -18,6 +18,8 @@ struct GroupChatInfoView: View {
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
     var onSearch: () -> Void
+    @State var localAlias: String = "" // TODO [alias]
+    @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
@@ -27,6 +29,7 @@ struct GroupChatInfoView: View {
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
+    @State private var chatItemTTL = ChatItemTTL.none // TODO [ttl]
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -70,6 +73,10 @@ struct GroupChatInfoView: View {
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
+                
+                localAliasTextEdit()
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                     .padding(.bottom, 18)
 
                 infoActionButtons()
@@ -93,6 +100,20 @@ struct GroupChatInfoView: View {
                     } else {
                         sendReceiptsOptionDisabled()
                     }
+
+                    // TODO [ttl]
+                    Picker(selection: $chatItemTTL) {
+                        ForEach(ChatItemTTL.values) { ttl in
+                            Text(ttl.deleteAfterText).tag(ttl)
+                        }
+                        if case .seconds = chatItemTTL {
+                            Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
+                        }
+                    } label: {
+                        Label("Delete messages after", systemImage: "trash")
+                    }
+                    .frame(height: 36)
+                    
                     NavigationLink {
                         ChatWallpaperEditorSheet(chat: chat)
                     } label: {
@@ -215,6 +236,23 @@ struct GroupChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
+    private func localAliasTextEdit() -> some View {
+        TextField("Set chat name…", text: $localAlias)
+            .disableAutocorrection(true)
+            .focused($aliasTextFieldFocused)
+            .submitLabel(.done)
+            .onChange(of: aliasTextFieldFocused) { focused in
+                if !focused {
+//                    setGroupAlias()
+                }
+            }
+            .onSubmit {
+//                setGroupAlias()
+            }
+            .multilineTextAlignment(.center)
+            .foregroundColor(theme.colors.secondary)
+    }
+    
     func infoActionButtons() -> some View {
         GeometryReader { g in
             let buttonWidth = g.size.width / 4

@@ -109,6 +109,7 @@ struct ChatInfoView: View {
     @State private var showConnectContactViaAddressDialog = false
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
+    @State private var chatItemTTL = ChatItemTTL.none // TODO [ttl]
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
     enum ChatInfoViewAlert: Identifiable {
@@ -145,12 +146,10 @@ struct ChatInfoView: View {
                         aliasTextFieldFocused = false
                     }
                 
-                Group {
-                    localAliasTextEdit()
-                }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .padding(.bottom, 18)
+                localAliasTextEdit()
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .padding(.bottom, 18)
                 
                 GeometryReader { g in
                     HStack(alignment: .center, spacing: 8) {
@@ -191,6 +190,19 @@ struct ChatInfoView: View {
                         // } else if developerTools {
                         //     synchronizeConnectionButtonForce()
                         // }
+
+                        // TODO [ttl]
+                        Picker(selection: $chatItemTTL) {
+                            ForEach(ChatItemTTL.values) { ttl in
+                                Text(ttl.deleteAfterText).tag(ttl)
+                            }
+                            if case .seconds = chatItemTTL {
+                                Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
+                            }
+                        } label: {
+                            Label("Delete messages after", systemImage: "trash")
+                        }
+                        .frame(height: 36)
                     }
                     .disabled(!contact.ready || !contact.active)
                     NavigationLink {
