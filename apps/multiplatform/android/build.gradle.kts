@@ -151,7 +151,6 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.4")
-    implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
 }
 
 tasks {
