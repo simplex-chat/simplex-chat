@@ -2,7 +2,6 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.ImageBitmap
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.DefaultDropdownMenu
@@ -15,12 +14,12 @@ import java.net.URI
 actual fun SaveOrOpenFileMenu(
   showMenu: MutableState<Boolean>,
   encrypted: Boolean,
-  ext: String,
+  ext: String?,
   encryptedUri: URI,
   fileSource: CryptoFile,
   saveFile: () -> Unit
 ) {
-  val defaultApp = remember(encryptedUri.toString()) { queryDefaultAppForExtension(ext, encryptedUri) }
+  val defaultApp = remember(encryptedUri.toString()) { if (ext != null) queryDefaultAppForExtension(ext, encryptedUri) else null }
   DefaultDropdownMenu(showMenu) {
     if (defaultApp != null) {
       if (!defaultApp.isSystemChooser) {

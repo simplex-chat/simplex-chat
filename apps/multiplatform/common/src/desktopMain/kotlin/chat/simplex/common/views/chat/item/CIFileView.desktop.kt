@@ -9,7 +9,7 @@ import java.net.URI
 actual fun SaveOrOpenFileMenu(
   showMenu: MutableState<Boolean>,
   encrypted: Boolean,
-  ext: String,
+  ext: String?,
   encryptedUri: URI,
   fileSource: CryptoFile,
   saveFile: () -> Unit
