@@ -631,13 +631,13 @@ getUpdateServerOperators db presetOps newUser = do
       DBNewEntity -> do
         op' <- insertOperator op
         case (operatorTag op', acceptForSimplex_) of
-          (Just OTSimplex, Just cond) -> autoAcceptConditions op' cond
+          (Just OTSimplex, Just cond) -> print 555 >> print op' >> autoAcceptConditions op' cond
           _ -> pure op'
       DBEntityId _ -> do
         updateOperator op
         getOperatorConditions_ db op currentConds latestAcceptedConds_ now >>= \case
-          CARequired Nothing | operatorTag op == Just OTSimplex -> autoAcceptConditions op currentConds
-          CARequired (Just ts) | ts < now -> autoAcceptConditions op currentConds
+          CARequired Nothing | operatorTag op == Just OTSimplex -> print 777 >> print op >> autoAcceptConditions op currentConds
+          CARequired (Just ts) | ts < now -> print 888 >> print op >> autoAcceptConditions op currentConds
           ca -> pure op {conditionsAcceptance = ca}
   where
     insertConditions UsageConditions {conditionsId, conditionsCommit, notifiedAt, createdAt} =
