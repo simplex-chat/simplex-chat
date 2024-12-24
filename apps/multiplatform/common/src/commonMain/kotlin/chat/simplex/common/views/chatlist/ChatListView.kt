@@ -997,7 +997,7 @@ private fun TagsView() {
             val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
             val invisibleText = buildAnnotatedString {
               append(tag.chatTagText)
-              withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+              withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
                 append(badgeText)
               }
             }
@@ -1011,7 +1011,7 @@ private fun TagsView() {
             // Visible text with styles
             val visibleText = buildAnnotatedString {
               append(tag.chatTagText)
-              withStyle(SpanStyle(color = MaterialTheme.colors.primary)) {
+              withStyle(SpanStyle(fontSize = 12.sp, color = MaterialTheme.colors.primary)) {
                 append(badgeText)
               }
             }
