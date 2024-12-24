@@ -1070,7 +1070,7 @@
     <string name="alert_title_msg_bad_hash">Hash de mensaje incorrecto</string>
     <string name="alert_title_msg_bad_id">ID de mensaje incorrecto</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir si tu contacto o tu usáis una copia de seguridad antigua de la base de datos.</string>
-    <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
+    <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.\"</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensaje(s) no ha(n) podido ser descifrado(s).</string>
     <string name="stop_file__action">Detener archivo</string>
     <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>
@@ -2255,4 +2255,5 @@
     <string name="encryption_renegotiation_in_progress">Renegociación de cifrado en curso.</string>
     <string name="sync_connection_confirm">Reparar</string>
     <string name="sync_connection_question">¿Reparar conexión?</string>
+    <string name="connection_not_ready">Conexión no establecida.</string>
 </resources>
