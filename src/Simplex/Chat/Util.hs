@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle) where
+module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle, crossDeviceRenameFile) where
 
 import Control.Exception (Exception)
 import Control.Monad
@@ -18,9 +18,12 @@ import Data.List (sortBy)
 import Data.Ord (comparing)
 import Data.Time (NominalDiffTime)
 import Data.Word (Word16)
+import Foreign.C.Error (eXDEV, getErrno)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import System.Random (randomRIO)
+import System.IO.Error (catchIOError)
+import UnliftIO.Directory (copyFile, removeFile, renameFile)
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (IOMode (..), withFile)
 
@@ -76,3 +79,13 @@ instance Exception e => MonadUnliftIO (ExceptT e (ReaderT r IO)) where
     withExceptT unInternalException . ExceptT . E.try $
       withRunInIO $ \run ->
         inner $ run . (either (E.throwIO . InternalException) pure <=< runExceptT)
+
+crossDeviceRenameFile :: MonadIO m => FilePath -> FilePath -> m ()
+crossDeviceRenameFile src dst =
+  liftIO $ catchIOError (renameFile src dst) $ \e -> do
+    errno <- getErrno
+    if errno == eXDEV
+      then do
+        copyFile src dst
+        removeFile src
+      else E.throwIO e
