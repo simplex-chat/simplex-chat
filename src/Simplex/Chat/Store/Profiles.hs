@@ -616,8 +616,12 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, Maybe ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
   conds <- map toUsageConditions <$> DB.query_ db usageCondsQuery
+  print "111"
+  print conds
   now <- getCurrentTime
   let (acceptForSimplex_, currentConds, condsToAdd) = usageConditionsToAdd newUser now conds
+  print "222"
+  print condsToAdd
   mapM_ insertConditions condsToAdd
   latestAcceptedConds_ <- getLatestAcceptedConditions db
   ops <- updatedServerOperators presetOps <$> getServerOperators_ db
