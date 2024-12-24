@@ -46,7 +46,7 @@ actual fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, e
       }
     }
     Spacer(Modifier.width(8.dp))
-    ChatListNameTextField(name, showError = showError)
+    TagListNameTextField(name, showError = showError)
   }
 }
 

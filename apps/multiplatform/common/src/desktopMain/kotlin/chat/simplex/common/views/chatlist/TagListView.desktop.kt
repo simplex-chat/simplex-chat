@@ -19,7 +19,7 @@ import dev.icerock.moko.resources.compose.painterResource
 actual fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>) {
   SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     SingleEmojiInput(emoji)
-    ChatListNameTextField(name, showError = showError)
+    TagListNameTextField(name, showError = showError)
   }
 }
 

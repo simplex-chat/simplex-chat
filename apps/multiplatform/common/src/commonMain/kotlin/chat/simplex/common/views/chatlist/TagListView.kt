@@ -268,7 +268,7 @@ fun ModalData.TagListEditor(
 
   val showError = derivedStateOf { isDuplicateEmojiOrName.value && saving.value != false }
 
-  ColumnWithScrollBar {
+  ColumnWithScrollBar(Modifier.consumeWindowInsets(PaddingValues(bottom = if (oneHandUI.value) WindowInsets.ime.asPaddingValues().calculateBottomPadding().coerceIn(0.dp, WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()) else 0.dp))) {
     if (oneHandUI.value) {
       Spacer(Modifier.weight(1f))
     }
@@ -287,7 +287,7 @@ fun ModalData.TagListEditor(
     val showErrorMessage = isDuplicateEmojiOrName.value && saving.value != false
     SectionCustomFooter {
       Row(
-        Modifier.fillMaxWidth().padding(bottom = if (keyboardState == KeyboardState.Opened) 0.dp else DEFAULT_PADDING),
+        Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING),
         verticalAlignment = Alignment.CenterVertically
       ) {
         Icon(
@@ -348,7 +348,7 @@ private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bool
 expect fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, emoji: MutableState<String?>)
 
 @Composable
-fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
+fun TagListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
   var focused by rememberSaveable { mutableStateOf(false) }
   val focusRequester = remember { FocusRequester() }
   val strokeColor by remember {
@@ -365,19 +365,15 @@ fun ChatListNameTextField(name: MutableState<String>, showError: State<Boolean>)
     }
   }
 
-  val modifier = Modifier
-    .fillMaxWidth()
-    .heightIn(min = 50.dp)
-    .onFocusChanged { focused = it.isFocused }
-  Column(
-    Modifier
-      .fillMaxWidth(),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
     BasicTextField(
       value = name.value,
       onValueChange = { name.value = it },
-      modifier = modifier.focusRequester(focusRequester),
+      modifier = Modifier
+        .fillMaxWidth()
+        .heightIn(min = 50.dp)
+        .onFocusChanged { focused = it.isFocused }
+        .focusRequester(focusRequester),
       textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
       singleLine = true,
       cursorBrush = SolidColor(MaterialTheme.colors.secondary),
