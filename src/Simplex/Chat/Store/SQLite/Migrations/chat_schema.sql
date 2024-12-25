@@ -622,6 +622,8 @@ CREATE TABLE operator_usage_conditions(
   conditions_commit TEXT NOT NULL,
   accepted_at TEXT,
   created_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  auto_accepted INTEGER DEFAULT 0
 );
 CREATE TABLE chat_tags(
   chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20241206_chat_tags where
+module Simplex.Chat.Store.SQLite.Migrations.M20241223_chat_tags where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20241206_chat_tags :: Query
-m20241206_chat_tags =
+m20241223_chat_tags :: Query
+m20241223_chat_tags =
   [sql|
 CREATE TABLE chat_tags (
   chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,8 +31,8 @@ CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_contact_id ON chat_tags_chat
 CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_group_id ON chat_tags_chats(group_id, chat_tag_id);
 |]
 
-down_m20241206_chat_tags :: Query
-down_m20241206_chat_tags =
+down_m20241223_chat_tags :: Query
+down_m20241223_chat_tags =
   [sql|
 DROP INDEX idx_chat_tags_user_id;
 DROP INDEX idx_chat_tags_user_id_chat_tag_text;

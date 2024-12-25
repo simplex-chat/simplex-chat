@@ -16,6 +16,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+    PRIVACY.md
     cabal.project
 
 flag swift
@@ -211,7 +212,8 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20241125_indexes
           Simplex.Chat.Store.SQLite.Migrations.M20241128_business_chats
           Simplex.Chat.Store.SQLite.Migrations.M20241205_business_chat_members
-          Simplex.Chat.Store.SQLite.Migrations.M20241206_chat_tags
+          Simplex.Chat.Store.SQLite.Migrations.M20241222_operator_conditions
+          Simplex.Chat.Store.SQLite.Migrations.M20241223_chat_tags
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
