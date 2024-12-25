@@ -2253,4 +2253,5 @@
     <string name="a_plus_b">a + b</string>
     <string name="strikethrough_text">закреслити</string>
     <string name="connection_not_ready">Підключення не готове.</string>
+    <string name="open_with_app">Відкрити за допомогою %s</string>
 </resources>
