@@ -27,6 +27,7 @@ import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
 import Simplex.Chat.Store

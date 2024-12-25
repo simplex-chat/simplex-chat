@@ -188,6 +188,9 @@
   <string name="error_updating_user_privacy">Error updating user privacy</string>
   <string name="possible_slow_function_title">Slow function</string>
   <string name="possible_slow_function_desc">Execution of function takes too long time: %1$d seconds: %2$s</string>
+  <string name="error_updating_chat_tags">Error updating chat list</string>
+  <string name="error_creating_chat_tags">Error creating chat list</string>
+  <string name="error_loading_chat_tags">Error loading chat lists</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -361,6 +364,7 @@
   <string name="revoke_file__confirm">Revoke</string>
   <string name="forward_chat_item">Forward</string>
   <string name="download_file">Download</string>
+  <string name="list_menu">List</string>
 
   <string name="message_forwarded_title">Message forwarded</string>
   <string name="message_forwarded_desc">No direct connection yet, message is forwarded by admin.</string>
@@ -390,6 +394,10 @@
   <string name="you_have_no_chats">You have no chats</string>
   <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
+  <string name="no_chats_in_list">No chats in list %s.</string>
+  <string name="no_unread_chats">No unread chats</string>
+  <string name="no_chats">No chats</string>
+  <string name="no_chats_found">No chats found</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
@@ -409,6 +417,12 @@
   <string name="forward_files_missing_desc">%1$d file(s) were deleted.</string>
   <string name="forward_files_not_accepted_receive_files">Download</string>
   <string name="forward_files_messages_deleted_after_selection_title">%1$s messages not forwarded</string>
+  <string name="chat_list_favorites">Favorites</string>
+  <string name="chat_list_contacts">Contacts</string>
+  <string name="chat_list_groups">Groups</string>
+  <string name="chat_list_businesses">Businesses</string>
+  <string name="chat_list_all">All</string>
+  <string name="chat_list_add_list">Add list</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
@@ -627,6 +641,16 @@
   <string name="favorite_chat">Favorite</string>
   <string name="unfavorite_chat">Unfavorite</string>
 
+  <!-- Tags - ChatListNavLinkView.kt -->
+  <string name="create_list">Create list</string>
+  <string name="add_to_list">Add to list</string>
+  <string name="save_list">Save list</string>
+  <string name="list_name_field_placeholder">List name...</string>
+  <string name="duplicated_list_error">List name and emoji should be different for all lists.</string>
+  <string name="delete_chat_list_menu_action">Delete</string>
+  <string name="delete_chat_list_question">Delete list?</string>
+  <string name="delete_chat_list_warning">All chats will be removed from the list %s, and the list deleted</string>
+  <string name="edit_chat_list_menu_action">Edit</string>
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_a_contact">You invited a contact</string>
@@ -1697,6 +1721,7 @@
   <string name="cant_call_member_alert_title">Can\'t call group member</string>
   <string name="cant_call_member_send_message_alert_text">Send message to enable calls.</string>
   <string name="cant_send_message_to_member_alert_title">Can\'t message group member</string>
+  <string name="connection_not_ready">Connection not ready.</string>
 
   <!-- GroupWelcomeView.kt -->
   <string name="group_welcome_title">Welcome message</string>

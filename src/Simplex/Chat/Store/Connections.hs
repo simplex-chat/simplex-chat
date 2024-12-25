@@ -21,11 +21,14 @@ where
 import Control.Applicative ((<|>))
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
+import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
@@ -93,8 +96,9 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           (userId, agentConnId)
     getContactRec_ :: Int64 -> Connection -> ExceptT StoreError IO Contact
     getContactRec_ contactId c = ExceptT $ do
-      toContact' contactId c
-        <$> DB.query
+      chatTags <- getDirectChatTags db contactId
+      firstRow (toContact' contactId c chatTags) (SEInternalError "referenced contact not found") $
+        DB.query
           db
           [sql|
             SELECT
@@ -105,17 +109,16 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [ContactRow'] -> Either StoreError Contact
-    toContact' contactId conn [(profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)] =
+    toContact' :: Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
+    toContact' contactId conn chatTags ((profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)) =
       let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
-       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData}
-    toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, uiThemes, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
-    getGroupAndMember_ groupMemberId c = ExceptT $ do
-      firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
+    getGroupAndMember_ groupMemberId c = do
+      gm <- ExceptT $ firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
         DB.query
           db
           [sql|
@@ -141,9 +144,10 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
           (groupMemberId, userId, userContactId)
+      liftIO $ bitraverse (addGroupChatTags db) pure gm
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember c (groupInfoRow :. memberRow) =
-      let groupInfo = toGroupInfo vr userContactId groupInfoRow
+      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
     getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
