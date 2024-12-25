@@ -187,7 +187,12 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   if (appPlatform.isAndroid) {
-    SetNotificationsModeAdditions()
+    val wasAllowedToSetupNotifications = rememberSaveable { mutableStateOf(false) }
+    val canEnableNotifications = remember { derivedStateOf { chatModel.chatRunning.value == true } }
+    if (wasAllowedToSetupNotifications.value || canEnableNotifications.value) {
+      SetNotificationsModeAdditions()
+      LaunchedEffect(Unit) { wasAllowedToSetupNotifications.value = true }
+    }
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(
         chatModel = chatModel,
