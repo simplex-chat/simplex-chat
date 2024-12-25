@@ -12,6 +12,8 @@ import SimpleXChat
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @StateObject var documentController = DocumentController()
+
     let file: CIFile?
     let edited: Bool
     var smallViewSize: CGFloat?
@@ -114,7 +116,7 @@ struct CIFileView: View {
             case .rcvComplete:
                 logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    saveOrOpenCryptoFile(fileSource, documentController)
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
@@ -131,12 +133,12 @@ struct CIFileView: View {
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    saveOrOpenCryptoFile(fileSource, documentController)
                 }
             case .sndComplete:
                 logger.debug("CIFileView fileAction - in .sndComplete")
                 if let fileSource = getLoadedFileSource(file) {
-                    saveCryptoFile(fileSource)
+                    saveOrOpenCryptoFile(fileSource, documentController)
                 }
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
@@ -237,6 +239,24 @@ struct CIFileView: View {
     }
 }
 
+class DocumentController: NSObject, ObservableObject, UIDocumentInteractionControllerDelegate {
+    let controller = UIDocumentInteractionController()
+    func presentDocument(url: URL) {
+        controller.delegate = self
+        controller.url = url
+        controller.presentOptionsMenu(from: .zero, in: rootController().view, animated: true)
+//        controller.presentPreview(animated: true)
+    }
+
+    private func rootController() -> UIViewController {
+        (UIApplication.shared.connectedScenes.compactMap { ($0 as! UIWindowScene).keyWindow }.last?.rootViewController)!
+    }
+
+    func documentInteractionControllerViewControllerForPreview(_: UIDocumentInteractionController) -> UIViewController {
+        return rootController()
+    }
+}
+
 func fileSizeValid(_ file: CIFile?) -> Bool {
     if let file = file {
         return file.fileSize <= getMaxFileSize(file.fileProtocol)
@@ -244,7 +264,7 @@ func fileSizeValid(_ file: CIFile?) -> Bool {
     return false
 }
 
-func saveCryptoFile(_ fileSource: CryptoFile) {
+func saveOrOpenCryptoFile(_ fileSource: CryptoFile, _ documentController: DocumentController? = nil) {
     if let cfArgs = fileSource.cryptoArgs {
         let url = getAppFilePath(fileSource.filePath)
         let tempUrl = getTempFilesDirectory().appendingPathComponent(fileSource.filePath)
@@ -252,8 +272,12 @@ func saveCryptoFile(_ fileSource: CryptoFile) {
             do {
                 try decryptCryptoFile(fromPath: url.path, cryptoArgs: cfArgs, toPath: tempUrl.path)
                 await MainActor.run {
-                    showShareSheet(items: [tempUrl]) {
-                        removeFile(tempUrl)
+                    if let documentController {
+                        documentController.presentDocument(url: tempUrl)
+                    } else {
+                        showShareSheet(items: [tempUrl]) {
+                            removeFile(tempUrl)
+                        }
                     }
                 }
             } catch {
@@ -264,7 +288,11 @@ func saveCryptoFile(_ fileSource: CryptoFile) {
         }
     } else {
         let url = getAppFilePath(fileSource.filePath)
-        showShareSheet(items: [url])
+        if let documentController {
+            documentController.presentDocument(url: url)
+        } else {
+            showShareSheet(items: [url])
+        }
     }
 }
 
