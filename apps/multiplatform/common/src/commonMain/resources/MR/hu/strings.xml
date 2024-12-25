@@ -2220,4 +2220,5 @@
     <string name="delete_messages_after">Üzenetek törlése ennyi idő után:</string>
     <string name="a_plus_b">a + b</string>
     <string name="connection_not_ready">A kapcsolat nem áll készen.</string>
+    <string name="open_with_app">Megnyitás a következővel: %s</string>
 </resources>
