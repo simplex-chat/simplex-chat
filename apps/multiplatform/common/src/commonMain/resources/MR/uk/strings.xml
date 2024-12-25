@@ -2254,4 +2254,27 @@
     <string name="strikethrough_text">закреслити</string>
     <string name="connection_not_ready">Підключення не готове.</string>
     <string name="open_with_app">Відкрити за допомогою %s</string>
+    <string name="no_chats_in_list">Немає чатів у списку %s.</string>
+    <string name="no_unread_chats">Немає непрочитаних чатів</string>
+    <string name="chat_list_all">всі</string>
+    <string name="save_list">Зберегти список</string>
+    <string name="delete_chat_list_menu_action">Видалити</string>
+    <string name="delete_chat_list_question">Видалити список?</string>
+    <string name="list_name_field_placeholder">Назва списку...</string>
+    <string name="delete_chat_list_warning">Усі чати буде видалено зі списку %s, а сам список видалено</string>
+    <string name="chat_list_contacts">Контакти</string>
+    <string name="error_creating_chat_tags">Помилка створення списку чату</string>
+    <string name="no_chats_found">Чати не знайдено</string>
+    <string name="create_list">Створити список</string>
+    <string name="chat_list_favorites">Вибране</string>
+    <string name="no_chats">Без чатів</string>
+    <string name="edit_chat_list_menu_action">Редагувати</string>
+    <string name="error_loading_chat_tags">Помилка завантаження списків чату</string>
+    <string name="error_updating_chat_tags">Помилка оновлення списку чату</string>
+    <string name="chat_list_groups">Групи</string>
+    <string name="chat_list_businesses">Компанії</string>
+    <string name="add_to_list">Додати до списку</string>
+    <string name="chat_list_add_list">Додати список</string>
+    <string name="list_menu">Список</string>
+    <string name="duplicated_list_error">Назва списку та емодзі мають відрізнятися для всіх списків.</string>
 </resources>
