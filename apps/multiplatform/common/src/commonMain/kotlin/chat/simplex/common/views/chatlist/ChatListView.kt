@@ -187,6 +187,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
     }
   }
   if (appPlatform.isAndroid) {
+    SetNotificationsModeAdditions()
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(
         chatModel = chatModel,
