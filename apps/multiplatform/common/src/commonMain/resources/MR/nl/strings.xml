@@ -854,7 +854,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">Uw contacten kunnen volledige verwijdering van berichten toestaan.</string>
     <string name="you_have_to_enter_passphrase_every_time">U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.</string>
     <string name="wrong_passphrase">Verkeerd wachtwoord voor de database</string>
-    <string name="save_passphrase_and_open_chat">Bewaar wachtwoord en open je chats</string>
+    <string name="save_passphrase_and_open_chat">Wachtwoord opslaan en open je chats</string>
     <string name="database_backup_can_be_restored">De poging om het wachtwoord van de database te wijzigen is niet voltooid.</string>
     <string name="restore_database">Database back-up terugzetten</string>
     <string name="restore_database_alert_title">Database back-up terugzetten\?</string>
@@ -2253,4 +2253,28 @@
     <string name="sync_connection_question">Verbinding herstellen?</string>
     <string name="sync_connection_confirm">Herstel</string>
     <string name="connection_not_ready">Verbinding nog niet klaar</string>
+    <string name="error_updating_chat_tags">Fout bij het bijwerken van de chatlijst</string>
+    <string name="no_chats_in_list">Geen chats in lijst %s.</string>
+    <string name="chat_list_favorites">Favorieten</string>
+    <string name="chat_list_groups">Groepen</string>
+    <string name="no_chats">Geen chats</string>
+    <string name="no_chats_found">Geen chats gevonden</string>
+    <string name="chat_list_add_list">Lijst toevoegen</string>
+    <string name="chat_list_all">alle</string>
+    <string name="open_with_app">Openen met %s</string>
+    <string name="create_list">Maak een lijst</string>
+    <string name="delete_chat_list_menu_action">Verwijderen</string>
+    <string name="delete_chat_list_question">Lijst verwijderen?</string>
+    <string name="edit_chat_list_menu_action">Bewerk</string>
+    <string name="list_name_field_placeholder">Naam van lijst...</string>
+    <string name="duplicated_list_error">De naam en emoji van de lijst moeten voor alle lijsten verschillend zijn.</string>
+    <string name="save_list">Lijst opslaan</string>
+    <string name="list_menu">Lijst</string>
+    <string name="error_loading_chat_tags">Fout bij het laden van chatlijsten</string>
+    <string name="delete_chat_list_warning">Alle chats worden verwijderd uit de lijst %s, en de lijst wordt verwijderd</string>
+    <string name="add_to_list">Toevoegen aan lijst</string>
+    <string name="chat_list_businesses">bedrijven</string>
+    <string name="chat_list_contacts">Contacten</string>
+    <string name="error_creating_chat_tags">Fout bij het aanmaken van chatlijst</string>
+    <string name="no_unread_chats">Geen ongelezen chats</string>
 </resources>
