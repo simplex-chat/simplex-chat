@@ -697,13 +697,19 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
         Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
       }
     )
+    val clipboard = LocalClipboardManager.current
+    val copyNameToClipboard = {
+      clipboard.setText(AnnotatedString(contact.profile.displayName))
+      showToast(generalGetString(MR.strings.copied))
+    }
     Text(
       text,
       inlineContent = inlineContent,
       style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       textAlign = TextAlign.Center,
       maxLines = 3,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
     )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
@@ -711,7 +717,8 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
         color = MaterialTheme.colors.onBackground,
         textAlign = TextAlign.Center,
         maxLines = 4,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
       )
     }
   }
