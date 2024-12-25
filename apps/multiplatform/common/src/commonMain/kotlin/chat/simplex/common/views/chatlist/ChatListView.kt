@@ -988,7 +988,7 @@ private fun TagsView() {
             Icon(
               painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
               null,
-              Modifier.size(20.dp),
+              Modifier.size(18.sp.toDp()),
               tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
             )
           }
@@ -1003,7 +1003,8 @@ private fun TagsView() {
             }
             Text(
               text = invisibleText,
-              fontWeight = FontWeight.SemiBold,
+              fontWeight = FontWeight.Medium,
+              fontSize = 15.sp,
               color = Color.Transparent,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis
@@ -1011,13 +1012,14 @@ private fun TagsView() {
             // Visible text with styles
             val visibleText = buildAnnotatedString {
               append(tag.chatTagText)
-              withStyle(SpanStyle(fontSize = 12.sp, color = MaterialTheme.colors.primary)) {
+              withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
                 append(badgeText)
               }
             }
             Text(
               text = visibleText,
-              fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
+              fontWeight = if (current) FontWeight.Medium else FontWeight.Normal,
+              fontSize = 15.sp,
               color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis
@@ -1036,9 +1038,9 @@ private fun TagsView() {
     Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
       if (userTags.value.isEmpty()) {
         Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
-          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.secondary)
           Spacer(Modifier.width(2.dp))
-          Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
+          Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
         }
       } else {
         Icon(
@@ -1095,6 +1097,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     Icon(
       painterResource(icon),
       stringResource(text),
+      Modifier.size(18.sp.toDp()),
       tint = color
     )
     Spacer(Modifier.width(4.dp))
@@ -1102,12 +1105,14 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
       Text(
         stringResource(text),
         color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+        fontWeight = if (active) FontWeight.Medium else FontWeight.Normal,
+        fontSize = 15.sp
       )
       Text(
         stringResource(text),
         color = Color.Transparent,
-        fontWeight = FontWeight.SemiBold
+        fontWeight = FontWeight.Medium,
+        fontSize = 15.sp
       )
     }
   }
@@ -1136,6 +1141,7 @@ private fun CollapsedTagsFilterView() {
       Icon(
         painterResource(icon),
         stringResource(text),
+        Modifier.size(18.sp.toDp()),
         tint = MaterialTheme.colors.secondary
       )
     } else {
