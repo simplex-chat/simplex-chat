@@ -877,7 +877,7 @@ private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
       is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
       is ActiveFilter.Unread -> {
           Row(
-            Modifier.clip(shape = RoundedCornerShape(percent = 50)).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
+            Modifier.clip(shape = CircleShape).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
@@ -917,6 +917,8 @@ private fun ChatListFeatureCards() {
   }
 }
 
+private val TAG_MIN_HEIGHT = 35.dp
+
 @Composable
 private fun TagsView() {
   val userTags = remember { chatModel.userTags }
@@ -929,7 +931,7 @@ private fun TagsView() {
     ModalManager.start.showCustomModal { close ->
       val editMode = remember { stateGetOrPut("editMode") { false } }
       ModalView(close, showClose = true, endButtons = {
-        TextButton(onClick = { editMode.value = !editMode.value }, modifier = Modifier.clip(shape = RoundedCornerShape(percent = 50))) {
+        TextButton(onClick = { editMode.value = !editMode.value }, modifier = Modifier.clip(shape = CircleShape)) {
           Text(stringResource(if (editMode.value) MR.strings.cancel_verb else MR.strings.edit_verb))
         }
       }) {
@@ -937,7 +939,7 @@ private fun TagsView() {
       }
     }
   }
-  val rowSizeModifier = Modifier.sizeIn(minHeight = 35.dp * fontSizeSqrtMultiplier)
+  val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
 
   TagsRow {
     if (presetTags.size > 1) {
@@ -962,7 +964,7 @@ private fun TagsView() {
       Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
         Row(
           Modifier
-            .clip(shape = RoundedCornerShape(percent = 50))
+            .clip(shape = CircleShape)
             .combinedClickable(
               onClick = {
                 if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
@@ -1037,7 +1039,7 @@ private fun TagsView() {
 
     Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
       if (userTags.value.isEmpty()) {
-        Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
+        Row(Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
           Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.secondary)
           Spacer(Modifier.width(2.dp))
           Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
@@ -1076,12 +1078,13 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     is ActiveFilter.PresetTag -> af.tag == tag
     else -> false
   }
+  val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
   val (icon, text) = presetTagLabel(tag, active)
   val color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
 
   Row(
-    modifier = Modifier
-      .clip(shape = RoundedCornerShape(percent = 50))
+    modifier = rowSizeModifier
+      .clip(shape = CircleShape)
       .clickable {
         if (activeFilter.value == ActiveFilter.PresetTag(tag)) {
           chatModel.activeChatTagFilter.value = null
@@ -1130,10 +1133,12 @@ private fun CollapsedTagsFilterView() {
     else -> null
   }
 
-  Column(Modifier
+  val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
+  Box(rowSizeModifier
     .clip(shape = CircleShape)
     .clickable { showMenu.value = true }
-    .padding(4.dp)
+    .padding(4.dp),
+    contentAlignment = Alignment.Center
   ) {
     if (selectedPresetTag != null) {
       val (icon, text) = presetTagLabel(selectedPresetTag, true)
