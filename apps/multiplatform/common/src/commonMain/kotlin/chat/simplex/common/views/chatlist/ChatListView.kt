@@ -1036,9 +1036,11 @@ private fun TagsView() {
         Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
       }
     } else {
-      Icon(
-        painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), rowSizeModifier.clip(shape = CircleShape).then(plusClickModifier).padding(horizontal = 2.dp, vertical = 4.dp), tint = MaterialTheme.colors.secondary
-      )
+      Box(rowSizeModifier, contentAlignment = Alignment.Center) {
+        Icon(
+          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(2.dp), tint = MaterialTheme.colors.secondary
+        )
+      }
     }
   }
 }
@@ -1125,10 +1127,10 @@ private fun CollapsedTagsFilterView() {
 
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
   Box(rowSizeModifier
+    .padding(vertical = 4.dp)
     .clip(shape = CircleShape)
-    .widthIn(min = 30.sp.toDp())
-    .clickable { showMenu.value = true }
-    .padding(4.dp),
+    .size(30.sp.toDp())
+    .clickable { showMenu.value = true },
     contentAlignment = Alignment.Center
   ) {
     if (selectedPresetTag != null) {
