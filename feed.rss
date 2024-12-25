@@ -89,7 +89,7 @@
 &lt;p&gt;&lt;strong&gt;See who reacted!&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;This is a small but important change - you can now see who reacted to your messages!&lt;/p&gt;
 &lt;h3 id=&quot;improving-notifications-in-ios-app&quot; tabindex=&quot;-1&quot;&gt;Improving notifications in iOS app&lt;/h3&gt;
-&lt;p&gt;iOS notifications in a decentralized network is a complex problems. We &lt;a href=&quot;https://simplex.chat/blog/20220404-simplex-chat-instant-notifications.html#ios-notifications-require-a-server&quot;&gt;support iOS notifications&lt;/a&gt; from early versions of the app, focussing on preserving privacy as much as possible. But the reliability of notifications was not good enough.&lt;/p&gt;
+&lt;p&gt;iOS notifications in a decentralized network is a complex problem. We &lt;a href=&quot;https://simplex.chat/blog/20220404-simplex-chat-instant-notifications.html#ios-notifications-require-a-server&quot;&gt;support iOS notifications&lt;/a&gt; from early versions of the app, focussing on preserving privacy as much as possible. But the reliability of notifications was not good enough.&lt;/p&gt;
 &lt;p&gt;We solved several problems of notification delivery in this release:&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;messaging servers no longer lose notifications while notification servers are restarted.&lt;/li&gt;
