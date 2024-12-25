@@ -748,7 +748,11 @@ private func setChatTag(tagId: Int64?, chat: Chat, closeSheet: @escaping () -> V
             
             await MainActor.run {
                 let m = ChatModel.shared
-                ChatTagsModel.shared.userTags = userTags
+                let tm = ChatTagsModel.shared
+                tm.userTags = userTags
+                if chat.unreadTag, let tags = chat.chatInfo.chatTags {
+                    tm.decTagsReadCount(tags)
+                }
                 if var contact = chat.chatInfo.contact {
                     contact.chatTags = chatTags
                     m.updateContact(contact)
@@ -756,6 +760,7 @@ private func setChatTag(tagId: Int64?, chat: Chat, closeSheet: @escaping () -> V
                     group.chatTags = chatTags
                     m.updateGroup(group)
                 }
+                ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: false)
                 closeSheet()
             }
         } catch let error {

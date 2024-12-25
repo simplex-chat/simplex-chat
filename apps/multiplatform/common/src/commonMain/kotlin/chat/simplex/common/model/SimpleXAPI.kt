@@ -625,6 +625,7 @@ object ChatController {
       updateChats(chats)
     }
     chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
+    chatModel.activeChatTagFilter.value = null
     chatModel.updateChatTags(rhId)
   }
 
