@@ -80,6 +80,7 @@ class AppPreferences {
     if (!runServiceInBackground.get()) NotificationsMode.OFF else NotificationsMode.default
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
+  val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
@@ -132,6 +133,7 @@ class AppPreferences {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val chatStopped = mkBoolPreference(SHARED_PREFS_CHAT_STOPPED, false)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
+  val logLevel = mkEnumPreference(SHARED_PREFS_LOG_LEVEL, LogLevel.WARNING) { LogLevel.entries.firstOrNull { it.name == this } }
   val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
   val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
@@ -357,6 +359,7 @@ class AppPreferences {
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
     private const val SHARED_PREFS_NOTIFICATION_PREVIEW_MODE = "NotificationPreviewMode"
+    private const val SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS = "CanAskToEnableNotifications"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
@@ -393,6 +396,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
+    private const val SHARED_PREFS_LOG_LEVEL = "LogLevel"
     private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
     private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
@@ -622,6 +626,9 @@ object ChatController {
       val chats = apiGetChats(rhId)
       updateChats(chats)
     }
+    chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
+    chatModel.activeChatTagFilter.value = null
+    chatModel.updateChatTags(rhId)
   }
 
   private fun startReceiver() {
@@ -877,6 +884,16 @@ object ChatController {
     return emptyList()
   }
 
+  private suspend fun apiGetChatTags(rh: Long?): List<ChatTag>?{
+    val userId = currentUserId("apiGetChatTags")
+    val r = sendCmd(rh, CC.ApiGetChatTags(userId))
+
+    if (r is CR.ChatTags) return r.userTags
+    Log.e(TAG, "apiGetChatTags bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_loading_chat_tags), "${r.responseType}: ${r.details}")
+    return null
+  }
+
   suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
     if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
@@ -888,6 +905,28 @@ object ChatController {
     }
     return null
   }
+
+  suspend fun apiCreateChatTag(rh: Long?, tag: ChatTagData): List<ChatTag>? {
+    val r = sendCmd(rh, CC.ApiCreateChatTag(tag))
+    if (r is CR.ChatTags) return r.userTags
+    Log.e(TAG, "apiCreateChatTag bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_creating_chat_tags), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiSetChatTags(rh: Long?, type: ChatType, id: Long, tagIds: List<Long>): Pair<List<ChatTag>, List<Long>>? {
+    val r = sendCmd(rh, CC.ApiSetChatTags(type, id, tagIds))
+    if (r is CR.TagsUpdated) return r.userTags to r.chatTags
+    Log.e(TAG, "apiSetChatTags bad response: ${r.responseType} ${r.details}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_updating_chat_tags), "${r.responseType}: ${r.details}")
+    return null
+  }
+
+  suspend fun apiDeleteChatTag(rh: Long?, tagId: Long) = sendCommandOkResp(rh, CC.ApiDeleteChatTag(tagId))
+
+  suspend fun apiUpdateChatTag(rh: Long?, tagId: Long, tag: ChatTagData) = sendCommandOkResp(rh, CC.ApiUpdateChatTag(tagId, tag))
+
+  suspend fun apiReorderChatTags(rh: Long?, tagIds: List<Long>) = sendCommandOkResp(rh, CC.ApiReorderChatTags(tagIds))
 
   suspend fun apiSendMessages(rh: Long?, type: ChatType, id: Long, live: Boolean = false, ttl: Int? = null, composedMessages: List<ComposedMessage>): List<AChatItem>? {
     val cmd = CC.ApiSendMessages(type, id, live, ttl, composedMessages)
@@ -966,6 +1005,7 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
     when {
       r is CR.ChatItemUpdated -> return r.chatItem
+      r is CR.ChatItemNotChanged -> return r.chatItem
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.maximum_message_size_title),
@@ -3149,10 +3189,16 @@ sealed class CC {
   class TestStorageEncryption(val key: String): CC()
   class ApiSaveSettings(val settings: AppSettings): CC()
   class ApiGetSettings(val settings: AppSettings): CC()
+  class ApiGetChatTags(val userId: Long): CC()
   class ApiGetChats(val userId: Long): CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
+  class ApiCreateChatTag(val tag: ChatTagData): CC()
+  class ApiSetChatTags(val type: ChatType, val id: Long, val tagIds: List<Long>): CC()
+  class ApiDeleteChatTag(val tagId: Long): CC()
+  class ApiUpdateChatTag(val tagId: Long, val tagData: ChatTagData): CC()
+  class ApiReorderChatTags(val tagIds: List<Long>): CC()
   class ApiCreateChatItems(val noteFolderId: Long, val composedMessages: List<ComposedMessage>): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
@@ -3304,6 +3350,7 @@ sealed class CC {
     is TestStorageEncryption -> "/db test key $key"
     is ApiSaveSettings -> "/_save app settings ${json.encodeToString(settings)}"
     is ApiGetSettings -> "/_get app settings ${json.encodeToString(settings)}"
+    is ApiGetChatTags -> "/_get tags $userId"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id)} $itemId"
@@ -3312,6 +3359,11 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_send ${chatRef(type, id)} live=${onOff(live)} ttl=${ttlStr} json $msgs"
     }
+    is ApiCreateChatTag -> "/_create tag ${json.encodeToString(tag)}"
+    is ApiSetChatTags -> "/_tags ${chatRef(type, id)} ${tagIds.joinToString(",")}"
+    is ApiDeleteChatTag -> "/_delete tag $tagId"
+    is ApiUpdateChatTag -> "/_update tag $tagId ${json.encodeToString(tagData)}"
+    is ApiReorderChatTags -> "/_reorder tags ${tagIds.joinToString(",")}"
     is ApiCreateChatItems -> {
       val msgs = json.encodeToString(composedMessages)
       "/_create *$noteFolderId json $msgs"
@@ -3468,10 +3520,16 @@ sealed class CC {
     is TestStorageEncryption -> "testStorageEncryption"
     is ApiSaveSettings -> "apiSaveSettings"
     is ApiGetSettings -> "apiGetSettings"
+    is ApiGetChatTags -> "apiGetChatTags"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessages -> "apiSendMessages"
+    is ApiCreateChatTag -> "apiCreateChatTag"
+    is ApiSetChatTags -> "apiSetChatTags"
+    is ApiDeleteChatTag -> "apiDeleteChatTag"
+    is ApiUpdateChatTag -> "apiUpdateChatTag"
+    is ApiReorderChatTags -> "apiReorderChatTags"
     is ApiCreateChatItems -> "apiCreateChatItems"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
@@ -3655,6 +3713,9 @@ sealed class ChatPagination {
 class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent)
 
 @Serializable
+class ChatTagData(val emoji: String?, val text: String)
+
+@Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
 
 @Serializable
@@ -3754,7 +3815,7 @@ data class ServerOperatorConditionsDetail(
 
 @Serializable()
 sealed class ConditionsAcceptance {
-  @Serializable @SerialName("accepted") data class Accepted(val acceptedAt: Instant?) : ConditionsAcceptance()
+  @Serializable @SerialName("accepted") data class Accepted(val acceptedAt: Instant?, val autoAccepted: Boolean) : ConditionsAcceptance()
   @Serializable @SerialName("required") data class Required(val deadline: Instant?) : ConditionsAcceptance()
 
   val conditionsAccepted: Boolean
@@ -3798,7 +3859,7 @@ data class ServerOperator(
       tradeName = "SimpleX Chat",
       legalName = "SimpleX Chat Ltd",
       serverDomains = listOf("simplex.im"),
-      conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null, autoAccepted = false),
       enabled = true,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
@@ -3880,7 +3941,7 @@ data class UserOperatorServers(
       tradeName = "",
       legalName = null,
       serverDomains = emptyList(),
-      conditionsAcceptance = ConditionsAcceptance.Accepted(null),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
@@ -5387,6 +5448,7 @@ sealed class CR {
   @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val user: UserRef, val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val user: UserRef, val chat: Chat, val navInfo: NavigationInfo = NavigationInfo()): CR()
+  @Serializable @SerialName("chatTags") class ChatTags(val user: UserRef, val userTags: List<ChatTag>): CR()
   @Serializable @SerialName("chatItemInfo") class ApiChatItemInfo(val user: UserRef, val chatItem: AChatItem, val chatItemInfo: ChatItemInfo): CR()
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("serverOperatorConditions") class ServerOperatorConditions(val conditions: ServerOperatorConditionsDetail): CR()
@@ -5413,6 +5475,7 @@ sealed class CR {
   @Serializable @SerialName("contactCode") class ContactCode(val user: UserRef, val contact: Contact, val connectionCode: String): CR()
   @Serializable @SerialName("groupMemberCode") class GroupMemberCode(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionCode: String): CR()
   @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: UserRef, val verified: Boolean, val expectedCode: String): CR()
+  @Serializable @SerialName("tagsUpdated") class TagsUpdated(val user: UserRef, val userTags: List<ChatTag>, val chatTags: List<Long>): CR()
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connReqInvitation: String, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
@@ -5571,6 +5634,7 @@ sealed class CR {
     is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
+    is ChatTags -> "chatTags"
     is ApiChatItemInfo -> "chatItemInfo"
     is ServerTestResult -> "serverTestResult"
     is ServerOperatorConditions -> "serverOperatorConditions"
@@ -5597,6 +5661,7 @@ sealed class CR {
     is ContactCode -> "contactCode"
     is GroupMemberCode -> "groupMemberCode"
     is ConnectionVerified -> "connectionVerified"
+    is TagsUpdated -> "tagsUpdated"
     is Invitation -> "invitation"
     is ConnectionIncognitoUpdated -> "connectionIncognitoUpdated"
     is ConnectionUserChanged -> "ConnectionUserChanged"
@@ -5745,6 +5810,7 @@ sealed class CR {
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
     is ApiChat -> withUser(user, "chat: ${json.encodeToString(chat)}\nnavInfo: ${navInfo}")
+    is ChatTags -> withUser(user, "userTags: ${json.encodeToString(userTags)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ServerOperatorConditions -> "conditions: ${json.encodeToString(conditions)}"
@@ -5771,6 +5837,7 @@ sealed class CR {
     is ContactCode -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode")
     is GroupMemberCode -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode")
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
+    is TagsUpdated -> withUser(user, "userTags: ${json.encodeToString(userTags)}\nchatTags: ${json.encodeToString(chatTags)}")
     is Invitation -> withUser(user, "connReqInvitation: $connReqInvitation\nconnection: $connection")
     is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
     is ConnectionUserChanged -> withUser(user, "fromConnection: ${json.encodeToString(fromConnection)}\ntoConnection: ${json.encodeToString(toConnection)}\nnewUser: ${json.encodeToString(newUser)}" )
@@ -6030,6 +6097,9 @@ class ConnectionStats(
 
   val ratchetSyncSendProhibited: Boolean get() =
     listOf(RatchetSyncState.Required, RatchetSyncState.Started, RatchetSyncState.Agreed).contains(ratchetSyncState)
+
+  val ratchetSyncInProgress: Boolean get() =
+    listOf(RatchetSyncState.Started, RatchetSyncState.Agreed).contains(ratchetSyncState)
 }
 
 @Serializable

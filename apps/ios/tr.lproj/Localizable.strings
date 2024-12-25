@@ -431,7 +431,7 @@
 "All data is erased when it is entered." = "Kullanıldığında bütün veriler silinir.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Tüm veriler cihazınıza özeldir.";
+"All data is kept private on your device." = "Tüm veriler cihazınıza özeldir.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Tüm grup üyeleri bağlı kalacaktır.";

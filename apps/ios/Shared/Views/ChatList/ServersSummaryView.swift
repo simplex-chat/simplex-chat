@@ -587,7 +587,7 @@ struct SMPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is private to your device.")
+            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is kept private on your device.")
         }
     }
 }
@@ -703,7 +703,7 @@ struct XFTPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is private to your device.")
+            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is kept private on your device.")
         }
     }
 }

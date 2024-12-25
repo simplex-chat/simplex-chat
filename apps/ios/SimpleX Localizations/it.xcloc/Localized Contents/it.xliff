@@ -759,8 +759,8 @@
         <target>Tutti i dati vengono cancellati quando inserito.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
-        <source>All data is private to your device.</source>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve">
+        <source>All data is kept private on your device.</source>
         <target>Tutti i dati sono privati, nel tuo dispositivo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1091,12 +1091,12 @@
       </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve">
         <source>Auto-accept contact requests</source>
-        <target>Auto-accetta richieste di contatto</target>
+        <target>Auto-accetta le richieste di contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
         <source>Auto-accept images</source>
-        <target>Auto-accetta immagini</target>
+        <target>Auto-accetta le immagini</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept settings" xml:space="preserve">
@@ -1216,7 +1216,7 @@
       </trans-unit>
       <trans-unit id="Blur media" xml:space="preserve">
         <source>Blur media</source>
-        <target>Sfocatura file multimediali</target>
+        <target>Sfocatura dei file multimediali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -4501,7 +4501,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
         <source>Message draft</source>
-        <target>Bozza dei messaggi</target>
+        <target>Bozza del messaggio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message forwarded" xml:space="preserve">
@@ -5988,12 +5988,12 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Review conditions" xml:space="preserve">
         <source>Review conditions</source>
-        <target>Esamina le condizioni</target>
+        <target>Leggi le condizioni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Review later" xml:space="preserve">
         <source>Review later</source>
-        <target>Esamina più tardi</target>
+        <target>Leggi più tardi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
@@ -6289,7 +6289,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
         <source>Send link previews</source>
-        <target>Invia anteprime dei link</target>
+        <target>Invia le anteprime dei link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send live message" xml:space="preserve">
@@ -6610,7 +6610,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Share SimpleX address on social media." xml:space="preserve">
         <source>Share SimpleX address on social media.</source>
-        <target>Condividi indirizzo SimpleX sui social media.</target>
+        <target>Condividi l'indirizzo SimpleX sui social media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share address" xml:space="preserve">
@@ -6715,6 +6715,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." xml:space="preserve">
         <source>SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app.</source>
+        <target>SimpleX Chat e Flux hanno concluso un accordo per includere server gestiti da Flux nell'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Chat security was audited by Trail of Bits." xml:space="preserve">
@@ -7031,7 +7032,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
         <source>Tap Create SimpleX address in the menu to create it later.</source>
-        <target>Tocca "Crea indirizzo SimpleX" nel menu per crearlo più tardi.</target>
+        <target>Tocca Crea indirizzo SimpleX nel menu per crearlo più tardi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">

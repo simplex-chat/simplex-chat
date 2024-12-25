@@ -473,7 +473,7 @@
 "All data is erased when it is entered." = "Tutti i dati vengono cancellati quando inserito.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Tutti i dati sono privati, nel tuo dispositivo.";
+"All data is kept private on your device." = "Tutti i dati sono privati, nel tuo dispositivo.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Tutti i membri del gruppo resteranno connessi.";
@@ -689,10 +689,10 @@
 "Auto-accept" = "Accetta automaticamente";
 
 /* No comment provided by engineer. */
-"Auto-accept contact requests" = "Auto-accetta richieste di contatto";
+"Auto-accept contact requests" = "Auto-accetta le richieste di contatto";
 
 /* No comment provided by engineer. */
-"Auto-accept images" = "Auto-accetta immagini";
+"Auto-accept images" = "Auto-accetta le immagini";
 
 /* alert title */
 "Auto-accept settings" = "Accetta automaticamente le impostazioni";
@@ -779,7 +779,7 @@
 "Blur for better privacy." = "Sfoca per una privacy maggiore.";
 
 /* No comment provided by engineer. */
-"Blur media" = "Sfocatura file multimediali";
+"Blur media" = "Sfocatura dei file multimediali";
 
 /* No comment provided by engineer. */
 "bold" = "grassetto";
@@ -3004,7 +3004,7 @@
 "Message delivery warning" = "Avviso di consegna del messaggio";
 
 /* No comment provided by engineer. */
-"Message draft" = "Bozza dei messaggi";
+"Message draft" = "Bozza del messaggio";
 
 /* item status text */
 "Message forwarded" = "Messaggio inoltrato";
@@ -3982,10 +3982,10 @@
 "Reveal" = "Rivela";
 
 /* No comment provided by engineer. */
-"Review conditions" = "Esamina le condizioni";
+"Review conditions" = "Leggi le condizioni";
 
 /* No comment provided by engineer. */
-"Review later" = "Esamina più tardi";
+"Review later" = "Leggi più tardi";
 
 /* No comment provided by engineer. */
 "Revoke" = "Revoca";
@@ -4181,7 +4181,7 @@
 "Send errors" = "Errori di invio";
 
 /* No comment provided by engineer. */
-"Send link previews" = "Invia anteprime dei link";
+"Send link previews" = "Invia le anteprime dei link";
 
 /* No comment provided by engineer. */
 "Send live message" = "Invia messaggio in diretta";
@@ -4401,7 +4401,7 @@
 "Share profile" = "Condividi il profilo";
 
 /* No comment provided by engineer. */
-"Share SimpleX address on social media." = "Condividi indirizzo SimpleX sui social media.";
+"Share SimpleX address on social media." = "Condividi l'indirizzo SimpleX sui social media.";
 
 /* No comment provided by engineer. */
 "Share this 1-time invite link" = "Condividi questo link di invito una tantum";
@@ -4453,6 +4453,9 @@
 
 /* No comment provided by engineer. */
 "SimpleX address or 1-time link?" = "Indirizzo SimpleX o link una tantum?";
+
+/* No comment provided by engineer. */
+"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "SimpleX Chat e Flux hanno concluso un accordo per includere server gestiti da Flux nell'app";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "La sicurezza di SimpleX Chat è stata verificata da Trail of Bits.";
@@ -4635,7 +4638,7 @@
 "Tap button " = "Tocca il pulsante ";
 
 /* No comment provided by engineer. */
-"Tap Create SimpleX address in the menu to create it later." = "Tocca \"Crea indirizzo SimpleX\" nel menu per crearlo più tardi.";
+"Tap Create SimpleX address in the menu to create it later." = "Tocca Crea indirizzo SimpleX nel menu per crearlo più tardi.";
 
 /* No comment provided by engineer. */
 "Tap to activate profile." = "Tocca per attivare il profilo.";

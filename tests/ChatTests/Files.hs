@@ -14,8 +14,8 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Network.HTTP.Types.URI (urlEncode)
-import Simplex.Chat (roundedFDCount)
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Library.Internal (roundedFDCount)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))

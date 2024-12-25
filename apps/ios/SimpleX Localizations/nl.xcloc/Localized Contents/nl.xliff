@@ -579,6 +579,7 @@
       </trans-unit>
       <trans-unit id="About operators" xml:space="preserve">
         <source>About operators</source>
+        <target>Over operatoren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -759,8 +760,8 @@
         <target>Alle gegevens worden bij het invoeren gewist.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
-        <source>All data is private to your device.</source>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve">
+        <source>All data is kept private on your device.</source>
         <target>Alle gegevens zijn privé op uw apparaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8552,6 +8553,7 @@ Verbindingsverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="accepted invitation" xml:space="preserve">
         <source>accepted invitation</source>
+        <target>geaccepteerde uitnodiging</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
@@ -9238,6 +9240,7 @@ Verbindingsverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>
+        <target>gevraagd om verbinding te maken</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">

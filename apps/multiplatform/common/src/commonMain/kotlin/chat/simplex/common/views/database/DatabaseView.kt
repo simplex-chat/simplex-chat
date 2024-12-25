@@ -30,6 +30,7 @@ import kotlinx.datetime.*
 import java.io.*
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -44,11 +45,14 @@ fun DatabaseView() {
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val stopped = remember { m.chatRunning }.value == false
   val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
-    val file = chatArchiveFile.value
-    if (file != null && to != null) {
-      copyFileToFile(File(file), to) {
-        chatArchiveFile.value = null
-      }
+    val archive = chatArchiveFile.value
+    if (archive != null && to != null) {
+      copyFileToFile(File(archive), to) {}
+    }
+    // delete no matter the database was exported or canceled the export process
+    if (archive != null) {
+      File(archive).delete()
+      chatArchiveFile.value = null
     }
   }
   val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
@@ -56,8 +60,7 @@ fun DatabaseView() {
     if (to != null) {
       importArchiveAlert {
         stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
-          importArchive(to, appFilesCountAndSize, progressIndicator)
-          true
+          importArchive(to, appFilesCountAndSize, progressIndicator, false)
         }
       }
     }
@@ -641,6 +644,7 @@ suspend fun importArchive(
   importedArchiveURI: URI,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   progressIndicator: MutableState<Boolean>,
+  migration: Boolean
 ): Boolean {
   val m = chatModel
   progressIndicator.value = true
@@ -662,12 +666,13 @@ suspend fun importArchive(
           if (chatModel.localUserCreated.value == false) {
             chatModel.chatRunning.value = false
           }
+          return true
         } else {
           operationEnded(m, progressIndicator) {
             showArchiveImportedWithErrorsAlert(archiveErrors)
           }
+          return migration
         }
-        return true
       } catch (e: Error) {
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
@@ -680,6 +685,8 @@ suspend fun importArchive(
     } finally {
       File(archivePath).delete()
     }
+  } else {
+    progressIndicator.value = false
   }
   return false
 }
@@ -691,14 +698,15 @@ private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
     if (inputStream != null && archiveName != null) {
       val archivePath = "$databaseExportDir${File.separator}$archiveName"
       val destFile = File(archivePath)
-      Files.copy(inputStream, destFile.toPath())
+      Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
       archivePath
     } else {
       Log.e(TAG, "saveArchiveFromURI null inputStream")
       null
     }
   } catch (e: Exception) {
-    Log.e(TAG, "saveArchiveFromURI error: ${e.message}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_database), e.stackTraceToString())
+    Log.e(TAG, "saveArchiveFromURI error: ${e.stackTraceToString()}")
     null
   }
 }

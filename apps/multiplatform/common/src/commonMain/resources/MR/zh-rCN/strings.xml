@@ -2157,8 +2157,8 @@
     <string name="v6_2_network_decentralization_descr">应用中的第二个预设运营者！</string>
     <string name="v6_2_improved_chat_navigation">改进了聊天导航</string>
     <string name="view_updated_conditions">查看更新后的条款</string>
-    <string name="onboarding_network_operators_app_will_use_for_routing">比如，如果你通过 SimpleX 服务器收到消息，应用会使用 Flux 服务器中的一台进行私密路由。</string>
-    <string name="onboarding_network_operators_app_will_use_different_operators">启用了多于一个网络运营者时，应用会为每个对话使用不同运营者的服务器。</string>
+    <string name="onboarding_network_operators_app_will_use_for_routing">比如，如果你通过 SimpleX 服务器收到消息，应用会通过 Flux 服务器传送它们。</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">应用通过在每个对话中使用不同运营者保护你的隐私。</string>
     <string name="accept_conditions">接受条款</string>
     <string name="appearance_bars_blur_radius">模糊</string>
     <string name="address_or_1_time_link">地址或一次性链接？</string>
@@ -2229,4 +2229,8 @@
     <string name="info_row_chat">聊天</string>
     <string name="member_will_be_removed_from_chat_cannot_be_undone">将从聊天中删除成员 - 此操作无法撤销！</string>
     <string name="maximum_message_size_reached_text">请减小消息尺寸并再次发送。</string>
+    <string name="onboarding_network_operators_cant_see_who_talks_to_whom">当启用了超过一个运营者时，没有一个运营者拥有了解谁和谁联络的元数据。</string>
+    <string name="display_name_accepted_invitation">已接受邀请</string>
+    <string name="display_name_requested_to_connect">被请求连接</string>
+    <string name="onboarding_network_about_operators">关于运营者</string>
 </resources>

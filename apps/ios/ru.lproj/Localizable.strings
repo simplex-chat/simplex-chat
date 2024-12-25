@@ -83,7 +83,7 @@
 "**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Рекомендовано**: токен устройства и уведомления отправляются на сервер SimpleX Chat, но сервер не получает сами сообщения, их размер или от кого они.";
 
 /* No comment provided by engineer. */
-"**Scan / Paste link**: to connect via a link you received." = "**Сканировать / Вставить ссылку**: чтобы соединится через полученную ссылку.";
+"**Scan / Paste link**: to connect via a link you received." = "**Сканировать / Вставить ссылку**: чтобы соединиться через полученную ссылку.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Внимание**: для работы мгновенных уведомлений пароль должен быть сохранен в Keychain.";
@@ -479,7 +479,7 @@
 "All data is erased when it is entered." = "Все данные удаляются при его вводе.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Все данные хранятся только на вашем устройстве.";
+"All data is kept private on your device." = "Все данные хранятся только на вашем устройстве.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Все члены группы, которые соединились через эту ссылку, останутся в группе.";
@@ -3720,7 +3720,7 @@
 "Protect your chat profiles with a password!" = "Защитите Ваши профили чата паролем!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.\nВключите в настройках *Сеть и серверы*.";
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.\nВключите в настройках *Сети и серверов*.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Таймаут протокола";
@@ -5406,7 +5406,7 @@
 "You can change it in Appearance settings." = "Вы можете изменить это в настройках Интерфейса.";
 
 /* No comment provided by engineer. */
-"You can configure operators in Network & servers settings." = "Вы можете настроить операторов в настройках Сеть и серверы.";
+"You can configure operators in Network & servers settings." = "Вы можете настроить операторов в настройках Сети и серверов.";
 
 /* No comment provided by engineer. */
 "You can configure servers via settings." = "Вы можете настроить серверы позже.";

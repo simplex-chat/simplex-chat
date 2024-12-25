@@ -627,13 +627,13 @@ getUpdateServerOperators db presetOps newUser = do
       DBNewEntity -> do
         op' <- insertOperator op
         case (operatorTag op', acceptForSimplex_) of
-          (Just OTSimplex, Just cond) -> autoAcceptConditions op' cond
+          (Just OTSimplex, Just cond) -> autoAcceptConditions op' cond now
           _ -> pure op'
       DBEntityId _ -> do
         updateOperator op
         getOperatorConditions_ db op currentConds latestAcceptedConds_ now >>= \case
-          CARequired Nothing | operatorTag op == Just OTSimplex -> autoAcceptConditions op currentConds
-          CARequired (Just ts) | ts < now -> autoAcceptConditions op currentConds
+          CARequired Nothing | operatorTag op == Just OTSimplex -> autoAcceptConditions op currentConds now
+          CARequired (Just ts) | ts < now -> autoAcceptConditions op currentConds now
           ca -> pure op {conditionsAcceptance = ca}
   where
     insertConditions UsageConditions {conditionsId, conditionsCommit, notifiedAt, createdAt} =
@@ -667,9 +667,9 @@ getUpdateServerOperators db presetOps newUser = do
         (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles)
       opId <- insertedRowId db
       pure op {operatorId = DBEntityId opId}
-    autoAcceptConditions op UsageConditions {conditionsCommit} =
-      acceptConditions_ db op conditionsCommit Nothing
-        $> op {conditionsAcceptance = CAAccepted Nothing}
+    autoAcceptConditions op UsageConditions {conditionsCommit} now =
+      acceptConditions_ db op conditionsCommit now True
+        $> op {conditionsAcceptance = CAAccepted (Just now) True}
 
 serverOperatorQuery :: Query
 serverOperatorQuery =
@@ -708,7 +708,7 @@ getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {condition
           DB.query
             db
             [sql|
-              SELECT conditions_commit, accepted_at
+              SELECT conditions_commit, accepted_at, auto_accepted
               FROM operator_usage_conditions
               WHERE server_operator_id = ?
               ORDER BY operator_usage_conditions_id DESC
@@ -716,10 +716,10 @@ getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {condition
             |]
             (Only operatorId)
       pure $ case operatorAcceptedConds_ of
-        Just (operatorCommit, acceptedAt_)
+        Just (operatorCommit, acceptedAt_, autoAccept)
           | operatorCommit /= latestAcceptedCommit -> CARequired Nothing -- TODO should we consider this operator disabled?
           | currentCommit /= latestAcceptedCommit -> CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
-          | otherwise -> CAAccepted acceptedAt_
+          | otherwise -> CAAccepted acceptedAt_ autoAccept
         _ -> CARequired Nothing -- no conditions were accepted for this operator
 
 getCurrentUsageConditions :: DB.Connection -> ExceptT StoreError IO UsageConditions
@@ -763,24 +763,39 @@ acceptConditions :: DB.Connection -> Int64 -> NonEmpty Int64 -> UTCTime -> Excep
 acceptConditions db condId opIds acceptedAt = do
   UsageConditions {conditionsCommit} <- getUsageConditionsById_ db condId
   operators <- mapM getServerOperator_ opIds
-  let ts = Just acceptedAt
-  liftIO $ forM_ operators $ \op -> acceptConditions_ db op conditionsCommit ts
+  liftIO $ forM_ operators $ \op -> acceptConditions_ db op conditionsCommit acceptedAt False
   where
     getServerOperator_ opId =
       ExceptT $
         firstRow toServerOperator (SEOperatorNotFound opId) $
           DB.query db (serverOperatorQuery <> " WHERE server_operator_id = ?") (Only opId)
 
-acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> Maybe UTCTime -> IO ()
-acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt =
-  DB.execute
-    db
-    [sql|
-      INSERT INTO operator_usage_conditions
-        (server_operator_id, server_operator_tag, conditions_commit, accepted_at)
-      VALUES (?,?,?,?)
-    |]
-    (operatorId, operatorTag, conditionsCommit, acceptedAt)
+acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> UTCTime -> Bool -> IO ()
+acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt autoAccepted = do
+  acceptedAt_ :: Maybe (Maybe UTCTime) <- maybeFirstRow fromOnly $ DB.query db "SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit == ?" (operatorId, conditionsCommit)
+  case acceptedAt_ of
+        Just Nothing ->
+          DB.execute
+            db
+            (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO UPDATE SET accepted_at = ?, auto_accepted = ?")
+            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted, acceptedAt, autoAccepted)
+        Just (Just _) ->
+          DB.execute
+            db
+            (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO NOTHING")
+            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted)
+        Nothing ->
+          DB.execute
+            db
+            q
+            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted)
+  where
+    q =
+      [sql|
+        INSERT INTO operator_usage_conditions
+          (server_operator_id, server_operator_tag, conditions_commit, accepted_at, auto_accepted)
+        VALUES (?,?,?,?,?)
+      |]
 
 getUsageConditionsById_ :: DB.Connection -> Int64 -> ExceptT StoreError IO UsageConditions
 getUsageConditionsById_ db conditionsId =

@@ -344,7 +344,10 @@
 "Abort changing address?" = "Címváltoztatás megszakítása??";
 
 /* No comment provided by engineer. */
-"About SimpleX Chat" = "A SimpleX Chatről";
+"About operators" = "Az üzemeltetőkről";
+
+/* No comment provided by engineer. */
+"About SimpleX Chat" = "SimpleX Chat névjegye";
 
 /* No comment provided by engineer. */
 "above, then choose:" = "gombra fent, majd válassza ki:";
@@ -375,6 +378,9 @@
 
 /* No comment provided by engineer. */
 "Accepted conditions" = "Elfogadott feltételek";
+
+/* chat list item title */
+"accepted invitation" = "elfogadott meghívó";
 
 /* No comment provided by engineer. */
 "Acknowledged" = "Nyugtázva";
@@ -473,7 +479,7 @@
 "All data is erased when it is entered." = "A jelkód megadása után az összes adat törlésre kerül.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Az összes adat biztonságban van az eszközén.";
+"All data is kept private on your device." = "Az összes adat biztonságban van az eszközén.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Az összes csoporttag kapcsolatban marad.";
@@ -879,7 +885,7 @@
 "Change" = "Változtatás";
 
 /* authentication reason */
-"Change chat profiles" = "Felhasználói profilok megváltoztatása";
+"Change chat profiles" = "Csevegési profilok megváltoztatása";
 
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Adatbázis-jelmondat megváltoztatása?";
@@ -2344,7 +2350,7 @@
 "For console" = "Konzolhoz";
 
 /* No comment provided by engineer. */
-"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Ha például az ismerőse a SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása a Flux egyik kiszolgálóját használja a kézbesítéshez.";
+"For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Például, ha az Ön ismerőse egy SimpleX Chat-kiszolgálón keresztül fogadja az üzeneteket, az Ön alkalmazása egy Flux-kiszolgálón keresztül fogja azokat kézbesíteni.";
 
 /* No comment provided by engineer. */
 "For private routing" = "A privát útválasztáshoz";
@@ -3708,7 +3714,7 @@
 "Protect app screen" = "Alkalmazás képernyőjének védelme";
 
 /* No comment provided by engineer. */
-"Protect IP address" = "IP-cím védelem";
+"Protect IP address" = "IP-cím védelme";
 
 /* No comment provided by engineer. */
 "Protect your chat profiles with a password!" = "Védje meg a csevegési profiljait egy jelszóval!";
@@ -3929,6 +3935,9 @@
 
 /* chat item action */
 "Reply" = "Válasz";
+
+/* chat list item title */
+"requested to connect" = "kérelmezve a kapcsolódáshoz";
 
 /* No comment provided by engineer. */
 "Required" = "Szükséges";
@@ -4455,6 +4464,9 @@
 "SimpleX address or 1-time link?" = "SimpleX-cím vagy egyszer használható meghívó-hivatkozás?";
 
 /* No comment provided by engineer. */
+"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "A SimpleX Chat és a Flux megállapodást kötött arról, hogy a Flux által üzemeltetett kiszolgálókat beépítik az alkalmazásba.";
+
+/* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "A SimpleX Chat biztonsága a Trail of Bits által lett auditálva.";
 
 /* simplex link type */
@@ -4752,7 +4764,7 @@
 "The profile is only shared with your contacts." = "A profilja csak az ismerőseivel kerül megosztásra.";
 
 /* No comment provided by engineer. */
-"The same conditions will apply to operator **%@**." = "Ugyanezek a feltételek vonatkoznak a következő üzemeltetőre is: **%@**.";
+"The same conditions will apply to operator **%@**." = "Ugyanezek a feltételek lesznek elfogadva a következő üzemeltetőre is: **%@**.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator(s): **%@**." = "Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k)re is: **%@**.";
@@ -5397,7 +5409,7 @@
 "You can configure operators in Network & servers settings." = "Az üzemeltetőket a „Hálózat és kiszolgálók” beállításaban konfigurálhatja.";
 
 /* No comment provided by engineer. */
-"You can configure servers via settings." = "A kiszolgálókat a beállításokon keresztül konfigurálhatja.";
+"You can configure servers via settings." = "A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Létrehozás később";
@@ -5427,7 +5439,7 @@
 "You can set connection name, to remember who the link was shared with." = "Beállíthatja az ismerős nevét, hogy emlékezzen arra, hogy kivel osztotta meg a hivatkozást.";
 
 /* No comment provided by engineer. */
-"You can set lock screen notification preview via settings." = "A beállításokon keresztül beállíthatja a lezárási képernyő értesítési előnézetét.";
+"You can set lock screen notification preview via settings." = "A lezárási képernyő értesítési előnézetét az „Értesítések” menüben állíthatja be.";
 
 /* No comment provided by engineer. */
 "You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.";

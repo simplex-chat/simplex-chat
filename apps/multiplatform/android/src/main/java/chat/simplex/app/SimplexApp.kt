@@ -33,6 +33,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.map
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -151,6 +152,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
   * */
   fun schedulePeriodicServiceRestartWorker() = CoroutineScope(Dispatchers.Default).launch {
     if (!allowToStartServiceAfterAppExit()) {
+      getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       return@launch
     }
     val workerVersion = chatController.appPrefs.autoRestartWorkerVersion.get()
@@ -172,6 +174,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {
     if (!allowToStartPeriodically()) {
+      MessagesFetcherWorker.cancelAll(withLog = false)
       return@launch
     }
     MessagesFetcherWorker.scheduleWork()
@@ -227,7 +230,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
             SimplexService.safeStopService()
           }
         }
-
+        if (mode != NotificationsMode.SERVICE) {
+          getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
+        }
         if (mode != NotificationsMode.PERIODIC) {
           MessagesFetcherWorker.cancelAll()
         }
@@ -244,6 +249,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidChatStopped() {
+        getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
         SimplexService.safeStopService()
         MessagesFetcherWorker.cancelAll()
       }
@@ -359,6 +365,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         return true
       }
+
+      override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
 
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
