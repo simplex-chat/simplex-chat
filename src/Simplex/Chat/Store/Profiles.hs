@@ -124,7 +124,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     DB.execute
       db
       "INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?)"
-      (auId, displayName, activeUser, order, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, currentTs, currentTs)
+      (auId, displayName, BI activeUser, order, BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, currentTs, currentTs)
     userId <- insertedRowId db
     DB.execute
       db
@@ -138,7 +138,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     DB.execute
       db
       "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
-      (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
+      (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser $ (userId, auId, contactId, profileId, activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
@@ -253,7 +253,7 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
       SET view_pwd_hash = ?, view_pwd_salt = ?, show_ntfs = ?
       WHERE user_id = ?
     |]
-    (hashSalt viewPwdHash :. (showNtfs, userId))
+    (hashSalt viewPwdHash :. (BI showNtfs, userId))
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
 
@@ -262,16 +262,16 @@ updateAllContactReceipts db onOff =
   DB.execute
     db
     "UPDATE users SET send_rcpts_contacts = ?, send_rcpts_small_groups = ? WHERE view_pwd_hash IS NULL"
-    (onOff, onOff)
+    (BI onOff, BI onOff)
 
 updateUserContactReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserContactReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
-  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (enable, userId)
+  DB.execute db "UPDATE users SET send_rcpts_contacts = ? WHERE user_id = ?" (BI enable, userId)
   when clearOverrides $ DB.execute_ db "UPDATE contacts SET send_rcpts = NULL"
 
 updateUserGroupReceipts :: DB.Connection -> User -> UserMsgReceiptSettings -> IO ()
 updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOverrides} = do
-  DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (enable, userId)
+  DB.execute db "UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?" (BI enable, userId)
   when clearOverrides $ DB.execute_ db "UPDATE groups SET send_rcpts = NULL"
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
@@ -455,8 +455,8 @@ $(J.deriveJSON defaultJSON ''AutoAccept)
 
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (ConnReqContact, Bool, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
-toUserContactLink (connReq, autoAccept, businessAddress, acceptIncognito, autoReply) =
+toUserContactLink :: (ConnReqContact, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
+toUserContactLink (connReq, BI autoAccept, BI businessAddress, BI acceptIncognito, autoReply) =
   UserContactLink connReq $
     if autoAccept then Just AutoAccept {businessAddress, acceptIncognito, autoReply} else Nothing
 
@@ -528,8 +528,8 @@ updateUserAddressAutoAccept db user@User {userId} autoAccept = do
         |]
         (ucl :. Only userId)
     ucl = case autoAccept of
-      Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (True, businessAddress, acceptIncognito, autoReply)
-      _ -> (False, False, False, Nothing)
+      Just AutoAccept {businessAddress, acceptIncognito, autoReply} -> (BI True, BI businessAddress, BI acceptIncognito, autoReply)
+      _ -> (BI False, BI False, BI False, Nothing)
 
 getProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> IO [UserServer p]
 getProtocolServers db p User {userId} =

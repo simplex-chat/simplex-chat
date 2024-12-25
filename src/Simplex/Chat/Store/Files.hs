@@ -692,9 +692,9 @@ getRcvFileTransfer_ db userId fileId = do
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, Bool, Bool) :. (Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, agentRcvFileDeleted, userApprovedRelays) :. (connId_, agentConnId_)) =
+    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, BI agentRcvFileDeleted, BI userApprovedRelays) :. (connId_, agentConnId_)) =
       case contactName_ <|> memberName_ <|> standaloneName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name ->
@@ -717,7 +717,7 @@ getRcvFileTransfer_ db userId fileId = do
         rfi_ = case (filePath_, connId_, agentConnId_) of
           (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           _ -> pure Nothing
-        cancelled = fromMaybe False cancelled_
+        cancelled = maybe False unBI cancelled_
 
 acceptRcvFileTransfer :: DB.Connection -> VersionRangeChat -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
@@ -726,7 +726,7 @@ acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus f
   DB.execute
     db
     "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at, to_subscribe) VALUES (?,?,?,?,?,?,?,?)"
-    (acId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs, subMode == SMOnlyCreate)
+    (acId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs, BI (subMode == SMOnlyCreate))
   connId <- insertedRowId db
   setCommandConnId db user cmdId connId
   runExceptT $ getChatItemByFileId db vr user fileId
@@ -763,7 +763,7 @@ acceptRcvFT_ db User {userId} fileId filePath userApprovedRelays rcvFileInline c
   DB.execute
     db
     "UPDATE rcv_files SET user_approved_relays = ?, rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
-    (userApprovedRelays, rcvFileInline, FSAccepted, currentTs, fileId)
+    (BI userApprovedRelays, rcvFileInline, FSAccepted, currentTs, fileId)
 
 setRcvFileToReceive :: DB.Connection -> FileTransferId -> Bool -> Maybe CryptoFileArgs -> IO ()
 setRcvFileToReceive db fileId userApprovedRelays cfArgs_ = do
@@ -775,7 +775,7 @@ setRcvFileToReceive db fileId userApprovedRelays cfArgs_ = do
       SET to_receive = 1, user_approved_relays = ?, updated_at = ?
       WHERE file_id = ?
     |]
-    (userApprovedRelays, currentTs, fileId)
+    (BI userApprovedRelays, currentTs, fileId)
   forM_ cfArgs_ $ \cfArgs -> setFileCryptoArgs_ db fileId cfArgs currentTs
 
 setFileCryptoArgs :: DB.Connection -> FileTransferId -> CryptoFileArgs -> IO ()
@@ -955,11 +955,11 @@ getFileTransferMeta_ db userId fileId =
       |]
       (userId, fileId)
   where
-    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe AgentSndFileId, Bool, Maybe Text, Maybe Bool, Maybe FileTransferId) -> FileTransferMeta
-    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileKey, fileNonce, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_, xftpRedirectFor) =
+    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe AgentSndFileId, BoolInt, Maybe Text, Maybe BoolInt, Maybe FileTransferId) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileKey, fileNonce, fileInline, aSndFileId_, BI agentSndFileDeleted, privateSndFileDescr, cancelled_, xftpRedirectFor) =
       let cryptoArgs = CFArgs <$> fileKey <*> fileNonce
           xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
-       in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
+       in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = maybe False unBI cancelled_}
 
 lookupFileTransferRedirectMeta :: DB.Connection -> User -> Int64 -> IO [FileTransferMeta]
 lookupFileTransferRedirectMeta db User {userId} fileId = do

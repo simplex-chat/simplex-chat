@@ -168,9 +168,9 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, Bool, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, PQSupport, PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Int, Int, Maybe VersionChat, VersionChat, VersionChat)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, BoolInt, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, BoolInt, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, PQSupport, PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Int, Int, Maybe VersionChat, VersionChat, VersionChat)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe BoolInt, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe BoolInt, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat)
 
 toConnection :: VersionRangeChat -> ConnectionRow -> Connection
 toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter, chatV, minVer, maxVer)) =
@@ -182,12 +182,12 @@ toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGr
       connLevel,
       viaContact,
       viaUserContactLink,
-      viaGroupLink,
+      viaGroupLink = unBI <$> viaGroupLink,
       groupLinkId,
       customUserProfileId,
       connStatus,
       connType,
-      contactConnInitiated,
+      contactConnInitiated = unBI <$> contactConnInitiated,
       localAlias,
       entityId = entityId_ connType,
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_,
@@ -227,9 +227,9 @@ createConnection_ db userId connType entityId acId connStatus connChatVersion pe
         conn_chat_version, peer_chat_min_version, peer_chat_max_version, to_subscribe, pq_support, pq_encryption
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, customUserProfileId, connStatus, connType)
+    ( (userId, acId, connLevel, viaContact, viaUserContactLink, BI viaGroupLink, customUserProfileId, connStatus, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
-        :. (connChatVersion, minV, maxV, subMode == SMOnlyCreate, pqSup, pqSup)
+        :. (connChatVersion, minV, maxV, BI (subMode == SMOnlyCreate), pqSup, pqSup)
     )
   connId <- insertedRowId db
   pure
@@ -269,7 +269,7 @@ createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, imag
       INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
       VALUES (?,?,?,?,?,?,?)
     |]
-    (displayName, fullName, image, userId, Just True, createdAt, createdAt)
+    (displayName, fullName, image, userId, Just (BI True), createdAt, createdAt)
   insertedRowId db
 
 updateConnSupportPQ :: DB.Connection -> Int64 -> PQSupport -> PQEncryption -> IO ()
@@ -366,7 +366,7 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
     DB.execute
       db
       "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?)"
-      (profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, contactUsed)
+      (profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI contactUsed)
     contactId <- insertedRowId db
     pure $ Right (ldn, contactId, profileId)
 
@@ -388,15 +388,15 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
     |]
     [":user_id" := userId, ":profile_id" := profileId]
 
-type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool, ContactStatus) :. (Maybe MsgFilter, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. (Maybe GroupMemberId, Bool, Maybe UIThemeEntityOverrides, Bool, Maybe CustomData)
+type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. (Maybe GroupMemberId, BoolInt, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData)
 
 type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)) :. connRow) =
+toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, BI contactGrpInvSent, uiThemes, BI chatDeleted, customData)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
-      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
+      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, uiThemes, chatDeleted, customData}
@@ -434,8 +434,8 @@ userQuery =
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
-toUser :: (UserId, UserId, ContactId, ProfileId, Bool, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, Maybe Preferences) :. (Bool, Bool, Bool, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, Maybe UIThemeEntityOverrides) -> User
-toUser ((userId, auId, userContactId, profileId, activeUser, activeOrder, displayName, fullName, image, contactLink, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, uiThemes)) =
+toUser :: (UserId, UserId, ContactId, ProfileId, BoolInt, Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, Maybe Preferences) :. (BoolInt, BoolInt, BoolInt, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, Maybe UIThemeEntityOverrides) -> User
+toUser ((userId, auId, userContactId, profileId, BI activeUser, activeOrder, displayName, fullName, image, contactLink, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, uiThemes)) =
   User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, viewPwdHash, userMemberProfileUpdatedAt, uiThemes}
   where
     profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences = userPreferences, localAlias = ""}
@@ -549,21 +549,21 @@ safeDeleteLDN db User {userId} localDisplayName = do
 
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe Bool, Bool, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Maybe ImageData, Maybe ProfileId, Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData) :. GroupMemberRow
 
-type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, Bool, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
+type GroupMemberRow = ((Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Preferences))
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. businessRow :. (uiThemes, customData) :. userMemberRow) =
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, BI favorite, groupPreferences) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. businessRow :. (uiThemes, customData) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
-      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
+      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
       businessChat = toBusinessChatInfo businessRow
    in GroupInfo {groupId, localDisplayName, groupProfile, businessChat, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, chatTags, uiThemes, customData}
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
+toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
   let memberProfile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       memberSettings = GroupMemberSettings {showMessages}
       blockedByAdmin = maybe False mrsBlocked memberRestriction_

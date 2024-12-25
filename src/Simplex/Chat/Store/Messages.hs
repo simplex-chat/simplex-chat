@@ -554,10 +554,10 @@ paginationByTimeFilter = \case
   PTAfter ts count -> ("\nAND ts > :ts ORDER BY ts ASC LIMIT :count", [":ts" := ts, ":count" := count])
   PTBefore ts count -> ("\nAND ts < :ts ORDER BY ts DESC LIMIT :count", [":ts" := ts, ":count" := count])
 
-type ChatStatsRow = (Int, ChatItemId, Bool)
+type ChatStatsRow = (Int, ChatItemId, BoolInt)
 
 toChatStats :: ChatStatsRow -> ChatStats
-toChatStats (unreadCount, minUnreadItemId, unreadChat) = ChatStats {unreadCount, minUnreadItemId, unreadChat}
+toChatStats (unreadCount, minUnreadItemId, BI unreadChat) = ChatStats {unreadCount, minUnreadItemId, unreadChat}
 
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
