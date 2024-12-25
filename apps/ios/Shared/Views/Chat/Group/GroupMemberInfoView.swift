@@ -162,7 +162,7 @@ struct GroupMemberInfoView: View {
                             }
                             .disabled(
                                 connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
-                                || connStats.ratchetSyncSendProhibited
+                                || !member.sendMsgEnabled
                             )
                             if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
                                 Button("Abort changing address") {
@@ -170,7 +170,7 @@ struct GroupMemberInfoView: View {
                                 }
                                 .disabled(
                                     connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil && !$0.canAbortSwitch }
-                                    || connStats.ratchetSyncSendProhibited
+                                    || !member.sendMsgEnabled
                                 )
                             }
                             smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
@@ -297,7 +297,7 @@ struct GroupMemberInfoView: View {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
                     } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
-                        createMemberContactButton(width: buttonWidth)
+                        createMemberContactButton(member, width: buttonWidth)
                     }
                     InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()
                     }
@@ -373,31 +373,41 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    func createMemberContactButton(width: CGFloat) -> some View {
-        InfoViewButton(image: "message.fill", title: "message", width: width) {
-            if let connStats = connectionStats {
-                if connStats.ratchetSyncState == .ok {
-                    progressIndicator = true
-                    Task {
-                        do {
-                            let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
-                            await MainActor.run {
-                                progressIndicator = false
-                                ItemsModel.shared.loadOpenChat("@\(memberContact.id)") {
-                                    dismissAllSheets(animated: true)
-                                }
-                                NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
+    func createMemberContactButton(_ member: GroupMember, width: CGFloat) -> some View {
+        InfoViewButton(
+            image: "message.fill",
+            title: "message",
+            disabledLook:
+                !(
+                    member.sendMsgEnabled ||
+                    (member.activeConn?.connectionStats?.ratchetSyncAllowed ?? false)
+                ),
+            width: width
+        ) {
+            if member.sendMsgEnabled {
+                progressIndicator = true
+                Task {
+                    do {
+                        let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
+                        await MainActor.run {
+                            progressIndicator = false
+                            chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
+                            ItemsModel.shared.loadOpenChat("@\(memberContact.id)") {
+                                dismissAllSheets(animated: true)
                             }
-                        } catch let error {
-                            logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                            let a = getErrorAlert(error, "Error creating member contact")
-                            await MainActor.run {
-                                progressIndicator = false
-                                alert = .error(title: a.title, error: a.message)
-                            }
+                            NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
+                        }
+                    } catch let error {
+                        logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
+                        let a = getErrorAlert(error, "Error creating member contact")
+                        await MainActor.run {
+                            progressIndicator = false
+                            alert = .error(title: a.title, error: a.message)
                         }
                     }
-                } else if connStats.ratchetSyncAllowed {
+                }
+            } else if let connStats = connectionStats {
+                if connStats.ratchetSyncAllowed {
                     alert = .someAlert(alert: SomeAlert(
                         alert: Alert(
                             title: Text("Fix connection?"),
@@ -409,13 +419,21 @@ struct GroupMemberInfoView: View {
                         ),
                         id: "can't message member, fix connection"
                     ))
-                } else {
+                } else if connStats.ratchetSyncInProgress {
                     alert = .someAlert(alert: SomeAlert(
                         alert: mkAlert(
                             title: "Can't message member",
                             message: "Encryption renegotiation in progress."
                         ),
-                        id: "can't message contact, encryption renegotiation in progress"
+                        id: "can't message member, encryption renegotiation in progress"
+                    ))
+                } else {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't message member",
+                            message: "Connection not ready."
+                        ),
+                        id: "can't message member, connection not ready"
                     ))
                 }
             }

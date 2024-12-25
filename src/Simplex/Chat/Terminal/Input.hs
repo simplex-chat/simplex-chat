@@ -29,8 +29,8 @@ import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Weak (deRefWeak)
-import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Styled

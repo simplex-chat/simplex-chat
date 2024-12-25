@@ -89,6 +89,9 @@ struct SimpleXInfo: View {
                 )
             }
         }
+        .onAppear() {
+            setLastVersionDefault()
+        }
         .frame(maxHeight: .infinity)
         .padding(.horizontal, 25)
         .padding(.top, 75)

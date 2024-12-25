@@ -622,6 +622,20 @@ CREATE TABLE operator_usage_conditions(
   conditions_commit TEXT NOT NULL,
   accepted_at TEXT,
   created_at TEXT NOT NULL DEFAULT(datetime('now'))
+  ,
+  auto_accepted INTEGER DEFAULT 0
+);
+CREATE TABLE chat_tags(
+  chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER REFERENCES users,
+  chat_tag_text TEXT NOT NULL,
+  chat_tag_emoji TEXT,
+  tag_order INTEGER NOT NULL
+);
+CREATE TABLE chat_tags_chats(
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
+  chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -929,3 +943,21 @@ CREATE INDEX idx_chat_items_notes ON chat_items(
   created_at
 );
 CREATE INDEX idx_groups_business_xcontact_id ON groups(business_xcontact_id);
+CREATE INDEX idx_chat_tags_user_id ON chat_tags(user_id);
+CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_text ON chat_tags(
+  user_id,
+  chat_tag_text
+);
+CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_emoji ON chat_tags(
+  user_id,
+  chat_tag_emoji
+);
+CREATE INDEX idx_chat_tags_chats_chat_tag_id ON chat_tags_chats(chat_tag_id);
+CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_contact_id ON chat_tags_chats(
+  contact_id,
+  chat_tag_id
+);
+CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_group_id ON chat_tags_chats(
+  group_id,
+  chat_tag_id
+);

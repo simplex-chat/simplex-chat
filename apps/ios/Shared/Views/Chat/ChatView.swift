@@ -2068,6 +2068,9 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
         do {
             try await apiSetChatSettings(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatSettings: chatSettings)
             await MainActor.run {
+                let wasFavorite = chat.chatInfo.chatSettings?.favorite ?? false
+                ChatTagsModel.shared.updateChatFavorite(favorite: chatSettings.favorite, wasFavorite: wasFavorite)
+                let wasUnread = chat.unreadTag
                 switch chat.chatInfo {
                 case var .direct(contact):
                     contact.chatSettings = chatSettings
@@ -2077,6 +2080,7 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
                     ChatModel.shared.updateGroup(groupInfo)
                 default: ()
                 }
+                ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
             }
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")

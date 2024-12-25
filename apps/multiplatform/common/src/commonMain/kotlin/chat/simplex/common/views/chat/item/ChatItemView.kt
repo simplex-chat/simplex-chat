@@ -868,6 +868,32 @@ fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, on
 }
 
 @Composable
+fun ItemAction(text: String, icon: ImageBitmap, textColor: Color = Color.Unspecified, iconColor: Color = Color.Unspecified, onClick: () -> Unit) {
+  val finalColor = if (textColor == Color.Unspecified) {
+    MenuTextColor
+  } else textColor
+  DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(
+        text,
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1F)
+          .padding(end = 15.dp),
+        color = finalColor,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
+      if (iconColor == Color.Unspecified) {
+        Image(icon, text, Modifier.size(22.dp))
+      } else {
+        Icon(icon, text, Modifier.size(22.dp), tint = iconColor)
+      }
+    }
+  }
+}
+
+@Composable
 fun ItemAction(
   text: String,
   composable: @Composable () -> Unit,
