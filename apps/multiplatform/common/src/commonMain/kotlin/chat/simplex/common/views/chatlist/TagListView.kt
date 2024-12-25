@@ -152,7 +152,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
               if (tag.chatTagEmoji != null) {
                 ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
               } else {
-                Icon(painterResource(MR.images.ic_label), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+                Icon(painterResource(MR.images.ic_label), null, Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.onBackground)
               }
               Spacer(Modifier.padding(horizontal = 4.dp))
               Text(
