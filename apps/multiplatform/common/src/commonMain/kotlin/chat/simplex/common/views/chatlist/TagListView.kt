@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
+import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chat.item.ReactionIcon
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -148,9 +150,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
               verticalAlignment = Alignment.CenterVertically
             ) {
               if (tag.chatTagEmoji != null) {
-                Text(
-                  tag.chatTagEmoji
-                )
+                ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
               } else {
                 Icon(painterResource(MR.images.ic_label), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
               }
@@ -196,7 +196,6 @@ fun ModalData.TagListEditor(
 ) {
   val userTags = remember { chatModel.userTags }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val keyboardState by getKeyboardState()
   val newEmoji = remember { stateGetOrPutNullable("chatTagEmoji") { emoji } }
   val newName = remember { stateGetOrPut("chatTagName") { name } }
   val saving = remember { mutableStateOf<Boolean?>(null) }
@@ -351,53 +350,45 @@ expect fun ChatTagInput(name: MutableState<String>, showError: State<Boolean>, e
 fun TagListNameTextField(name: MutableState<String>, showError: State<Boolean>) {
   var focused by rememberSaveable { mutableStateOf(false) }
   val focusRequester = remember { FocusRequester() }
-  val strokeColor by remember {
-    derivedStateOf {
-      if (showError.value) {
-        Color.Red
-      } else {
-        if (focused) {
-          CurrentColors.value.colors.secondary.copy(alpha = 0.6f)
-        } else {
-          CurrentColors.value.colors.secondary.copy(alpha = 0.3f)
-        }
-      }
+  val interactionSource = remember { MutableInteractionSource() }
+  val colors = TextFieldDefaults.textFieldColors(
+    backgroundColor = Color.Unspecified,
+    focusedIndicatorColor = MaterialTheme.colors.secondary.copy(alpha = 0.6f),
+    unfocusedIndicatorColor = CurrentColors.value.colors.secondary.copy(alpha = 0.3f),
+    cursorColor = MaterialTheme.colors.secondary,
+  )
+  BasicTextField(
+    value = name.value,
+    onValueChange = { name.value = it },
+    interactionSource = interactionSource,
+    modifier = Modifier
+      .fillMaxWidth()
+      .indicatorLine(true, showError.value, interactionSource, colors)
+      .heightIn(min = TextFieldDefaults.MinHeight)
+      .onFocusChanged { focused = it.isFocused }
+      .focusRequester(focusRequester),
+    textStyle = TextStyle(fontSize = 18.sp, color = MaterialTheme.colors.onBackground),
+    singleLine = true,
+    cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+    decorationBox = @Composable { innerTextField ->
+      TextFieldDefaults.TextFieldDecorationBox(
+        value = name.value,
+        innerTextField = innerTextField,
+        placeholder = {
+          Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp))
+        },
+        contentPadding = PaddingValues(),
+        label = null,
+        visualTransformation = VisualTransformation.None,
+        leadingIcon = null,
+        singleLine = true,
+        enabled = true,
+        isError = false,
+        interactionSource = remember { MutableInteractionSource() },
+        colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
+      )
     }
-  }
-
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    BasicTextField(
-      value = name.value,
-      onValueChange = { name.value = it },
-      modifier = Modifier
-        .fillMaxWidth()
-        .heightIn(min = 50.dp)
-        .onFocusChanged { focused = it.isFocused }
-        .focusRequester(focusRequester),
-      textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
-      singleLine = true,
-      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
-      decorationBox = @Composable { innerTextField ->
-        TextFieldDefaults.TextFieldDecorationBox(
-          value = name.value,
-          innerTextField = innerTextField,
-          placeholder = {
-            Text(generalGetString(MR.strings.list_name_field_placeholder), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp))
-          },
-          contentPadding = PaddingValues(),
-          label = null,
-          visualTransformation = VisualTransformation.None,
-          leadingIcon = null,
-          singleLine = true,
-          enabled = true,
-          isError = false,
-          interactionSource = remember { MutableInteractionSource() },
-          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
-        )
-      }
-    )
-    Divider(color = strokeColor, thickness = if (focused) 2.dp else 1.dp)
-  }
+  )
 }
 
 private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {

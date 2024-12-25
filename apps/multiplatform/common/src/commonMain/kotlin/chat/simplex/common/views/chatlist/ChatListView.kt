@@ -33,8 +33,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
-import chat.simplex.common.views.chat.item.CIFileViewScope
-import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
@@ -948,9 +947,7 @@ private fun TagsView() {
           ExpandedTagFilterView(tag)
         }
       } else {
-        Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
-          CollapsedTagsFilterView()
-        }
+        CollapsedTagsFilterView()
       }
     }
 
@@ -960,73 +957,68 @@ private fun TagsView() {
         else -> false
       }
       val interactionSource = remember { MutableInteractionSource() }
-
-      Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
-        Row(
-          Modifier
-            .clip(shape = CircleShape)
-            .combinedClickable(
-              onClick = {
-                if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
-                  chatModel.activeChatTagFilter.value = null
-                } else {
-                  chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
-                }
-              },
-              onLongClick = { showTagList() },
-              interactionSource = interactionSource,
-              indication = LocalIndication.current
-            )
-            .onRightClick { showTagList() }
-            .padding(4.dp),
-          horizontalArrangement = Arrangement.Center,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          if (tag.chatTagEmoji != null) {
-            Text(
-              tag.chatTagEmoji
-            )
-          } else {
-            Icon(
-              painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
-              null,
-              Modifier.size(18.sp.toDp()),
-              tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
-            )
-          }
-          Spacer(Modifier.width(4.dp))
-          Box {
-            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
-            val invisibleText = buildAnnotatedString {
-              append(tag.chatTagText)
-              withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
-                append(badgeText)
+      Row(
+        rowSizeModifier
+          .clip(shape = CircleShape)
+          .combinedClickable(
+            onClick = {
+              if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
+                chatModel.activeChatTagFilter.value = null
+              } else {
+                chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
               }
+            },
+            onLongClick = { showTagList() },
+            interactionSource = interactionSource,
+            indication = LocalIndication.current
+          )
+          .onRightClick { showTagList() }
+          .padding(4.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        if (tag.chatTagEmoji != null) {
+          ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
+        } else {
+          Icon(
+            painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
+            null,
+            Modifier.size(18.sp.toDp()),
+            tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+          )
+        }
+        Spacer(Modifier.width(4.dp))
+        Box {
+          val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+          val invisibleText = buildAnnotatedString {
+            append(tag.chatTagText)
+            withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
+              append(badgeText)
             }
-            Text(
-              text = invisibleText,
-              fontWeight = FontWeight.Medium,
-              fontSize = 15.sp,
-              color = Color.Transparent,
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis
-            )
-            // Visible text with styles
-            val visibleText = buildAnnotatedString {
-              append(tag.chatTagText)
-              withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
-                append(badgeText)
-              }
-            }
-            Text(
-              text = visibleText,
-              fontWeight = if (current) FontWeight.Medium else FontWeight.Normal,
-              fontSize = 15.sp,
-              color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis
-            )
           }
+          Text(
+            text = invisibleText,
+            fontWeight = FontWeight.Medium,
+            fontSize = 15.sp,
+            color = Color.Transparent,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+          )
+          // Visible text with styles
+          val visibleText = buildAnnotatedString {
+            append(tag.chatTagText)
+            withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
+              append(badgeText)
+            }
+          }
+          Text(
+            text = visibleText,
+            fontWeight = if (current) FontWeight.Medium else FontWeight.Normal,
+            fontSize = 15.sp,
+            color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+          )
         }
       }
     }
@@ -1037,18 +1029,16 @@ private fun TagsView() {
         }
       }
 
-    Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
-      if (userTags.value.isEmpty()) {
-        Row(Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
-          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.secondary)
-          Spacer(Modifier.width(2.dp))
-          Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
-        }
-      } else {
-        Icon(
-          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(4.dp), tint = MaterialTheme.colors.secondary
-        )
+    if (userTags.value.isEmpty()) {
+      Row(rowSizeModifier.clip(shape = CircleShape).then(plusClickModifier).padding(start = 2.dp, top = 4.dp, end = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.size(18.sp.toDp()), tint = MaterialTheme.colors.secondary)
+        Spacer(Modifier.width(2.dp))
+        Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary, fontSize = 15.sp)
       }
+    } else {
+      Icon(
+        painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), rowSizeModifier.clip(shape = CircleShape).then(plusClickModifier).padding(horizontal = 2.dp, vertical = 4.dp), tint = MaterialTheme.colors.secondary
+      )
     }
   }
 }
@@ -1092,7 +1082,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
           chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(tag)
         }
       }
-      .padding(4.dp)
+      .padding(horizontal = 5.dp, vertical = 4.dp)
     ,
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.Center
@@ -1136,13 +1126,13 @@ private fun CollapsedTagsFilterView() {
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
   Box(rowSizeModifier
     .clip(shape = CircleShape)
+    .widthIn(min = 30.sp.toDp())
     .clickable { showMenu.value = true }
     .padding(4.dp),
     contentAlignment = Alignment.Center
   ) {
     if (selectedPresetTag != null) {
       val (icon, text) = presetTagLabel(selectedPresetTag, true)
-
       Icon(
         painterResource(icon),
         stringResource(text),
