@@ -16,11 +16,13 @@ import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
@@ -32,20 +34,29 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.topPaddingToContent
-import chat.simplex.common.views.mkValidName
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
-import chat.simplex.common.views.showInvalidNameAlert
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
+
+enum class PresetTagKind { FAVORITES, CONTACTS, GROUPS, BUSINESS }
+
+sealed class ActiveFilter {
+  data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
+  data class UserTag(val tag: ChatTag) : ActiveFilter()
+  data object Unread: ActiveFilter()
+}
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
   ModalManager.start.closeModals()
@@ -557,17 +568,24 @@ private fun BoxScope.unreadBadge(text: String? = "") {
 
 @Composable
 private fun ToggleFilterEnabledButton() {
-  val pref = remember { ChatController.appPrefs.showUnreadAndFavorites }
-  IconButton(onClick = { pref.set(!pref.get()) }) {
+  val showUnread = remember { chatModel.activeChatTagFilter }.value == ActiveFilter.Unread
+
+  IconButton(onClick = {
+    if (showUnread) {
+      chatModel.activeChatTagFilter.value = null
+    } else {
+      chatModel.activeChatTagFilter.value = ActiveFilter.Unread
+    }
+  }) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_filter_list),
       null,
-      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
+      tint = if (showUnread) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
       modifier = Modifier
         .padding(3.dp)
-        .background(color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
-        .border(width = 1.dp, color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
+        .background(color = if (showUnread) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
+        .border(width = 1.dp, color = if (showUnread) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(sp16)
     )
@@ -731,6 +749,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -753,14 +772,13 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val allChats = remember { chatModel.chats }
   // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
-  val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
+  val chats = filteredChats(searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList(), activeFilter.value)
   val topPaddingToContent = topPaddingToContent(false)
   val blankSpaceSize = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else topPaddingToContent
   LazyColumnWithScrollBar(
@@ -791,11 +809,15 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ) {
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
+            Divider()
+            TagsView()
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+          TagsView()
+          Divider()
         }
       }
     }
@@ -815,8 +837,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
-    Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.Center) {
-      Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
+    Box(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING), contentAlignment = Alignment.Center) {
+      NoChatsView(searchText = searchText)
     }
   }
   if (oneHandUI.value) {
@@ -839,6 +861,41 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       }
     }
   }
+
+  LaunchedEffect(activeFilter.value) {
+    searchText.value = TextFieldValue("")
+  }
+}
+
+@Composable
+private fun NoChatsView(searchText: MutableState<TextFieldValue>) {
+  val activeFilter = remember { chatModel.activeChatTagFilter }.value
+
+  if (searchText.value.text.isBlank()) {
+    when (activeFilter) {
+      is ActiveFilter.PresetTag -> Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center) // this should not happen
+      is ActiveFilter.UserTag -> Text(String.format(generalGetString(MR.strings.no_chats_in_list), activeFilter.tag.chatTagText), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+      is ActiveFilter.Unread -> {
+          Row(
+            Modifier.clip(shape = RoundedCornerShape(percent = 50)).clickable { chatModel.activeChatTagFilter.value = null }.padding(DEFAULT_PADDING_HALF),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Icon(
+              painterResource(MR.images.ic_filter_list),
+              null,
+              tint = MaterialTheme.colors.secondary
+            )
+            Text(generalGetString(MR.strings.no_unread_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+          }
+      }
+      null -> {
+        Text(generalGetString(MR.strings.no_chats), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+      }
+    }
+  } else {
+    Text(generalGetString(MR.strings.no_chats_found), color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+  }
 }
 
 @Composable
@@ -860,31 +917,297 @@ private fun ChatListFeatureCards() {
   }
 }
 
+@Composable
+private fun TagsView() {
+  val userTags = remember { chatModel.userTags }
+  val presetTags = remember { chatModel.presetTags }
+  val activeFilter = remember { chatModel.activeChatTagFilter }
+  val unreadTags = remember { chatModel.unreadTags }
+  val rhId = chatModel.remoteHostId()
+
+  fun showTagList() {
+    ModalManager.start.showCustomModal { close ->
+      val editMode = remember { stateGetOrPut("editMode") { false } }
+      ModalView(close, showClose = true, endButtons = {
+        TextButton(onClick = { editMode.value = !editMode.value }, modifier = Modifier.clip(shape = RoundedCornerShape(percent = 50))) {
+          Text(stringResource(if (editMode.value) MR.strings.cancel_verb else MR.strings.edit_verb))
+        }
+      }) {
+        TagListView(rhId = rhId, close = close, editMode = editMode)
+      }
+    }
+  }
+  val rowSizeModifier = Modifier.sizeIn(minHeight = 35.dp * fontSizeSqrtMultiplier)
+
+  TagsRow {
+    if (presetTags.size > 1) {
+      if (presetTags.size + userTags.value.size <= 3) {
+        PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
+          ExpandedTagFilterView(tag)
+        }
+      } else {
+        Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
+          CollapsedTagsFilterView()
+        }
+      }
+    }
+
+    userTags.value.forEach { tag ->
+      val current = when (val af = activeFilter.value) {
+        is ActiveFilter.UserTag -> af.tag == tag
+        else -> false
+      }
+      val interactionSource = remember { MutableInteractionSource() }
+
+      Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
+        Row(
+          Modifier
+            .clip(shape = RoundedCornerShape(percent = 50))
+            .combinedClickable(
+              onClick = {
+                if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
+                  chatModel.activeChatTagFilter.value = null
+                } else {
+                  chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
+                }
+              },
+              onLongClick = { showTagList() },
+              interactionSource = interactionSource,
+              indication = LocalIndication.current
+            )
+            .onRightClick { showTagList() }
+            .padding(4.dp),
+          horizontalArrangement = Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          if (tag.chatTagEmoji != null) {
+            Text(
+              tag.chatTagEmoji
+            )
+          } else {
+            Icon(
+              painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
+              null,
+              Modifier.size(20.dp),
+              tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+            )
+          }
+          Spacer(Modifier.width(4.dp))
+          Box {
+            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val invisibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
+                append(badgeText)
+              }
+            }
+            Text(
+              text = invisibleText,
+              fontWeight = FontWeight.SemiBold,
+              color = Color.Transparent,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            // Visible text with styles
+            val visibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(fontSize = 12.sp, color = MaterialTheme.colors.primary)) {
+                append(badgeText)
+              }
+            }
+            Text(
+              text = visibleText,
+              fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
+              color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+          }
+        }
+      }
+    }
+    val plusClickModifier = Modifier
+      .clickable {
+        ModalManager.start.showModalCloseable { close ->
+          TagListEditor(rhId = rhId, close = close)
+        }
+      }
+
+    Column(rowSizeModifier, verticalArrangement = Arrangement.Center) {
+      if (userTags.value.isEmpty()) {
+        Row(Modifier.clip(shape = RoundedCornerShape(percent = 50)).then(plusClickModifier).padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center) {
+          Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), tint = MaterialTheme.colors.secondary)
+          Spacer(Modifier.width(2.dp))
+          Text(stringResource(MR.strings.chat_list_add_list), color = MaterialTheme.colors.secondary)
+        }
+      } else {
+        Icon(
+          painterResource(MR.images.ic_add), stringResource(MR.strings.chat_list_add_list), Modifier.clip(shape = CircleShape).then(plusClickModifier).padding(4.dp), tint = MaterialTheme.colors.secondary
+        )
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagsRow(content: @Composable() (() -> Unit)) {
+  if (appPlatform.isAndroid) {
+    Row(
+      modifier = Modifier
+        .padding(horizontal = 14.dp)
+        .horizontalScroll(rememberScrollState()),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+      content()
+    }
+  } else {
+    FlowRow(modifier = Modifier.padding(horizontal = 14.dp)) { content() }
+  }
+}
+
+@Composable
+private fun ExpandedTagFilterView(tag: PresetTagKind) {
+  val activeFilter = remember { chatModel.activeChatTagFilter }
+  val active = when (val af = activeFilter.value) {
+    is ActiveFilter.PresetTag -> af.tag == tag
+    else -> false
+  }
+  val (icon, text) = presetTagLabel(tag, active)
+  val color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+
+  Row(
+    modifier = Modifier
+      .clip(shape = RoundedCornerShape(percent = 50))
+      .clickable {
+        if (activeFilter.value == ActiveFilter.PresetTag(tag)) {
+          chatModel.activeChatTagFilter.value = null
+        } else {
+          chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(tag)
+        }
+      }
+      .padding(4.dp)
+    ,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center
+  ) {
+    Icon(
+      painterResource(icon),
+      stringResource(text),
+      tint = color
+    )
+    Spacer(Modifier.width(4.dp))
+    Box {
+      Text(
+        stringResource(text),
+        color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+      )
+      Text(
+        stringResource(text),
+        color = Color.Transparent,
+        fontWeight = FontWeight.SemiBold
+      )
+    }
+  }
+}
+
+
+@Composable
+private fun CollapsedTagsFilterView() {
+  val activeFilter = remember { chatModel.activeChatTagFilter }
+  val presetTags = remember { chatModel.presetTags }
+  val showMenu = remember { mutableStateOf(false) }
+
+  val selectedPresetTag = when (val af = activeFilter.value) {
+    is ActiveFilter.PresetTag -> af.tag
+    else -> null
+  }
+
+  Column(Modifier
+    .clip(shape = CircleShape)
+    .clickable { showMenu.value = true }
+    .padding(4.dp)
+  ) {
+    if (selectedPresetTag != null) {
+      val (icon, text) = presetTagLabel(selectedPresetTag, true)
+
+      Icon(
+        painterResource(icon),
+        stringResource(text),
+        tint = MaterialTheme.colors.secondary
+      )
+    } else {
+      Icon(
+        painterResource(MR.images.ic_menu),
+        stringResource(MR.strings.chat_list_all),
+        tint = MaterialTheme.colors.secondary
+      )
+    }
+
+    DefaultDropdownMenu(showMenu = showMenu) {
+      if (selectedPresetTag != null) {
+        ItemAction(
+          stringResource(MR.strings.chat_list_all),
+          painterResource(MR.images.ic_menu),
+          onClick = {
+            chatModel.activeChatTagFilter.value = null
+            showMenu.value = false
+          }
+        )
+      }
+      PresetTagKind.entries.forEach { tag ->
+        if ((presetTags[tag] ?: 0) > 0) {
+          ItemPresetFilterAction(tag, tag == selectedPresetTag, showMenu)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun ItemPresetFilterAction(
+  presetTag: PresetTagKind,
+  active: Boolean,
+  showMenu: MutableState<Boolean>
+) {
+  val (icon, text) = presetTagLabel(presetTag, active)
+  ItemAction(
+    stringResource(text),
+    painterResource(icon),
+    onClick = {
+      chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(presetTag)
+      showMenu.value = false
+    }
+  )
+}
+
 fun filteredChats(
-  showUnreadAndFavorites: Boolean,
   searchShowingSimplexLink: State<Boolean>,
   searchChatFilteredBySimplexLink: State<String?>,
   searchText: String,
-  chats: List<Chat>
+  chats: List<Chat>,
+  activeFilter: ActiveFilter? = null,
 ): List<Chat> {
   val linkChatId = searchChatFilteredBySimplexLink.value
   return if (linkChatId != null) {
     chats.filter { it.id == linkChatId }
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
-    if (s.isEmpty() && !showUnreadAndFavorites)
-      chats.filter { chat -> !chat.chatInfo.chatDeleted && chatContactType(chat) != ContactType.CARD }
+    if (s.isEmpty())
+      chats.filter { chat -> !chat.chatInfo.chatDeleted && chatContactType(chat) != ContactType.CARD && filtered(chat, activeFilter) }
     else {
       chats.filter { chat ->
         when (val cInfo = chat.chatInfo) {
           is ChatInfo.Direct -> chatContactType(chat) != ContactType.CARD && !chat.chatInfo.chatDeleted && (
             if (s.isEmpty()) {
-              chat.id == chatModel.chatId.value || filtered(chat)
+              chat.id == chatModel.chatId.value || filtered(chat, activeFilter)
             } else {
               cInfo.anyNameContains(s)
             })
           is ChatInfo.Group -> if (s.isEmpty()) {
-            chat.id == chatModel.chatId.value || filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
+            chat.id == chatModel.chatId.value || filtered(chat, activeFilter) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
           } else {
             cInfo.anyNameContains(s)
           }
@@ -898,10 +1221,41 @@ fun filteredChats(
   }
 }
 
-private fun filtered(chat: Chat): Boolean =
-  (chat.chatInfo.chatSettings?.favorite ?: false) ||
-      chat.chatStats.unreadChat ||
-      (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
+private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
+  when (activeFilter) {
+    is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo)
+    is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
+    is ActiveFilter.Unread -> chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
+    else -> true
+  }
+
+fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo): Boolean =
+  when (tag) {
+    PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
+    PresetTagKind.CONTACTS -> when (chatInfo) {
+      is ChatInfo.Direct -> !(chatInfo.contact.activeConn == null && chatInfo.contact.profile.contactLink != null && chatInfo.contact.active) && !chatInfo.contact.chatDeleted
+      is ChatInfo.ContactRequest -> true
+      is ChatInfo.ContactConnection -> true
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Customer
+      else -> false
+    }
+    PresetTagKind.GROUPS -> when (chatInfo) {
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat == null
+      else -> false
+    }
+    PresetTagKind.BUSINESS -> when (chatInfo) {
+      is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Business
+      else -> false
+    }
+  }
+
+private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResource, StringResource> =
+  when (tag) {
+    PresetTagKind.FAVORITES -> (if (active) MR.images.ic_star_filled else MR.images.ic_star) to MR.strings.chat_list_favorites
+    PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
+    PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
+    PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
+  }
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
   scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
