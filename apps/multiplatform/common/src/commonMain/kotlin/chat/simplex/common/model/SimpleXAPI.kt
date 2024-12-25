@@ -3757,7 +3757,7 @@ data class ServerOperatorConditionsDetail(
 
 @Serializable()
 sealed class ConditionsAcceptance {
-  @Serializable @SerialName("accepted") data class Accepted(val acceptedAt: Instant?) : ConditionsAcceptance()
+  @Serializable @SerialName("accepted") data class Accepted(val acceptedAt: Instant?, val autoAccepted: Boolean) : ConditionsAcceptance()
   @Serializable @SerialName("required") data class Required(val deadline: Instant?) : ConditionsAcceptance()
 
   val conditionsAccepted: Boolean
@@ -3801,7 +3801,7 @@ data class ServerOperator(
       tradeName = "SimpleX Chat",
       legalName = "SimpleX Chat Ltd",
       serverDomains = listOf("simplex.im"),
-      conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null, autoAccepted = false),
       enabled = true,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
@@ -3883,7 +3883,7 @@ data class UserOperatorServers(
       tradeName = "",
       legalName = null,
       serverDomains = emptyList(),
-      conditionsAcceptance = ConditionsAcceptance.Accepted(null),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
