@@ -2226,4 +2226,22 @@
     <string name="chat_list_add_list">Lista hozzáadása</string>
     <string name="chat_list_all">Összes</string>
     <string name="add_to_list">Hozzáadás listához</string>
+    <string name="error_creating_chat_tags">Hiba a csevegési lista létrehozásakor</string>
+    <string name="error_loading_chat_tags">Hiba a csevegési lista betöltésekor</string>
+    <string name="error_updating_chat_tags">Hiba a csevegési lista frissítésekor</string>
+    <string name="chat_list_businesses">Üzleti</string>
+    <string name="chat_list_contacts">Ismerősök</string>
+    <string name="chat_list_favorites">Kedvencek</string>
+    <string name="no_chats">Nincsenek csevegések</string>
+    <string name="no_chats_found">Nem találhatók csevegések</string>
+    <string name="no_unread_chats">Nincsenek olvasatlan csevegések</string>
+    <string name="create_list">Lista létrehozása</string>
+    <string name="save_list">Lista mentése</string>
+    <string name="delete_chat_list_warning">Az összes csevegés el lesz távolítva a következő listáról, és a lista is törlődik: %s</string>
+    <string name="delete_chat_list_menu_action">Törlés</string>
+    <string name="delete_chat_list_question">Lista törlése?</string>
+    <string name="edit_chat_list_menu_action">Szerkesztés</string>
+    <string name="list_name_field_placeholder">Listanév…</string>
+    <string name="duplicated_list_error">Az összes lista nevének vagy hangulatjelének különbözőnek kell lennie.</string>
+    <string name="no_chats_in_list">Nincsenek csevegések a(z) %s nevű listában.</string>
 </resources>
