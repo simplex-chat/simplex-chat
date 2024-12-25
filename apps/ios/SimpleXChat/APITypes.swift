@@ -1290,7 +1290,7 @@ public struct ServerOperatorConditions: Decodable {
 }
 
 public enum ConditionsAcceptance: Equatable, Codable, Hashable {
-    case accepted(acceptedAt: Date?)
+    case accepted(acceptedAt: Date?, autoAccepted: Bool)
     // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
     // No deadline indicates it's required to accept conditions for the operator to start using it.
     case required(deadline: Date?)
@@ -1364,7 +1364,7 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         tradeName: "SimpleX Chat",
         legalName: "SimpleX Chat Ltd",
         serverDomains: ["simplex.im"],
-        conditionsAcceptance: .accepted(acceptedAt: nil),
+        conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
         enabled: true,
         smpRoles: ServerRoles(storage: true, proxy: true),
         xftpRoles: ServerRoles(storage: true, proxy: true)
@@ -1397,7 +1397,7 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
                 tradeName: "",
                 legalName: "",
                 serverDomains: [],
-                conditionsAcceptance: .accepted(acceptedAt: nil),
+                conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
                 smpRoles: ServerRoles(storage: true, proxy: true),
                 xftpRoles: ServerRoles(storage: true, proxy: true)
