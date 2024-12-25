@@ -2221,4 +2221,9 @@
     <string name="a_plus_b">a + b</string>
     <string name="connection_not_ready">A kapcsolat nem áll készen.</string>
     <string name="open_with_app">Megnyitás a következővel: %s</string>
+    <string name="list_menu">Lista</string>
+    <string name="chat_list_groups">Csoportok</string>
+    <string name="chat_list_add_list">Lista hozzáadása</string>
+    <string name="chat_list_all">Összes</string>
+    <string name="add_to_list">Hozzáadás listához</string>
 </resources>
