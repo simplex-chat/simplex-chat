@@ -8,18 +8,14 @@ title: App settings
 To open app settings:
 
 - Open the app.
-- Tap on your user profile image in the upper left-hand of the screen.
-- If you have more than one profile, tap the current profile again or choose Settings.
-
-## Your profile settings
-
-This section is labelled **"You"** in the app settings.
+- Tap on your user profile image in the upper/bottom left-hand of the screen.
+- Tap on Settings.
 
 ### Your active profile
 
 Tap on your avatar/name to update your current profile names and avatar.
 
-Display name cannot have any spaces and it is recommended to use latin characters and numbers to make it easier to type these names to the users who use [SimpleX Chat for the terminal](../CLI.md) (CLI).
+For display name, It is recommended to use latin characters and numbers to make it easier to type these names to the users who use [SimpleX Chat for the terminal](../CLI.md) (CLI).
 
 **Please note**: When you save your profile, the update will be sent to all your contacts (excluding the contacts with whom your incognito profiles were shared). If you have a large number of contacts it can take several seconds.
 
@@ -39,7 +35,7 @@ Please read more in [this post](../../blog/20220901-simplex-chat-v3.2-incognito-
 
 <img src="../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-address2.png" width="288">
 
-This page allows you to create a long term address that can be used by other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on other social media platforms.
+This page allows you to create a long term address that other people can use to connect with you. Unlike 1-time invitation links, these addresses can be used many times, making them ideal for sharing online, e.g. on other social media platforms.
 
 When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts.
 
@@ -63,7 +59,7 @@ Group owners can set similar preferences for their groups, when the group is cre
 
 ## Your app settings
 
-This section is labelled **"Settings"** in the app settings.
+This section is labelled **"Settings"** in the app.
 
 ### Notifications
 
@@ -71,7 +67,7 @@ This page allows to configure the notifications mode: instant, periodic or only 
 
 You can also configure whether the message preview is shown when the message arrives.
 
-**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the settings. Also, some variants of Android system require additional settings, for example MIU system on Xiaomi phones requires to enable "Auto start" for the app for the notification service to work. Please read [Don't kill my app](https://dontkillmyapp.com/) guide for any settings that may be required on your device.
+**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the settings. Also, some variants of Android system require additional settings, for example MIUI system on Xiaomi phones requires to enable "Auto start" for the app for the notification service to work. Please read [Don't kill my app](https://dontkillmyapp.com/) guide for any settings that may be required on your device.
 
 Also, currently instant notifications have the highest battery consumption - we are working to reduce it to be less or the same as for periodic notifications.
 
@@ -133,7 +129,7 @@ If your network is slow, and connections to the servers keep failing (you would 
 
 ### Privacy and security
 
-#### SimpleX Lock
+**SimpleX Lock**
 
 SimpleX Lock when enabled requires to pass the device authentication when you open the app or use some security- or privacy-sensitive features.
 
@@ -143,10 +139,11 @@ To enable it later:
 
 - [Open the app settings](#opening-the-app-settings).
 - Tap on "Privacy & security".
-- Toggle on "SimpleX Lock" slider.
+- Tap on "SimpleX Lock".
+- Toggle on "Enable Lock" and Choose Lock Mode
 - Confirm your phone credentials.
 
-Done! Now you will be required to authenticate when you start or resume the app after 30 seconds in background.
+Done! Now you will be required to authenticate when you start or resume the app based on your preferred timeout.
 
 #### Protect app screen
 
@@ -208,7 +205,7 @@ Thank you for your support!
 
 ## Developer tools
 
-This page has options that normally are only needed for app developers and can be used to debug the app in case something is not working.
+This page offers features for app developers to troubleshoot issues.
 
 ### Chat console
 
