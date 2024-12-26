@@ -1843,4 +1843,7 @@
     <string name="color_wallpaper_tint">Тапетен акцент</string>
     <string name="wallpaper_preview_hello_alice">Добър ден!</string>
     <string name="wallpaper_preview_hello_bob">Добро утро!</string>
+    <string name="wallpaper_scale_fill">Запълване</string>
+    <string name="wallpaper_scale_repeat">Повтори</string>
+    <string name="wallpaper_scale">Мащаб</string>
 </resources>
