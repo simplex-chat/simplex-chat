@@ -114,7 +114,22 @@ struct MergedItems {
 }
 
 
-enum MergedItem: Hashable {
+enum MergedItem: /*Identifiable, */Hashable {
+//    var id: Int64 {
+//        get {
+//            switch self {
+//            case let .single(item, _): item.item.id
+//            case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item.id
+//            }
+//        }
+//    }
+
+    var hashValue: Int { self.newest().item.hashValue }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine("\(self.newest().item)")
+    }
+
     // the item that is always single, cannot be grouped and always revealed
     case single(
         item: ListItem,
@@ -255,6 +270,25 @@ class ActiveChatState {
         unreadTotal = 0
         unreadAfter = 0
         unreadAfterNewestLoaded = 0
+    }
+}
+
+struct BoxedValue2<T: Hashable>: /*Identifiable, */Hashable {
+//    var id: Int64 { (boxedValue as! MergedItem).id }
+
+    static func == (lhs: BoxedValue2<T>, rhs: BoxedValue2<T>) -> Bool {
+        lhs.boxedValue == rhs.boxedValue
+    }
+
+    var hashValue: Int { (boxedValue as! MergedItem).newest().hashValue }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine("\((boxedValue as! MergedItem).newest())")
+    }
+
+    var boxedValue : T
+    init(_ value: T) {
+        self.boxedValue = value
     }
 }
 

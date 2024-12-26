@@ -19,6 +19,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
     @Binding var scrollState: ReverseListScrollModel.State
 
+    @State private var itemsUpdaterTask: Task<Void, Never>? = nil
+
     /// Closure, that returns user interface for a given item
     /// Index, merged item
     let content: (Int, MergedItem) -> Content
@@ -43,7 +45,28 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 controller.scroll(to: 0, position: .top)
             }
         } else {
-            controller.update(items: items)
+            itemsUpdaterTask?.cancel()
+            // when tableView is dragging and new items are added, scroll position cannot be set correctly
+            // so it's better to just wait until dragging ends
+            if controller.tableView.isDragging {
+                DispatchQueue.main.async {
+                    itemsUpdaterTask = Task {
+                        while controller.tableView.isDragging {
+                            do {
+                                try await Task.sleep(nanoseconds: 100_000000)
+                            } catch {
+                                return
+                            }
+                        }
+                        await MainActor.run {
+                            controller.update(items: items)
+                        }
+                    }
+
+                }
+            } else {
+                controller.update(items: items)
+            }
         }
     }
 
@@ -51,12 +74,17 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     public class Controller: UITableViewController {
         private enum Section { case main }
         var representer: ReverseList
-        private var dataSource: UITableViewDiffableDataSource<Section, MergedItem>!
+        // Here Int means hash of the ChatItem that is inside MergedItem.newest().item.hashValue.
+        // Putting MergedItem here directly prevents UITableViewDiffableDataSource to make partial updates
+        // which looks like UITableView scrolls to bottom on insert values to bottom instead of
+        // remains in the same scroll position
+        private var dataSource: UITableViewDiffableDataSource<Section, Int>!
         var itemCount: Int {
             get {
                 representer.mergedItems.items.count
             }
         }
+        private var itemsInPrevSnapshot: Dictionary<Int, MergedItem> = [:]
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
@@ -86,7 +114,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
 
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, MergedItem>(
+            self.dataSource = UITableViewDiffableDataSource<Section, Int>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if indexPath.item > self.itemCount - 8 {
@@ -96,12 +124,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
-                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(indexPath.item, item) }
+                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(indexPath.item, self.itemsInPrevSnapshot[item]!) }
                         .margins(.all, 0)
                         .minSize(height: 1) // Passing zero will result in system default of 44 points being used
                 } else {
                     if let cell = cell as? HostingCell<Content> {
-                        cell.set(content: self.representer.content(indexPath.item, item), parent: self)
+                        cell.set(content: self.representer.content(indexPath.item, self.itemsInPrevSnapshot[item]!), parent: self)
                     } else {
                         fatalError("Unexpected Cell Type for: \(item)")
                     }
@@ -225,19 +253,28 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         func update(items: [ChatItem]) {
             var prevSnapshot = dataSource.snapshot()
             let wasCount = prevSnapshot.numberOfItems
-            let insertedOneNewestItem = wasCount != 0 && representer.mergedItems.items.count - wasCount == 1 && prevSnapshot.itemIdentifiers.first! == self.representer.mergedItems.items[1]
+            let insertedOneNewestItem = wasCount != 0 && representer.mergedItems.items.count - wasCount == 1 && prevSnapshot.itemIdentifiers.first!.hashValue == self.representer.mergedItems.items[1].hashValue
             logger.debug("LALAL WAS \(wasCount) will be \(self.representer.mergedItems.items.count)")
             //self.representer.mergedItems = MergedItems.create(items, representer.unreadCount, representer.revealedItems, ItemsModel.shared.chatState)
-            let snapshot: NSDiffableDataSourceSnapshot<Section, MergedItem>
+            let snapshot: NSDiffableDataSourceSnapshot<Section, Int>
+            let itemsInCurrentSnapshot: Dictionary<Int, MergedItem>
             if insertedOneNewestItem {
-                prevSnapshot.insertItems([representer.mergedItems.items.first!], beforeItem: prevSnapshot.itemIdentifiers.first!)
+                prevSnapshot.insertItems([representer.mergedItems.items.first!.hashValue], beforeItem: prevSnapshot.itemIdentifiers.first!)
+                var new = itemsInPrevSnapshot
+                new[representer.mergedItems.items.first!.hashValue] = representer.mergedItems.items.first!
+                itemsInCurrentSnapshot = new
                 snapshot = prevSnapshot
             } else {
-                var snap = NSDiffableDataSourceSnapshot<Section, MergedItem>()
+                var new: Dictionary<Int, MergedItem> = [:]
+                var snap = NSDiffableDataSourceSnapshot<Section, Int>()
                 snap.appendSections([.main])
-                snap.appendItems(representer.mergedItems.items)
+                snap.appendItems(representer.mergedItems.items.map({ merged in
+                    new[merged.hashValue] = merged
+                    return merged.hashValue
+                }))
+                itemsInCurrentSnapshot = new
 
-                if snap.itemIdentifiers == prevSnapshot.itemIdentifiers {
+                if (wasCount == 101 && self.representer.mergedItems.items.count == 101) || snap.itemIdentifiers == prevSnapshot.itemIdentifiers {
                     logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
                     return
                 }
@@ -247,14 +284,18 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             dataSource.defaultRowAnimation = .none
             let wasContentHeight = tableView.contentSize.height
             let wasOffset = tableView.contentOffset.y
+            let listState = getListState()
+            let wasFirstVisibleRow = listState?.firstVisibleItemIndex ?? 0//tableView.indexPathsForVisibleRows?.first?.row ?? 0
+            let wasFirstVisibleOffset = listState?.firstVisibleItemOffset ?? 0
             let countDiff = max(0, snapshot.numberOfItems - prevSnapshot.numberOfItems)
             // Sets content offset on initial load
             if wasCount == 0 {
+                itemsInPrevSnapshot = itemsInCurrentSnapshot
                 dataSource.apply(
                     snapshot,
                     animatingDifferences: insertedOneNewestItem
                 )
-                if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { merged in merged.hasUnread() }) {
+                if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { hash in itemsInPrevSnapshot[hash]!.hasUnread() }) {
                     scrollToRowWhenKnowSize(firstUnreadItem)
                 } else {
                     tableView.setContentOffset(
@@ -263,27 +304,41 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     )
                 }
             } else if wasCount != snapshot.numberOfItems {
-                tableView.beginUpdates()
-                dataSource.apply(
-                    snapshot,
-                    animatingDifferences: false
-                )
-//                tableView.scrollToRow(
-//                    at: IndexPath(row: countDiff, section: 0),
-//                    at: .top,
-//                    animated: false
-//                )
-                tableView.endUpdates()
-//                if snapshot.itemIdentifiers[0].newest().item.id == prevSnapshot.itemIdentifiers[0].newest().item.id {
-//                    // added new items to top
-//                } else {
-//                    // added new items to bottom
-//                    logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight))")
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//                        self.tableView.setContentOffset(CGPointMake(0, self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), animated: false)
-//                    }
-//                }
+                logger.debug("LALAL drag \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
+//                logger.debug("LALAL drag2 \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
+                if tableView.isDecelerating {
+                    itemsInPrevSnapshot = itemsInCurrentSnapshot
+                    tableView.beginUpdates()
+                    dataSource.apply(
+                        snapshot,
+                        animatingDifferences: false
+                    )
+                    tableView.endUpdates()
+                } else {
+                    itemsInPrevSnapshot = itemsInCurrentSnapshot
+                    dataSource.apply(
+                        snapshot,
+                        animatingDifferences: false
+                    )
+                    if snapshot.itemIdentifiers[0] == prevSnapshot.itemIdentifiers[0] {
+                        // added new items to top
 
+                    } else {
+                        // added new items to bottom
+//                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
+                        self.tableView.scrollToRow(
+                            at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + wasFirstVisibleRow)), section: 0),
+                            at: .top,
+                            animated: false
+                        )
+                        self.tableView.setContentOffset(
+                            CGPoint(x: 0, y: self.tableView.contentOffset.y - wasFirstVisibleOffset),
+                            animated: false
+                        )
+                        let state = getListState()!
+                        logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
+                    }
+                }
             }
             updateFloatingButtons.send()
         }
@@ -303,6 +358,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         nil
                     }
                 let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) })
+                let firstVisibleOffset: CGFloat? = if let row = firstVisible?.row {
+                    offsetForRow(row)
+                } else { nil }
                 let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) })
                 let bottomItemId: ChatItem.ID? =
                     if let firstVisible {
@@ -310,11 +368,24 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     } else {
                         nil
                     }
-                return ListState(scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId, firstVisibleItemIndex: firstVisible?.item ?? 0, lastVisibleItemIndex: lastVisible?.item ?? 0)
+                return ListState(scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId, firstVisibleItemIndex: firstVisible?.item ?? 0, lastVisibleItemIndex: lastVisible?.item ?? 0, firstVisibleItemOffset: firstVisibleOffset ?? 0)
             }
             return nil
         }
-        
+
+        private func offsetForRow(_ row: Int) -> CGFloat? {
+            if let relativeFrame = tableView.superview?.convert(
+                tableView.rectForRow(at: IndexPath(row: row, section: 0)),
+                from: tableView
+            ),  relativeFrame.maxY > InvertedTableView.inset &&
+                relativeFrame.minY < tableView.frame.height - InvertedTableView.inset {
+                // it is visible
+                let offset = tableView.frame.height - InvertedTableView.inset - relativeFrame.maxY
+                logger.debug("LALAL ROW \(row) minY \(relativeFrame.minY) maxY \(relativeFrame.maxY) table \(self.tableView.frame.height) inset \(InvertedTableView.inset)")
+                return offset
+            } else { return nil }
+        }
+
         private func isVisible(indexPath: IndexPath) -> Bool {
             if let relativeFrame = tableView.superview?.convert(
                 tableView.rectForRow(at: indexPath),
@@ -372,13 +443,15 @@ class ListState {
     let bottomItemId: ChatItem.ID?
     let firstVisibleItemIndex: Int
     let lastVisibleItemIndex: Int
+    let firstVisibleItemOffset: CGFloat // can be negative or zero
 
-    init(scrollOffset: Double = 0, topItemDate: Date? = nil, bottomItemId: ChatItem.ID? = nil, firstVisibleItemIndex: Int = 0, lastVisibleItemIndex: Int = 0) {
+    init(scrollOffset: Double = 0, topItemDate: Date? = nil, bottomItemId: ChatItem.ID? = nil, firstVisibleItemIndex: Int = 0, lastVisibleItemIndex: Int = 0, firstVisibleItemOffset: CGFloat = 0) {
         self.scrollOffset = scrollOffset
         self.topItemDate = topItemDate
         self.bottomItemId = bottomItemId
         self.firstVisibleItemIndex = firstVisibleItemIndex
         self.lastVisibleItemIndex = lastVisibleItemIndex
+        self.firstVisibleItemOffset = firstVisibleItemOffset
     }
 }
 
