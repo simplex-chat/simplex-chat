@@ -1852,7 +1852,7 @@
     <string name="file_error_auth">Грешен ключ или неизвестен адрес на файлово парче - най-вероятно файлът е изтрит.</string>
     <string name="share_text_file_status">Файлов статус: %s</string>
     <string name="all_users">Всички профили</string>
-    <string name="servers_info_private_data_disclaimer">Като се започне от %s.\nВсички данни се съхраняват поверително на вашето устройство ..</string>
+    <string name="servers_info_private_data_disclaimer">Започвайки от %s.\nВсички данни се съхраняват поверително на вашето устройство ..</string>
     <string name="servers_info_reconnect_server_message">Свържете отново сървъра, за да принудите доставката на съобщенията. Това използва допълнителен трафик.</string>
     <string name="servers_info_reset_stats_alert_error_title">Грешка при нулиране на статистиката</string>
     <string name="scan_paste_link">Сканирай / Постави линк</string>
@@ -1940,4 +1940,20 @@
     <string name="smp_servers_configured">Конфигурирани SMP сървъри</string>
     <string name="smp_servers_other">Други SMP сървъри</string>
     <string name="v5_8_message_delivery">Подобрена доставка на съобщения</string>
+    <string name="attempts_label">опити</string>
+    <string name="expired_label">изтекли</string>
+    <string name="other_label">други</string>
+    <string name="duplicates_label">дубликати</string>
+    <string name="acknowledged">Потвърден</string>
+    <string name="acknowledgement_errors">Грешки при потвърждението</string>
+    <string name="connections">Връзки</string>
+    <string name="servers_info_starting_from">Започвайки от %s.</string>
+    <string name="xftp_server">XFTP сървър</string>
+    <string name="sent_directly">Изпратени директно</string>
+    <string name="sent_via_proxy">Изпратени чрез прокси</string>
+    <string name="proxied">Чрез прокси</string>
+    <string name="smp_server">SMP сървър</string>
+    <string name="send_errors">Изпрати грешки</string>
+    <string name="other_errors">други грешки</string>
+    <string name="decryption_errors">грешки при декриптиране</string>
 </resources>
