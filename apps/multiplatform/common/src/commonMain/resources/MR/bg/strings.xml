@@ -1838,4 +1838,9 @@
     <string name="settings_section_title_chat_theme">Тема на чата</string>
     <string name="color_received_quote">Получен отговор</string>
     <string name="color_sent_quote">Изпратен отговор</string>
+    <string name="theme_remove_image">Премахни изображението</string>
+    <string name="color_wallpaper_background">Тапетен фон</string>
+    <string name="color_wallpaper_tint">Тапетен акцент</string>
+    <string name="wallpaper_preview_hello_alice">Добър ден!</string>
+    <string name="wallpaper_preview_hello_bob">Добро утро!</string>
 </resources>
