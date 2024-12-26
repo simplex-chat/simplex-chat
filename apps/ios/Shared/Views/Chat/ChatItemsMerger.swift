@@ -273,17 +273,17 @@ class ActiveChatState {
     }
 }
 
-struct BoxedValue2<T: Hashable>: /*Identifiable, */Hashable {
+class BoxedValue2<T: Hashable>: /*Identifiable, */Hashable {
 //    var id: Int64 { (boxedValue as! MergedItem).id }
 
     static func == (lhs: BoxedValue2<T>, rhs: BoxedValue2<T>) -> Bool {
         lhs.boxedValue == rhs.boxedValue
     }
 
-    var hashValue: Int { (boxedValue as! MergedItem).newest().hashValue }
+    var hashValue: Int { (boxedValue as! MergedItem).newest().item.hashValue }
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine("\((boxedValue as! MergedItem).newest())")
+        hasher.combine("\((boxedValue as! MergedItem).newest().item)")
     }
 
     var boxedValue : T
