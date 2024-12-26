@@ -614,7 +614,7 @@
     <string name="downgrade_and_open_chat">الرجوع إلى إصدار سابق وفتح الدردشة</string>
     <string name="direct_messages">رسائل مباشرة</string>
     <string name="disappearing_messages_are_prohibited">الرسائل المختفية ممنوعة.</string>
-    <string name="button_edit_group_profile">تحرير ملف تعريف المجموعة</string>
+    <string name="button_edit_group_profile">حرر ملف تعريف المجموعة</string>
     <string name="dont_show_again">لا تُظهر مرة أخرى</string>
     <string name="settings_section_title_device">الجهاز</string>
     <string name="ttl_week">%d أسبوع</string>
@@ -625,7 +625,7 @@
     <string name="ttl_h">%d ساعة</string>
     <string name="ttl_hours">%d ساعات</string>
     <string name="ttl_mth">%d شهر</string>
-    <string name="edit_image">تحرير الصورة</string>
+    <string name="edit_image">حرر الصورة</string>
     <string name="total_files_count_and_size">%d ملف/ات بإجمالي الحجم %s</string>
     <string name="ttl_s">%d ثانية</string>
     <string name="receipts_section_contacts">جهات الاتصال</string>
@@ -1127,7 +1127,7 @@
     <string name="chat_help_tap_button">زر النقر</string>
     <string name="thank_you_for_installing_simplex">شكرًا لك على تثبيت SimpleX Chat!</string>
     <string name="smp_servers_test_server">اختبر الخادم</string>
-    <string name="alert_text_msg_bad_hash">تجزئة الرسالة السابقة مختلفة.</string>
+    <string name="alert_text_msg_bad_hash">تجزئة الرسالة السابقة مختلفة.\"</string>
     <string name="alert_text_msg_bad_id">معرف الرسالة التالية غير صحيح (أقل أو يساوي السابق).
 \nيمكن أن يحدث ذلك بسبب بعض العلل أو عندما يُخترق الاتصال.</string>
     <string name="unfavorite_chat">إزالة من المفضلة</string>
@@ -2247,4 +2247,28 @@
     <string name="error_saving_database">خطأ في حفظ قاعدة البيانات</string>
     <string name="strikethrough_text">شطب</string>
     <string name="connection_not_ready">الاتصال غير جاهز.</string>
+    <string name="list_menu">القائمة</string>
+    <string name="no_chats">لا دردشات</string>
+    <string name="no_chats_in_list">لا توجد محادثات في القائمة %s.</string>
+    <string name="no_unread_chats">لا توجد محادثات غير مقروءة</string>
+    <string name="no_chats_found">لم يتم العثور على أي محادثات</string>
+    <string name="chat_list_favorites">المفضلات</string>
+    <string name="chat_list_add_list">أضف القائمة</string>
+    <string name="chat_list_all">الكل</string>
+    <string name="chat_list_groups">المجموعات</string>
+    <string name="open_with_app">افتح باستخدام %s</string>
+    <string name="add_to_list">أضف إلى القائمة</string>
+    <string name="delete_chat_list_menu_action">احذف</string>
+    <string name="delete_chat_list_question">حذف القائمة؟</string>
+    <string name="edit_chat_list_menu_action">حرر</string>
+    <string name="list_name_field_placeholder">اسم القائمة...</string>
+    <string name="duplicated_list_error">يجب أن يكون اسم القائمة والرموز التعبيرية مختلفين لجميع القوائم.</string>
+    <string name="save_list">احفظ القائمة</string>
+    <string name="chat_list_contacts">جهات الاتصال</string>
+    <string name="error_creating_chat_tags">خطأ في إنشاء قائمة الدردشة</string>
+    <string name="chat_list_businesses">الشركات</string>
+    <string name="error_loading_chat_tags">خطأ في تحميل قوائم الدردشة</string>
+    <string name="delete_chat_list_warning">سيتم إزالة جميع المحادثات من القائمة %s، وسيتم حذف القائمة</string>
+    <string name="create_list">أنشئ قائمة</string>
+    <string name="error_updating_chat_tags">خطأ في تحديث قائمة الدردشة</string>
 </resources>
