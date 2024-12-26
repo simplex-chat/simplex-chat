@@ -167,7 +167,7 @@ class ChatTagsModel: ObservableObject {
     
     func markChatTagRead(_ chat: Chat) -> Void {
         if chat.unreadTag, let tags = chat.chatInfo.chatTags {
-            markChatTagRead_(chat, tags)
+            decTagsReadCount(tags)
         }
     }
     
@@ -179,11 +179,11 @@ class ChatTagsModel: ObservableObject {
                 unreadTags[tag] = (unreadTags[tag] ?? 0) + 1
             }
         } else if !nowUnread && wasUnread {
-            markChatTagRead_(chat, tags)
+            decTagsReadCount(tags)
         }
     }
 
-    private func markChatTagRead_(_ chat: Chat, _ tags: [Int64]) -> Void {
+    func decTagsReadCount(_ tags: [Int64]) -> Void {
         for tag in tags {
             if let count = unreadTags[tag] {
                 unreadTags[tag] = max(0, count - 1)
