@@ -2003,7 +2003,7 @@
     <string name="delete_contact_cannot_undo_warning">El contacto será eliminado. ¡No podrá deshacerse!</string>
     <string name="conversation_deleted">¡Conversación eliminada!</string>
     <string name="delete_without_notification">Elimina sin notificar</string>
-    <string name="only_delete_conversation">Sólo borrar la conversación</string>
+    <string name="only_delete_conversation">Eliminar sólo la conversación</string>
     <string name="keep_conversation">Conservar conversación</string>
     <string name="info_view_search_button">buscar</string>
     <string name="deleted_chats">Contactos archivados</string>
