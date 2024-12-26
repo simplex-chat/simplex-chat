@@ -283,7 +283,7 @@ createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fi
   DB.execute
     db
     "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-    (userId, fileDescrText, fileDescrPartNo, fileDescrComplete, currentTs, currentTs)
+    (userId, fileDescrText, fileDescrPartNo, BI fileDescrComplete, currentTs, currentTs)
   fileDescrId <- insertedRowId db
   DB.execute
     db
@@ -308,7 +308,7 @@ updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDesc
       SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?, updated_at = ?
       WHERE user_id = ? AND file_descr_id = ?
     |]
-    (rfdText, 1 :: Int, True, currentTs, userId, fileDescrId)
+    (rfdText, 1 :: Int, BI True, currentTs, userId, fileDescrId)
   updateCIFileStatus db user fileId $ CIFSSndTransfer 1 1
   updateSndFileStatus db sft FSConnected
 
@@ -574,7 +574,7 @@ createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, file
     DB.execute
       db
       "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (userId, fileDescrText, fileDescrPartNo, fileDescrComplete, currentTs, currentTs)
+      (userId, fileDescrText, fileDescrPartNo, BI fileDescrComplete, currentTs, currentTs)
     insertedRowId db
   pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText, fileDescrComplete}
 
@@ -607,7 +607,7 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
               SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?
               WHERE file_descr_id = ?
             |]
-            (fileDescrText', fileDescrPartNo, fileDescrComplete, fileDescrId)
+            (fileDescrText', fileDescrPartNo, BI fileDescrComplete, fileDescrId)
         pure RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
 
 getRcvFileDescrByRcvFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
@@ -650,8 +650,8 @@ getRcvFileDescrBySndFileId_ db fileId =
       |]
       (Only fileId)
 
-toRcvFileDescr :: (Int64, Text, Int, Bool) -> RcvFileDescr
-toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
+toRcvFileDescr :: (Int64, Text, Int, BoolInt) -> RcvFileDescr
+toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, BI fileDescrComplete) =
   RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
 
 updateRcvFileAgentId :: DB.Connection -> FileTransferId -> Maybe AgentRcvFileId -> IO ()

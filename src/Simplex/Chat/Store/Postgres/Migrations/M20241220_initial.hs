@@ -341,37 +341,37 @@ CREATE TABLE contact_requests(
 );
 CREATE TABLE messages(
   message_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  msg_sent INTEGER NOT NULL,
+  msg_sent SMALLINT NOT NULL,
   chat_msg_event TEXT NOT NULL,
   msg_body BYTEA,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL,
-  connection_id INTEGER DEFAULT NULL REFERENCES connections ON DELETE CASCADE,
-  group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
+  connection_id BIGINT DEFAULT NULL REFERENCES connections ON DELETE CASCADE,
+  group_id BIGINT DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
   shared_msg_id BYTEA,
-  shared_msg_id_user INTEGER,
-  author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  shared_msg_id_user SMALLINT,
+  author_group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL,
+  forwarded_by_group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE pending_group_messages(
   pending_group_message_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
-  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE,
-  group_member_intro_id INTEGER REFERENCES group_member_intros ON DELETE CASCADE,
+  group_member_id BIGINT NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  message_id BIGINT NOT NULL REFERENCES messages ON DELETE CASCADE,
+  group_member_intro_id BIGINT REFERENCES group_member_intros ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE chat_items(
   chat_item_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
-  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
-  group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  chat_msg_id INTEGER,
-  created_by_msg_id INTEGER UNIQUE REFERENCES messages(message_id) ON DELETE SET NULL,
-  item_sent INTEGER NOT NULL,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
+  contact_id BIGINT REFERENCES contacts ON DELETE CASCADE,
+  group_id BIGINT REFERENCES groups ON DELETE CASCADE,
+  group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL,
+  chat_msg_id BIGINT,
+  created_by_msg_id BIGINT UNIQUE REFERENCES messages(message_id) ON DELETE SET NULL,
+  item_sent SMALLINT NOT NULL,
   item_ts TIMESTAMPTZ NOT NULL,
-  item_deleted INTEGER NOT NULL DEFAULT 0,
+  item_deleted SMALLINT NOT NULL DEFAULT 0,
   item_content TEXT NOT NULL,
   item_text TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
@@ -381,58 +381,58 @@ CREATE TABLE chat_items(
   quoted_shared_msg_id BYTEA,
   quoted_sent_at TIMESTAMPTZ,
   quoted_content TEXT,
-  quoted_sent INTEGER,
+  quoted_sent SMALLINT,
   quoted_member_id BYTEA,
-  item_edited INTEGER,
-  timed_ttl INTEGER,
+  item_edited SMALLINT,
+  timed_ttl BIGINT,
   timed_delete_at TIMESTAMPTZ,
-  item_live INTEGER,
-  item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  item_live SMALLINT,
+  item_deleted_by_group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL,
   item_deleted_ts TIMESTAMPTZ,
-  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  forwarded_by_group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL,
   item_content_tag TEXT,
-  note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
+  note_folder_id BIGINT DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
   fwd_from_tag TEXT,
   fwd_from_chat_name TEXT,
-  fwd_from_msg_dir INTEGER,
-  fwd_from_contact_id INTEGER REFERENCES contacts ON DELETE SET NULL,
-  fwd_from_group_id INTEGER REFERENCES groups ON DELETE SET NULL,
-  fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
-  via_proxy INTEGER
+  fwd_from_msg_dir SMALLINT,
+  fwd_from_contact_id BIGINT REFERENCES contacts ON DELETE SET NULL,
+  fwd_from_group_id BIGINT REFERENCES groups ON DELETE SET NULL,
+  fwd_from_chat_item_id BIGINT REFERENCES chat_items ON DELETE SET NULL,
+  via_proxy SMALLINT
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
-  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  message_id INTEGER NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
+  chat_item_id BIGINT NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  message_id BIGINT NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   UNIQUE(chat_item_id, message_id)
 );
 CREATE TABLE calls(
   call_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
+  contact_id BIGINT NOT NULL REFERENCES contacts ON DELETE CASCADE,
   shared_call_id BYTEA NOT NULL,
-  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  chat_item_id BIGINT NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   call_state BYTEA NOT NULL,
   call_ts TIMESTAMPTZ NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   call_uuid TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE commands(
   command_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  connection_id INTEGER REFERENCES connections ON DELETE CASCADE,
+  connection_id BIGINT REFERENCES connections ON DELETE CASCADE,
   command_function TEXT NOT NULL,
   command_status TEXT NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE settings(
   settings_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  chat_item_ttl INTEGER,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  chat_item_ttl BIGINT,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
@@ -442,10 +442,10 @@ CREATE TABLE protocol_servers(
   port TEXT NOT NULL,
   key_hash BYTEA NOT NULL,
   basic_auth TEXT,
-  preset INTEGER NOT NULL DEFAULT 0,
-  tested INTEGER,
-  enabled INTEGER NOT NULL DEFAULT 1,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  preset SMALLINT NOT NULL DEFAULT 0,
+  tested SMALLINT,
+  enabled SMALLINT NOT NULL DEFAULT 1,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   protocol TEXT NOT NULL DEFAULT 'smp',
@@ -453,24 +453,24 @@ CREATE TABLE protocol_servers(
 );
 CREATE TABLE xftp_file_descriptions(
   file_descr_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   file_descr_text TEXT NOT NULL,
-  file_descr_part_no INTEGER NOT NULL DEFAULT(0),
-  file_descr_complete INTEGER NOT NULL DEFAULT(0),
+  file_descr_part_no BIGINT NOT NULL DEFAULT(0),
+  file_descr_complete SMALLINT NOT NULL DEFAULT(0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE extra_xftp_file_descriptions(
   extra_file_descr_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  file_id BIGINT NOT NULL REFERENCES files ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   file_descr_text TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE chat_item_versions(
   chat_item_version_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  chat_item_id BIGINT NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   msg_content TEXT NOT NULL,
   item_version_ts TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
@@ -480,62 +480,62 @@ CREATE TABLE chat_item_reactions(
   chat_item_reaction_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   item_member_id BYTEA,
   shared_msg_id BYTEA NOT NULL,
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
-  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
-  group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  created_by_msg_id INTEGER REFERENCES messages(message_id) ON DELETE SET NULL,
+  contact_id BIGINT REFERENCES contacts ON DELETE CASCADE,
+  group_id BIGINT REFERENCES groups ON DELETE CASCADE,
+  group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL,
+  created_by_msg_id BIGINT REFERENCES messages(message_id) ON DELETE SET NULL,
   reaction TEXT NOT NULL,
-  reaction_sent INTEGER NOT NULL,
+  reaction_sent SMALLINT NOT NULL,
   reaction_ts TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE chat_item_moderations(
   chat_item_moderation_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
-  moderator_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  group_id BIGINT NOT NULL REFERENCES groups ON DELETE CASCADE,
+  moderator_member_id BIGINT NOT NULL REFERENCES group_members ON DELETE CASCADE,
   item_member_id BYTEA NOT NULL,
   shared_msg_id BYTEA NOT NULL,
-  created_by_msg_id INTEGER REFERENCES messages(message_id) ON DELETE SET NULL,
+  created_by_msg_id BIGINT REFERENCES messages(message_id) ON DELETE SET NULL,
   moderated_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE group_snd_item_statuses(
   group_snd_item_status_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  chat_item_id BIGINT NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  group_member_id BIGINT NOT NULL REFERENCES group_members ON DELETE CASCADE,
   group_snd_item_status TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  via_proxy INTEGER
+  via_proxy SMALLINT
 );
 CREATE TABLE sent_probes(
   sent_probe_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
-  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  contact_id BIGINT REFERENCES contacts ON DELETE CASCADE,
+  group_member_id BIGINT REFERENCES group_members ON DELETE CASCADE,
   probe BYTEA NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   UNIQUE(user_id, probe)
 );
 CREATE TABLE sent_probe_hashes(
   sent_probe_hash_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  sent_probe_id INTEGER NOT NULL REFERENCES sent_probes ON DELETE CASCADE,
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
-  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  sent_probe_id BIGINT NOT NULL REFERENCES sent_probes ON DELETE CASCADE,
+  contact_id BIGINT REFERENCES contacts ON DELETE CASCADE,
+  group_member_id BIGINT REFERENCES group_members ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL
 );
 CREATE TABLE received_probes(
   received_probe_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
-  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  contact_id BIGINT REFERENCES contacts ON DELETE CASCADE,
+  group_member_id BIGINT REFERENCES group_members ON DELETE CASCADE,
   probe BYTEA,
   probe_hash BYTEA NOT NULL,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL
 );
@@ -550,7 +550,7 @@ CREATE TABLE remote_hosts(
   host_dh_pub BYTEA NOT NULL,
   bind_addr TEXT,
   bind_iface TEXT,
-  bind_port INTEGER
+  bind_port BIGINT
 );
 CREATE TABLE remote_controllers(
   remote_ctrl_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -564,9 +564,9 @@ CREATE TABLE remote_controllers(
 );
 CREATE TABLE msg_deliveries(
   msg_delivery_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE,
-  connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
-  agent_msg_id INTEGER,
+  message_id BIGINT NOT NULL REFERENCES messages ON DELETE CASCADE,
+  connection_id BIGINT NOT NULL REFERENCES connections ON DELETE CASCADE,
+  agent_msg_id BIGINT,
   agent_msg_meta TEXT,
   chat_ts TIMESTAMPTZ NOT NULL DEFAULT (now()),
   created_at TIMESTAMPTZ NOT NULL,
@@ -575,7 +575,7 @@ CREATE TABLE msg_deliveries(
 );
 CREATE TABLE note_folders(
   note_folder_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   chat_ts TIMESTAMPTZ NOT NULL DEFAULT (now()),
@@ -589,11 +589,11 @@ CREATE TABLE server_operators(
   trade_name TEXT NOT NULL,
   legal_name TEXT,
   server_domains TEXT,
-  enabled INTEGER NOT NULL DEFAULT 1,
-  smp_role_storage INTEGER NOT NULL DEFAULT 1,
-  smp_role_proxy INTEGER NOT NULL DEFAULT 1,
-  xftp_role_storage INTEGER NOT NULL DEFAULT 1,
-  xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
+  enabled SMALLINT NOT NULL DEFAULT 1,
+  smp_role_storage SMALLINT NOT NULL DEFAULT 1,
+  smp_role_proxy SMALLINT NOT NULL DEFAULT 1,
+  xftp_role_storage SMALLINT NOT NULL DEFAULT 1,
+  xftp_role_proxy SMALLINT NOT NULL DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
@@ -606,24 +606,24 @@ CREATE TABLE usage_conditions(
 );
 CREATE TABLE operator_usage_conditions(
   operator_usage_conditions_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  server_operator_id INTEGER REFERENCES server_operators(server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  server_operator_id BIGINT REFERENCES server_operators(server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
   server_operator_tag TEXT,
   conditions_commit TEXT NOT NULL,
   accepted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  auto_accepted INTEGER DEFAULT 0
+  auto_accepted SMALLINT DEFAULT 0
 );
 CREATE TABLE chat_tags(
   chat_tag_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  user_id INTEGER REFERENCES users,
+  user_id BIGINT REFERENCES users,
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
-  tag_order INTEGER NOT NULL
+  tag_order BIGINT NOT NULL
 );
 CREATE TABLE chat_tags_chats(
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
-  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
-  chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
+  contact_id BIGINT REFERENCES contacts ON DELETE CASCADE,
+  group_id BIGINT REFERENCES groups ON DELETE CASCADE,
+  chat_tag_id BIGINT NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

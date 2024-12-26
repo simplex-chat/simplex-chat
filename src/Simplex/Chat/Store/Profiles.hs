@@ -543,10 +543,10 @@ getProtocolServers db p User {userId} =
       |]
       (userId, decodeLatin1 $ strEncode p)
   where
-    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> UserServer p
-    toUserServer (serverId, host, port, keyHash, auth_, preset, tested, enabled) =
+    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, BoolInt, Maybe BoolInt, BoolInt) -> UserServer p
+    toUserServer (serverId, host, port, keyHash, auth_, BI preset, tested, BI enabled) =
       let server = ProtoServerWithAuth (ProtocolServer p host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-       in UserServer {serverId, server, preset, tested, enabled, deleted = False}
+       in UserServer {serverId, server, preset, tested = unBI <$> tested, enabled, deleted = False}
 
 insertProtocolServer :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> UTCTime -> NewUserServer p -> IO (UserServer p)
 insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, tested, enabled} = do
@@ -557,7 +557,7 @@ insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, teste
         (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    (serverColumns p server :. (preset, tested, enabled, userId, ts, ts))
+    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, userId, ts, ts))
   sId <- insertedRowId db
   pure (srv :: NewUserServer p) {serverId = DBEntityId sId}
 
@@ -571,7 +571,7 @@ updateProtocolServer db p ts UserServer {serverId, server, preset, tested, enabl
           preset = ?, tested = ?, enabled = ?, updated_at = ?
       WHERE smp_server_id = ?
     |]
-    (serverColumns p server :. (preset, tested, enabled, ts, serverId))
+    (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, ts, serverId))
 
 serverColumns :: ProtocolTypeI p => SProtocolType p -> ProtoServerWithAuth p -> (Text, NonEmpty TransportHost, String, C.KeyHash, Maybe Text)
 serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_) =
@@ -611,7 +611,7 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
       SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
       WHERE server_operator_id = ?
     |]
-    (enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, currentTs, operatorId)
+    (BI enabled, BI storage smpRoles, BI proxy smpRoles, BI storage xftpRoles, BI proxy xftpRoles, currentTs, operatorId)
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, Maybe ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
@@ -654,7 +654,7 @@ getUpdateServerOperators db presetOps newUser = do
           SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?
           WHERE server_operator_id = ?
         |]
-        (tradeName, legalName, T.intercalate "," serverDomains, enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles, operatorId)
+        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI storage smpRoles, BI proxy smpRoles, BI storage xftpRoles, BI proxy xftpRoles, operatorId)
     insertOperator :: NewServerOperator -> IO ServerOperator
     insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, smpRoles, xftpRoles} = do
       DB.execute
@@ -664,7 +664,7 @@ getUpdateServerOperators db presetOps newUser = do
             (server_operator_tag, trade_name, legal_name, server_domains, enabled, smp_role_storage, smp_role_proxy, xftp_role_storage, xftp_role_proxy)
           VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, enabled, storage smpRoles, proxy smpRoles, storage xftpRoles, proxy xftpRoles)
+        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI storage smpRoles, BI proxy smpRoles, BI storage xftpRoles, BI proxy xftpRoles)
       opId <- insertedRowId db
       pure op {operatorId = DBEntityId opId}
     autoAcceptConditions op UsageConditions {conditionsCommit} now =
@@ -682,8 +682,8 @@ serverOperatorQuery =
 getServerOperators_ :: DB.Connection -> IO [ServerOperator]
 getServerOperators_ db = map toServerOperator <$> DB.query_ db serverOperatorQuery
 
-toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, Bool) :. (Bool, Bool) :. (Bool, Bool) -> ServerOperator
-toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, enabled) :. smpRoles' :. xftpRoles') =
+toServerOperator :: (DBEntityId, Maybe OperatorTag, Text, Maybe Text, Text, BoolInt) :. (BoolInt, BoolInt) :. (BoolInt, BoolInt) -> ServerOperator
+toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, BI enabled) :. smpRoles' :. xftpRoles') =
   ServerOperator
     { operatorId,
       operatorTag,
@@ -696,7 +696,7 @@ toServerOperator ((operatorId, operatorTag, tradeName, legalName, domains, enabl
       xftpRoles = serverRoles xftpRoles'
     }
   where
-    serverRoles (storage, proxy) = ServerRoles {storage, proxy}
+    serverRoles (BI storage, BI proxy) = ServerRoles {storage, proxy}
 
 getOperatorConditions_ :: DB.Connection -> ServerOperator -> UsageConditions -> Maybe UsageConditions -> UTCTime -> IO ConditionsAcceptance
 getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {conditionsCommit = currentCommit, createdAt, notifiedAt} latestAcceptedConds_ now = do
@@ -716,7 +716,7 @@ getOperatorConditions_ db ServerOperator {operatorId} UsageConditions {condition
             |]
             (Only operatorId)
       pure $ case operatorAcceptedConds_ of
-        Just (operatorCommit, acceptedAt_, autoAccept)
+        Just (operatorCommit, acceptedAt_, BI autoAccept)
           | operatorCommit /= latestAcceptedCommit -> CARequired Nothing -- TODO should we consider this operator disabled?
           | currentCommit /= latestAcceptedCommit -> CARequired $ conditionsRequiredOrDeadline createdAt (fromMaybe now notifiedAt)
           | otherwise -> CAAccepted acceptedAt_ autoAccept
@@ -778,17 +778,17 @@ acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit a
           DB.execute
             db
             (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO UPDATE SET accepted_at = ?, auto_accepted = ?")
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted, acceptedAt, autoAccepted)
+            (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted, acceptedAt, BI autoAccepted)
         Just (Just _) ->
           DB.execute
             db
             (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO NOTHING")
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted)
+            (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
         Nothing ->
           DB.execute
             db
             q
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, autoAccepted)
+            (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
   where
     q =
       [sql|
@@ -825,7 +825,7 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertProtocolServer db p user ts s
       DBEntityId srvId
-        | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, False)
+        | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
