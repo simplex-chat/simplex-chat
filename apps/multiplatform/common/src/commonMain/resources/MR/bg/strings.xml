@@ -1969,4 +1969,6 @@
     <string name="upload_errors">Грешки при качване</string>
     <string name="size">Размер</string>
     <string name="chunks_deleted">Парчета изтрити</string>
+    <string name="chunks_downloaded">Изтеглени парчета</string>
+    <string name="downloaded_files">Изтеглени файлове</string>
 </resources>
