@@ -48,10 +48,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             itemsUpdaterTask?.cancel()
             // when tableView is dragging and new items are added, scroll position cannot be set correctly
             // so it's better to just wait until dragging ends
-            if controller.tableView.isDragging {
+            if controller.tableView.isDragging && !controller.tableView.isDecelerating {
                 DispatchQueue.main.async {
                     itemsUpdaterTask = Task {
-                        while controller.tableView.isDragging {
+                        while controller.tableView.isDragging && !controller.tableView.isDecelerating {
                             do {
                                 try await Task.sleep(nanoseconds: 100_000000)
                             } catch {
