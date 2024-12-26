@@ -1572,9 +1572,9 @@
         <target>¿Vaciar conversación?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear private notes?" xml:space="preserve">
+      <trans-unit id="Clear private notes?" xml:space="preserve" approved="no">
         <source>Clear private notes?</source>
-        <target>¿Borrar notas privadas?</target>
+        <target state="translated">¿Eliminar notas privadas?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear verification" xml:space="preserve">
@@ -5063,9 +5063,9 @@ Requiere activación de la VPN.</target>
         <target>Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes enviados con **cifrado de extremo a extremo de 2 capas**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only delete conversation" xml:space="preserve">
+      <trans-unit id="Only delete conversation" xml:space="preserve" approved="no">
         <source>Only delete conversation</source>
-        <target>Sólo borrar la conversación</target>
+        <target state="translated">Eliminar sólo la conversación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
