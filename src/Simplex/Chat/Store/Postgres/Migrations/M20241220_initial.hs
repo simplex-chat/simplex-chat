@@ -10,6 +10,23 @@ m20241220_initial :: Text
 m20241220_initial =
   T.pack
     [r|
+CREATE TABLE users(
+  user_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  contact_id BIGINT NOT NULL UNIQUE,
+  local_display_name TEXT NOT NULL UNIQUE,
+  active_user SMALLINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  agent_user_id BIGINT NOT NULL,
+  view_pwd_hash BYTEA,
+  view_pwd_salt BYTEA,
+  show_ntfs SMALLINT NOT NULL DEFAULT 1,
+  send_rcpts_contacts SMALLINT NOT NULL DEFAULT 0,
+  send_rcpts_small_groups SMALLINT NOT NULL DEFAULT 0,
+  user_member_profile_updated_at TIMESTAMPTZ,
+  ui_themes TEXT,
+  active_order BIGINT NOT NULL DEFAULT 0
+);
 CREATE TABLE contact_profiles(
   contact_profile_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   display_name TEXT NOT NULL,
@@ -24,29 +41,6 @@ CREATE TABLE contact_profiles(
   preferences TEXT,
   contact_link BYTEA
 );
-CREATE TABLE users(
-  user_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  contact_id BIGINT NOT NULL UNIQUE REFERENCES contacts ON DELETE RESTRICT
-  DEFERRABLE INITIALLY DEFERRED,
-  local_display_name TEXT NOT NULL UNIQUE,
-  active_user SMALLINT NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL,
-  agent_user_id BIGINT NOT NULL,
-  view_pwd_hash BYTEA,
-  view_pwd_salt BYTEA,
-  show_ntfs SMALLINT NOT NULL DEFAULT 1,
-  send_rcpts_contacts SMALLINT NOT NULL DEFAULT 0,
-  send_rcpts_small_groups SMALLINT NOT NULL DEFAULT 0,
-  user_member_profile_updated_at TIMESTAMPTZ,
-  ui_themes TEXT,
-  active_order BIGINT NOT NULL DEFAULT 0,
-  FOREIGN KEY(user_id, local_display_name)
-  REFERENCES display_names(user_id, local_display_name)
-  ON DELETE RESTRICT
-  ON UPDATE CASCADE
-  DEFERRABLE INITIALLY DEFERRED
-);
 CREATE TABLE display_names(
   user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -54,16 +48,23 @@ CREATE TABLE display_names(
   ldn_suffix BIGINT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
-  PRIMARY KEY(user_id, local_display_name) ON CONFLICT FAIL,
-  UNIQUE(user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
+  PRIMARY KEY(user_id, local_display_name),
+  UNIQUE(user_id, ldn_base, ldn_suffix)
 );
+ALTER TABLE users
+ADD CONSTRAINT fk_users_display_names
+  FOREIGN KEY(user_id, local_display_name)
+  REFERENCES display_names(user_id, local_display_name)
+  ON DELETE RESTRICT
+  ON UPDATE CASCADE
+  DEFERRABLE INITIALLY DEFERRED;
 CREATE TABLE contacts(
   contact_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   contact_profile_id BIGINT REFERENCES contact_profiles ON DELETE SET NULL,
   user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
   is_user SMALLINT NOT NULL DEFAULT 0,
-  via_group BIGINT REFERENCES groups(group_id) ON DELETE SET NULL,
+  via_group BIGINT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL,
   xcontact_id BYTEA,
@@ -75,8 +76,7 @@ CREATE TABLE contacts(
   deleted SMALLINT NOT NULL DEFAULT 0,
   favorite SMALLINT NOT NULL DEFAULT 0,
   send_rcpts SMALLINT,
-  contact_group_member_id BIGINT
-  REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  contact_group_member_id BIGINT,
   contact_grp_inv_sent SMALLINT NOT NULL DEFAULT 0,
   contact_status TEXT NOT NULL DEFAULT 'active',
   custom_data BYTEA,
@@ -89,6 +89,12 @@ CREATE TABLE contacts(
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, contact_profile_id)
 );
+ALTER TABLE users
+ADD CONSTRAINT fk_users_contacts
+  FOREIGN KEY(contact_id)
+  REFERENCES contacts(contact_id)
+  ON DELETE RESTRICT
+  DEFERRABLE INITIALLY DEFERRED;
 CREATE TABLE known_servers(
   server_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   host TEXT NOT NULL,
@@ -119,7 +125,7 @@ CREATE TABLE groups(
   inv_queue_info BYTEA,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
-  chat_item_id BIGINT DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
+  chat_item_id BIGINT DEFAULT NULL,
   enable_ntfs SMALLINT,
   host_conn_custom_user_profile_id BIGINT REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat SMALLINT NOT NULL DEFAULT 0,
@@ -141,6 +147,10 @@ CREATE TABLE groups(
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, group_profile_id)
 );
+ALTER TABLE contacts
+ADD CONSTRAINT fk_contacts_groups
+  FOREIGN KEY(via_group)
+  REFERENCES groups(group_id) ON DELETE SET NULL;
 CREATE TABLE group_members(
   group_member_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   group_id BIGINT NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -171,6 +181,10 @@ CREATE TABLE group_members(
   ON UPDATE CASCADE,
   UNIQUE(group_id, member_id)
 );
+ALTER TABLE contacts
+ADD CONSTRAINT fk_contacts_group_members
+  FOREIGN KEY(contact_group_member_id)
+  REFERENCES group_members(group_member_id) ON DELETE SET NULL;
 CREATE TABLE group_member_intros(
   group_member_intro_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   re_group_member_id BIGINT NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
@@ -193,7 +207,7 @@ CREATE TABLE files(
   chunk_size BIGINT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
-  chat_item_id BIGINT DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE,
+  chat_item_id BIGINT DEFAULT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   cancelled SMALLINT,
   ci_file_status TEXT,
@@ -204,20 +218,19 @@ CREATE TABLE files(
   protocol TEXT NOT NULL DEFAULT 'smp',
   file_crypto_key BYTEA,
   file_crypto_nonce BYTEA,
-  note_folder_id BIGINT DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
+  note_folder_id BIGINT DEFAULT NULL,
   redirect_file_id BIGINT REFERENCES files ON DELETE CASCADE
 );
 CREATE TABLE snd_files(
   file_id BIGINT NOT NULL REFERENCES files ON DELETE CASCADE,
-  connection_id BIGINT NOT NULL REFERENCES connections ON DELETE CASCADE,
+  connection_id BIGINT NOT NULL,
   file_status TEXT NOT NULL,
   group_member_id BIGINT REFERENCES group_members ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   file_inline TEXT,
   last_inline_msg_delivery_id BIGINT,
-  file_descr_id BIGINT NULL
-  REFERENCES xftp_file_descriptions ON DELETE SET NULL,
+  file_descr_id BIGINT NULL,
   PRIMARY KEY(file_id, connection_id)
 );
 CREATE TABLE rcv_files(
@@ -229,8 +242,7 @@ CREATE TABLE rcv_files(
   updated_at TIMESTAMPTZ NOT NULL,
   rcv_file_inline TEXT,
   file_inline TEXT,
-  file_descr_id BIGINT NULL
-  REFERENCES xftp_file_descriptions ON DELETE SET NULL,
+  file_descr_id BIGINT NULL,
   agent_rcv_file_id BYTEA NULL,
   agent_rcv_file_deleted SMALLINT NOT NULL DEFAULT 0,
   to_receive SMALLINT,
@@ -263,7 +275,7 @@ CREATE TABLE connections(
   via_contact BIGINT REFERENCES contacts(contact_id) ON DELETE SET NULL,
   conn_status TEXT NOT NULL,
   conn_type TEXT NOT NULL,
-  user_contact_link_id BIGINT REFERENCES user_contact_links ON DELETE CASCADE,
+  user_contact_link_id BIGINT,
   contact_id BIGINT REFERENCES contacts ON DELETE CASCADE,
   group_member_id BIGINT REFERENCES group_members ON DELETE CASCADE,
   snd_file_id BIGINT,
@@ -273,8 +285,7 @@ CREATE TABLE connections(
   updated_at TIMESTAMPTZ NOT NULL,
   via_contact_uri_hash BYTEA,
   xcontact_id BYTEA,
-  via_user_contact_link BIGINT DEFAULT NULL
-  REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
+  via_user_contact_link BIGINT DEFAULT NULL,
   custom_user_profile_id BIGINT REFERENCES contact_profiles ON DELETE SET NULL,
   conn_req_inv BYTEA,
   local_alias TEXT NOT NULL DEFAULT '',
@@ -298,6 +309,10 @@ CREATE TABLE connections(
   ON DELETE CASCADE
   DEFERRABLE INITIALLY DEFERRED
 );
+ALTER TABLE snd_files
+ADD CONSTRAINT fk_snd_files_connections
+  FOREIGN KEY(connection_id)
+  REFERENCES connections(connection_id) ON DELETE CASCADE;
 CREATE TABLE user_contact_links(
   user_contact_link_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   conn_req_contact BYTEA NOT NULL,
@@ -314,6 +329,14 @@ CREATE TABLE user_contact_links(
   business_address SMALLINT DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
+ALTER TABLE connections
+ADD CONSTRAINT fk_connections_user_contact_links_user_contact_link_id
+  FOREIGN KEY(user_contact_link_id)
+  REFERENCES user_contact_links(user_contact_link_id) ON DELETE CASCADE;
+ALTER TABLE connections
+ADD CONSTRAINT fk_connections_user_contact_links_via_user_contact_link
+  FOREIGN KEY(via_user_contact_link)
+  REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL;
 CREATE TABLE contact_requests(
   contact_request_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   user_contact_link_id BIGINT NOT NULL REFERENCES user_contact_links
@@ -391,7 +414,7 @@ CREATE TABLE chat_items(
   item_deleted_ts TIMESTAMPTZ,
   forwarded_by_group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL,
   item_content_tag TEXT,
-  note_folder_id BIGINT DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
+  note_folder_id BIGINT DEFAULT NULL,
   fwd_from_tag TEXT,
   fwd_from_chat_name TEXT,
   fwd_from_msg_dir SMALLINT,
@@ -400,7 +423,14 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id BIGINT REFERENCES chat_items ON DELETE SET NULL,
   via_proxy SMALLINT
 );
-CREATE TABLE sqlite_sequence(name,seq);
+ALTER TABLE groups
+ADD CONSTRAINT fk_groups_chat_items
+  FOREIGN KEY(chat_item_id)
+  REFERENCES chat_items(chat_item_id) ON DELETE SET NULL;
+ALTER TABLE files
+ADD CONSTRAINT fk_files_chat_items
+  FOREIGN KEY(chat_item_id)
+  REFERENCES chat_items(chat_item_id) ON DELETE CASCADE;
 CREATE TABLE chat_item_messages(
   chat_item_id BIGINT NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   message_id BIGINT NOT NULL UNIQUE REFERENCES messages ON DELETE CASCADE,
@@ -460,6 +490,14 @@ CREATE TABLE xftp_file_descriptions(
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
+ALTER TABLE snd_files
+ADD CONSTRAINT fk_snd_files_xftp_file_descriptions
+  FOREIGN KEY(file_descr_id)
+  REFERENCES xftp_file_descriptions(file_descr_id) ON DELETE SET NULL;
+ALTER TABLE rcv_files
+ADD CONSTRAINT fk_rcv_files_xftp_file_descriptions
+  FOREIGN KEY(file_descr_id)
+  REFERENCES xftp_file_descriptions(file_descr_id) ON DELETE SET NULL;
 CREATE TABLE extra_xftp_file_descriptions(
   extra_file_descr_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   file_id BIGINT NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -582,6 +620,14 @@ CREATE TABLE note_folders(
   favorite SMALLINT NOT NULL DEFAULT 0,
   unread_chat SMALLINT NOT NULL DEFAULT 0
 );
+ALTER TABLE files
+ADD CONSTRAINT fk_files_note_folders
+  FOREIGN KEY(note_folder_id)
+  REFERENCES note_folders(note_folder_id) ON DELETE CASCADE;
+ALTER TABLE chat_items
+ADD CONSTRAINT fk_chat_items_note_folders
+  FOREIGN KEY(note_folder_id)
+  REFERENCES note_folders(note_folder_id) ON DELETE CASCADE;
 CREATE TABLE app_settings(app_settings TEXT NOT NULL);
 CREATE TABLE server_operators(
   server_operator_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
