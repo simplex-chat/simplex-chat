@@ -1836,4 +1836,6 @@
     <string name="color_mode_light">Светла</string>
     <string name="network_smp_proxy_fallback_allow">Да</string>
     <string name="settings_section_title_chat_theme">Тема на чата</string>
+    <string name="color_received_quote">Получен отговор</string>
+    <string name="color_sent_quote">Изпратен отговор</string>
 </resources>
