@@ -1363,9 +1363,9 @@
         <target>Конзола</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database" xml:space="preserve">
+      <trans-unit id="Chat database" xml:space="preserve" approved="no">
         <source>Chat database</source>
-        <target>База данни за чата</target>
+        <target state="translated">База данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database deleted" xml:space="preserve">
@@ -1377,9 +1377,9 @@
         <source>Chat database exported</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database imported" xml:space="preserve">
+      <trans-unit id="Chat database imported" xml:space="preserve" approved="no">
         <source>Chat database imported</source>
-        <target>Базата данни на чат е импортирана</target>
+        <target state="translated">Базата данни на е импортирана</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat is running" xml:space="preserve">
@@ -2901,9 +2901,9 @@ This is your own one-time link!</source>
         <target>Грешка при декриптирането на файла</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat database" xml:space="preserve">
+      <trans-unit id="Error deleting chat database" xml:space="preserve" approved="no">
         <source>Error deleting chat database</source>
-        <target>Грешка при изтриване на чат базата данни</target>
+        <target state="translated">Грешка при изтриване на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
@@ -2956,18 +2956,18 @@ This is your own one-time link!</source>
         <target>Грешка при криптиране на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error exporting chat database" xml:space="preserve">
+      <trans-unit id="Error exporting chat database" xml:space="preserve" approved="no">
         <source>Error exporting chat database</source>
-        <target>Грешка при експортиране на чат базата данни</target>
+        <target state="translated">Грешка при експортиране на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error exporting theme: %@" xml:space="preserve">
         <source>Error exporting theme: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error importing chat database" xml:space="preserve">
+      <trans-unit id="Error importing chat database" xml:space="preserve" approved="no">
         <source>Error importing chat database</source>
-        <target>Грешка при импортиране на чат базата данни</target>
+        <target state="translated">Грешка при импортиране на базата данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error joining group" xml:space="preserve">
@@ -3716,9 +3716,9 @@ Error: %2$@</source>
         <target>Импортиране</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import chat database?" xml:space="preserve">
+      <trans-unit id="Import chat database?" xml:space="preserve" approved="no">
         <source>Import chat database?</source>
-        <target>Импортиране на чат база данни?</target>
+        <target state="translated">Импортиране на база данни?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Import database" xml:space="preserve">
@@ -7986,14 +7986,14 @@ Repeat connection request?</source>
         <target>Вашите обаждания</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat database" xml:space="preserve">
+      <trans-unit id="Your chat database" xml:space="preserve" approved="no">
         <source>Your chat database</source>
-        <target>Вашата чат база данни</target>
+        <target state="translated">Вашата база данни</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
+      <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve" approved="no">
         <source>Your chat database is not encrypted - set passphrase to encrypt it.</source>
-        <target>Вашата чат база данни не е криптирана - задайте парола, за да я криптирате.</target>
+        <target state="translated">Вашата база данни не е криптирана - задайте парола, за да я криптирате.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat preferences" xml:space="preserve">
@@ -8028,9 +8028,9 @@ Repeat connection request?</source>
         <source>Your credentials may be sent unencrypted.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
+      <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve" approved="no">
         <source>Your current chat database will be DELETED and REPLACED with the imported one.</source>
-        <target>Вашата текуща чат база данни ще бъде ИЗТРИТА и ЗАМЕНЕНА с импортираната.</target>
+        <target state="translated">Вашата текуща база данни ще бъде ИЗТРИТА и ЗАМЕНЕНА с импортираната.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current profile" xml:space="preserve">
