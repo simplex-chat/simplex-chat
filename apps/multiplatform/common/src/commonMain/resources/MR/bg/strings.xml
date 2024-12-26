@@ -1749,4 +1749,16 @@
     <string name="settings_section_title_profile_images">Профилни изображения</string>
     <string name="v5_7_shape_profile_images">Променете формата на профилните изображения</string>
     <string name="v5_7_shape_profile_images_descr">Квадрат, кръг или нещо между тях.</string>
+    <string name="forward_files_not_accepted_desc">%1$d файл(а) не бяха изтеглени.</string>
+    <string name="forward_files_in_progress_desc">%1$d файл(а) все още се изтеглят.</string>
+    <string name="operator_conditions_accepted">Приети условия</string>
+    <string name="accept_conditions">Приемете условията</string>
+    <string name="n_file_errors">%1$d файлова грешка(и):\n%2$s</string>
+    <string name="forward_files_missing_desc">%1$d файл(а) бяха изтрити.</string>
+    <string name="forward_files_failed_to_receive_desc">Неуспешно изтегляне на %1$d файл(а).</string>
+    <string name="forward_files_messages_deleted_after_selection_title">%1$s съобщения не са препратени</string>
+    <string name="display_name_accepted_invitation">приета покана</string>
+    <string name="n_other_file_errors">%1$d друга(и) файлова(и) грешка(и).</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="onboarding_network_about_operators">За операторите</string>
 </resources>
