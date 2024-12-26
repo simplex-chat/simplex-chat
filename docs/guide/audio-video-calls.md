@@ -1,5 +1,5 @@
 ---
-title: Audio & video Calls
+title: Audio & Video Calls
 ---
 # Audio and Video Calls
 
@@ -63,7 +63,7 @@ Read more in [this post](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.m
 
 <img src="../../blog/images/20220928-ice-servers.png" width="330">
 
-SimpleX Chat uses a preset relay server to hide your IP address from your contacts by default, but it can also observe the duration of your calls. If you don't want that, you can configure and use your self-hosted WebRTC relay servers instead for further control of your calls.
+SimpleX Chat uses a preset relay server to hide your IP address from your contacts by default, but it can observe the duration of your calls. If you don't want that, you can configure and use your self-hosted WebRTC relay servers instead for further control of your calls.
 
 1. Open the app settings menu.
 2. Tap **Audio and Video calls**.
@@ -72,7 +72,7 @@ SimpleX Chat uses a preset relay server to hide your IP address from your contac
 5. Enter your ICE server addresses (one per line).
 6. Tap **Save**.
 
-**Please note**: unlike messaging relays (SMP servers), the configuration of WebRTC ICE servers is stored on the current device, not in the chat database. if you transfer the chat database to another device you need to update this configuration.
+**Please note**: unlike messaging relays (SMP servers), the configuration of WebRTC ICE servers is stored on the current device, not in the chat database. If you transfer the chat database to another device you need to update this configuration.
 
 ### Always use relay
 
@@ -82,4 +82,4 @@ Audio and video calls on SimpleX Chat are routed via a TURN relay server by defa
 2. Tap **Audio and Video calls**.
 3. Toggle the **Always use relay** switch on to use a relay server or off for P2P.
 
-**Please note**: disabling this option allows P2P calls, but it does not prohibit the use of TURN relays – in case your network providers block P2P connections, the call will still use relays if the are available. To prohibit the use of relays you need to change WebRTC ICE server configuration to only include STUN servers, for example:
+**Please note**: disabling this option allows P2P calls, but it does not prohibit the use of TURN relays – in case your network providers block P2P connections, the call will still use relays if they are available. To prohibit the use of relays you need to change WebRTC ICE server configuration to only include STUN servers, for example:

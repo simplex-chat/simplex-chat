@@ -8,18 +8,14 @@ title: App settings
 To open app settings:
 
 - Open the app.
-- Tap on your user profile image in the upper left-hand of the screen.
-- If you have more than one profile, tap the current profile again or choose Settings.
-
-## Your profile settings
-
-This section is labelled **"You"** in the app settings.
+- Tap on your user profile image in the upper/bottom left-hand of the screen.
+- Tap on Settings.
 
 ### Your active profile
 
 Tap on your avatar/name to update your current profile names and avatar.
 
-Display name cannot have any spaces and it is recommended to use latin characters and numbers to make it easier to type these names to the users who use [SimpleX Chat for the terminal](../CLI.md) (CLI).
+For display name, it is recommended to use Latin characters and numbers to make it easier for users who use [SimpleX Chat for the terminal](../CLI.md) (CLI) to type these names.
 
 **Please note**: When you save your profile, the update will be sent to all your contacts (excluding the contacts with whom your incognito profiles were shared). If you have a large number of contacts it can take several seconds.
 
@@ -31,17 +27,15 @@ This page allows adding and configuring your chat profiles. Please see [Your cha
 
 This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
-When "Incognito” is turned on, your current profile name and image are NOT shared with your new contacts. It allows connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each contact or group.
-
-Please read more in [this post](../../blog/20220901-simplex-chat-v3.2-incognito-mode.md#incognito-mode).
+When you click on "Accept Incognito" for contact requests, your current profile name and image are NOT shared with your new contacts. It allows connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each contact or group.
 
 ### Your SimpleX contact address
 
 <img src="../../blog/images/20221108-address1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221108-address2.png" width="288">
 
-This page allows you to create a long term address that can be used by other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on other social media platforms.
+This page allows you to create a long-term address that other people can use to connect with you. Unlike 1-time invitation links, these addresses can be used many times, making them ideal for sharing online, e.g. on other social media platforms.
 
-When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts.
+When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection requests and an automatic welcome message that will be sent to the new contacts.
 
 If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.
 
@@ -51,10 +45,10 @@ Read more in [this post](../../blog/20221108-simplex-chat-v4.2-security-audit-ne
 
 ### Chat preferences
 
-This page allows to configure the chat preferences that would apply to all contacts - they can be changed separately for each contact:
+This page allows you to configure the chat preferences that would apply to all contacts - they can be changed separately for each contact:
 
 - _disappearing messages_ - to allow disappearing messages in the conversations with you, only if your contacts allow them.
-- _delete for everyone_ - to allow irreversible message deletion (by default messages are marked as deleted, not fully deleted). "Yes" setting would allow it only if they allow it for you, and "Always" - even if they don't allow.
+- _delete for everyone_ - to allow irreversible message deletion (by default messages are marked as deleted, not fully deleted). "Yes" setting would allow it only if they allow it for you, and "Always" - even if they don't allow it.
 - _voice messages_ - to allow sending voice messages.
 
 To set chat preferences in each contact, tap contact name on top of the conversation and then choose "Contact preferences".
@@ -63,21 +57,21 @@ Group owners can set similar preferences for their groups, when the group is cre
 
 ## Your app settings
 
-This section is labelled **"Settings"** in the app settings.
+This section is labelled **"Settings"** in the app.
 
 ### Notifications
 
-This page allows to configure the notifications mode: instant, periodic or only when the app is running. There are some differences in how these options work on iOS and Android. Please read more in [this post](../../blog/20220404-simplex-chat-instant-notifications.md) about how notifications work.
+This page allows you to configure the notifications mode: instant, periodic or only when the app is running. There are some differences in how these options work on iOS and Android. Please read more in [this post](../../blog/20220404-simplex-chat-instant-notifications.md) about how notifications work.
 
 You can also configure whether the message preview is shown when the message arrives.
 
-**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the settings. Also, some variants of Android system require additional settings, for example MIU system on Xiaomi phones requires to enable "Auto start" for the app for the notification service to work. Please read [Don't kill my app](https://dontkillmyapp.com/) guide for any settings that may be required on your device.
+**Please note**: For instant and periodic notifications to work on Android, you need to disable power optimization when prompted by the app, or later via the settings. Also, some variants of Android system require additional settings, for example MIUI system on Xiaomi phones requires enabling "Auto start" for the app for the notification service to work. Please read [Don't kill my app](https://dontkillmyapp.com/) guide for any settings that may be required on your device.
 
 Also, currently instant notifications have the highest battery consumption - we are working to reduce it to be less or the same as for periodic notifications.
 
 ### Network & servers
 
-This page allows to configure your own SMP relays and change other network settings.
+This page allows you to configure your own SMP relays and change other network settings.
 
 <img src="../../blog/images/20230204-transport.png" width="288">
 
@@ -115,9 +109,9 @@ While iOS does not support SOCKS proxies, you can install Orbot app that works a
 
 - _no_ (default): do not use .onion hosts. Choose this option if you do not use Orbot or if you use VPN that proxies connections via some other overlay network.
 - _when available_: use .onion host addresses when SMP relays include them in their configuration. Orbot VPN must be enabled for this option to work.
-- _required_: always use .onion hosts. Choose this option if you use Orbot VPN and you want to avoid connections without Tor. In this case, if the SMP relay address does not include .onion host, the connection will fail. If you use this option, you can enable "Disable Orbot for non-onion traffic" option in Orbot settings making the rest of your device traffic to not use Tor.
+- _required_: always use .onion hosts. Choose this option if you use Orbot VPN and you want to avoid connections without Tor. In this case, if the SMP relay address does not include .onion host, the connection will fail. If you use this option, you can enable "Disable Orbot for non-onion traffic" option in Orbot settings making the rest of your device traffic not use Tor.
 
-**Please note** VPN on iOS can send some traffic to the usual network, if, for example, VPN app crashes. You can configure enable always-on VPN mode on managed iOS devices, but this is not applicable to most individual devices.
+**Please note**: VPN on iOS can send some traffic to the usual network if, for example, VPN app crashes. You can configure always-on VPN mode on managed iOS devices, but this is not applicable to most individual devices.
 
 #### Transport isolation (BETA)
 
@@ -129,13 +123,13 @@ Please read the details in [this post](../../blog/20230204-simplex-chat-v4-5-use
 
 <img src="../../blog/images/20220808-network.png" width="330">
 
-If your network is slow, and connections to the servers keep failing (you would see a spinner on your contacts), please increase TCP and protocol timeouts in this page.
+If your network is slow, and connections to the servers keep failing (you would see a spinner on your contacts), please increase TCP and protocol timeouts on this page.
 
 ### Privacy and security
 
-#### SimpleX Lock
+**SimpleX Lock**
 
-SimpleX Lock when enabled requires to pass the device authentication when you open the app or use some security- or privacy-sensitive features.
+SimpleX Lock when enabled requires passing the device authentication when you open the app or use some security- or privacy-sensitive features.
 
 You will be offered to enable it after you open the app a few times.
 
@@ -143,10 +137,11 @@ To enable it later:
 
 - [Open the app settings](#opening-the-app-settings).
 - Tap on "Privacy & security".
-- Toggle on "SimpleX Lock" slider.
+- Tap on "SimpleX Lock".
+- Toggle on "Enable Lock" and Choose Lock Mode
 - Confirm your phone credentials.
 
-Done! Now you will be required to authenticate when you start or resume the app after 30 seconds in background.
+Done! Now you will be required to authenticate when you start or resume the app based on your preferred timeout.
 
 #### Protect app screen
 
@@ -164,7 +159,7 @@ Auto-accepting images may reduce privacy – your contacts will know you are onl
 
 #### Send Link Previews
 
-Enabling sending link previews may reduce privacy – your app will be loading link preview from the website.
+Enabling sending link previews may reduce privacy – your app will be loading link previews from the website.
 
 - [Open the app settings](#opening-the-app-settings).
 - Tap on "Privacy & security".
@@ -190,7 +185,7 @@ This page allows configuring:
 
 ### Database passphrase & export
 
-This page allows to change the database passphrase, export and import the database and configure the message retention period.
+This page allows you to change the database passphrase, export and import the database and configure the message retention period.
 
 Read more in [Managing Your Data](./managing-data.md) page.
 
@@ -200,27 +195,27 @@ This section has information on how to use the app and the links to connect to t
 
 ## Support SimpleX Chat
 
-- contribute - the link to the information about how to contribute and to donate to the project.
+- contribute - the link to information about how you can contribute and donate to the project.
 - rate the app - rate and review it on the App Store or Play Store - your feedback helps a lot.
-- star on GitHub - that also helps us grow very much.
+- star on GitHub - that also supports our growth.
 
 Thank you for your support!
 
 ## Developer tools
 
-This page has options that normally are only needed for app developers and can be used to debug the app in case something is not working.
+This page offers features for app developers to troubleshoot issues.
 
 ### Chat console
 
-Here you can see and use console command with the chat core. None of this information is sent over the network, this is an internal communication between different parts of the app.
+Here you can see and use console commands with the chat core. None of this information is sent over the network, this is an internal communication between different parts of the app.
 
 Please be careful - some of the commands can disrupt app functioning, only use them if you know what you are doing or were instructed by the team.
 
-**Please note**: the log in console can contain what looks like errors. Unless you experience any issues in the app UI, these errors should not be considered as the app malfunction - they are likely to be normal and expected behavior.
+**Please note**: the log in console can contain what looks like errors. Unless you experience any issues in the app UI, these errors should not be considered as app malfunction - these behaviors are usual.
 
 ### Confirm database upgrades
 
-This option is off by default - the app database is migrated to the new version without any confirmations. Starting from v4.6.2 these migrations are reversible - you can rollback to the previous version(s) of the app (not earlier than v4.6.1). If you want to be asked a confirmation every time database is upgraded you may enable this option - this is not recommended, as it happens almost on every app update, and should not cause any concerns.
+This option is off by default - the app database is migrated to the new version without any confirmations. Starting from v4.6.2 these migrations are reversible - you can roll back to the previous version(s) of the app (not earlier than v4.6.1). If you want to be asked for confirmation every time database is upgraded you may enable this option - this is not recommended, as it happens almost on every app update, and should not cause any concerns.
 
 ### Show developer options
 

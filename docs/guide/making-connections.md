@@ -15,9 +15,9 @@ Group Chat — Users have the option to create a secret group, share their conta
 
 ## Your SimpleX contact address
 
-You can [create an optional long term address](./app-settings.md#your-simplex-contact-address) for other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on social media platforms, or in email signatures. That helps more people discover SimpleX Chat, so please do it!
+You can [create an optional long-term address](./app-settings.md#your-simplex-contact-address) for other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, making them ideal for sharing online, e.g. on other social media platforms, or in email signatures. That helps more people discover SimpleX Chat, so please do it!
 
-When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts. You can also share this address as part of your SimpleX profile, so group members can connect to you, and your contacts can share it with others - if this is something that you want.
+When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection requests and an automatic welcome message that will be sent to the new contacts. You can also share this address as part of your SimpleX profile, so group members can connect to you, and your contacts can share it with others - if this is something that you want.
 
 If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.
 
@@ -56,7 +56,7 @@ If you start receiving too many requests via this address it is always safe to r
   </tr>
   <tr>
     <td>Advantages over other platforms</td>
-    <td>There is no direct analogy, other platforms don’t offer one-time invitations without any fixed part identifying the user.</td>
+    <td>There is no direct analogy, other platforms don't offer one-time invitations without any fixed part identifying the user.</td>
     <td>Unlike addresses in other platforms, SimpleX addresses are not used to deliver the messages &mdash; only the initial connection requests.<br>It means that removing this address will not break the contacts made via it (like changing an email address would), it would only prevent new connections, which makes it a good solution against spam and abuse.</td>
   </tr>
   <tr>
