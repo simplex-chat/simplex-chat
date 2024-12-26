@@ -27,7 +27,7 @@ import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), Query, SQLError, (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
@@ -38,8 +38,9 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
@@ -173,7 +174,7 @@ type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, BoolInt, May
 type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe BoolInt, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe BoolInt, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe PQSupport, Maybe PQEncryption, Maybe PQEncryption, Maybe PQEncryption, Maybe Int, Maybe Int, Maybe VersionChat, Maybe VersionChat, Maybe VersionChat)
 
 toConnection :: VersionRangeChat -> ConnectionRow -> Connection
-toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter, chatV, minVer, maxVer)) =
+toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, BI viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, BI contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter, chatV, minVer, maxVer)) =
   Connection
     { connId,
       agentConnId = AgentConnId acId,
@@ -182,12 +183,12 @@ toConnection vr ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGr
       connLevel,
       viaContact,
       viaUserContactLink,
-      viaGroupLink = unBI <$> viaGroupLink,
+      viaGroupLink,
       groupLinkId,
       customUserProfileId,
       connStatus,
       connType,
-      contactConnInitiated = unBI <$> contactConnInitiated,
+      contactConnInitiated,
       localAlias,
       entityId = entityId_ connType,
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_,
@@ -372,21 +373,21 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
 deleteUnusedIncognitoProfileById_ db User {userId} profileId =
-  DB.executeNamed
+  DB.execute
     db
     [sql|
       DELETE FROM contact_profiles
-      WHERE user_id = :user_id AND contact_profile_id = :profile_id AND incognito = 1
+      WHERE user_id = ? AND contact_profile_id = ? AND incognito = 1
         AND 1 NOT IN (
           SELECT 1 FROM connections
-          WHERE user_id = :user_id AND custom_user_profile_id = :profile_id LIMIT 1
+          WHERE user_id = ? AND custom_user_profile_id = ? LIMIT 1
         )
         AND 1 NOT IN (
           SELECT 1 FROM group_members
-          WHERE user_id = :user_id AND member_profile_id = :profile_id LIMIT 1
+          WHERE user_id = ? AND member_profile_id = ? LIMIT 1
         )
     |]
-    [":user_id" := userId, ":profile_id" := profileId]
+    (userId, profileId, userId, profileId, userId, profileId)
 
 type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. (Maybe GroupMemberId, BoolInt, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData)
 
@@ -462,15 +463,15 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
     getLdnSuffix :: IO Int
     getLdnSuffix =
       maybe 0 ((+ 1) . fromOnly) . listToMaybe
-        <$> DB.queryNamed
+        <$> DB.query
           db
           [sql|
             SELECT ldn_suffix FROM display_names
-            WHERE user_id = :user_id AND ldn_base = :display_name
+            WHERE user_id = ? AND ldn_base = ?
             ORDER BY ldn_suffix DESC
             LIMIT 1
           |]
-          [":user_id" := userId, ":display_name" := displayName]
+          (userId, displayName)
     tryCreateName :: Int -> Int -> IO (Either StoreError a)
     tryCreateName _ 0 = pure $ Left SEDuplicateName
     tryCreateName ldnSuffix attempts = do

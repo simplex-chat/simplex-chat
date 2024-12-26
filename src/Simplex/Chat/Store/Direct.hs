@@ -93,7 +93,7 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
+import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
@@ -101,8 +101,9 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util ((<$$>))
@@ -342,31 +343,33 @@ deleteContactProfile_ db userId contactId =
 
 deleteUnusedProfile_ :: DB.Connection -> UserId -> ProfileId -> IO ()
 deleteUnusedProfile_ db userId profileId =
-  DB.executeNamed
+  DB.execute
     db
     [sql|
       DELETE FROM contact_profiles
-      WHERE user_id = :user_id AND contact_profile_id = :profile_id
+      WHERE user_id = ? AND contact_profile_id = ?
         AND 1 NOT IN (
           SELECT 1 FROM connections
-          WHERE user_id = :user_id AND custom_user_profile_id = :profile_id LIMIT 1
+          WHERE user_id = ? AND custom_user_profile_id = ? LIMIT 1
         )
         AND 1 NOT IN (
           SELECT 1 FROM contacts
-          WHERE user_id = :user_id AND contact_profile_id = :profile_id LIMIT 1
+          WHERE user_id = ? AND contact_profile_id = ? LIMIT 1
         )
         AND 1 NOT IN (
           SELECT 1 FROM contact_requests
-          WHERE user_id = :user_id AND contact_profile_id = :profile_id LIMIT 1
+          WHERE user_id = ? AND contact_profile_id = ? LIMIT 1
         )
         AND 1 NOT IN (
           SELECT 1 FROM group_members
-          WHERE user_id = :user_id
-            AND (member_profile_id = :profile_id OR contact_profile_id = :profile_id)
+          WHERE user_id = ?
+            AND (member_profile_id = ? OR contact_profile_id = ?)
           LIMIT 1
         )
     |]
-    [":user_id" := userId, ":profile_id" := profileId]
+    ( (userId, profileId, userId, profileId, userId, profileId)
+      :. (userId, profileId, userId, profileId, profileId)
+    )
 
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db user@User {userId} c p'
@@ -897,16 +900,16 @@ getUserByContactRequestId db contactRequestId =
 getPendingContactConnections :: DB.Connection -> User -> IO [PendingContactConnection]
 getPendingContactConnections db User {userId} = do
   map toPendingContactConnection
-    <$> DB.queryNamed
+    <$> DB.query
       db
       [sql|
         SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
-        WHERE user_id = :user_id
-          AND conn_type = :conn_type
+        WHERE user_id = ?
+          AND conn_type = ?
           AND contact_id IS NULL
       |]
-      [":user_id" := userId, ":conn_type" := ConnContact]
+      (userId, ConnContact)
 
 getContactConnections :: DB.Connection -> VersionRangeChat -> UserId -> Contact -> IO [Connection]
 getContactConnections db vr userId Contact {contactId} =

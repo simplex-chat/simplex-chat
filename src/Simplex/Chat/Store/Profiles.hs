@@ -86,7 +86,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
@@ -100,8 +100,9 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
@@ -141,7 +142,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -403,21 +404,21 @@ deleteUserAddress db user@User {userId} = do
       )
     |]
     (Only userId)
-  DB.executeNamed
+  DB.execute
     db
     [sql|
       DELETE FROM display_names
-      WHERE user_id = :user_id
+      WHERE user_id = ?
         AND local_display_name in (
           SELECT cr.local_display_name
           FROM contact_requests cr
           JOIN user_contact_links uc USING (user_contact_link_id)
-          WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
+          WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
         )
-        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = :user_id)
+        AND local_display_name NOT IN (SELECT local_display_name FROM users WHERE user_id = ?)
     |]
-    [":user_id" := userId]
-  DB.executeNamed
+    (userId, userId, userId)
+  DB.execute
     db
     [sql|
       DELETE FROM contact_profiles
@@ -425,10 +426,10 @@ deleteUserAddress db user@User {userId} = do
         SELECT cr.contact_profile_id
         FROM contact_requests cr
         JOIN user_contact_links uc USING (user_contact_link_id)
-        WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
+        WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
       )
     |]
-    [":user_id" := userId]
+    (Only userId)
   void $ setUserProfileContactLink db user Nothing
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
@@ -611,7 +612,7 @@ updateServerOperator db currentTs ServerOperator {operatorId, enabled, smpRoles,
       SET enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?, updated_at = ?
       WHERE server_operator_id = ?
     |]
-    (BI enabled, BI storage smpRoles, BI proxy smpRoles, BI storage xftpRoles, BI proxy xftpRoles, currentTs, operatorId)
+    (BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), currentTs, operatorId)
 
 getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> IO [(Maybe PresetOperator, Maybe ServerOperator)]
 getUpdateServerOperators db presetOps newUser = do
@@ -654,7 +655,7 @@ getUpdateServerOperators db presetOps newUser = do
           SET trade_name = ?, legal_name = ?, server_domains = ?, enabled = ?, smp_role_storage = ?, smp_role_proxy = ?, xftp_role_storage = ?, xftp_role_proxy = ?
           WHERE server_operator_id = ?
         |]
-        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI storage smpRoles, BI proxy smpRoles, BI storage xftpRoles, BI proxy xftpRoles, operatorId)
+        (tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles), operatorId)
     insertOperator :: NewServerOperator -> IO ServerOperator
     insertOperator op@ServerOperator {operatorTag, tradeName, legalName, serverDomains, enabled, smpRoles, xftpRoles} = do
       DB.execute
@@ -664,7 +665,7 @@ getUpdateServerOperators db presetOps newUser = do
             (server_operator_tag, trade_name, legal_name, server_domains, enabled, smp_role_storage, smp_role_proxy, xftp_role_storage, xftp_role_proxy)
           VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI storage smpRoles, BI proxy smpRoles, BI storage xftpRoles, BI proxy xftpRoles)
+        (operatorTag, tradeName, legalName, T.intercalate "," serverDomains, BI enabled, BI (storage smpRoles), BI (proxy smpRoles), BI (storage xftpRoles), BI (proxy xftpRoles))
       opId <- insertedRowId db
       pure op {operatorId = DBEntityId opId}
     autoAcceptConditions op UsageConditions {conditionsCommit} now =

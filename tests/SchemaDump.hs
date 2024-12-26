@@ -10,8 +10,8 @@ import Data.List (dropWhileEnd)
 import Data.Maybe (fromJust, isJust)
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore, createSQLiteStore)
-import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.SQLite (closeSQLiteStore, createSQLiteStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory (doesFileExist, removeFile)
