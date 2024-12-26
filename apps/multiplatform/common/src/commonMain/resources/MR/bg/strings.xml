@@ -1962,4 +1962,6 @@
     <string name="deleted">Изтрит</string>
     <string name="secured">Защитен</string>
     <string name="subscribed">Абониран</string>
+    <string name="subscription_results_ignored">Абонаменти игнорирани</string>
+    <string name="subscription_errors">Абонаментни грешки</string>
 </resources>
