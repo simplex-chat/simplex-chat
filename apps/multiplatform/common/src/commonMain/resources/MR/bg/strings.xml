@@ -1956,4 +1956,9 @@
     <string name="send_errors">Изпрати грешки</string>
     <string name="other_errors">други грешки</string>
     <string name="decryption_errors">грешки при декриптиране</string>
+    <string name="deletion_errors">Грешки при изтриване</string>
+    <string name="created">Създаден</string>
+    <string name="completed">Завършен</string>
+    <string name="deleted">Изтрит</string>
+    <string name="secured">Защитен</string>
 </resources>
