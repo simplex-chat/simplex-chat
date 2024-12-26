@@ -1964,4 +1964,8 @@
     <string name="subscribed">Абониран</string>
     <string name="subscription_results_ignored">Абонаменти игнорирани</string>
     <string name="subscription_errors">Абонаментни грешки</string>
+    <string name="chunks_uploaded">Качени парчета</string>
+    <string name="uploaded_files">Качени файлове</string>
+    <string name="upload_errors">Грешки при качване</string>
+    <string name="size">Размер</string>
 </resources>
