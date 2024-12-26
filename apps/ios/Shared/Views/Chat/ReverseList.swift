@@ -48,7 +48,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             itemsUpdaterTask?.cancel()
             // when tableView is dragging and new items are added, scroll position cannot be set correctly
             // so it's better to just wait until dragging ends
-            if false && controller.tableView.isDragging {
+            if controller.tableView.isDragging {
                 DispatchQueue.main.async {
                     itemsUpdaterTask = Task {
                         while controller.tableView.isDragging {
@@ -78,7 +78,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         // Putting MergedItem here directly prevents UITableViewDiffableDataSource to make partial updates
         // which looks like UITableView scrolls to bottom on insert values to bottom instead of
         // remains in the same scroll position
-        private var dataSource: UITableViewDiffableDataSource<Section, BoxedValue2<MergedItem>>!
+        private var dataSource: UITableViewDiffableDataSource<Section, Int>!
         var itemCount: Int {
             get {
                 representer.mergedItems.items.count
@@ -114,7 +114,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
 
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, BoxedValue2<MergedItem>>(
+            self.dataSource = UITableViewDiffableDataSource<Section, Int>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 if indexPath.item > self.itemCount - 8 {
@@ -124,12 +124,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
-                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(indexPath.item, item.boxedValue) }
+                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(indexPath.item, self.itemsInPrevSnapshot[item]!) }
                         .margins(.all, 0)
                         .minSize(height: 1) // Passing zero will result in system default of 44 points being used
                 } else {
                     if let cell = cell as? HostingCell<Content> {
-                        cell.set(content: self.representer.content(indexPath.item, item.boxedValue), parent: self)
+                        cell.set(content: self.representer.content(indexPath.item, self.itemsInPrevSnapshot[item]!), parent: self)
                     } else {
                         fatalError("Unexpected Cell Type for: \(item)")
                     }
@@ -256,21 +256,21 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             let insertedOneNewestItem = wasCount != 0 && representer.mergedItems.items.count - wasCount == 1 && prevSnapshot.itemIdentifiers.first!.hashValue == self.representer.mergedItems.items[1].hashValue
             logger.debug("LALAL WAS \(wasCount) will be \(self.representer.mergedItems.items.count)")
             //self.representer.mergedItems = MergedItems.create(items, representer.unreadCount, representer.revealedItems, ItemsModel.shared.chatState)
-            let snapshot: NSDiffableDataSourceSnapshot<Section, BoxedValue2<MergedItem>>
+            let snapshot: NSDiffableDataSourceSnapshot<Section, Int>
             let itemsInCurrentSnapshot: Dictionary<Int, MergedItem>
             if insertedOneNewestItem {
-                prevSnapshot.insertItems([BoxedValue2(representer.mergedItems.items.first!)], beforeItem: prevSnapshot.itemIdentifiers.first!)
+                prevSnapshot.insertItems([representer.mergedItems.items.first!.hashValue], beforeItem: prevSnapshot.itemIdentifiers.first!)
                 var new = itemsInPrevSnapshot
-                //new[representer.mergedItems.items.first!.hashValue] = representer.mergedItems.items.first!
+                new[representer.mergedItems.items.first!.hashValue] = representer.mergedItems.items.first!
                 itemsInCurrentSnapshot = new
                 snapshot = prevSnapshot
             } else {
                 var new: Dictionary<Int, MergedItem> = [:]
-                var snap = NSDiffableDataSourceSnapshot<Section, BoxedValue2<MergedItem>>()
+                var snap = NSDiffableDataSourceSnapshot<Section, Int>()
                 snap.appendSections([.main])
                 snap.appendItems(representer.mergedItems.items.map({ merged in
                     new[merged.hashValue] = merged
-                    return BoxedValue2(merged)//.hashValue
+                    return merged.hashValue
                 }))
                 itemsInCurrentSnapshot = new
 
@@ -295,7 +295,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     snapshot,
                     animatingDifferences: insertedOneNewestItem
                 )
-                if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { item in item.boxedValue.hasUnread() }) {
+                if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { hash in itemsInPrevSnapshot[hash]!.hasUnread() }) {
                     scrollToRowWhenKnowSize(firstUnreadItem)
                 } else {
                     tableView.setContentOffset(
