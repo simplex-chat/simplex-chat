@@ -233,6 +233,7 @@ library
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
+    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
@@ -251,6 +252,7 @@ library
     , simple-logger ==0.1.*
     , simplexmq >=5.0
     , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
@@ -306,6 +308,7 @@ executable simplex-bot
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
+    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
@@ -325,6 +328,7 @@ executable simplex-bot
     , simplex-chat
     , simplexmq >=5.0
     , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
@@ -337,15 +341,7 @@ executable simplex-bot
   if flag(swift)
     cpp-options: -DswiftJSON
   if flag(client_postgres)
-    build-depends:
-        postgresql-libpq >=0.10.0.0
-      , postgresql-simple ==0.7.*
-      , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
-  else
-    build-depends:
-        direct-sqlcipher ==2.3.*
-      , sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -380,6 +376,7 @@ executable simplex-bot-advanced
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
+    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
@@ -399,6 +396,7 @@ executable simplex-bot-advanced
     , simplex-chat
     , simplexmq >=5.0
     , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
@@ -411,15 +409,7 @@ executable simplex-bot-advanced
   if flag(swift)
     cpp-options: -DswiftJSON
   if flag(client_postgres)
-    build-depends:
-        postgresql-libpq >=0.10.0.0
-      , postgresql-simple ==0.7.*
-      , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
-  else
-    build-depends:
-        direct-sqlcipher ==2.3.*
-      , sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -457,6 +447,7 @@ executable simplex-broadcast-bot
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
+    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
@@ -476,6 +467,7 @@ executable simplex-broadcast-bot
     , simplex-chat
     , simplexmq >=5.0
     , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
@@ -488,15 +480,7 @@ executable simplex-broadcast-bot
   if flag(swift)
     cpp-options: -DswiftJSON
   if flag(client_postgres)
-    build-depends:
-        postgresql-libpq >=0.10.0.0
-      , postgresql-simple ==0.7.*
-      , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
-  else
-    build-depends:
-        direct-sqlcipher ==2.3.*
-      , sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -532,6 +516,7 @@ executable simplex-chat
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
+    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
@@ -551,6 +536,7 @@ executable simplex-chat
     , simplex-chat
     , simplexmq >=5.0
     , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
@@ -564,15 +550,7 @@ executable simplex-chat
   if flag(swift)
     cpp-options: -DswiftJSON
   if flag(client_postgres)
-    build-depends:
-        postgresql-libpq >=0.10.0.0
-      , postgresql-simple ==0.7.*
-      , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
-  else
-    build-depends:
-        direct-sqlcipher ==2.3.*
-      , sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -613,6 +591,7 @@ executable simplex-directory-service
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
+    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
@@ -632,6 +611,7 @@ executable simplex-directory-service
     , simplex-chat
     , simplexmq >=5.0
     , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
@@ -722,6 +702,7 @@ test-suite simplex-chat-test
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
+    , direct-sqlcipher ==2.3.*
     , deepseq ==1.4.*
     , directory ==1.3.*
     , email-validate ==2.3.*
@@ -744,6 +725,7 @@ test-suite simplex-chat-test
     , simplex-chat
     , simplexmq >=5.0
     , socks ==0.6.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
