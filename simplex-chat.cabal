@@ -239,7 +239,7 @@ library
     , record-hasfield ==1.0.*
     , scientific ==0.3.7.*
     , simple-logger ==0.1.*
-    , simplexmq >=5.0
+    , simplexmq >=6.3
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
@@ -276,61 +276,10 @@ executable simplex-bot
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
-    , ansi-terminal >=0.10 && <0.12
-    , async ==2.2.*
-    , attoparsec ==0.14.*
-    , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
-    , composition ==1.0.*
-    , constraints >=0.12 && <0.14
-    , containers ==0.6.*
-    , crypton ==0.34.*
-    , data-default ==0.7.*
-    , direct-sqlcipher ==2.3.*
+      base >=4.7 && <5
     , directory ==1.3.*
-    , email-validate ==2.3.*
-    , exceptions ==0.10.*
-    , file-embed ==0.0.15.*
-    , filepath ==1.4.*
-    , http-types ==0.12.*
-    , http2 >=4.2.2 && <4.3
-    , memory ==0.18.*
-    , mtl >=2.3.1 && <3.0
-    , network >=3.1.2.7 && <3.2
-    , network-transport ==0.5.6
-    , optparse-applicative >=0.15 && <0.17
-    , random >=1.1 && <1.3
-    , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
-    , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=5.0
-    , socks ==0.6.*
-    , sqlcipher-simple ==0.4.*
-    , stm ==2.5.*
-    , terminal ==0.2.*
-    , time ==1.12.*
-    , tls >=1.9.0 && <1.10
-    , unliftio ==0.2.*
-    , unliftio-core ==0.2.*
-    , uuid ==1.3.*
-    , zip ==2.0.*
   default-language: Haskell2010
-  if flag(swift)
-    cpp-options: -DswiftJSON
-  if impl(ghc >= 9.6.2)
-    build-depends:
-        bytestring ==0.11.*
-      , process ==1.6.*
-      , template-haskell ==2.20.*
-      , text >=2.0.1 && <2.2
-  if impl(ghc < 9.6.2)
-    build-depends:
-        bytestring ==0.10.*
-      , process >=1.6 && <1.6.18
-      , template-haskell ==2.16.*
-      , text >=1.2.4.0 && <1.3
 
 executable simplex-bot-advanced
   main-is: Main.hs
@@ -342,61 +291,19 @@ executable simplex-bot-advanced
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
-    , ansi-terminal >=0.10 && <0.12
-    , async ==2.2.*
-    , attoparsec ==0.14.*
+      async ==2.2.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
-    , composition ==1.0.*
-    , constraints >=0.12 && <0.14
-    , containers ==0.6.*
-    , crypton ==0.34.*
-    , data-default ==0.7.*
-    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
-    , email-validate ==2.3.*
-    , exceptions ==0.10.*
-    , file-embed ==0.0.15.*
-    , filepath ==1.4.*
-    , http-types ==0.12.*
-    , http2 >=4.2.2 && <4.3
-    , memory ==0.18.*
-    , mtl >=2.3.1 && <3.0
-    , network >=3.1.2.7 && <3.2
-    , network-transport ==0.5.6
-    , optparse-applicative >=0.15 && <0.17
-    , random >=1.1 && <1.3
-    , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
-    , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=5.0
-    , socks ==0.6.*
-    , sqlcipher-simple ==0.4.*
+    , simplexmq >=6.3
     , stm ==2.5.*
-    , terminal ==0.2.*
-    , time ==1.12.*
-    , tls >=1.9.0 && <1.10
-    , unliftio ==0.2.*
-    , unliftio-core ==0.2.*
-    , uuid ==1.3.*
-    , zip ==2.0.*
   default-language: Haskell2010
-  if flag(swift)
-    cpp-options: -DswiftJSON
   if impl(ghc >= 9.6.2)
     build-depends:
-        bytestring ==0.11.*
-      , process ==1.6.*
-      , template-haskell ==2.20.*
-      , text >=2.0.1 && <2.2
+        text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)
     build-depends:
-        bytestring ==0.10.*
-      , process >=1.6 && <1.6.18
-      , template-haskell ==2.16.*
-      , text >=1.2.4.0 && <1.3
+        text >=1.2.4.0 && <1.3
 
 executable simplex-broadcast-bot
   main-is: Main.hs
@@ -411,61 +318,20 @@ executable simplex-broadcast-bot
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
-    , ansi-terminal >=0.10 && <0.12
-    , async ==2.2.*
-    , attoparsec ==0.14.*
+      async ==2.2.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
-    , composition ==1.0.*
-    , constraints >=0.12 && <0.14
-    , containers ==0.6.*
-    , crypton ==0.34.*
-    , data-default ==0.7.*
-    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
-    , email-validate ==2.3.*
-    , exceptions ==0.10.*
-    , file-embed ==0.0.15.*
-    , filepath ==1.4.*
-    , http-types ==0.12.*
-    , http2 >=4.2.2 && <4.3
-    , memory ==0.18.*
-    , mtl >=2.3.1 && <3.0
-    , network >=3.1.2.7 && <3.2
-    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
-    , random >=1.1 && <1.3
-    , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
-    , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=5.0
-    , socks ==0.6.*
-    , sqlcipher-simple ==0.4.*
+    , simplexmq >=6.3
     , stm ==2.5.*
-    , terminal ==0.2.*
-    , time ==1.12.*
-    , tls >=1.9.0 && <1.10
-    , unliftio ==0.2.*
-    , unliftio-core ==0.2.*
-    , uuid ==1.3.*
-    , zip ==2.0.*
   default-language: Haskell2010
-  if flag(swift)
-    cpp-options: -DswiftJSON
   if impl(ghc >= 9.6.2)
     build-depends:
-        bytestring ==0.11.*
-      , process ==1.6.*
-      , template-haskell ==2.20.*
-      , text >=2.0.1 && <2.2
+        text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)
     build-depends:
-        bytestring ==0.10.*
-      , process >=1.6 && <1.6.18
-      , template-haskell ==2.16.*
-      , text >=1.2.4.0 && <1.3
+        text >=1.2.4.0 && <1.3
 
 executable simplex-chat
   main-is: Main.hs
@@ -479,61 +345,22 @@ executable simplex-chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
       aeson ==2.2.*
-    , ansi-terminal >=0.10 && <0.12
-    , async ==2.2.*
-    , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
-    , composition ==1.0.*
-    , constraints >=0.12 && <0.14
-    , containers ==0.6.*
-    , crypton ==0.34.*
-    , data-default ==0.7.*
-    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
-    , email-validate ==2.3.*
-    , exceptions ==0.10.*
-    , file-embed ==0.0.15.*
-    , filepath ==1.4.*
-    , http-types ==0.12.*
-    , http2 >=4.2.2 && <4.3
-    , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*
-    , network-transport ==0.5.6
-    , optparse-applicative >=0.15 && <0.17
-    , random >=1.1 && <1.3
-    , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
-    , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=5.0
-    , socks ==0.6.*
-    , sqlcipher-simple ==0.4.*
+    , simplexmq >=6.3
     , stm ==2.5.*
-    , terminal ==0.2.*
-    , time ==1.12.*
-    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
-    , unliftio-core ==0.2.*
-    , uuid ==1.3.*
     , websockets ==0.12.*
-    , zip ==2.0.*
   default-language: Haskell2010
-  if flag(swift)
-    cpp-options: -DswiftJSON
   if impl(ghc >= 9.6.2)
     build-depends:
-        bytestring ==0.11.*
-      , process ==1.6.*
-      , template-haskell ==2.20.*
-      , text >=2.0.1 && <2.2
+        text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)
     build-depends:
-        bytestring ==0.10.*
-      , process >=1.6 && <1.6.18
-      , template-haskell ==2.16.*
-      , text >=1.2.4.0 && <1.3
+        text >=1.2.4.0 && <1.3
 
 executable simplex-directory-service
   main-is: Main.hs
@@ -551,60 +378,26 @@ executable simplex-directory-service
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
-    , ansi-terminal >=0.10 && <0.12
-    , async ==2.2.*
+      async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
-    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
-    , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , crypton ==0.34.*
-    , data-default ==0.7.*
-    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
-    , email-validate ==2.3.*
-    , exceptions ==0.10.*
-    , file-embed ==0.0.15.*
-    , filepath ==1.4.*
-    , http-types ==0.12.*
-    , http2 >=4.2.2 && <4.3
-    , memory ==0.18.*
-    , mtl >=2.3.1 && <3.0
-    , network >=3.1.2.7 && <3.2
-    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
-    , random >=1.1 && <1.3
-    , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=5.0
-    , socks ==0.6.*
-    , sqlcipher-simple ==0.4.*
+    , simplexmq >=6.3
     , stm ==2.5.*
-    , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.9.0 && <1.10
-    , unliftio ==0.2.*
-    , unliftio-core ==0.2.*
-    , uuid ==1.3.*
-    , zip ==2.0.*
   default-language: Haskell2010
-  if flag(swift)
-    cpp-options: -DswiftJSON
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
-      , process ==1.6.*
-      , template-haskell ==2.20.*
       , text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)
     build-depends:
         bytestring ==0.10.*
-      , process >=1.6 && <1.6.18
-      , template-haskell ==2.16.*
       , text >=1.2.4.0 && <1.3
 
 test-suite simplex-chat-test
@@ -659,60 +452,36 @@ test-suite simplex-chat-test
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
-    , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , crypton ==0.34.*
-    , data-default ==0.7.*
     , deepseq ==1.4.*
-    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
-    , email-validate ==2.3.*
-    , exceptions ==0.10.*
-    , file-embed ==0.0.15.*
     , filepath ==1.4.*
     , generic-random ==1.5.*
     , http-types ==0.12.*
-    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network ==3.1.*
-    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
-    , random >=1.1 && <1.3
-    , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
     , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat
-    , simplexmq >=5.0
-    , socks ==0.6.*
+    , simplexmq >=6.3
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
-    , unliftio-core ==0.2.*
-    , uuid ==1.3.*
-    , zip ==2.0.*
   default-language: Haskell2010
-  if flag(swift)
-    cpp-options: -DswiftJSON
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
+      , hspec ==2.11.*
       , process ==1.6.*
-      , template-haskell ==2.20.*
       , text >=2.0.1 && <2.2
   if impl(ghc < 9.6.2)
     build-depends:
         bytestring ==0.10.*
+      , hspec ==2.7.*
       , process >=1.6 && <1.6.18
-      , template-haskell ==2.16.*
       , text >=1.2.4.0 && <1.3
-  if impl(ghc >= 9.6.2)
-    build-depends:
-        hspec ==2.11.*
-  if impl(ghc < 9.6.2)
-    build-depends:
-        hspec ==2.7.*
