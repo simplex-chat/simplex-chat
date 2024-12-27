@@ -467,12 +467,18 @@ test-suite simplex-chat-test
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=6.3
-    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
     , unliftio ==0.2.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    build-depends:
+        postgresql-simple ==0.7.*
+    cpp-options: -DdbPostgres
+  else
+    build-depends:
+        sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
