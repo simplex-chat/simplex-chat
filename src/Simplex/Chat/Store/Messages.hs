@@ -152,8 +152,8 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
@@ -556,18 +556,6 @@ data ChatPreviewData (c :: ChatType) where
 
 data AChatPreviewData = forall c. ChatTypeI c => ACPD (SChatType c) (ChatPreviewData c)
 
--- TODO [postgres] can't return different types - return list of Action (postgres) / SQLData (sqlite)? rework query?
--- paginationByTimeFilter :: (ToRow q) => PaginationByTime -> (Query, q)
--- paginationByTimeFilter = \case
---   PTLast count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
---   PTAfter ts count -> ("\nAND ts > ? ORDER BY ts ASC LIMIT ?", (ts, count))
---   PTBefore ts count -> ("\nAND ts < ? ORDER BY ts DESC LIMIT ?", (ts, count))
-paginationByTimeFilter :: PaginationByTime -> (Query, Only Int)
-paginationByTimeFilter = \case
-  PTLast count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
-  PTAfter ts count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
-  PTBefore ts count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
-
 type ChatStatsRow = (Int, ChatItemId, BoolInt)
 
 toChatStats :: ChatStatsRow -> ChatStats
@@ -598,69 +586,69 @@ findDirectChatPreviews_ db User {userId} pagination clq =
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
       |]
     baseParams = (userId, userId, CISRcvNew)
-    (pagQuery, pagParams) = paginationByTimeFilter pagination
     getPreviews = case clq of
-      CLQFilters {favorite = False, unread = False} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+      CLQFilters {favorite = False, unread = False} -> do
+        let q = baseQuery <> " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used"
+            p = baseParams :. Only userId
+        case pagination of
+          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
+          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
+          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+      CLQFilters {favorite = True, unread = False} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                        AND ct.favorite = 1
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = True, unread = False} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-                      AND ct.favorite = 1
+            p = baseParams :. Only userId
+        case pagination of
+          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
+          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
+          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+      CLQFilters {favorite = False, unread = True} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                        AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = False, unread = True} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-                      AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            p = baseParams :. Only userId
+        case pagination of
+          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
+          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
+          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+      CLQFilters {favorite = True, unread = True} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                        AND (ct.favorite = 1
+                          OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = True, unread = True} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-                      AND (ct.favorite = 1
-                        OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            p = baseParams :. Only userId
+        case pagination of
+          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
+          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
+          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+      CLQSearch {search} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                        AND (
+                          ct.local_display_name LIKE '%' || ? || '%'
+                          OR cp.display_name LIKE '%' || ? || '%'
+                          OR cp.full_name LIKE '%' || ? || '%'
+                          OR cp.local_alias LIKE '%' || ? || '%'
+                        )
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQSearch {search} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-                    WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-                      AND (
-                        ct.local_display_name LIKE '%' || ? || '%'
-                        OR cp.display_name LIKE '%' || ? || '%'
-                        OR cp.full_name LIKE '%' || ? || '%'
-                        OR cp.local_alias LIKE '%' || ? || '%'
-                      )
-                  |]
-              <> pagQuery
-          )
-          (baseParams :. (userId, search, search, search, search) :. pagParams)
+            p = baseParams :. (userId, search, search, search, search)
+        case pagination of
+          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
+          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
+          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
 
 getDirectChatPreview_ :: DB.Connection -> VersionRangeChat -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
 getDirectChatPreview_ db vr user (DirectChatPD _ contactId lastItemId_ stats) = do
@@ -1181,7 +1169,7 @@ getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
             )
           |]
           ( (userId, contactId, CISRcvNew, ciCreatedAt afterCI)
-            :. (userId, contactId, CISRcvNew, ciCreatedAt afterCI, cChatItemId afterCI)
+              :. (userId, contactId, CISRcvNew, ciCreatedAt afterCI, cChatItemId afterCI)
           )
     getAfterTotalCount :: IO Int
     getAfterTotalCount =
@@ -1203,7 +1191,7 @@ getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
             )
           |]
           ( (userId, contactId, ciCreatedAt afterCI)
-            :. (userId, contactId, ciCreatedAt afterCI, cChatItemId afterCI)
+              :. (userId, contactId, ciCreatedAt afterCI, cChatItemId afterCI)
           )
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
@@ -1419,7 +1407,7 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
             )
           |]
           ( (userId, groupId, CISRcvNew, chatItemTs afterCI)
-            :. (userId, groupId, CISRcvNew, chatItemTs afterCI, cChatItemId afterCI)
+              :. (userId, groupId, CISRcvNew, chatItemTs afterCI, cChatItemId afterCI)
           )
     getAfterTotalCount :: IO Int
     getAfterTotalCount =
@@ -1441,7 +1429,7 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
             )
           |]
           ( (userId, groupId, chatItemTs afterCI)
-            :. (userId, groupId, chatItemTs afterCI, cChatItemId afterCI)
+              :. (userId, groupId, chatItemTs afterCI, cChatItemId afterCI)
           )
 
 getLocalChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTLocal, Maybe NavigationInfo)
@@ -1641,7 +1629,7 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
             )
           |]
           ( (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI)
-            :. (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI, cChatItemId afterCI)
+              :. (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI, cChatItemId afterCI)
           )
     getAfterTotalCount :: IO Int
     getAfterTotalCount =
@@ -1663,7 +1651,7 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
             )
           |]
           ( (userId, noteFolderId, ciCreatedAt afterCI)
-            :. (userId, noteFolderId, ciCreatedAt afterCI, cChatItemId afterCI)
+              :. (userId, noteFolderId, ciCreatedAt afterCI, cChatItemId afterCI)
           )
 
 toChatItemRef :: (ChatItemId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (ChatRef, ChatItemId)
