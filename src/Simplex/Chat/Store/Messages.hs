@@ -159,10 +159,10 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, ToRow (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
-import Database.SQLite.Simple (Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, ToRow (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
@@ -590,10 +590,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
       CLQFilters {favorite = False, unread = False} -> do
         let q = baseQuery <> " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used"
             p = baseParams :. Only userId
-        case pagination of
-          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
-          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
-          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+        queryWithPagination db q p pagination
       CLQFilters {favorite = True, unread = False} -> do
         let q =
               baseQuery
@@ -602,10 +599,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
                         AND ct.favorite = 1
                   |]
             p = baseParams :. Only userId
-        case pagination of
-          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
-          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
-          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+        queryWithPagination db q p pagination
       CLQFilters {favorite = False, unread = True} -> do
         let q =
               baseQuery
@@ -614,10 +608,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
                         AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
             p = baseParams :. Only userId
-        case pagination of
-          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
-          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
-          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+        queryWithPagination db q p pagination
       CLQFilters {favorite = True, unread = True} -> do
         let q =
               baseQuery
@@ -627,10 +618,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
                           OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
             p = baseParams :. Only userId
-        case pagination of
-          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
-          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
-          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+        queryWithPagination db q p pagination
       CLQSearch {search} -> do
         let q =
               baseQuery
@@ -645,10 +633,13 @@ findDirectChatPreviews_ db User {userId} pagination clq =
                         )
                   |]
             p = baseParams :. (userId, search, search, search, search)
-        case pagination of
-          PTLast count -> DB.query db (q <> " ORDER BY ts DESC LIMIT ?") (p :. Only count)
-          PTAfter ts count -> DB.query db (q <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (p :. (ts, count))
-          PTBefore ts count -> DB.query db (q <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (p :. (ts, count))
+        queryWithPagination db q p pagination
+
+queryWithPagination :: ToRow p => DB.Connection -> Query -> p -> PaginationByTime -> IO [(ContactId, UTCTime, Maybe ChatItemId) :. ChatStatsRow]
+queryWithPagination db query params = \case
+  PTLast count -> DB.query db (query <> " ORDER BY ts DESC LIMIT ?") (params :. Only count)
+  PTAfter ts count -> DB.query db (query <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (params :. (ts, count))
+  PTBefore ts count -> DB.query db (query <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (params :. (ts, count))
 
 getDirectChatPreview_ :: DB.Connection -> VersionRangeChat -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
 getDirectChatPreview_ db vr user (DirectChatPD _ contactId lastItemId_ stats) = do
