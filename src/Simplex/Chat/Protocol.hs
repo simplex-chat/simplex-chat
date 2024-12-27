@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -49,6 +51,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -211,10 +214,9 @@ instance StrEncoding AppMessageBinary where
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField SharedMsgId where fromField f = SharedMsgId <$> fromField f
-
-instance ToField SharedMsgId where toField (SharedMsgId m) = toField m
+instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ DB.Binary m
 
 instance StrEncoding SharedMsgId where
   strEncode (SharedMsgId m) = strEncode m

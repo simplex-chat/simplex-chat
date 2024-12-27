@@ -73,9 +73,10 @@ import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWo
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -203,7 +204,7 @@ defaultInlineFilesConfig =
       receiveInstant = True -- allow receiving instant files, within receiveChunks limit
     }
 
-data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
+data ChatDatabase = ChatDatabase {chatStore :: DBStore, agentStore :: DBStore}
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
@@ -213,7 +214,7 @@ data ChatController = ChatController
     firstTime :: Bool,
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
-    chatStore :: SQLiteStore,
+    chatStore :: DBStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     random :: TVar ChaChaDRG,
     eventSeq :: TVar Int,

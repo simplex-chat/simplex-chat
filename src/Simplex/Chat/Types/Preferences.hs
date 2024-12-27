@@ -33,9 +33,8 @@ import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Records.Compat
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
 
 data ChatFeature
@@ -678,7 +677,7 @@ data FeatureAllowed
   | FANo -- do not allow
   deriving (Eq, Show)
 
-instance FromField FeatureAllowed where fromField = fromBlobField_ strDecode
+instance FromField FeatureAllowed where fromField = blobFieldDecoder strDecode
 
 instance ToField FeatureAllowed where toField = toField . strEncode
 
@@ -704,7 +703,7 @@ instance ToJSON FeatureAllowed where
 data GroupFeatureEnabled = FEOn | FEOff
   deriving (Eq, Show)
 
-instance FromField GroupFeatureEnabled where fromField = fromBlobField_ strDecode
+instance FromField GroupFeatureEnabled where fromField = blobFieldDecoder strDecode
 
 instance ToField GroupFeatureEnabled where toField = toField . strEncode
 

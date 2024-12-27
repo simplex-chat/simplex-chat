@@ -2,16 +2,19 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -29,6 +32,7 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -49,10 +53,11 @@ import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -131,10 +136,9 @@ data NewUser = NewUser
 
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField B64UrlByteString where fromField f = B64UrlByteString <$> fromField f
-
-instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField m
+instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField $ Binary m
 
 instance StrEncoding B64UrlByteString where
   strEncode (B64UrlByteString m) = strEncode m
@@ -195,9 +199,9 @@ instance ToJSON CustomData where
 instance FromJSON CustomData where
   parseJSON = J.withObject "CustomData" (pure . CustomData)
 
-instance ToField CustomData where toField (CustomData v) = toField $ J.encode v
+instance ToField CustomData where toField (CustomData v) = toField . Binary . LB.toStrict . J.encode $ v
 
-instance FromField CustomData where fromField = fromBlobField_ J.eitherDecodeStrict
+instance FromField CustomData where fromField = blobFieldDecoder J.eitherDecodeStrict
 
 contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
@@ -316,10 +320,9 @@ data UserContactRequest = UserContactRequest
 
 newtype XContactId = XContactId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField XContactId where fromField f = XContactId <$> fromField f
-
-instance ToField XContactId where toField (XContactId m) = toField m
+instance ToField XContactId where toField (XContactId m) = toField $ Binary m
 
 instance StrEncoding XContactId where
   strEncode (XContactId m) = strEncode m
@@ -335,10 +338,9 @@ instance ToJSON XContactId where
 
 newtype ConnReqUriHash = ConnReqUriHash {unConnReqUriHash :: ByteString}
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField ConnReqUriHash where fromField f = ConnReqUriHash <$> fromField f
-
-instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField m
+instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField $ Binary m
 
 instance StrEncoding ConnReqUriHash where
   strEncode (ConnReqUriHash m) = strEncode m
@@ -599,10 +601,9 @@ data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField GroupLinkId where fromField f = GroupLinkId <$> fromField f
-
-instance ToField GroupLinkId where toField (GroupLinkId g) = toField g
+instance ToField GroupLinkId where toField (GroupLinkId g) = toField $ Binary g
 
 instance StrEncoding GroupLinkId where
   strEncode (GroupLinkId g) = strEncode g
@@ -679,7 +680,7 @@ data MemberRestrictionStatus
   | MRSUnknown Text
   deriving (Eq, Show)
 
-instance FromField MemberRestrictionStatus where fromField = fromBlobField_ strDecode
+instance FromField MemberRestrictionStatus where fromField = blobFieldDecoder strDecode
 
 instance ToField MemberRestrictionStatus where toField = toField . strEncode
 
@@ -808,10 +809,9 @@ data NewGroupMember = NewGroupMember
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField MemberId where fromField f = MemberId <$> fromField f
-
-instance ToField MemberId where toField (MemberId m) = toField m
+instance ToField MemberId where toField (MemberId m) = toField $ Binary m
 
 instance StrEncoding MemberId where
   strEncode (MemberId m) = strEncode m
@@ -1162,6 +1162,9 @@ liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Ord, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentConnId where toField (AgentConnId m) = toField $ Binary m
 
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
@@ -1175,12 +1178,11 @@ instance ToJSON AgentConnId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
-
-instance ToField AgentConnId where toField (AgentConnId m) = toField m
-
 newtype AgentSndFileId = AgentSndFileId SndFileId
   deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField $ Binary m
 
 instance StrEncoding AgentSndFileId where
   strEncode (AgentSndFileId connId) = strEncode connId
@@ -1194,12 +1196,11 @@ instance ToJSON AgentSndFileId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromField f
-
-instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
-
 newtype AgentRcvFileId = AgentRcvFileId RcvFileId
   deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField $ Binary m
 
 instance StrEncoding AgentRcvFileId where
   strEncode (AgentRcvFileId connId) = strEncode connId
@@ -1212,10 +1213,6 @@ instance FromJSON AgentRcvFileId where
 instance ToJSON AgentRcvFileId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
-
-instance FromField AgentRcvFileId where fromField f = AgentRcvFileId <$> fromField f
-
-instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField m
 
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)

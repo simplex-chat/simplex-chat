@@ -8,8 +8,8 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (blobFieldDecoder)
 import Simplex.Messaging.Util ((<$?>))
 
 data GroupMemberRole
@@ -20,7 +20,7 @@ data GroupMemberRole
   | GROwner -- + delete and change group information, add/remove/change roles for Owners
   deriving (Eq, Show, Ord)
 
-instance FromField GroupMemberRole where fromField = fromBlobField_ strDecode
+instance FromField GroupMemberRole where fromField = blobFieldDecoder strDecode
 
 instance ToField GroupMemberRole where toField = toField . strEncode
 
