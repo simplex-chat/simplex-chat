@@ -67,7 +67,7 @@ sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack 
 sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
 
-getSelectActiveUser :: SQLiteStore -> IO (Maybe User)
+getSelectActiveUser :: DBStore -> IO (Maybe User)
 getSelectActiveUser st = do
   users <- withTransaction st getUsers
   case find activeUser users of

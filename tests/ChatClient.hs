@@ -43,7 +43,7 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store (closeSQLiteStore)
+import Simplex.Messaging.Agent.Store (closeStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
@@ -277,7 +277,7 @@ stopTestChat TestCC {chatController = cc@ChatController {smpAgent, chatStore}, c
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
   liftIO $ disposeAgentClient smpAgent
-  closeSQLiteStore chatStore
+  closeStore chatStore
   threadDelay 200000
 
 withNewTestChat :: HasCallStack => FilePath -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a

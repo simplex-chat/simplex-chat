@@ -159,10 +159,10 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, ToRow (..), (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
-import Database.SQLite.Simple (Only (..), Query, ToRow (..), (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
@@ -556,11 +556,17 @@ data ChatPreviewData (c :: ChatType) where
 
 data AChatPreviewData = forall c. ChatTypeI c => ACPD (SChatType c) (ChatPreviewData c)
 
-paginationByTimeFilter :: (ToRow q) => PaginationByTime -> (Query, q)
+-- TODO [postgres] can't return different types - return list of Action (postgres) / SQLData (sqlite)? rework query?
+-- paginationByTimeFilter :: (ToRow q) => PaginationByTime -> (Query, q)
+-- paginationByTimeFilter = \case
+--   PTLast count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
+--   PTAfter ts count -> ("\nAND ts > ? ORDER BY ts ASC LIMIT ?", (ts, count))
+--   PTBefore ts count -> ("\nAND ts < ? ORDER BY ts DESC LIMIT ?", (ts, count))
+paginationByTimeFilter :: PaginationByTime -> (Query, Only Int)
 paginationByTimeFilter = \case
   PTLast count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
-  PTAfter ts count -> ("\nAND ts > ? ORDER BY ts ASC LIMIT ?", (ts, count))
-  PTBefore ts count -> ("\nAND ts < ? ORDER BY ts DESC LIMIT ?", (ts, count))
+  PTAfter ts count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
+  PTBefore ts count -> ("\nORDER BY ts DESC LIMIT ?", (Only count))
 
 type ChatStatsRow = (Int, ChatItemId, BoolInt)
 

@@ -49,7 +49,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
-import Simplex.Messaging.Agent.Store.SQLite (closeSQLiteStore, reopenSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (closeDBStore, reopenSQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
@@ -227,7 +227,7 @@ defaultMobileConfig =
       deviceNameForRemote = "Mobile"
     }
 
-getActiveUser_ :: SQLiteStore -> IO (Maybe User)
+getActiveUser_ :: DBStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
@@ -256,8 +256,8 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
 
 chatCloseStore :: ChatController -> IO String
 chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
-  closeSQLiteStore chatStore
-  closeSQLiteStore $ agentClientStore smpAgent
+  closeDBStore chatStore
+  closeDBStore $ agentClientStore smpAgent
 
 chatReopenStore :: ChatController -> IO String
 chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do
