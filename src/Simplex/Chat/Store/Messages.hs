@@ -674,69 +674,54 @@ findGroupChatPreviews_ db User {userId} pagination clq =
         ) ChatStats ON ChatStats.group_id = g.group_id
       |]
     baseParams = (userId, userId, CISRcvNew)
-    (pagQuery, pagParams) = paginationByTimeFilter pagination
     getPreviews = case clq of
-      CLQFilters {favorite = False, unread = False} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE g.user_id = ?
+      CLQFilters {favorite = False, unread = False} -> do
+        let q = baseQuery <> " WHERE g.user_id = ?"
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
+      CLQFilters {favorite = True, unread = False} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE g.user_id = ?
+                        AND g.favorite = 1
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = True, unread = False} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE g.user_id = ?
-                      AND g.favorite = 1
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
+      CLQFilters {favorite = False, unread = True} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE g.user_id = ?
+                        AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = False, unread = True} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE g.user_id = ?
-                      AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
+      CLQFilters {favorite = True, unread = True} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE g.user_id = ?
+                        AND (g.favorite = 1
+                          OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = True, unread = True} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE g.user_id = ?
-                      AND (g.favorite = 1
-                        OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
+      CLQSearch {search} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+                      WHERE g.user_id = ?
+                        AND (
+                          g.local_display_name LIKE '%' || ? || '%'
+                          OR gp.display_name LIKE '%' || ? || '%'
+                          OR gp.full_name LIKE '%' || ? || '%'
+                          OR gp.description LIKE '%' || ? || '%'
+                        )
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQSearch {search} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-                    WHERE g.user_id = ?
-                      AND (
-                        g.local_display_name LIKE '%' || ? || '%'
-                        OR gp.display_name LIKE '%' || ? || '%'
-                        OR gp.full_name LIKE '%' || ? || '%'
-                        OR gp.description LIKE '%' || ? || '%'
-                      )
-                  |]
-              <> pagQuery
-          )
-          (baseParams :. (userId, search, search, search, search) :. pagParams)
+            p = baseParams :. (userId, search, search, search, search)
+        queryWithPagination db q p pagination
 
 getGroupChatPreview_ :: DB.Connection -> VersionRangeChat -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
 getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
@@ -771,52 +756,39 @@ findLocalChatPreviews_ db User {userId} pagination clq =
         ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
       |]
     baseParams = (userId, userId, CISRcvNew)
-    (pagQuery, pagParams) = paginationByTimeFilter pagination
     getPreviews = case clq of
-      CLQFilters {favorite = False, unread = False} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE nf.user_id = ?
+      CLQFilters {favorite = False, unread = False} -> do
+        let q = baseQuery <> " WHERE nf.user_id = ?"
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
+      CLQFilters {favorite = True, unread = False} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE nf.user_id = ?
+                        AND nf.favorite = 1
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = True, unread = False} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE nf.user_id = ?
-                      AND nf.favorite = 1
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
+      CLQFilters {favorite = False, unread = True} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE nf.user_id = ?
+                        AND (nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = False, unread = True} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE nf.user_id = ?
-                      AND (nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
+      CLQFilters {favorite = True, unread = True} -> do
+        let q =
+              baseQuery
+                <> [sql|
+                      WHERE nf.user_id = ?
+                        AND (nf.favorite = 1
+                          OR nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
-      CLQFilters {favorite = True, unread = True} ->
-        DB.query
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE nf.user_id = ?
-                      AND (nf.favorite = 1
-                        OR nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                  |]
-              <> pagQuery
-          )
-          (baseParams :. (Only userId) :. pagParams)
+            p = baseParams :. Only userId
+        queryWithPagination db q p pagination
       CLQSearch {} -> pure []
 
 getLocalChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTLocal -> ExceptT StoreError IO AChat
@@ -868,40 +840,38 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
-  CLQFilters {favorite = False, unread = False} -> query ""
+  CLQFilters {favorite = False, unread = False} -> map toPreview <$> getPreviews ""
   CLQFilters {favorite = True, unread = False} -> pure []
-  CLQFilters {favorite = False, unread = True} -> query ""
-  CLQFilters {favorite = True, unread = True} -> query ""
-  CLQSearch {search} -> query search
+  CLQFilters {favorite = False, unread = True} -> map toPreview <$> getPreviews ""
+  CLQFilters {favorite = True, unread = True} -> map toPreview <$> getPreviews ""
+  CLQSearch {search} -> map toPreview <$> getPreviews search
   where
-    (pagQuery, pagParams) = paginationByTimeFilter pagination
-    query search =
-      map toPreview
-        <$> DB.query
-          db
-          ( [sql|
-              SELECT
-                cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
-                c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences,
-                cr.created_at, cr.updated_at as ts,
-                cr.peer_chat_min_version, cr.peer_chat_max_version
-              FROM contact_requests cr
-              JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
-              JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
-              JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
-              WHERE cr.user_id = ?
-                AND uc.user_id = ?
-                AND uc.local_display_name = ''
-                AND uc.group_id IS NULL
-                AND (
-                  cr.local_display_name LIKE '%' || ? || '%'
-                  OR p.display_name LIKE '%' || ? || '%'
-                  OR p.full_name LIKE '%' || ? || '%'
-                )
-            |]
-              <> pagQuery
+    query =
+      [sql|
+        SELECT
+          cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.contact_id, cr.user_contact_link_id,
+          c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, cr.xcontact_id, cr.pq_support, p.preferences,
+          cr.created_at, cr.updated_at as ts,
+          cr.peer_chat_min_version, cr.peer_chat_max_version
+        FROM contact_requests cr
+        JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
+        JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
+        JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
+        WHERE cr.user_id = ?
+          AND uc.user_id = ?
+          AND uc.local_display_name = ''
+          AND uc.group_id IS NULL
+          AND (
+            cr.local_display_name LIKE '%' || ? || '%'
+            OR p.display_name LIKE '%' || ? || '%'
+            OR p.full_name LIKE '%' || ? || '%'
           )
-          ((userId, userId, search, search, search) :. pagParams)
+      |]
+    params search = (userId, userId, search, search, search)
+    getPreviews search = case pagination of
+      PTLast count -> DB.query db (query <> " ORDER BY ts DESC LIMIT ?") (params search :. Only count)
+      PTAfter ts count -> DB.query db (query <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (params search :. (ts, count))
+      PTBefore ts count -> DB.query db (query <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (params search :. (ts, count))
     toPreview :: ContactRequestRow -> AChatPreviewData
     toPreview cReqRow =
       let cReq@UserContactRequest {updatedAt} = toContactRequest cReqRow
@@ -911,34 +881,32 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
 
 getContactConnectionChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
-  CLQFilters {favorite = False, unread = False} -> query ""
+  CLQFilters {favorite = False, unread = False} -> map toPreview <$> getPreviews ""
   CLQFilters {favorite = True, unread = False} -> pure []
   CLQFilters {favorite = False, unread = True} -> pure []
   CLQFilters {favorite = True, unread = True} -> pure []
-  CLQSearch {search} -> query search
+  CLQSearch {search} -> map toPreview <$> getPreviews search
   where
-    (pagQuery, pagParams) = paginationByTimeFilter pagination
-    query search =
-      map toPreview
-        <$> DB.query
-          db
-          ( [sql|
-              SELECT
-                connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id,
-                custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at as ts
-              FROM connections
-              WHERE user_id = ?
-                AND conn_type = ?
-                AND conn_status != ?
-                AND contact_id IS NULL
-                AND conn_level = 0
-                AND via_contact IS NULL
-                AND (via_group_link = 0 || (via_group_link = 1 AND group_link_id IS NOT NULL))
-                AND local_alias LIKE '%' || ? || '%'
-            |]
-              <> pagQuery
-          )
-          ((userId, ConnContact, ConnPrepared, search) :. pagParams)
+    query =
+      [sql|
+        SELECT
+          connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id,
+          custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at as ts
+        FROM connections
+        WHERE user_id = ?
+          AND conn_type = ?
+          AND conn_status != ?
+          AND contact_id IS NULL
+          AND conn_level = 0
+          AND via_contact IS NULL
+          AND (via_group_link = 0 || (via_group_link = 1 AND group_link_id IS NOT NULL))
+          AND local_alias LIKE '%' || ? || '%'
+      |]
+    params search = (userId, ConnContact, ConnPrepared, search)
+    getPreviews search = case pagination of
+      PTLast count -> DB.query db (query <> " ORDER BY ts DESC LIMIT ?") (params search :. Only count)
+      PTAfter ts count -> DB.query db (query <> " AND ts > ? ORDER BY ts ASC LIMIT ?") (params search :. (ts, count))
+      PTBefore ts count -> DB.query db (query <> " AND ts < ? ORDER BY ts DESC LIMIT ?") (params search :. (ts, count))
     toPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChatPreviewData
     toPreview connRow =
       let conn@PendingContactConnection {updatedAt} = toPendingContactConnection connRow
