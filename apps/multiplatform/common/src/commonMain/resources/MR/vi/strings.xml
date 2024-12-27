@@ -1435,4 +1435,25 @@
     <string name="delete_chat_question">Xóa cuộc trò chuyện?</string>
     <string name="direct_messages_are_prohibited">Tin nhắn trực tiếp giữa các thành viên bị cấm.</string>
     <string name="debug_logs">Bật logs</string>
+    <string name="a_plus_b">a + b</string>
+    <string name="connection_not_ready">Kết nối chưa sẵn sàng.</string>
+    <string name="error_updating_chat_tags">Lỗi cập nhật danh sách trò chuyện</string>
+    <string name="error_creating_chat_tags">Lỗi tạo danh sách trò chuyện</string>
+    <string name="error_loading_chat_tags">Lỗi tải các danh sách trò chuyện</string>
+    <string name="chat_list_contacts">Các liên hệ</string>
+    <string name="chat_list_groups">Nhóm</string>
+    <string name="chat_list_add_list">Thêm danh sách</string>
+    <string name="chat_list_all">Tất cả</string>
+    <string name="delete_chat_list_menu_action">Xóa</string>
+    <string name="delete_chat_list_question">Xóa danh sách?</string>
+    <string name="edit_chat_list_menu_action">Chỉnh sửa</string>
+    <string name="list_name_field_placeholder">Tên danh sách...</string>
+    <string name="users_delete_profile_for">Xóa hồ sơ trò chuyện cho</string>
+    <string name="create_list">Tạo danh sách</string>
+    <string name="add_to_list">Thêm vào danh sách</string>
+    <string name="chat_list_businesses">Các doanh nghiệp</string>
+    <string name="delete_chat_list_warning">Tất cả các cuộc trò chuyện sẽ bị xóa khỏi danh sách %s, và danh sách cũng sẽ bị xóa</string>
+    <string name="chat_list_favorites">Ưa thích</string>
+    <string name="list_menu">Danh sách</string>
+    <string name="delete_messages_after">Xóa tin nhắn sau</string>
 </resources>
