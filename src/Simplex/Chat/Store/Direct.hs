@@ -103,7 +103,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util ((<$$>))
@@ -638,7 +638,7 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
                  created_at, updated_at, xcontact_id, pq_support)
               VALUES (?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ( (userContactLinkId, invId, minV, maxV, profileId, ldn, userId)
+            ( (userContactLinkId, Binary invId, minV, maxV, profileId, ldn, userId)
                 :. (currentTs, currentTs, xContactId_, pqSup)
             )
           insertedRowId db
@@ -705,7 +705,7 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
                 SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
-              (invId, pqSup, minV, maxV, currentTs, userId, cReqId)
+              (Binary invId, pqSup, minV, maxV, currentTs, userId, cReqId)
         else withLocalDisplayName db userId displayName $ \ldn ->
           Right <$> do
             DB.execute
@@ -715,7 +715,7 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
                 SET agent_invitation_id = ?, pq_support = ?, peer_chat_min_version = ?, peer_chat_max_version = ?, local_display_name = ?, updated_at = ?
                 WHERE user_id = ? AND contact_request_id = ?
               |]
-              (invId, pqSup, minV, maxV, ldn, currentTs, userId, cReqId)
+              (Binary invId, pqSup, minV, maxV, ldn, currentTs, userId, cReqId)
             safeDeleteLDN db user oldLdn
       where
         updateProfile currentTs =

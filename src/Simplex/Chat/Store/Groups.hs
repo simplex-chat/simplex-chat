@@ -153,7 +153,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
@@ -1632,7 +1632,7 @@ createSentProbe db gVar userId to =
     DB.execute
       db
       "INSERT INTO sent_probes (contact_id, group_member_id, probe, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (ctId, gmId, probe, userId, currentTs, currentTs)
+      (ctId, gmId, Binary probe, userId, currentTs, currentTs)
     (Probe probe,) <$> insertedRowId db
 
 createSentProbeHash :: DB.Connection -> UserId -> Int64 -> ContactOrMember -> IO ()
@@ -1658,13 +1658,13 @@ matchReceivedProbe db vr user@User {userId} from (Probe probe) = do
         LEFT JOIN groups g ON g.group_id = m.group_id
         WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NULL
       |]
-      (userId, probeHash)
+      (userId, Binary probeHash)
   currentTs <- getCurrentTime
   let (ctId, gmId) = contactOrMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-    (ctId, gmId, probe, probeHash, userId, currentTs, currentTs)
+    (ctId, gmId, Binary probe, Binary probeHash, userId, currentTs, currentTs)
   let cgmIds' = filterFirstContactId cgmIds
   catMaybes <$> mapM (getContactOrMember_ db vr user) cgmIds'
   where
@@ -1690,13 +1690,13 @@ matchReceivedProbeHash db vr user@User {userId} from (ProbeHash probeHash) = do
           LEFT JOIN groups g ON g.group_id = m.group_id
           WHERE r.user_id = ? AND r.probe_hash = ? AND r.probe IS NOT NULL
         |]
-        (userId, probeHash)
+        (userId, Binary probeHash)
   currentTs <- getCurrentTime
   let (ctId, gmId) = contactOrMemberIds from
   DB.execute
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-    (ctId, gmId, probeHash, userId, currentTs, currentTs)
+    (ctId, gmId, Binary probeHash, userId, currentTs, currentTs)
   pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrMember_ db vr user cgmIds
 
 matchSentProbe :: DB.Connection -> VersionRangeChat -> User -> ContactOrMember -> Probe -> IO (Maybe ContactOrMember)
@@ -1718,7 +1718,7 @@ matchSentProbe db vr user@User {userId} _from (Probe probe) = do
             WHERE s.user_id = ? AND s.probe = ?
               AND (h.contact_id = ? OR h.group_member_id = ?)
           |]
-          (userId, probe, ctId, gmId)
+          (userId, Binary probe, ctId, gmId)
 
 getContactOrMember_ :: DB.Connection -> VersionRangeChat -> User -> (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId) -> IO (Maybe ContactOrMember)
 getContactOrMember_ db vr user ids =

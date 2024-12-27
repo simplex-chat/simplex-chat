@@ -205,7 +205,7 @@ createNewSndMessage db gVar connOrGroupId chatMsgEvent encodeMessage =
               shared_msg_id, shared_msg_id_user, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?)
           |]
-          (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, sharedMsgId, Just (BI True), createdAt, createdAt)
+          (MDSnd, toCMEventTag chatMsgEvent, DB.Binary msgBody, connId_, groupId_, DB.Binary sharedMsgId, Just (BI True), createdAt, createdAt)
         msgId <- insertedRowId db
         pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
   where
@@ -290,7 +290,7 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody} share
             (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
           VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
+        (MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
 
