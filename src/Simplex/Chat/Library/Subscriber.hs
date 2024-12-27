@@ -70,7 +70,7 @@ import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProxyClientError (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))

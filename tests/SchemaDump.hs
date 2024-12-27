@@ -10,8 +10,8 @@ import Data.List (dropWhileEnd)
 import Data.Maybe (fromJust, isJust)
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore, createSQLiteStore)
-import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.SQLite (closeDBStore, createDBStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory (doesFileExist, removeFile)
@@ -22,7 +22,7 @@ testDB :: FilePath
 testDB = "tests/tmp/test_chat.db"
 
 appSchema :: FilePath
-appSchema = "src/Simplex/Chat/Migrations/chat_schema.sql"
+appSchema = "src/Simplex/Chat/Store/SQLite/Migrations/chat_schema.sql"
 
 -- Some indexes found by `.lint fkey-indexes` are not added to schema, explanation:
 --
@@ -38,7 +38,7 @@ appSchema = "src/Simplex/Chat/Migrations/chat_schema.sql"
 --   EXPLAIN QUERY PLAN DELETE FROM group_members;
 --   (uses idx_connections_group_member)
 appLint :: FilePath
-appLint = "src/Simplex/Chat/Migrations/chat_lint.sql"
+appLint = "src/Simplex/Chat/Store/SQLite/Migrations/chat_lint.sql"
 
 testSchema :: FilePath
 testSchema = "tests/tmp/test_agent_schema.sql"
@@ -68,9 +68,9 @@ testVerifyLintFKeyIndexes = withTmpFiles $ do
 testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createSQLiteStore testDB "" False noDownMigrations MCError
+  Right st <- createDBStore testDB "" False noDownMigrations MCError
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
-  closeSQLiteStore st
+  closeDBStore st
   removeFile testDB
   whenM (doesFileExist testSchema) $ removeFile testSchema
   where

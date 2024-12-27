@@ -26,7 +26,7 @@ import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import System.Directory (copyFile)

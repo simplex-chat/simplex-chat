@@ -15,8 +15,8 @@ import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Shared
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.RemoteControl.Types

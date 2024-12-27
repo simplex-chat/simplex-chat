@@ -36,8 +36,8 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (catchAll_, safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
@@ -223,7 +223,7 @@ data AutoComplete
   | ACCommand Text
   | ACNone
 
-updateTermState :: Maybe User -> SQLiteStore -> String -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
+updateTermState :: Maybe User -> DBStore -> String -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
 updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
