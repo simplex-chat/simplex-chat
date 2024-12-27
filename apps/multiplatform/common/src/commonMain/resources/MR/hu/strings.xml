@@ -2242,6 +2242,6 @@
     <string name="delete_chat_list_question">Lista törlése?</string>
     <string name="edit_chat_list_menu_action">Szerkesztés</string>
     <string name="list_name_field_placeholder">Listanév…</string>
-    <string name="duplicated_list_error">Az összes lista nevének vagy hangulatjelének különbözőnek kell lennie.</string>
+    <string name="duplicated_list_error">Az összes lista nevének és hangulatjel-ikonjának különbözőnek kell lennie.</string>
     <string name="no_chats_in_list">Nincsenek csevegések a(z) %s nevű listában.</string>
 </resources>
