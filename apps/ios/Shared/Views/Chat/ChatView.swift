@@ -1494,7 +1494,7 @@ struct ChatView: View {
 
         func saveButton(file: CryptoFile) -> Button<some View> {
             Button {
-                saveCryptoFile(file)
+                saveOrOpenCryptoFile(file)
             } label: {
                 Label(
                     NSLocalizedString("Save", comment: "chat item action"),
