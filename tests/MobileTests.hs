@@ -214,7 +214,7 @@ testChatApi :: FilePath -> IO ()
 testChatApi tmp = do
   let dbPrefix = tmp </> "1"
       f = chatStoreFile dbPrefix
-  Right st <- createChatStore f "myKey" False MCYesUp
+  Right st <- createChatStore f "myKey" False MCYesUp True
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
