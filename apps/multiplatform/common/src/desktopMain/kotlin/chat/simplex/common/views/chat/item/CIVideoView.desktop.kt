@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
@@ -37,3 +38,6 @@ actual fun LocalWindowWidth(): Dp = with(LocalDensity.current) {
     simplexWindowState.windowState.size.width
   }
 }
+
+@Composable
+actual fun LocalWindowHeight(): Dp = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }

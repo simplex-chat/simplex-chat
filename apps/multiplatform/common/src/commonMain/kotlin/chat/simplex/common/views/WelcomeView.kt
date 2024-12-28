@@ -40,8 +40,6 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
-
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Box(
       modifier = Modifier
         .fillMaxSize()
@@ -50,11 +48,9 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
-      ColumnWithScrollBar(
-        modifier = Modifier.fillMaxSize()
-      ) {
+      ColumnWithScrollBar {
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
+          AppBarTitle(stringResource(MR.strings.create_profile), withPadding = false, bottomPadding = DEFAULT_PADDING)
           Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
               stringResource(MR.strings.display_name),
@@ -102,7 +98,6 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         }
       }
     }
-  }
 }
 
 @Composable
@@ -111,59 +106,43 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
-  val handler = remember { AppBarHandler() }
-  CompositionLocalProvider(
-    LocalAppBarHandler provides handler
-  ) {
-    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Column(
-        modifier = Modifier
-          .fillMaxSize()
-          .themedBackground(),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        CloseSheetBar(close = {
-          if (chatModel.users.none { !it.user.hidden }) {
-            appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-          } else {
-            close()
+  CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
+    ModalView({
+      if (chatModel.users.none { !it.user.hidden }) {
+        appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+      } else {
+        close()
+      }
+    }) {
+      ColumnWithScrollBar {
+        val displayName = rememberSaveable { mutableStateOf("") }
+        val focusRequester = remember { FocusRequester() }
+        Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(start = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, end = DEFAULT_ONBOARDING_HORIZONTAL_PADDING * 2, bottom = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          Box(Modifier.align(Alignment.CenterHorizontally)) {
+            AppBarTitle(stringResource(MR.strings.create_your_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
           }
-        })
-        BackHandler(onBack = {
-          appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-        })
+          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+          OnboardingActionButton(
+            if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.create_profile_button,
+            onboarding = null,
+            enabled = canCreateProfile(displayName.value),
+            onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
+          )
+          // Reserve space
+          TextButtonBelowOnboardingButton("", null)
+        }
 
-        ColumnWithScrollBar(
-          modifier = Modifier.fillMaxSize()
-        ) {
-          val displayName = rememberSaveable { mutableStateOf("") }
-          val focusRequester = remember { FocusRequester() }
-          Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
-            Box(Modifier.align(Alignment.CenterHorizontally)) {
-              AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
-            }
-            ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
-            Spacer(Modifier.height(DEFAULT_PADDING))
-            ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-            ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Start, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-          }
-          Spacer(Modifier.fillMaxHeight().weight(1f))
-          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-            OnboardingActionButton(
-              if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-              labelId = MR.strings.create_profile_button,
-              onboarding = null,
-              enabled = canCreateProfile(displayName.value),
-              onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
-            )
-            // Reserve space
-            TextButtonBelowOnboardingButton("", null)
-          }
-
-          LaunchedEffect(Unit) {
-            delay(300)
-            focusRequester.requestFocus()
-          }
+        LaunchedEffect(Unit) {
+          delay(300)
+          focusRequester.requestFocus()
         }
       }
       LaunchedEffect(Unit) {
@@ -187,7 +166,7 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
-    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_ChooseServerOperators)
     controller.startChat(user)
     controller.switchUIRemoteHost(null)
     close()
@@ -203,7 +182,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
-      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
     } else {
       val users = chatModel.controller.listUsers(rhId)
       chatModel.users.clear()
@@ -226,7 +205,7 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
-        OnboardingStage.Step3_CreateSimpleXAddress
+        OnboardingStage.Step3_ChooseServerOperators
       })
     } else {
       // the next two lines are only needed for failure case when because of the database error the app gets stuck on on-boarding screen,
@@ -255,7 +234,6 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
   val modifier = Modifier
     .fillMaxWidth()
     .heightIn(min = 50.dp)
-    .navigationBarsWithImePadding()
     .onFocusChanged { focused = it.isFocused }
   Column(
     Modifier
@@ -289,6 +267,7 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
           enabled = true,
           isError = false,
           interactionSource = remember { MutableInteractionSource() },
+          colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
         )
       }
     )

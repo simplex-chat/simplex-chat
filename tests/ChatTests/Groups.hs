@@ -1,8 +1,10 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatTests.Groups where
 
@@ -36,6 +38,7 @@ chatGroupTests = do
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
     it "mark multiple messages as read" testMarkReadGroup
+    it "initial chat pagination" testChatPaginationInitial
     it "v1: add contacts, create group and send/receive messages" testGroup
     it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "send large message" testGroupLargeMessage
@@ -339,19 +342,17 @@ testGroupShared alice bob cath checkMessages directConnections = do
     getReadChats :: HasCallStack => String -> String -> IO ()
     getReadChats msgItem1 msgItem2 = do
       alice @@@ [("#team", "hey team"), ("@cath", "sent invitation to join group team as admin"), ("@bob", "sent invitation to join group team as admin")]
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       -- "before" and "after" define a chat item id across all chats,
       -- so we take into account group event items as well as sent group invitations in direct chats
       alice #$> ("/_get chat #1 after=" <> msgItem1 <> " count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, sndGroupFeatures <> [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 around=" <> msgItem1 <> " count=2", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
-      alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
-      cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
       alice #$> ("/_read chat #1", id, "ok")
       bob #$> ("/_read chat #1", id, "ok")
       cath #$> ("/_read chat #1", id, "ok")
@@ -373,6 +374,38 @@ testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
   i :: ChatItemId <- read <$> getTermLine bob
   let itemIds = intercalate "," $ map show [i - 3 .. i]
   bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+
+testChatPaginationInitial :: HasCallStack => FilePath -> IO ()
+testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+  createGroup2 "team" alice bob
+  -- Wait, otherwise ids are going to be wrong.
+  threadDelay 1000000
+  lastEventId <- (read :: String -> Int) <$> lastItemId bob
+  let groupItemId n = show $ lastEventId + n
+
+  -- Send messages from alice to bob
+  forM_ ([1 .. 10] :: [Int]) $ \n -> alice #> ("#team " <> show n)
+
+  -- Bob receives the messages.
+  forM_ ([1 .. 10] :: [Int]) $ \n -> bob <# ("#team alice> " <> show n)
+
+  -- All messages are unread for bob, should return area around unread
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "Recent history: on"), (0, "connected"), (0, "1"), (0, "2"), (0, "3")])
+
+  -- Read next 2 items
+  let itemIds = intercalate "," $ map groupItemId [1 .. 2]
+  bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
+  bob #$> ("/_get chat #1 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
+
+  -- Read all items
+  bob #$> ("/_read chat #1", id, "ok")
+  bob #$> ("/_get chat #1 initial=3", chat, [(0, "8"), (0, "9"), (0, "10")])
+  bob #$> ("/_get chat #1 initial=5", chat, [(0, "6"), (0, "7"), (0, "8"), (0, "9"), (0, "10")])
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
 
 testGroupLargeMessage :: HasCallStack => FilePath -> IO ()
 testGroupLargeMessage =
@@ -532,18 +565,21 @@ testGroup2 =
       dan <##> cath
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 9"
+      alice ##> "/t #club 17"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
-        <##? [ ConsoleString ("#club " <> e2eeInfoNoPQStr),
-               "#club bob> connected",
-               "#club cath> connected",
-               "#club bob> added dan (Daniel)",
-               "#club dan> connected",
-               "#club hello",
-               "#club bob> hi there",
-               "#club cath> hey",
-               "#club dan> how is it going?"
-             ]
+        <##?
+          ( map (ConsoleString . ("#club " <> )) groupFeatureStrs
+              <>
+                [ "#club bob> connected",
+                  "#club cath> connected",
+                  "#club bob> added dan (Daniel)",
+                  "#club dan> connected",
+                  "#club hello",
+                  "#club bob> hi there",
+                  "#club cath> hey",
+                  "#club dan> how is it going?"
+                ]
+          )
       alice ##> "/t @dan 2"
       alice
         <##? [ "dan> hi",
@@ -1952,7 +1988,6 @@ testGroupAsync tmp = do
         (bob <## "#team: you joined the group")
       alice #> "#team hello bob"
       bob <# "#team alice> hello bob"
-  print (1 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withNewTestChat tmp "cath" cathProfile $ \cath -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -1972,7 +2007,6 @@ testGroupAsync tmp = do
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
-  print (2 :: Integer)
   withTestChat tmp "bob" $ \bob -> do
     withTestChat tmp "cath" $ \cath -> do
       concurrentlyN_
@@ -1988,7 +2022,6 @@ testGroupAsync tmp = do
             cath <## "#team: member bob (Bob) is connected"
         ]
   threadDelay 500000
-  print (3 :: Integer)
   withTestChat tmp "bob" $ \bob -> do
     withNewTestChat tmp "dan" danProfile $ \dan -> do
       bob <## "2 contacts connected (use /cs for the list)"
@@ -2008,7 +2041,6 @@ testGroupAsync tmp = do
         ]
       threadDelay 1000000
   threadDelay 1000000
-  print (4 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withTestChat tmp "cath" $ \cath -> do
       withTestChat tmp "dan" $ \dan -> do
@@ -2030,7 +2062,6 @@ testGroupAsync tmp = do
               dan <## "#team: member cath (Catherine) is connected"
           ]
         threadDelay 1000000
-  print (5 :: Integer)
   withTestChat tmp "alice" $ \alice -> do
     withTestChat tmp "bob" $ \bob -> do
       withTestChat tmp "cath" $ \cath -> do
@@ -2111,7 +2142,7 @@ testGroupLink =
             bob <## "#team: you joined the group"
         ]
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
       -- contacts connected via group link are not in chat previews
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -2972,7 +3003,7 @@ testGroupLinkNoContact =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -3035,7 +3066,7 @@ testGroupLinkNoContactInviteesWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected"), ("@cath", "hey")]
@@ -3116,7 +3147,7 @@ testGroupLinkNoContactAllMembersWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected"), ("@bob", "hey"), ("@cath", "hey")]
       bob @@@ [("#team", "connected"), ("@alice", "hey"), ("@cath", "hey")]
@@ -3272,7 +3303,7 @@ testGroupLinkNoContactHostIncognito =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -3306,7 +3337,7 @@ testGroupLinkNoContactInviteeIncognito =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -3373,7 +3404,7 @@ testGroupLinkNoContactExistingContactMerged =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
 
       alice <##> bob
 
@@ -3707,6 +3738,9 @@ testSetGroupMessageReactions =
       cath ##> "/tail #team 1"
       cath <# "#team alice> hi"
       cath <## "      👍 2 🚀 1"
+      itemId' <- lastItemId alice
+      alice ##> ("/_reaction members 1 #1 " <> itemId' <> " {\"type\": \"emoji\", \"emoji\": \"👍\"}")
+      alice <## "2 member(s) reacted"
       bob ##> "-1 #team hi"
       bob <## "removed 👍"
       alice <# "#team bob> > alice hi"

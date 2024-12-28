@@ -89,8 +89,7 @@
     <string name="network_session_mode_user_description"><![CDATA[Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки чат профил, който имате в приложението</b>.]]></string>
     <string name="icon_descr_audio_call">аудио разговор</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Най-добро за батерията</b>. Ще получавате известия само когато приложението работи (БЕЗ фонова услуга).]]></string>
-    <string name="network_session_mode_entity_description">Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки контакт и член на група</b>.
-\n<b>Моля, обърнете внимание</b>: ако имате много връзки, консумацията на батерията и трафика може да бъде значително по-висока и някои връзки може да се провалят.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Ще се използва отделна TCP връзка (и идентификационни данни за SOCKS) <b>за всеки контакт и член на група</b>. \n<b>Моля, обърнете внимание</b>: ако имате много връзки, консумацията на батерията и трафика може да бъде значително по-висока и някои връзки може да се провалят.]]></string>
     <string name="icon_descr_asked_to_receive">Помолен да получи изображението</string>
     <string name="v4_6_audio_video_calls">Аудио и видео разговори</string>
     <string name="audio_call_no_encryption">аудио разговор (не е e2e криптиран)</string>
@@ -228,7 +227,6 @@
     <string name="chat_database_imported">Базата данни на чат е импортирана</string>
     <string name="confirm_new_passphrase">Потвърди новата парола…</string>
     <string name="confirm_database_upgrades">Потвърди актуализаациите на базата данни</string>
-    <string name="chat_archive_header">Архив на чата</string>
     <string name="rcv_group_event_member_connected">свързан</string>
     <string name="snd_conn_event_switch_queue_phase_changing">промяна на адреса…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">промяна на адреса за %s…</string>
@@ -317,7 +315,6 @@
     <string name="change_self_destruct_mode">Промени режима на самоунищожение</string>
     <string name="change_self_destruct_passcode">Промени кода за достъп за самоунищожение</string>
     <string name="settings_section_title_chats">ЧАТОВЕ</string>
-    <string name="chat_archive_section">АРХИВ НА ЧАТА</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">промяна на адреса…</string>
     <string name="maximum_supported_file_size">В момента максималният поддържан размер на файла е %1$s.</string>
     <string name="info_row_database_id">ID в базата данни</string>
@@ -341,9 +338,6 @@
     <string name="database_downgrade">Понижаване на версията на базата данни</string>
     <string name="database_upgrade">Актуализация на базата данни</string>
     <string name="mtr_error_no_down_migration">версията на базата данни е по-нова от приложението, но няма миграция надолу за: %s</string>
-    <string name="archive_created_on_ts">Създаден на %1$s</string>
-    <string name="delete_archive">Изтрий архив</string>
-    <string name="delete_chat_archive_question">Изтриване на архива на чата\?</string>
     <string name="rcv_group_event_group_deleted">групата изтрита</string>
     <string name="icon_descr_contact_checked">Контактът е проверен</string>
     <string name="group_member_status_creator">създател</string>
@@ -466,7 +460,7 @@
     <string name="timed_messages">Изчезващи съобщения</string>
     <string name="feature_enabled">активирано</string>
     <string name="feature_enabled_for_contact">активирано за контакт</string>
-    <string name="direct_messages_are_prohibited_in_chat">Личните съобщения между членовете са забранени в тази група.</string>
+    <string name="direct_messages_are_prohibited_in_group">Личните съобщения между членовете са забранени в тази група.</string>
     <string name="v4_5_multiple_chat_profiles_descr">Различни имена, аватари и транспортна изолация.</string>
     <string name="v5_2_fix_encryption_descr">Оправяне на криптирането след възстановяване от резервни копия.</string>
     <string name="delivery_receipts_title">Потвърждениe за доставка!</string>
@@ -987,16 +981,13 @@
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Протокол и код с отворен код – всеки може да оперира собствени сървъри.</string>
     <string name="people_can_connect_only_via_links_you_share">Хората могат да се свържат с вас само чрез ликовете, които споделяте.</string>
     <string name="privacy_redefined">Поверителността преосмислена</string>
-    <string name="read_more_in_github">Прочетете повече в нашето хранилище в GitHub.</string>
     <string name="make_private_connection">Добави поверителна връзка</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Много хора попитаха: <i>ако SimpleX няма потребителски идентификатори, как може да доставя съобщения\?</i>]]></string>
     <string name="open_verb">Отвори</string>
     <string name="relay_server_if_necessary">Реле сървър се използва само ако е необходимо. Друга страна може да наблюдава вашия IP адрес.</string>
     <string name="lock_after">Заключване след</string>
     <string name="lock_mode">Режим на заключване</string>
     <string name="alert_text_fragment_please_report_to_developers">Моля, докладвайте го на разработчиците.</string>
     <string name="protect_app_screen">Защити екрана на приложението</string>
-    <string name="save_archive">Запази архив</string>
     <string name="member_info_section_title_member">ЧЛЕН</string>
     <string name="remove_member_confirmation">Премахване</string>
     <string name="network_option_ping_count">PING бройка</string>
@@ -1142,7 +1133,6 @@
     <string name="save_preferences_question">Запази настройките\?</string>
     <string name="icon_descr_speaker_on">Високоговорителят е включен</string>
     <string name="icon_descr_speaker_off">Високоговорителят е изключен</string>
-    <string name="stop_chat_to_enable_database_actions">Спрете чата, за да активирате действията с базата данни.</string>
     <string name="role_in_group">Роля</string>
     <string name="network_options_save">Запази</string>
     <string name="reset_color">Нулирай цветовете</string>
@@ -1226,7 +1216,6 @@
     <string name="network_use_onion_hosts_prefer">Когато са налични</string>
     <string name="your_profile_is_stored_on_your_device">Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Можете да използвате markdown за форматиране на съобщенията:</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Вие контролирате през кой сървър(и) <b>да получавате</b> съобщенията, вашите контакти – сървърите, които използвате, за да им изпращате съобщения.]]></string>
     <string name="use_chat">Използвай чата</string>
     <string name="update_database">Актуализация</string>
     <string name="you_have_to_enter_passphrase_every_time">Трябва да въвеждате парола при всяко стартиране на приложението - тя не се съхранява на устройството.</string>

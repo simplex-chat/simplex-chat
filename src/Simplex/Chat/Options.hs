@@ -236,7 +236,7 @@ coreChatOptsP appDir defaultDbFileName = do
       )
   yesToUpMigrations <-
     switch
-      ( long "--yes-migrate"
+      ( long "yes-migrate"
           <> short 'y'
           <> help "Automatically confirm \"up\" database migrations"
       )

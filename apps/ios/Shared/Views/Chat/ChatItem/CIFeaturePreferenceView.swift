@@ -47,7 +47,7 @@ struct CIFeaturePreferenceView: View {
             + Text(acceptText)
                 .fontWeight(.medium)
                 .foregroundColor(theme.colors.primary)
-            + Text("  ")
+            + Text(verbatim: "  ")
         }
         r = r + chatItem.timestampText
             .fontWeight(.light)

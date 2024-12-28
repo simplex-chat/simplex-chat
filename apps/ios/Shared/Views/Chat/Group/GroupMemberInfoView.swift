@@ -14,11 +14,15 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var groupInfo: GroupInfo
+    @ObservedObject var chat: Chat
     @ObservedObject var groupMember: GMember
     var navigation: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var connectionLoaded: Bool = false
+    @State private var knownContactChat: Chat? = nil
+    @State private var knownContact: Contact? = nil
+    @State private var knownContactConnectionStats: ConnectionStats? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @State private var sheet: PlanAndConnectActionSheet?
@@ -118,8 +122,8 @@ struct GroupMemberInfoView: View {
                             } label: {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }
-                            if let contactId = member.memberContactId {
-                                if knownDirectChat(contactId) == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                            if member.memberContactId != nil {
+                                if knownContactChat == nil && !groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                                     connectViaAddressButton(contactLink)
                                 }
                             } else {
@@ -135,7 +139,8 @@ struct GroupMemberInfoView: View {
                     }
 
                     Section(header: Text("Member").foregroundColor(theme.colors.secondary)) {
-                        infoRow("Group", groupInfo.displayName)
+                        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Group" : "Chat"
+                        infoRow(label, groupInfo.displayName)
 
                         if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
                             Picker("Change role", selection: $newRole) {
@@ -227,6 +232,18 @@ struct GroupMemberInfoView: View {
                     }
                     logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
                 }
+                if let contactId = member.memberContactId, let (contactChat, contact) = knownDirectChat(contactId) {
+                    knownContactChat = contactChat
+                    knownContact = contact
+                    do {
+                        let (stats, _) = try await apiContactInfo(contactChat.chatInfo.apiId)
+                        await MainActor.run {
+                            knownContactConnectionStats = stats
+                        }
+                    } catch let error {
+                        logger.error("apiContactInfo error: \(responseError(error))")
+                    }
+                }
             }
             .onChange(of: newRole) { newRole in
                 if newRole != member.memberRole {
@@ -260,6 +277,11 @@ struct GroupMemberInfoView: View {
                 ProgressView().scaleEffect(2)
             }
         }
+        .onChange(of: chat.chatInfo) { c in
+            if case let .group(gI) = chat.chatInfo {
+                groupInfo = gI
+            }
+        }
         .modifier(ThemedBackground(grouped: true))
     }
 
@@ -267,10 +289,10 @@ struct GroupMemberInfoView: View {
         GeometryReader { g in
             let buttonWidth = g.size.width / 4
             HStack(alignment: .center, spacing: 8) {
-                if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
+                if let chat = knownContactChat, let contact = knownContact {
                     knownDirectChatButton(chat, width: buttonWidth)
-                    AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                    VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                    AudioCallButton(chat: chat, contact: contact, connectionStats: $knownContactConnectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                    VideoButton(chat: chat, contact: contact, connectionStats: $knownContactConnectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                 } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
@@ -305,10 +327,15 @@ struct GroupMemberInfoView: View {
     }
 
     func showDirectMessagesProhibitedAlert(_ title: LocalizedStringKey) {
+        let messageLabel: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "Direct messages between members are prohibited."
+            : "Direct messages between members are prohibited in this chat."
+        )
         alert = .someAlert(alert: SomeAlert(
             alert: mkAlert(
                 title: title,
-                message: "Direct messages between members are prohibited in this group."
+                message: messageLabel
             ),
             id: "can't message member, direct messages prohibited"
         ))
@@ -354,25 +381,49 @@ struct GroupMemberInfoView: View {
 
     func createMemberContactButton(width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
-            progressIndicator = true
-            Task {
-                do {
-                    let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
-                    await MainActor.run {
-                        progressIndicator = false
-                        chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                        ItemsModel.shared.loadOpenChat(memberContact.id) {
-                            dismissAllSheets(animated: true)
+            if let connStats = connectionStats {
+                if connStats.ratchetSyncState == .ok {
+                    progressIndicator = true
+                    Task {
+                        do {
+                            let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
+                            await MainActor.run {
+                                progressIndicator = false
+                                chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
+                                ItemsModel.shared.loadOpenChat(memberContact.id) {
+                                    dismissAllSheets(animated: true)
+                                }
+                                NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
+                            }
+                        } catch let error {
+                            logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
+                            let a = getErrorAlert(error, "Error creating member contact")
+                            await MainActor.run {
+                                progressIndicator = false
+                                alert = .error(title: a.title, error: a.message)
+                            }
                         }
-                        NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
                     }
-                } catch let error {
-                    logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error creating member contact")
-                    await MainActor.run {
-                        progressIndicator = false
-                        alert = .error(title: a.title, error: a.message)
-                    }
+                } else if connStats.ratchetSyncAllowed {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: Alert(
+                            title: Text("Fix connection?"),
+                            message: Text("Connection requires encryption renegotiation."),
+                            primaryButton: .default(Text("Fix")) {
+                                syncMemberConnection(force: false)
+                            },
+                            secondaryButton: .cancel()
+                        ),
+                        id: "can't message member, fix connection"
+                    ))
+                } else {
+                    alert = .someAlert(alert: SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't message member",
+                            message: "Encryption renegotiation in progress."
+                        ),
+                        id: "can't message contact, encryption renegotiation in progress"
+                    ))
                 }
             }
         }
@@ -388,7 +439,7 @@ struct GroupMemberInfoView: View {
                     Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(theme.colors.secondary)
                         .font(.title2)
-                    + Text(" ")
+                    + textSpace
                     + Text(mem.displayName)
                         .font(.largeTitle)
                 )
@@ -537,9 +588,14 @@ struct GroupMemberInfoView: View {
     }
 
     private func removeMemberAlert(_ mem: GroupMember) -> Alert {
-        Alert(
+        let label: LocalizedStringKey = (
+            groupInfo.businessChat == nil
+            ? "Member will be removed from group - this cannot be undone!"
+            : "Member will be removed from chat - this cannot be undone!"
+        )
+        return Alert(
             title: Text("Remove member?"),
-            message: Text("Member will be removed from group - this cannot be undone!"),
+            message: Text(label),
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
@@ -562,7 +618,15 @@ struct GroupMemberInfoView: View {
     private func changeMemberRoleAlert(_ mem: GroupMember) -> Alert {
         Alert(
             title: Text("Change member role?"),
-            message: mem.memberCurrent ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.") : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation."),
+            message: (
+                mem.memberCurrent
+                ? (
+                    groupInfo.businessChat == nil
+                    ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.")
+                    : Text("Member role will be changed to \"\(newRole.text)\". All chat members will be notified.")
+                )
+                : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation.")
+            ),
             primaryButton: .default(Text("Change")) {
                 Task {
                     do {
@@ -570,7 +634,7 @@ struct GroupMemberInfoView: View {
                         await MainActor.run {
                             _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
                         }
-                        
+
                     } catch let error {
                         newRole = mem.memberRole
                         logger.error("apiMemberRole error: \(responseError(error))")
@@ -739,6 +803,7 @@ struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupMemberInfoView(
             groupInfo: GroupInfo.sampleData,
+            chat: Chat.sampleData,
             groupMember: GMember.sampleData
         )
     }

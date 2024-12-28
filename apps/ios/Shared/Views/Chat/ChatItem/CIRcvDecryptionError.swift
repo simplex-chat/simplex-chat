@@ -121,11 +121,11 @@ struct CIRcvDecryptionError: View {
                     Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath"))
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
-                    + Text(" ")
+                    + textSpace
                     + Text("Fix connection")
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
-                    + Text("   ")
+                    + Text(verbatim: "   ")
                     + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                 )
             }
@@ -144,7 +144,7 @@ struct CIRcvDecryptionError: View {
                 Text(chatItem.content.text)
                     .foregroundColor(.red)
                     .italic()
-                + Text("   ")
+                + Text(verbatim: "   ")
                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
             }
             .padding(.horizontal, 12)

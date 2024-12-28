@@ -163,13 +163,14 @@ Your donations help us raise more funds - any amount, even the price of the cup 
 It is possible to donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) (commission-free) or [OpenCollective](https://opencollective.com/simplex-chat) (~10% commission).
-- Bitcoin: bc1qd74rc032ek2knhhr3yjq2ajzc5enz3h4qwnxad
-- Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- BTC: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
+- XMR: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
-- Ethereum: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
-- USDT:
-  - Ethereum: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
-- Solana: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
+- ETH: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- USDT (Ethereum): 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
+- DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf
+- SOL: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 - please ask if you want to donate any other coins.
 
 Thank you,
@@ -233,6 +234,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Dec 10, 2024. SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
+
 [Oct 14, 2024. SimpleX network: security review of protocols design by Trail of Bits, v6.1 released with better calls and user experience.](./blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
 
 [Aug 14, 2024. SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
@@ -241,19 +244,13 @@ Recent and important updates:
 
 [Mar 14, 2024. SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm.](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
 
-[Jan 24, 2024. SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.](./blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
-
 [Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
-
-[Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
 
 [Apr 22, 2023. SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
 [Mar 1, 2023. SimpleX File Transfer Protocol – send large files efficiently, privately and securely, soon to be integrated into SimpleX Chat apps.](./blog/20230301-simplex-file-transfer-protocol.md).
 
 [Nov 8, 2022. Security audit by Trail of Bits, the new website and v4.2 released](./blog/20221108-simplex-chat-v4.2-security-audit-new-website.md).
-
-[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md).
 
 [All updates](./blog)
 
@@ -382,9 +379,11 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Improve sending videos (including encryption of locally stored videos).
 - ✅ Post-quantum resistant key exchange in double ratchet protocol.
 - ✅ Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
+- ✅ Support multiple network operators in the app.
+- 🏗 Large groups, communities and public channels.
+- 🏗 Short links to connect and join groups.
 - 🏗 Improve stability and reduce battery usage.
 - 🏗 Improve experience for the new users.
-- 🏗 Large groups, communities and public channels.
 - Privacy & security slider - a simple way to set all settings at once.
 - SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.

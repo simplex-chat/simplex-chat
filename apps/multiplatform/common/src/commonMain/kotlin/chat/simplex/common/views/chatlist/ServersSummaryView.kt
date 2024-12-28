@@ -48,7 +48,6 @@ import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.ProtocolServersView
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -540,15 +539,8 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
         )
       )
     }
-    if (summary.known == true) {
-      SectionItemView(click = {
-        ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.XFTP, close) }
-      }) {
-        Text(generalGetString(MR.strings.open_server_settings_button))
-      }
-      if (summary.stats != null || summary.sessions != null) {
-        SectionDividerSpaced()
-      }
+    if (summary.stats != null || summary.sessions != null) {
+      SectionDividerSpaced()
     }
 
     if (summary.stats != null) {
@@ -579,12 +571,7 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
         )
       )
     }
-    if (summary.known == true) {
-      SectionItemView(click = {
-        ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.SMP, close) }
-      }) {
-        Text(generalGetString(MR.strings.open_server_settings_button))
-      }
+    if (summary.stats != null || summary.subs != null || summary.sessions != null) {
       SectionDividerSpaced()
     }
 
@@ -620,9 +607,7 @@ fun ModalData.SMPServerSummaryView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       val bottomPadding = DEFAULT_PADDING
       AppBarTitle(
         stringResource(MR.strings.smp_server),
@@ -645,9 +630,7 @@ fun ModalData.DetailedXFTPStatsView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -671,9 +654,7 @@ fun ModalData.DetailedSMPStatsView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -697,9 +678,7 @@ fun ModalData.XFTPServerSummaryView(
   ModalView(
     close = close
   ) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxSize(),
-    ) {
+    ColumnWithScrollBar {
       Box(contentAlignment = Alignment.Center) {
         val bottomPadding = DEFAULT_PADDING
         AppBarTitle(
@@ -715,9 +694,7 @@ fun ModalData.XFTPServerSummaryView(
 
 @Composable
 fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableState<PresentedServersSummary?>) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize(),
-  ) {
+  ColumnWithScrollBar {
     var showUserSelection by remember { mutableStateOf(false) }
     val selectedUserCategory =
       remember { stateGetOrPut("selectedUserCategory") { PresentedUserCategory.ALL_USERS } }

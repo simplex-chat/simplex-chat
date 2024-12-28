@@ -55,9 +55,7 @@ fun PrivacySettingsView(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
     AppBarTitle(stringResource(MR.strings.your_privacy))
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
@@ -514,9 +512,7 @@ fun SimplexLockView(
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.chat_lock))
     SectionView {
       EnableLock(remember { appPrefs.performLA.state }) { performLAToggle ->

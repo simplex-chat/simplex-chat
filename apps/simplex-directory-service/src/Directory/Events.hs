@@ -89,10 +89,11 @@ crDirectoryEvent = \case
   CRChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
 
-data DirectoryRole = DRUser | DRSuperUser
+data DirectoryRole = DRUser | DRAdmin | DRSuperUser
 
 data SDirectoryRole (r :: DirectoryRole) where
   SDRUser :: SDirectoryRole 'DRUser
+  SDRAdmin :: SDirectoryRole 'DRAdmin
   SDRSuperUser :: SDirectoryRole 'DRSuperUser
 
 deriving instance Show (SDirectoryRole r)
@@ -107,12 +108,14 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
   DCSetRole_ :: DirectoryCmdTag 'DRUser
-  DCApproveGroup_ :: DirectoryCmdTag 'DRSuperUser
-  DCRejectGroup_ :: DirectoryCmdTag 'DRSuperUser
-  DCSuspendGroup_ :: DirectoryCmdTag 'DRSuperUser
-  DCResumeGroup_ :: DirectoryCmdTag 'DRSuperUser
-  DCListLastGroups_ :: DirectoryCmdTag 'DRSuperUser
-  DCListPendingGroups_ :: DirectoryCmdTag 'DRSuperUser
+  DCApproveGroup_ :: DirectoryCmdTag 'DRAdmin
+  DCRejectGroup_ :: DirectoryCmdTag 'DRAdmin
+  DCSuspendGroup_ :: DirectoryCmdTag 'DRAdmin
+  DCResumeGroup_ :: DirectoryCmdTag 'DRAdmin
+  DCListLastGroups_ :: DirectoryCmdTag 'DRAdmin
+  DCListPendingGroups_ :: DirectoryCmdTag 'DRAdmin
+  DCShowGroupLink_ :: DirectoryCmdTag 'DRAdmin
+  DCSendToGroupOwner_ :: DirectoryCmdTag 'DRAdmin
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -130,12 +133,14 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCSetRole :: GroupId -> GroupName -> GroupMemberRole -> DirectoryCmd 'DRUser
-  DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRSuperUser
-  DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
-  DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
-  DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRSuperUser
-  DCListLastGroups :: Int -> DirectoryCmd 'DRSuperUser
-  DCListPendingGroups :: Int -> DirectoryCmd 'DRSuperUser
+  DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRAdmin
+  DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
+  DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
+  DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
+  DCListLastGroups :: Int -> DirectoryCmd 'DRAdmin
+  DCListPendingGroups :: Int -> DirectoryCmd 'DRAdmin
+  DCShowGroupLink :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
+  DCSendToGroupOwner :: GroupId -> GroupName -> Text -> DirectoryCmd 'DRAdmin
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -168,17 +173,20 @@ directoryCmdP =
         "ls" -> u DCListUserGroups_
         "delete" -> u DCDeleteGroup_
         "role" -> u DCSetRole_
-        "approve" -> su DCApproveGroup_
-        "reject" -> su DCRejectGroup_
-        "suspend" -> su DCSuspendGroup_
-        "resume" -> su DCResumeGroup_
-        "last" -> su DCListLastGroups_
-        "pending" -> su DCListPendingGroups_
+        "approve" -> au DCApproveGroup_
+        "reject" -> au DCRejectGroup_
+        "suspend" -> au DCSuspendGroup_
+        "resume" -> au DCResumeGroup_
+        "last" -> au DCListLastGroups_
+        "pending" -> au DCListPendingGroups_
+        "link" -> au DCShowGroupLink_
+        "owner" -> au DCSendToGroupOwner_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
       where
         u = pure . ADCT SDRUser
+        au = pure . ADCT SDRAdmin
         su = pure . ADCT SDRSuperUser
     cmdP :: DirectoryCmdTag r -> Parser (DirectoryCmd r)
     cmdP = \case
@@ -203,6 +211,11 @@ directoryCmdP =
       DCResumeGroup_ -> gc DCResumeGroup
       DCListLastGroups_ -> DCListLastGroups <$> (A.space *> A.decimal <|> pure 10)
       DCListPendingGroups_ -> DCListPendingGroups <$> (A.space *> A.decimal <|> pure 10)
+      DCShowGroupLink_ -> gc DCShowGroupLink
+      DCSendToGroupOwner_ -> do
+        (groupId, displayName) <- gc (,)
+        msg <- A.space *> A.takeText
+        pure $ DCSendToGroupOwner groupId displayName msg
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
       where
         gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameP
@@ -213,8 +226,8 @@ directoryCmdP =
         quoted c = A.char c *> takeNameTill (== c) <* A.char c
         refChar c = c > ' ' && c /= '#' && c /= '@'
 
-viewName :: String -> String
-viewName n = if ' ' `elem` n then "'" <> n <> "'" else n
+viewName :: Text -> Text
+viewName n = if any (== ' ') (T.unpack n) then "'" <> n <> "'" else n
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
@@ -234,6 +247,8 @@ directoryCmdTag = \case
   DCResumeGroup {} -> "resume"
   DCListLastGroups _ -> "last"
   DCListPendingGroups _ -> "pending"
+  DCShowGroupLink {} -> "link"
+  DCSendToGroupOwner {} -> "owner"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"

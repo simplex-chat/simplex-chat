@@ -28,7 +28,8 @@ revision: 12.10.2024
   - [Documentation](#documentation)
     - [SMP server address](#smp-server-address)
     - [Systemd commands](#systemd-commands)
-    - [Monitoring](#monitoring)
+    - [Control port](#control-port)
+    - [Daily statistics](#daily-statistics)
   - [Updating your SMP server](#updating-your-smp-server)
   - [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
 
@@ -1079,7 +1080,81 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
 ```
 
-#### Monitoring
+#### Control port
+
+Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete queues for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
+
+1. Generate two passwords for each user:
+
+   ```sh
+   tr -dc A-Za-z0-9 </dev/urandom | head -c 20; echo
+   ```
+
+2. Open the configuration file:
+
+   ```sh
+   vim /etc/opt/simplex/smp-server.ini
+   ```
+
+2. Configure the control port and replace the passwords:
+
+   ```ini
+   [AUTH]
+   control_port_admin_password: <your_randomly_generated_admin_password>
+   control_port_user_password: <your_randomly_generated_user_password>
+
+   [TRANSPORT]
+   control_port: 5224
+   ```
+
+3. Restart the server:
+
+   ```sh
+   systemctl restart smp-server
+   ```
+
+To access the control port, use:
+
+```sh
+nc 127.0.0.1 5224
+```
+
+or:
+
+```sh
+telnet 127.0.0.1 5224
+```
+
+Upon connecting, the control port should print:
+
+```sh
+SMP server control port
+'help' for supported commands
+```
+
+To authenticate, type the following and hit enter. Change the `my_generated_password` with the `user` or `admin` password from the configuration:
+
+```sh
+auth my_generated_password
+```
+
+Here's the full list of commands, their descriptions and who can access them.
+
+| Command          | Description                                                                     | Requires `admin` role      |
+| ---------------- | ------------------------------------------------------------------------------- | -------------------------- |
+| `stats`          | Real-time statistics. Fields described in [Daily statistics](#daily-statistics) | -                          |
+| `stats-rts`      | GHC/Haskell statistics. Can be enabled with `+RTS -T -RTS` option               | -                          |
+| `clients`        | Clients information. Useful for debugging.                                      | yes                        |
+| `sockets`        | General sockets information.                                                    | -                          |
+| `socket-threads` | Thread infomation per socket. Useful for debugging.                             | yes                        |
+| `threads`        | Threads information. Useful for debugging.                                      | yes                        |
+| `server-info`    | Aggregated server infomation.                                                   | -                          |
+| `delete`         | Delete known queue. Useful for content moderation.                              | -                          |
+| `save`           | Save queues/messages from memory.                                               | yes                        |
+| `help`           | Help menu.                                                                      | -                          |
+| `quit`           | Exit the control port.                                                          | -                          |
+
+#### Daily statistics
 
 You can enable `smp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
 
@@ -1089,7 +1164,7 @@ Logs will be stored as `csv` file in `/var/opt/simplex/smp-server-stats.daily.lo
 fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge,msgNtfs,msgNtfNoSub,msgNtfLost,qSubNoMsg,msgRecvGet,msgGet,msgGetNoMsg,msgGetAuth,msgGetDuplicate,msgGetProhibited,psSubDaily,psSubWeekly,psSubMonthly,qCount2,ntfCreated,ntfDeleted,ntfSub,ntfSubAuth,ntfSubDuplicate,ntfCount,qDeletedAllB,qSubAllB,qSubEnd,qSubEndB,ntfDeletedB,ntfSubB,msgNtfsB,msgNtfExpired
 ```
 
-#### Fields description
+**Fields description**
 
 | Field number  | Field name                   | Field Description          |
 | ------------- | ---------------------------- | -------------------------- |

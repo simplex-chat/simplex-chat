@@ -131,26 +131,14 @@ fun ChatInfoView(
       },
       syncContactConnection = {
         withBGApi {
-          val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
-          connStats.value = cStats
-          if (cStats != null) {
-            withChats {
-              updateContactConnectionStats(chatRh, contact, cStats)
-            }
-          }
+          syncContactConnection(chatRh, contact, connStats, force = false)
           close.invoke()
         }
       },
       syncContactConnectionForce = {
         showSyncConnectionForceAlert(syncConnectionForce = {
           withBGApi {
-            val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = true)
-            connStats.value = cStats
-            if (cStats != null) {
-              withChats {
-                updateContactConnectionStats(chatRh, contact, cStats)
-              }
-            }
+            syncContactConnection(chatRh, contact, connStats, force = true)
             close.invoke()
           }
         })
@@ -186,6 +174,16 @@ fun ChatInfoView(
       close = close,
       onSearchClicked = onSearchClicked
     )
+  }
+}
+
+suspend fun syncContactConnection(rhId: Long?, contact: Contact, connectionStats: MutableState<ConnectionStats?>, force: Boolean) {
+  val cStats = chatModel.controller.apiSyncContactRatchet(rhId, contact.contactId, force = force)
+  connectionStats.value = cStats
+  if (cStats != null) {
+    withChats {
+      updateContactConnectionStats(rhId, contact, cStats)
+    }
   }
 }
 
@@ -505,7 +503,7 @@ fun ChatInfoLayout(
   currentUser: User,
   sendReceipts: State<SendReceipts>,
   setSendReceipts: (SendReceipts) -> Unit,
-  connStats: State<ConnectionStats?>,
+  connStats: MutableState<ConnectionStats?>,
   contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
@@ -529,10 +527,7 @@ fun ChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { scrollState.scrollTo(0) }
   }
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth()
-  ) {
+  ColumnWithScrollBar {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
@@ -556,8 +551,8 @@ fun ChatInfoLayout(
         verticalAlignment = Alignment.CenterVertically
       ) {
         SearchButton(modifier = Modifier.fillMaxWidth(0.25f), chat, contact, close, onSearchClicked)
-        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact)
-        VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
+        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact, connStats)
+        VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact, connStats)
         MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
       }
     }
@@ -702,13 +697,19 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
         Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
       }
     )
+    val clipboard = LocalClipboardManager.current
+    val copyNameToClipboard = {
+      clipboard.setText(AnnotatedString(contact.profile.displayName))
+      showToast(generalGetString(MR.strings.copied))
+    }
     Text(
       text,
       inlineContent = inlineContent,
       style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       textAlign = TextAlign.Center,
       maxLines = 3,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
     )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
@@ -716,7 +717,8 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
         color = MaterialTheme.colors.onBackground,
         textAlign = TextAlign.Center,
         maxLines = 4,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
       )
     }
   }
@@ -828,12 +830,14 @@ fun MuteButton(
 fun AudioCallButton(
   modifier: Modifier,
   chat: Chat,
-  contact: Contact
+  contact: Contact,
+  connectionStats: MutableState<ConnectionStats?>
 ) {
   CallButton(
     modifier = modifier,
     chat,
     contact,
+    connectionStats,
     icon = painterResource(MR.images.ic_call),
     title = generalGetString(MR.strings.info_view_call_button),
     mediaType = CallMediaType.Audio
@@ -844,12 +848,14 @@ fun AudioCallButton(
 fun VideoButton(
   modifier: Modifier,
   chat: Chat,
-  contact: Contact
+  contact: Contact,
+  connectionStats: MutableState<ConnectionStats?>
 ) {
   CallButton(
     modifier = modifier,
     chat,
     contact,
+    connectionStats,
     icon = painterResource(MR.images.ic_videocam),
     title = generalGetString(MR.strings.info_view_video_button),
     mediaType = CallMediaType.Video
@@ -861,6 +867,7 @@ fun CallButton(
   modifier: Modifier,
   chat: Chat,
   contact: Contact,
+  connectionStats: MutableState<ConnectionStats?>,
   icon: Painter,
   title: String,
   mediaType: CallMediaType
@@ -882,7 +889,23 @@ fun CallButton(
     disabledLook = !canCall,
     onClick =
       when {
-        canCall -> { { startChatCall(chat.remoteHostId, chat.chatInfo, mediaType) } }
+        canCall -> { {
+          val connStats = connectionStats.value
+          if (connStats != null) {
+            if (connStats.ratchetSyncState == RatchetSyncState.Ok) {
+              startChatCall(chat.remoteHostId, chat.chatInfo, mediaType)
+            } else if (connStats.ratchetSyncAllowed) {
+              showFixConnectionAlert(syncConnection = {
+                withBGApi { syncContactConnection(chat.remoteHostId, contact, connectionStats, force = false) }
+              })
+            } else {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.cant_call_contact_alert_title),
+                generalGetString(MR.strings.encryption_renegotiation_in_progress)
+              )
+            }
+          }
+        } }
         contact.nextSendGrpInv -> { { showCantCallContactSendMessageAlert() } }
         !contact.active -> { { showCantCallContactDeletedAlert() } }
         !contact.ready -> { { showCantCallContactConnectingAlert() } }
@@ -1265,6 +1288,15 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
     confirmText = generalGetString(MR.strings.sync_connection_force_confirm),
     onConfirm = syncConnectionForce,
     destructive = true,
+  )
+}
+
+fun showFixConnectionAlert(syncConnection: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.sync_connection_question),
+    text = generalGetString(MR.strings.sync_connection_desc),
+    confirmText = generalGetString(MR.strings.sync_connection_confirm),
+    onConfirm = syncConnection,
   )
 }
 

@@ -116,7 +116,7 @@ git checkout stable
 apt-get update && apt-get install -y build-essential libgmp3-dev zlib1g-dev
 cp scripts/cabal.project.local.linux cabal.project.local
 # nebo na MacOS:
-# brew install openssl@1.1
+# brew install openssl@3.0
 # cp scripts/cabal.project.local.mac cabal.project.local
 # možná budete muset změnit cabal.project.local tak, aby ukazoval na skutečné umístění openssl
 cabal update

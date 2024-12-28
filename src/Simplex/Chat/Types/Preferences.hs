@@ -390,6 +390,33 @@ defaultGroupPrefs =
 emptyGroupPrefs :: GroupPreferences
 emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
+businessGroupPrefs :: Preferences -> GroupPreferences
+businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice} =
+  defaultBusinessGroupPrefs
+    { timedMessages = Just TimedMessagesGroupPreference {enable = maybe FEOff enableFeature timedMessages, ttl = maybe Nothing prefParam timedMessages},
+      fullDelete = Just FullDeleteGroupPreference {enable = maybe FEOff enableFeature fullDelete},
+      reactions = Just ReactionsGroupPreference {enable = maybe FEOn enableFeature reactions},
+      voice = Just VoiceGroupPreference {enable = maybe FEOff enableFeature voice, role = Nothing}
+    }
+  where
+    enableFeature :: FeatureI f => FeaturePreference f -> GroupFeatureEnabled
+    enableFeature p = case getField @"allow" p of
+      FANo -> FEOff
+      _ -> FEOn
+
+defaultBusinessGroupPrefs :: GroupPreferences
+defaultBusinessGroupPrefs =
+  GroupPreferences
+    { timedMessages = Just $ TimedMessagesGroupPreference FEOff Nothing,
+      directMessages = Just $ DirectMessagesGroupPreference FEOff Nothing,
+      fullDelete = Just $ FullDeleteGroupPreference FEOff,
+      reactions = Just $ ReactionsGroupPreference FEOn,
+      voice = Just $ VoiceGroupPreference FEOff Nothing,
+      files = Just $ FilesGroupPreference FEOn Nothing,
+      simplexLinks = Just $ SimplexLinksGroupPreference FEOn Nothing,
+      history = Just $ HistoryGroupPreference FEOn
+    }
+
 data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
     ttl :: Maybe Int

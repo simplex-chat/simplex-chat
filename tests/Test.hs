@@ -10,6 +10,7 @@ import MarkdownTests
 import MessageBatching
 import MobileTests
 import ProtocolTests
+import OperatorTests
 import RandomServers
 import RemoteTests
 import SchemaDump
@@ -31,6 +32,7 @@ main = do
     around tmpBracket $ describe "WebRTC encryption" webRTCTests
     describe "Valid names" validNameTests
     describe "Message batching" batchingTests
+    describe "Operators" operatorTests
     describe "Random servers" randomServersTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests

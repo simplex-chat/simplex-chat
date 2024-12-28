@@ -172,7 +172,7 @@ struct ChatPreviewView: View {
     }
 
     private var verifiedIcon: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        (Text(Image(systemName: "checkmark.shield")) + textSpace)
             .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)
             .kerning(-2)
@@ -232,12 +232,12 @@ struct ChatPreviewView: View {
                 + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
-            Text(Image(systemName: s)).foregroundColor(color) + Text(" ")
+            Text(Image(systemName: s)).foregroundColor(color) + textSpace
         }
 
         func attachment() -> Text {
             switch draft.preview {
-            case let .filePreview(fileName, _): return image("doc.fill") + Text(fileName) + Text(" ")
+            case let .filePreview(fileName, _): return image("doc.fill") + Text(fileName) + textSpace
             case .mediaPreviews: return image("photo")
             case let .voicePreview(_, duration): return image("play.fill") + Text(durationText(duration))
             default: return Text("")
@@ -367,11 +367,11 @@ struct ChatPreviewView: View {
         case .sndErrorAuth, .sndError:
             return Text(Image(systemName: "multiply"))
                 .font(.caption)
-                .foregroundColor(.red) + Text(" ")
+                .foregroundColor(.red) + textSpace
         case .sndWarning:
             return Text(Image(systemName: "exclamationmark.triangle.fill"))
                 .font(.caption)
-                .foregroundColor(.orange) + Text(" ")
+                .foregroundColor(.orange) + textSpace
         default: return Text("")
         }
     }

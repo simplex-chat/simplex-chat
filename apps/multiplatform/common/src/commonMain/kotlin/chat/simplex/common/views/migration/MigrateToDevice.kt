@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.OnionRelatedLayout
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -34,6 +35,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.serialization.*
 import java.io.File
+import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.max
@@ -162,9 +164,7 @@ private fun ModalData.MigrateToDeviceLayout(
   close: () -> Unit,
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize(), maxIntrinsicSize = true
-  ) {
+  ColumnWithScrollBar(maxIntrinsicSize = true) {
     AppBarTitle(stringResource(MR.strings.migrate_to_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver, close)
     SectionBottomSpacer()
@@ -181,7 +181,7 @@ private fun ModalData.SectionByState(
 ) {
   when (val s = migrationState.value) {
     null -> {}
-    is MigrationToState.PasteOrScanLink -> migrationState.PasteOrScanLinkView()
+    is MigrationToState.PasteOrScanLink -> migrationState.PasteOrScanLinkView(close)
     is MigrationToState.Onion -> OnionView(s.link, s.legacySocksProxy, s.networkProxy, s.hostMode, s.requiredHostMode, migrationState)
     is MigrationToState.DatabaseInit -> migrationState.DatabaseInitView(s.link, tempDatabaseFile, s.netCfg, s.networkProxy)
     is MigrationToState.LinkDownloading -> migrationState.LinkDownloadingView(s.link, s.ctrl, s.user, s.archivePath, tempDatabaseFile, chatReceiver, s.netCfg, s.networkProxy)
@@ -196,18 +196,30 @@ private fun ModalData.SectionByState(
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.PasteOrScanLinkView() {
-  if (appPlatform.isAndroid) {
-    SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
-      QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
-        withBGApi { checkUserLink(text) }
+private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Unit) {
+  Box {
+    val progressIndicator = remember { mutableStateOf(false) }
+    Column {
+      if (appPlatform.isAndroid) {
+        SectionView(stringResource(MR.strings.scan_QR_code).replace('\n', ' ').uppercase()) {
+          QRCodeScanner(showQRCodeScanner = remember { mutableStateOf(true) }) { text ->
+            checkUserLink(text)
+          }
+        }
+        SectionSpacer()
+      }
+
+      SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
+        PasteLinkView()
+      }
+      SectionSpacer()
+
+      SectionView(stringResource(MR.strings.chat_archive).uppercase()) {
+        ArchiveImportView(progressIndicator, close)
       }
     }
-    SectionSpacer()
-  }
-
-  SectionView(stringResource(if (appPlatform.isAndroid) MR.strings.or_paste_archive_link else MR.strings.paste_archive_link).uppercase()) {
-    PasteLinkView()
+    if (progressIndicator.value)
+    ProgressView()
   }
 }
 
@@ -219,6 +231,31 @@ private fun MutableState<MigrationToState?>.PasteLinkView() {
     withBGApi { checkUserLink(str) }
   }) {
     Text(stringResource(MR.strings.tap_to_paste_link))
+  }
+}
+
+@Composable
+private fun ArchiveImportView(progressIndicator: MutableState<Boolean>, close: () -> Unit) {
+  val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
+    if (to != null) {
+      withLongRunningApi {
+        val success = importArchive(to, mutableStateOf(0 to 0), progressIndicator, true)
+        if (success) {
+          startChat(
+            chatModel,
+            mutableStateOf(Clock.System.now()),
+            chatModel.chatDbChanged,
+            progressIndicator
+          )
+          hideView(close)
+        }
+      }
+    }
+  }
+  SectionItemView({
+    withLongRunningApi { importArchiveLauncher.launch("application/zip") }
+  }) {
+    Text(stringResource(MR.strings.import_database))
   }
 }
 
@@ -481,8 +518,8 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String) {
-  if (strHasSimplexFileLink(link.trim())) {
+private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
+  return if (strHasSimplexFileLink(link.trim())) {
     val data = MigrationFileLinkData.readFromLink(link)
     val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
     val networkConfig = data?.networkConfig?.transformToPlatformSupported()
@@ -500,11 +537,13 @@ private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String) 
         networkProxy = null
       )
     }
+    true
   } else {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.invalid_file_link),
       text = generalGetString(MR.strings.the_text_you_pasted_is_not_a_link)
     )
+    false
   }
 }
 
@@ -652,6 +691,7 @@ private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit)
     if (user != null) {
       startChat(user)
     }
+    platform.androidChatStartedAfterBeingOff()
     hideView(close)
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_to_device_chat_migrated), generalGetString(MR.strings.migrate_to_device_finalize_migration))
   } catch (e: Exception) {
