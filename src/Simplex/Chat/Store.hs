@@ -21,7 +21,7 @@ import Simplex.Messaging.Agent.Store.SQLite (createDBStore)
 import Simplex.Messaging.Agent.Store.SQLite.Common (DBStore (..), withTransaction)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, MigrationError)
 
-createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError DBStore)
+createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> Bool -> IO (Either MigrationError DBStore)
 createChatStore dbPath key keepKey = createDBStore dbPath key keepKey migrations
 
 chatStoreFile :: FilePath -> FilePath

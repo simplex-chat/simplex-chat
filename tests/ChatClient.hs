@@ -106,7 +106,8 @@ testCoreOpts =
       logFile = Nothing,
       tbqSize = 16,
       highlyAvailable = False,
-      yesToUpMigrations = False
+      yesToUpMigrations = False,
+      vaccumOnMigration = True
     }
 
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -248,14 +249,14 @@ groupLinkViaContactVRange = mkVersionRange (VersionChat 1) (VersionChat 2)
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
-  Right db@ChatDatabase {chatStore, agentStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
+  Right db@ChatDatabase {chatStore, agentStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError True
   withTransaction agentStore (`DB.execute_` "INSERT INTO users (user_id) VALUES (1);")
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError True
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
 
