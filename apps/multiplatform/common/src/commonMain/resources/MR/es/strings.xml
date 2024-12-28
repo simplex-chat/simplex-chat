@@ -744,7 +744,7 @@
     <string name="icon_descr_settings">Configuración</string>
     <string name="icon_descr_speaker_off">Altavoz desactivado</string>
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">Para exportar, importar o eliminar la base de datos debes parar SimpleX. Mientra tanto no podrás recibir o enviar mensajes.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Para exportar, importar o eliminar la base de datos debes parar SimpleX. Mientra tanto no podrás enviar ni recibir mensajes.</string>
     <string name="thank_you_for_installing_simplex">Gracias por instalar SimpleX Chat!</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger tu privacidad, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa el Bloqueo SimpleX.
