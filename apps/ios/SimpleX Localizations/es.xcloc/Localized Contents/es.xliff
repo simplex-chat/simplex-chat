@@ -720,9 +720,9 @@
         <target>¿Dirección o enlace de un uso?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address settings" xml:space="preserve">
+      <trans-unit id="Address settings" xml:space="preserve" approved="no">
         <source>Address settings</source>
-        <target>Configuración de dirección</target>
+        <target state="translated">Configurar dirección</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve">
@@ -5208,9 +5208,9 @@ Requiere activación de la VPN.</target>
         <target>O comparte de forma segura este enlace al archivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Or show this code" xml:space="preserve">
+      <trans-unit id="Or show this code" xml:space="preserve" approved="no">
         <source>Or show this code</source>
-        <target>O muestra este código QR</target>
+        <target state="translated">O muestra el código QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or to share privately" xml:space="preserve">
@@ -5771,9 +5771,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>¿Reconectar todos los servidores?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect server to force message delivery. It uses additional traffic." xml:space="preserve">
+      <trans-unit id="Reconnect server to force message delivery. It uses additional traffic." xml:space="preserve" approved="no">
         <source>Reconnect server to force message delivery. It uses additional traffic.</source>
-        <target>Reconectar el servidor para forzar la entrega de mensajes. Usa tráfico adicional.</target>
+        <target state="translated">Reconectar con el servidor para forzar la entrega de mensajes. Se usa tráfico adicional.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reconnect server?" xml:space="preserve">
@@ -6639,9 +6639,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Compartir enlace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share profile" xml:space="preserve">
+      <trans-unit id="Share profile" xml:space="preserve" approved="no">
         <source>Share profile</source>
-        <target>Comparte perfil</target>
+        <target state="translated">Perfil a compartir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
@@ -6956,9 +6956,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Enviar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribed" xml:space="preserve">
+      <trans-unit id="Subscribed" xml:space="preserve" approved="no">
         <source>Subscribed</source>
-        <target>Suscrito</target>
+        <target state="translated">Suscritas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
@@ -7580,10 +7580,10 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>A menos que utilices la interfaz de llamadas de iOS, activa el modo No molestar para evitar interrupciones.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
+      <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve" approved="no">
         <source>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
 To connect, please ask your contact to create another connection link and check that you have a stable network connection.</source>
-        <target>A menos que tu contacto haya eliminado la conexión o el enlace haya sido usado, podría ser un error. Por favor, notifícalo.
+        <target state="translated">A menos que tu contacto haya eliminado la conexión o el enlace se haya usado, podría ser un error. Por favor, notifícalo.
 Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
