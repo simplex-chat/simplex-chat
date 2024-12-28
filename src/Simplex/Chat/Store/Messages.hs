@@ -152,7 +152,7 @@ import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))

@@ -35,7 +35,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ConnId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
 

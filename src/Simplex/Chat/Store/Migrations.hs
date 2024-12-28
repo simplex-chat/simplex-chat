@@ -121,7 +121,7 @@ import Simplex.Chat.Migrations.M20241128_business_chats
 import Simplex.Chat.Migrations.M20241205_business_chat_members
 import Simplex.Chat.Migrations.M20241222_operator_conditions
 import Simplex.Chat.Migrations.M20241223_chat_tags
-import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
+import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =

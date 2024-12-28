@@ -101,7 +101,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))

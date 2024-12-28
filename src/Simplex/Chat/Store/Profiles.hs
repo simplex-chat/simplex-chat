@@ -100,7 +100,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR

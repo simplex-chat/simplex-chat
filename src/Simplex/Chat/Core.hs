@@ -26,7 +26,8 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), SQLiteStore, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite.Common (DBStore (..), withTransaction)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
@@ -66,7 +67,7 @@ sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack 
 sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
 
-getSelectActiveUser :: SQLiteStore -> IO (Maybe User)
+getSelectActiveUser :: DBStore -> IO (Maybe User)
 getSelectActiveUser st = do
   users <- withTransaction st getUsers
   case find activeUser users of

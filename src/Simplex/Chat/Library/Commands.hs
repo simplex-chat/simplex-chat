@@ -90,10 +90,12 @@ import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (execSQL, upMigration, withConnection)
+import Simplex.Messaging.Agent.Store.SQLite (execSQL)
+import Simplex.Messaging.Agent.Store.SQLite.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
+import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (SMAlways), textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -2311,7 +2313,7 @@ processChatCommand' vr = \case
   ShowVersion -> do
     -- simplexmqCommitQ makes iOS builds crash m(
     let versionInfo = coreVersionInfo ""
-    chatMigrations <- map upMigration <$> withFastStore' (Migrations.getCurrent . DB.conn)
+    chatMigrations <- map upMigration <$> withFastStore' Migrations.getCurrent
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> lift $ do
