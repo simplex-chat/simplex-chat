@@ -1047,7 +1047,7 @@
     <string name="you_can_turn_on_lock">Je kunt SimpleX Vergrendeling aanzetten via Instellingen.</string>
     <string name="enable_lock">Vergrendeling inschakelen</string>
     <string name="lock_mode">Vergrendeling modus</string>
-    <string name="submit_passcode">Indienen</string>
+    <string name="submit_passcode">Bevestigen</string>
     <string name="authentication_cancelled">Verificatie geannuleerd</string>
     <string name="change_lock_mode">Wijzig de vergrendelings modus</string>
     <string name="confirm_passcode">Bevestig toegangscode</string>
