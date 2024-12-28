@@ -6951,9 +6951,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Krachtig</target>
         <note>blur media</note>
       </trans-unit>
-      <trans-unit id="Submit" xml:space="preserve">
+      <trans-unit id="Submit" xml:space="preserve" approved="no">
         <source>Submit</source>
-        <target>Indienen</target>
+        <target state="translated">Bevestigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribed" xml:space="preserve">
