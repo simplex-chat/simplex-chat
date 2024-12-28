@@ -39,9 +39,10 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import Simplex.Chat.Types
+import Simplex.Chat.Util (crossDeviceRenameFile)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (ifM)
-import System.Directory (doesFileExist, renameFile)
+import System.Directory (doesFileExist)
 import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
 
 data DirectoryStore = DirectoryStore
@@ -296,7 +297,7 @@ restoreDirectoryStore = \case
       pure h
     restore f = do
       grs <- readDirectoryData f
-      renameFile f (f <> ".bak")
+      crossDeviceRenameFile f (f <> ".bak")
       h <- writeDirectoryData f grs -- compact
       atomically $ mkDirectoryStore h grs
 
