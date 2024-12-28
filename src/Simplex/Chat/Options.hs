@@ -67,7 +67,7 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
-    vaccumOnMigration :: Bool
+    vacuumOnMigration :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -272,7 +272,7 @@ coreChatOptsP appDir defaultDbFileName = do
         tbqSize,
         highlyAvailable,
         yesToUpMigrations,
-        vaccumOnMigration = not disableVacuum
+        vacuumOnMigration = not disableVacuum
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p

@@ -202,7 +202,7 @@ mobileChatOpts dbFilePrefix =
             tbqSize = 1024,
             highlyAvailable = False,
             yesToUpMigrations = False,
-            vaccumOnMigration = True
+            vacuumOnMigration = True
           },
       deviceName = Nothing,
       chatCmd = "",
@@ -247,7 +247,7 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
       newChatController db user_ defaultMobileConfig opts backgroundMode
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations (vaccumOnMigration $ coreOptions opts))
+        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations (vacuumOnMigration $ coreOptions opts))
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where
