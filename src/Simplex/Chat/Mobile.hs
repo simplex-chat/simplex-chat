@@ -241,12 +241,13 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
   agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
+    opts = mobileChatOpts dbFilePrefix
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix) backgroundMode
+      newChatController db user_ defaultMobileConfig opts backgroundMode
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations True)
+        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations (vaccumOnMigration $ coreOptions opts))
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where
