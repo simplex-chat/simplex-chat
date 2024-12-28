@@ -694,8 +694,7 @@
     <string name="save_and_notify_contact">Guardar y notificar contacto</string>
     <string name="save_preferences_question">¿Guardar preferencias\?</string>
     <string name="save_and_notify_group_members">Guardar y notificar grupo</string>
-    <string name="connection_error_auth_desc">A menos que tu contacto haya eliminado la conexión o el enlace haya sido usado, podría ser un error. Por favor, notifícalo.
-\nPara conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.</string>
+    <string name="connection_error_auth_desc">A menos que tu contacto haya eliminado la conexión o el enlace se haya usado, podría ser un error. Por favor, notifícalo. \nPara conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.</string>
     <string name="periodic_notifications_desc">La aplicación recoge nuevos mensajes periódicamente lo que consume un pequeño porcentaje de batería al día. La aplicación no usa notificaciones push por tanto los datos de tu dispositivo no se envían a los servidores push.</string>
     <string name="la_notice_title_simplex_lock">Bloqueo SimpleX</string>
     <string name="auth_unlock">Desbloquear</string>
@@ -1517,7 +1516,7 @@
     <string name="enable_sending_recent_history">Se envían hasta 100 mensajes más recientes a los miembros nuevos.</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Añadir contacto</b>: crea un enlace de invitación nuevo o usa un enlace recibido.]]></string>
     <string name="disable_sending_recent_history">No se envía el historial a los miembros nuevos.</string>
-    <string name="or_show_this_qr_code">O muestra este código QR</string>
+    <string name="or_show_this_qr_code">O muestra el código QR</string>
     <string name="recent_history_is_sent_to_new_members">Hasta 100 últimos mensajes son enviados a los miembros nuevos.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">El código QR escaneado no es un enlace SimpleX.</string>
     <string name="the_text_you_pasted_is_not_a_link">El texto pegado no es un enlace SimpleX.</string>
@@ -1860,7 +1859,7 @@
     <string name="servers_info">Info servidores</string>
     <string name="servers_info_files_tab">Archivos</string>
     <string name="servers_info_target">Mostrando</string>
-    <string name="subscribed">Suscrito</string>
+    <string name="subscribed">Suscritas</string>
     <string name="subscription_errors">Errores de suscripción</string>
     <string name="subscription_results_ignored">Suscripciones ignoradas</string>
     <string name="app_check_for_updates_notice_desc">Para ser notificado sobre versiones nuevas, activa el chequeo periódico para las versiones Estable o Beta.</string>
@@ -1943,7 +1942,7 @@
     <string name="servers_info_reconnect_all_servers_button">Reconectar todos los servidores</string>
     <string name="servers_info_reconnect_server_title">¿Reconectar servidor?</string>
     <string name="servers_info_reconnect_servers_title">¿Reconectar servidores?</string>
-    <string name="servers_info_reconnect_server_message">Reconectar el servidor para forzar la entrega de mensajes. Usa tráfico adicional.</string>
+    <string name="servers_info_reconnect_server_message">Reconectar con el servidor para forzar la entrega de mensajes. Se usa tráfico adicional.</string>
     <string name="servers_info_reconnect_servers_message">Reconectar todos los servidores para forzar la entrega de mensajes. Usa tráfico adicional.</string>
     <string name="servers_info_reset_stats">Restablecer todas las estadísticas</string>
     <string name="servers_info_reset_stats_alert_title">¿Restablecer todas las estadísticas?</string>
@@ -2090,7 +2089,7 @@
     <string name="delete_messages_cannot_be_undone_warning">Los mensajes serán eliminados. ¡No podrá deshacerse!</string>
     <string name="switching_profile_error_title">Error al cambiar perfil</string>
     <string name="select_chat_profile">Selecciona perfil de chat</string>
-    <string name="new_chat_share_profile">Comparte perfil</string>
+    <string name="new_chat_share_profile">Perfil a compartir</string>
     <string name="switching_profile_error_message">Tu conexión ha sido trasladada a %s pero ha ocurrido un error inesperado al redirigirte al perfil.</string>
     <string name="icon_descr_sound_muted">Sonido silenciado</string>
     <string name="error_initializing_web_view_wrong_arch">Error al iniciar WebView. Asegúrate de tener WebView instalado y que sea compatible con la arquitectura amr64.\nError: %s</string>
@@ -2123,7 +2122,7 @@
     <string name="connection_security">Seguridad de conexión</string>
     <string name="share_1_time_link_with_a_friend">Compartir enlace de un uso con un amigo</string>
     <string name="share_simplex_address_on_social_media">Comparte tu dirección SimpleX en redes sociales.</string>
-    <string name="address_settings">Configuración de dirección</string>
+    <string name="address_settings">Configurar dirección</string>
     <string name="create_1_time_link">Crear enlace de un uso</string>
     <string name="for_social_media">Para redes sociales</string>
     <string name="simplex_address_or_1_time_link">¿Dirección SimpleX o enlace de un uso?</string>
