@@ -8,7 +8,7 @@ import qualified Data.Aeson as J
 import Data.Maybe (fromMaybe)
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (AppSettings (..), combineAppSettings, defaultAppSettings, defaultParseAppSettings)
-import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 
 saveAppSettings :: DB.Connection -> AppSettings -> IO ()

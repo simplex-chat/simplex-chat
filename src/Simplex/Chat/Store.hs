@@ -1,5 +1,5 @@
 module Simplex.Chat.Store
-  ( SQLiteStore,
+  ( DBStore,
     StoreError (..),
     ChatLockEntity (..),
     UserMsgReceiptSettings (..),
@@ -17,10 +17,12 @@ import Data.ByteArray (ScrubbedBytes)
 import Simplex.Chat.Store.Migrations
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, MigrationError, SQLiteStore (..), createSQLiteStore, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (createDBStore)
+import Simplex.Messaging.Agent.Store.SQLite.Common (DBStore (..), withTransaction)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, MigrationError)
 
-createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError SQLiteStore)
-createChatStore dbPath key keepKey = createSQLiteStore dbPath key keepKey migrations
+createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError DBStore)
+createChatStore dbPath key keepKey = createDBStore dbPath key keepKey migrations
 
 chatStoreFile :: FilePath -> FilePath
 chatStoreFile = (<> "_chat.db")

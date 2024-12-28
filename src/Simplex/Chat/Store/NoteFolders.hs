@@ -15,7 +15,7 @@ import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types (NoteFolder (..), NoteFolderId, User (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 
 createNoteFolder :: DB.Connection -> User -> ExceptT StoreError IO ()
