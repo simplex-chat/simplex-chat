@@ -2133,4 +2133,8 @@
     <string name="onboarding_notifications_mode_service_desc_short">Uygulama her zaman arka planda çalışır</string>
     <string name="onboarding_network_about_operators">Operatörler hakkında</string>
     <string name="a_plus_b">a+b</string>
+    <string name="chat_list_add_list">Liste ekle</string>
+    <string name="chat_list_all">Hepsi</string>
+    <string name="add_to_list">Listeye ekle</string>
+    <string name="delete_chat_list_warning">%s listesindeki bütün sohbetler kaldırılacak ve liste silinecek</string>
 </resources>
