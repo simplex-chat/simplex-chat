@@ -3347,9 +3347,11 @@ public enum MREmojiChar: String, Codable, CaseIterable, Hashable {
     case thumbsup = "👍"
     case thumbsdown = "👎"
     case smile = "😀"
+    case laugh = "😂"
     case sad = "😢"
     case heart = "❤"
     case launch = "🚀"
+    case check = "✅"
 }
 
 extension MsgReaction: Decodable {

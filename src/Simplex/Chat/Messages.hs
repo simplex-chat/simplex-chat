@@ -56,7 +56,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextFie
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
-data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
+data ChatType = CTDirect | CTGroup | CTLocal | CTReports | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord)
 
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
@@ -67,6 +67,7 @@ chatTypeStr = \case
   CTDirect -> "@"
   CTGroup -> "#"
   CTLocal -> "*"
+  CTReports -> "!"
   CTContactRequest -> "<@"
   CTContactConnection -> ":"
 
@@ -80,6 +81,7 @@ data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
   LocalChat :: NoteFolder -> ChatInfo 'CTLocal
+  ReportsChat :: ChatInfo 'CTReports -- TODO this chat is automatic, but it may require a record e.g. to enable or disable notications, to show in lists, etc.
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
 
@@ -91,19 +93,21 @@ chatInfoChatTs = \case
   GroupChat GroupInfo {chatTs} -> chatTs
   _ -> Nothing
 
-chatInfoUpdatedAt :: ChatInfo c -> UTCTime
+chatInfoUpdatedAt :: ChatInfo c -> Maybe UTCTime
 chatInfoUpdatedAt = \case
-  DirectChat Contact {updatedAt} -> updatedAt
-  GroupChat GroupInfo {updatedAt} -> updatedAt
-  LocalChat NoteFolder {updatedAt} -> updatedAt
-  ContactRequest UserContactRequest {updatedAt} -> updatedAt
-  ContactConnection PendingContactConnection {updatedAt} -> updatedAt
+  DirectChat Contact {updatedAt} -> Just updatedAt
+  GroupChat GroupInfo {updatedAt} -> Just updatedAt
+  LocalChat NoteFolder {updatedAt} -> Just updatedAt
+  ReportsChat -> Nothing
+  ContactRequest UserContactRequest {updatedAt} -> Just updatedAt
+  ContactConnection PendingContactConnection {updatedAt} -> Just updatedAt
 
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> ChatRef CTDirect contactId
   GroupChat GroupInfo {groupId} -> ChatRef CTGroup groupId
   LocalChat NoteFolder {noteFolderId} -> ChatRef CTLocal noteFolderId
+  ReportsChat -> ChatRef CTReports 0
   ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
   ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
 
@@ -116,6 +120,7 @@ data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
   | JCInfoLocal {noteFolder :: NoteFolder}
+  | JCInfoReports
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
 
@@ -133,6 +138,7 @@ jsonChatInfo = \case
   DirectChat c -> JCInfoDirect c
   GroupChat g -> JCInfoGroup g
   LocalChat l -> JCInfoLocal l
+  ReportsChat -> JCInfoReports
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
 
@@ -145,6 +151,7 @@ jsonAChatInfo = \case
   JCInfoDirect c -> AChatInfo SCTDirect $ DirectChat c
   JCInfoGroup g -> AChatInfo SCTGroup $ GroupChat g
   JCInfoLocal l -> AChatInfo SCTLocal $ LocalChat l
+  JCInfoReports -> AChatInfo SCTReports ReportsChat
   JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
   JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
 
@@ -998,6 +1005,7 @@ data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
   SCTLocal :: SChatType 'CTLocal
+  SCTReports :: SChatType 'CTReports
   SCTContactRequest :: SChatType 'CTContactRequest
   SCTContactConnection :: SChatType 'CTContactConnection
 
@@ -1022,6 +1030,8 @@ instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
 
 instance ChatTypeI 'CTLocal where chatTypeI = SCTLocal
 
+instance ChatTypeI 'CTReports where chatTypeI = SCTReports
+
 instance ChatTypeI 'CTContactRequest where chatTypeI = SCTContactRequest
 
 instance ChatTypeI 'CTContactConnection where chatTypeI = SCTContactConnection
@@ -1031,6 +1041,7 @@ toChatType = \case
   SCTDirect -> CTDirect
   SCTGroup -> CTGroup
   SCTLocal -> CTLocal
+  SCTReports -> CTReports
   SCTContactRequest -> CTContactRequest
   SCTContactConnection -> CTContactConnection
 
@@ -1039,6 +1050,7 @@ aChatType = \case
   CTDirect -> ACT SCTDirect
   CTGroup -> ACT SCTGroup
   CTLocal -> ACT SCTLocal
+  CTReports -> ACT SCTReports
   CTContactRequest -> ACT SCTContactRequest
   CTContactConnection -> ACT SCTContactConnection
 

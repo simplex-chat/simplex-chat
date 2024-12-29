@@ -2114,7 +2114,7 @@ createChatItemVersion db itemId itemVersionTs msgContent =
       INSERT INTO chat_item_versions (chat_item_id, msg_content, item_version_ts)
       VALUES (?,?,?)
     |]
-    (itemId, toMCText msgContent, itemVersionTs)
+    (itemId, MCText $ msgContentText msgContent, itemVersionTs)
 
 deleteDirectChatItem :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> IO ()
 deleteDirectChatItem db User {userId} Contact {contactId} ci = do

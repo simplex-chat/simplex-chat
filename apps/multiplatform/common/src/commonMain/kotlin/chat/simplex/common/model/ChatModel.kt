@@ -3175,9 +3175,11 @@ enum class MREmojiChar(val value: String) {
   @SerialName("👍") ThumbsUp("👍"),
   @SerialName("👎") ThumbsDown("👎"),
   @SerialName("😀") Smile("😀"),
+  @SerialName("😂") Laugh("😂");
   @SerialName("😢") Sad("😢"),
   @SerialName("❤") Heart("❤"),
   @SerialName("🚀") Launch("🚀");
+  @SerialName("✅") Check("✅");
 }
 
 @Serializable

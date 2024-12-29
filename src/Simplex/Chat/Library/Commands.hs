@@ -492,6 +492,7 @@ processChatCommand' vr = \case
     CTLocal -> do
       (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
+    CTReports -> pure $ chatCmdError (Just user) "todo"
     CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIGetChatItems pagination search -> withUser $ \user -> do
@@ -522,6 +523,7 @@ processChatCommand' vr = \case
       withGroupLock "sendMessage" chatId $
         sendGroupContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
+    CTReports -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatTag (ChatTagData emoji text) -> withUser $ \user -> withFastStore' $ \db -> do
@@ -607,6 +609,7 @@ processChatCommand' vr = \case
               ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc) True
               pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
         _ -> throwChatError CEInvalidChatItemUpdate
+    CTReports -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemIds mode -> withUser $ \user -> case cType of
@@ -639,6 +642,7 @@ processChatCommand' vr = \case
     CTLocal -> do
       (nf, items) <- getCommandLocalChatItems user chatId itemIds
       deleteLocalCIs user nf items True False
+    CTReports -> pure $ chatCmdError (Just user) "todo"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -723,6 +727,7 @@ processChatCommand' vr = \case
             pure $ CRChatItemReaction user add r
           _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
+    CTReports -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -740,6 +745,7 @@ processChatCommand' vr = \case
     CTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds
     CTGroup -> planForward user . snd =<< getCommandGroupChatItems user fromChatId itemIds
     CTLocal -> planForward user . snd =<< getCommandLocalChatItems user fromChatId itemIds
+    CTReports -> pure $ chatCmdError (Just user) "todo/not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -780,6 +786,7 @@ processChatCommand' vr = \case
                 MCVideo {text} -> text /= ""
                 MCVoice {text} -> text /= ""
                 MCFile t -> t /= ""
+                MCReport {} -> True
                 MCUnknown {} -> True
   APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
@@ -802,6 +809,7 @@ processChatCommand' vr = \case
         Just cmrs' ->
           createNoteFolderContentItems user toChatId cmrs'
         Nothing -> pure $ CRNewChatItems user []
+    CTReports -> pure $ chatCmdError (Just user) "todo/not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -841,6 +849,7 @@ processChatCommand' vr = \case
             ciComposeMsgReq (CChatItem _ ci) (mc', file) =
               let ciff = forwardCIFF ci Nothing
                in (ComposedMessage file Nothing mc', ciff)
+        CTReports -> throwChatError $ CECommandError "todo/not supported"
         CTContactRequest -> throwChatError $ CECommandError "not supported"
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
@@ -926,6 +935,7 @@ processChatCommand' vr = \case
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
       withFastStore' $ \db -> updateLocalChatItemsRead db user chatId
       ok user
+    CTReports -> pure $ chatCmdError Nothing "todo"
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
   APIChatItemsRead chatRef@(ChatRef cType chatId) itemIds -> withUser $ \_ -> case cType of
@@ -944,6 +954,7 @@ processChatCommand' vr = \case
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
       ok user
     CTLocal -> pure $ chatCmdError Nothing "not supported"
+    CTReports -> pure $ chatCmdError Nothing "todo"
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
@@ -1044,6 +1055,7 @@ processChatCommand' vr = \case
               e_ <- (setContactDeleted db user ct $> Nothing) `catchStoreError` (pure . Just)
               pure (e_, map aConnId conns)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
+    CTReports -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
@@ -1069,6 +1081,7 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deleteNoteFolderFiles db userId nf
       withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
+    CTReports -> pure $ chatCmdError (Just user) "todo"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do

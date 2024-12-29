@@ -471,6 +471,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
         toChatView (AChat _ (Chat (LocalChat _) items _)) = ("*", toCIPreview items Nothing, Nothing)
+        toChatView (AChat _ (Chat ReportsChat items _)) = ("!", toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
@@ -931,6 +932,7 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
   GroupChat gi -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
   LocalChat _ -> ["notes: all messages are removed"]
+  ReportsChat -> ["reports: all reported messages are removed"]
   ContactRequest _ -> []
   ContactConnection _ -> []
 
