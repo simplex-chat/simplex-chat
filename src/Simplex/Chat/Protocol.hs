@@ -636,7 +636,9 @@ parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
     <|> MCComment <$> v .: "parent" <*> mc
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
-    -- <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
+    -- The support for arbitrary object in "forward" property is added to allow
+    -- forward compatibility with forwards that include public group links.
+    <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
     <|> MCSimple <$> mc
   where
     mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
