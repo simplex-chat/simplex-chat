@@ -245,8 +245,9 @@ class ActiveChatState {
         let currentIndex = nonReversedItems.firstIndex(where: { $0.id == unreadAfterItemId })
         let newIndex = nonReversedItems.firstIndex(where: { $0.id == toItemId })
         guard let currentIndex, let newIndex else {
-            return unreadAfterItemId = toItemId
+            return
         }
+        unreadAfterItemId = toItemId
         let unreadDiff = newIndex > currentIndex
         ? -nonReversedItems[currentIndex + 1..<newIndex + 1].filter { $0.isRcvNew }.count
         : nonReversedItems[newIndex + 1..<currentIndex + 1].filter { $0.isRcvNew }.count
@@ -255,8 +256,9 @@ class ActiveChatState {
 
     func moveUnreadAfterItem(_ fromIndex: Int, _ toIndex: Int, _ nonReversedItems: [ChatItem]) {
         if fromIndex == -1 || toIndex == -1 {
-            return unreadAfterItemId = nonReversedItems[toIndex].id
+            return
         }
+        unreadAfterItemId = nonReversedItems[toIndex].id
         let unreadDiff = toIndex > fromIndex
         ? -nonReversedItems[fromIndex + 1..<toIndex + 1].filter { $0.isRcvNew }.count
         : nonReversedItems[toIndex + 1..<fromIndex + 1].filter { $0.isRcvNew }.count
@@ -308,6 +310,7 @@ class BoxedValue<T: Hashable>: Hashable {
 }
 
 extension ReverseList.Controller {
+    @MainActor
     func visibleItemIndexesNonReversed(_ mergedItems: Binding<MergedItems>) -> ClosedRange<Int> {
         let zero = 0 ... 0
         if itemCount == 0 {

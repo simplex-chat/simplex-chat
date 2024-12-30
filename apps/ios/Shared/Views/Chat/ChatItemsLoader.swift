@@ -17,7 +17,7 @@ func apiLoadMessages(
     _ pagination: ChatPagination,
     _ chatState: ActiveChatState,
     _ search: String = "",
-    _ visibleItemIndexesNonReversed: () -> ClosedRange<Int> = { 0 ... 0 }
+    _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
 ) async {
     let chat: Chat
     let navInfo: NavigationInfo
@@ -67,8 +67,9 @@ func apiLoadMessages(
         guard let indexInCurrentItems else { return }
         let (newIds, _) = mapItemsToIds(chat.chatItems)
         let wasSize = newItems.count
+        let visibleItemIndexes = await MainActor.run { visibleItemIndexesNonReversed() }
         let modifiedSplits = removeDuplicatesAndModifySplitsOnBeforePagination(
-            unreadAfterItemId, &newItems, newIds, chatState.splits, visibleItemIndexesNonReversed
+            unreadAfterItemId, &newItems, newIds, chatState.splits, visibleItemIndexes
         )
         let insertAt = max((indexInCurrentItems - (wasSize - newItems.count) + modifiedSplits.trimmedIds.count), 0)
         newItems.insert(contentsOf: chat.chatItems, at: insertAt)
@@ -151,18 +152,21 @@ private func removeDuplicatesAndModifySplitsOnBeforePagination(
     _ newItems: inout [ChatItem],
     _ newIds: Set<Int64>,
     _ splits: [Int64],
-    _ visibleItemIndexesNonReversed: () -> ClosedRange<Int>
+    _ visibleItemIndexes: ClosedRange<Int>
 ) -> ModifiedSplits {
     var oldUnreadSplitIndex: Int = -1
     var newUnreadSplitIndex: Int = -1
-    let visibleItemIndexes = visibleItemIndexesNonReversed()
     var lastSplitIndexTrimmed: Int? = nil
     var allowedTrimming = true
     var index = 0
     /** keep the newest [TRIM_KEEP_COUNT] items (bottom area) and oldest [TRIM_KEEP_COUNT] items, trim others */
-    let trimRange = visibleItemIndexes.upperBound + TRIM_KEEP_COUNT ... newItems.count - TRIM_KEEP_COUNT
+    let trimLowerBound = visibleItemIndexes.upperBound + TRIM_KEEP_COUNT
+    let trimUpperBound = newItems.count - TRIM_KEEP_COUNT
+    let trimRange = trimUpperBound >= trimLowerBound ? trimLowerBound ... trimUpperBound : -1 ... -1
     var trimmedIds = Set<Int64>()
-    let prevItemTrimRange = visibleItemIndexes.upperBound + TRIM_KEEP_COUNT + 1 ... newItems.count - TRIM_KEEP_COUNT
+    let prevTrimLowerBound = visibleItemIndexes.upperBound + TRIM_KEEP_COUNT + 1
+    let prevTrimUpperBound = newItems.count - TRIM_KEEP_COUNT
+    let prevItemTrimRange = prevTrimUpperBound >= prevTrimLowerBound ? prevTrimLowerBound ... prevTrimUpperBound : -1 ... -1
     var newSplits = splits
 
     newItems.removeAll(where: {

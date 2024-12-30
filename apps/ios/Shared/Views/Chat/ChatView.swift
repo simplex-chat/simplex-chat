@@ -33,7 +33,6 @@ struct ChatView: View {
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
     @State private var loadingItems = false
-    @State private var firstPage = false
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -47,6 +46,7 @@ struct ChatView: View {
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
+    @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: [Int64] = []
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -202,7 +202,9 @@ struct ChatView: View {
                 } else {
                     .last(count: loadItemsPerPage)
                 }
-                loadChatItems(chat.chatInfo, pagination)
+                Task {
+                    _ = await loadChatItems(chat.chatInfo, pagination)
+                }
             }
         }
         .environmentObject(scrollModel)
@@ -442,7 +444,7 @@ struct ChatView: View {
         return GeometryReader { g in
             let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
             // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
-            ReverseList(items: im.reversedChatItems, mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
+            ReverseList(items: im.reversedChatItems, mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
                 let ci = switch mergedItem {
                 case let .single(item, _): item.item
                 case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item
@@ -476,11 +478,15 @@ struct ChatView: View {
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in ReverseList
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadItems: { pagination, visibleItemIndexesNonReversed in
-                loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
+                await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
             }
             .onAppear {
                 mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
                 loadLastItems($loadingItems, chat.chatInfo)
+                allowLoadMoreItems = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    allowLoadMoreItems = true
+                }
             }
             .onChange(of: im.reversedChatItems) { items in
                 mergedItems = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
@@ -493,6 +499,10 @@ struct ChatView: View {
             }
             .onChange(of: chat.id) { _ in
                 loadLastItems($loadingItems, chat.chatInfo)
+                allowLoadMoreItems = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    allowLoadMoreItems = true
+                }
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
@@ -893,34 +903,30 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) {
-        Task {
-            if loadingItems || firstPage { return }
-            loadingItems = true
-            var chatItemsAvailable = true
-            var itemsCountChanged = false
-            // Load additional items until the page is +50 large after merging
-            //while chatItemsAvailable && filtered(im.reversedChatItems).count < loadItemsPerPage {
-                let oldCount = im.reversedChatItems.count
-                await apiLoadMessages(
-                    cInfo.chatType,
-                    cInfo.apiId,
-                    pagination,
-                    im.chatState,
-                    searchText,
-                    visibleItemIndexesNonReversed
-                )
-                itemsCountChanged = im.reversedChatItems.count != oldCount
-                chatItemsAvailable = itemsCountChanged
-            //}
-            logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
-            await MainActor.run {
-                if !itemsCountChanged {
-                    firstPage = true
-                }
-                loadingItems = false
-            }
+    private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
+        if loadingItems { return false }
+        loadingItems = true
+        var chatItemsAvailable = true
+        var itemsCountChanged = false
+        // Load additional items until the page is +50 large after merging
+        //while chatItemsAvailable && filtered(im.reversedChatItems).count < loadItemsPerPage {
+        let oldCount = im.reversedChatItems.count
+        await apiLoadMessages(
+            cInfo.chatType,
+            cInfo.apiId,
+            pagination,
+            im.chatState,
+            searchText,
+            visibleItemIndexesNonReversed
+        )
+        itemsCountChanged = im.reversedChatItems.count != oldCount
+        chatItemsAvailable = itemsCountChanged
+        //}
+        logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
+        await MainActor.run {
+            loadingItems = false
         }
+        return true
     }
 
     func stopAudioPlayer() {

@@ -18,6 +18,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     @Binding var unreadCount: Int
 
     @Binding var scrollState: ReverseListScrollModel.State
+    @Binding var allowLoadMoreItems: Bool
     @Binding var ignoreLoadingRequests: [Int64]
 
     /// Closure, that returns user interface for a given item
@@ -25,7 +26,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let content: (Int, MergedItem) -> Content
 
     // pagination, visibleItemIndexesNonReversed
-    let loadItems: (ChatPagination, @escaping () -> ClosedRange<Int>) -> Void
+    let loadItems: (ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
 
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
@@ -78,6 +79,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         var runBlockOnEndDecelerating: (() -> Void)? = nil
 
         private var scrollToRowOnAppear = 0
+        private var translationToApply: CGPoint? = nil
 
         init(representer: ReverseList) {
             self.representer = representer
@@ -112,12 +114,24 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     logger.debug("LALAL ITEM \(indexPath.item)")
                     Task {
                         // do not put it outside Task because it will be stackoverflow error
-                        if let state = self.getListState(), prevFirstVisible != state.firstVisibleItemIndex {
+                        let state = await MainActor.run {
+                            self.getListState()
+                        }
+                        if let state, prevFirstVisible != state.firstVisibleItemIndex {
                             prevFirstVisible = state.firstVisibleItemIndex
                             logger.debug("LALAL LOADING before")
-                            preloadItems(self.representer.mergedItems, state, self.representer.$ignoreLoadingRequests) { pagination in
+                            await preloadItems(self.representer.mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
                                 logger.debug("LALAL LOADING INSIDE")
-                                self.representer.loadItems(pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
+                                let triedToLoad = await self.representer.loadItems(pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
+                                if triedToLoad {
+                                    let t = self.tableView.panGestureRecognizer.translation(in: self.tableView.superview!)
+                                    if t.y != 0 {
+                                        self.translationToApply = t
+                                    }
+                                    // stop scrolling
+                                    self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
+                                }
+                                return triedToLoad
                             }
                         }
                     }
@@ -240,7 +254,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             if #available(iOS 16.0, *) {
                 animated = true
             }
-            if let index, tableView.numberOfRows(inSection: 0) != 0 {
+            if let index, tableView.numberOfRows(inSection: 0) > index {
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: 0),
                     at: position,
@@ -283,7 +297,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }))
                 itemsInCurrentSnapshot = new
 
-                if (wasCount == 101 && self.representer.mergedItems.items.count == 101) || snap.itemIdentifiers == prevSnapshot.itemIdentifiers {
+                if snap.itemIdentifiers == prevSnapshot.itemIdentifiers {
                     logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
                     return
                 }
@@ -350,6 +364,17 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         )
                         let state = getListState()!
                         logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
+
+                    if let t = translationToApply {
+//                        self.tableView.panGestureRecognizer.setTranslation(CGPointMake(t.x, t.y), in: self.tableView.superview!)
+                        let o = self.tableView.contentOffset
+//                        UIView.animate(withDuration: 0.5) {
+//                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: false)
+//                            self.tableView.layoutIfNeeded()
+//                        }
+                        self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
+                        translationToApply = nil
+                    }
                     //}
                 }
             }
