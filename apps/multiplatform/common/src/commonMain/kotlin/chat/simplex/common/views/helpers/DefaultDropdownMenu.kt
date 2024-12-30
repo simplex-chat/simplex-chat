@@ -15,7 +15,7 @@ fun DefaultDropdownMenu(
   showMenu: MutableState<Boolean>,
   modifier: Modifier = Modifier,
   offset: DpOffset = DpOffset(0.dp, 0.dp),
-  onClosed: (() -> Unit)? = null,
+  onClosed: State<() -> Unit> = remember { mutableStateOf({}) },
   dropdownMenuItems: (@Composable () -> Unit)?
 ) {
   MaterialTheme(
@@ -31,12 +31,10 @@ fun DefaultDropdownMenu(
       offset = offset,
     ) {
       dropdownMenuItems?.invoke()
-      if (onClosed != null) {
         DisposableEffect(Unit) {
           onDispose {
-            onClosed()
+            onClosed.value()
           }
-        }
       }
     }
   }

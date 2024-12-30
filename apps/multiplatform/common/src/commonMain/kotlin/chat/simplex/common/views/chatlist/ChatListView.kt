@@ -1134,26 +1134,26 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
       )
     }
 
-    val commitPresetDropdownMenuState = rememberSaveable { mutableStateOf<(() -> Unit)?>(null) }
+    val onCloseMenuAction = rememberSaveable { mutableStateOf<(() -> Unit)>({}) }
 
-    DefaultDropdownMenu(showMenu = showMenu, onClosed = commitPresetDropdownMenuState.value) {
+    DefaultDropdownMenu(showMenu = showMenu, onClosed = onCloseMenuAction) {
       if (activeFilter.value != null || searchText.value.text.isNotBlank()) {
         ItemAction(
           stringResource(MR.strings.chat_list_all),
           painterResource(MR.images.ic_menu),
           onClick = {
-            showMenu.value = false
-            commitPresetDropdownMenuState.value = {
+            onCloseMenuAction.value = {
               searchText.value = TextFieldValue()
               chatModel.activeChatTagFilter.value = null
-              commitPresetDropdownMenuState.value = null
+              onCloseMenuAction.value = {}
             }
+            showMenu.value = false
           }
         )
       }
       PresetTagKind.entries.forEach { tag ->
         if ((presetTags[tag] ?: 0) > 0) {
-          ItemPresetFilterAction(tag, tag == selectedPresetTag, showMenu, commitPresetDropdownMenuState)
+          ItemPresetFilterAction(tag, tag == selectedPresetTag, showMenu, onCloseMenuAction)
         }
       }
     }
@@ -1165,7 +1165,7 @@ fun ItemPresetFilterAction(
   presetTag: PresetTagKind,
   active: Boolean,
   showMenu: MutableState<Boolean>,
-  commitPresetDropdownMenuState: MutableState<(() -> Unit)?>
+  onCloseMenuAction: MutableState<(() -> Unit)>
 ) {
   val (icon, text) = presetTagLabel(presetTag, active)
   ItemAction(
@@ -1173,11 +1173,11 @@ fun ItemPresetFilterAction(
     painterResource(icon),
     color = if (active) MaterialTheme.colors.primary else Color.Unspecified,
     onClick = {
-      showMenu.value = false
-      commitPresetDropdownMenuState.value = {
+      onCloseMenuAction.value = {
         chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(presetTag)
-        commitPresetDropdownMenuState.value = null
+        onCloseMenuAction.value = {}
       }
+      showMenu.value = false
     }
   )
 }
