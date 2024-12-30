@@ -1045,23 +1045,8 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TagsRow(content: @Composable() (() -> Unit)) {
-  if (appPlatform.isAndroid) {
-    Row(
-      modifier = Modifier
-        .padding(horizontal = 14.dp)
-        .horizontalScroll(rememberScrollState()),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-      content()
-    }
-  } else {
-    FlowRow(modifier = Modifier.padding(horizontal = 14.dp)) { content() }
-  }
-}
+expect fun TagsRow(content: @Composable() (() -> Unit))
 
 @Composable
 private fun ExpandedTagFilterView(tag: PresetTagKind) {
