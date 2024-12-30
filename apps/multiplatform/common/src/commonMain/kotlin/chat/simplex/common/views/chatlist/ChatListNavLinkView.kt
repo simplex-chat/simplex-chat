@@ -351,7 +351,7 @@ fun TagListAction(
 ) {
   val userTags = remember { chatModel.userTags }
   ItemAction(
-    stringResource(MR.strings.list_menu),
+    stringResource(MR.strings.add_to_list),
     painterResource(MR.images.ic_label),
     onClick = {
       ModalManager.start.showModalCloseable { close ->

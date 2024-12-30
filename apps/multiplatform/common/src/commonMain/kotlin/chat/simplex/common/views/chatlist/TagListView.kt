@@ -279,7 +279,7 @@ fun ModalData.TagListEditor(
 
     SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled) {
       Text(
-        generalGetString(if (chat != null) MR.strings.add_to_list else if (tagId == null) MR.strings.create_list else MR.strings.save_list),
+        generalGetString(if (chat != null) MR.strings.add_to_list else MR.strings.save_list),
         color = if (disabled) colors.secondary else colors.primary
       )
     }
