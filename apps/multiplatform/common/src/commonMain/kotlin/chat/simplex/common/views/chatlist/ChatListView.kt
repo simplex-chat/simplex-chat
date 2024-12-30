@@ -1186,6 +1186,7 @@ fun ItemPresetFilterAction(
   ItemAction(
     stringResource(text),
     painterResource(icon),
+    color = if (active) MaterialTheme.colors.primary else Color.Unspecified,
     onClick = {
       chatModel.activeChatTagFilter.value = ActiveFilter.PresetTag(presetTag)
       showMenu.value = false
