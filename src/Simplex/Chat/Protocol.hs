@@ -514,11 +514,6 @@ mcExtMsgContent = \case
   MCComment _ c -> c
   MCForward c -> c
 
-isQuote :: MsgContainer -> Bool
-isQuote = \case
-  MCQuote {} -> True
-  _ -> False
-
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
