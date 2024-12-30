@@ -111,7 +111,6 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
           backgroundColor = if (isDragging) colors.surface else Color.Unspecified
         ) {
           Column {
-            val showMenu = remember { mutableStateOf(false) }
             val selected = chatTagIds.value.contains(tag.chatTagId)
 
             Row(
@@ -139,13 +138,9 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                       })
                     }
                   },
-                  onLongClick = if (editMode.value) null else {
-                    { showMenu.value = true }
-                  },
                   interactionSource = remember { MutableInteractionSource() },
                   indication = LocalIndication.current
                 )
-                .onRightClick { showMenu.value = true }
                 .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
               verticalAlignment = Alignment.CenterVertically
             ) {
@@ -167,10 +162,6 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                 Spacer(Modifier.weight(1f))
                 Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
               }
-              DefaultDropdownMenu(showMenu, dropdownMenuItems = {
-                EditTagAction(rhId, tag, showMenu)
-                DeleteTagAction(rhId, tag, showMenu, saving)
-              })
             }
             SectionDivider()
           }
@@ -310,7 +301,7 @@ fun ModalData.TagListEditor(
 }
 
 @Composable
-private fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
+fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.delete_chat_list_menu_action),
     painterResource(MR.images.ic_delete),
@@ -323,7 +314,7 @@ private fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bo
 }
 
 @Composable
-private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
+fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.edit_chat_list_menu_action),
     painterResource(MR.images.ic_edit),
@@ -337,6 +328,22 @@ private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bool
           emoji = tag.chatTagEmoji,
           name = tag.chatTagText
         )
+      }
+    },
+    color = MenuTextColor
+  )
+}
+
+@Composable
+fun ChangeOrderTagAction(rhId: Long?, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.change_order_chat_list_menu_action),
+    painterResource(MR.images.ic_drag_handle),
+    onClick = {
+      showMenu.value = false
+      ModalManager.start.showModalCloseable { close ->
+        val editMode = remember { stateGetOrPut("editMode") { true } }
+        TagListView(rhId = rhId, close = close, editMode = editMode)
       }
     },
     color = MenuTextColor

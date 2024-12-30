@@ -651,6 +651,7 @@
   <string name="delete_chat_list_question">Delete list?</string>
   <string name="delete_chat_list_warning">All chats will be removed from the list %s, and the list deleted</string>
   <string name="edit_chat_list_menu_action">Edit</string>
+  <string name="change_order_chat_list_menu_action">Change order</string>
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_a_contact">You invited a contact</string>

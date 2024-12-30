@@ -932,18 +932,6 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val unreadTags = remember { chatModel.unreadTags }
   val rhId = chatModel.remoteHostId()
 
-  fun showTagList() {
-    ModalManager.start.showCustomModal { close ->
-      val editMode = remember { stateGetOrPut("editMode") { false } }
-      ModalView(close, showClose = true, endButtons = {
-        TextButton(onClick = { editMode.value = !editMode.value }, modifier = Modifier.clip(shape = CircleShape)) {
-          Text(stringResource(if (editMode.value) MR.strings.cancel_verb else MR.strings.edit_verb))
-        }
-      }) {
-        TagListView(rhId = rhId, close = close, editMode = editMode)
-      }
-    }
-  }
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
 
   TagsRow {
@@ -963,69 +951,79 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
         else -> false
       }
       val interactionSource = remember { MutableInteractionSource() }
-      Row(
-        rowSizeModifier
-          .clip(shape = CircleShape)
-          .combinedClickable(
-            onClick = {
-              if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
-                chatModel.activeChatTagFilter.value = null
-              } else {
-                chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
+      val showMenu = remember { mutableStateOf(false) }
+      val saving = remember { mutableStateOf(false) }
+      Box {
+        Row(
+          rowSizeModifier
+            .clip(shape = CircleShape)
+            .combinedClickable(
+              onClick = {
+                if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
+                  chatModel.activeChatTagFilter.value = null
+                } else {
+                  chatModel.activeChatTagFilter.value = ActiveFilter.UserTag(tag)
+                }
+              },
+              onLongClick = { showMenu.value = true },
+              interactionSource = interactionSource,
+              indication = LocalIndication.current,
+              enabled = !saving.value
+            )
+            .onRightClick { showMenu.value = true }
+            .padding(4.dp),
+          horizontalArrangement = Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          if (tag.chatTagEmoji != null) {
+            ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
+          } else {
+            Icon(
+              painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
+              null,
+              Modifier.size(18.sp.toDp()),
+              tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+            )
+          }
+          Spacer(Modifier.width(4.dp))
+          Box {
+            val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+            val invisibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
+                append(badgeText)
               }
-            },
-            onLongClick = { showTagList() },
-            interactionSource = interactionSource,
-            indication = LocalIndication.current
-          )
-          .onRightClick { showTagList() }
-          .padding(4.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        if (tag.chatTagEmoji != null) {
-          ReactionIcon(tag.chatTagEmoji, fontSize = 14.sp)
-        } else {
-          Icon(
-            painterResource(if (current) MR.images.ic_label_filled else MR.images.ic_label),
-            null,
-            Modifier.size(18.sp.toDp()),
-            tint = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
-          )
-        }
-        Spacer(Modifier.width(4.dp))
-        Box {
-          val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
-          val invisibleText = buildAnnotatedString {
-            append(tag.chatTagText)
-            withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {
-              append(badgeText)
             }
-          }
-          Text(
-            text = invisibleText,
-            fontWeight = FontWeight.Medium,
-            fontSize = 15.sp,
-            color = Color.Transparent,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-          )
-          // Visible text with styles
-          val visibleText = buildAnnotatedString {
-            append(tag.chatTagText)
-            withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
-              append(badgeText)
+            Text(
+              text = invisibleText,
+              fontWeight = FontWeight.Medium,
+              fontSize = 15.sp,
+              color = Color.Transparent,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            // Visible text with styles
+            val visibleText = buildAnnotatedString {
+              append(tag.chatTagText)
+              withStyle(SpanStyle(fontSize = 12.5.sp, color = MaterialTheme.colors.primary)) {
+                append(badgeText)
+              }
             }
+            Text(
+              text = visibleText,
+              fontWeight = if (current) FontWeight.Medium else FontWeight.Normal,
+              fontSize = 15.sp,
+              color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
           }
-          Text(
-            text = visibleText,
-            fontWeight = if (current) FontWeight.Medium else FontWeight.Normal,
-            fontSize = 15.sp,
-            color = if (current) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-          )
         }
+        DefaultDropdownMenu(showMenu, dropdownMenuItems = {
+          EditTagAction(rhId, tag, showMenu)
+          DeleteTagAction(rhId, tag, showMenu, saving)
+          ChangeOrderTagAction(rhId, showMenu)
+        })
       }
     }
     val plusClickModifier = Modifier
