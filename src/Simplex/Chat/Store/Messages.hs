@@ -39,6 +39,7 @@ module Simplex.Chat.Store.Messages
     getChatPreviews,
     getDirectChat,
     getGroupChat,
+    getGroupReports,
     getLocalChat,
     getDirectChatItemLast,
     getAllChatItems,
@@ -556,8 +557,9 @@ paginationByTimeFilter = \case
 
 type ChatStatsRow = (Int, ChatItemId, Bool)
 
+-- TODO [reports]
 toChatStats :: ChatStatsRow -> ChatStats
-toChatStats (unreadCount, minUnreadItemId, unreadChat) = ChatStats {unreadCount, minUnreadItemId, unreadChat}
+toChatStats (unreadCount, minUnreadItemId, unreadChat) = ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat}
 
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
@@ -909,7 +911,7 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
     toPreview :: ContactRequestRow -> AChatPreviewData
     toPreview cReqRow =
       let cReq@UserContactRequest {updatedAt} = toContactRequest cReqRow
-          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+          stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
           aChat = AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
        in ACPD SCTContactRequest $ ContactRequestPD updatedAt aChat
 
@@ -946,7 +948,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
     toPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChatPreviewData
     toPreview connRow =
       let conn@PendingContactConnection {updatedAt} = toPendingContactConnection connRow
-          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+          stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
           aChat = AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
        in ACPD SCTContactConnection $ ContactConnectionPD updatedAt aChat
 
@@ -966,7 +968,7 @@ getDirectChat db vr user contactId pagination search_ = do
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
 getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> IO (Chat 'CTDirect)
 getDirectChatLast_ db user ct count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   ciIds <- getDirectChatItemIdsLast_ db user ct count search
   ts <- getCurrentTime
   cis <- mapM (safeGetDirectItem db user ct ts) ciIds
@@ -1030,7 +1032,7 @@ getDirectChatItemLast db user@User {userId} contactId = do
 
 getDirectChatAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db user ct@Contact {contactId} afterId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterCI <- getDirectChatItem db user contactId afterId
   ciIds <- liftIO $ getDirectCIsAfter_ db user ct afterCI count search
   ts <- liftIO getCurrentTime
@@ -1054,7 +1056,7 @@ getDirectCIsAfter_ db User {userId} Contact {contactId} afterCI count search =
 
 getDirectChatBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatBefore_ db user ct@Contact {contactId} beforeId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeCI <- getDirectChatItem db user contactId beforeId
   ciIds <- liftIO $ getDirectCIsBefore_ db user ct beforeCI count search
   ts <- liftIO getCurrentTime
@@ -1102,7 +1104,7 @@ getDirectChatInitial_ db user ct count = do
   liftIO (getContactMinUnreadId_ db user ct) >>= \case
     Just minUnreadItemId -> do
       unreadCount <- liftIO $ getContactUnreadCount_ db user ct
-      let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+      let stats = ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
       getDirectChatAround' db user ct minUnreadItemId count "" stats
     Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getDirectChatLast_ db user ct count ""
 
@@ -1110,7 +1112,7 @@ getContactStats_ :: DB.Connection -> User -> Contact -> IO ChatStats
 getContactStats_ db user ct = do
   minUnreadItemId <- fromMaybe 0 <$> getContactMinUnreadId_ db user ct
   unreadCount <- getContactUnreadCount_ db user ct
-  pure ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+  pure ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
 
 getContactMinUnreadId_ :: DB.Connection -> User -> Contact -> IO (Maybe ChatItemId)
 getContactMinUnreadId_ db User {userId} Contact {contactId} =
@@ -1195,7 +1197,15 @@ getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
           ]
 
 getGroupChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChat db vr user groupId pagination search_ = do
+getGroupChat db vr user groupId = getGroupChat_ db vr user groupId Nothing Nothing
+{-# INLINE getGroupChat #-}
+
+getGroupReports :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupReports db vr user groupId archived = getGroupChat_ db vr user groupId (Just archived) (Just MCReport_)
+{-# INLINE getGroupReports #-}
+
+getGroupChat_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe Bool -> Maybe MsgContentTag -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChat_ db vr user groupId archived_ msgContentTag_ pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
   case pagination of
@@ -1209,7 +1219,7 @@ getGroupChat db vr user groupId pagination search_ = do
 
 getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO (Chat 'CTGroup)
 getGroupChatLast_ db user g count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   ciIds <- getGroupChatItemIdsLast_ db user g count search
   ts <- getCurrentTime
   cis <- mapM (safeGetGroupItem db user g ts) ciIds
@@ -1273,7 +1283,7 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
 
 getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatAfter_ db user g@GroupInfo {groupId} afterId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterCI <- getGroupChatItem db user groupId afterId
   ciIds <- liftIO $ getGroupCIsAfter_ db user g afterCI count search
   ts <- liftIO getCurrentTime
@@ -1297,7 +1307,7 @@ getGroupCIsAfter_ db User {userId} GroupInfo {groupId} afterCI count search =
 
 getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatBefore_ db user g@GroupInfo {groupId} beforeId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeCI <- getGroupChatItem db user groupId beforeId
   ciIds <- liftIO $ getGroupCIsBefore_ db user g beforeCI count search
   ts <- liftIO getCurrentTime
@@ -1345,7 +1355,8 @@ getGroupChatInitial_ db user g count =
   liftIO (getGroupMinUnreadId_ db user g) >>= \case
     Just minUnreadItemId -> do
       unreadCount <- liftIO $ getGroupUnreadCount_ db user g
-      let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+      -- TODO [reports]
+      let stats = ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
       getGroupChatAround' db user g minUnreadItemId count "" stats
     Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g count ""
 
@@ -1353,7 +1364,8 @@ getGroupStats_ :: DB.Connection -> User -> GroupInfo -> IO ChatStats
 getGroupStats_ db user g = do
   minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g
   unreadCount <- getGroupUnreadCount_ db user g
-  pure ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+  -- TODO [reports]
+  pure ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
 
 getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> IO (Maybe ChatItemId)
 getGroupMinUnreadId_ db User {userId} GroupInfo {groupId} =
@@ -1452,7 +1464,7 @@ getLocalChat db user folderId pagination search_ = do
 
 getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> IO (Chat 'CTLocal)
 getLocalChatLast_ db user nf count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   ciIds <- getLocalChatItemIdsLast_ db user nf count search
   ts <- getCurrentTime
   cis <- mapM (safeGetLocalItem db user nf ts) ciIds
@@ -1500,7 +1512,7 @@ safeToLocalItem currentTs itemId = \case
 
 getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} afterId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterCI <- getLocalChatItem db user noteFolderId afterId
   ciIds <- liftIO $ getLocalCIsAfter_ db user nf afterCI count search
   ts <- liftIO getCurrentTime
@@ -1524,7 +1536,7 @@ getLocalCIsAfter_ db User {userId} NoteFolder {noteFolderId} afterCI count searc
 
 getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatBefore_ db user nf@NoteFolder {noteFolderId} beforeId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeCI <- getLocalChatItem db user noteFolderId beforeId
   ciIds <- liftIO $ getLocalCIsBefore_ db user nf beforeCI count search
   ts <- liftIO getCurrentTime
@@ -1572,7 +1584,7 @@ getLocalChatInitial_ db user nf count = do
   liftIO (getLocalMinUnreadId_ db user nf) >>= \case
     Just minUnreadItemId -> do
       unreadCount <- liftIO $ getLocalUnreadCount_ db user nf
-      let stats = ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+      let stats = ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
       getLocalChatAround' db user nf minUnreadItemId count "" stats
     Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getLocalChatLast_ db user nf count ""
 
@@ -1580,7 +1592,7 @@ getLocalStats_ :: DB.Connection -> User -> NoteFolder -> IO ChatStats
 getLocalStats_ db user nf = do
   minUnreadItemId <- fromMaybe 0 <$> getLocalMinUnreadId_ db user nf
   unreadCount <- getLocalUnreadCount_ db user nf
-  pure ChatStats {unreadCount, minUnreadItemId, unreadChat = False}
+  pure ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
 
 getLocalMinUnreadId_ :: DB.Connection -> User -> NoteFolder -> IO (Maybe ChatItemId)
 getLocalMinUnreadId_ db User {userId} NoteFolder {noteFolderId} =
