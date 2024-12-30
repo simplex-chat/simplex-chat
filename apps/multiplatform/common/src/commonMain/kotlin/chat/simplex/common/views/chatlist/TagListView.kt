@@ -5,8 +5,7 @@ import SectionDivider
 import SectionItemView
 import TextIconSpaced
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -117,8 +116,8 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
               Modifier
                 .fillMaxWidth()
                 .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-                .combinedClickable(
-                  enabled = !saving.value,
+                .clickable(
+                  enabled = !saving.value && !editMode.value,
                   onClick = {
                     if (chat == null) {
                       ModalManager.start.showModalCloseable { close ->
@@ -138,8 +137,6 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                       })
                     }
                   },
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = LocalIndication.current
                 )
                 .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
               verticalAlignment = Alignment.CenterVertically
