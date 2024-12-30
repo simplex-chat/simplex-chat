@@ -815,13 +815,13 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         if (oneHandUI.value) {
           Column(Modifier.consumeWindowInsets(WindowInsets.navigationBars).consumeWindowInsets(PaddingValues(bottom = AppBarHeight))) {
             Divider()
-            TagsView()
+            TagsView(searchText)
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
         } else {
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-          TagsView()
+          TagsView(searchText)
           Divider()
         }
       }
@@ -925,7 +925,7 @@ private fun ChatListFeatureCards() {
 private val TAG_MIN_HEIGHT = 35.dp
 
 @Composable
-private fun TagsView() {
+private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val userTags = remember { chatModel.userTags }
   val presetTags = remember { chatModel.presetTags }
   val activeFilter = remember { chatModel.activeChatTagFilter }
@@ -953,7 +953,7 @@ private fun TagsView() {
           ExpandedTagFilterView(tag)
         }
       } else {
-        CollapsedTagsFilterView()
+        CollapsedTagsFilterView(searchText)
       }
     }
 
@@ -1121,7 +1121,7 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
 
 
 @Composable
-private fun CollapsedTagsFilterView() {
+private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val presetTags = remember { chatModel.presetTags }
   val showMenu = remember { mutableStateOf(false) }
@@ -1156,12 +1156,13 @@ private fun CollapsedTagsFilterView() {
     }
 
     DefaultDropdownMenu(showMenu = showMenu) {
-      if (selectedPresetTag != null) {
+      if (activeFilter.value != null || searchText.value.text.isNotBlank()) {
         ItemAction(
           stringResource(MR.strings.chat_list_all),
           painterResource(MR.images.ic_menu),
           onClick = {
             chatModel.activeChatTagFilter.value = null
+            searchText.value = TextFieldValue()
             showMenu.value = false
           }
         )
