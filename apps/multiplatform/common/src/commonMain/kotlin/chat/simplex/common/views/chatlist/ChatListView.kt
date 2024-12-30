@@ -1205,26 +1205,18 @@ fun filteredChats(
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty())
-      chats.filter { chat -> !chat.chatInfo.chatDeleted && chatContactType(chat) != ContactType.CARD && filtered(chat, activeFilter) }
+      chats.filter { chat -> !chat.chatInfo.chatDeleted && !chat.chatInfo.contactCard && (chat.id == chatModel.chatId.value || filtered(chat, activeFilter))}
     else {
       chats.filter { chat ->
-        when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> chatContactType(chat) != ContactType.CARD && !chat.chatInfo.chatDeleted && (
-            if (s.isEmpty()) {
-              chat.id == chatModel.chatId.value || filtered(chat, activeFilter)
-            } else {
-              cInfo.anyNameContains(s)
-            })
-          is ChatInfo.Group -> if (s.isEmpty()) {
-            chat.id == chatModel.chatId.value || filtered(chat, activeFilter) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
-          } else {
-            cInfo.anyNameContains(s)
+        chat.id == chatModel.chatId.value ||
+          when (val cInfo = chat.chatInfo) {
+            is ChatInfo.Direct -> !cInfo.contact.chatDeleted && !chat.chatInfo.contactCard && cInfo.anyNameContains(s)
+            is ChatInfo.Group -> cInfo.anyNameContains(s)
+            is ChatInfo.Local -> cInfo.anyNameContains(s)
+            is ChatInfo.ContactRequest -> cInfo.anyNameContains(s)
+            is ChatInfo.ContactConnection -> cInfo.contactConnection.localAlias.lowercase().contains(s)
+            is ChatInfo.InvalidJSON -> false
           }
-          is ChatInfo.Local -> s.isEmpty() || cInfo.anyNameContains(s)
-          is ChatInfo.ContactRequest -> s.isEmpty() || cInfo.anyNameContains(s)
-          is ChatInfo.ContactConnection -> (s.isNotEmpty() && cInfo.anyNameContains(s)) || (s.isEmpty() && chat.id == chatModel.chatId.value)
-          is ChatInfo.InvalidJSON -> chat.id == chatModel.chatId.value
-        }
       }
     }
   }
