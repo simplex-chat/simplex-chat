@@ -293,7 +293,16 @@ fun ModalData.TagListEditor(
 }
 
 @Composable
-fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
+fun TagsDropdownMenu(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
+  DefaultDropdownMenu(showMenu, dropdownMenuItems = {
+    EditTagAction(rhId, tag, showMenu)
+    DeleteTagAction(rhId, tag, showMenu, saving)
+    ChangeOrderTagAction(rhId, showMenu)
+  })
+}
+
+@Composable
+private fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.delete_chat_list_menu_action),
     painterResource(MR.images.ic_delete),
@@ -306,7 +315,7 @@ fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, 
 }
 
 @Composable
-fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
+private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.edit_chat_list_menu_action),
     painterResource(MR.images.ic_edit),
@@ -327,7 +336,7 @@ fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>) {
 }
 
 @Composable
-fun ChangeOrderTagAction(rhId: Long?, showMenu: MutableState<Boolean>) {
+private fun ChangeOrderTagAction(rhId: Long?, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.change_order_chat_list_menu_action),
     painterResource(MR.images.ic_drag_handle),

@@ -1019,11 +1019,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
             )
           }
         }
-        DefaultDropdownMenu(showMenu, dropdownMenuItems = {
-          EditTagAction(rhId, tag, showMenu)
-          DeleteTagAction(rhId, tag, showMenu, saving)
-          ChangeOrderTagAction(rhId, showMenu)
-        })
+        TagsDropdownMenu(rhId, tag, showMenu, saving)
       }
     }
     val plusClickModifier = Modifier
