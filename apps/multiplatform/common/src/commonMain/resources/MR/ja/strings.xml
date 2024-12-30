@@ -1962,4 +1962,6 @@
     <string name="servers_info_missing">情報がありません、リロードしてください</string>
     <string name="smp_server">SMPサーバ</string>
     <string name="info_view_message_button">メッセージ</string>
+    <string name="operator_website">ウェブサイト</string>
+    <string name="info_view_video_button">ビデオ</string>
 </resources>
