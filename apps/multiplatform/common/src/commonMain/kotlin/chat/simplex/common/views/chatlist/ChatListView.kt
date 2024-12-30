@@ -1134,7 +1134,7 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
       )
     }
 
-    val onCloseMenuAction = rememberSaveable { mutableStateOf<(() -> Unit)>({}) }
+    val onCloseMenuAction = remember { mutableStateOf<(() -> Unit)>({}) }
 
     DefaultDropdownMenu(showMenu = showMenu, onClosed = onCloseMenuAction) {
       if (activeFilter.value != null || searchText.value.text.isNotBlank()) {
