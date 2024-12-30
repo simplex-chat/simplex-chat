@@ -622,6 +622,9 @@ struct ChatListSearchBar: View {
                 }
             }
         }
+        .onChange(of: chatTagsModel.activeFilter) { _ in
+            searchText = ""
+        }
         .alert(item: $alert) { a in
             planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
         }
