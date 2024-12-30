@@ -49,7 +49,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
-enum class PresetTagKind { FAVORITES, CONTACTS, GROUPS, BUSINESS }
+enum class PresetTagKind { FAVORITES, CONTACTS, GROUPS, BUSINESS, NOTES }
 
 sealed class ActiveFilter {
   data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
@@ -1074,12 +1074,12 @@ private fun ExpandedTagFilterView(tag: PresetTagKind) {
     is ActiveFilter.PresetTag -> af.tag == tag
     else -> false
   }
-  val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
   val (icon, text) = presetTagLabel(tag, active)
   val color = if (active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
 
   Row(
-    modifier = rowSizeModifier
+    modifier = Modifier
+      .sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
       .clip(shape = CircleShape)
       .clickable {
         if (activeFilter.value == ActiveFilter.PresetTag(tag)) {
@@ -1248,6 +1248,10 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo): Boolean =
       is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Business
       else -> false
     }
+    PresetTagKind.NOTES -> when (chatInfo) {
+      is ChatInfo.Local -> !chatInfo.noteFolder.chatDeleted
+      else -> false
+    }
   }
 
 private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResource, StringResource> =
@@ -1256,6 +1260,7 @@ private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResou
     PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
     PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
     PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
+    PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_open_filled else MR.images.ic_folder_open) to MR.strings.chat_list_notes
   }
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
