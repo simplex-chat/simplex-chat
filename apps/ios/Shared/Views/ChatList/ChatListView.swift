@@ -564,7 +564,7 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView(parentSheet: $parentSheet) }
+            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView(parentSheet: $parentSheet, searchText: $searchText) }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
@@ -671,6 +671,7 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var parentSheet: SomeSheet<AnyView>?
+    @Binding var searchText: String
 
     var body: some View {
         HStack {
@@ -791,9 +792,10 @@ struct ChatTagsView: View {
             nil
         }
         Menu {
-            if selectedPresetTag != nil {
+            if chatTagsModel.activeFilter != nil || !searchText.isEmpty {
                 Button {
                     chatTagsModel.activeFilter = nil
+                    searchText = ""
                 } label: {
                     HStack {
                         Image(systemName: "list.bullet")
