@@ -36,6 +36,7 @@ enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
     case contacts = 1
     case groups = 2
     case business = 3
+    case notes = 4
     
     var id: Int { rawValue }
 }
@@ -829,6 +830,7 @@ struct ChatTagsView: View {
         case .contacts: (active ? "person.fill" : "person", "Contacts")
         case .groups: (active ? "person.2.fill" : "person.2", "Groups")
         case .business: (active ? "briefcase.fill" : "briefcase", "Businesses")
+        case .notes: (active ? "folder.fill" : "folder", "Notes")
         }
     }
     
@@ -871,6 +873,11 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo) -> Bool {
         }
     case .business:
         chatInfo.groupInfo?.businessChat?.chatType == .business
+    case .notes:
+        switch chatInfo {
+        case .local: true
+        default: false
+        }
     }
 }
 
