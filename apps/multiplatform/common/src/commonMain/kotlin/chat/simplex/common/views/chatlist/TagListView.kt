@@ -43,12 +43,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: MutableState<Boolean> = remember { mutableStateOf(false) }) {
-  if (remember { editMode }.value) {
-    BackHandler {
-      editMode.value = false
-    }
-  }
+fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean) {
   val userTags = remember { chatModel.userTags }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
@@ -76,7 +71,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
   val topPaddingToContent = topPaddingToContent(false)
 
   LazyColumnWithScrollBar(
-    modifier = if (editMode.value) Modifier.dragContainer(dragDropState) else Modifier,
+    modifier = if (reorderMode) Modifier.dragContainer(dragDropState) else Modifier,
     contentPadding = PaddingValues(
       top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
       bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
@@ -96,7 +91,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
       }
     }
 
-    if (oneHandUI.value && !editMode.value) {
+    if (oneHandUI.value && !reorderMode) {
       item {
         CreateList()
       }
@@ -117,7 +112,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                 .fillMaxWidth()
                 .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
                 .clickable(
-                  enabled = !saving.value && !editMode.value,
+                  enabled = !saving.value && !reorderMode,
                   onClick = {
                     if (chat == null) {
                       ModalManager.start.showModalCloseable { close ->
@@ -155,7 +150,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
               if (selected) {
                 Spacer(Modifier.weight(1f))
                 Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-              } else if (editMode.value) {
+              } else if (reorderMode) {
                 Spacer(Modifier.weight(1f))
                 Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
               }
@@ -165,7 +160,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
         }
       }
     }
-    if (!oneHandUI.value && !editMode.value) {
+    if (!oneHandUI.value && !reorderMode) {
       item {
         CreateList()
       }
@@ -339,8 +334,7 @@ fun ChangeOrderTagAction(rhId: Long?, showMenu: MutableState<Boolean>) {
     onClick = {
       showMenu.value = false
       ModalManager.start.showModalCloseable { close ->
-        val editMode = remember { stateGetOrPut("editMode") { true } }
-        TagListView(rhId = rhId, close = close, editMode = editMode)
+        TagListView(rhId = rhId, close = close, reorderMode = true)
       }
     },
     color = MenuTextColor

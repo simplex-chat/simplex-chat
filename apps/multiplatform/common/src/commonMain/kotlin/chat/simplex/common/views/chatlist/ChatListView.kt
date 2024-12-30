@@ -951,7 +951,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
         else -> false
       }
       val interactionSource = remember { MutableInteractionSource() }
-      val showMenu = remember { mutableStateOf(false) }
+      val showMenu = rememberSaveable { mutableStateOf(false) }
       val saving = remember { mutableStateOf(false) }
       Box {
         Row(

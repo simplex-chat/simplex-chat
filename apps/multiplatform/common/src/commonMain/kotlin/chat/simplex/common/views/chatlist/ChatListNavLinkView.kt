@@ -358,7 +358,7 @@ fun TagListAction(
         if (userTags.value.isEmpty()) {
           TagListEditor(rhId = chat.remoteHostId, chat = chat, close = close)
         } else {
-          TagListView(rhId = chat.remoteHostId, chat = chat, close = close)
+          TagListView(rhId = chat.remoteHostId, chat = chat, close = close, reorderMode = false)
         }
       }
       showMenu.value = false
