@@ -1195,7 +1195,7 @@ fun filteredChats(
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty())
-      chats.filter { chat -> !chat.chatInfo.chatDeleted && !chat.chatInfo.contactCard && (chat.id == chatModel.chatId.value || filtered(chat, activeFilter))}
+      chats.filter { chat -> chat.id == chatModel.chatId.value || (!chat.chatInfo.chatDeleted && !chat.chatInfo.contactCard && filtered(chat, activeFilter)) }
     else {
       chats.filter { chat ->
         chat.id == chatModel.chatId.value ||
