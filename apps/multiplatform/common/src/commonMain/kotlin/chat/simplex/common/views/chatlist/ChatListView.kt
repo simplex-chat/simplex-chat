@@ -1124,7 +1124,7 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
         painterResource(icon),
         stringResource(text),
         Modifier.size(18.sp.toDp()),
-        tint = MaterialTheme.colors.secondary
+        tint = MaterialTheme.colors.primary
       )
     } else {
       Icon(
