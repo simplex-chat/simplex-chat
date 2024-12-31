@@ -1250,7 +1250,7 @@ private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResou
     PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
     PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
     PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
-    PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_open_filled else MR.images.ic_folder_open) to MR.strings.chat_list_notes
+    PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed) to MR.strings.chat_list_notes
   }
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
