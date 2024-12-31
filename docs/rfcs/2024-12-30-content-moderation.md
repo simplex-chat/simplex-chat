@@ -7,7 +7,7 @@ As the users and groups grow, and particularly given that we are planning to mak
 Our current approach to content moderation is the following:
 - receive a user complaints about the group that violates content guidelines (e.g., most users who send complaints, send them about relatively rare cases of CSAM distribution). This complaint contains the link to join the group, so it is a public group that anybody can join, and there is no expectation of privacy of communications in this group.
 - we forward this complaint to our automatic bot joins this group and validates the complaint.
-- if the complaint is valid, and the link is hosted on one of the preconfigured servers, then we can disable the link to join the group.
+- if the complaint is valid, and the link is hosted on one of the pre-configured servers, then we can disable the link to join the group.
 - in addition to that, the bot automatically deletes all files sent to the group, in case they are uploaded to our servers, via secure SSH connection directly to server control port (we don't expose shell access in this way, only to a limited set of server control port commands).
 
 The problem of CSAM is small at the moment, compared with the network size, but without moderation it would grow, and we need to be ahead of this problem, so this solution was in place since early 2024 - we wrote about it on social media.
@@ -32,11 +32,11 @@ The usual counter-argument is that this can be easily circumvented, because the 
 - most users are either unable or unwilling to invest time into modifying code. This fact alone makes this solution effective in absolute majority of cases.
 - any restriction on communication can be applied both on sending and on receiving client, without the need to identify either of these clients. We already do it with 1gb file restriction - e.g., even if file sender modifies their client to allow sending larger files, most of the recipients won't be able to receive this file anyway, as their clients also restrict the size of file that can be received to 1gb.
 
-For the group that is blocked to continue functioning, not only message senders have to modify their clients, but also message recipients, which won't happen in the absense of ability to communicate in disabled group. Such groups will only be able to function in an isolated segment of the network, when all users use modified clients and with self-hosted servers, which is outside of our zone of any moral and any potential legal responsibility (while we do not have any responsiblity for user-generated content under the existing laws, there are requirements we have to comply with that exist outside of law, e.g. requirements of application stores).
+For the group that is blocked to continue functioning, not only message senders have to modify their clients, but also message recipients, which won't happen in the absence of ability to communicate in disabled group. Such groups will only be able to function in an isolated segment of the network, when all users use modified clients and with self-hosted servers, which is outside of our zone of any moral and any potential legal responsibility (while we do not have any responsibility for user-generated content under the existing laws, there are requirements we have to comply with that exist outside of law, e.g. requirements of application stores).
 
 ## Potential changes
 
-This section is the braindump of technically possible changes for the future. They will not be implemented all at once, and this list is neither exhaustive, as we or our users can come up with better ideas, nor committed - some of the ideas below may never be implemented. So these ideas are only listed as technical possibilities.
+This section is the brain-dump of technically possible changes for the future. They will not be implemented all at once, and this list is neither exhaustive, as we or our users can come up with better ideas, nor committed - some of the ideas below may never be implemented. So these ideas are only listed as technical possibilities.
 
 Our priority is to continue being able to prevent CSAM distribution as network and groups grow, while doing what is reasonable and minimally possible, to save our costs, to avoid any disruption to the users, and to avoid the reduction in privacy and security - on the opposite, we are planning multiple privacy and security improvements in 2025.
 
@@ -82,7 +82,7 @@ For all group members:
 
 For the same reason as with files, this measure will be an effective deterrence, even though the code is open-source.
 
-While full blocking may be seen as draconian, for the people who repeatedly violate the conditions of use, ignoring temporary or limited restrictions, it may be appropriate. The tracking of repeat violations of conditions also does not require any user identification and can be done fully on the client side, with sufficient effeciency.
+While full blocking may be seen as draconian, for the people who repeatedly violate the conditions of use, ignoring temporary or limited restrictions, it may be appropriate. The tracking of repeat violations of conditions also does not require any user identification and can be done fully on the client side, with sufficient efficiency.
 
 ### Implement ability to submit reports to group owners and moderators
 
@@ -100,7 +100,7 @@ Server operators may be then offered efficient interfaces in the clients to mana
 
 We cannot and should not enforce that 3rd party server operators remove CSAM from their servers. We will only be recommending it and providing tools to simplify it.
 
-But we can, technically, implement blocklists of servers so that the users who need to send messages to these servers would not be able to do that via our servers.
+But we can, technically, implement block-lists of servers so that the users who need to send messages to these servers would not be able to do that via our servers.
 
 We also can require mandatory server identification to requests to proxy messages via client certificates of the server that could be validated via a reverse connection, and also block incoming traffic from these servers.
 
