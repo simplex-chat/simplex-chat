@@ -429,7 +429,7 @@
     <string name="create_profile_button">Crează</string>
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="permissions_camera">Camera</string>
-    <string name="call_on_lock_screen">Apeluri pe ecranul de blocare:</string>
+    <string name="call_on_lock_screen">Apeluri pe ecranul blocat:</string>
     <string name="status_contact_has_e2e_encryption">contactul are cifrare e2e</string>
     <string name="status_contact_has_no_e2e_encryption">contactul nu are cifrare e2e</string>
     <string name="receipts_section_contacts">Contacte</string>
@@ -487,7 +487,7 @@
     <string name="network_session_mode_user">Profil conversație</string>
     <string name="bold_text">aldin</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Poți folosi markdown pentru a formata mesaje:</string>
-    <string name="callstatus_calling">Apelând…</string>
+    <string name="callstatus_calling">se apelează…</string>
     <string name="change_self_destruct_mode">Schimbă modul de autodistrugere</string>
     <string name="chat_database_imported">Baza de date a conversației importată</string>
     <string name="you_must_use_the_most_recent_version_of_database">Trebuie să folosești cea mai recentă versiune a bazei de date a conversațiilor DOAR pe un singur dispozitiv, altfel se poate să nu mai primești mesajele de la unele contacte.</string>
@@ -524,8 +524,7 @@
     <string name="migrate_from_device_check_connection_and_try_again">Verifică conexiunea la internet și încearcă din nou</string>
     <string name="settings_section_title_chat_colors">Culori conversație</string>
     <string name="settings_section_title_chat_theme">Aspectul discuției</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Bun pentru baterie</b>. 
-\nServiciul în fundal verifică mesaje la fiecare 10 minute. Ai putea rata apeluri sau mesaje urgente.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bun pentru baterie</b>. Aplicația verifică mesajele la fiecare 10 minute. Pot fi pierdute apeluri sau mesaje urgente.]]></string>
     <string name="theme_black">Negru</string>
     <string name="block_for_all_question">Blochezi membrul pentru toți?</string>
     <string name="both_you_and_your_contacts_can_delete">Și tu și contactul tău puteți șterge ireversibil mesajele trimise. (24 de ore)</string>
@@ -554,7 +553,7 @@
     <string name="connecting_to_desktop">Se conectează la desktop</string>
     <string name="icon_descr_asked_to_receive">Rugat să primească imaginea</string>
     <string name="connection_request_sent">Cerere de conexiune trimisă!</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Vă rugăm să rețineți:</b> mesajele și releurile pentru fișiere sunt conectate printr-un proxy SOCKS. Apelurile ți trimiterea de previzualizări a link-urilor folosesc o conexiune directă.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>De reținut</b>: releele de mesaje și fișiere sunt conectate prin proxy SOCKS. Apelurile și trimiterea de previzualizări ale adreselor web utilizează conexiunea directă.]]></string>
     <string name="callstate_connected">conectat</string>
     <string name="confirm_passcode">Confirmați codul de access</string>
     <string name="confirm_database_upgrades">Confirmare actualizare bază de date</string>
@@ -719,7 +718,7 @@
     <string name="servers_info_sessions_connecting">Se conectează</string>
     <string name="servers_info_connected_servers_section_header">Servere conectate</string>
     <string name="cant_call_contact_alert_title">Nu se poate apela contactul</string>
-    <string name="cant_call_contact_connecting_wait_alert_text">Se conectează la contact, te rog așteaptă sau verifică mai târziu!</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">Se conectează la contact, așteaptă sau verifică mai târziu!</string>
     <string name="network_settings_title">Reglări avansate</string>
     <string name="toolbar_settings">Reglări</string>
     <string name="your_settings">Reglările tale</string>
@@ -732,4 +731,12 @@
     <string name="settings_section_title_you">TU</string>
     <string name="status_no_e2e_encryption">necifrat e2e</string>
     <string name="status_e2e_encrypted">cifrat e2e</string>
+    <string name="incoming_video_call">Apel video primit</string>
+    <string name="no_call_on_lock_screen">Dezactivează</string>
+    <string name="allow_calls_question">Permiți apeluri?</string>
+    <string name="callstate_ended">terminat</string>
+    <string name="v5_7_call_sounds">Sunete la apel</string>
+    <string name="v6_1_better_calls">Apeluri îmbunătățite</string>
+    <string name="incoming_audio_call">Apel audio primit</string>
+    <string name="call_service_notification_end_call">Termină apelul</string>
 </resources>
