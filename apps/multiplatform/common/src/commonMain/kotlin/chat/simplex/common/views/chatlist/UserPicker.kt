@@ -53,9 +53,10 @@ fun UserPicker(
       userPickerState.value = AnimatedViewState.HIDING
     }
   }
+  val us = chatModel.users.collectAsState()
   val users by remember {
     derivedStateOf {
-      chatModel.users.value
+      us.value
         .filter { u -> u.user.activeUser || !u.user.hidden }
         .sortedByDescending { it.user.activeOrder }
     }

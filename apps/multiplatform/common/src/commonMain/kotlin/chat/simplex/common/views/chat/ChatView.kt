@@ -58,9 +58,11 @@ data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val dat
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
 // to chat list smooth. Otherwise, chat view will become blank right before the transition starts
 fun ChatView(staleChatId: StateFlow<String?>, onComposed: suspend (chatId: String) -> Unit) {
-  val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
+  println("LALAL CHAT VIEW")
+  val chats = chatModel.chats.collectAsState()
+  val remoteHostId = remember { derivedStateOf { chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
   val showSearch = rememberSaveable { mutableStateOf(false) }
-  val activeChatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatInfo } }
+  val activeChatInfo = remember { derivedStateOf { chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatInfo } }
   val user = chatModel.currentUser.value
   val chatInfo = activeChatInfo.value
   if (chatInfo == null || user == null) {
@@ -107,7 +109,7 @@ fun ChatView(staleChatId: StateFlow<String?>, onComposed: suspend (chatId: Strin
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == activeChatInfo.value?.id }?.chatStats?.unreadCount ?: 0
+        chats.value.firstOrNull { chat -> chat.chatInfo.id == activeChatInfo.value?.id }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current

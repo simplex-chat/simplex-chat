@@ -123,8 +123,9 @@ fun TerminalLayout(
 
 @Composable
 fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
+  val items = chatModel.terminalItems.collectAsState()
   val reversedTerminalItems by remember {
-    derivedStateOf { chatModel.terminalItems.value.asReversed() }
+    derivedStateOf { items.value.asReversed();  }
   }
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
   var autoScrollToBottom = rememberSaveable { mutableStateOf(true) }

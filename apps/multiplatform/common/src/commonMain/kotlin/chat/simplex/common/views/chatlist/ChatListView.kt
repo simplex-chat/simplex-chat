@@ -44,8 +44,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
@@ -306,7 +305,7 @@ private fun BoxScope.ChatListWithLoadingScreen(searchText: MutableState<TextFiel
   if (!chatModel.desktopNoUserNoRemote) {
     ChatList(searchText = searchText, listState)
   }
-  if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+  if (chatModel.chats.collectAsState().value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
     Text(
       stringResource(
         if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats
@@ -448,7 +447,8 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
           }
         }
       } else {
-        val users by remember { derivedStateOf { chatModel.users.value.filter { u -> u.user.activeUser || !u.user.hidden } } }
+        val us = chatModel.users.collectAsState()
+        val users by remember { derivedStateOf { us.value.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -777,7 +777,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
-  val allChats = remember { chatModel.chats }
+  val allChats = chatModel.chats.collectAsState()
   // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
@@ -926,10 +926,10 @@ private val TAG_MIN_HEIGHT = 35.dp
 
 @Composable
 private fun TagsView() {
-  val userTags = remember { chatModel.userTags }
-  val presetTags = remember { chatModel.presetTags }
-  val activeFilter = remember { chatModel.activeChatTagFilter }
-  val unreadTags = remember { chatModel.unreadTags }
+  val userTags = chatModel.userTags.collectAsState()
+  val presetTags = chatModel.presetTags.collectAsState()
+  val activeFilter = chatModel.activeChatTagFilter.collectAsState()
+  val unreadTags = chatModel.unreadTags.collectAsState()
   val rhId = chatModel.remoteHostId()
 
   fun showTagList() {
@@ -949,7 +949,7 @@ private fun TagsView() {
   TagsRow {
     if (presetTags.value.size > 1) {
       if (presetTags.value.size + userTags.value.size <= 3) {
-        PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
+        PresetTagKind.entries.filter { t -> (presetTags.value[t] ?: 0) > 0 }.forEach { tag ->
           ExpandedTagFilterView(tag)
         }
       } else {
@@ -995,7 +995,7 @@ private fun TagsView() {
         }
         Spacer(Modifier.width(4.dp))
         Box {
-          val badgeText = if ((unreadTags[tag.chatTagId] ?: 0) > 0) " ●" else ""
+          val badgeText = if ((unreadTags.value[tag.chatTagId] ?: 0) > 0) " ●" else ""
           val invisibleText = buildAnnotatedString {
             append(tag.chatTagText)
             withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold)) {

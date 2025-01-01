@@ -338,7 +338,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       .then(if (hasCutout) Modifier.clip(RectangleShape) else Modifier)
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
-      currentChatId.value?.let {
+      currentChatId.collectAsState().value?.let {
         ChatView(currentChatId, onComposed)
       }
     }

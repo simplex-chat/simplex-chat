@@ -620,10 +620,13 @@ object ChatController {
     val hasUser = chatModel.currentUser.value != null
     chatModel.userAddress.value = if (hasUser) apiGetUserAddress(rhId) else null
     chatModel.chatItemTTL.value = if (hasUser) getChatItemTTL(rhId) else ChatItemTTL.None
+    println("LALAL WAIT")
     withChats {
       val chats = apiGetChats(rhId)
+      println("LALAL WAIT1 ${chats.size}")
       updateChats(chats)
     }
+    println("LALAL WAIT2  ${chatModel.chats.size}")
     chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
     chatModel.activeChatTagFilter.value = null
     chatModel.updateChatTags(rhId)
