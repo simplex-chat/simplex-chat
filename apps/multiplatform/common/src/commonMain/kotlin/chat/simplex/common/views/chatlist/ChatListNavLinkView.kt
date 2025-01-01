@@ -216,15 +216,19 @@ suspend fun openChat(rhId: Long?, chatInfo: ChatInfo) = openChat(rhId, chatInfo.
 private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long) =
   apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
 
-fun openLoadedChat(chat: Chat) {
-  chatModel.chatItemStatuses.clear()
-  chatModel.chatItems.replaceAll(chat.chatItems)
-  chatModel.chatId.value = chat.chatInfo.id
-  chatModel.chatState.clear()
+suspend fun openLoadedChat(chat: Chat) {
+  withChats {
+    chatModel.chatItemStatuses.clear()
+    chatItems.replaceAll(chat.chatItems)
+    chatModel.chatId.value = chat.chatInfo.id
+    chatModel.chatState.clear()
+  }
 }
 
 suspend fun apiFindMessages(ch: Chat, search: String) {
-  chatModel.chatItems.clearAndNotify()
+  withChats {
+    chatItems.clearAndNotify()
+  }
   apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), chatModel.chatState, search = search)
 }
 

@@ -61,7 +61,6 @@ object ChatModel {
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   private val _chats = mutableStateOf(SnapshotStateList<Chat>())
   val chats: State<List<Chat>> = _chats
-  private val chatsContext = ChatsContext()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
@@ -72,7 +71,10 @@ object ChatModel {
    * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
    * If you use api call to get the items, use just [add] instead of [addAndNotify].
    * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
-  val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  private val _chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  val chatItems: State<SnapshotStateList<ChatItem>> = _chatItems
+  // declaration of chatsContext should be after any other variable that is directly attached to ChatsContext class, otherwise, strange crash with NullPointerException for "this" parameter in random functions
+  private val chatsContext = ChatsContext()
   // set listener here that will be notified on every add/delete of a chat item
   var chatItemsChangesListener: ChatItemsChangesListener? = null
   val chatState = ActiveChatState()
@@ -341,6 +343,7 @@ object ChatModel {
 
   class ChatsContext {
     val chats = _chats
+    val chatItems = _chatItems
 
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
@@ -761,7 +764,7 @@ object ChatModel {
 
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
-    withContext(Dispatchers.Main) {
+    withChats {
       chatItems.addAndNotify(cItem)
     }
     return cItem
@@ -769,7 +772,11 @@ object ChatModel {
 
   fun removeLiveDummy() {
     if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-      chatItems.removeLastAndNotify()
+      withApi {
+        withChats {
+          chatItems.removeLastAndNotify()
+        }
+      }
     }
   }
 
@@ -890,19 +897,25 @@ object ChatModel {
 
   fun replaceConnReqView(id: String, withId: String) {
     if (id == showingInvitation.value?.connId) {
-      showingInvitation.value = null
-      chatModel.chatItems.clearAndNotify()
-      chatModel.chatId.value = withId
+      withApi {
+        withChats {
+          showingInvitation.value = null
+          chatItems.clearAndNotify()
+          chatModel.chatId.value = withId
+        }
+      }
       ModalManager.start.closeModals()
       ModalManager.end.closeModals()
     }
   }
 
-  fun dismissConnReqView(id: String) {
+  fun dismissConnReqView(id: String) = withApi {
     if (id == showingInvitation.value?.connId) {
-      showingInvitation.value = null
-      chatModel.chatItems.clearAndNotify()
-      chatModel.chatId.value = null
+      withChats {
+        showingInvitation.value = null
+        chatItems.clearAndNotify()
+        chatModel.chatId.value = null
+      }
       // Close NewChatView
       ModalManager.start.closeModals()
       ModalManager.center.closeModals()

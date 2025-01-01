@@ -528,9 +528,9 @@ fun deleteChatDatabaseFilesAndState() {
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
-  chatModel.chatItems.clearAndNotify()
   withLongRunningApi {
     withChats {
+      chatItems.clearAndNotify()
       chats.clear()
       popChatCollector.clear()
     }

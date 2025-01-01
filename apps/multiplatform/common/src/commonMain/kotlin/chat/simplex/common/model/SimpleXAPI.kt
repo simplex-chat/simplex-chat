@@ -3044,8 +3044,8 @@ object ChatController {
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
     if (user == null) {
-      chatModel.chatItems.clearAndNotify()
       withChats {
+        chatItems.clearAndNotify()
         chats.clear()
         popChatCollector.clear()
       }
