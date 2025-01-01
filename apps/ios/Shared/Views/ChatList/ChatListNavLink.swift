@@ -868,8 +868,6 @@ struct ChatListTagEditor: View {
                         Text(
                             chat != nil
                             ? "Add to list"
-                            : tagId == nil
-                            ? "Create list"
                             : "Save list"
                         )
                     }
