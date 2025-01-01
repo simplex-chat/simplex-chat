@@ -355,14 +355,14 @@ fun TagListAction(
 ) {
   val userTags = remember { chatModel.userTags }
   ItemAction(
-    stringResource(MR.strings.list_menu),
+    stringResource(if (chat.chatInfo.chatTags.isNullOrEmpty()) MR.strings.add_to_list else MR.strings.change_list),
     painterResource(MR.images.ic_label),
     onClick = {
       ModalManager.start.showModalCloseable { close ->
         if (userTags.value.isEmpty()) {
           TagListEditor(rhId = chat.remoteHostId, chat = chat, close = close)
         } else {
-          TagListView(rhId = chat.remoteHostId, chat = chat, close = close)
+          TagListView(rhId = chat.remoteHostId, chat = chat, close = close, reorderMode = false)
         }
       }
       showMenu.value = false

@@ -421,6 +421,7 @@
   <string name="chat_list_contacts">Contacts</string>
   <string name="chat_list_groups">Groups</string>
   <string name="chat_list_businesses">Businesses</string>
+  <string name="chat_list_notes">Notes</string>
   <string name="chat_list_all">All</string>
   <string name="chat_list_add_list">Add list</string>
 
@@ -644,6 +645,7 @@
   <!-- Tags - ChatListNavLinkView.kt -->
   <string name="create_list">Create list</string>
   <string name="add_to_list">Add to list</string>
+  <string name="change_list">Change list</string>
   <string name="save_list">Save list</string>
   <string name="list_name_field_placeholder">List name...</string>
   <string name="duplicated_list_error">List name and emoji should be different for all lists.</string>
@@ -651,6 +653,7 @@
   <string name="delete_chat_list_question">Delete list?</string>
   <string name="delete_chat_list_warning">All chats will be removed from the list %s, and the list deleted</string>
   <string name="edit_chat_list_menu_action">Edit</string>
+  <string name="change_order_chat_list_menu_action">Change order</string>
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_a_contact">You invited a contact</string>
