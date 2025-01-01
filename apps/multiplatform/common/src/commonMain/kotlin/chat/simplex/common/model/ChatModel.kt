@@ -59,7 +59,7 @@ object ChatModel {
   val ctrlInitInProgress = MutableStateFlow(false)
   val dbMigrationInProgress = MutableStateFlow(false)
   val incompleteInitializedDbRemoved = MutableStateFlow(false)
-  private val _chats = MutableStateFlow(ArrayList<Chat>())
+  private val _chats = MutableStateFlow(SnapshotStateList<Chat>())
   val chats: StateFlow<List<Chat>> = _chats
   private val chatsContext = ChatsContext()
   // map of connections network statuses, key is agent connection id
@@ -2505,16 +2505,16 @@ data class ChatItem (
   }
 }
 
-fun MutableStateFlow<ArrayList<Chat>>.add(index: Int, elem: Chat) {
-  value = ArrayList(value).apply { add(index, elem) }
+fun MutableStateFlow<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); add(index, elem) }
 }
 
 fun MutableStateFlow<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
   value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
 }
 
-fun MutableStateFlow<ArrayList<Chat>>.add(elem: Chat) {
-  value = ArrayList(value).apply { add(elem) }
+fun MutableStateFlow<SnapshotStateList<Chat>>.add(elem: Chat) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); add(elem) }
 }
 
 // For some reason, Kotlin version crashes if the list is empty
@@ -2529,20 +2529,12 @@ fun <T> MutableStateFlow<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>
   value = SnapshotStateList<T>().apply { addAll(value); addAll(index, elems) }
 }
 
-fun <T> MutableStateFlow<ArrayList<T>>.addAll(index: Int, elems: List<T>) {
-  value = ArrayList(value).apply { addAll(index, elems) }
-}
-
 fun <T> MutableStateFlow<SnapshotStateList<T>>.addAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(value); addAll(elems) }
 }
 
-fun <T> MutableStateFlow<ArrayList<T>>.addAll(elems: List<T>) {
-  value = ArrayList(value).apply { addAll(elems) }
-}
-
-fun MutableStateFlow<ArrayList<Chat>>.removeAll(block: (Chat) -> Boolean) {
-  value = ArrayList(value).apply { removeAll(block) }
+fun MutableStateFlow<SnapshotStateList<Chat>>.removeAll(block: (Chat) -> Boolean) {
+  value = SnapshotStateList<Chat>().apply { addAll(value); removeAll(block) }
 }
 
 // Removes item(s) from chatItems and notifies a listener about removed item(s)
@@ -2563,8 +2555,9 @@ fun MutableStateFlow<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (Cha
   }
 }
 
-fun MutableStateFlow<ArrayList<Chat>>.removeAt(index: Int): Chat {
-  val new = ArrayList(value)
+fun MutableStateFlow<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
+  val new = SnapshotStateList<Chat>()
+  new.addAll(value)
   val res = new.removeAt(index)
   value = new
   return res
@@ -2592,12 +2585,8 @@ fun <T> MutableStateFlow<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(elems) }
 }
 
-fun <T> MutableStateFlow<AttayList<T>>.replaceAll(elems: List<T>) {
-  value = ArrayList(elems)
-}
-
-fun MutableStateFlow<ArrayList<Chat>>.clear() {
-  value = ArrayList()
+fun MutableStateFlow<SnapshotStateList<Chat>>.clear() {
+  value = SnapshotStateList()
 }
 
 // Removes all chatItems and notifies a listener about it
