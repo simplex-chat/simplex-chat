@@ -337,6 +337,7 @@ object ChatModel {
     }
   }
 
+  // running everything inside the block on main thread. Make sure any heavy computation is moved to a background thread
   suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
     chatsContext.action()
   }
