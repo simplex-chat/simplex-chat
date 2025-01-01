@@ -38,7 +38,7 @@ import kotlinx.coroutines.*
 @Composable
 fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, withAuth: (block: () -> Unit) -> Unit) {
   val searchTextOrPassword = rememberSaveable { search }
-  val users by remember { derivedStateOf { m.users.map { it.user } } }
+  val users by remember { derivedStateOf { m.users.value.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
   UserProfilesLayout(
     users = users,
@@ -306,7 +306,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
 fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<UserInfo> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
-  return m.users.filter { u ->
+  return m.users.value.filter { u ->
     if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.anyNameContains(lower))) {
       true
     } else {
@@ -315,7 +315,7 @@ fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<UserInfo> {
   }
 }
 
-private fun visibleUsersCount(m: ChatModel): Int = m.users.filter { u -> !u.user.hidden }.size
+private fun visibleUsersCount(m: ChatModel): Int = m.users.value.filter { u -> !u.user.hidden }.size
 
 fun correctPassword(user: User, pwd: String): Boolean {
   val ph = user.viewPwdHash

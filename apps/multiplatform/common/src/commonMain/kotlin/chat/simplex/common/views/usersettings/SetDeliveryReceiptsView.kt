@@ -13,6 +13,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
@@ -32,8 +33,7 @@ fun SetDeliveryReceiptsView(m: ChatModel) {
             m.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
             try {
               val users = m.controller.listUsers(currentUser.remoteHostId)
-              m.users.clear()
-              m.users.addAll(users)
+              m.users.value = users
             } catch (e: Exception) {
               Log.e(TAG, "listUsers error: ${e.stackTraceToString()}")
             }

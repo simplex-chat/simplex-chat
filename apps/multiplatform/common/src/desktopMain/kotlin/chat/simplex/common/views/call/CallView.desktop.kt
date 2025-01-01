@@ -97,7 +97,7 @@ actual fun ActiveCallView() {
           is WCallCommand.Camera -> {
             chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
             if (!call.localMediaSources.mic) {
-              chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = false))
+              chatModel.callCommand.value += WCallCommand.Media(CallMediaSource.Mic, enable = false)
             }
           }
           is WCallCommand.End ->
@@ -106,11 +106,11 @@ actual fun ActiveCallView() {
         }
         is WCallResponse.Error -> {
           when (apiMsg.command) {
-            is WCallCommand.Capabilities -> chatModel.callCommand.add(WCallCommand.Permission(
+            is WCallCommand.Capabilities -> chatModel.callCommand.value += WCallCommand.Permission(
               title = generalGetString(MR.strings.call_desktop_permission_denied_title),
               chrome = generalGetString(MR.strings.call_desktop_permission_denied_chrome),
               safari = generalGetString(MR.strings.call_desktop_permission_denied_safari)
-            ))
+            )
             else -> {}
           }
           Log.e(TAG, "ActiveCallView: command error ${r.message}")
@@ -123,11 +123,13 @@ actual fun ActiveCallView() {
   DisposableEffect(Unit) {
     chatModel.activeCallViewIsVisible.value = true
     // After the first call, End command gets added to the list which prevents making another calls
-    chatModel.callCommand.removeAll { it is WCallCommand.End }
+    val cmds = chatModel.callCommand.value.toMutableList()
+    cmds.removeAll { it is WCallCommand.End }
+    chatModel.callCommand.value = cmds
     onDispose {
       CallSoundsPlayer.stop()
       chatModel.activeCallViewIsVisible.value = false
-      chatModel.callCommand.clear()
+      chatModel.callCommand.value = emptyList()
     }
   }
 }
@@ -143,13 +145,13 @@ private fun SendStateUpdates() {
         val connInfo = call.connectionInfo
         val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
         val description = call.encryptionStatus + connInfoText
-        chatModel.callCommand.add(WCallCommand.Description(state, description))
+        chatModel.callCommand.value += WCallCommand.Description(state, description)
       }
   }
 }
 
 @Composable
-fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
+fun WebRTCController(callCommand: MutableStateFlow<List<WCallCommand>>, onResponse: (WVAPIMessage) -> Unit) {
   val uriHandler = LocalUriHandler.current
   val endCall = {
     val call = chatModel.activeCall.value
@@ -187,15 +189,17 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
     }
   }
   LaunchedEffect(Unit) {
-    snapshotFlow { callCommand.firstOrNull() }
+    snapshotFlow { callCommand.value.firstOrNull() }
       .distinctUntilChanged()
       .filterNotNull()
       .collect {
         while (connections.isEmpty()) {
           delay(100)
         }
-        while (callCommand.isNotEmpty()) {
-          val cmd = callCommand.removeFirst()
+        while (callCommand.value.isNotEmpty()) {
+          val cmds = callCommand.value.toMutableList()
+          val cmd = cmds.removeFirst()
+          callCommand.value = cmds
           Log.d(TAG, "WebRTCController LaunchedEffect executing $cmd")
           processCommand(cmd)
         }

@@ -890,7 +890,7 @@ object AppearanceScope {
         // Otherwise, it would be needed to make global variable and to use it everywhere for making a decision to include these overrides into active theme constructing or not
         chatModel.currentUser.value = chatModel.currentUser.value?.copy(uiThemes = null)
       } else {
-        chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), chatModel.users.firstOrNull { it.user.userId == chatModel.currentUser.value?.userId }?.user?.uiThemes)
+        chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), chatModel.users.value.firstOrNull { it.user.userId == chatModel.currentUser.value?.userId }?.user?.uiThemes)
       }
     }
     DisposableEffect(Unit) {
@@ -898,15 +898,15 @@ object AppearanceScope {
         // Skip when Appearance screen is not hidden yet
         if (ModalManager.start.hasModalsOpen()) return@onDispose
         // Restore user overrides from stored list of users
-        chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), chatModel.users.firstOrNull { it.user.userId == chatModel.currentUser.value?.userId }?.user?.uiThemes)
+        chatModel.updateCurrentUserUiThemes(chatModel.remoteHostId(), chatModel.users.value.firstOrNull { it.user.userId == chatModel.currentUser.value?.userId }?.user?.uiThemes)
         themeUserDestination.value = if (chatModel.currentUser.value?.uiThemes == null) null else chatModel.currentUser.value?.userId!! to chatModel.currentUser.value?.uiThemes
       }
     }
 
-    val values by remember(chatModel.users.toList()) { mutableStateOf(
+    val values by remember(chatModel.users.value) { mutableStateOf(
       listOf(null as Long? to generalGetString(MR.strings.theme_destination_app_theme))
           +
-        chatModel.users.filter { it.user.activeUser }.map {
+        chatModel.users.value.filter { it.user.activeUser }.map {
           it.user.userId to it.user.chatViewName
         },
       )
@@ -921,7 +921,7 @@ object AppearanceScope {
         onSelected = { userId ->
           themeUserDest.value = userId
           if (userId != null) {
-            themeUserDestination.value = userId to chatModel.users.firstOrNull { it.user.userId == userId }?.user?.uiThemes
+            themeUserDestination.value = userId to chatModel.users.value.firstOrNull { it.user.userId == userId }?.user?.uiThemes
           } else {
             themeUserDestination.value = null
           }

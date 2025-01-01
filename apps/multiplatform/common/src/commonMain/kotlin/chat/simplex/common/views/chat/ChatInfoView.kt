@@ -68,7 +68,7 @@ fun ChatInfoView(
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
+    val contactNetworkStatus = remember(chatModel.networkStatuses.value, contact) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
     val chatRh = chat.remoteHostId

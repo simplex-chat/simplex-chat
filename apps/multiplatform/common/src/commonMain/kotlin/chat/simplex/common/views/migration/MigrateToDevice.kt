@@ -31,6 +31,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
 import kotlinx.serialization.*
@@ -112,7 +113,7 @@ sealed class MigrationToState {
   @Serializable data class Migration(val passphrase: String, val confirmation: chat.simplex.common.views.helpers.MigrationConfirmation, val useKeychain: Boolean, val netCfg: NetCfg, val networkProxy: NetworkProxy?): MigrationToState()
 }
 
-private var MutableState<MigrationToState?>.state: MigrationToState?
+private var MutableStateFlow<MigrationToState?>.state: MigrationToState?
   get() = value
   set(v) { value = v }
 
@@ -159,7 +160,7 @@ fun ModalData.MigrateToDeviceView(close: () -> Unit) {
 
 @Composable
 private fun ModalData.MigrateToDeviceLayout(
-  migrationState: MutableState<MigrationToState?>,
+  migrationState: MutableStateFlow<MigrationToState?>,
   chatReceiver: MutableState<MigrationToChatReceiver?>,
   close: () -> Unit,
 ) {
@@ -174,7 +175,7 @@ private fun ModalData.MigrateToDeviceLayout(
 
 @Composable
 private fun ModalData.SectionByState(
-  migrationState: MutableState<MigrationToState?>,
+  migrationState: MutableStateFlow<MigrationToState?>,
   tempDatabaseFile: File,
   chatReceiver: MutableState<MigrationToChatReceiver?>,
   close: () -> Unit
@@ -196,7 +197,7 @@ private fun ModalData.SectionByState(
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Unit) {
+private fun MutableStateFlow<MigrationToState?>.PasteOrScanLinkView(close: () -> Unit) {
   Box {
     val progressIndicator = remember { mutableStateOf(false) }
     Column {
@@ -224,7 +225,7 @@ private fun MutableState<MigrationToState?>.PasteOrScanLinkView(close: () -> Uni
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.PasteLinkView() {
+private fun MutableStateFlow<MigrationToState?>.PasteLinkView() {
   val clipboard = LocalClipboardManager.current
   SectionItemView({
     val str = clipboard.getText()?.text ?: return@SectionItemView
@@ -260,7 +261,7 @@ private fun ArchiveImportView(progressIndicator: MutableState<Boolean>, close: (
 }
 
 @Composable
-private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, linkNetworkProxy: NetworkProxy?, hostMode: HostMode, requiredHostMode: Boolean, state: MutableState<MigrationToState?>) {
+private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, linkNetworkProxy: NetworkProxy?, hostMode: HostMode, requiredHostMode: Boolean, state: MutableStateFlow<MigrationToState?>) {
   val onionHosts = remember { stateGetOrPut("onionHosts") {
     getNetCfg().copy(socksProxy = linkNetworkProxy?.toProxyString() ?: legacyLinkSocksProxy, hostMode = hostMode, requiredHostMode = requiredHostMode).onionHosts
   } }
@@ -323,7 +324,7 @@ private fun ModalData.OnionView(link: String, legacyLinkSocksProxy: String?, lin
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.DatabaseInitView(link: String, tempDatabaseFile: File, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableStateFlow<MigrationToState?>.DatabaseInitView(link: String, tempDatabaseFile: File, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
     SectionView(stringResource(MR.strings.migrate_to_device_database_init).uppercase()) {}
     ProgressView()
@@ -334,7 +335,7 @@ private fun MutableState<MigrationToState?>.DatabaseInitView(link: String, tempD
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.LinkDownloadingView(
+private fun MutableStateFlow<MigrationToState?>.LinkDownloadingView(
   link: String,
   ctrl: ChatCtrl,
   user: User,
@@ -364,7 +365,7 @@ private fun DownloadProgressView(downloadedBytes: Long, totalBytes: Long) {
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, chatReceiver: MigrationToChatReceiver?, archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableStateFlow<MigrationToState?>.DownloadFailedView(link: String, chatReceiver: MigrationToChatReceiver?, archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   SectionView(stringResource(MR.strings.migrate_to_device_download_failed).uppercase()) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
@@ -384,7 +385,7 @@ private fun MutableState<MigrationToState?>.DownloadFailedView(link: String, cha
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableStateFlow<MigrationToState?>.ArchiveImportView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   Box {
     SectionView(stringResource(MR.strings.migrate_to_device_importing_archive).uppercase()) {}
     ProgressView()
@@ -395,7 +396,7 @@ private fun MutableState<MigrationToState?>.ArchiveImportView(archivePath: Strin
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.ArchiveImportFailedView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableStateFlow<MigrationToState?>.ArchiveImportFailedView(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   SectionView(stringResource(MR.strings.migrate_to_device_import_failed).uppercase()) {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_download),
@@ -410,7 +411,7 @@ private fun MutableState<MigrationToState?>.ArchiveImportFailedView(archivePath:
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableStateFlow<MigrationToState?>.PassphraseEnteringView(currentKey: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   val currentKey = rememberSaveable { mutableStateOf(currentKey) }
   val verifyingPassphrase = rememberSaveable { mutableStateOf(false) }
   val useKeychain = rememberSaveable { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
@@ -459,7 +460,7 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
 }
 
 @Composable
-private fun MutableState<MigrationToState?>.MigrationConfirmationView(status: DBMigrationResult, passphrase: String, useKeychain: Boolean, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableStateFlow<MigrationToState?>.MigrationConfirmationView(status: DBMigrationResult, passphrase: String, useKeychain: Boolean, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   data class Tuple4<A,B,C,D>(val a: A, val b: B, val c: C, val d: D)
   val (header: String, button: String?, footer: String, confirmation: MigrationConfirmation?) = when (status) {
     is DBMigrationResult.ErrorMigration -> when (val err = status.migrationError) {
@@ -518,7 +519,7 @@ private fun ProgressView() {
   DefaultProgressView(null)
 }
 
-private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
+private suspend fun MutableStateFlow<MigrationToState?>.checkUserLink(link: String): Boolean {
   return if (strHasSimplexFileLink(link.trim())) {
     val data = MigrationFileLinkData.readFromLink(link)
     val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
@@ -547,7 +548,7 @@ private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String):
   }
 }
 
-private fun MutableState<MigrationToState?>.prepareDatabase(
+private fun MutableStateFlow<MigrationToState?>.prepareDatabase(
   link: String,
   tempDatabaseFile: File,
   netCfg: NetCfg,
@@ -567,7 +568,7 @@ private fun MutableState<MigrationToState?>.prepareDatabase(
   }
 }
 
-private fun MutableState<MigrationToState?>.startDownloading(
+private fun MutableStateFlow<MigrationToState?>.startDownloading(
   totalBytes: Long,
   ctrl: ChatCtrl,
   user: User,
@@ -629,7 +630,7 @@ private fun MutableState<MigrationToState?>.startDownloading(
   }
 }
 
-private fun MutableState<MigrationToState?>.importArchive(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
+private fun MutableStateFlow<MigrationToState?>.importArchive(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   withLongRunningApi {
     try {
       if (ChatController.ctrl == null || ChatController.ctrl == -1L) {
@@ -706,7 +707,7 @@ private fun hideView(close: () -> Unit) {
   close()
 }
 
-private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: MigrationToChatReceiver?) {
+private suspend fun MutableStateFlow<MigrationToState?>.cleanUpOnBack(chatReceiver: MigrationToChatReceiver?) {
   val state = state
   if (state is MigrationToState.ArchiveImportFailed) {
     // Original database is not exist, nothing is set up correctly for showing to a user yet. Return to clean state

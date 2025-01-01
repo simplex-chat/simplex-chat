@@ -31,12 +31,12 @@ fun NotificationsSettingsView(
 
   NotificationsSettingsLayout(
     notificationsMode = remember { chatModel.controller.appPrefs.notificationsMode.state },
-    notificationPreviewMode = chatModel.notificationPreviewMode,
+    notificationPreviewMode = chatModel.notificationPreviewMode.collectAsState(),
     showPage = { page ->
       ModalManager.start.showModalCloseable(true) {
         when (page) {
           CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.controller.appPrefs.notificationsMode.state) { changeNotificationsMode(it, chatModel) }
-          CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode, onNotificationPreviewModeSelected)
+          CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode.collectAsState(), onNotificationPreviewModeSelected)
         }
       }
     },

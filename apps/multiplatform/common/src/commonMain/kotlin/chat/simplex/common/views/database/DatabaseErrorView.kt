@@ -26,6 +26,8 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.datetime.Clock
 import java.io.File
 import java.nio.file.Files
@@ -34,7 +36,7 @@ import kotlin.io.path.Path
 
 @Composable
 fun DatabaseErrorView(
-  chatDbStatus: State<DBMigrationResult?>,
+  chatDbStatus: StateFlow<DBMigrationResult?>,
   appPreferences: AppPreferences,
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
@@ -200,7 +202,7 @@ fun DatabaseErrorView(
 private fun runChat(
   dbKey: String? = null,
   confirmMigrations: MigrationConfirmation? = null,
-  chatDbStatus: State<DBMigrationResult?>,
+  chatDbStatus: StateFlow<DBMigrationResult?>,
   progressIndicator: MutableState<Boolean>,
 ) = CoroutineScope(Dispatchers.Default).launch {
   // Don't do things concurrently. Shouldn't be here concurrently, just in case
@@ -337,7 +339,7 @@ private fun ColumnScope.RestoreDbButton(onClick: () -> Unit) {
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
     DatabaseErrorView(
-      remember { mutableStateOf(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db")) },
+      remember { MutableStateFlow(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db")) },
       AppPreferences()
     )
   }

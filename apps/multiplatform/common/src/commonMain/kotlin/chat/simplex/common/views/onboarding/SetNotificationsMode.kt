@@ -121,7 +121,7 @@ private fun NotificationBatteryUsageInfo() {
 
 fun prepareChatBeforeFinishingOnboarding() {
   // No visible users but may have hidden. In this case chat should be started anyway because it's stopped on this stage with hidden users
-  if (chatModel.users.any { u -> !u.user.hidden }) return
+  if (chatModel.users.value.any { u -> !u.user.hidden }) return
   withBGApi {
     val user = chatModel.controller.apiGetActiveUser(null) ?: return@withBGApi
     chatModel.currentUser.value = user

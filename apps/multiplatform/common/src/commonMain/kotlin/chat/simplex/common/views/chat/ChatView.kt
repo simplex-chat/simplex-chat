@@ -57,7 +57,7 @@ data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val dat
 @Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
 // to chat list smooth. Otherwise, chat view will become blank right before the transition starts
-fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -> Unit) {
+fun ChatView(staleChatId: StateFlow<String?>, onComposed: suspend (chatId: String) -> Unit) {
   val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
   val showSearch = rememberSaveable { mutableStateOf(false) }
   val activeChatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatInfo } }
@@ -220,8 +220,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               hideKeyboard(view)
               AudioPlayer.stop()
               chatModel.chatId.value = null
-              chatModel.groupMembers.clear()
-              chatModel.groupMembersIndexes.clear()
+              chatModel.groupMembers.value = emptyList()
+              chatModel.groupMembersIndexes.value = emptyMap()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -246,7 +246,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   if (chatInfo is ChatInfo.Direct) {
                     var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
                     var code: String? by remember { mutableStateOf(preloadedCode) }
-                    KeyChangeEffect(chatInfo.id, ChatModel.networkStatuses.toMap()) {
+                    KeyChangeEffect(chatInfo.id, ChatModel.networkStatuses.value) {
                       contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                       preloadedContactInfo = contactInfo
                       code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
@@ -359,11 +359,13 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             acceptCall = { contact ->
               hideKeyboard(view)
               withBGApi {
-                val invitation = chatModel.callInvitations.remove(contact.id)
+                val invts = chatModel.callInvitations.value.toMutableMap()
+                val invitation = invts.remove(contact.id)
                   ?: controller.apiGetCallInvitations(chatModel.remoteHostId()).firstOrNull { it.contact.id == contact.id }
                 if (invitation == null) {
                   AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
                 } else {
+                  chatModel.callInvitations.value = invts
                   chatModel.callManager.acceptIncomingCall(invitation = invitation)
                 }
               }
@@ -431,7 +433,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               chatModel.getChat(chatId)
             },
             findModelMember = { memberId ->
-              chatModel.groupMembers.find { it.id == memberId }
+              chatModel.groupMembers.value.find { it.id == memberId }
             },
             setReaction = { cInfo, cItem, add, reaction ->
               withBGApi {
@@ -578,7 +580,7 @@ fun startChatCall(remoteHostId: Long?, chatInfo: ChatInfo, media: CallMediaType)
       activeCall.value?.androidCallState?.close()
       chatModel.activeCall.value = Call(remoteHostId = remoteHostId, contact = chatInfo.contact, callUUID = null, callState = CallState.WaitCapabilities, initialCallType = media, userProfile = profile, androidCallState = platform.androidCreateActiveCallState())
       chatModel.showCallView.value = true
-      chatModel.callCommand.add(WCallCommand.Capabilities(media))
+      chatModel.callCommand.value += WCallCommand.Capabilities(media)
     }
   }
 }
@@ -739,7 +741,7 @@ fun BoxScope.ChatInfoToolbar(
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
-  val activeCall by remember { chatModel.activeCall }
+  val activeCall by chatModel.activeCall.collectAsState()
   if (chatInfo is ChatInfo.Local) {
     barButtons.add {
       IconButton(
@@ -1359,7 +1361,7 @@ private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, remoteHostId:
 }
 
 @Composable
-private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: State<List<ChatItem>>) {
+private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: StateFlow<List<ChatItem>>) {
   val scrollDistance = with(LocalDensity.current) { -39.dp.toPx() }
   LaunchedEffect(Unit) {
     var lastTotalItems = listState.value.layoutInfo.totalItemsCount

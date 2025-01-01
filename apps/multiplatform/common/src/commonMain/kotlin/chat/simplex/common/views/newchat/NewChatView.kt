@@ -279,11 +279,11 @@ fun ActiveProfilePicker(
   val incognito = remember {
     chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
   }
-  val selectedProfile by remember { chatModel.currentUser }
+  val selectedProfile by chatModel.currentUser.collectAsState()
   val searchTextOrPassword = rememberSaveable { search }
   // Intentionally don't use derivedStateOf in order to NOT change an order after user was selected
   val filteredProfiles = remember(searchTextOrPassword.value) {
-    filteredProfiles(chatModel.users.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
+    filteredProfiles(chatModel.users.value.map { it.user }.sortedBy { !it.activeUser }, searchTextOrPassword.value)
   }
 
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }

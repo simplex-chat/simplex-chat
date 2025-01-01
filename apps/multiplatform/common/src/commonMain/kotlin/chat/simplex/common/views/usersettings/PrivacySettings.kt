@@ -81,7 +81,7 @@ fun PrivacySettingsView(
             chatModel.draftChatId.value = null
           }
         })
-      SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
+      SimpleXLinkOptions(chatModel.simplexLinkMode.collectAsState(), onSelected = {
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })

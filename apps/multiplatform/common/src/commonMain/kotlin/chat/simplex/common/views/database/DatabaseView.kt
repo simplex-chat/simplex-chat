@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.*
 import java.io.*
 import java.net.URI
@@ -82,7 +83,7 @@ fun DatabaseView() {
       appFilesCountAndSize,
       chatItemTTL,
       user,
-      m.users,
+      m.users.value,
       startChat = { startChat(m, chatLastStart, m.chatDbChanged, progressIndicator) },
       stopChatAlert = { stopChatAlert(m, progressIndicator) },
       exportArchive = {
@@ -116,7 +117,7 @@ fun DatabaseView() {
         }
       },
       disconnectAllHosts = {
-        val connected = chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }
+        val connected = chatModel.remoteHosts.value.filter { it.sessionState is RemoteHostSessionState.Connected }
         connected.forEachIndexed { index, h ->
           controller.stopRemoteHostAndReloadHosts(h, index == connected.lastIndex && chatModel.connectedToRemote())
         }
@@ -182,7 +183,7 @@ fun DatabaseLayout(
       )
       SectionDividerSpaced(maxTopPadding = true)
     }
-    val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
+    val toggleEnabled = chatModel.remoteHosts.collectAsState().value.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
       // still show the toggle in case database was stopped when the user opened this screen because it can be in the following situations:
       // - database was stopped after migration and the app relaunched
@@ -355,7 +356,7 @@ fun RunChatSetting(
 fun startChat(
   m: ChatModel,
   chatLastStart: MutableState<Instant?>,
-  chatDbChanged: MutableState<Boolean>,
+  chatDbChanged: MutableStateFlow<Boolean>,
   progressIndicator: MutableState<Boolean>? = null
 ) {
   withLongRunningApi {
@@ -535,7 +536,7 @@ fun deleteChatDatabaseFilesAndState() {
       popChatCollector.clear()
     }
   }
-  chatModel.users.clear()
+  chatModel.users.value = emptyList()
   ntfManager.cancelAllNotifications()
 }
 

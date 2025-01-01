@@ -277,7 +277,7 @@ class AlertManager {
   }
 }
 
-private fun alertTitle(title: String): (@Composable () -> Unit)? {
+private fun alertTitle(title: String): (@Composable () -> Unit) {
   return {
     Text(
       title,
@@ -368,12 +368,12 @@ private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>
   }
 }
 
-fun hostDevice(rhId: Long?): Pair<Long?, String>? = if (rhId == null && chatModel.remoteHosts.isNotEmpty()) {
+fun hostDevice(rhId: Long?): Pair<Long?, String>? = if (rhId == null && chatModel.remoteHosts.value.isNotEmpty()) {
   null to ChatModel.controller.appPrefs.deviceNameForRemoteAccess.get()!!
 } else if (rhId == null) {
   null
 } else {
-  rhId to (chatModel.remoteHosts.firstOrNull { it.remoteHostId == rhId }?.hostDeviceName?.ifEmpty { rhId.toString() } ?: rhId.toString())
+  rhId to (chatModel.remoteHosts.value.firstOrNull { it.remoteHostId == rhId }?.hostDeviceName?.ifEmpty { rhId.toString() } ?: rhId.toString())
 }
 
 @Composable

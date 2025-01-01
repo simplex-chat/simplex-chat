@@ -292,7 +292,7 @@ fun AndroidWrapInCallLayout(content: @Composable () -> Unit) {
 @Composable
 fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
   BoxWithConstraints {
-    val currentChatId = remember { mutableStateOf(chatModel.chatId.value) }
+    val currentChatId = remember { MutableStateFlow(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     val cutout = WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal).asPaddingValues()
     val direction = LocalLayoutDirection.current

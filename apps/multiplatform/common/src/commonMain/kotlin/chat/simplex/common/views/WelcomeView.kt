@@ -108,7 +108,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
   CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler()) {
     ModalView({
-      if (chatModel.users.none { !it.user.hidden }) {
+      if (chatModel.users.value.none { !it.user.hidden }) {
         appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       } else {
         close()
@@ -185,8 +185,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step4_SetNotificationsMode)
     } else {
       val users = chatModel.controller.listUsers(rhId)
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
+      chatModel.users.value = users
       chatModel.controller.getUserChatData(rhId)
       close()
     }
@@ -201,7 +200,7 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
     chatModel.localUserCreated.value = true
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     // No users or no visible users
-    if (chatModel.users.none { u -> !u.user.hidden }) {
+    if (chatModel.users.value.none { u -> !u.user.hidden }) {
       onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {

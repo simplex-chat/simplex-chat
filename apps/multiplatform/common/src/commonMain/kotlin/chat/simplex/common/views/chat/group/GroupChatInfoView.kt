@@ -64,7 +64,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
         updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
       },
-      members = chatModel.groupMembers
+      members = chatModel.groupMembers.value
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedByDescending { it.memberRole },
       developerTools,

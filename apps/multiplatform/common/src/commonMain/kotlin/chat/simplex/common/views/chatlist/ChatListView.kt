@@ -448,7 +448,7 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
           }
         }
       } else {
-        val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
+        val users by remember { derivedStateOf { chatModel.users.value.filter { u -> u.user.activeUser || !u.user.hidden } } }
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }
@@ -544,7 +544,7 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       }
     }
     if (appPlatform.isDesktop) {
-      val h by remember { chatModel.currentRemoteHost }
+      val h by chatModel.currentRemoteHost.collectAsState()
       if (h != null) {
         Spacer(Modifier.width(12.dp))
         HostDisconnectButton {
@@ -947,8 +947,8 @@ private fun TagsView() {
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
 
   TagsRow {
-    if (presetTags.size > 1) {
-      if (presetTags.size + userTags.value.size <= 3) {
+    if (presetTags.value.size > 1) {
+      if (presetTags.value.size + userTags.value.size <= 3) {
         PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
           ExpandedTagFilterView(tag)
         }

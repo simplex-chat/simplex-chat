@@ -55,14 +55,14 @@ fun UserPicker(
   }
   val users by remember {
     derivedStateOf {
-      chatModel.users
+      chatModel.users.value
         .filter { u -> u.user.activeUser || !u.user.hidden }
         .sortedByDescending { it.user.activeOrder }
     }
   }
   val remoteHosts by remember {
     derivedStateOf {
-      chatModel.remoteHosts
+      chatModel.remoteHosts.value
         .sortedBy { it.hostDeviceName }
     }
   }
@@ -111,8 +111,7 @@ fun UserPicker(
             }
           }
           if (!same) {
-            chatModel.users.clear()
-            chatModel.users.addAll(updatedUsers)
+            chatModel.users.value = updatedUsers
           }
         } catch (e: Exception) {
           Log.e(TAG, "Error updating users ${e.stackTraceToString()}")
@@ -121,8 +120,7 @@ fun UserPicker(
         try {
           val updatedHosts = chatModel.controller.listRemoteHosts()?.sortedBy { it.hostDeviceName } ?: emptyList()
           if (remoteHosts != updatedHosts) {
-            chatModel.remoteHosts.clear()
-            chatModel.remoteHosts.addAll(updatedHosts)
+            chatModel.remoteHosts.value = updatedHosts
           }
         } catch (e: Exception) {
           Log.e(TAG, "Error updating remote hosts ${e.stackTraceToString()}")

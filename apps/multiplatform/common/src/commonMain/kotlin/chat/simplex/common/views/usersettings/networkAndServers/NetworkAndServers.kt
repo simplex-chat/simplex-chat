@@ -43,7 +43,7 @@ import kotlinx.coroutines.*
 
 @Composable
 fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
-  val currentRemoteHost by remember { chatModel.currentRemoteHost }
+  val currentRemoteHost by chatModel.currentRemoteHost.collectAsState()
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }

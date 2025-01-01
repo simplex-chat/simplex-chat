@@ -131,7 +131,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (user == null) {
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null
-      chatModel.users.clear()
+      chatModel.users.value = emptyList()
       if (appPlatform.isDesktop) {
         /**
          * Setting it here to null because otherwise the screen will flash in [MainScreen] after the first start

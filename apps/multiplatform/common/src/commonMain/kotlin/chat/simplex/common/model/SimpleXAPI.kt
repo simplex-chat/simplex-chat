@@ -524,8 +524,7 @@ object ChatController {
       apiSetNetworkConfig(getNetCfg())
       val chatRunning = apiCheckChatRunning()
       val users = listUsers(null)
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
+      chatModel.users.value = users
       if (!chatRunning) {
         chatModel.currentUser.value = user
         chatModel.localUserCreated.value = true
@@ -557,7 +556,7 @@ object ChatController {
     Log.d(TAG, "user: null")
     try {
       if (chatModel.chatRunning.value == true) return
-      chatModel.users.clear()
+      chatModel.users.value = emptyList()
       chatModel.currentUser.value = null
       chatModel.localUserCreated.value = false
       appPrefs.chatLastStart.set(Clock.System.now())
@@ -609,10 +608,9 @@ object ChatController {
       ntfManager.cancelNotificationsForUser(prevActiveUser.userId)
     }
     val users = listUsers(rhId)
-    chatModel.users.clear()
-    chatModel.users.addAll(users)
+    chatModel.users.value = users
     getUserChatData(rhId)
-    val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
+    val invitation = chatModel.callInvitations.value.values.firstOrNull { inv -> inv.user.userId == toUserId }
     if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
     }
@@ -2086,8 +2084,7 @@ object ChatController {
 
   suspend fun reloadRemoteHosts() {
     val hosts = listRemoteHosts() ?: return
-    chatModel.remoteHosts.clear()
-    chatModel.remoteHosts.addAll(hosts)
+    chatModel.remoteHosts.value = hosts
   }
 
   suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = true, address: RemoteCtrlAddress?, port: Int?): CR.RemoteHostStarted? {
@@ -2446,14 +2443,18 @@ object ChatController {
         }
       }
       is CR.NetworkStatusResp -> {
+        val nStatuses = chatModel.networkStatuses.value.toMutableMap()
         for (cId in r.connections) {
-          chatModel.networkStatuses[cId] = r.networkStatus
+          nStatuses[cId] = r.networkStatus
         }
+        chatModel.networkStatuses.value = nStatuses
       }
       is CR.NetworkStatuses -> {
+        val nStatuses = chatModel.networkStatuses.value.toMutableMap()
         for (s in r.networkStatuses) {
-          chatModel.networkStatuses[s.agentConnId] = s.networkStatus
+          nStatuses[s.agentConnId] = s.networkStatus
         }
+        chatModel.networkStatuses.value = nStatuses
       }
       is CR.NewChatItems -> withBGApi {
         r.chatItems.forEach { chatItem ->
@@ -2727,31 +2728,33 @@ object ChatController {
           val useRelay = appPrefs.webrtcPolicyRelay.get()
           val iceServers = getIceServers()
           Log.d(TAG, ".callOffer iceServers $iceServers")
-          chatModel.callCommand.add(WCallCommand.Offer(
+          chatModel.callCommand.value += WCallCommand.Offer(
             offer = r.offer.rtcSession,
             iceCandidates = r.offer.rtcIceCandidates,
             media = r.callType.media,
             aesKey = r.sharedKey,
             iceServers = iceServers,
             relay = useRelay
-          ))
+          )
         }
       }
       is CR.CallAnswer -> {
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.AnswerReceived)
-          chatModel.callCommand.add(WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates))
+          chatModel.callCommand.value += WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates)
         }
       }
       is CR.CallExtraInfo -> {
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates))
+          chatModel.callCommand.value += WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates)
         }
       }
       is CR.CallEnded -> {
-        val invitation = chatModel.callInvitations.remove(r.contact.id)
+        val invits = chatModel.callInvitations.value.toMutableMap()
+        val invitation = invits.remove(r.contact.id)
         if (invitation != null) {
           chatModel.callManager.reportCallRemoteEnded(invitation = invitation)
+          chatModel.callInvitations.value = invits
         }
         withCall(r, r.contact) { call ->
           withBGApi { chatModel.callManager.endCall(call) }
@@ -2797,7 +2800,7 @@ object ChatController {
         }
       }
       is CR.RemoteHostStopped -> {
-        val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
+        val disconnectedHost = chatModel.remoteHosts.value.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.remoteHostPairing.value = null
         if (disconnectedHost != null) {
           val deviceName = disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() }
@@ -2955,14 +2958,11 @@ object ChatController {
     val m = chatModel
     m.remoteCtrlSession.value = null
     val users = listUsers(null)
-    m.users.clear()
-    m.users.addAll(users)
+    m.users.value = users
     getUserChatData(null)
     val statuses = apiGetNetworkStatuses(null)
     if (statuses != null) {
-      chatModel.networkStatuses.clear()
-      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
-      chatModel.networkStatuses.putAll(ss)
+      chatModel.networkStatuses.value = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
     }
   }
 
@@ -3009,9 +3009,11 @@ object ChatController {
   }
 
   private fun updateContactsStatus(contactRefs: List<ContactRef>, status: NetworkStatus) {
+    val nStatuses = chatModel.networkStatuses.value.toMutableMap()
     for (c in contactRefs) {
-      chatModel.networkStatuses[c.agentConnId] = status
+      nStatuses[c.agentConnId] = status
     }
+    chatModel.networkStatuses.value = nStatuses
   }
 
   private fun processContactSubError(contact: Contact, chatError: ChatError) {
@@ -3040,8 +3042,7 @@ object ChatController {
     reloadRemoteHosts()
     val user = apiGetActiveUser(rhId)
     val users = listUsers(rhId)
-    chatModel.users.clear()
-    chatModel.users.addAll(users)
+    chatModel.users.value = users
     chatModel.currentUser.value = user
     if (user == null) {
       chatModel.chatItems.clearAndNotify()
@@ -3052,9 +3053,7 @@ object ChatController {
     }
     val statuses = apiGetNetworkStatuses(rhId)
     if (statuses != null) {
-      chatModel.networkStatuses.clear()
-      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
-      chatModel.networkStatuses.putAll(ss)
+      chatModel.networkStatuses.value = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
     }
     getUserChatData(rhId)
   }

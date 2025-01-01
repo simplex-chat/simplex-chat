@@ -53,9 +53,9 @@ fun ConnectMobileView() {
   }
   ConnectMobileLayout(
     deviceName = remember { deviceName.state },
-    remoteHosts = remoteHosts,
+    remoteHosts = remoteHosts.value,
     connecting,
-    connectedHost = remember { chatModel.currentRemoteHost },
+    connectedHost = chatModel.currentRemoteHost.collectAsState(),
     updateDeviceName = {
       withBGApi {
         if (it != "") {
@@ -71,7 +71,9 @@ fun ConnectMobileView() {
       withBGApi {
         val success = controller.deleteRemoteHost(host.remoteHostId)
         if (success) {
-          chatModel.remoteHosts.removeAll { it.remoteHostId == host.remoteHostId }
+          val rHosts = chatModel.remoteHosts.value.toMutableList()
+          rHosts.removeAll { it.remoteHostId == host.remoteHostId }
+          chatModel.remoteHosts.value = rHosts
         }
       }
     }

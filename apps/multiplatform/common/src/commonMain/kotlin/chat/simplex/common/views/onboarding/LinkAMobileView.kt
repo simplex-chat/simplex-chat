@@ -57,7 +57,7 @@ private fun LinkAMobileLayout(
   ModalView({ appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }) {
     Column(Modifier.fillMaxSize().padding(top = AppBarHeight * fontSizeSqrtMultiplier)) {
       Box(Modifier.align(Alignment.CenterHorizontally)) {
-        AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
+        AppBarTitle(stringResource(if (chatModel.remoteHosts.collectAsState().value.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
       }
       Row(Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING * 2), verticalAlignment = Alignment.CenterVertically) {
         Column(
@@ -75,7 +75,7 @@ private fun LinkAMobileLayout(
         Box(Modifier.weight(0.7f)) {
           AddingMobileDevice(false, staleQrCode, connecting) {
             // currentRemoteHost will be set instantly but remoteHosts may be delayed
-            if (chatModel.remoteHosts.isEmpty() && chatModel.currentRemoteHost.value == null) {
+            if (chatModel.remoteHosts.value.isEmpty() && chatModel.currentRemoteHost.value == null) {
               chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
             } else {
               chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)

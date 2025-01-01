@@ -32,7 +32,7 @@ import java.text.DecimalFormat
 
 @Composable
 fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> Unit, close: () -> Unit) {
-  val currentRemoteHost by remember { chatModel.currentRemoteHost }
+  val currentRemoteHost by chatModel.currentRemoteHost.collectAsState()
   val developerTools = remember { appPrefs.developerTools.get() }
 
   // Will be actual once the screen is re-opened

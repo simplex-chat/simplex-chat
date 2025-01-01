@@ -230,7 +230,7 @@ suspend fun apiFindMessages(ch: Chat, search: String) {
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
-  val currentMembers = chatModel.groupMembers
+  val currentMembers = chatModel.groupMembers.value
   val newMembers = groupMembers.map { newMember ->
     val currentMember = currentMembers.find { it.id == newMember.id }
     val currentMemberStats = currentMember?.activeConn?.connectionStats
@@ -241,9 +241,8 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       newMember
     }
   }
-  chatModel.groupMembers.clear()
-  chatModel.groupMembersIndexes.clear()
-  chatModel.groupMembers.addAll(newMembers)
+  chatModel.groupMembersIndexes.value = emptyMap()
+  chatModel.groupMembers.value = newMembers
   chatModel.populateGroupMembersIndexes()
 }
 

@@ -709,7 +709,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
     }
 
     LaunchedEffect(Unit) {
-      if (chatModel.users.count { u -> u.user.activeUser || !u.user.hidden } == 1
+      if (chatModel.users.value.count { u -> u.user.activeUser || !u.user.hidden } == 1
       ) {
         selectedUserCategory.value = PresentedUserCategory.CURRENT_USER
       } else {

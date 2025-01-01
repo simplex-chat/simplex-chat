@@ -48,71 +48,71 @@ import kotlin.time.*
 @Stable
 object ChatModel {
   val controller: ChatController = ChatController
-  val setDeliveryReceipts = mutableStateOf(false)
-  val currentUser = mutableStateOf<User?>(null)
-  val users = mutableStateListOf<UserInfo>()
-  val localUserCreated = mutableStateOf<Boolean?>(null)
-  val chatRunning = mutableStateOf<Boolean?>(null)
-  val chatDbChanged = mutableStateOf<Boolean>(false)
-  val chatDbEncrypted = mutableStateOf<Boolean?>(false)
-  val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
-  val ctrlInitInProgress = mutableStateOf(false)
-  val dbMigrationInProgress = mutableStateOf(false)
-  val incompleteInitializedDbRemoved = mutableStateOf(false)
-  private val _chats = mutableStateOf(SnapshotStateList<Chat>())
-  val chats: State<List<Chat>> = _chats
+  val setDeliveryReceipts = MutableStateFlow(false)
+  val currentUser = MutableStateFlow<User?>(null)
+  val users = MutableStateFlow<List<UserInfo>>(emptyList())
+  val localUserCreated = MutableStateFlow<Boolean?>(null)
+  val chatRunning = MutableStateFlow<Boolean?>(null)
+  val chatDbChanged = MutableStateFlow<Boolean>(false)
+  val chatDbEncrypted = MutableStateFlow<Boolean?>(false)
+  val chatDbStatus = MutableStateFlow<DBMigrationResult?>(null)
+  val ctrlInitInProgress = MutableStateFlow(false)
+  val dbMigrationInProgress = MutableStateFlow(false)
+  val incompleteInitializedDbRemoved = MutableStateFlow(false)
+  private val _chats = MutableStateFlow(SnapshotStateList<Chat>())
+  val chats: StateFlow<List<Chat>> = _chats
   private val chatsContext = ChatsContext()
   // map of connections network statuses, key is agent connection id
-  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
-  val switchingUsersAndHosts = mutableStateOf(false)
+  val networkStatuses = MutableStateFlow<Map<String, NetworkStatus>>(emptyMap())
+  val switchingUsersAndHosts = MutableStateFlow(false)
 
   // current chat
-  val chatId = mutableStateOf<String?>(null)
+  val chatId = MutableStateFlow<String?>(null)
   /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
    * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
    * If you use api call to get the items, use just [add] instead of [addAndNotify].
    * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
-  val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  val chatItems = MutableStateFlow(SnapshotStateList<ChatItem>())
   // set listener here that will be notified on every add/delete of a chat item
   var chatItemsChangesListener: ChatItemsChangesListener? = null
   val chatState = ActiveChatState()
   // rhId, chatId
-  val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
+  val deletedChats = MutableStateFlow<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
-  val groupMembers = mutableStateListOf<GroupMember>()
-  val groupMembersIndexes = mutableStateMapOf<Long, Int>()
+  val groupMembers = MutableStateFlow<List<GroupMember>>(emptyList())
+  val groupMembersIndexes = MutableStateFlow<Map<Long, Int>>(emptyMap())
 
   // Chat Tags
-  val userTags = mutableStateOf(emptyList<ChatTag>())
-  val activeChatTagFilter = mutableStateOf<ActiveFilter?>(null)
-  val presetTags = mutableStateMapOf<PresetTagKind, Int>()
-  val unreadTags = mutableStateMapOf<Long, Int>()
+  val userTags = MutableStateFlow(emptyList<ChatTag>())
+  val activeChatTagFilter = MutableStateFlow<ActiveFilter?>(null)
+  val presetTags = MutableStateFlow<Map<PresetTagKind, Int>>(emptyMap())
+  val unreadTags = MutableStateFlow<Map<Long, Int>>(emptyMap())
 
   // false: default placement, true: floating window.
   // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
   var terminalsVisible = setOf<Boolean>()
-  val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
-  val userAddress = mutableStateOf<UserContactLinkRec?>(null)
-  val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
+  val terminalItems = MutableStateFlow<List<TerminalItem>>(emptyList())
+  val userAddress = MutableStateFlow<UserContactLinkRec?>(null)
+  val chatItemTTL = MutableStateFlow<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent
-  val clearOverlays = mutableStateOf<Boolean>(false)
+  val clearOverlays = MutableStateFlow<Boolean>(false)
 
   // Only needed during onboarding when user skipped password setup (left as random password)
-  val desktopOnboardingRandomPassword = mutableStateOf(false)
+  val desktopOnboardingRandomPassword = MutableStateFlow(false)
 
   // set when app is opened via contact or invitation URI (rhId, uri)
-  val appOpenUrl = mutableStateOf<Pair<Long?, String>?>(null)
+  val appOpenUrl = MutableStateFlow<Pair<Long?, String>?>(null)
 
   // Needed to check for bottom nav bar and to apply or not navigation bar color on Android
-  val newChatSheetVisible = mutableStateOf(false)
+  val newChatSheetVisible = MutableStateFlow(false)
 
   // Needed to apply black color to left/right cutout area on Android
-  val fullscreenGalleryVisible = mutableStateOf(false)
+  val fullscreenGalleryVisible = MutableStateFlow(false)
 
   // preferences
   val notificationPreviewMode by lazy {
-    mutableStateOf(
+    MutableStateFlow(
       try {
         NotificationPreviewMode.valueOf(controller.appPrefs.notificationPreviewMode.get()!!)
       } catch (e: Exception) {
@@ -120,41 +120,41 @@ object ChatModel {
       }
     )
   }
-  val showAuthScreen by lazy { mutableStateOf(ChatController.appPrefs.performLA.get()) }
-  val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
-  val showChatPreviews by lazy { mutableStateOf(ChatController.appPrefs.privacyShowChatPreviews.get()) }
+  val showAuthScreen by lazy { MutableStateFlow(ChatController.appPrefs.performLA.get()) }
+  val showAdvertiseLAUnavailableAlert = MutableStateFlow(false)
+  val showChatPreviews by lazy { MutableStateFlow(ChatController.appPrefs.privacyShowChatPreviews.get()) }
 
   // current WebRTC call
   val callManager = CallManager(this)
-  val callInvitations = mutableStateMapOf<String, RcvCallInvitation>()
-  val activeCallInvitation = mutableStateOf<RcvCallInvitation?>(null)
-  val activeCall = mutableStateOf<Call?>(null)
-  val activeCallViewIsVisible = mutableStateOf<Boolean>(false)
-  val activeCallViewIsCollapsed = mutableStateOf<Boolean>(false)
-  val callCommand = mutableStateListOf<WCallCommand>()
-  val showCallView = mutableStateOf(false)
-  val switchingCall = mutableStateOf(false)
+  val callInvitations = MutableStateFlow<Map<String, RcvCallInvitation>>(emptyMap())
+  val activeCallInvitation = MutableStateFlow<RcvCallInvitation?>(null)
+  val activeCall = MutableStateFlow<Call?>(null)
+  val activeCallViewIsVisible = MutableStateFlow<Boolean>(false)
+  val activeCallViewIsCollapsed = MutableStateFlow<Boolean>(false)
+  val callCommand = MutableStateFlow<List<WCallCommand>>(emptyList())
+  val showCallView = MutableStateFlow(false)
+  val switchingCall = MutableStateFlow(false)
 
   // currently showing invitation
-  val showingInvitation = mutableStateOf(null as ShowingInvitation?)
+  val showingInvitation = MutableStateFlow(null as ShowingInvitation?)
 
-  val migrationState: MutableState<MigrationToState?> by lazy { mutableStateOf(MigrationToDeviceState.makeMigrationState()) }
+  val migrationState: MutableStateFlow<MigrationToState?> by lazy { MutableStateFlow(MigrationToDeviceState.makeMigrationState()) }
 
-  var draft = mutableStateOf(null as ComposeState?)
-  var draftChatId = mutableStateOf(null as String?)
+  var draft = MutableStateFlow(null as ComposeState?)
+  var draftChatId = MutableStateFlow(null as String?)
 
   // working with external intents or internal forwarding of chat items
-  val sharedContent = mutableStateOf(null as SharedContent?)
+  val sharedContent = MutableStateFlow(null as SharedContent?)
 
   val filesToDelete = mutableSetOf<File>()
-  val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
+  val simplexLinkMode by lazy { MutableStateFlow(ChatController.appPrefs.simplexLinkMode.get()) }
 
-  val clipboardHasText = mutableStateOf(false)
-  val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
+  val clipboardHasText = MutableStateFlow(false)
+  val networkInfo = MutableStateFlow(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
 
-  val conditions = mutableStateOf(ServerOperatorConditionsDetail.empty)
+  val conditions = MutableStateFlow(ServerOperatorConditionsDetail.empty)
 
-  val updatingProgress = mutableStateOf(null as Float?)
+  val updatingProgress = MutableStateFlow(null as Float?)
   var updatingRequest: Closeable? = null
 
   private val updatingChatsMutex: Mutex = Mutex()
@@ -164,12 +164,12 @@ object ChatModel {
   fun desktopNoUserNoRemote(): Boolean = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
 
   // remote controller
-  val remoteHosts = mutableStateListOf<RemoteHostInfo>()
-  val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
+  val remoteHosts = MutableStateFlow<List<RemoteHostInfo>>(emptyList())
+  val currentRemoteHost = MutableStateFlow<RemoteHostInfo?>(null)
   val remoteHostId: Long? @Composable get() = remember { currentRemoteHost }.value?.remoteHostId
   fun remoteHostId(): Long? = currentRemoteHost.value?.remoteHostId
-  val remoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
-  val remoteCtrlSession = mutableStateOf<RemoteCtrlSession?>(null)
+  val remoteHostPairing = MutableStateFlow<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
+  val remoteCtrlSession = MutableStateFlow<RemoteCtrlSession?>(null)
 
   val processedCriticalError: ProcessedErrors<AgentErrorType.CRITICAL> = ProcessedErrors(60_000)
   val processedInternalError: ProcessedErrors<AgentErrorType.INTERNAL> = ProcessedErrors(20_000)
@@ -180,11 +180,11 @@ object ChatModel {
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {
-    users.firstOrNull { it.user.userId == userId }?.user
+    users.value.firstOrNull { it.user.userId == userId }?.user
   }
 
   private fun getUserIndex(user: User): Int =
-    users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == user.remoteHostId }
+    users.value.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == user.remoteHostId }
 
   fun updateUser(user: User) {
     val i = getUserIndex(user)
@@ -230,42 +230,47 @@ object ChatModel {
       activeChatTagFilter.value = null
     }
 
-    presetTags.clear()
-    presetTags.putAll(newPresetTags)
-    unreadTags.clear()
-    unreadTags.putAll(newUnreadTags)
+    presetTags.value = newPresetTags
+    unreadTags.value = newUnreadTags
   }
 
   fun updateChatFavorite(favorite: Boolean, wasFavorite: Boolean) {
-    val count = presetTags[PresetTagKind.FAVORITES]
+    val pTags = presetTags.value.toMutableMap()
+    val count = pTags[PresetTagKind.FAVORITES]
 
     if (favorite && !wasFavorite) {
-      presetTags[PresetTagKind.FAVORITES] = (count ?: 0) + 1
+      pTags[PresetTagKind.FAVORITES] = (count ?: 0) + 1
+      presetTags.value = pTags
     } else if (!favorite && wasFavorite && count != null) {
-      presetTags[PresetTagKind.FAVORITES] = maxOf(0, count - 1)
-      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.FAVORITES) && (presetTags[PresetTagKind.FAVORITES] ?: 0) == 0) {
+      pTags[PresetTagKind.FAVORITES] = maxOf(0, count - 1)
+      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.FAVORITES) && (pTags[PresetTagKind.FAVORITES] ?: 0) == 0) {
         activeChatTagFilter.value = null
       }
+      presetTags.value = pTags
     }
   }
 
   fun addPresetChatTags(chatInfo: ChatInfo) {
+    val pTags = presetTags.value.toMutableMap()
     for (tag in PresetTagKind.entries) {
       if (presetTagMatchesChat(tag, chatInfo)) {
-        presetTags[tag] = (presetTags[tag] ?: 0) + 1
+        pTags[tag] = (pTags[tag] ?: 0) + 1
       }
     }
+    presetTags.value = pTags
   }
 
   fun removePresetChatTags(chatInfo: ChatInfo) {
+    val pTags = presetTags.value.toMutableMap()
     for (tag in PresetTagKind.entries) {
       if (presetTagMatchesChat(tag, chatInfo)) {
-        val count = presetTags[tag]
+        val count = pTags[tag]
         if (count != null) {
-          presetTags[tag] = maxOf(0, count - 1)
+          pTags[tag] = maxOf(0, count - 1)
         }
       }
     }
+    presetTags.value = pTags
   }
 
   fun markChatTagRead(chat: Chat) {
@@ -281,9 +286,11 @@ object ChatModel {
     val nowUnread = chat.unreadTag
 
     if (nowUnread && !wasUnread) {
+      val uTags = unreadTags.value.toMutableMap()
       tags.forEach { tag ->
-        unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
+        uTags[tag] = (uTags[tag] ?: 0) + 1
       }
+      unreadTags.value = uTags
     } else if (!nowUnread && wasUnread) {
       markChatTagRead_(chat, tags)
     }
@@ -291,26 +298,30 @@ object ChatModel {
 
   fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
     if (chat.unreadTag) {
+      val uTags = unreadTags.value.toMutableMap()
       oldTags?.forEach { t ->
-        val oldCount = unreadTags[t]
+        val oldCount = uTags[t]
         if (oldCount != null) {
-          unreadTags[t] = maxOf(0, oldCount - 1)
+          uTags[t] = maxOf(0, oldCount - 1)
         }
       }
 
       newTags.forEach { t ->
-        unreadTags[t] = (unreadTags[t] ?: 0) + 1
+        uTags[t] = (uTags[t] ?: 0) + 1
       }
+      unreadTags.value = uTags
     }
   }
 
   private fun markChatTagRead_(chat: Chat, tags: List<Long>) {
+    val uTags = unreadTags.value.toMutableMap()
     for (tag in tags) {
-      val count = unreadTags[tag]
+      val count = uTags[tag]
       if (count != null) {
-        unreadTags[tag] = maxOf(0, count - 1)
+        uTags[tag] = maxOf(0, count - 1)
       }
     }
+    unreadTags.value = uTags
   }
 
   // toList() here is to prevent ConcurrentModificationException that is rarely happens but happens
@@ -321,16 +332,17 @@ object ChatModel {
   fun getGroupChat(groupId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
 
   fun populateGroupMembersIndexes() {
-    groupMembersIndexes.clear()
-    groupMembers.forEachIndexed { i, member ->
-      groupMembersIndexes[member.groupMemberId] = i
+    val indexes = mutableMapOf<Long, Int>()
+    groupMembers.value.forEachIndexed { i, member ->
+      indexes[member.groupMemberId] = i
     }
+    groupMembersIndexes.value = indexes
   }
 
   fun getGroupMember(groupMemberId: Long): GroupMember? {
-    val memberIndex = groupMembersIndexes[groupMemberId]
+    val memberIndex = groupMembersIndexes.value[groupMemberId]
     return if (memberIndex != null) {
-      groupMembers[memberIndex]
+      groupMembers.value[memberIndex]
     } else {
       null
     }
@@ -694,7 +706,7 @@ object ChatModel {
       }
       // update current chat
       return if (chatId.value == groupInfo.id) {
-        val memberIndex = groupMembersIndexes[member.groupMemberId]
+        val memberIndex = groupMembersIndexes.value[member.groupMemberId]
         val updated = chatItems.value.map {
           // Take into account only specific changes, not all. Other member updates are not important and can be skipped
           if (it.chatDir is CIDirection.GroupRcv && it.chatDir.groupMember.groupMemberId == member.groupMemberId &&
@@ -710,11 +722,14 @@ object ChatModel {
         if (updated != chatItems.value) {
           chatItems.replaceAll(updated)
         }
+        val gMembers = groupMembers.value.toMutableList()
         if (memberIndex != null) {
-          groupMembers[memberIndex] = member
+          gMembers[memberIndex] = member
+          groupMembers.value = gMembers
           false
         } else {
-          groupMembers.add(member)
+          gMembers.add(member)
+          groupMembers.value = gMembers
           groupMembersIndexes[member.groupMemberId] = groupMembers.size - 1
           true
         }
@@ -741,7 +756,7 @@ object ChatModel {
       profile = newProfile.toLocalProfile(current.profile.profileId),
       fullPreferences = preferences ?: current.fullPreferences
     )
-    val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
+    val i = users.value.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
     if (i != -1) {
       users[i] = users[i].copy(user = updated)
     }
@@ -753,7 +768,7 @@ object ChatModel {
     val updated = current.copy(
       uiThemes = uiThemes
     )
-    val i = users.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
+    val i = users.value.indexOfFirst { it.user.userId == current.userId && it.user.remoteHostId == rhId }
     if (i != -1) {
       users[i] = users[i].copy(user = updated)
     }
@@ -816,9 +831,11 @@ object ChatModel {
   }
 
   private fun changeUnreadCounter(rhId: Long?, user: UserLike, by: Int) {
-    val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
+    val i = users.value.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
     if (i != -1) {
-      users[i] = users[i].copy(unreadCount = users[i].unreadCount + by)
+      val usrs = users.value.toMutableList()
+      usrs[i] = usrs[i].copy(unreadCount = usrs[i].unreadCount + by)
+      users.value = usrs
     }
   }
 
@@ -2488,15 +2505,15 @@ data class ChatItem (
   }
 }
 
-fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
+fun MutableStateFlow<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
   value = SnapshotStateList<Chat>().apply { addAll(value); add(index, elem) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
+fun MutableStateFlow<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
   value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
 }
 
-fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
+fun MutableStateFlow<SnapshotStateList<Chat>>.add(elem: Chat) {
   value = SnapshotStateList<Chat>().apply { addAll(value); add(elem) }
 }
 
@@ -2504,24 +2521,24 @@ fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
 fun <T> MutableList<T>.removeAll(predicate: (T) -> Boolean): Boolean = if (isEmpty()) false else remAll(predicate)
 
 // Adds item to chatItems and notifies a listener about newly added item
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem) {
+fun MutableStateFlow<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem) {
   value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
+fun <T> MutableStateFlow<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(value); addAll(index, elems) }
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.addAll(elems: List<T>) {
+fun <T> MutableStateFlow<SnapshotStateList<T>>.addAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(value); addAll(elems) }
 }
 
-fun MutableState<SnapshotStateList<Chat>>.removeAll(block: (Chat) -> Boolean) {
+fun MutableStateFlow<SnapshotStateList<Chat>>.removeAll(block: (Chat) -> Boolean) {
   value = SnapshotStateList<Chat>().apply { addAll(value); removeAll(block) }
 }
 
 // Removes item(s) from chatItems and notifies a listener about removed item(s)
-fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatItem) -> Boolean) {
+fun MutableStateFlow<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatItem) -> Boolean) {
   val toRemove = ArrayList<Triple<Long, Int, Boolean>>()
   value = SnapshotStateList<ChatItem>().apply {
     addAll(value)
@@ -2538,7 +2555,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatIte
   }
 }
 
-fun MutableState<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
+fun MutableStateFlow<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
   val new = SnapshotStateList<Chat>()
   new.addAll(value)
   val res = new.removeAt(index)
@@ -2546,7 +2563,14 @@ fun MutableState<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
   return res
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
+fun <T> MutableStateFlow<List<T>>.removeAt(index: Int): T {
+  val l = value.toMutableList()
+  val removed = l.removeAt(index)
+  value = l
+  return removed
+}
+
+fun MutableStateFlow<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
   val removed: Triple<Long, Int, Boolean>
   value = SnapshotStateList<ChatItem>().apply {
     addAll(value)
@@ -2557,29 +2581,53 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
   chatItemsChangesListener?.removed(listOf(removed), value)
 }
 
-fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
+fun <T> MutableStateFlow<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
   value = SnapshotStateList<T>().apply { addAll(elems) }
 }
 
-fun MutableState<SnapshotStateList<Chat>>.clear() {
+fun MutableStateFlow<SnapshotStateList<Chat>>.clear() {
   value = SnapshotStateList()
 }
 
 // Removes all chatItems and notifies a listener about it
-fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
+fun MutableStateFlow<SnapshotStateList<ChatItem>>.clearAndNotify() {
   value = SnapshotStateList()
   chatItemsChangesListener?.cleared()
 }
 
-fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()
+fun <T> StateFlow<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()
 
-fun <T> State<SnapshotStateList<T>>.toList(): List<T> = value.toList()
+fun <T> StateFlow<SnapshotStateList<T>>.toList(): List<T> = value.toList()
 
-operator fun <T> State<SnapshotStateList<T>>.get(i: Int): T = value[i]
+operator fun <K, V> StateFlow<Map<K, V>>.get(key: K): V? = value[key]
 
-operator fun <T> State<SnapshotStateList<T>>.set(index: Int, elem: T) { value[index] = elem }
+operator fun <T> StateFlow<List<T>>.get(i: Int): T = value[i]
+
+operator fun <T> StateFlow<SnapshotStateList<T>>.set(index: Int, elem: T) { value[index] = elem }
+
+operator fun <T> MutableStateFlow<List<T>>.set(index: Int, elem: T) {
+  val l = value.toMutableList()
+  l[index] = elem
+  value = l
+}
+
+fun StateFlow<List<Any>>.isEmpty(): Boolean = value.isEmpty()
+
+operator fun <K, V> MutableStateFlow<Map<K, V>>.set(key: K, elem: V) {
+  val m = value.toMutableMap()
+  m[key] = elem
+  value = m
+}
+
+fun <K, V> MutableStateFlow<Map<K, V>>.remove(key: K): V? {
+  val m = value.toMutableMap()
+  val removed = m.remove(key)
+  value = m
+  return removed
+}
 
 val State<List<Any>>.size: Int get() = value.size
+val StateFlow<List<Any>>.size: Int get() = value.size
 
 enum class CIMergeCategory {
   MemberConnected,
