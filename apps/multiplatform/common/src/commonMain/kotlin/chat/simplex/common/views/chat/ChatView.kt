@@ -550,7 +550,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            chatModel.chatItems.clearAndNotify()
+            withChats {
+              chatItems.clearAndNotify()
+            }
           }
       }
       is ChatInfo.InvalidJSON -> {
@@ -561,7 +563,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            chatModel.chatItems.clearAndNotify()
+            withChats {
+              chatItems.clearAndNotify()
+            }
           }
       }
       else -> {}
