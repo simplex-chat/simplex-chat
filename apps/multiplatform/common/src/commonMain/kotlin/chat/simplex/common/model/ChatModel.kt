@@ -157,7 +157,6 @@ object ChatModel {
   val updatingProgress = mutableStateOf(null as Float?)
   var updatingRequest: Closeable? = null
 
-  private val updatingChatsMutex: Mutex = Mutex()
   val changingActiveUserMutex: Mutex = Mutex()
 
   val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
@@ -336,7 +335,7 @@ object ChatModel {
     }
   }
 
-  suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = updatingChatsMutex.withLock {
+  suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
     chatsContext.action()
   }
 
