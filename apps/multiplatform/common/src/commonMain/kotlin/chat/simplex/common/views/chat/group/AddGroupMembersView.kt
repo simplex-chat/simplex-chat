@@ -83,7 +83,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
 
 fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
   val s = search.trim().lowercase()
-  val memberContactIds = chatModel.groupMembers
+  val memberContactIds = chatModel.groupMembers.value
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
   return chatModel.chats.value

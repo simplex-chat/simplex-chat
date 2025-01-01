@@ -79,8 +79,8 @@ object ChatModel {
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
-  val groupMembers = mutableStateListOf<GroupMember>()
-  val groupMembersIndexes = mutableStateMapOf<Long, Int>()
+  val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
+  val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
 
   // Chat Tags
   val userTags = mutableStateOf(emptyList<ChatTag>())
@@ -321,16 +321,18 @@ object ChatModel {
   fun getGroupChat(groupId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
 
   fun populateGroupMembersIndexes() {
-    groupMembersIndexes.clear()
-    groupMembers.forEachIndexed { i, member ->
-      groupMembersIndexes[member.groupMemberId] = i
+    groupMembersIndexes.value = emptyMap()
+    val gmIndexes = groupMembersIndexes.value.toMutableMap()
+    groupMembers.value.forEachIndexed { i, member ->
+      gmIndexes[member.groupMemberId] = i
     }
+    groupMembersIndexes.value = gmIndexes
   }
 
   fun getGroupMember(groupMemberId: Long): GroupMember? {
-    val memberIndex = groupMembersIndexes[groupMemberId]
+    val memberIndex = groupMembersIndexes.value[groupMemberId]
     return if (memberIndex != null) {
-      groupMembers[memberIndex]
+      groupMembers.value[memberIndex]
     } else {
       null
     }
@@ -694,7 +696,7 @@ object ChatModel {
       }
       // update current chat
       return if (chatId.value == groupInfo.id) {
-        val memberIndex = groupMembersIndexes[member.groupMemberId]
+        val memberIndex = groupMembersIndexes.value[member.groupMemberId]
         val updated = chatItems.value.map {
           // Take into account only specific changes, not all. Other member updates are not important and can be skipped
           if (it.chatDir is CIDirection.GroupRcv && it.chatDir.groupMember.groupMemberId == member.groupMemberId &&
@@ -710,12 +712,17 @@ object ChatModel {
         if (updated != chatItems.value) {
           chatItems.replaceAll(updated)
         }
+        val gMembers = groupMembers.value.toMutableList()
         if (memberIndex != null) {
-          groupMembers[memberIndex] = member
+          gMembers[memberIndex] = member
+          groupMembers.value = gMembers
           false
         } else {
-          groupMembers.add(member)
-          groupMembersIndexes[member.groupMemberId] = groupMembers.size - 1
+          gMembers.add(member)
+          groupMembers.value = gMembers
+          val gmIndexes = groupMembersIndexes.value.toMutableMap()
+          gmIndexes[member.groupMemberId] = groupMembers.size - 1
+          groupMembersIndexes.value = gmIndexes
           true
         }
       } else {
