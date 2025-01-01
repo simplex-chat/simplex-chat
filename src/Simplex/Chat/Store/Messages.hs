@@ -1205,28 +1205,28 @@ getGroupReports db vr user groupId archived = getGroupChat_ db vr user groupId (
 {-# INLINE getGroupReports #-}
 
 getGroupChat_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe Bool -> Maybe MsgContentTag -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChat_ db vr user groupId archived_ msgContentTag_ pagination search_ = do
+getGroupChat_ db vr user groupId processed_ msgContentTag_ pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
   case pagination of
-    CPLast count -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g count search
-    CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g afterId count search
-    CPBefore beforeId count -> (,Nothing) <$> getGroupChatBefore_ db user g beforeId count search
-    CPAround aroundId count -> getGroupChatAround_ db user g aroundId count search
+    CPLast count -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g processed_ msgContentTag_ count search
+    CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g processed_ msgContentTag_ afterId count search
+    CPBefore beforeId count -> (,Nothing) <$> getGroupChatBefore_ db user g processed_ msgContentTag_ beforeId count search
+    CPAround aroundId count -> getGroupChatAround_ db user g processed_ msgContentTag_ aroundId count search
     CPInitial count -> do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
-      getGroupChatInitial_ db user g count
+      getGroupChatInitial_ db user g processed_ msgContentTag_ count
 
-getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO (Chat 'CTGroup)
-getGroupChatLast_ db user g count search = do
+getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Maybe Bool -> Maybe MsgContentTag -> Int -> String -> IO (Chat 'CTGroup)
+getGroupChatLast_ db user g processed_ msgContentTag_ count search = do
   let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
-  ciIds <- getGroupChatItemIdsLast_ db user g count search
+  ciIds <- getGroupChatItemIdsLast_ db user g processed_ msgContentTag_ count search
   ts <- getCurrentTime
   cis <- mapM (safeGetGroupItem db user g ts) ciIds
   pure $ Chat (GroupChat g) (reverse cis) stats
 
-getGroupChatItemIdsLast_ :: DB.Connection -> User -> GroupInfo -> Int -> String -> IO [ChatItemId]
-getGroupChatItemIdsLast_ db User {userId} GroupInfo {groupId} count search =
+getGroupChatItemIdsLast_ :: DB.Connection -> User -> GroupInfo -> Maybe Bool -> Maybe MsgContentTag -> Int -> String -> IO [ChatItemId]
+getGroupChatItemIdsLast_ db User {userId} GroupInfo {groupId} processed_ msgContentTag_ count search =
   map fromOnly
     <$> DB.query
       db
@@ -1281,8 +1281,8 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
         (userId, groupId, groupMemberId)
   getGroupChatItem db user groupId chatItemId
 
-getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user g@GroupInfo {groupId} afterId count search = do
+getGroupChatAfter_ :: DB.Connection -> User -> GroupInfo -> Maybe Bool -> Maybe MsgContentTag -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatAfter_ db user g@GroupInfo {groupId} processed_ msgContentTag_ afterId count search = do
   let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterCI <- getGroupChatItem db user groupId afterId
   ciIds <- liftIO $ getGroupCIsAfter_ db user g afterCI count search
@@ -1305,8 +1305,8 @@ getGroupCIsAfter_ db User {userId} GroupInfo {groupId} afterCI count search =
       |]
       (userId, groupId, search, chatItemTs afterCI, chatItemTs afterCI, cChatItemId afterCI, count)
 
-getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatBefore_ db user g@GroupInfo {groupId} beforeId count search = do
+getGroupChatBefore_ :: DB.Connection -> User -> GroupInfo -> Maybe Bool -> Maybe MsgContentTag -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatBefore_ db user g@GroupInfo {groupId} processed_ msgContentTag_ beforeId count search = do
   let stats = ChatStats {unreadCount = 0, reportsCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeCI <- getGroupChatItem db user groupId beforeId
   ciIds <- liftIO $ getGroupCIsBefore_ db user g beforeCI count search
@@ -1329,13 +1329,13 @@ getGroupCIsBefore_ db User {userId} GroupInfo {groupId} beforeCI count search =
       |]
       (userId, groupId, search, chatItemTs beforeCI, chatItemTs beforeCI, cChatItemId beforeCI, count)
 
-getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatAround_ db user g aroundId count search = do
+getGroupChatAround_ :: DB.Connection -> User -> GroupInfo -> Maybe Bool -> Maybe MsgContentTag -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround_ db user g processed_ msgContentTag_ aroundId count search = do
   stats <- liftIO $ getGroupStats_ db user g
-  getGroupChatAround' db user g aroundId count search stats
+  getGroupChatAround' db user g processed_ msgContentTag_ aroundId count search stats
 
-getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatAround' db user g@GroupInfo {groupId} aroundId count search stats = do
+getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> Maybe Bool -> Maybe MsgContentTag -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatAround' db user g@GroupInfo {groupId} processed_ msgContentTag_ aroundId count search stats = do
   aroundCI <- getGroupChatItem db user groupId aroundId
   beforeIds <- liftIO $ getGroupCIsBefore_ db user g aroundCI count search
   afterIds <- liftIO $ getGroupCIsAfter_ db user g aroundCI count search
@@ -1350,15 +1350,15 @@ getGroupChatAround' db user g@GroupInfo {groupId} aroundId count search stats = 
       [] -> pure $ NavigationInfo 0 0
       cis -> getGroupNavInfo_ db user g (last cis)
 
-getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatInitial_ db user g count =
+getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe Bool -> Maybe MsgContentTag -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
+getGroupChatInitial_ db user g processed_ msgContentTag_ count =
   liftIO (getGroupMinUnreadId_ db user g) >>= \case
     Just minUnreadItemId -> do
       unreadCount <- liftIO $ getGroupUnreadCount_ db user g
       -- TODO [reports]
       let stats = ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
-      getGroupChatAround' db user g minUnreadItemId count "" stats
-    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g count ""
+      getGroupChatAround' db user g processed_ msgContentTag_ minUnreadItemId count "" stats
+    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g processed_ msgContentTag_ count ""
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> IO ChatStats
 getGroupStats_ db user g = do
@@ -1693,6 +1693,14 @@ updateDirectChatItemsRead db User {userId} contactId = do
       WHERE user_id = ? AND contact_id = ? AND item_status = ?
     |]
     (CISRcvRead, currentTs, userId, contactId, CISRcvNew)
+  DB.execute
+    db
+    [sql|
+      UPDATE contacts
+      SET unread_count = 0, last_read_item_id = -1, last_read_created_at = NULL, updated_at = ?
+      WHERE user_id = ? AND contact_id = ?
+    |]
+    (currentTs, userId, contactId)
 
 getDirectUnreadTimedItems :: DB.Connection -> User -> ContactId -> IO [(ChatItemId, Int)]
 getDirectUnreadTimedItems db User {userId} contactId =
