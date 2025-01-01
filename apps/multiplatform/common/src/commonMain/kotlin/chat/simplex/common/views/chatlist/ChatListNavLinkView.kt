@@ -216,21 +216,26 @@ suspend fun openChat(rhId: Long?, chatInfo: ChatInfo) = openChat(rhId, chatInfo.
 private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long) =
   apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
 
-fun openLoadedChat(chat: Chat) {
-  chatModel.chatItemStatuses.clear()
-  chatModel.chatItems.replaceAll(chat.chatItems)
-  chatModel.chatId.value = chat.chatInfo.id
-  chatModel.chatState.clear()
+suspend fun openLoadedChat(chat: Chat) {
+  withChats {
+    chatModel.chatItemStatuses.clear()
+    chatItems.replaceAll(chat.chatItems)
+    chatModel.chatId.value = chat.chatInfo.id
+    chatModel.chatState.clear()
+  }
 }
 
 suspend fun apiFindMessages(ch: Chat, search: String) {
-  chatModel.chatItems.clearAndNotify()
+  withChats {
+    chatItems.clearAndNotify()
+  }
   apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), chatModel.chatState, search = search)
 }
 
-suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
+suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
+  // groupMembers loading can take a long time and if the user already closed the screen, coroutine may be canceled
   val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
-  val currentMembers = chatModel.groupMembers
+  val currentMembers = chatModel.groupMembers.value
   val newMembers = groupMembers.map { newMember ->
     val currentMember = currentMembers.find { it.id == newMember.id }
     val currentMemberStats = currentMember?.activeConn?.connectionStats
@@ -241,9 +246,8 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       newMember
     }
   }
-  chatModel.groupMembers.clear()
-  chatModel.groupMembersIndexes.clear()
-  chatModel.groupMembers.addAll(newMembers)
+  chatModel.groupMembersIndexes.value = emptyMap()
+  chatModel.groupMembers.value = newMembers
   chatModel.populateGroupMembersIndexes()
 }
 

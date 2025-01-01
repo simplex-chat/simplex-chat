@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -55,8 +56,12 @@ fun showApp() {
               // Better to not close fullscreen since it can contain passcode
             } else {
               // The last possible cause that can be closed
-              chatModel.chatId.value = null
-              chatModel.chatItems.clearAndNotify()
+              withApi {
+                withChats {
+                  chatModel.chatId.value = null
+                  chatItems.clearAndNotify()
+                }
+              }
             }
             chatModel.activeCall.value?.let {
               withBGApi {
