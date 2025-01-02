@@ -2267,4 +2267,7 @@
     <string name="delete_chat_list_warning">سيتم إزالة جميع المحادثات من القائمة %s، وسيتم حذف القائمة</string>
     <string name="create_list">أنشئ قائمة</string>
     <string name="error_updating_chat_tags">خطأ في تحديث قائمة الدردشة</string>
+    <string name="chat_list_notes">الملحوظات</string>
+    <string name="change_list">تغيير القائمة</string>
+    <string name="change_order_chat_list_menu_action">تغيير الترتيب</string>
 </resources>
