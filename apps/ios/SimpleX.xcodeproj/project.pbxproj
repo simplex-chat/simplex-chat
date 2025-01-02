@@ -203,6 +203,7 @@
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		8CE848A32C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */; };
+		B70F945F2D26C5E600D38C5B /* CIReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70F945E2D26C5E600D38C5B /* CIReportView.swift */; };
 		B73EFE532CE5FA3500C778EA /* CreateSimpleXAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73EFE522CE5FA3500C778EA /* CreateSimpleXAddress.swift */; };
 		B76E6C312C5C41D900EC11AA /* ContactListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76E6C302C5C41D900EC11AA /* ContactListNavLink.swift */; };
 		B79ADAFF2CE4EF930083DFFD /* AddressCreationCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B79ADAFE2CE4EF930083DFFD /* AddressCreationCard.swift */; };
@@ -551,6 +552,7 @@
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableChatItemToolbars.swift; sourceTree = "<group>"; };
+		B70F945E2D26C5E600D38C5B /* CIReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIReportView.swift; sourceTree = "<group>"; };
 		B73EFE522CE5FA3500C778EA /* CreateSimpleXAddress.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreateSimpleXAddress.swift; sourceTree = "<group>"; };
 		B76E6C302C5C41D900EC11AA /* ContactListNavLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactListNavLink.swift; sourceTree = "<group>"; };
 		B79ADAFE2CE4EF930083DFFD /* AddressCreationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressCreationCard.swift; sourceTree = "<group>"; };
@@ -1032,6 +1034,7 @@
 				18415FD2E36F13F596A45BB4 /* CIVideoView.swift */,
 				5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */,
 				6419EC572AB97507004A607A /* CIMemberCreatedContactView.swift */,
+				B70F945E2D26C5E600D38C5B /* CIReportView.swift */,
 			);
 			path = ChatItem;
 			sourceTree = "<group>";
@@ -1477,6 +1480,7 @@
 				646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */,
 				8C74C3EA2C1B90AF00039E77 /* ThemeManager.swift in Sources */,
 				5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */,
+				B70F945F2D26C5E600D38C5B /* CIReportView.swift in Sources */,
 				5C35CFC827B2782E00FB6C6D /* BGManager.swift in Sources */,
 				5CB634B129E5EFEA0066AD6B /* PasscodeView.swift in Sources */,
 				8C69FE7D2B8C7D2700267E38 /* AppSettings.swift in Sources */,

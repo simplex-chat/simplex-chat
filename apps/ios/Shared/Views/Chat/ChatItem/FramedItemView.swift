@@ -44,9 +44,17 @@ struct FramedItemView: View {
                 } else if chatItem.meta.isLive {
                     framedItemHeader(caption: Text("LIVE"))
                 }
+                
+                if (chatItem.content.msgContent?.isReport == true) {
+                    let txt = chatItem.chatDir.sent ?
+                        Text("Only you and group moderators can see it") :
+                        Text("Only reporter and moderators can see it")
+                        
+                    framedItemHeader(caption: txt.italic())
+                }
 
                 if let qi = chatItem.quotedItem {
-                    ciQuoteView(qi)
+                    ciQuoteView(qi, chatItem.content.msgContent?.isReport ?? false)
                         .onTapGesture {
                             if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
@@ -57,7 +65,7 @@ struct FramedItemView: View {
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
                     framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                 }
-
+                
                 ChatItemContentView(chat: chat, chatItem: chatItem, msgContentView: framedMsgContentView)
                     .padding(chatItem.content.msgContent != nil ? 0 : 4)
                     .overlay(DetermineWidth())
@@ -147,6 +155,8 @@ struct FramedItemView: View {
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
+            case let .report(text, reason):
+                CIReportView(text: text, reason: reason)
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
                     ciMsgContentView(chatItem)
@@ -185,49 +195,57 @@ struct FramedItemView: View {
         }
     }
 
-    @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
-        let v = ZStack(alignment: .topTrailing) {
-            switch (qi.content) {
-            case let .image(_, image):
-                if let uiImage = imageFromBase64(image) {
+    @ViewBuilder private func ciQuoteView(_ qi: CIQuote, _ showQuoteAvatar: Bool) -> some View {
+        let v = HStack(spacing: 0) {
+            if showQuoteAvatar, case let .groupRcv(member) = qi.chatDir {
+                MemberProfileImage(member, size: 44, backgroundColor: theme.colors.background)
+                    .padding(.leading, 12)
+            }
+            ZStack(alignment: .topTrailing) {
+                switch (qi.content) {
+                case let .image(_, image):
+                    if let uiImage = imageFromBase64(image) {
+                        ciQuotedMsgView(qi)
+                            .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 68, height: 68)
+                            .clipped()
+                    } else {
+                        ciQuotedMsgView(qi)
+                    }
+                case let .video(_, image, _):
+                    if let uiImage = imageFromBase64(image) {
+                        ciQuotedMsgView(qi)
+                            .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 68, height: 68)
+                            .clipped()
+                    } else {
+                        ciQuotedMsgView(qi)
+                    }
+                case .file:
                     ciQuotedMsgView(qi)
-                        .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 68, height: 68)
-                        .clipped()
-                } else {
+                        .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                    ciQuoteIconView("doc.fill")
+                case .voice:
+                    ciQuotedMsgView(qi)
+                        .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                    ciQuoteIconView("mic.fill")
+                default:
                     ciQuotedMsgView(qi)
                 }
-            case let .video(_, image, _):
-                if let uiImage = imageFromBase64(image) {
-                    ciQuotedMsgView(qi)
-                    .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
-                    Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 68, height: 68)
-                    .clipped()
-                } else {
-                    ciQuotedMsgView(qi)
-                }
-            case .file:
-                ciQuotedMsgView(qi)
-                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
-                ciQuoteIconView("doc.fill")
-            case .voice:
-                ciQuotedMsgView(qi)
-                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
-                ciQuoteIconView("mic.fill")
-            default:
-                ciQuotedMsgView(qi)
             }
         }
+            
             // if enable this always, size of the framed voice message item will be incorrect after end of playback
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(chatItemFrameContextColor(chatItem, theme))
+            
 
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)

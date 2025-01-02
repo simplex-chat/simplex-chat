@@ -917,6 +917,7 @@ struct ChatView: View {
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
+        @State private var actionSheet: SomeActionSheet? = nil
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -1001,6 +1002,7 @@ struct ChatView: View {
                     }
                 }
             }
+            .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
         private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
@@ -1334,6 +1336,8 @@ struct ChatView: View {
                 }
                 if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
                     moderateButton(ci, groupInfo)
+                } else if chat.chatInfo.groupInfo != nil, ci.chatDir != .groupSnd {
+                    reportButton(ci)
                 }
             } else if ci.meta.itemDeleted != nil {
                 if revealed {
@@ -1345,6 +1349,9 @@ struct ChatView: View {
                 }
                 viewInfoButton(ci)
                 deleteButton(ci)
+                if chat.chatInfo.groupInfo != nil, ci.chatDir != .groupSnd {
+                    reportButton(ci)
+                }
             } else if ci.isDeletedContent {
                 viewInfoButton(ci)
                 deleteButton(ci)
@@ -1704,6 +1711,41 @@ struct ChatView: View {
                 Label (
                     NSLocalizedString("Hide", comment: "chat item action"),
                     systemImage: "arrow.down.and.line.horizontal.and.arrow.up"
+                )
+            }
+        }
+        
+        private func reportButton(_ ci: ChatItem) -> Button<some View> {
+            Button(role: .destructive) {
+                var buttons: [Alert.Button] = ReportReason.allCases.compactMap { reason in
+                    switch reason {
+                    case .spam: return .default(Text("Spam")) {
+                        let im = ItemsModel.shared
+                        im.reversedChatItems.insert(
+                            ChatItem.getReportSample(text: "This guy keeps on sending ads on a hourly basis", reason: .spam, item: ci), at: 0)
+                        
+                        im.reversedChatItems.insert(
+                            ChatItem.getReportSample(text: "This guy keeps on sending ads on a hourly basis", reason: .spam, item: ci, sender: chat.chatInfo.groupInfo?.membership), at: 0)
+                    }
+                    case .illegal: return .default(Text("Illegal Content")) { }
+                    case .community: return .default(Text("Community Guidelines")) { }
+                    case .other: return .default(Text("Other")) { }
+                    case .unknown: return nil
+                    }
+                }
+                    
+                buttons.append(.cancel())
+                actionSheet = SomeActionSheet(
+                    actionSheet: ActionSheet(
+                        title: Text("Report reason?"),
+                        buttons: buttons
+                    ),
+                    id: "reportChatMessage"
+                )
+            } label: {
+                Label (
+                    NSLocalizedString("Report", comment: "chat item action"),
+                    systemImage: "exclamationmark.bubble"
                 )
             }
         }

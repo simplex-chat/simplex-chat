@@ -2636,6 +2636,34 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             file: nil
         )
     }
+    
+    public static func getReportSample(text: String, reason: ReportReason, item: ChatItem, sender: GroupMember? = nil) -> ChatItem {
+        let chatDir = if let sender = sender {
+            CIDirection.groupRcv(groupMember: sender)
+        } else {
+            CIDirection.groupSnd
+        }
+        
+        return ChatItem(
+            chatDir: chatDir,
+            meta: CIMeta(
+                itemId: -2,
+                itemTs: .now,
+                itemText: "",
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: nil,
+                itemEdited: false,
+                itemLive: false,
+                deletable: false,
+                editable: false
+            ),
+            content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
+            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
+            file: nil
+        )
+    }
 
     public static func deletedItemDummy() -> ChatItem {
         ChatItem(
@@ -3249,14 +3277,12 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
     public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
-
     public var text: String {
         switch (content.text, content) {
         case let ("", .voice(_, duration)): return durationText(duration)
         default: return content.text
         }
     }
-
     public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
         case .directSnd: return "you"
@@ -3680,6 +3706,13 @@ public enum MsgContent: Equatable, Hashable {
         default: false
         }
     }
+    
+    public var isReport: Bool {
+        switch self {
+        case .report: true
+        default: false
+        }
+    }
 
     var cmdString: String {
         "json \(encodeJSON(self))"
@@ -3861,12 +3894,22 @@ public enum FormatColor: String, Decodable, Hashable {
     }
 }
 
-public enum ReportReason: Codable,  Hashable {
+public enum ReportReason: Codable, Hashable, CaseIterable {
     case spam
     case illegal
     case community
     case other
     case unknown
+    
+    public var text: String {
+        switch self {
+        case .spam: return NSLocalizedString("Spam", comment: "report reason")
+        case .illegal: return NSLocalizedString("Illegal content", comment: "report reason")
+        case .community: return NSLocalizedString("Community guidelines", comment: "report reason")
+        case .other: return NSLocalizedString("Other", comment: "report reason")
+        case .unknown: return NSLocalizedString("Unknown", comment: "report reason")
+        }
+    }
 }
 
 // Struct to use with simplex API
