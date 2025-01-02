@@ -2279,4 +2279,7 @@
     <string name="save_list">Guardar lista</string>
     <string name="no_unread_chats">Ningún chat sin leer</string>
     <string name="error_creating_chat_tags">Error al crear lista de chat</string>
+    <string name="chat_list_notes">Notas</string>
+    <string name="change_order_chat_list_menu_action">Reordenar</string>
+    <string name="change_list">Cambiar lista</string>
 </resources>
