@@ -960,18 +960,12 @@ processChatCommand' vr = \case
         _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APIArchiveChatItem gId itemId _processed ->
-    withUser $ \user ->
-      withGroupLock "archiveChatItem" gId $ do
-        withFastStore $ \db -> do
-          gInfo <- getGroupInfo db vr user gId
-          _cci <- getGroupCIWithReactions db user gInfo itemId
-          undefined -- TODO
   APIDeleteChatItem (ChatRef cType chatId) itemIds mode -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "deleteChatItem" chatId $ do
       (ct, items) <- getCommandDirectChatItems user chatId itemIds
       case mode of
         CIDMInternal -> deleteDirectCIs user ct items True False
+        CIDMInternalMark -> undefined
         CIDMBroadcast -> do
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
@@ -987,6 +981,7 @@ processChatCommand' vr = \case
       ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
       case mode of
         CIDMInternal -> deleteGroupCIs user gInfo items True False Nothing =<< liftIO getCurrentTime
+        CIDMInternalMark -> undefined
         CIDMBroadcast -> do
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
@@ -8414,7 +8409,6 @@ chatCommandP =
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
-      "/_archive item #" *> (APIArchiveChatItem <$> A.decimal <* A.space <*> A.decimal <*> (" archived=" *> onOffP)),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),

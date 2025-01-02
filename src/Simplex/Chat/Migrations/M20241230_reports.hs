@@ -9,7 +9,6 @@
  m20241230_reports =
    [sql|
 ALTER TABLE chat_items ADD COLUMN msg_content_tag TEXT;
-ALTER TABLE chat_items ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;
 
 -- TODO create indices
  |]
@@ -18,7 +17,6 @@ ALTER TABLE chat_items ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;
  down_m20241230_reports =
    [sql|
 ALTER TABLE chat_items DROP COLUMN msg_content_tag;
-ALTER TABLE chat_items DROP COLUMN archived;
 
 -- TODO remove indices
 |]
