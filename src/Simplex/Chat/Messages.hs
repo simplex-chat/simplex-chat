@@ -91,14 +91,6 @@ chatInfoChatTs = \case
   GroupChat GroupInfo {chatTs} -> chatTs
   _ -> Nothing
 
-chatInfoUpdatedAt :: ChatInfo c -> UTCTime
-chatInfoUpdatedAt = \case
-  DirectChat Contact {updatedAt} -> updatedAt
-  GroupChat GroupInfo {updatedAt} -> updatedAt
-  LocalChat NoteFolder {updatedAt} -> updatedAt
-  ContactRequest UserContactRequest {updatedAt} -> updatedAt
-  ContactConnection PendingContactConnection {updatedAt} -> updatedAt
-
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> ChatRef CTDirect contactId
@@ -319,6 +311,7 @@ deriving instance Show AChat
 
 data ChatStats = ChatStats
   { unreadCount :: Int,
+    reportsCount :: Int,
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }

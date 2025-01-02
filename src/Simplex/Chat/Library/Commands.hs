@@ -514,6 +514,10 @@ processChatCommand' vr = \case
         Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
           Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
         _ -> pure Nothing
+  APIGetReports {groupId, processed, chatPagination, search} -> withUser $ \user -> do
+    (groupChat, navInfo) <- withFastStore $ \db -> getGroupReports db vr user groupId processed chatPagination search
+    pure $ CRApiChat user (AChat SCTGroup groupChat) navInfo
+  APISetReportProcessed gId itemId processed -> pure $ chatCmdError Nothing "not supported"
   APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> case cType of
     CTDirect ->
       withContactLock "sendMessage" chatId $
@@ -780,6 +784,7 @@ processChatCommand' vr = \case
                 MCVideo {text} -> text /= ""
                 MCVoice {text} -> text /= ""
                 MCFile t -> t /= ""
+                MCReport {} -> True
                 MCUnknown {} -> True
   APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
@@ -3541,6 +3546,8 @@ chatCommandP =
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
+      "/_get reports #" *> (APIGetReports <$> A.decimal <*> (" processed=" *> onOffP) <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
+      "/_set report #" *> (APISetReportProcessed <$> A.decimal <* A.space <*> A.decimal <*> (" processed=" *> onOffP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),

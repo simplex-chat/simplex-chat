@@ -113,6 +113,12 @@
           "properties": {
             "text": {"type": "string", "metadata": {"comment": "can be empty"}}
           }
+        },
+        "report": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty, includes report reason for old clients"}},
+            "reason": {"enum": ["spam", "illegal", "community", "other"]}
+          }
         }
       },
       "metadata": {

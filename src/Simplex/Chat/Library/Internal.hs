@@ -220,6 +220,7 @@ quoteContent mc qmc ciFile_
       MCImage {} -> True
       MCVideo {} -> True
       MCVoice {} -> False
+      MCReport {} -> False
       MCUnknown {} -> True
     qText = msgContentText qmc
     getFileName :: CIFile d -> String
