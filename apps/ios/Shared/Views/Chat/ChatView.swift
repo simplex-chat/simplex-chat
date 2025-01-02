@@ -1776,29 +1776,24 @@ struct ChatView: View {
         
         private func reportButton(_ ci: ChatItem) -> Button<some View> {
             Button(role: .destructive) {
-                var buttons: [Alert.Button] = ReportReason.allCases.compactMap { reason in
-                    switch reason {
-                    case .spam: return .default(Text("Spam")) {
-                        withAnimation {
-                            if composeState.editing {
-                                composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
-                            } else {
-                                composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
-                            }
-                        }
-                    }
-                    case .illegal: return .default(Text("Illegal Content")) { }
-                    case .community: return .default(Text("Community Guidelines")) { }
-                    case .other: return .default(Text("Other")) { }
-                    case .unknown: return nil
-                    }
-                }
-                    
-                buttons.append(.cancel())
                 actionSheet = SomeActionSheet(
                     actionSheet: ActionSheet(
                         title: Text("Report reason?"),
-                        buttons: buttons
+                        buttons: [
+                            .default(Text("Spam")) {
+                                withAnimation {
+                                    if composeState.editing {
+                                        composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
+                                    } else {
+                                        composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
+                                    }
+                                }
+                            },
+                            .default(Text("Inappropriate content")) { },
+                            .default(Text("Community guidelines violation")) { },
+                            .default(Text("Other")) { },
+                            .cancel()
+                            ]
                     ),
                     id: "reportChatMessage"
                 )

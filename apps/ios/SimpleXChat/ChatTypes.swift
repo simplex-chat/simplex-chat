@@ -2554,7 +2554,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     
     public var isReport: Bool {
         switch content {
-        case let .sndMsgContent(msgContent):
+        case let .sndMsgContent(msgContent), let .rcvMsgContent(msgContent):
             switch msgContent {
             case .report: true
             default: false
@@ -3817,7 +3817,8 @@ extension MsgContent: Encodable {
             try container.encode("file", forKey: .type)
             try container.encode(text, forKey: .text)
         case let .report(text, reason):
-            try container.encode("text", forKey: .type)
+            try container.encode("report", forKey: .type)
+            try container.encode(text, forKey: .text)
             try container.encode(reason, forKey: .reason)
         // TODO use original JSON and type
         case let .unknown(_, text):
@@ -3898,12 +3899,12 @@ public enum FormatColor: String, Decodable, Hashable {
     }
 }
 
-public enum ReportReason: Codable, Hashable, CaseIterable {
+public enum ReportReason: Hashable {
     case spam
     case illegal
     case community
     case other
-    case unknown
+    case unknown(type: String)
     
     public var text: String {
         switch self {
@@ -3912,6 +3913,49 @@ public enum ReportReason: Codable, Hashable, CaseIterable {
         case .community: return NSLocalizedString("Community guidelines", comment: "report reason")
         case .other: return NSLocalizedString("Other", comment: "report reason")
         case .unknown: return NSLocalizedString("Unknown", comment: "report reason")
+        }
+    }
+
+}
+
+extension ReportReason: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .spam:
+            try container.encode("spam")
+        case .illegal:
+            try container.encode("illegal")
+        case .community:
+            try container.encode("community")
+        case .other:
+            try container.encode("other")
+        case .unknown(let type):
+            try container.encode(type)
+        }
+    }
+}
+
+extension ReportReason: Decodable {
+    public init(from decoder: Decoder) throws {
+        do {
+            let container = try decoder.singleValueContainer()
+            let type = try container.decode(String.self)
+
+            switch type {
+            case "spam":
+                self = .spam
+            case "illegal":
+                self = .illegal
+            case "community":
+                self = .community
+            case "other":
+                self = .other
+            default:
+                self = .unknown(type: type)
+            }
+        } catch {
+            self = .unknown(type: "")
         }
     }
 }

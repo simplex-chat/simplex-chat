@@ -756,7 +756,7 @@ struct ComposeView: View {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
-        } else if  case let .reportedItem(chatItem, reason) = composeState.contextItem {
+        } else if case let .reportedItem(chatItem, reason) = composeState.contextItem {
             // Confirm ttl
             sent = await send(.report(text: msgText, reason: reason), quoted: chatItem.id, live: live, ttl: ttl)
         } else {
