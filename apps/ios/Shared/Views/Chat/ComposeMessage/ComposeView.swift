@@ -24,6 +24,7 @@ enum ComposeContextItem {
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
     case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
+    case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
 enum VoiceMessageRecordingState {
@@ -715,6 +716,15 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
+        case let .reportedItem(chatItem: reportedItem, _):
+            ContextItemView(
+                chat: chat,
+                contextItems: [reportedItem],
+                contextIcon: "flag",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
+                contextIconForeground: Color.red
+            )
+            Divider()
         }
     }
 
@@ -746,6 +756,9 @@ struct ComposeView: View {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
+        } else if  case let .reportedItem(chatItem, reason) = composeState.contextItem {
+            // Confirm ttl
+            sent = await send(.report(text: msgText, reason: reason), quoted: chatItem.id, live: live, ttl: ttl)
         } else {
             var quoted: Int64? = nil
             if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {

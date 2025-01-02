@@ -2551,9 +2551,20 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         default: return true
         }
     }
+    
+    public var isReport: Bool {
+        switch content {
+        case let .sndMsgContent(msgContent):
+            switch msgContent {
+            case .report: true
+            default: false
+            }
+        default: false
+        }
+    }
 
     public var canBeDeletedForSelf: Bool {
-        (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
+        !isReport && ((content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete)
     }
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
@@ -3703,13 +3714,6 @@ public enum MsgContent: Equatable, Hashable {
         case .image: true
         case .video: true
         case .file: true
-        default: false
-        }
-    }
-    
-    public var isReport: Bool {
-        switch self {
-        case .report: true
         default: false
         }
     }

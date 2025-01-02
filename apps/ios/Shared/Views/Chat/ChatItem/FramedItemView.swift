@@ -45,12 +45,12 @@ struct FramedItemView: View {
                     framedItemHeader(caption: Text("LIVE"))
                 }
                 
-                if (chatItem.content.msgContent?.isReport == true) {
+                if (chatItem.isReport == true) {
                     let txt = chatItem.chatDir.sent ?
-                        Text("Only you and group moderators can see it") :
-                        Text("Only reporter and moderators can see it")
+                        Text("Only you and moderators see it") :
+                        Text("Only sender and moderators see it")
                         
-                    framedItemHeader(caption: txt.italic())
+                    framedItemHeader(icon: "flag", caption: txt.italic())
                 }
 
                 if let qi = chatItem.quotedItem {
@@ -156,7 +156,7 @@ struct FramedItemView: View {
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
             case let .report(text, reason):
-                CIReportView(text: text, reason: reason)
+                ciMsgContentView(chatItem)
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
                     ciMsgContentView(chatItem)

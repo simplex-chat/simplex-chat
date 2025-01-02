@@ -1284,7 +1284,20 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+            if ci.isReport {
+                if let qi = ci.quotedItem,
+                   let rItem = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                    if let (groupInfo, rMember) = rItem.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
+                        moderateButton(rItem, groupInfo)
+                        if let rMember = rMember {
+                            if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
+                                blockMemberButton(rMember, groupInfo, rItem)
+                            }
+                        }
+                        
+                    }
+                }
+            } else if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
                     reactionsGroup
@@ -1336,7 +1349,8 @@ struct ChatView: View {
                 }
                 if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
                     moderateButton(ci, groupInfo)
-                } else if chat.chatInfo.groupInfo != nil, ci.chatDir != .groupSnd {
+                }
+                if chat.chatInfo.groupInfo != nil, ci.chatDir != .groupSnd {
                     reportButton(ci)
                 }
             } else if ci.meta.itemDeleted != nil {
@@ -1658,10 +1672,10 @@ struct ChatView: View {
                 AlertManager.shared.showAlert(Alert(
                     title: Text("Delete member message?"),
                     message: Text(
-                                groupInfo.fullGroupPreferences.fullDelete.on
-                                ? "The message will be deleted for all members."
-                                : "The message will be marked as moderated for all members."
-                            ),
+                        groupInfo.fullGroupPreferences.fullDelete.on
+                        ? "The message will be deleted for all members."
+                        : "The message will be marked as moderated for all members."
+                    ),
                     primaryButton: .destructive(Text("Delete")) {
                         deletingItem = ci
                         deleteMessage(.cidmBroadcast, moderate: true)
@@ -1672,6 +1686,51 @@ struct ChatView: View {
                 Label(
                     NSLocalizedString("Moderate", comment: "chat item action"),
                     systemImage: "flag"
+                )
+            }
+        }
+        
+        private func blockMemberButton(_ member: GroupMember, _ groupInfo: GroupInfo, _ cItem: ChatItem) -> Button<some View> {
+            Button(role: .destructive) {
+                actionSheet = SomeActionSheet(
+                    actionSheet: ActionSheet(
+                        title: Text("Block and moderate?"),
+                        buttons: [
+                            .destructive(Text("Block and moderate")) {
+                                AlertManager.shared.showAlert(
+                                    Alert(
+                                        title: Text("Delete member message and block?"),
+                                        message: Text(
+                                            NSLocalizedString(
+                                                groupInfo.fullGroupPreferences.fullDelete.on
+                                                ? "The message will be deleted for all members.\nAll new messages from \(member.chatViewName) will be hidden!"
+                                                : "The message will be marked as moderated for all members.\n All new messages from \(member.chatViewName) will be hidden!"
+                                                , comment: "block and moderate action"
+                                            )
+                                        ),
+                                        primaryButton: .destructive(Text("Delete and block")) {
+                                            deletingItem = cItem
+                                            deleteMessage(.cidmBroadcast, moderate: true)
+                                            blockMemberForAll(groupInfo, member, false)
+                                        },
+                                        secondaryButton: .cancel()
+                                    )
+                                )
+                            },
+                            .destructive(Text("Only block")) {
+                                AlertManager.shared.showAlert(
+                                    blockForAllAlert(groupInfo, member)
+                                )
+                            },
+                            .cancel()
+                        ]
+                    ),
+                    id: "blockMember"
+                )
+            } label: {
+                Label(
+                    NSLocalizedString("Block member", comment: "chat item action"),
+                    systemImage: "hand.raised"
                 )
             }
         }
@@ -1720,12 +1779,13 @@ struct ChatView: View {
                 var buttons: [Alert.Button] = ReportReason.allCases.compactMap { reason in
                     switch reason {
                     case .spam: return .default(Text("Spam")) {
-                        let im = ItemsModel.shared
-                        im.reversedChatItems.insert(
-                            ChatItem.getReportSample(text: "This guy keeps on sending ads on a hourly basis", reason: .spam, item: ci), at: 0)
-                        
-                        im.reversedChatItems.insert(
-                            ChatItem.getReportSample(text: "This guy keeps on sending ads on a hourly basis", reason: .spam, item: ci, sender: chat.chatInfo.groupInfo?.membership), at: 0)
+                        withAnimation {
+                            if composeState.editing {
+                                composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
+                            } else {
+                                composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
+                            }
+                        }
                     }
                     case .illegal: return .default(Text("Illegal Content")) { }
                     case .community: return .default(Text("Community Guidelines")) { }
@@ -1749,6 +1809,7 @@ struct ChatView: View {
                 )
             }
         }
+        
 
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
