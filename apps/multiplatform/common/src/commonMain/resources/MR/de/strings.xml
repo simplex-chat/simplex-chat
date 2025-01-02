@@ -2352,4 +2352,7 @@
     <string name="chat_list_add_list">Liste hinzufügen</string>
     <string name="add_to_list">Zur Liste hinzufügen</string>
     <string name="open_with_app">Mit %s öffnen</string>
+    <string name="chat_list_notes">Anmerkungen</string>
+    <string name="change_order_chat_list_menu_action">Anordnung ändern</string>
+    <string name="change_list">Liste ändern</string>
 </resources>
