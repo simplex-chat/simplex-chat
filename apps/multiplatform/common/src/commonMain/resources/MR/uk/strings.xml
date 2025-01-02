@@ -2277,4 +2277,7 @@
     <string name="chat_list_add_list">Додати список</string>
     <string name="list_menu">Список</string>
     <string name="duplicated_list_error">Назва списку та емодзі мають відрізнятися для всіх списків.</string>
+    <string name="chat_list_notes">Нотатки</string>
+    <string name="change_list">Список змін</string>
+    <string name="change_order_chat_list_menu_action">Змінити порядок</string>
 </resources>
