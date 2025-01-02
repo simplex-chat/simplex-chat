@@ -3738,6 +3738,10 @@ extension MsgContent: Decodable {
             case "file":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 self = .file(text)
+            case "report":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let reason = try container.decode(ReportReason.self, forKey: CodingKeys.reason)
+                self = .report(text: text, reason: reason)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
