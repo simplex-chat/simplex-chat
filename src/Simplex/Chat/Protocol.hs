@@ -48,6 +48,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
@@ -499,6 +500,10 @@ instance FromJSON MsgContentTag where
 instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+instance FromField MsgContentTag where fromField = fromBlobField_ strDecode
+
+instance ToField MsgContentTag where toField = toField . strEncode
 
 data MsgContainer
   = MCSimple ExtMsgContent
