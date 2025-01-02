@@ -117,13 +117,24 @@ struct ComposeState {
         default: return false
         }
     }
-
+    
+    var submitingValidReport: Bool {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            switch reason {
+            case .other: return !message.isEmpty
+            default: return true
+            }
+        default: return false
+        }
+    }
+    
     var sendEnabled: Bool {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || forwarding || liveMessage != nil
+        default: return !message.isEmpty || forwarding || liveMessage != nil || submitingValidReport
         }
     }
 
@@ -193,6 +204,27 @@ struct ComposeState {
         case .filePreview: true
         }
     }
+
+    var placeholder: String? {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            switch reason {
+            case .spam:
+                return NSLocalizedString("Spam", comment: "compose message placeholder")
+            case .illegal:
+                return NSLocalizedString("Inappropriate content", comment: "compose message placeholder")
+            case .community:
+                return NSLocalizedString("Community guidelines violation", comment: "compose message placeholder")
+            case .other:
+                return NSLocalizedString("Other", comment: "compose message placeholder")
+            default:
+                return nil
+            }
+        default:
+            return nil
+        }
+    }
+
 
     var empty: Bool {
         message == "" && noPreview
