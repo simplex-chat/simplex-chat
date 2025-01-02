@@ -8768,6 +8768,7 @@ chatCommandP =
       A.choice
         [ " owner" $> GROwner,
           " admin" $> GRAdmin,
+          " moderator" $> GRModerator,
           " member" $> GRMember,
           " observer" $> GRObserver
         ]
