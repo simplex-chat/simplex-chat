@@ -2264,4 +2264,7 @@
     <string name="chat_list_all">全部</string>
     <string name="delete_chat_list_question">删除列表？</string>
     <string name="no_unread_chats">没有未读聊天</string>
+    <string name="chat_list_notes">附注</string>
+    <string name="change_list">更改列表</string>
+    <string name="change_order_chat_list_menu_action">更改顺序</string>
 </resources>
