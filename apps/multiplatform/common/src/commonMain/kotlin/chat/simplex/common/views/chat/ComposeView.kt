@@ -918,154 +918,153 @@ fun ComposeView(
         }
       }
     }
-    Box(Modifier.background(MaterialTheme.colors.background)) {
-    Divider()
-    Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-      val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
-      val attachmentClicked = if (isGroupAndProhibitedFiles) {
-        {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.files_and_media_prohibited),
-            text = generalGetString(MR.strings.only_owners_can_enable_files_and_media)
+    Surface(color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
+      Divider()
+      Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
+        val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
+        val attachmentClicked = if (isGroupAndProhibitedFiles) {
+          {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.files_and_media_prohibited),
+              text = generalGetString(MR.strings.only_owners_can_enable_files_and_media)
+            )
+          }
+        } else {
+          showChooseAttachment
+        }
+        val attachmentEnabled =
+          !composeState.value.attachmentDisabled
+              && sendMsgEnabled.value
+              && userCanSend.value
+              && !isGroupAndProhibitedFiles
+              && !nextSendGrpInv.value
+        IconButton(
+          attachmentClicked,
+          Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
+          enabled = attachmentEnabled
+        ) {
+          Icon(
+            painterResource(MR.images.ic_attach_file_filled_500),
+            contentDescription = stringResource(MR.strings.attach),
+            tint = if (attachmentEnabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+            modifier = Modifier
+              .size(28.dp)
+              .clip(CircleShape)
           )
         }
-      } else {
-        showChooseAttachment
-      }
-      val attachmentEnabled =
-        !composeState.value.attachmentDisabled
-            && sendMsgEnabled.value
-            && userCanSend.value
-            && !isGroupAndProhibitedFiles
-            && !nextSendGrpInv.value
-      IconButton(
-        attachmentClicked,
-        Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
-        enabled = attachmentEnabled
-      ) {
-        Icon(
-          painterResource(MR.images.ic_attach_file_filled_500),
-          contentDescription = stringResource(MR.strings.attach),
-          tint = if (attachmentEnabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          modifier = Modifier
-            .size(28.dp)
-            .clip(CircleShape)
+        val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Voice) }
+        LaunchedEffect(allowedVoiceByPrefs) {
+          if (!allowedVoiceByPrefs && composeState.value.preview is ComposePreview.VoicePreview) {
+            // Voice was disabled right when this user records it, just cancel it
+            cancelVoice()
+          }
+        }
+        val needToAllowVoiceToContact = remember(chat.chatInfo) {
+          chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
+            ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+                contactPreference.allow == FeatureAllowed.YES
+          }
+        }
+        LaunchedEffect(Unit) {
+          snapshotFlow { recState.value }
+            .distinctUntilChanged()
+            .collect {
+              when (it) {
+                is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
+                is RecordingState.Finished -> if (it.durationMs > 300) {
+                  onAudioAdded(it.filePath, it.durationMs, true)
+                } else {
+                  cancelVoice()
+                }
+                is RecordingState.NotStarted -> {}
+              }
+            }
+        }
+
+        LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
+          if (!chat.chatInfo.userCanSend) {
+            clearCurrentDraft()
+            clearState()
+          }
+        }
+
+        KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
+          val cs = composeState.value
+          if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
+            sendMessage(null)
+            resetLinkPreview()
+            clearPrevDraft(prevChatId)
+            deleteUnusedFiles()
+          } else if (cs.inProgress) {
+            clearPrevDraft(prevChatId)
+          } else if (!cs.empty) {
+            if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+              composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
+            }
+            if (saveLastDraft) {
+              chatModel.draft.value = composeState.value
+              chatModel.draftChatId.value = prevChatId
+            }
+            composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+          } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+            composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
+          } else {
+            clearPrevDraft(prevChatId)
+            deleteUnusedFiles()
+          }
+          chatModel.removeLiveDummy()
+          CIFile.cachedRemoteFileRequests.clear()
+        }
+        if (appPlatform.isDesktop) {
+          // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
+          DisposableEffect(Unit) {
+            onDispose {
+              if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
+                chatModel.draft.value = composeState.value
+                chatModel.draftChatId.value = chat.id
+              }
+            }
+          }
+        }
+        val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
+        val sendButtonColor =
+          if (chat.chatInfo.incognito)
+            if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+          else MaterialTheme.colors.primary
+        SendMsgView(
+          composeState,
+          showVoiceRecordIcon = true,
+          recState,
+          chat.chatInfo is ChatInfo.Direct,
+          liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
+          sendMsgEnabled = sendMsgEnabled.value,
+          sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
+          nextSendGrpInv = nextSendGrpInv.value,
+          needToAllowVoiceToContact,
+          allowedVoiceByPrefs,
+          allowVoiceToContact = ::allowVoiceToContact,
+          userIsObserver = userIsObserver.value,
+          userCanSend = userCanSend.value,
+          sendButtonColor = sendButtonColor,
+          timedMessageAllowed = timedMessageAllowed,
+          customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
+          placeholder = stringResource(MR.strings.compose_message_placeholder),
+          sendMessage = { ttl ->
+            sendMessage(ttl)
+            resetLinkPreview()
+          },
+          sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
+          updateLiveMessage = ::updateLiveMessage,
+          cancelLiveMessage = {
+            composeState.value = composeState.value.copy(liveMessage = null)
+            chatModel.removeLiveDummy()
+          },
+          editPrevMessage = ::editPrevMessage,
+          onFilesPasted = { composeState.onFilesAttached(it) },
+          onMessageChange = ::onMessageChange,
+          textStyle = textStyle
         )
       }
-      val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Voice) }
-      LaunchedEffect(allowedVoiceByPrefs) {
-        if (!allowedVoiceByPrefs && composeState.value.preview is ComposePreview.VoicePreview) {
-          // Voice was disabled right when this user records it, just cancel it
-          cancelVoice()
-        }
-      }
-      val needToAllowVoiceToContact = remember(chat.chatInfo) {
-        chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
-          ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
-              contactPreference.allow == FeatureAllowed.YES
-        }
-      }
-      LaunchedEffect(Unit) {
-        snapshotFlow { recState.value }
-          .distinctUntilChanged()
-          .collect {
-            when (it) {
-              is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
-              is RecordingState.Finished -> if (it.durationMs > 300) {
-                onAudioAdded(it.filePath, it.durationMs, true)
-              } else {
-                cancelVoice()
-              }
-              is RecordingState.NotStarted -> {}
-            }
-          }
-      }
-
-      LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
-        if (!chat.chatInfo.userCanSend) {
-          clearCurrentDraft()
-          clearState()
-        }
-      }
-
-      KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
-        val cs = composeState.value
-        if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
-          sendMessage(null)
-          resetLinkPreview()
-          clearPrevDraft(prevChatId)
-          deleteUnusedFiles()
-        } else if (cs.inProgress) {
-          clearPrevDraft(prevChatId)
-        } else if (!cs.empty) {
-          if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
-            composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
-          }
-          if (saveLastDraft) {
-            chatModel.draft.value = composeState.value
-            chatModel.draftChatId.value = prevChatId
-          }
-          composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
-        } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
-          composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
-        } else {
-          clearPrevDraft(prevChatId)
-          deleteUnusedFiles()
-        }
-        chatModel.removeLiveDummy()
-        CIFile.cachedRemoteFileRequests.clear()
-      }
-      if (appPlatform.isDesktop) {
-        // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
-        DisposableEffect(Unit) {
-          onDispose {
-            if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
-              chatModel.draft.value = composeState.value
-              chatModel.draftChatId.value = chat.id
-            }
-          }
-        }
-      }
-
-      val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
-      val sendButtonColor =
-        if (chat.chatInfo.incognito)
-          if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
-        else MaterialTheme.colors.primary
-      SendMsgView(
-        composeState,
-        showVoiceRecordIcon = true,
-        recState,
-        chat.chatInfo is ChatInfo.Direct,
-        liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
-        sendMsgEnabled = sendMsgEnabled.value,
-        sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
-        nextSendGrpInv = nextSendGrpInv.value,
-        needToAllowVoiceToContact,
-        allowedVoiceByPrefs,
-        allowVoiceToContact = ::allowVoiceToContact,
-        userIsObserver = userIsObserver.value,
-        userCanSend = userCanSend.value,
-        sendButtonColor = sendButtonColor,
-        timedMessageAllowed = timedMessageAllowed,
-        customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
-        placeholder = stringResource(MR.strings.compose_message_placeholder),
-        sendMessage = { ttl ->
-          sendMessage(ttl)
-          resetLinkPreview()
-        },
-        sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
-        updateLiveMessage = ::updateLiveMessage,
-        cancelLiveMessage = {
-          composeState.value = composeState.value.copy(liveMessage = null)
-          chatModel.removeLiveDummy()
-        },
-        editPrevMessage = ::editPrevMessage,
-        onFilesPasted = { composeState.onFilesAttached(it) },
-        onMessageChange = ::onMessageChange,
-        textStyle = textStyle
-      )
     }
-  }
   }
 }
