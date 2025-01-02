@@ -3619,6 +3619,7 @@ public enum MsgContent: Equatable, Hashable {
     case video(text: String, image: String, duration: Int)
     case voice(text: String, duration: Int)
     case file(String)
+    case report(text: String, reason: ReportReason)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -3630,6 +3631,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .video(text, _, _): return text
         case let .voice(text, _): return text
         case let .file(text): return text
+        case let .report(text, reason): return text
         case let .unknown(_, text): return text
         }
     }
@@ -3689,6 +3691,7 @@ public enum MsgContent: Equatable, Hashable {
         case preview
         case image
         case duration
+        case reason
     }
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
@@ -3771,6 +3774,9 @@ extension MsgContent: Encodable {
         case let .file(text):
             try container.encode("file", forKey: .type)
             try container.encode(text, forKey: .text)
+        case let .report(text, reason):
+            try container.encode("text", forKey: .type)
+
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
@@ -3848,6 +3854,14 @@ public enum FormatColor: String, Decodable, Hashable {
             }
         }
     }
+}
+
+public enum ReportReason: Decodable, Hashable {
+    case spam
+    case illegal
+    case community
+    case other
+    case unknown
 }
 
 // Struct to use with simplex API

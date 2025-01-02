@@ -872,6 +872,8 @@ struct ComposeView: View {
                 return .voice(text: msgText, duration: duration)
             case .file:
                 return .file(msgText)
+            case .report(_, let reason):
+                return .report(text: msgText, reason: reason)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
