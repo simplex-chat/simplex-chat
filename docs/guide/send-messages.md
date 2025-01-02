@@ -55,13 +55,13 @@ You can also tap and hold the microphone button to record a voice message. In th
 
 You can use "live" messages for your recipients to see the messages as you type them, without having to tap "Send" button until it's completed. It can be useful in these scenarios:
 
-1. Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would see it. Also people don’t need to guess what you’re typing. This allows to avoid interrupting the flow of conversation and still send longer messages.
+1. Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would see it. Also people don't need to guess what you're typing. This allows to avoid interrupting the flow of conversation and still send longer messages.
 2. An activist doing live reporting when there is a risk to lose the phone or connection at any moment. This feature allows to send as much as possible, up to the last word, without having to send only very short messages.
 
 To send a "live" message:
 
 - Tap ⚡️ (lightning) button on the right of the message entry box.
-- When you do it first time, you would see and alert explaining the feature. Tap "OK", and tap it again.
+- When you do it first time, you would see an alert explaining the feature. Tap "OK", and tap it again.
 - Now you can start typing the messages, the app will be periodically sending the updates to your recipients, as you type (every few seconds, and only complete words).
 
 ### Sending stickers and animated messages
