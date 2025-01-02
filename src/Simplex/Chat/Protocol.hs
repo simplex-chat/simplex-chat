@@ -246,7 +246,7 @@ data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text,
 data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
 
-data ReportReason = RRSpam | RRIllegal | RRCommunity | RROther | RRUnknown Text
+data ReportReason = RRSpam | RRIllegal | RRCommunity | RRProfile | RROther | RRUnknown Text
   deriving (Eq, Show)
 
 $(pure [])

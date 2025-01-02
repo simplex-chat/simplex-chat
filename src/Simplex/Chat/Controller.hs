@@ -301,7 +301,7 @@ data ChatCommand
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APIGetReports {groupId :: GroupId, processed :: Bool, chatPagination :: ChatPagination, search :: Maybe String}
-  | APISetReportProcessed GroupId ChatItemId Bool 
+  | APISetReportProcessed GroupId ChatItemId Bool
   | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
