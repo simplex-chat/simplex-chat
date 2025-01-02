@@ -2280,4 +2280,7 @@
     <string name="create_list">Crea elenco</string>
     <string name="edit_chat_list_menu_action">Modifica</string>
     <string name="no_chats_in_list">Nessuna chat nell\'elenco %s.</string>
+    <string name="change_list">Cambia elenco</string>
+    <string name="chat_list_notes">Note</string>
+    <string name="change_order_chat_list_menu_action">Cambia ordine</string>
 </resources>
