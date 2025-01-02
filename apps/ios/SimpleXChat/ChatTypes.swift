@@ -3631,7 +3631,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .video(text, _, _): return text
         case let .voice(text, _): return text
         case let .file(text): return text
-        case let .report(text, reason): return text
+        case let .report(text, _): return text
         case let .unknown(_, text): return text
         }
     }
@@ -3702,6 +3702,7 @@ public enum MsgContent: Equatable, Hashable {
         case let (.video(lt, li, ld), .video(rt, ri, rd)): return lt == rt && li == ri && ld == rd
         case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
         case let (.file(lf), .file(rf)): return lf == rf
+        case let (.report(lt, lr), .report(rt, rr)): return lt == rt && lr == rr
         case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
         default: return false
         }
@@ -3776,7 +3777,7 @@ extension MsgContent: Encodable {
             try container.encode(text, forKey: .text)
         case let .report(text, reason):
             try container.encode("text", forKey: .type)
-
+            try container.encode(reason, forKey: .reason)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
@@ -3856,7 +3857,7 @@ public enum FormatColor: String, Decodable, Hashable {
     }
 }
 
-public enum ReportReason: Decodable, Hashable {
+public enum ReportReason: Codable,  Hashable {
     case spam
     case illegal
     case community
