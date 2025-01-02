@@ -65,7 +65,7 @@ struct FramedItemView: View {
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
                     framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
                 }
-                
+
                 ChatItemContentView(chat: chat, chatItem: chatItem, msgContentView: framedMsgContentView)
                     .padding(chatItem.content.msgContent != nil ? 0 : 4)
                     .overlay(DetermineWidth())
@@ -213,12 +213,12 @@ struct FramedItemView: View {
             case let .video(_, image, _):
                 if let uiImage = imageFromBase64(image) {
                     ciQuotedMsgView(qi)
-                        .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
+                    .padding(.trailing, 70).frame(minWidth: msgWidth, alignment: .leading)
                     Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 68, height: 68)
-                        .clipped()
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 68, height: 68)
+                    .clipped()
                 } else {
                     ciQuotedMsgView(qi)
                 }
@@ -234,13 +234,10 @@ struct FramedItemView: View {
                 ciQuotedMsgView(qi)
             }
         }
-        
-        // if enable this always, size of the framed voice message item will be incorrect after end of playback
+            // if enable this always, size of the framed voice message item will be incorrect after end of playback
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(chatItemFrameContextColor(chatItem, theme))
-        
-        
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
