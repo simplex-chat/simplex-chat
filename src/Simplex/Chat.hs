@@ -965,7 +965,7 @@ processChatCommand' vr = \case
       (ct, items) <- getCommandDirectChatItems user chatId itemIds
       case mode of
         CIDMInternal -> deleteDirectCIs user ct items True False
-        CIDMInternalMark -> undefined
+        CIDMInternalMark -> markDirectCIsDeleted user ct items True =<< liftIO getCurrentTime
         CIDMBroadcast -> do
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
@@ -981,7 +981,7 @@ processChatCommand' vr = \case
       ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
       case mode of
         CIDMInternal -> deleteGroupCIs user gInfo items True False Nothing =<< liftIO getCurrentTime
-        CIDMInternalMark -> undefined
+        CIDMInternalMark -> markGroupCIsDeleted user gInfo items True Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
