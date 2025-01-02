@@ -1201,7 +1201,7 @@ getGroupChat db vr user groupId = getGroupChat_ db vr user groupId Nothing
 {-# INLINE getGroupChat #-}
 
 getGroupReports :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupReports db vr user groupId processed = getGroupChat_ db vr user groupId (Just (MCReport_, Just processed))
+getGroupReports db vr user groupId deleted = getGroupChat_ db vr user groupId (Just (MCReport_, Just deleted))
 {-# INLINE getGroupReports #-}
 
 getGroupChat_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe (MsgContentTag, Maybe Bool) -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
@@ -1228,17 +1228,17 @@ getGroupChatLast_ db user g contentFilter count search = do
 getGroupChatItemIdsLast_ :: DB.Connection -> User -> GroupInfo -> Maybe (MsgContentTag, Maybe Bool) -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIdsLast_ db User {userId} GroupInfo {groupId} contentFilter count search =
   map fromOnly <$> case contentFilter of
-    Just (msgContentTag, Just processed)
+    Just (msgContentTag, Just deleted)
       | null search ->
           DB.query
             db
-            (groupItemIdsBase <> " AND msg_content_tag = ? AND processed_by_group_member_id " <> processedByNull processed <> groupItemIdsDescLimit)
-            (userId, groupId, msgContentTag, count)
+            (groupItemIdsBase <> " AND msg_content_tag = ? AND item_deleted = ? " <> groupItemIdsDescLimit)
+            (userId, groupId, msgContentTag, deleted, count)
       | otherwise ->
           DB.query
             db
-            (groupItemIdsBase <> " AND msg_content_tag = ? AND processed_by_group_member_id " <> processedByNull processed <> itemTextLike <> groupItemIdsDescLimit)
-            (userId, groupId, msgContentTag, search, count)
+            (groupItemIdsBase <> " AND msg_content_tag = ? AND item_deleted = ? " <> itemTextLike <> groupItemIdsDescLimit)
+            (userId, groupId, msgContentTag, deleted, search, count)
     Just (msgContentTag, Nothing)
       | null search ->
           DB.query
@@ -1275,10 +1275,6 @@ itemTextLike = " AND item_text LIKE '%' || ? || '%' "
 
 groupItemIdsDescLimit :: Query
 groupItemIdsDescLimit = " ORDER BY item_ts DESC, chat_item_id DESC LIMIT ? "
-
-processedByNull :: Bool -> Query
-processedByNull True = " IS NOT NULL "
-processedByNull False = " IS NULL "
 
 safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g currentTs itemId =
