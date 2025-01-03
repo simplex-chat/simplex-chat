@@ -777,8 +777,7 @@ struct ComposeView: View {
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
         } else if case let .reportedItem(chatItem, reason) = composeState.contextItem {
-            // Confirm ttl
-            sent = await send(.report(text: msgText, reason: reason), quoted: chatItem.id, live: live, ttl: ttl)
+            sent = await send(reason, chatItemId: chatItem.id)
         } else {
             var quoted: Int64? = nil
             if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
@@ -926,7 +925,25 @@ struct ComposeView: View {
                 return nil
             }
         }
-
+        
+        func send(_ reportReason: ReportReason, chatItemId: Int64) async -> ChatItem? {
+            if let chatItems = await apiReportMessage(
+                groupId: chat.chatInfo.apiId,
+                chatItemId: chatItemId,
+                reportReason: reportReason,
+                reportText: msgText
+            ) {
+                await MainActor.run {
+                    for chatItem in chatItems {
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
+                }
+                return chatItems.first
+            }
+            
+            return nil
+        }
+                
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             await send(
                 [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)],

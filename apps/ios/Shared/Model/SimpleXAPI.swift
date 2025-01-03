@@ -418,6 +418,18 @@ func apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage]
     return nil
 }
 
+func apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String) async -> [ChatItem]? {
+    let r = await chatSendCmd(.apiReportMessage(groupId: groupId, chatItemId: chatItemId, reportReason: reportReason, reportText: reportText))
+    if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
+
+    logger.error("apiReportMessage error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating report",
+        message: "Error: \(responseError(r))"
+    )
+    return nil
+}
+
 private func sendMessageErrorAlert(_ r: ChatResponse) {
     logger.error("send message error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
