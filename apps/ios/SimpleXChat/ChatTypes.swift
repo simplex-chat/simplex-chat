@@ -3337,6 +3337,20 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
     }
+    
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember?)? {
+        switch (chatInfo, chatDir) {
+        case let (.group(groupInfo), .groupRcv(groupMember)):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole
+                    ? (groupInfo, groupMember)
+                    : nil
+        case let (.group(groupInfo), .groupSnd):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin ? (groupInfo, nil) : nil
+        default: return nil
+        }
+    }
 }
 
 public struct CIReactionCount: Decodable, Hashable {
