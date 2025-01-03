@@ -16,7 +16,7 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var disableEditing: Bool
     @Binding var height: CGFloat
     @Binding var focused: Bool
-    let placeholder: String?
+    @Binding var placeholder: String?
     let onImagesAdded: ([UploadContent]) -> Void
     
     private let minHeight: CGFloat = 37
@@ -51,9 +51,7 @@ struct NativeTextEditor: UIViewRepresentable {
         field.setOnFocusChangedListener { focused = $0 }
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
-        if let pH = placeholder {
-            field.setPlaceholder(pH)
-        }
+        field.setPlaceholder()
         updateFont(field)
         updateHeight(field)
         return field
@@ -65,6 +63,11 @@ struct NativeTextEditor: UIViewRepresentable {
             field.textAlignment = alignment(text)
             updateFont(field)
             updateHeight(field)
+        }
+        
+        let castedField = field as! CustomUITextField
+        if castedField.placeholder != placeholder {
+            castedField.placeholder = placeholder
         }
     }
 
@@ -108,7 +111,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
         super.init(frame: .zero, textContainer: nil)
     }
 
-    private var placeholder: String? {
+    var placeholder: String? {
         get { placeholderLabel.text }
         set { placeholderLabel.text = newValue }
     }
@@ -136,8 +139,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
         self.onTextChanged = onTextChanged
     }
     
-    func setPlaceholder(_ txt: String) {
-        placeholder = txt
+    func setPlaceholder() {
         placeholderLabel.textColor = .lightGray
         placeholderLabel.font = UIFont.preferredFont(forTextStyle: .body)
         placeholderLabel.isHidden = !text.isEmpty
@@ -244,7 +246,7 @@ struct NativeTextEditor_Previews: PreviewProvider{
             disableEditing: Binding.constant(false),
             height: Binding.constant(100),
             focused: Binding.constant(false),
-            placeholder: nil,
+            placeholder: Binding.constant("Placeholder"),
             onImagesAdded: { _ in }
         )
         .fixedSize(horizontal: false, vertical: true)

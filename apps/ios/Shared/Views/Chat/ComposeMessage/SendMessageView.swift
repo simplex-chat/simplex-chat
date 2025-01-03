@@ -61,7 +61,7 @@ struct SendMessageView: View {
                             disableEditing: $composeState.inProgress,
                             height: $teHeight,
                             focused: $keyboardVisible,
-                            placeholder: composeState.placeholder,
+                            placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
                             onImagesAdded: onMediaAdded
                         )
                         .allowsTightening(false)
