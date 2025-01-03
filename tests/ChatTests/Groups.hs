@@ -175,6 +175,8 @@ chatGroupTests = do
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
+  describe "group member reports" $ do
+    it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -6540,3 +6542,61 @@ testGroupMemberInactive tmp = do
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testGroupMemberReports :: HasCallStack => FilePath -> IO ()
+testGroupMemberReports =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "jokes" alice bob cath
+      alice ##> "/mr jokes bob moderator"
+      concurrentlyN_
+        [ alice <## "#jokes: you changed the role of bob from admin to moderator",
+          bob <## "#jokes: alice changed your role from admin to moderator",
+          cath <## "#jokes: alice changed the role of bob from admin to moderator"
+        ]
+      alice ##> "/mr jokes cath member"
+      concurrentlyN_
+        [ alice <## "#jokes: you changed the role of cath from admin to member",
+          bob <## "#jokes: alice changed the role of cath from admin to member",
+          cath <## "#jokes: alice changed your role from admin to member"
+        ]
+      alice ##> "/create link #jokes"
+      gLink <- getGroupLink alice "jokes" GRMember True
+      dan ##> ("/c " <> gLink)
+      dan <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "dan (Daniel): accepting request to join group #jokes..."
+            alice <## "#jokes: dan joined the group",
+          do
+            dan <## "#jokes: joining the group..."
+            dan <## "#jokes: you joined the group"
+            dan <###
+              [ "#jokes: member bob (Bob) is connected",
+                "#jokes: member cath (Catherine) is connected"
+              ],
+          do
+            bob <## "#jokes: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#jokes: new member dan is connected",
+          do
+            cath <## "#jokes: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#jokes: new member dan is connected"
+        ]
+      cath #> "#jokes inappropriate joke"
+      concurrentlyN_
+        [ alice <# "#jokes cath> inappropriate joke",
+          bob <# "#jokes cath> inappropriate joke",
+          dan <# "#jokes cath> inappropriate joke"
+        ]
+      dan ##> "/report #jokes content inappropriate joke"
+      dan <# "#jokes > cath inappropriate joke"
+      dan <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#jokes dan> > cath inappropriate joke"
+            alice <## "      report content",
+          do
+            bob <# "#jokes dan> > cath inappropriate joke"
+            bob <## "      report content",
+          (cath </)
+        ]

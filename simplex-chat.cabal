@@ -156,6 +156,8 @@ library
       Simplex.Chat.Migrations.M20241128_business_chats
       Simplex.Chat.Migrations.M20241205_business_chat_members
       Simplex.Chat.Migrations.M20241222_operator_conditions
+      Simplex.Chat.Migrations.M20241223_chat_tags
+      Simplex.Chat.Migrations.M20241230_reports
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

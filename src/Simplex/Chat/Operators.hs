@@ -300,22 +300,22 @@ newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
--- it evaluates to (conditions to mark as accepted to SimpleX operator, current conditions, and conditions to add)
-usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+-- it evaluates to (current conditions, and conditions to add)
+usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (UsageConditions, [UsageConditions])
 usageConditionsToAdd = usageConditionsToAdd' previousConditionsCommit usageConditionsCommit
 
 -- This function is used in unit tests
-usageConditionsToAdd' :: Text -> Text -> Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+usageConditionsToAdd' :: Text -> Text -> Bool -> UTCTime -> [UsageConditions] -> (UsageConditions, [UsageConditions])
 usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
   []
-    | newUser -> (Just sourceCond, sourceCond, [sourceCond])
-    | otherwise -> (Just prevCond, sourceCond, [prevCond, sourceCond])
+    | newUser -> (sourceCond, [sourceCond])
+    | otherwise -> (sourceCond, [prevCond, sourceCond])
     where
       prevCond = conditions 1 prevCommit
       sourceCond = conditions 2 sourceCommit
   conds
-    | hasSourceCond -> (Nothing, last conds, [])
-    | otherwise -> (Nothing, sourceCond, [sourceCond])
+    | hasSourceCond -> (last conds, [])
+    | otherwise -> (sourceCond, [sourceCond])
     where
       hasSourceCond = any ((sourceCommit ==) . conditionsCommit) conds
       sourceCond = conditions cId sourceCommit

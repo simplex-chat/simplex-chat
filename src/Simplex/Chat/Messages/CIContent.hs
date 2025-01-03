@@ -103,7 +103,7 @@ msgDirectionIntP = \case
   1 -> Just MDSnd
   _ -> Nothing
 
-data CIDeleteMode = CIDMBroadcast | CIDMInternal
+data CIDeleteMode = CIDMBroadcast | CIDMInternal | CIDMInternalMark
   deriving (Show)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CIDM") ''CIDeleteMode)
@@ -111,7 +111,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "CIDM") ''CIDeleteMode)
 ciDeleteModeToText :: CIDeleteMode -> Text
 ciDeleteModeToText = \case
   CIDMBroadcast -> "this item is deleted (broadcast)"
-  CIDMInternal -> "this item is deleted (internal)"
+  CIDMInternal -> "this item is deleted (locally)"
+  CIDMInternalMark -> "this item is deleted (locally)"
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! Nested sum types also have to use different encodings for database and API
