@@ -37,7 +37,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (decodeASCII', decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
@@ -53,7 +53,7 @@ import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
@@ -247,7 +247,7 @@ data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text,
 data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
 
-data ReportReason = RRSpam | RRIllegal | RRCommunity | RRProfile | RROther | RRUnknown Text
+data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RRGroup | RROther | RRUnknown Text
    deriving (Eq, Show)
 
 $(pure [])
@@ -269,20 +269,31 @@ instance ToJSON LinkContent where
 
 $(JQ.deriveJSON defaultJSON ''LinkPreview)
 
+instance StrEncoding ReportReason where
+  strEncode = \case
+    RRSpam -> "spam"
+    RRContent -> "content"
+    RRCommunity -> "community"
+    RRProfile -> "profile"
+    RRGroup -> "group"
+    RROther -> "other"
+    RRUnknown t -> encodeUtf8 t
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "spam" -> pure RRSpam
+      "content" -> pure RRContent
+      "community" -> pure RRCommunity
+      "profile" -> pure RRProfile
+      "group" -> pure RRGroup
+      "other" -> pure RROther
+      t -> maybe (fail "bad ReportReason") (pure . RRUnknown) $ decodeASCII' t
+
 instance FromJSON ReportReason where
-  parseJSON v@(J.String t) =
-    $(JQ.mkParseJSON (enumJSON $ dropPrefix "RR") ''ReportReason) v
-      <|> pure (RRUnknown t)
-  parseJSON invalid =
-    JT.prependFailure "bad ReportReason, " (JT.typeMismatch "String" invalid)
+  parseJSON = strParseJSON "ReportReason"
 
 instance ToJSON ReportReason where
-  toJSON = \case
-    RRUnknown t -> J.String t
-    r -> $(JQ.mkToJSON (enumJSON $ dropPrefix "RR") ''ReportReason) r
-  toEncoding = \case
-    RRUnknown t -> JE.text t
-    r -> $(JQ.mkToEncoding (enumJSON $ dropPrefix "RR") ''ReportReason) r
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRangeChat,

@@ -897,6 +897,15 @@ processChatCommand' vr = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatItems folderId cms -> withUser $ \user ->
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
+  APIReportMessage gId reportedItemId reportReason reportText -> withUser $ \user ->
+    withGroupLock "reportMessage" gId $ do
+      (gInfo, ms) <-
+        withFastStore $ \db -> do
+          gInfo <- getGroupInfo db vr user gId
+          (gInfo,) <$> liftIO (getGroupModerators db vr user gInfo)
+      let mc = MCReport reportText reportReason
+          cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc}
+      sendGroupContentMessages_ user gInfo ms False Nothing [(cm, Nothing)]
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
@@ -3263,10 +3272,14 @@ processChatCommand' vr = \case
     sendGroupContentMessages :: User -> GroupId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendGroupContentMessages user groupId live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      g@(Group gInfo _) <- withFastStore $ \db -> getGroup db vr user groupId
+      Group gInfo ms <- withFastStore $ \db -> getGroup db vr user groupId
+      sendGroupContentMessages_ user gInfo ms live itemTTL cmrs
+    sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
+    sendGroupContentMessages_ user gInfo ms live itemTTL cmrs = do
+      assertMultiSendable live cmrs
       assertUserGroupRole gInfo GRAuthor
       assertGroupContentAllowed gInfo
-      processComposedMessages g
+      processComposedMessages gInfo ms
       where
         assertGroupContentAllowed :: GroupInfo -> CM ()
         assertGroupContentAllowed gInfo@GroupInfo {membership} =
@@ -3279,8 +3292,8 @@ processChatCommand' vr = \case
               foldr'
                 (\(ComposedMessage {fileSource, msgContent = mc}, _) acc -> prohibitedGroupContent gInfo membership mc fileSource <|> acc)
                 Nothing
-        processComposedMessages :: Group -> CM ChatResponse
-        processComposedMessages g@(Group gInfo ms) = do
+        processComposedMessages :: GroupInfo -> [GroupMember] -> CM ChatResponse
+        processComposedMessages gInfo@GroupInfo {groupId} ms = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
@@ -3301,7 +3314,7 @@ processChatCommand' vr = \case
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _) -> case file_ of
                 Just file -> do
                   fileSize <- checkSndFile file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup g
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo ms
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposeMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTGroup)))
@@ -3359,7 +3372,7 @@ processChatCommand' vr = \case
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
-        CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
+        CGGroup _ ms -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
           where
             -- we are not sending files to pending members, same as with inline files
             saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
@@ -8410,6 +8423,7 @@ chatCommandP =
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
+      "/_report #" *> (APIReportMessage <$> A.decimal <* A.space <*> A.decimal <*> (" reason=" *> strP) <*> (A.space *> textP <|> pure "")),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
