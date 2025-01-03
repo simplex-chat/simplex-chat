@@ -1713,7 +1713,7 @@ struct ChatView: View {
                                         ),
                                         primaryButton: .destructive(Text("Delete and block")) {
                                             deleteReportedMessage(itemId, reportId, groupInfo)
-                                            blockMemberForAll(groupInfo, member, false)
+                                            blockMemberForAll(groupInfo, member, true)
                                         },
                                         secondaryButton: .cancel()
                                     )
