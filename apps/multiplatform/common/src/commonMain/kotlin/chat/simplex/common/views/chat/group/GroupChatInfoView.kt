@@ -309,12 +309,12 @@ fun ModalData.GroupChatInfoLayout(
   Box {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
   LazyColumnWithScrollBar(
+    state = listState,
     contentPadding = if (oneHandUI.value) {
       PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + DEFAULT_PADDING + 5.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
     } else {
       PaddingValues(top = topPaddingToContent(false))
-    },
-    state = listState
+    }
   ) {
     item {
       Row(

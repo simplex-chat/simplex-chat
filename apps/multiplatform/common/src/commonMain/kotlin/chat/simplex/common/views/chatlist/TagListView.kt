@@ -72,11 +72,11 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
 
   LazyColumnWithScrollBar(
     modifier = if (reorderMode) Modifier.dragContainer(dragDropState) else Modifier,
+    state = listState,
     contentPadding = PaddingValues(
       top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
       bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
     ),
-    state = listState,
     verticalArrangement = if (oneHandUI.value) Arrangement.Bottom else Arrangement.Top,
   ) {
     @Composable fun CreateList() {

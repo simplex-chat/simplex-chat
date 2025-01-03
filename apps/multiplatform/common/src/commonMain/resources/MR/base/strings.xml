@@ -424,6 +424,11 @@
   <string name="chat_list_notes">Notes</string>
   <string name="chat_list_all">All</string>
   <string name="chat_list_add_list">Add list</string>
+  <string name="group_reports_active_one">1 report</string>
+  <string name="group_reports_active">%d reports</string>
+  <string name="group_reports_member_reports">Member reports</string>
+  <string name="group_reports_show_archived">Show archived</string>
+  <string name="group_reports_hide_archived">Hide archived</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
