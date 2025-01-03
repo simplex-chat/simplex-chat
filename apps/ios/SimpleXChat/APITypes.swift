@@ -1166,12 +1166,14 @@ public enum ChatPagination {
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
     case before(chatItemId: Int64, count: Int)
+    case around(chatItemId: Int64, count: Int)
 
     var cmdString: String {
         switch self {
         case let .last(count): return "count=\(count)"
         case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
         case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
+        case let .around(chatItemId, count): return "around=\(chatItemId) count=\(count)"
         }
     }
 }
