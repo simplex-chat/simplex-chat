@@ -1348,7 +1348,7 @@ struct ChatView: View {
                 if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
                     moderateButton(ci, groupInfo)
                 }
-                if chat.chatInfo.groupInfo != nil, ci.chatDir != .groupSnd {
+                if ci.meta.itemDeleted == nil && chat.chatInfo.groupInfo != nil && ci.chatDir != .groupSnd {
                     reportButton(ci)
                 }
             } else if ci.meta.itemDeleted != nil {

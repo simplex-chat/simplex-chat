@@ -30,29 +30,29 @@ struct FramedItemView: View {
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                if let di = chatItem.meta.itemDeleted {
-                    if chatItem.isReport {
-                        framedItemHeader(icon: "flag", caption: Text("archived report").italic())
-                    } else {
-                        switch di {
-                        case let .moderated(_, byGroupMember):
-                            framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
-                        case .blocked:
-                            framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
-                        case .blockedByAdmin:
-                            framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
-                        case .deleted:
-                            framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
-                        }
-                    }
-                } else if chatItem.meta.isLive {
-                    framedItemHeader(caption: Text("LIVE"))
-                } else if (chatItem.isReport == true) {
-                    let txt = chatItem.chatDir.sent ?
+                if chatItem.isReport {
+                    if chatItem.meta.itemDeleted == nil {
+                        let txt = chatItem.chatDir.sent ?
                         Text("Only you and moderators see it") :
                         Text("Only sender and moderators see it")
                         
-                    framedItemHeader(icon: "flag", caption: txt.italic())
+                        framedItemHeader(icon: "flag", caption: txt.italic())
+                    } else {
+                        framedItemHeader(icon: "flag", caption: Text("archived report").italic())
+                    }
+                } else if let di = chatItem.meta.itemDeleted {
+                    switch di {
+                    case let .moderated(_, byGroupMember):
+                        framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
+                    case .blocked:
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
+                    case .blockedByAdmin:
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked by admin").italic())
+                    case .deleted:
+                        framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
+                    }
+                } else if chatItem.meta.isLive {
+                    framedItemHeader(caption: Text("LIVE"))
                 }
 
                 if let qi = chatItem.quotedItem {
