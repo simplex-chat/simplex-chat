@@ -70,12 +70,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 9 - batch sending in direct connections (2024-07-24)
 -- 10 - business chats (2024-11-29)
 -- 11 - fix profile update in business chats (2024-12-05)
+-- 12 - fix profile update in business chats (2025-01-03)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 11
+currentChatVersion = VersionChat 12
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -121,6 +122,10 @@ businessChatsVersion = VersionChat 10
 -- support updating preferences in business chats (XGrpPrefs message)
 businessChatPrefsVersion :: VersionChat
 businessChatPrefsVersion = VersionChat 11
+
+-- support updating preferences in business chats (MCReport message content)
+contentReportsVersion :: VersionChat
+contentReportsVersion = VersionChat 12
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v

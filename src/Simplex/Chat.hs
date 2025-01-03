@@ -885,7 +885,7 @@ processChatCommand' vr = \case
         Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
           Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
         _ -> pure Nothing
-  APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> case cType of
+  APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case cType of
     CTDirect ->
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
@@ -895,7 +895,8 @@ processChatCommand' vr = \case
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APICreateChatItems folderId cms -> withUser $ \user ->
+  APICreateChatItems folderId cms -> withUser $ \user -> do
+    mapM_ assertAllowedContent' cms
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
   APIReportMessage gId reportedItemId reportReason reportText -> withUser $ \user ->
     withGroupLock "reportMessage" gId $ do
@@ -903,10 +904,15 @@ processChatCommand' vr = \case
         withFastStore $ \db -> do
           gInfo <- getGroupInfo db vr user gId
           (gInfo,) <$> liftIO (getGroupModerators db vr user gInfo)
-      let mc = MCReport reportText reportReason
+      let ms' = filter compatibleModerator ms
+          mc = MCReport reportText reportReason
           cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc}
-      sendGroupContentMessages_ user gInfo ms False Nothing [(cm, Nothing)]
-  APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
+      when (null ms') $ throwChatError $ CECommandError "no moderators support receiving reports"
+      sendGroupContentMessages_ user gInfo ms' False Nothing [(cm, Nothing)]
+    where
+      compatibleModerator GroupMember {activeConn, memberChatVRange} =
+        maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
+  APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> assertAllowedContent mc >> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
@@ -3212,6 +3218,12 @@ processChatCommand' vr = \case
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTDirect contactId, itemId)
         _ -> pure () -- prohibited
+    assertAllowedContent :: MsgContent -> CM ()
+    assertAllowedContent = \case
+      MCReport {} -> throwChatError $ CECommandError "sending reports via this API is not supported"
+      _ -> pure ()
+    assertAllowedContent' :: ComposedMessage -> CM ()
+    assertAllowedContent' ComposedMessage {msgContent} = assertAllowedContent msgContent
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cmrs = do
       assertMultiSendable live cmrs
@@ -3275,14 +3287,14 @@ processChatCommand' vr = \case
       Group gInfo ms <- withFastStore $ \db -> getGroup db vr user groupId
       sendGroupContentMessages_ user gInfo ms live itemTTL cmrs
     sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
-    sendGroupContentMessages_ user gInfo ms live itemTTL cmrs = do
+    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} ms live itemTTL cmrs = do
       assertMultiSendable live cmrs
       assertUserGroupRole gInfo GRAuthor
-      assertGroupContentAllowed gInfo
-      processComposedMessages gInfo ms
+      assertGroupContentAllowed
+      processComposedMessages
       where
-        assertGroupContentAllowed :: GroupInfo -> CM ()
-        assertGroupContentAllowed gInfo@GroupInfo {membership} =
+        assertGroupContentAllowed :: CM ()
+        assertGroupContentAllowed =
           case findProhibited (L.toList cmrs) of
             Just f -> throwChatError (CECommandError $ "feature not allowed " <> T.unpack (groupFeatureNameText f))
             Nothing -> pure ()
@@ -3292,8 +3304,8 @@ processChatCommand' vr = \case
               foldr'
                 (\(ComposedMessage {fileSource, msgContent = mc}, _) acc -> prohibitedGroupContent gInfo membership mc fileSource <|> acc)
                 Nothing
-        processComposedMessages :: GroupInfo -> [GroupMember] -> CM ChatResponse
-        processComposedMessages gInfo@GroupInfo {groupId} ms = do
+        processComposedMessages :: CM ChatResponse
+        processComposedMessages = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
