@@ -366,14 +366,8 @@ struct GroupMemberInfoView: View {
     func newDirectChatButton(_ contactId: Int64, width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
             Task {
-                do {
-                    let chat = try await apiGetChat(type: .direct, id: contactId)
-                    chatModel.addChat(chat)
-                    ItemsModel.shared.loadOpenChat(chat.id) {
-                        dismissAllSheets(animated: true)
-                    }
-                } catch let error {
-                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
+                ItemsModel.shared.loadOpenChat("@\(contactId)") {
+                    dismissAllSheets(animated: true)
                 }
             }
         }
@@ -398,7 +392,7 @@ struct GroupMemberInfoView: View {
                         await MainActor.run {
                             progressIndicator = false
                             chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                            ItemsModel.shared.loadOpenChat(memberContact.id) {
+                            ItemsModel.shared.loadOpenChat("@\(memberContact.id)") {
                                 dismissAllSheets(animated: true)
                             }
                             NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
