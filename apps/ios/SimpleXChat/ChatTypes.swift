@@ -2386,6 +2386,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         switch (content.text, content.msgContent, file) {
         case let ("", .some(.voice(_, duration)), _): return "Voice message (\(durationText(duration)))"
         case let ("", _, .some(file)): return file.fileName
+        case let (_, .report(txt, reason), _): return txt.isEmpty ? reason.text : txt
         default: return content.text
         }
     }
