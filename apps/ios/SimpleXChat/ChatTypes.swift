@@ -9,6 +9,12 @@
 import Foundation
 import SwiftUI
 
+// version to establishing direct connection with a group member (xGrpDirectInvVRange in core)
+public let CREATE_MEMBER_CONTACT_VERSION = 2
+
+// version to receive reports (MCReport)
+public let REPORTS_VERSION = 12
+
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
     public var agentUserId: String
@@ -1678,7 +1684,7 @@ public struct Connection: Decodable, Hashable {
     static let sampleData = Connection(
         connId: 1,
         agentConnId: "abc",
-        peerChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
+        peerChatVRange: VersionRange(1, 1),
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false,
@@ -1690,17 +1696,13 @@ public struct Connection: Decodable, Hashable {
 }
 
 public struct VersionRange: Decodable, Hashable {
-    public init(minVersion: Int, maxVersion: Int) {
+    public init(_ minVersion: Int, _ maxVersion: Int) {
         self.minVersion = minVersion
         self.maxVersion = maxVersion
     }
 
     public var minVersion: Int
     public var maxVersion: Int
-
-    public func isCompatibleRange(_ vRange: VersionRange) -> Bool {
-        self.minVersion <= vRange.maxVersion && vRange.minVersion <= self.maxVersion
-    }
 }
 
 public struct SecurityCode: Decodable, Equatable, Hashable {
@@ -1752,7 +1754,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
         userContactLinkId: 1,
-        cReqChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
+        cReqChatVRange: VersionRange(1, 1),
         localDisplayName: "alice",
         profile: Profile.sampleData,
         createdAt: .now,
@@ -1989,6 +1991,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var memberContactId: Int64?
     public var memberContactProfileId: Int64
     public var activeConn: Connection?
+    public var memberChatVRange: VersionRange
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
     public var displayName: String {
@@ -2083,6 +2086,15 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .admin
             && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
+    
+    public var canReceiveReports: Bool {
+        let vr = if let activeConn {
+            activeConn.peerChatVRange
+        } else {
+            memberChatVRange
+        }
+        return vr.maxVersion >= REPORTS_VERSION
+    }
 
     public var memberIncognito: Bool {
         memberProfile.profileId != memberContactProfileId
@@ -2102,7 +2114,8 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         memberProfile: LocalProfile.sampleData,
         memberContactId: 1,
         memberContactProfileId: 1,
-        activeConn: Connection.sampleData
+        activeConn: Connection.sampleData,
+        memberChatVRange: VersionRange(2, 12)
     )
 }
 

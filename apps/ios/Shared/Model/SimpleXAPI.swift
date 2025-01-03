@@ -15,12 +15,6 @@ import SimpleXChat
 
 private var chatController: chat_ctrl?
 
-// currentChatVersion in core
-public let CURRENT_CHAT_VERSION: Int = 2
-
-// version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
-public let CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion: 2, maxVersion: CURRENT_CHAT_VERSION)
-
 private let networkStatusesLock = DispatchQueue(label: "chat.simplex.app.network-statuses.lock")
 
 enum TerminalItem: Identifiable {
