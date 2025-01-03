@@ -3903,19 +3903,20 @@ public enum ReportReason: Hashable {
     case spam
     case illegal
     case community
+    case profile
     case other
     case unknown(type: String)
     
     public var text: String {
         switch self {
         case .spam: return NSLocalizedString("Spam", comment: "report reason")
-        case .illegal: return NSLocalizedString("Illegal content", comment: "report reason")
-        case .community: return NSLocalizedString("Community guidelines", comment: "report reason")
+        case .illegal: return NSLocalizedString("Inappropriate content", comment: "report reason")
+        case .community: return NSLocalizedString("Community guidelines violation", comment: "report reason")
+        case .profile: return NSLocalizedString("Inappropriate profile", comment: "report reason")
         case .other: return NSLocalizedString("Other", comment: "report reason")
-        case .unknown: return NSLocalizedString("Unknown", comment: "report reason")
+        case let .unknown(type): return type
         }
     }
-
 }
 
 extension ReportReason: Encodable {
@@ -3928,6 +3929,8 @@ extension ReportReason: Encodable {
             try container.encode("illegal")
         case .community:
             try container.encode("community")
+        case .profile:
+            try container.encode("profile")
         case .other:
             try container.encode("other")
         case .unknown(let type):
@@ -3949,6 +3952,8 @@ extension ReportReason: Decodable {
                 self = .illegal
             case "community":
                 self = .community
+            case "profile":
+                self = .profile
             case "other":
                 self = .other
             default:

@@ -208,23 +208,11 @@ struct ComposeState {
     var placeholder: String? {
         switch contextItem {
         case let .reportedItem(_, reason):
-            switch reason {
-            case .spam:
-                return NSLocalizedString("Spam", comment: "compose message placeholder")
-            case .illegal:
-                return NSLocalizedString("Inappropriate content", comment: "compose message placeholder")
-            case .community:
-                return NSLocalizedString("Community guidelines violation", comment: "compose message placeholder")
-            case .other:
-                return NSLocalizedString("Other", comment: "compose message placeholder")
-            default:
-                return nil
-            }
+            return reason.text
         default:
             return nil
         }
     }
-
 
     var empty: Bool {
         message == "" && noPreview

@@ -1780,20 +1780,13 @@ struct ChatView: View {
                     actionSheet: ActionSheet(
                         title: Text("Report reason?"),
                         buttons: [
-                            .default(Text("Spam")) {
-                                withAnimation {
-                                    if composeState.editing {
-                                        composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
-                                    } else {
-                                        composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: .spam))
-                                    }
-                                }
-                            },
-                            .default(Text("Inappropriate content")) { },
-                            .default(Text("Community guidelines violation")) { },
-                            .default(Text("Other")) { },
+                            reportReasonButton(.spam),
+                            reportReasonButton(.illegal),
+                            reportReasonButton(.community),
+                            reportReasonButton(.profile),
+                            reportReasonButton(.other),
                             .cancel()
-                            ]
+                        ]
                     ),
                     id: "reportChatMessage"
                 )
@@ -1805,6 +1798,18 @@ struct ChatView: View {
             }
         }
         
+        private func reportReasonButton(_ reason: ReportReason) -> ActionSheet.Button {
+            .default(Text(reason.text)) {
+                withAnimation {
+                    if composeState.editing {
+                        composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                    } else {
+                        composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                    }
+                }
+            }
+        }
+    
 
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
