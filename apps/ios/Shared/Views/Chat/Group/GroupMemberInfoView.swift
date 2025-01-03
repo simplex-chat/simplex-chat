@@ -296,7 +296,7 @@ struct GroupMemberInfoView: View {
                 } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                     if let contactId = member.memberContactId {
                         newDirectChatButton(contactId, width: buttonWidth)
-                    } else if let v = member.activeConn?.peerChatVRange.minVersion, v >= CREATE_MEMBER_CONTACT_VERSION {
+                    } else if member.versionRange.maxVersion >= CREATE_MEMBER_CONTACT_VERSION {
                         createMemberContactButton(width: buttonWidth)
                     }
                     InfoViewButton(image: "phone.fill", title: "call", disabledLook: true, width: buttonWidth) { showSendMessageToEnableCallsAlert()

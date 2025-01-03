@@ -2088,14 +2088,17 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     }
     
     public var canReceiveReports: Bool {
-        let vr = if let activeConn {
+        memberRole >= .moderator && versionRange.maxVersion >= REPORTS_VERSION
+    }
+
+    public var versionRange: VersionRange {
+        if let activeConn {
             activeConn.peerChatVRange
         } else {
             memberChatVRange
         }
-        return vr.maxVersion >= REPORTS_VERSION
     }
-
+    
     public var memberIncognito: Bool {
         memberProfile.profileId != memberContactProfileId
     }
@@ -2134,19 +2137,23 @@ public struct GroupMemberIds: Decodable, Hashable {
 }
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable, Hashable {
-    case observer = "observer"
-    case author = "author"
-    case member = "member"
-    case admin = "admin"
-    case owner = "owner"
+    case observer
+    case author
+    case member
+    case moderator
+    case admin
+    case owner
 
     public var id: Self { self }
 
+    public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .admin, .owner]
+    
     public var text: String {
         switch self {
         case .observer: return NSLocalizedString("observer", comment: "member role")
         case .author: return NSLocalizedString("author", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
+        case .moderator: return NSLocalizedString("moderator", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
         }
@@ -2154,11 +2161,12 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     private var comparisonValue: Int {
         switch self {
-        case .observer: return 0
-        case .author: return 1
-        case .member: return 2
-        case .admin: return 3
-        case .owner: return 4
+        case .observer: 0
+        case .author: 1
+        case .member: 2
+        case .moderator: 3
+        case .admin: 4
+        case .owner: 5
         }
     }
 
