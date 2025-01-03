@@ -51,7 +51,7 @@ struct NativeTextEditor: UIViewRepresentable {
         field.setOnFocusChangedListener { focused = $0 }
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
-        field.setPlaceholder()
+        field.setPlaceholderView()
         updateFont(field)
         updateHeight(field)
         return field
@@ -139,7 +139,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
         self.onTextChanged = onTextChanged
     }
     
-    func setPlaceholder() {
+    func setPlaceholderView() {
         placeholderLabel.textColor = .lightGray
         placeholderLabel.font = UIFont.preferredFont(forTextStyle: .body)
         placeholderLabel.isHidden = !text.isEmpty
