@@ -1284,19 +1284,18 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if ci.isReport {
+            if ci.isReport, ci.meta.itemDeleted == nil {
                 if let qi = ci.quotedItem, let rItemId = qi.itemId {
                     if let (groupInfo, rMember) = qi.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
-                        moderateReportedButton(rItemId, groupInfo)
+                        moderateReportedButton(rItemId, ci.id, groupInfo)
                         if let rMember = rMember {
                             if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
-                                blockMemberButton(rMember, groupInfo, rItemId)
+                                blockMemberButton(rMember, groupInfo, rItemId, ci.id)
                             }
                         }
-                        
                     }
                 }
-            } else if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+            } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
                     reactionsGroup
@@ -1362,9 +1361,6 @@ struct ChatView: View {
                 }
                 viewInfoButton(ci)
                 deleteButton(ci)
-                if chat.chatInfo.groupInfo != nil, ci.chatDir != .groupSnd {
-                    reportButton(ci)
-                }
             } else if ci.isDeletedContent {
                 viewInfoButton(ci)
                 deleteButton(ci)
@@ -1682,11 +1678,11 @@ struct ChatView: View {
             }
         }
         
-        private func moderateReportedButton(_ rItemId: Int64, _ groupInfo: GroupInfo) -> Button<some View> {
+        private func moderateReportedButton(_ itemId: Int64, _ reportId: Int64, _ groupInfo: GroupInfo) -> Button<some View> {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(
                     getModerateMessageAlert(groupInfo) {
-                        deleteReportedMessage(rItemId, groupInfo)
+                        deleteReportedMessage(itemId, reportId, groupInfo)
                     }
                 )
             } label: {
@@ -1697,7 +1693,7 @@ struct ChatView: View {
             }
         }
         
-        private func blockMemberButton(_ member: GroupMember, _ groupInfo: GroupInfo, _ rItemId: Int64) -> Button<some View> {
+        private func blockMemberButton(_ member: GroupMember, _ groupInfo: GroupInfo, _ itemId: Int64, _ reportId: Int64) -> Button<some View> {
             Button(role: .destructive) {
                 actionSheet = SomeActionSheet(
                     actionSheet: ActionSheet(
@@ -1716,7 +1712,7 @@ struct ChatView: View {
                                             )
                                         ),
                                         primaryButton: .destructive(Text("Delete and block")) {
-                                            deleteReportedMessage(rItemId, groupInfo)
+                                            deleteReportedMessage(itemId, reportId, groupInfo)
                                             blockMemberForAll(groupInfo, member, false)
                                         },
                                         secondaryButton: .cancel()
@@ -1815,7 +1811,6 @@ struct ChatView: View {
                 }
             }
         }
-    
 
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
@@ -1848,16 +1843,15 @@ struct ChatView: View {
             }
         }
         
-        private func deleteReportedMessage(_ rItemId: Int64, _ groupInfo: GroupInfo) {
-            // TODO: Archive report message
+        private func deleteReportedMessage(_ itemId: Int64, _ reportId: Int64,  _ groupInfo: GroupInfo) {
             Task {
                 let r = try await apiDeleteMemberChatItems(
                     groupId: groupInfo.apiId,
-                    itemIds: [rItemId]
+                    itemIds: [itemId, reportId]
                 )
                 
-                if let itemDeletion = r.first {
-                    await MainActor.run {
+                await MainActor.run {
+                    r.forEach { itemDeletion in
                         if let toItem = itemDeletion.toChatItem {
                             _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)
                         } else {
