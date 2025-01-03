@@ -252,7 +252,7 @@ data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text,
 data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
 
-data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RRGroup | RROther | RRUnknown Text
+data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RROther | RRUnknown Text
    deriving (Eq, Show)
 
 $(pure [])
@@ -280,7 +280,6 @@ instance StrEncoding ReportReason where
     RRContent -> "content"
     RRCommunity -> "community"
     RRProfile -> "profile"
-    RRGroup -> "group"
     RROther -> "other"
     RRUnknown t -> encodeUtf8 t
   strP =
@@ -289,7 +288,6 @@ instance StrEncoding ReportReason where
       "content" -> pure RRContent
       "community" -> pure RRCommunity
       "profile" -> pure RRProfile
-      "group" -> pure RRGroup
       "other" -> pure RROther
       t -> maybe (fail "bad ReportReason") (pure . RRUnknown) $ decodeASCII' t
 
@@ -560,7 +558,10 @@ msgContentText = \case
     where
       msg = "voice message " <> durationText duration
   MCFile t -> t
-  MCReport {text} -> text
+  MCReport {text, reason} ->
+    if T.null text then msg else msg <> ": " <> text
+    where
+      msg = "report " <> safeDecodeUtf8 (strEncode reason)
   MCUnknown {text} -> text
 
 toMCText :: MsgContent -> MsgContent

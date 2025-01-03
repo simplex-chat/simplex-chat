@@ -912,6 +912,10 @@ processChatCommand' vr = \case
     where
       compatibleModerator GroupMember {activeConn, memberChatVRange} =
         maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
+  ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
+    gId <- withFastStore $ \db -> getGroupIdByName db user groupName
+    reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
+    processChatCommand $ APIReportMessage gId reportedItemId reportReason ""
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> assertAllowedContent mc >> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
@@ -8436,6 +8440,7 @@ chatCommandP =
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_report #" *> (APIReportMessage <$> A.decimal <* A.space <*> A.decimal <*> (" reason=" *> strP) <*> (A.space *> textP <|> pure "")),
+      "/report #" *> (ReportMessage <$> displayName <*> optional (" @" *> displayName) <*> _strP <* A.space <*> msgTextP),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
