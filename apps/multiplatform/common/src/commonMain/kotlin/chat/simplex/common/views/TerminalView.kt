@@ -154,12 +154,12 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
     }
   }
   LazyColumnWithScrollBar (
-    reverseLayout = true,
+    state = listState,
     contentPadding = PaddingValues(
       top = topPaddingToContent(false),
       bottom = composeViewHeight.value
     ),
-    state = listState,
+    reverseLayout = true,
     additionalBarOffset = composeViewHeight
   ) {
     items(reversedTerminalItems, key = { item -> item.id to item.createdAtNanos }) { item ->
