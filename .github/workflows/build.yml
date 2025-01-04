@@ -89,6 +89,9 @@ jobs:
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
             desktop_asset_name: simplex-desktop-windows-x86_64.msi
+
+    if: matrix.ghc != '8.10.7' || github.ref != 'refs/heads/stable'
+
     steps:
       - name: Configure pagefile (Windows)
         if: matrix.os == 'windows-latest'
@@ -302,7 +305,7 @@ jobs:
           key: ${{ steps.restore_cache.outputs.cache-primary-key }}
 
       - name: Unix test
-        if: matrix.os != 'windows-latest' && (matrix.ghc != '8.10.7' || github.ref != 'refs/heads/stable')
+        if: matrix.os != 'windows-latest'
         timeout-minutes: 40
         shell: bash
         run: cabal test --test-show-details=direct
