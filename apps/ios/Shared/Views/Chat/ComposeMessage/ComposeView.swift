@@ -318,6 +318,11 @@ struct ComposeView: View {
                 ContextInvitingContactMemberView()
                 Divider()
             }
+            
+            if case let .reportedItem(_, reason) = composeState.contextItem {
+                reportReasonView(reason)
+                Divider()
+            }
             // preference checks should match checks in forwarding list
             let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
             let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
@@ -707,6 +712,31 @@ struct ComposeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.thinMaterial)
     }
+    
+    
+    private func reportReasonView(_ reason: ReportReason) -> some View {
+        HStack {
+            let reportText = switch reason {
+            case .spam: NSLocalizedString("spam", comment: "report reason")
+            case .profile: NSLocalizedString("member profile", comment: "report reason")
+            case .community: NSLocalizedString("violation", comment: "report reason")
+            case .illegal: NSLocalizedString("content", comment: "report reason")
+            case .other: NSLocalizedString("other", comment: "report reason")
+            case .unknown: "unknown" // Should never happen
+            }
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString("Report %@: only group moderators will see it.",comment: "integrity error chat item"),
+                    reportText
+                )
+            ).italic()
+        }
+        .padding(12)
+        .frame(minHeight: 54)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial)
+    }
+
 
     @ViewBuilder private func contextItemView() -> some View {
         switch composeState.contextItem {
