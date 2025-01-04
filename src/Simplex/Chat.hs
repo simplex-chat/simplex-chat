@@ -3292,7 +3292,6 @@ processChatCommand' vr = \case
       sendGroupContentMessages_ user gInfo ms live itemTTL cmrs
     sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} ms live itemTTL cmrs = do
-      assertMultiSendable live cmrs
       assertUserGroupRole gInfo GRAuthor
       assertGroupContentAllowed
       processComposedMessages
