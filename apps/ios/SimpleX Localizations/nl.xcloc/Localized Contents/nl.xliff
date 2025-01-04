@@ -4183,9 +4183,9 @@ Binnenkort meer verbeteringen!</target>
         <target>Japanse interface</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join" xml:space="preserve">
+      <trans-unit id="Join" xml:space="preserve" approved="no">
         <source>Join</source>
-        <target>Word lid van</target>
+        <target state="translated">Word lid</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
