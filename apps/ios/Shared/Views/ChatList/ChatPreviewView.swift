@@ -253,11 +253,15 @@ struct ChatPreviewView: View {
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
         func markedDeletedText() -> String {
-            switch cItem.meta.itemDeleted {
-            case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
-            case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
-            case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
-            case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+            if cItem.meta.itemDeleted != nil, cItem.isReport {
+                "archived report"
+            } else {
+                switch cItem.meta.itemDeleted {
+                case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
+                case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
+                case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
+                case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+                }
             }
         }
 

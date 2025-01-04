@@ -917,6 +917,7 @@ struct ChatView: View {
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
+        @State private var actionSheet: SomeActionSheet? = nil
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -1001,6 +1002,7 @@ struct ChatView: View {
                     }
                 }
             }
+            .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
         private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
@@ -1282,7 +1284,17 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+            if let groupInfo = chat.chatInfo.groupInfo, ci.isReport, ci.meta.itemDeleted == nil {
+                archiveReportButton(ci, groupInfo)
+                if let qi = ci.quotedItem {
+                    moderateReportedButton(qi, ci.id, groupInfo)
+                    if let rMember = qi.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
+                        if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
+                            blockMemberButton(rMember, groupInfo, qi, ci.id)
+                        }
+                    }
+                }
+            } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
                     reactionsGroup
@@ -1334,6 +1346,9 @@ struct ChatView: View {
                 }
                 if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
                     moderateButton(ci, groupInfo)
+                }
+                if ci.meta.itemDeleted == nil && chat.chatInfo.groupInfo != nil && ci.chatDir != .groupSnd {
+                    reportButton(ci)
                 }
             } else if ci.meta.itemDeleted != nil {
                 if revealed {
@@ -1648,23 +1663,102 @@ struct ChatView: View {
 
         private func moderateButton(_ ci: ChatItem, _ groupInfo: GroupInfo) -> Button<some View> {
             Button(role: .destructive) {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Delete member message?"),
-                    message: Text(
-                                groupInfo.fullGroupPreferences.fullDelete.on
-                                ? "The message will be deleted for all members."
-                                : "The message will be marked as moderated for all members."
-                            ),
-                    primaryButton: .destructive(Text("Delete")) {
-                        deletingItem = ci
-                        deleteMessage(.cidmBroadcast, moderate: true)
-                    },
-                    secondaryButton: .cancel()
-                ))
+                showModerateMessageAlert(groupInfo) {
+                    deletingItem = ci
+                    deleteMessage(.cidmBroadcast, moderate: true)
+                }
             } label: {
                 Label(
                     NSLocalizedString("Moderate", comment: "chat item action"),
                     systemImage: "flag"
+                )
+            }
+        }
+        
+        private func moderateReportedButton(_ rItem: CIQuote, _ reportId: Int64, _ groupInfo: GroupInfo) -> Button<some View> {
+            Button(role: .destructive) {
+                showModerateMessageAlert(groupInfo) {
+                    deleteReportedMessage(rItem, reportId, groupInfo)
+                }
+            } label: {
+                Label(
+                    NSLocalizedString("Moderate", comment: "chat item action"),
+                    systemImage: "flag"
+                )
+            }
+        }
+        
+        private func archiveReportButton(_ cItem: ChatItem, _ groupInfo: GroupInfo) -> Button<some View> {
+            Button(role: .destructive) {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text("Archive report?"),
+                        message: Text(
+                            cItem.chatDir == .groupSnd
+                            ? "The report will be archived for all moderators."
+                            : "The report will be archived for all moderators and reporter."
+                        ),
+                        primaryButton: .destructive(Text("Archive")) {
+                            deletingItem = cItem
+                            deleteMessage(.cidmBroadcast, moderate: false)
+                        },
+                        secondaryButton: .cancel()
+                    )
+                )
+            } label: {
+                Label(
+                    NSLocalizedString("Archive", comment: "chat item action"),
+                    systemImage: "archivebox"
+                )
+            }
+        }
+        
+        private func blockMemberButton(_ member: GroupMember, _ groupInfo: GroupInfo, _ rItem: CIQuote, _ reportId: Int64) -> Button<some View> {
+            Button(role: .destructive) {
+                actionSheet = SomeActionSheet(
+                    actionSheet: ActionSheet(
+                        title: Text("Block and moderate?"),
+                        buttons: [
+                            .destructive(Text("Block and moderate")) {
+                                AlertManager.shared.showAlert(
+                                    Alert(
+                                        title: Text("Delete member message and block?"),
+                                        message: Text(
+                                            NSLocalizedString(
+                                                groupInfo.fullGroupPreferences.fullDelete.on
+                                                ? "The message will be deleted for all members.\nAll new messages from \(member.chatViewName) will be hidden!"
+                                                : "The message will be marked as moderated for all members.\n All new messages from \(member.chatViewName) will be hidden!"
+                                                , comment: "block and moderate action"
+                                            )
+                                        ),
+                                        primaryButton: .destructive(Text("Delete and block")) {
+                                            deleteReportedMessage(rItem, reportId, groupInfo)
+                                            blockMemberForAll(groupInfo, member, true)
+                                        },
+                                        secondaryButton: .cancel()
+                                    )
+                                )
+                            },
+                            .destructive(Text("Only block")) {
+                                Task {
+                                    if (await getLocalIdForReportedMessage(rItem, reportId, groupInfo)) != nil {
+                                        AlertManager.shared.showAlert(
+                                            blockForAllAlert(groupInfo, member)
+                                        )
+                                    } else {
+                                        showNoMessageMessageAlert()
+                                    }
+                                }
+                            },
+                            .cancel()
+                        ]
+                    ),
+                    id: "blockMember"
+                )
+            } label: {
+                Label(
+                    NSLocalizedString("Block member", comment: "chat item action"),
+                    systemImage: "hand.raised"
                 )
             }
         }
@@ -1707,6 +1801,42 @@ struct ChatView: View {
                 )
             }
         }
+        
+        private func reportButton(_ ci: ChatItem) -> Button<some View> {
+            Button(role: .destructive) {
+                actionSheet = SomeActionSheet(
+                    actionSheet: ActionSheet(
+                        title: Text("Report reason?"),
+                        buttons: [
+                            reportReasonButton(.spam),
+                            reportReasonButton(.illegal),
+                            reportReasonButton(.community),
+                            reportReasonButton(.profile),
+                            reportReasonButton(.other),
+                            .cancel()
+                        ]
+                    ),
+                    id: "reportChatMessage"
+                )
+            } label: {
+                Label (
+                    NSLocalizedString("Report", comment: "chat item action"),
+                    systemImage: "exclamationmark.bubble"
+                )
+            }
+        }
+        
+        private func reportReasonButton(_ reason: ReportReason) -> ActionSheet.Button {
+            .default(Text(reason.text)) {
+                withAnimation {
+                    if composeState.editing {
+                        composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                    } else {
+                        composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                    }
+                }
+            }
+        }
 
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
@@ -1737,6 +1867,63 @@ struct ChatView: View {
             } else {
                 itemIds.forEach { selectedChatItems?.remove($0) }
             }
+        }
+        
+        private func deleteReportedMessage(_ rItem: CIQuote, _ reportId: Int64,  _ groupInfo: GroupInfo) {
+            Task {
+                do {
+                    let itemId = await getLocalIdForReportedMessage(rItem, reportId, groupInfo)
+                    
+                    if let itemId = itemId {
+                        var deletedItems = try await apiDeleteMemberChatItems(
+                            groupId: groupInfo.apiId,
+                            itemIds: [itemId]
+                        )
+
+                        deletedItems.append(contentsOf: try await apiDeleteMemberChatItems(
+                            groupId: groupInfo.apiId,
+                            itemIds: [reportId]
+                        ))
+
+                        await MainActor.run {
+                            deletedItems.forEach { itemDeletion in
+                                if let toItem = itemDeletion.toChatItem {
+                                    _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)
+                                } else {
+                                    m.removeChatItem(chat.chatInfo, itemDeletion.deletedChatItem.chatItem)
+                                }
+                            }
+                        }
+                    } else {
+                        showNoMessageMessageAlert()
+                    }
+                } catch {
+                    logger.error("ChatView.deleteReportedMessage error: \(error)")
+                    AlertManager.shared.showAlertMsg(title: LocalizedStringKey("Error"), message: LocalizedStringKey("Failed to delete reported message"))
+                }
+            }
+        }
+        
+        private func getLocalIdForReportedMessage(_ rItem: CIQuote, _ reportId: Int64,  _ groupInfo: GroupInfo) async -> Int64? {
+            do {
+                if let itemId = rItem.itemId {
+                    return itemId
+                } else {
+                    let reportItem = try await apiGetChatItems(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        pagination: .around(chatItemId: reportId, count: 0)
+                    ).first
+                    
+                    if let itemId = reportItem?.quotedItem?.itemId {
+                        return itemId
+                    }
+                }
+            } catch {
+                logger.error("ChatView.getLocalIdForReportedMessage error: \(error)")
+            }
+            
+            return nil
         }
 
         private func deleteMessage(_ mode: CIDeleteMode, moderate: Bool) {
@@ -1810,6 +1997,26 @@ struct ChatView: View {
             }
         }
     }
+}
+
+private func showModerateMessageAlert(_ groupInfo: GroupInfo, _ onModerate: @escaping () -> Void) {
+    AlertManager.shared.showAlert(Alert(
+        title: Text("Delete member message?"),
+        message: Text(
+            groupInfo.fullGroupPreferences.fullDelete.on
+            ? "The message will be deleted for all members."
+            : "The message will be marked as moderated for all members."
+        ),
+        primaryButton: .destructive(Text("Delete"), action: onModerate),
+        secondaryButton: .cancel()
+    ))
+}
+
+private func showNoMessageMessageAlert() {
+    AlertManager.shared.showAlertMsg(
+        title: LocalizedStringKey("No message"),
+        message: LocalizedStringKey("This message was deleted or not received yet.")
+    )
 }
 
 private func broadcastDeleteButtonText(_ chat: Chat) -> LocalizedStringKey {

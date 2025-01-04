@@ -30,7 +30,17 @@ struct FramedItemView: View {
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                if let di = chatItem.meta.itemDeleted {
+                if chatItem.isReport {
+                    if chatItem.meta.itemDeleted == nil {
+                        let txt = chatItem.chatDir.sent ?
+                        Text("Only you and moderators see it") :
+                        Text("Only sender and moderators see it")
+                        
+                        framedItemHeader(icon: "flag", caption: txt.italic())
+                    } else {
+                        framedItemHeader(icon: "flag", caption: Text("archived report").italic())
+                    }
+                } else if let di = chatItem.meta.itemDeleted {
                     switch di {
                     case let .moderated(_, byGroupMember):
                         framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
@@ -147,6 +157,8 @@ struct FramedItemView: View {
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
+            case let .report(text, reason):
+                ciMsgContentView(chatItem)
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
                     ciMsgContentView(chatItem)
@@ -228,7 +240,6 @@ struct FramedItemView: View {
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(chatItemFrameContextColor(chatItem, theme))
-
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {

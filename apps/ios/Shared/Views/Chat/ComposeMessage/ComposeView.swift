@@ -24,6 +24,7 @@ enum ComposeContextItem {
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)
     case forwardingItems(chatItems: [ChatItem], fromChatInfo: ChatInfo)
+    case reportedItem(chatItem: ChatItem, reason: ReportReason)
 }
 
 enum VoiceMessageRecordingState {
@@ -116,13 +117,24 @@ struct ComposeState {
         default: return false
         }
     }
-
+    
+    var submitingValidReport: Bool {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            switch reason {
+            case .other: return !message.isEmpty
+            default: return true
+            }
+        default: return false
+        }
+    }
+    
     var sendEnabled: Bool {
         switch preview {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || forwarding || liveMessage != nil
+        default: return !message.isEmpty || forwarding || liveMessage != nil || submitingValidReport
         }
     }
 
@@ -190,6 +202,15 @@ struct ComposeState {
         case let .mediaPreviews(mediaPreviews): !mediaPreviews.isEmpty
         case .voicePreview: false
         case .filePreview: true
+        }
+    }
+
+    var placeholder: String? {
+        switch contextItem {
+        case let .reportedItem(_, reason):
+            return reason.text
+        default:
+            return nil
         }
     }
 
@@ -715,6 +736,15 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
             Divider()
+        case let .reportedItem(chatItem: reportedItem, _):
+            ContextItemView(
+                chat: chat,
+                contextItems: [reportedItem],
+                contextIcon: "flag",
+                cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
+                contextIconForeground: Color.red
+            )
+            Divider()
         }
     }
 
@@ -746,6 +776,8 @@ struct ComposeView: View {
             sent = await updateMessage(ci, live: live)
         } else if let liveMessage = liveMessage, liveMessage.sentMsg != nil {
             sent = await updateMessage(liveMessage.chatItem, live: live)
+        } else if case let .reportedItem(chatItem, reason) = composeState.contextItem {
+            sent = await send(reason, chatItemId: chatItem.id)
         } else {
             var quoted: Int64? = nil
             if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
@@ -872,6 +904,8 @@ struct ComposeView: View {
                 return .voice(text: msgText, duration: duration)
             case .file:
                 return .file(msgText)
+            case .report(_, let reason):
+                return .report(text: msgText, reason: reason)
             case .unknown(let type, _):
                 return .unknown(type: type, text: msgText)
             }
@@ -891,7 +925,25 @@ struct ComposeView: View {
                 return nil
             }
         }
-
+        
+        func send(_ reportReason: ReportReason, chatItemId: Int64) async -> ChatItem? {
+            if let chatItems = await apiReportMessage(
+                groupId: chat.chatInfo.apiId,
+                chatItemId: chatItemId,
+                reportReason: reportReason,
+                reportText: msgText
+            ) {
+                await MainActor.run {
+                    for chatItem in chatItems {
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
+                }
+                return chatItems.first
+            }
+            
+            return nil
+        }
+                
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             await send(
                 [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)],
