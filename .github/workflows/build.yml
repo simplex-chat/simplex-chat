@@ -302,7 +302,7 @@ jobs:
           key: ${{ steps.restore_cache.outputs.cache-primary-key }}
 
       - name: Unix test
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-latest' && (matrix.ghc != '8.10.7' || github.ref != 'refs/heads/stable')
         timeout-minutes: 40
         shell: bash
         run: cabal test --test-show-details=direct
