@@ -90,8 +90,6 @@ jobs:
             asset_name: simplex-chat-windows-x86-64
             desktop_asset_name: simplex-desktop-windows-x86_64.msi
 
-    if: ${{ matrix.ghc != '8.10.7' || github.ref != 'refs/heads/stable' }}
-
     steps:
       - name: Configure pagefile (Windows)
         if: matrix.os == 'windows-latest'
