@@ -54,7 +54,6 @@ jobs:
 
   build:
     name: build-${{ matrix.os }}-${{ matrix.ghc }}
-    if: always()
     needs: prepare-release
     runs-on: ${{ matrix.os }}
     strategy:
@@ -89,6 +88,8 @@ jobs:
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
             desktop_asset_name: simplex-desktop-windows-x86_64.msi
+
+    if: matrix.ghc != '8.10.7' || github.ref != 'refs/heads/stable'
 
     steps:
       - name: Configure pagefile (Windows)
