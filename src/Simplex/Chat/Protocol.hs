@@ -123,7 +123,7 @@ businessChatsVersion = VersionChat 10
 businessChatPrefsVersion :: VersionChat
 businessChatPrefsVersion = VersionChat 11
 
--- support updating preferences in business chats (MCReport message content)
+-- support sending and receiving content reports (MCReport message content)
 contentReportsVersion :: VersionChat
 contentReportsVersion = VersionChat 12
 
