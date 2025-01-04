@@ -1284,14 +1284,13 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if ci.isReport, ci.meta.itemDeleted == nil {
-                if let qi = ci.quotedItem, let groupInfo = chat.chatInfo.groupInfo {
+            if let groupInfo = chat.chatInfo.groupInfo, ci.isReport, ci.meta.itemDeleted == nil {
+                archiveReportButton(ci, groupInfo)
+                if let qi = ci.quotedItem {
                     moderateReportedButton(qi, ci.id, groupInfo)
                     if let rMember = qi.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
-                        if let rMember = rMember {
-                            if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
-                                blockMemberButton(rMember, groupInfo, qi, ci.id)
-                            }
+                        if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
+                            blockMemberButton(rMember, groupInfo, qi, ci.id)
                         }
                     }
                 }
@@ -1689,6 +1688,31 @@ struct ChatView: View {
             }
         }
         
+        private func archiveReportButton(_ cItem: ChatItem, _ groupInfo: GroupInfo) -> Button<some View> {
+            Button(role: .destructive) {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text("Archive report?"),
+                        message: Text(
+                            cItem.chatDir == .groupSnd
+                            ? "The report will be archived for all moderators."
+                            : "The report will be archived for all moderators and reporter."
+                        ),
+                        primaryButton: .destructive(Text("Archive")) {
+                            deletingItem = cItem
+                            deleteMessage(.cidmBroadcast, moderate: false)
+                        },
+                        secondaryButton: .cancel()
+                    )
+                )
+            } label: {
+                Label(
+                    NSLocalizedString("Archive", comment: "chat item action"),
+                    systemImage: "archivebox"
+                )
+            }
+        }
+        
         private func blockMemberButton(_ member: GroupMember, _ groupInfo: GroupInfo, _ rItem: CIQuote, _ reportId: Int64) -> Button<some View> {
             Button(role: .destructive) {
                 actionSheet = SomeActionSheet(
@@ -1717,7 +1741,7 @@ struct ChatView: View {
                             },
                             .destructive(Text("Only block")) {
                                 Task {
-                                    if let itemId = await getLocalIdForReportedMessage(rItem, reportId, groupInfo) {
+                                    if (await getLocalIdForReportedMessage(rItem, reportId, groupInfo)) != nil {
                                         AlertManager.shared.showAlert(
                                             blockForAllAlert(groupInfo, member)
                                         )
