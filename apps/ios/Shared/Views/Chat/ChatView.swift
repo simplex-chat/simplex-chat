@@ -1286,9 +1286,9 @@ struct ChatView: View {
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
             if let groupInfo = chat.chatInfo.groupInfo, ci.isReport, ci.meta.itemDeleted == nil {
                 archiveReportButton(ci, groupInfo)
-                if let qi = ci.quotedItem {
+                if let qi = ci.quotedItem, ci.chatDir != .groupSnd {
                     moderateReportedButton(qi, ci.id, groupInfo)
-                    if let rMember = qi.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
+                    if let rMember = qi.memberToModerate(chat.chatInfo) {
                         if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
                             blockMemberButton(rMember, groupInfo, qi, ci.id)
                         }
@@ -1690,17 +1690,18 @@ struct ChatView: View {
         
         private func archiveReportButton(_ cItem: ChatItem, _ groupInfo: GroupInfo) -> Button<some View> {
             Button(role: .destructive) {
+                let isOwnReport = cItem.chatDir == .groupSnd
                 AlertManager.shared.showAlert(
                     Alert(
                         title: Text("Archive report?"),
                         message: Text(
-                            cItem.chatDir == .groupSnd
+                            isOwnReport
                             ? "The report will be archived for all moderators."
                             : "The report will be archived for all moderators and reporter."
                         ),
                         primaryButton: .destructive(Text("Archive")) {
                             deletingItem = cItem
-                            deleteMessage(.cidmBroadcast, moderate: false)
+                            deleteMessage(.cidmBroadcast, moderate: !isOwnReport)
                         },
                         secondaryButton: .cancel()
                     )

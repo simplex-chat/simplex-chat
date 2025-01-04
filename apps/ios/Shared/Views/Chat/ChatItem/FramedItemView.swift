@@ -157,7 +157,7 @@ struct FramedItemView: View {
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
-            case let .report(text, reason):
+            case .report(_, _):
                 ciMsgContentView(chatItem)
             case let .unknown(_, text: text):
                 if chatItem.file == nil {
