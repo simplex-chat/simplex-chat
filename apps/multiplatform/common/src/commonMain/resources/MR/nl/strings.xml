@@ -445,7 +445,7 @@
     <string name="messages_section_title">Berichten</string>
     <string name="new_passphrase">Nieuw wachtwoord…</string>
     <string name="keychain_error">Keychain fout</string>
-    <string name="join_group_button">Word lid van</string>
+    <string name="join_group_button">Word lid</string>
     <string name="leave_group_question">Groep verlaten\?</string>
     <string name="new_member_role">Nieuwe leden rol</string>
     <string name="no_contacts_to_add">Geen contacten om toe te voegen</string>
@@ -2277,4 +2277,7 @@
     <string name="chat_list_contacts">Contacten</string>
     <string name="error_creating_chat_tags">Fout bij het aanmaken van chatlijst</string>
     <string name="no_unread_chats">Geen ongelezen chats</string>
+    <string name="chat_list_notes">Notities</string>
+    <string name="change_list">Lijst wijzigen</string>
+    <string name="change_order_chat_list_menu_action">Wijzig volgorde</string>
 </resources>
