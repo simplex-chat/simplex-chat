@@ -3102,6 +3102,7 @@ public enum CIForwardedFrom: Decodable, Hashable {
 public enum CIDeleteMode: String, Decodable, Hashable {
     case cidmBroadcast = "broadcast"
     case cidmInternal = "internal"
+    case cidmInternalMark = "internalMark"
 }
 
 protocol ItemContent {

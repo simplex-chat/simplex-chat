@@ -61,7 +61,6 @@ object ChatModel {
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   private val _chats = mutableStateOf(SnapshotStateList<Chat>())
   val chats: State<List<Chat>> = _chats
-  private val chatsContext = ChatsContext()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
@@ -72,15 +71,18 @@ object ChatModel {
    * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
    * If you use api call to get the items, use just [add] instead of [addAndNotify].
    * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
-  val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  private val _chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+  val chatItems: State<SnapshotStateList<ChatItem>> = _chatItems
+  // declaration of chatsContext should be after any other variable that is directly attached to ChatsContext class, otherwise, strange crash with NullPointerException for "this" parameter in random functions
+  private val chatsContext = ChatsContext()
   // set listener here that will be notified on every add/delete of a chat item
   var chatItemsChangesListener: ChatItemsChangesListener? = null
   val chatState = ActiveChatState()
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
-  val groupMembers = mutableStateListOf<GroupMember>()
-  val groupMembersIndexes = mutableStateMapOf<Long, Int>()
+  val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
+  val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
 
   // Chat Tags
   val userTags = mutableStateOf(emptyList<ChatTag>())
@@ -157,7 +159,6 @@ object ChatModel {
   val updatingProgress = mutableStateOf(null as Float?)
   var updatingRequest: Closeable? = null
 
-  private val updatingChatsMutex: Mutex = Mutex()
   val changingActiveUserMutex: Mutex = Mutex()
 
   val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
@@ -321,27 +322,31 @@ object ChatModel {
   fun getGroupChat(groupId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
 
   fun populateGroupMembersIndexes() {
-    groupMembersIndexes.clear()
-    groupMembers.forEachIndexed { i, member ->
-      groupMembersIndexes[member.groupMemberId] = i
+    groupMembersIndexes.value = emptyMap()
+    val gmIndexes = groupMembersIndexes.value.toMutableMap()
+    groupMembers.value.forEachIndexed { i, member ->
+      gmIndexes[member.groupMemberId] = i
     }
+    groupMembersIndexes.value = gmIndexes
   }
 
   fun getGroupMember(groupMemberId: Long): GroupMember? {
-    val memberIndex = groupMembersIndexes[groupMemberId]
+    val memberIndex = groupMembersIndexes.value[groupMemberId]
     return if (memberIndex != null) {
-      groupMembers[memberIndex]
+      groupMembers.value[memberIndex]
     } else {
       null
     }
   }
 
-  suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = updatingChatsMutex.withLock {
+  // running everything inside the block on main thread. Make sure any heavy computation is moved to a background thread
+  suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
     chatsContext.action()
   }
 
   class ChatsContext {
     val chats = _chats
+    val chatItems = _chatItems
 
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
@@ -694,7 +699,7 @@ object ChatModel {
       }
       // update current chat
       return if (chatId.value == groupInfo.id) {
-        val memberIndex = groupMembersIndexes[member.groupMemberId]
+        val memberIndex = groupMembersIndexes.value[member.groupMemberId]
         val updated = chatItems.value.map {
           // Take into account only specific changes, not all. Other member updates are not important and can be skipped
           if (it.chatDir is CIDirection.GroupRcv && it.chatDir.groupMember.groupMemberId == member.groupMemberId &&
@@ -710,12 +715,17 @@ object ChatModel {
         if (updated != chatItems.value) {
           chatItems.replaceAll(updated)
         }
+        val gMembers = groupMembers.value.toMutableList()
         if (memberIndex != null) {
-          groupMembers[memberIndex] = member
+          gMembers[memberIndex] = member
+          groupMembers.value = gMembers
           false
         } else {
-          groupMembers.add(member)
-          groupMembersIndexes[member.groupMemberId] = groupMembers.size - 1
+          gMembers.add(member)
+          groupMembers.value = gMembers
+          val gmIndexes = groupMembersIndexes.value.toMutableMap()
+          gmIndexes[member.groupMemberId] = groupMembers.size - 1
+          groupMembersIndexes.value = gmIndexes
           true
         }
       } else {
@@ -762,7 +772,7 @@ object ChatModel {
 
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
-    withContext(Dispatchers.Main) {
+    withChats {
       chatItems.addAndNotify(cItem)
     }
     return cItem
@@ -770,7 +780,11 @@ object ChatModel {
 
   fun removeLiveDummy() {
     if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-      chatItems.removeLastAndNotify()
+      withApi {
+        withChats {
+          chatItems.removeLastAndNotify()
+        }
+      }
     }
   }
 
@@ -891,19 +905,25 @@ object ChatModel {
 
   fun replaceConnReqView(id: String, withId: String) {
     if (id == showingInvitation.value?.connId) {
-      showingInvitation.value = null
-      chatModel.chatItems.clearAndNotify()
-      chatModel.chatId.value = withId
+      withApi {
+        withChats {
+          showingInvitation.value = null
+          chatItems.clearAndNotify()
+          chatModel.chatId.value = withId
+        }
+      }
       ModalManager.start.closeModals()
       ModalManager.end.closeModals()
     }
   }
 
-  fun dismissConnReqView(id: String) {
+  fun dismissConnReqView(id: String) = withApi {
     if (id == showingInvitation.value?.connId) {
-      showingInvitation.value = null
-      chatModel.chatItems.clearAndNotify()
-      chatModel.chatId.value = null
+      withChats {
+        showingInvitation.value = null
+        chatItems.clearAndNotify()
+        chatModel.chatId.value = null
+      }
       // Close NewChatView
       ModalManager.start.closeModals()
       ModalManager.center.closeModals()
@@ -1334,7 +1354,13 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo.chatTags
       else -> null
     }
-}
+
+  val contactCard: Boolean
+    get() = when (this) {
+      is Direct -> contact.activeConn == null && contact.profile.contactLink != null && contact.active
+      else -> false
+    }
+  }
 
 @Serializable
 sealed class NetworkStatus {
@@ -2928,6 +2954,7 @@ sealed class CIForwardedFrom {
 @Serializable
 enum class CIDeleteMode(val deleteMode: String) {
   @SerialName("internal") cidmInternal("internal"),
+  @SerialName("internalMark") cidmInternalMark("internalMark"),
   @SerialName("broadcast") cidmBroadcast("broadcast");
 }
 

@@ -45,9 +45,9 @@ suspend fun apiLoadMessages(
           addChat(chat)
         }
       }
-      withContext(Dispatchers.Main) {
+      withChats {
         chatModel.chatItemStatuses.clear()
-        chatModel.chatItems.replaceAll(chat.chatItems)
+        chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.chatInfo.id
         splits.value = newSplits
         if (chat.chatItems.isNotEmpty()) {
@@ -70,8 +70,8 @@ suspend fun apiLoadMessages(
       )
       val insertAt = (indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size).coerceAtLeast(0)
       newItems.addAll(insertAt, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats {
+        chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
       }
@@ -89,8 +89,8 @@ suspend fun apiLoadMessages(
       val indexToAdd = min(indexInCurrentItems + 1, newItems.size)
       val indexToAddIsLast = indexToAdd == newItems.size
       newItems.addAll(indexToAdd, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats {
+        chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(splits.value.firstOrNull() ?: newItems.last().id, newItems)
         // loading clear bottom area, updating number of unread items after the newest loaded item
@@ -104,8 +104,8 @@ suspend fun apiLoadMessages(
       val newSplits = removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed)
       // currently, items will always be added on top, which is index 0
       newItems.addAll(0, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats {
+        chatItems.replaceAll(newItems)
         splits.value = listOf(chat.chatItems.last().id) + newSplits
         unreadAfterItemId.value = chat.chatItems.last().id
         totalAfter.value = navInfo.afterTotal
@@ -119,8 +119,8 @@ suspend fun apiLoadMessages(
       newItems.addAll(oldItems)
       removeDuplicates(newItems, chat)
       newItems.addAll(chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats {
+        chatItems.replaceAll(newItems)
         unreadAfterNewestLoaded.value = 0
       }
     }

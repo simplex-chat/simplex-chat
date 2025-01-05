@@ -88,7 +88,7 @@ fun TerminalLayout(
           .background(MaterialTheme.colors.background)
       ) {
         Divider()
-        Box(Modifier.padding(horizontal = 8.dp)) {
+        Surface(Modifier.padding(horizontal = 8.dp), color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
           SendMsgView(
             composeState = composeState,
             showVoiceRecordIcon = false,

@@ -683,6 +683,8 @@ object ChatController {
         Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       }
       val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
+      // coroutine was cancelled already, no need to process response (helps with apiListMembers - very heavy query in large groups)
+      interruptIfCancelled()
       val r = APIResponse.decodeStr(json)
       if (log) {
         Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
@@ -3044,8 +3046,8 @@ object ChatController {
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
     if (user == null) {
-      chatModel.chatItems.clearAndNotify()
       withChats {
+        chatItems.clearAndNotify()
         chats.clear()
         popChatCollector.clear()
       }

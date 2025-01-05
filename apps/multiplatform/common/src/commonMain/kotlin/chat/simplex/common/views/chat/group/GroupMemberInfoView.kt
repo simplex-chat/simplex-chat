@@ -98,8 +98,8 @@ fun GroupMemberInfoView(
               val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
               withChats {
                 addChat(memberChat)
-                openLoadedChat(memberChat)
               }
+              openLoadedChat(memberChat)
               closeAll()
               chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
             }

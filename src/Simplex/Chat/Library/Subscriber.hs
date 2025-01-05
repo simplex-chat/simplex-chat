@@ -1749,7 +1749,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ci' <- withStore' $ \db -> markGroupCIBlockedByAdmin db user gInfo ci
               groupMsgToView gInfo ci'
         applyModeration CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, moderatedAt}
-          | moderatorRole < GRAdmin || moderatorRole < memberRole =
+          | moderatorRole < GRModerator || moderatorRole < memberRole =
               createContentItem
           | groupFeatureAllowed SGFFullDelete gInfo = do
               ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvModerated Nothing timed' False
@@ -1834,7 +1834,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           CIGroupSnd -> moderate membership cci
         Left e
           | msgMemberId == memberId -> messageError $ "x.msg.del: message not found, " <> tshow e
-          | senderRole < GRAdmin -> messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
+          | senderRole < GRModerator -> messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
           | otherwise -> withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
       where
         moderate :: GroupMember -> CChatItem 'CTGroup -> CM ()
@@ -1844,7 +1844,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId"
           _ -> messageError "x.msg.del: message of another member without memberId"
         checkRole GroupMember {memberRole} a
-          | senderRole < GRAdmin || senderRole < memberRole =
+          | senderRole < GRModerator || senderRole < memberRole =
               messageError "x.msg.del: message of another member with insufficient member permissions"
           | otherwise = a
         delete :: CChatItem 'CTGroup -> Maybe GroupMember -> CM ChatResponse
@@ -2580,7 +2580,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         | otherwise =
             withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
               Right bm@GroupMember {groupMemberId = bmId, memberRole, memberProfile = bmp}
-                | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
+                | senderRole < GRModerator || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
                 | otherwise -> do
                     bm' <- setMemberBlocked bmId
                     toggleNtf user bm' (not blocked)
