@@ -1225,26 +1225,31 @@ getGroupChatItemIDs db User {userId} GroupInfo {groupId} contentFilter range cou
     Nothing -> idsQuery " AND msg_content_tag = ? " (userId, groupId, mcTag)
   Nothing -> idsQuery "" (userId, groupId)
   where
+    baseQuery =
+      [sql|
+        SELECT item_ts, chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND group_id = ?
+      |]
     idsQuery :: ToRow p1 => Query -> p1 -> IO [ChatItemId]
     idsQuery fc fp = case range of
-      GRLast -> rangeQuery "" () " ORDER BY item_ts DESC, chat_item_id DESC "
-      GRAfter ts itemId -> rangeQuery " AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?)) " (ts, ts, itemId) " ORDER BY item_ts ASC, chat_item_id ASC "
-      GRBefore ts itemId -> rangeQuery " AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?)) " (ts, ts, itemId) " ORDER BY item_ts DESC, chat_item_id DESC "
+      GRLast ->
+        map snd <$> rangeQuery "" () " ORDER BY item_ts DESC, chat_item_id DESC "
+      GRAfter ts itemId ->
+        map snd . filter (\(ts', itemId') -> ts /= ts' || itemId' > itemId)
+          <$> rangeQuery " AND item_ts >= ? " (Only ts) " ORDER BY item_ts ASC, chat_item_id ASC "
+      GRBefore ts itemId ->
+        map snd . filter (\(ts', itemId') -> ts /= ts' || itemId' < itemId)
+          <$> rangeQuery " AND item_ts <= ? " (Only ts) " ORDER BY item_ts DESC, chat_item_id DESC "
       where
-        rangeQuery :: ToRow p2 => Query -> p2 -> Query -> IO [ChatItemId]
+        rangeQuery :: ToRow p2 => Query -> p2 -> Query -> IO [(UTCTime, ChatItemId)]
         rangeQuery rc rp ob
           | null search = searchQuery "" ()
           | otherwise = searchQuery " AND item_text LIKE '%' || ? || '%' " (Only search)
           where
-            searchQuery :: ToRow p3 => Query -> p3 -> IO [ChatItemId]
+            searchQuery :: ToRow p3 => Query -> p3 -> IO [(UTCTime, ChatItemId)]
             searchQuery sc sp =
-              map fromOnly <$> DB.query db (baseQuery <> fc <> rc <> sc <> ob <> " LIMIT ?") (fp :. rp :. sp :. Only count)
-            baseQuery =
-              [sql|
-                SELECT chat_item_id
-                FROM chat_items
-                WHERE user_id = ? AND group_id = ?
-              |]
+              DB.query db (baseQuery <> fc <> rc <> sc <> ob <> " LIMIT ?") (fp :. rp :. sp :. Only count)
 
 safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g currentTs itemId =

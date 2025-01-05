@@ -403,7 +403,8 @@ CREATE TABLE chat_items(
   fwd_from_group_id INTEGER REFERENCES groups ON DELETE SET NULL,
   fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
   via_proxy INTEGER,
-  msg_content_tag TEXT
+  msg_content_tag TEXT,
+  processed_by_group_member_id BLOB
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -961,4 +962,17 @@ CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_contact_id ON chat_tags_chat
 CREATE UNIQUE INDEX idx_chat_tags_chats_chat_tag_id_group_id ON chat_tags_chats(
   group_id,
   chat_tag_id
+);
+CREATE INDEX idx_chat_items_groups_msg_content_tag_item_ts ON chat_items(
+  user_id,
+  group_id,
+  msg_content_tag,
+  item_ts
+);
+CREATE INDEX idx_chat_items_groups_msg_content_tag_item_deleted_item_ts ON chat_items(
+  user_id,
+  group_id,
+  msg_content_tag,
+  item_deleted,
+  item_ts
 );
