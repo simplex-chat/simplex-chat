@@ -93,7 +93,7 @@
     <string name="save_preferences_question">Tercihleri kaydet\?</string>
     <string name="save_profile_password">Profil parolasını kaydet</string>
     <string name="profile_is_only_shared_with_your_contacts">Profil sadece konuştuğun kişilerle paylaşılır.</string>
-    <string name="next_generation_of_private_messaging">Gizli iletişimin\ngelecek kuşağı</string>
+    <string name="next_generation_of_private_messaging">Mesajlaşmanın geleceği</string>
     <string name="icon_descr_audio_off">Ses kapalı</string>
     <string name="authentication_cancelled">Doğrulama iptal edildi</string>
     <string name="settings_restart_app">Yeniden başlat</string>
@@ -1201,7 +1201,7 @@
     <string name="scan_from_mobile">Mobilden tara</string>
     <string name="verify_connections">Bağlantıları onayla</string>
     <string name="share_message">Mesaj paylaş…</string>
-    <string name="alert_text_msg_bad_hash">Önceki mesajın hash\'i farklı.</string>
+    <string name="alert_text_msg_bad_hash">Önceki mesajın hash\'i farklı.\"</string>
     <string name="lock_not_enabled">SimpleX Kilit aktif değil!</string>
     <string name="chat_lock">SimpleX Kilit</string>
     <string name="connect_via_member_address_alert_title">Doğrudan bağlanılsın mı?</string>
@@ -2137,4 +2137,5 @@
     <string name="chat_list_all">Hepsi</string>
     <string name="add_to_list">Listeye ekle</string>
     <string name="delete_chat_list_warning">%s listesindeki bütün sohbetler kaldırılacak ve liste silinecek</string>
+    <string name="chat_list_businesses">İşletmeler</string>
 </resources>
