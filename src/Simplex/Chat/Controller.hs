@@ -297,11 +297,9 @@ data ChatCommand
   | SlowSQLQueries
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat ChatRef ChatPagination (Maybe String)
+  | APIGetChat ChatRef (Maybe ContentFilter) ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
-  | APIGetReports {groupId :: GroupId, processed :: Bool, chatPagination :: ChatPagination, search :: Maybe String}
-  | APISetReportProcessed GroupId ChatItemId Bool
   | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
@@ -868,6 +866,12 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
+
+data ContentFilter = ContentFilter
+  { mcTag :: MsgContentTag,
+    deleted :: Maybe Bool
+  }
+  deriving (Show)
 
 data ChatPagination
   = CPLast Int

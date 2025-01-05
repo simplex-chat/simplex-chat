@@ -688,7 +688,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
           sendComposedMessage cc ct Nothing $ MCText text
 
 getContact :: ChatController -> ContactId -> IO (Maybe Contact)
-getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) (CPLast 0) Nothing)
+getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) Nothing (CPLast 0) Nothing)
   where
     resp :: ChatResponse -> Maybe Contact
     resp = \case
