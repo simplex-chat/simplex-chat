@@ -877,7 +877,7 @@
     <string name="simplex_link_contact">SimpleX-kapcsolattartási-cím</string>
     <string name="stop_file__confirm">Megállítás</string>
     <string name="smp_servers_preset_server">Előre beállított kiszolgáló</string>
-    <string name="add_contact_or_create_group">Új csevegés kezdése</string>
+    <string name="add_contact_or_create_group">Új csevegés indítása</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Bárki üzemeltethet kiszolgálókat.</string>
     <string name="rcv_group_event_open_chat">Megnyitás</string>
     <string name="network_option_protocol_timeout">Protokoll időtúllépése</string>
@@ -1383,7 +1383,7 @@
     <string name="your_profile_is_stored_on_your_device">A profilja, az ismerősei és az elküldött üzenetei az eszközén kerülnek tárolásra.</string>
     <string name="system_restricted_background_warn"><![CDATA[Az értesítések engedélyezéséhez válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem egy meghívó-hivatkozás!</string>
-    <string name="to_start_a_new_chat_help_header">Új csevegés kezdése</string>
+    <string name="to_start_a_new_chat_help_header">Új csevegés indításához</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">A kapcsolódás már folyamatban van ezen az egyszer használható meghívó-hivatkozáson keresztül!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Nem veszíti el az ismerőseit, ha később törli a címét.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.</string>
@@ -1494,7 +1494,7 @@
     <string name="tap_to_paste_link">Koppintson ide a hivatkozás beillesztéséhez</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Ismerős hozzáadása</b>: új meghívó-hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.]]></string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Csoport létrehozása</b>: új csoport létrehozásához.]]></string>
-    <string name="chat_is_stopped_you_should_transfer_database">A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés elindítása előtt.</string>
     <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem kerülnek elküldésre az új tagok számára.</string>
     <string name="retry_verb">Újrapróbálkozás</string>
     <string name="camera_not_available">A kamera nem elérhető</string>
