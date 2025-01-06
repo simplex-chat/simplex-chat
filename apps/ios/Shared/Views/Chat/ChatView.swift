@@ -1876,22 +1876,17 @@ struct ChatView: View {
                     let itemId = await getLocalIdForReportedMessage(rItem, reportId, groupInfo)
                     
                     if let itemId = itemId {
-                        var deletedItems = try await apiDeleteMemberChatItems(
+                        let deletedItem = try await apiDeleteMemberChatItems(
                             groupId: groupInfo.apiId,
                             itemIds: [itemId]
-                        )
+                        ).first
 
-                        deletedItems.append(contentsOf: try await apiDeleteMemberChatItems(
-                            groupId: groupInfo.apiId,
-                            itemIds: [reportId]
-                        ))
-
-                        await MainActor.run {
-                            deletedItems.forEach { itemDeletion in
-                                if let toItem = itemDeletion.toChatItem {
+                        if let di = deletedItem {
+                            await MainActor.run {
+                                if let toItem = di.toChatItem {
                                     _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)
                                 } else {
-                                    m.removeChatItem(chat.chatInfo, itemDeletion.deletedChatItem.chatItem)
+                                    m.removeChatItem(chat.chatInfo, di.deletedChatItem.chatItem)
                                 }
                             }
                         }
