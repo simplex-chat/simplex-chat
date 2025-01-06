@@ -170,6 +170,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
     is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
     is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
+    is MsgContent.MCReport -> ComposePreview.NoPreview
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
@@ -483,6 +484,7 @@ fun ComposeView(
         is MsgContent.MCVideo -> MsgContent.MCVideo(msgText, image = msgContent.image, duration = msgContent.duration)
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
+        is MsgContent.MCReport -> MsgContent.MCReport(msgText, reason = msgContent.reason)
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
     }
