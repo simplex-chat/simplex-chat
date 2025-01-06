@@ -1378,13 +1378,13 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
             FROM (
               SELECT 1
               FROM chat_items
-              WHERE user_id = :user_id AND group_id = :group_id
-                AND item_ts > :item_ts
+              WHERE user_id = ? AND group_id = ?
+                AND item_ts > ?
               UNION ALL
               SELECT 1
               FROM chat_items
-              WHERE user_id = :user_id AND group_id = :group_id
-                AND item_ts = :item_ts AND chat_item_id > :item_id
+              WHERE user_id = ? AND group_id = ?
+                AND item_ts = ? AND chat_item_id > ?
             )
           |]
           ( (userId, groupId, chatItemTs afterCI)
