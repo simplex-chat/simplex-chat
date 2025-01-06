@@ -992,6 +992,10 @@ fun BoxScope.ChatItemsList(
   val loadingMoreItems = remember { mutableStateOf(false) }
   val animatedScrollingInProgress = remember { mutableStateOf(false) }
   val ignoreLoadingRequests = remember(remoteHostId) { mutableSetOf<Long>() }
+  LaunchedEffect(chatInfo.id, searchValueIsEmpty.value) {
+    if (searchValueIsEmpty.value && reversedChatItems.value.size < ChatPagination.INITIAL_COUNT)
+      ignoreLoadingRequests.add(reversedChatItems.value.lastOrNull()?.id ?: return@LaunchedEffect)
+  }
   if (!loadingMoreItems.value) {
     PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
       if (loadingMoreItems.value) return@PreloadItems false
