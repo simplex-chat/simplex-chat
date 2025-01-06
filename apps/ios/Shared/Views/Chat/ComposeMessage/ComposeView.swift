@@ -118,7 +118,7 @@ struct ComposeState {
         }
     }
     
-    var submitingValidReport: Bool {
+    var submittingValidReport: Bool {
         switch contextItem {
         case let .reportedItem(_, reason):
             switch reason {
@@ -134,7 +134,7 @@ struct ComposeState {
         case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
-        default: return !message.isEmpty || forwarding || liveMessage != nil || submitingValidReport
+        default: return !message.isEmpty || forwarding || liveMessage != nil || submittingValidReport
         }
     }
 
