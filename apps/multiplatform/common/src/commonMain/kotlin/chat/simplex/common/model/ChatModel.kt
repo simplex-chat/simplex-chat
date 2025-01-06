@@ -3587,11 +3587,11 @@ enum class FormatColor(val color: String) {
 
 @Serializable(with = ReportReasonSerializer::class)
 sealed class ReportReason {
-  @Serializable @SerialName("spam") data object Spam: ReportReason()
-  @Serializable @SerialName("illegal") data object Illegal: ReportReason()
-  @Serializable @SerialName("community") data object Community: ReportReason()
-  @Serializable @SerialName("profile") data object Profile: ReportReason()
-  @Serializable @SerialName("other") data object Other: ReportReason()
+  @Serializable @SerialName("spam") object Spam: ReportReason()
+  @Serializable @SerialName("illegal") object Illegal: ReportReason()
+  @Serializable @SerialName("community") object Community: ReportReason()
+  @Serializable @SerialName("profile") object Profile: ReportReason()
+  @Serializable @SerialName("other") object Other: ReportReason()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
 }
 
