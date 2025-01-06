@@ -147,8 +147,8 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
         addSubview(placeholderLabel)
         
         NSLayoutConstraint.activate([
-            placeholderLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5),
-            placeholderLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5),
+            placeholderLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 7),
+            placeholderLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -7),
             placeholderLabel.topAnchor.constraint(equalTo: topAnchor, constant: 8)
         ])
     }
