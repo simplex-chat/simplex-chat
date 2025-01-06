@@ -53,7 +53,7 @@ testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
-  void $ createChatStore testDB "" False MCError
+  void $ createChatStore testDB "" False MCError True
   getSchema testDB appSchema `shouldReturn` savedSchema
   removeFile testDB
 
@@ -61,14 +61,14 @@ testVerifyLintFKeyIndexes :: IO ()
 testVerifyLintFKeyIndexes = withTmpFiles $ do
   savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
   savedLint `deepseq` pure ()
-  void $ createChatStore testDB "" False MCError
+  void $ createChatStore testDB "" False MCError True
   getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
 testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createDBStore testDB "" False noDownMigrations MCError
+  Right st <- createDBStore testDB "" False noDownMigrations MCError True
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
   closeDBStore st
   removeFile testDB
@@ -78,14 +78,14 @@ testSchemaMigrations = withTmpFiles $ do
       putStrLn $ "down migration " <> name m
       let downMigr = fromJust $ toDownMigration m
       schema <- getSchema testDB testSchema
-      Migrations.run st $ MTRUp [m]
+      Migrations.run st True $ MTRUp [m]
       schema' <- getSchema testDB testSchema
       schema' `shouldNotBe` schema
-      Migrations.run st $ MTRDown [downMigr]
+      Migrations.run st True $ MTRDown [downMigr]
       unless (name m `elem` skipComparisonForDownMigrations) $ do
         schema'' <- getSchema testDB testSchema
         schema'' `shouldBe` schema
-      Migrations.run st $ MTRUp [m]
+      Migrations.run st True $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
 

@@ -121,6 +121,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20241128_business_chats
 import Simplex.Chat.Store.SQLite.Migrations.M20241205_business_chat_members
 import Simplex.Chat.Store.SQLite.Migrations.M20241222_operator_conditions
 import Simplex.Chat.Store.SQLite.Migrations.M20241223_chat_tags
+import Simplex.Chat.Store.SQLite.Migrations.M20241230_reports
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -241,7 +242,8 @@ schemaMigrations =
     ("20241128_business_chats", m20241128_business_chats, Just down_m20241128_business_chats),
     ("20241205_business_chat_members", m20241205_business_chat_members, Just down_m20241205_business_chat_members),
     ("20241222_operator_conditions", m20241222_operator_conditions, Just down_m20241222_operator_conditions),
-    ("20241223_chat_tags", m20241223_chat_tags, Just down_m20241223_chat_tags)
+    ("20241223_chat_tags", m20241223_chat_tags, Just down_m20241223_chat_tags),
+    ("20241230_reports", m20241230_reports, Just down_m20241230_reports)
   ]
 
 -- | The list of migrations in ascending order by date

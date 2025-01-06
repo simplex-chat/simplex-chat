@@ -214,6 +214,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20241205_business_chat_members
           Simplex.Chat.Store.SQLite.Migrations.M20241222_operator_conditions
           Simplex.Chat.Store.SQLite.Migrations.M20241223_chat_tags
+          Simplex.Chat.Store.SQLite.Migrations.M20241230_reports
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

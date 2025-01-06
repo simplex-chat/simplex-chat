@@ -66,7 +66,8 @@ data CoreChatOpts = CoreChatOpts
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
     highlyAvailable :: Bool,
-    yesToUpMigrations :: Bool
+    yesToUpMigrations :: Bool,
+    vacuumOnMigration :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -240,6 +241,11 @@ coreChatOptsP appDir defaultDbFileName = do
           <> short 'y'
           <> help "Automatically confirm \"up\" database migrations"
       )
+  disableVacuum <-
+    switch
+      ( long "disable-vacuum"
+          <> help "Do not vacuum database after migrations"
+      )
   pure
     CoreChatOpts
       { dbFilePrefix,
@@ -265,7 +271,8 @@ coreChatOptsP appDir defaultDbFileName = do
         logFile,
         tbqSize,
         highlyAvailable,
-        yesToUpMigrations
+        yesToUpMigrations,
+        vacuumOnMigration = not disableVacuum
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p

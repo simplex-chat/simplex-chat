@@ -114,6 +114,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
     CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false)) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
+        var groupMembersJob: Job = remember { Job() }
         val perChatTheme = remember(chatInfo, CurrentColors.value.base) { if (chatInfo is ChatInfo.Direct) chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
         val overrides = if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get()) else null
         val fullDeleteAllowed = remember(chatInfo) { chatInfo.featureEnabled(ChatFeature.FullDelete) }
@@ -220,8 +221,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               hideKeyboard(view)
               AudioPlayer.stop()
               chatModel.chatId.value = null
-              chatModel.groupMembers.clear()
-              chatModel.groupMembersIndexes.clear()
+              chatModel.groupMembers.value = emptyList()
+              chatModel.groupMembersIndexes.value = emptyMap()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -229,7 +230,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 return@ChatLayout
               }
               hideKeyboard(view)
-              withBGApi {
+              groupMembersJob.cancel()
+              groupMembersJob = scope.launch(Dispatchers.Default) {
                 // The idea is to preload information before showing a modal because large groups can take time to load all members
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
                 var preloadedCode: String? = null
@@ -241,6 +243,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
                   preloadedLink = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
                 }
+                if (!isActive) return@launch
+
                 ModalManager.end.showModalCloseable(true) { close ->
                   val chatInfo = remember { activeChatInfo }.value
                   if (chatInfo is ChatInfo.Direct) {
@@ -276,7 +280,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             },
             showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
               hideKeyboard(view)
-              withBGApi {
+              groupMembersJob.cancel()
+              groupMembersJob = scope.launch(Dispatchers.Default) {
                 val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
                 val stats = r?.second
                 val (_, code) = if (member.memberActive) {
@@ -286,6 +291,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   member to null
                 }
                 setGroupMembers(chatRh, groupInfo, chatModel)
+                if (!isActive) return@launch
+
                 ModalManager.end.closeModals()
                 ModalManager.end.showModalCloseable(true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
@@ -431,7 +438,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               chatModel.getChat(chatId)
             },
             findModelMember = { memberId ->
-              chatModel.groupMembers.find { it.id == memberId }
+              chatModel.groupMembers.value.find { it.id == memberId }
             },
             setReaction = { cInfo, cItem, add, reaction ->
               withBGApi {
@@ -451,17 +458,19 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               }
             },
             showItemDetails = { cInfo, cItem ->
-              suspend fun loadChatItemInfo(): ChatItemInfo? {
+              suspend fun loadChatItemInfo(): ChatItemInfo? = coroutineScope {
                 val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cItem.id)
                 if (ciInfo != null) {
                   if (chatInfo is ChatInfo.Group) {
                     setGroupMembers(chatRh, chatInfo.groupInfo, chatModel)
+                    if (!isActive) return@coroutineScope null
                   }
                 }
-                return ciInfo
+                ciInfo
               }
-              withBGApi {
-                var initialCiInfo = loadChatItemInfo() ?: return@withBGApi
+              groupMembersJob.cancel()
+              groupMembersJob = scope.launch(Dispatchers.Default) {
+                var initialCiInfo = loadChatItemInfo() ?: return@launch
                 ModalManager.end.closeModals()
                 ModalManager.end.showModalCloseable(endButtons = {
                   ShareButton {
@@ -550,7 +559,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            chatModel.chatItems.clearAndNotify()
+            withChats {
+              chatItems.clearAndNotify()
+            }
           }
       }
       is ChatInfo.InvalidJSON -> {
@@ -561,7 +572,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           LaunchedEffect(chatInfo.id) {
             onComposed(chatInfo.id)
             ModalManager.end.closeModals()
-            chatModel.chatItems.clearAndNotify()
+            withChats {
+              chatItems.clearAndNotify()
+            }
           }
       }
       else -> {}

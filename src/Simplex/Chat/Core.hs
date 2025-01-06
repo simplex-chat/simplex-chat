@@ -34,14 +34,14 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent, yesToUpMigrations}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent, yesToUpMigrations, vacuumOnMigration}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbFilePrefix dbKey False confirm' >>= either exit run
+    initRun = createChatDatabase dbFilePrefix dbKey False confirm' vacuumOnMigration >>= either exit run
     confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
     exit e = do
       putStrLn $ "Error opening database: " <> show e

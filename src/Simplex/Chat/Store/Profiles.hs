@@ -618,18 +618,14 @@ getUpdateServerOperators :: DB.Connection -> NonEmpty PresetOperator -> Bool -> 
 getUpdateServerOperators db presetOps newUser = do
   conds <- map toUsageConditions <$> DB.query_ db usageCondsQuery
   now <- getCurrentTime
-  let (acceptForSimplex_, currentConds, condsToAdd) = usageConditionsToAdd newUser now conds
+  let (currentConds, condsToAdd) = usageConditionsToAdd newUser now conds
   mapM_ insertConditions condsToAdd
   latestAcceptedConds_ <- getLatestAcceptedConditions db
   ops <- updatedServerOperators presetOps <$> getServerOperators_ db
   forM ops $ traverse $ mapM $ \(ASO _ op) ->
     -- traverse for tuple, mapM for Maybe
     case operatorId op of
-      DBNewEntity -> do
-        op' <- insertOperator op
-        case (operatorTag op', acceptForSimplex_) of
-          (Just OTSimplex, Just cond) -> autoAcceptConditions op' cond now
-          _ -> pure op'
+      DBNewEntity -> insertOperator op
       DBEntityId _ -> do
         updateOperator op
         getOperatorConditions_ db op currentConds latestAcceptedConds_ now >>= \case

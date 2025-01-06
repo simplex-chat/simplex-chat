@@ -27,7 +27,7 @@ import Simplex.Messaging.Agent.Store.Postgres (createDBStore)
 import Simplex.Messaging.Agent.Store.SQLite (createDBStore)
 #endif
 
-createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError DBStore)
+createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> Bool -> IO (Either MigrationError DBStore)
 createChatStore dbPath key keepKey = createDBStore dbPath key keepKey migrations
 
 chatStoreFile :: FilePath -> FilePath

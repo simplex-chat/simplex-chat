@@ -36,6 +36,7 @@ enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
     case contacts = 1
     case groups = 2
     case business = 3
+    case notes = 4
     
     var id: Int { rawValue }
 }
@@ -563,7 +564,7 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView(parentSheet: $parentSheet) }
+            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView(parentSheet: $parentSheet, searchText: $searchText) }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
@@ -621,6 +622,9 @@ struct ChatListSearchBar: View {
                 }
             }
         }
+        .onChange(of: chatTagsModel.activeFilter) { _ in
+            searchText = ""
+        }
         .alert(item: $alert) { a in
             planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
         }
@@ -667,6 +671,7 @@ struct ChatTagsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var parentSheet: SomeSheet<AnyView>?
+    @Binding var searchText: String
 
     var body: some View {
         HStack {
@@ -787,9 +792,10 @@ struct ChatTagsView: View {
             nil
         }
         Menu {
-            if selectedPresetTag != nil {
+            if chatTagsModel.activeFilter != nil || !searchText.isEmpty {
                 Button {
                     chatTagsModel.activeFilter = nil
+                    searchText = ""
                 } label: {
                     HStack {
                         Image(systemName: "list.bullet")
@@ -829,6 +835,7 @@ struct ChatTagsView: View {
         case .contacts: (active ? "person.fill" : "person", "Contacts")
         case .groups: (active ? "person.2.fill" : "person.2", "Groups")
         case .business: (active ? "briefcase.fill" : "briefcase", "Businesses")
+        case .notes: (active ? "folder.fill" : "folder", "Notes")
         }
     }
     
@@ -871,6 +878,11 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo) -> Bool {
         }
     case .business:
         chatInfo.groupInfo?.businessChat?.chatType == .business
+    case .notes:
+        switch chatInfo {
+        case .local: true
+        default: false
+        }
     }
 }
 
