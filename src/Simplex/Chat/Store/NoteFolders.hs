@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -10,14 +11,19 @@ module Simplex.Chat.Store.NoteFolders where
 import Control.Monad.Except (ExceptT (..), throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Time (getCurrentTime)
-import Database.SQLite.Simple (Only (..))
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types (NoteFolder (..), NoteFolderId, User (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..))
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 createNoteFolder :: DB.Connection -> User -> ExceptT StoreError IO ()
 createNoteFolder db User {userId} = do

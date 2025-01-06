@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -27,9 +28,6 @@ import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (Only (..), Query, SQLError, (:.) (..))
-import qualified Database.SQLite.Simple as SQL
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.Types
@@ -49,6 +47,15 @@ import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
 import Simplex.Messaging.Version
 import UnliftIO.STM
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), Query, SqlError, (:.) (..))
+import Database.PostgreSQL.Simple.Errors (constraintViolation)
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), Query, SQLError, (:.) (..))
+import qualified Database.SQLite.Simple as SQL
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 data ChatLockEntity
   = CLInvitation ByteString
@@ -143,10 +150,17 @@ insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
 checkConstraint :: StoreError -> ExceptT StoreError IO a -> ExceptT StoreError IO a
 checkConstraint err action = ExceptT $ runExceptT action `E.catch` (pure . Left . handleSQLError err)
 
+#if defined(dbPostgres)
+handleSQLError :: StoreError -> SqlError -> StoreError
+handleSQLError err e = case constraintViolation e of
+  Just _ -> err
+  Nothing -> SEInternalError $ show e
+#else
 handleSQLError :: StoreError -> SQLError -> StoreError
 handleSQLError err e
   | SQL.sqlError e == SQL.ErrorConstraint = err
   | otherwise = SEInternalError $ show e
+#endif
 
 storeFinally :: ExceptT StoreError IO a -> ExceptT StoreError IO b -> ExceptT StoreError IO a
 storeFinally = allFinally mkStoreError
@@ -479,9 +493,7 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
       let ldn = displayName <> (if ldnSuffix == 0 then "" else T.pack $ '_' : show ldnSuffix)
       E.try (insertName ldn currentTs) >>= \case
         Right () -> action ldn
-        Left e
-          | SQL.sqlError e == SQL.ErrorConstraint -> tryCreateName (ldnSuffix + 1) (attempts - 1)
-          | otherwise -> E.throwIO e
+        Left e -> handleErr ldnSuffix attempts e
       where
         insertName ldn ts =
           DB.execute
@@ -492,6 +504,15 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
               VALUES (?,?,?,?,?,?)
             |]
             (ldn, displayName, ldnSuffix, userId, ts, ts)
+#if defined(dbPostgres)
+    handleErr ldnSuffix attempts e = case constraintViolation e of
+      Just _ -> tryCreateName (ldnSuffix + 1) (attempts - 1)
+      Nothing -> E.throwIO e
+#else
+    handleErr ldnSuffix attempts e
+      | SQL.sqlError e == SQL.ErrorConstraint = tryCreateName (ldnSuffix + 1) (attempts - 1)
+      | otherwise = E.throwIO e
+#endif
 
 createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomId = createWithRandomBytes 12
@@ -511,9 +532,16 @@ createWithRandomBytes' size gVar create = tryCreate 3
       id' <- liftIO $ encodedRandomBytes gVar size
       liftIO (E.try $ create id') >>= \case
         Right x -> liftEither x
-        Left e
-          | SQL.sqlError e == SQL.ErrorConstraint -> tryCreate (n - 1)
-          | otherwise -> throwError . SEInternalError $ show e
+        Left e -> handleErr n e
+#if defined(dbPostgres)
+    handleErr n e = case constraintViolation e of
+      Just _ -> tryCreate (n - 1)
+      Nothing -> throwError . SEInternalError $ show e
+#else
+    handleErr n e
+      | SQL.sqlError e == SQL.ErrorConstraint = tryCreate (n - 1)
+      | otherwise = throwError . SEInternalError $ show e
+#endif
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar

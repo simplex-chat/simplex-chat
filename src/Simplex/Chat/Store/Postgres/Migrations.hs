@@ -1,8 +1,11 @@
-module Simplex.Chat.Store.Postgres.Migrations where
+{-# LANGUAGE NamedFieldPuns #-}
+
+module Simplex.Chat.Store.Postgres.Migrations (migrations) where
 
 import Data.List (sortOn)
 import Data.Text (Text)
 import Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
+import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
 schemaMigrations =

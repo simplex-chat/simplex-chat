@@ -421,7 +421,8 @@ CREATE TABLE chat_items(
   fwd_from_contact_id BIGINT REFERENCES contacts ON DELETE SET NULL,
   fwd_from_group_id BIGINT REFERENCES groups ON DELETE SET NULL,
   fwd_from_chat_item_id BIGINT REFERENCES chat_items ON DELETE SET NULL,
-  via_proxy SMALLINT
+  via_proxy SMALLINT,
+  msg_content_tag TEXT
 );
 ALTER TABLE groups
 ADD CONSTRAINT fk_groups_chat_items

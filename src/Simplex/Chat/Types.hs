@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -41,11 +42,6 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (FromField (..), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
-import Database.SQLite.Simple.Ok
-import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -61,6 +57,17 @@ import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enu
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ResultError (..))
+import Database.PostgreSQL.Simple.FromField (FromField(..), FieldParser, returnError)
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple (ResultError (..), SQLData (..))
+import Database.SQLite.Simple.FromField (FromField (..), returnError)
+import Database.SQLite.Simple.Internal (Field (..))
+import Database.SQLite.Simple.Ok
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -103,7 +110,7 @@ instance ToJSON AgentUserId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentUserId where fromField f = AgentUserId <$> fromField f
+deriving newtype instance FromField AgentUserId
 
 instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 
@@ -459,6 +466,15 @@ msgFilterIntP = \case
   2 -> Just MFMentions
   _ -> Just MFAll
 
+-- TODO [postgres] review
+#if defined(dbPostgres)
+fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> FieldParser a
+fromIntField_ fromInt f val = do
+  i <- fromField f val
+  case fromInt i of
+    Just x -> pure x
+    _ -> returnError ConversionFailed f "invalid integer value"
+#else
 fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
 fromIntField_ fromInt = \case
   f@(Field (SQLInteger i) _) ->
@@ -466,6 +482,7 @@ fromIntField_ fromInt = \case
       Just x -> Ok x
       _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
   f -> returnError ConversionFailed f "expecting SQLInteger column type"
+#endif
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
@@ -595,7 +612,7 @@ instance ToJSON ImageData where
 
 instance ToField ImageData where toField (ImageData t) = toField t
 
-instance FromField ImageData where fromField = fmap ImageData . fromField
+deriving newtype instance FromField ImageData
 
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
@@ -1229,7 +1246,7 @@ instance ToJSON AgentInvId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentInvId where fromField f = AgentInvId <$> fromField f
+deriving newtype instance FromField AgentInvId
 
 instance ToField AgentInvId where toField (AgentInvId m) = toField m
 

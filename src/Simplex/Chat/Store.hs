@@ -17,13 +17,14 @@ where
 
 import Data.ByteArray (ScrubbedBytes)
 import Simplex.Chat.Store.Profiles
-import Simplex.Chat.Store.SQLite.Migrations
 import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withTransaction)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, MigrationError)
 #if defined(dbPostgres)
+import Simplex.Chat.Store.Postgres.Migrations
 import Simplex.Messaging.Agent.Store.Postgres (createDBStore)
 #else
+import Simplex.Chat.Store.SQLite.Migrations
 import Simplex.Messaging.Agent.Store.SQLite (createDBStore)
 #endif
 
