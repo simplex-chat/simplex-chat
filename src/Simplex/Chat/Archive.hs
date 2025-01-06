@@ -11,7 +11,6 @@ module Simplex.Chat.Archive
     deleteStorage,
     sqlCipherExport,
     sqlCipherTestKey,
-    archiveFilesFolder,
   )
 where
 

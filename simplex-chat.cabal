@@ -33,7 +33,6 @@ library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.AppSettings
-      Simplex.Chat.Archive
       Simplex.Chat.Bot
       Simplex.Chat.Bot.KnownContacts
       Simplex.Chat.Call
@@ -96,6 +95,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
   else
       exposed-modules:
+          Simplex.Chat.Archive
           Simplex.Chat.Store.SQLite.Migrations
           Simplex.Chat.Store.SQLite.Migrations.M20220101_initial
           Simplex.Chat.Store.SQLite.Migrations.M20220122_v1_1

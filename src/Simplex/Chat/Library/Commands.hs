@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -26,8 +27,6 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Bifunctor (bimap, first, second)
-import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -47,14 +46,11 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMayb
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, getCurrentTime, nominalDay)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
-import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -87,13 +83,10 @@ import Simplex.Chat.Util (liftIOEither)
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
-import Simplex.Messaging.Agent.Store.SQLite (execSQL)
-import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+import Simplex.Messaging.Agent.Store (execSQL)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Agent.Store.Migrations as Migrations
 import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (SMAlways), textToHostMode)
@@ -122,6 +115,20 @@ import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
 import UnliftIO.STM
+#if defined(dbPostgres)
+import Data.Bifunctor (bimap, second)
+import Data.Time (NominalDiffTime, addUTCTime)
+import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
+#else
+import Data.Bifunctor (bimap, first, second)
+import qualified Data.ByteArray as BA
+import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
+import qualified Database.SQLite.Simple as SQL
+import Simplex.Chat.Archive
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
+import Simplex.Messaging.Agent.Store.Common (withConnection)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+#endif
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
@@ -446,6 +453,7 @@ processChatCommand' vr = \case
         chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
+#if !defined(dbPostgres)
   APIExportArchive cfg -> checkChatStopped $ CRArchiveExported <$> lift (exportArchive cfg)
   ExportArchive -> do
     ts <- liftIO getCurrentTime
@@ -455,13 +463,9 @@ processChatCommand' vr = \case
     fileErrs <- lift $ importArchive cfg
     setStoreChanged
     pure $ CRArchiveImported fileErrs
-  APISaveAppSettings as -> withFastStore' (`saveAppSettings` as) >> ok_
-  APIGetAppSettings platformDefaults -> CRAppSettings <$> withFastStore' (`getAppSettings` platformDefaults)
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   TestStorageEncryption key -> sqlCipherTestKey key >> ok_
-  ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
-  ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
   SlowSQLQueries -> do
     ChatController {chatStore, smpAgent} <- ask
     chatQueries <- slowQueries chatStore
@@ -474,6 +478,11 @@ processChatCommand' vr = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
+#endif
+  ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
+  ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
+  APISaveAppSettings as -> withFastStore' (`saveAppSettings` as) >> ok_
+  APIGetAppSettings platformDefaults -> CRAppSettings <$> withFastStore' (`getAppSettings` platformDefaults)
   APIGetChatTags userId -> withUserId' userId $ \user -> do
     tags <- withFastStore' (`getUserChatTags` user)
     pure $ CRChatTags user tags
@@ -2417,12 +2426,14 @@ processChatCommand' vr = \case
           | name == "" -> withFastStore (`getUserNoteFolderId` user)
           | otherwise -> throwChatError $ CECommandError "not supported"
         _ -> throwChatError $ CECommandError "not supported"
+#if !defined(dbPostgres)
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: CM ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
     withStoreChanged :: CM () -> CM ChatResponse
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged >> ok_
+#endif
     checkStoreNotChanged :: CM ChatResponse -> CM ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     withUserName :: UserName -> (UserId -> ChatCommand) -> CM ChatResponse
@@ -3551,6 +3562,7 @@ chatCommandP =
       "/set file paths " *> (APISetAppFilePaths <$> jsonP),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
+#if !defined(dbPostgres)
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
       "/_db import " *> (APIImportArchive <$> jsonP),
@@ -3560,11 +3572,12 @@ chatCommandP =
       "/db key " *> (APIStorageEncryption <$> (dbEncryptionConfig <$> dbKeyP <* A.space <*> dbKeyP)),
       "/db decrypt " *> (APIStorageEncryption . (`dbEncryptionConfig` "") <$> dbKeyP),
       "/db test key " *> (TestStorageEncryption <$> dbKeyP),
+      "/sql slow" $> SlowSQLQueries,
+#endif
       "/_save app settings" *> (APISaveAppSettings <$> jsonP),
       "/_get app settings" *> (APIGetAppSettings <$> optional (A.space *> jsonP)),
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
-      "/sql slow" $> SlowSQLQueries,
       "/_get tags " *> (APIGetChatTags <$> A.decimal),
       "/_get chats "
         *> ( APIGetChats
@@ -3998,9 +4011,11 @@ chatCommandP =
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
       pure $ SimpleNetCfg {socksProxy, socksMode, hostMode, requiredHostMode, smpProxyMode_, smpProxyFallback_, smpWebPort, tcpTimeout_, logTLSErrors}
+#if !defined(dbPostgres)
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
+#endif
     autoAcceptP = ifM onOffP (Just <$> (businessAA <|> addressAA)) (pure Nothing)
       where
         addressAA = AutoAccept False <$> (" incognito=" *> onOffP <|> pure False) <*> autoReply

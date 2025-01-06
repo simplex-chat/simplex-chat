@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -25,8 +26,6 @@ import Control.Monad.IO.Class
 import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
-import Database.SQLite.Simple (Only (..), (:.) (..))
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
@@ -39,6 +38,13 @@ import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirst
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import Simplex.Messaging.Util (eitherToMaybe)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), (:.) (..))
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 getChatLockEntity :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ChatLockEntity
 getChatLockEntity db agentConnId = do

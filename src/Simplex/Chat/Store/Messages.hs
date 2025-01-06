@@ -159,10 +159,10 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, ToRow (..), (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, ToRow, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
-import Database.SQLite.Simple (Only (..), Query, ToRow (..), (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 

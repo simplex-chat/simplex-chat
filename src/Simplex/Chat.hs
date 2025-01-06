@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -20,7 +21,6 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Data.Bifunctor (bimap, second)
-import Data.ByteArray (ScrubbedBytes)
 import Data.List (partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -50,6 +50,11 @@ import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), 
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ConnectInfo (..))
+#else
+import Data.ByteArray (ScrubbedBytes)
+#endif
 
 operatorSimpleXChat :: NewServerOperator
 operatorSimpleXChat =
@@ -183,11 +188,19 @@ fluxXFTPServers =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
+#if defined(dbPostgres)
+createChatDatabase :: ConnectInfo -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
+createChatDatabase connectInfo confirmMigrations = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore connectInfo chatSchema confirmMigrations
+  agentStore <- ExceptT $ createAgentStore connectInfo agentSchema confirmMigrations
+  pure ChatDatabase {chatStore, agentStore}
+#else
 createChatDatabase :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> Bool -> IO (Either MigrationError ChatDatabase)
 createChatDatabase filePrefix key keepKey confirmMigrations vacuum = runExceptT $ do
   chatStore <- ExceptT $ createChatStore (chatStoreFile filePrefix) key keepKey confirmMigrations vacuum
   agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key keepKey confirmMigrations vacuum
   pure ChatDatabase {chatStore, agentStore}
+#endif
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
 newChatController
