@@ -1459,7 +1459,7 @@
       </trans-unit>
       <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
-        <target state="translated">A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</target>
+        <target state="translated">A csevegés megállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés elindítása előtt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
@@ -5168,9 +5168,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csoport megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open migration to another device" xml:space="preserve">
+      <trans-unit id="Open migration to another device" xml:space="preserve" approved="no">
         <source>Open migration to another device</source>
-        <target>Átköltöztetés megkezdése egy másik eszközre</target>
+        <target state="translated">Átköltöztetés indítása egy másik eszközre</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
