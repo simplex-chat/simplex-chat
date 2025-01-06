@@ -36,7 +36,7 @@ struct FramedItemView: View {
                         Text("Only you and moderators see it") :
                         Text("Only sender and moderators see it")
                         
-                        framedItemHeader(icon: "flag", caption: txt.italic())
+                        framedItemHeader(icon: "flag", iconColor: .red, caption: txt.italic())
                     } else {
                         framedItemHeader(icon: "flag", caption: Text("archived report").italic())
                     }
@@ -171,13 +171,14 @@ struct FramedItemView: View {
         }
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
+    @ViewBuilder func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
         let v = HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 14, height: 14)
+                    .foregroundColor(iconColor ?? theme.colors.secondary)
             }
             caption
                 .font(.caption)

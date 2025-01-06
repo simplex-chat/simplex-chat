@@ -1849,7 +1849,7 @@ struct ChatView: View {
             } label: {
                 Label (
                     NSLocalizedString("Report", comment: "chat item action"),
-                    systemImage: "exclamationmark.bubble"
+                    systemImage: "flag"
                 )
             }
         }

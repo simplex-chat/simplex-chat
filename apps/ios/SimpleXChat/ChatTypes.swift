@@ -3946,7 +3946,7 @@ public enum ReportReason: Hashable {
         case .illegal: return NSLocalizedString("Inappropriate content", comment: "report reason")
         case .community: return NSLocalizedString("Community guidelines violation", comment: "report reason")
         case .profile: return NSLocalizedString("Inappropriate profile", comment: "report reason")
-        case .other: return NSLocalizedString("Other", comment: "report reason")
+        case .other: return NSLocalizedString("Another reason", comment: "report reason")
         case let .unknown(type): return type
         }
     }
