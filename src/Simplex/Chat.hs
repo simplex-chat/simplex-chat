@@ -92,8 +92,9 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle)
 import qualified Simplex.Chat.Util as U
+import Simplex.FileTransfer.Description (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription, maxFileSize, maxFileSizeHard)
+import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
@@ -884,17 +885,16 @@ processChatCommand' vr = \case
         Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
           Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
         _ -> pure Nothing
-  APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user ->
-    mapM_ assertAllowedContent' cms >> case cType of
-      CTDirect ->
-        withContactLock "sendMessage" chatId $
-          sendContactContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
-      CTGroup ->
-        withGroupLock "sendMessage" chatId $
-          sendGroupContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
-      CTLocal -> pure $ chatCmdError (Just user) "not supported"
-      CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-      CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case cType of
+    CTDirect ->
+      withContactLock "sendMessage" chatId $
+        sendContactContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
+    CTGroup ->
+      withGroupLock "sendMessage" chatId $
+        sendGroupContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
+    CTLocal -> pure $ chatCmdError (Just user) "not supported"
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatItems folderId cms -> withUser $ \user -> do
     mapM_ assertAllowedContent' cms
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
@@ -916,70 +916,69 @@ processChatCommand' vr = \case
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
     reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
     processChatCommand $ APIReportMessage gId reportedItemId reportReason ""
-  APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user ->
-    assertAllowedContent mc >> case cType of
-      CTDirect -> withContactLock "updateChatItem" chatId $ do
-        ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
-        assertDirectAllowed user MDSnd ct XMsgUpdate_
-        cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
-        case cci of
-          CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
-            case (ciContent, itemSharedMsgId, editable) of
-              (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-                let changed = mc /= oldMC
-                if changed || fromMaybe False itemLive
-                  then do
-                    (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
-                    ci' <- withFastStore' $ \db -> do
-                      currentTs <- liftIO getCurrentTime
-                      when changed $
-                        addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                      let edited = itemLive /= Just True
-                      updateDirectChatItem' db user contactId ci (CISndMsgContent mc) edited live Nothing $ Just msgId
-                    startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
-                    pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
-                  else pure $ CRChatItemNotChanged user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
-              _ -> throwChatError CEInvalidChatItemUpdate
-          CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-      CTGroup -> withGroupLock "updateChatItem" chatId $ do
-        Group gInfo@GroupInfo {groupId, membership} ms <- withFastStore $ \db -> getGroup db vr user chatId
-        assertUserGroupRole gInfo GRAuthor
-        if prohibitedSimplexLinks gInfo membership mc
-          then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
-          else do
-            cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
-            case cci of
-              CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
-                case (ciContent, itemSharedMsgId, editable) of
-                  (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-                    let changed = mc /= oldMC
-                    if changed || fromMaybe False itemLive
-                      then do
-                        SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
-                        ci' <- withFastStore' $ \db -> do
-                          currentTs <- liftIO getCurrentTime
-                          when changed $
-                            addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                          let edited = itemLive /= Just True
-                          updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
-                        startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
-                        pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
-                      else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
-                  _ -> throwChatError CEInvalidChatItemUpdate
-              CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-      CTLocal -> do
-        (nf@NoteFolder {noteFolderId}, cci) <- withFastStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
-        case cci of
-          CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent oldMC}
-            | mc == oldMC -> pure $ CRChatItemNotChanged user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
-            | otherwise -> withFastStore' $ \db -> do
-                currentTs <- getCurrentTime
-                addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc) True
-                pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
-          _ -> throwChatError CEInvalidChatItemUpdate
-      CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-      CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+  APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> assertAllowedContent mc >> case cType of
+    CTDirect -> withContactLock "updateChatItem" chatId $ do
+      ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
+      assertDirectAllowed user MDSnd ct XMsgUpdate_
+      cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
+      case cci of
+        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+          case (ciContent, itemSharedMsgId, editable) of
+            (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
+              let changed = mc /= oldMC
+              if changed || fromMaybe False itemLive
+                then do
+                  (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                  ci' <- withFastStore' $ \db -> do
+                    currentTs <- liftIO getCurrentTime
+                    when changed $
+                      addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                    let edited = itemLive /= Just True
+                    updateDirectChatItem' db user contactId ci (CISndMsgContent mc) edited live Nothing $ Just msgId
+                  startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
+                  pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
+                else pure $ CRChatItemNotChanged user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+            _ -> throwChatError CEInvalidChatItemUpdate
+        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
+    CTGroup -> withGroupLock "updateChatItem" chatId $ do
+      Group gInfo@GroupInfo {groupId, membership} ms <- withFastStore $ \db -> getGroup db vr user chatId
+      assertUserGroupRole gInfo GRAuthor
+      if prohibitedSimplexLinks gInfo membership mc
+        then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
+        else do
+          cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
+          case cci of
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+              case (ciContent, itemSharedMsgId, editable) of
+                (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
+                  let changed = mc /= oldMC
+                  if changed || fromMaybe False itemLive
+                    then do
+                      SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                      ci' <- withFastStore' $ \db -> do
+                        currentTs <- liftIO getCurrentTime
+                        when changed $
+                          addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                        let edited = itemLive /= Just True
+                        updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
+                      startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
+                      pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
+                    else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+                _ -> throwChatError CEInvalidChatItemUpdate
+            CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
+    CTLocal -> do
+      (nf@NoteFolder {noteFolderId}, cci) <- withFastStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
+      case cci of
+        CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent oldMC}
+          | mc == oldMC -> pure $ CRChatItemNotChanged user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
+          | otherwise -> withFastStore' $ \db -> do
+              currentTs <- getCurrentTime
+              addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+              ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc) True
+              pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
+        _ -> throwChatError CEInvalidChatItemUpdate
+    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
+    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemIds mode -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "deleteChatItem" chatId $ do
       (ct, items) <- getCommandDirectChatItems user chatId itemIds
@@ -8442,7 +8441,7 @@ chatCommandP =
       "/_report #" *> (APIReportMessage <$> A.decimal <* A.space <*> A.decimal <*> (" reason=" *> strP) <*> (A.space *> textP <|> pure "")),
       "/report #" *> (ReportMessage <$> displayName <*> optional (" @" *> displayName) <*> _strP <* A.space <*> msgTextP),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
-      "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <*> _strP),
+      "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
@@ -8725,6 +8724,7 @@ chatCommandP =
         <|> (PTBefore <$ "before=" <*> strP <* A.space <* "count=" <*> A.decimal)
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
+    ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
     chatDeleteMode =
       A.choice
         [ " full" *> (CDMFull <$> notifyP),
