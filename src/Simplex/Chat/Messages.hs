@@ -312,10 +312,14 @@ deriving instance Show AChat
 data ChatStats = ChatStats
   { unreadCount :: Int,
     reportsCount :: Int,
+    archivedReportsCount :: Int,
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }
   deriving (Show)
+
+emptyChatStats :: ChatStats
+emptyChatStats = ChatStats 0 0 0 0 False
 
 data NavigationInfo = NavigationInfo
   { afterUnread :: Int,
