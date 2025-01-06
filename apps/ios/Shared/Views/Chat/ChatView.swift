@@ -1287,10 +1287,10 @@ struct ChatView: View {
             if let groupInfo = chat.chatInfo.groupInfo, ci.isReport, ci.meta.itemDeleted == nil {
                 archiveReportButton(ci, groupInfo)
                 if let qi = ci.quotedItem, ci.chatDir != .groupSnd {
-                    moderateReportedButton(qi, ci.id, groupInfo)
+                    moderateReportedButton(qi, ci, groupInfo)
                     if let rMember = qi.memberToModerate(chat.chatInfo) {
                         if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
-                            blockMemberButton(rMember, groupInfo, qi, ci.id)
+                            blockMemberButton(rMember, groupInfo, qi, ci)
                         }
                     }
                 }
@@ -1675,10 +1675,18 @@ struct ChatView: View {
             }
         }
         
-        private func moderateReportedButton(_ rItem: CIQuote, _ reportId: Int64, _ groupInfo: GroupInfo) -> Button<some View> {
+        private func moderateReportedButton(_ rItem: CIQuote, _ reportItem: ChatItem, _ groupInfo: GroupInfo) -> Button<some View> {
             Button(role: .destructive) {
                 showModerateMessageAlert(groupInfo) {
-                    deleteReportedMessage(rItem, reportId, groupInfo)
+                    Task {
+                        let deleted = await deleteReportedMessage(rItem, reportItem.id, groupInfo)
+                        if deleted != nil {
+                            await MainActor.run {
+                                deletingItem = reportItem
+                                deleteMessage(.cidmInternalMark, moderate: false)
+                            }
+                        }
+                    }
                 }
             } label: {
                 Label(
@@ -1701,7 +1709,7 @@ struct ChatView: View {
                         ),
                         primaryButton: .destructive(Text("Archive")) {
                             deletingItem = cItem
-                            deleteMessage(.cidmBroadcast, moderate: !isOwnReport)
+                            deleteMessage(.cidmInternalMark, moderate: false)
                         },
                         secondaryButton: .cancel()
                     )
@@ -1714,7 +1722,7 @@ struct ChatView: View {
             }
         }
         
-        private func blockMemberButton(_ member: GroupMember, _ groupInfo: GroupInfo, _ rItem: CIQuote, _ reportId: Int64) -> Button<some View> {
+        private func blockMemberButton(_ member: GroupMember, _ groupInfo: GroupInfo, _ rItem: CIQuote, _ report: ChatItem) -> Button<some View> {
             Button(role: .destructive) {
                 actionSheet = SomeActionSheet(
                     actionSheet: ActionSheet(
@@ -1733,8 +1741,19 @@ struct ChatView: View {
                                             )
                                         ),
                                         primaryButton: .destructive(Text("Delete and block")) {
-                                            deleteReportedMessage(rItem, reportId, groupInfo)
-                                            blockMemberForAll(groupInfo, member, true)
+                                            Task {
+                                                let deleted = await deleteReportedMessage(rItem, report.id, groupInfo)
+                                                if deleted != nil {
+                                                    let blocked = await blockMemberForAll(groupInfo, member, true)
+                                                    
+                                                    if blocked != nil {
+                                                        await MainActor.run {
+                                                            deletingItem = report
+                                                            deleteMessage(.cidmInternalMark, moderate: false)
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         },
                                         secondaryButton: .cancel()
                                     )
@@ -1742,9 +1761,12 @@ struct ChatView: View {
                             },
                             .destructive(Text("Only block")) {
                                 Task {
-                                    if (await getLocalIdForReportedMessage(rItem, reportId, groupInfo)) != nil {
+                                    if (await getLocalIdForReportedMessage(rItem, report.id, groupInfo)) != nil {
                                         AlertManager.shared.showAlert(
-                                            blockForAllAlert(groupInfo, member)
+                                            blockForAllAlert(groupInfo, member) {
+                                                deletingItem = report
+                                                deleteMessage(.cidmInternalMark, moderate: false)
+                                            }
                                         )
                                     } else {
                                         showNoMessageMessageAlert()
@@ -1870,34 +1892,36 @@ struct ChatView: View {
             }
         }
         
-        private func deleteReportedMessage(_ rItem: CIQuote, _ reportId: Int64,  _ groupInfo: GroupInfo) {
-            Task {
-                do {
-                    let itemId = await getLocalIdForReportedMessage(rItem, reportId, groupInfo)
+        private func deleteReportedMessage(_ rItem: CIQuote, _ reportId: Int64,  _ groupInfo: GroupInfo) async -> ChatItemDeletion? {
+            do {
+                let itemId = await getLocalIdForReportedMessage(rItem, reportId, groupInfo)
+                
+                if let itemId = itemId {
+                    let deletedItem = try await apiDeleteMemberChatItems(
+                        groupId: groupInfo.apiId,
+                        itemIds: [itemId]
+                    ).first
                     
-                    if let itemId = itemId {
-                        let deletedItem = try await apiDeleteMemberChatItems(
-                            groupId: groupInfo.apiId,
-                            itemIds: [itemId]
-                        ).first
-
-                        if let di = deletedItem {
-                            await MainActor.run {
-                                if let toItem = di.toChatItem {
-                                    _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)
-                                } else {
-                                    m.removeChatItem(chat.chatInfo, di.deletedChatItem.chatItem)
-                                }
+                    if let di = deletedItem {
+                        await MainActor.run {
+                            if let toItem = di.toChatItem {
+                                _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)
+                            } else {
+                                m.removeChatItem(chat.chatInfo, di.deletedChatItem.chatItem)
                             }
                         }
-                    } else {
-                        showNoMessageMessageAlert()
+                        
+                        return di
                     }
-                } catch {
-                    logger.error("ChatView.deleteReportedMessage error: \(error)")
-                    AlertManager.shared.showAlertMsg(title: LocalizedStringKey("Error"), message: LocalizedStringKey("Failed to delete reported message"))
+                } else {
+                    showNoMessageMessageAlert()
                 }
+            } catch {
+                logger.error("ChatView.deleteReportedMessage error: \(error)")
+                AlertManager.shared.showAlertMsg(title: LocalizedStringKey("Error"), message: LocalizedStringKey("Failed to delete reported message"))
             }
+            
+            return nil
         }
         
         private func getLocalIdForReportedMessage(_ rItem: CIQuote, _ reportId: Int64,  _ groupInfo: GroupInfo) async -> Int64? {
@@ -1955,7 +1979,7 @@ struct ChatView: View {
                         }
                     }
                 } catch {
-                    logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+                    logger.error("ChatView.deleteMessage error: \(error)")
                 }
             }
         }
