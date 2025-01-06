@@ -2768,6 +2768,7 @@ sealed class CIForwardedFrom {
 @Serializable
 enum class CIDeleteMode(val deleteMode: String) {
   @SerialName("internal") cidmInternal("internal"),
+  @SerialName("internalMark") cidmInternalMark("internalMark"),
   @SerialName("broadcast") cidmBroadcast("broadcast");
 }
 
