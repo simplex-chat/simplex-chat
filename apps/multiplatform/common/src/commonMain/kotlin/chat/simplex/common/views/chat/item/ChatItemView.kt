@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat.item
 
+import SectionItemView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.HoverInteraction
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -386,6 +388,9 @@ fun ChatItemView(
                 val groupInfo = cItem.memberToModerate(cInfo)?.first
                 if (groupInfo != null && cItem.chatDir !is CIDirection.GroupSnd) {
                   ModerateItemAction(cItem, questionText = moderateMessageQuestionText(cInfo.featureEnabled(ChatFeature.FullDelete), 1), showMenu, deleteMessage)
+                }
+                if (cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group && cItem.chatDir is CIDirection.GroupRcv) {
+                  ReportItemAction(cItem, composeState, showMenu)
                 }
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
@@ -799,6 +804,7 @@ fun SelectItemAction(
   )
 }
 
+
 @Composable
 private fun RevealItemAction(revealed: State<Boolean>, showMenu: MutableState<Boolean>, reveal: (Boolean) -> Unit) {
   ItemAction(
@@ -845,6 +851,51 @@ private fun ShrinkItemAction(revealed: State<Boolean>, showMenu: MutableState<Bo
       showMenu.value = false
     },
   )
+}
+
+@Composable
+private fun ReportItemAction(
+  cItem: ChatItem,
+  composeState: MutableState<ComposeState>,
+  showMenu: MutableState<Boolean>,
+) {
+  ItemAction(
+    stringResource(MR.strings.report_verb),
+    painterResource(MR.images.ic_flag),
+    onClick = {
+      AlertManager.shared.showAlertDialogButtons(
+        title = generalGetString(MR.strings.report_reason_alert_title),
+        buttons = {
+          ReportReasonOption(ReportReason.Spam, cItem, composeState)
+          ReportReasonOption(ReportReason.Illegal, cItem, composeState)
+          ReportReasonOption(ReportReason.Community, cItem, composeState)
+          ReportReasonOption(ReportReason.Profile, cItem, composeState)
+          ReportReasonOption(ReportReason.Other, cItem, composeState)
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+          }) {
+            Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
+        }
+      )
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+private fun ReportReasonOption(reason: ReportReason, cItem: ChatItem, composeState: MutableState<ComposeState>, ) {
+  SectionItemView({
+    if (composeState.value.editing) {
+      composeState.value = ComposeState(contextItem = ComposeContextItem.ReportedItem(cItem, reason), useLinkPreviews = composeState.value.useLinkPreviews)
+    } else {
+      composeState.value = composeState.value.copy(contextItem = ComposeContextItem.ReportedItem(cItem, reason))
+    }
+    AlertManager.shared.hideAlert()
+  }) {
+    Text(reason.text, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+  }
 }
 
 @Composable

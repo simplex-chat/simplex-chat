@@ -2120,8 +2120,14 @@ data class ChatItem (
       else -> true
     }
 
+  val isReport: Boolean get() = when (content) {
+    is CIContent.SndMsgContent, is CIContent.RcvMsgContent ->
+      content.msgContent is MsgContent.MCReport
+    else -> false
+  }
+
   val canBeDeletedForSelf: Boolean
-    get() = (content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete
+    get() = !isReport && (content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete
 
   val showNotification: Boolean get() =
     when (content) {
@@ -3593,6 +3599,15 @@ sealed class ReportReason {
   @Serializable @SerialName("profile") object Profile: ReportReason()
   @Serializable @SerialName("other") object Other: ReportReason()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
+
+  val text: String get() = when (this) {
+    Spam -> generalGetString(MR.strings.report_reason_spam)
+    Illegal -> generalGetString(MR.strings.report_reason_illegal)
+    Community -> generalGetString(MR.strings.report_reason_community)
+    Profile -> generalGetString(MR.strings.report_reason_profile)
+    Other -> generalGetString(MR.strings.report_reason_other)
+    is Unknown -> type
+  }
 }
 
 object ReportReasonSerializer : KSerializer<ReportReason> {
