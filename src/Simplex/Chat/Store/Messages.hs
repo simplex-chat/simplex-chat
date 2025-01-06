@@ -1221,35 +1221,36 @@ data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime 
 getGroupChatItemIDs :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> GroupItemIDsRange -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIDs db User {userId} GroupInfo {groupId} contentFilter range count search = case contentFilter of
   Just ContentFilter {mcTag, deleted} -> case deleted of
-    Just deleted' -> idsQuery " AND msg_content_tag = ? AND item_deleted = ? " (userId, groupId, mcTag, deleted')
-    Nothing -> idsQuery " AND msg_content_tag = ? " (userId, groupId, mcTag)
-  Nothing -> idsQuery "" (userId, groupId)
+    Just deleted' -> idsQuery (baseCond <> " msg_content_tag = ? AND item_deleted = ? ") (userId, groupId, mcTag, deleted')
+    Nothing -> idsQuery (baseCond <> " msg_content_tag = ? ") (userId, groupId, mcTag)
+  Nothing -> idsQuery baseCond (userId, groupId)
   where
-    baseQuery =
-      [sql|
-        SELECT item_ts, chat_item_id
-        FROM chat_items
-        WHERE user_id = ? AND group_id = ?
-      |]
-    idsQuery :: ToRow p1 => Query -> p1 -> IO [ChatItemId]
-    idsQuery fc fp = case range of
-      GRLast ->
-        map snd <$> rangeQuery "" () " ORDER BY item_ts DESC, chat_item_id DESC "
+    baseQuery = " SELECT chat_item_id FROM chat_items WHERE "
+    baseCond = " user_id = ? AND group_id = ? "
+    idsQuery :: ToRow p => Query -> p -> IO [ChatItemId]
+    idsQuery c p = case range of
+      GRLast -> rangeQuery c p " ORDER BY item_ts DESC, chat_item_id DESC "
       GRAfter ts itemId ->
-        map snd . filter (\(ts', itemId') -> ts /= ts' || itemId' > itemId)
-          <$> rangeQuery " AND item_ts >= ? " (Only ts) " ORDER BY item_ts ASC, chat_item_id ASC "
+        rangeQuery
+          (" item_ts > ? " `orCond` " item_ts = ? AND chat_item_id > ? ")
+          (orParams ts itemId)
+          " ORDER BY item_ts ASC, chat_item_id ASC "
       GRBefore ts itemId ->
-        map snd . filter (\(ts', itemId') -> ts /= ts' || itemId' < itemId)
-          <$> rangeQuery " AND item_ts <= ? " (Only ts) " ORDER BY item_ts DESC, chat_item_id DESC "
+        rangeQuery
+          (" item_ts < ? " `orCond` " item_ts = ? AND chat_item_id < ? ")
+          (orParams ts itemId)
+          " ORDER BY item_ts DESC, chat_item_id DESC "
       where
-        rangeQuery :: ToRow p2 => Query -> p2 -> Query -> IO [(UTCTime, ChatItemId)]
-        rangeQuery rc rp ob
-          | null search = searchQuery "" ()
-          | otherwise = searchQuery " AND item_text LIKE '%' || ? || '%' " (Only search)
-          where
-            searchQuery :: ToRow p3 => Query -> p3 -> IO [(UTCTime, ChatItemId)]
-            searchQuery sc sp =
-              DB.query db (baseQuery <> fc <> rc <> sc <> ob <> " LIMIT ?") (fp :. rp :. sp :. Only count)
+        orCond c1 c2 = " (" <> c <> " AND " <> c1 <> ") OR (" <> c <> " AND " <> c2 <> ") "
+        orParams ts itemId = (p :. (Only ts) :. p :. (ts, itemId))
+    rangeQuery :: ToRow p => Query -> p -> Query -> IO [ChatItemId]
+    rangeQuery c p ob
+      | null search = searchQuery "" ()
+      | otherwise = searchQuery " AND item_text LIKE '%' || ? || '%' " (Only search)
+      where
+        searchQuery :: ToRow p' => Query -> p' -> IO [ChatItemId]
+        searchQuery c' p' =
+          map fromOnly <$> DB.query db (baseQuery <> c <> c' <> ob <> " LIMIT ?") (p :. p' :. Only count)
 
 safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g currentTs itemId =
