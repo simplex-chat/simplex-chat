@@ -569,13 +569,13 @@ findDirectChatPreviews_ db User {userId} pagination clq =
         LEFT JOIN (
           SELECT contact_id, chat_item_id, MAX(created_at)
           FROM chat_items
-          WHERE user_id = :user_id AND contact_id IS NOT NULL
+          WHERE user_id = ? AND contact_id IS NOT NULL
           GROUP BY contact_id
         ) LastItems ON LastItems.contact_id = ct.contact_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = :user_id AND contact_id IS NOT NULL AND item_status = :rcv_new
+          WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
       |]
@@ -657,13 +657,13 @@ findGroupChatPreviews_ db User {userId} pagination clq =
         LEFT JOIN (
           SELECT group_id, chat_item_id, MAX(item_ts)
           FROM chat_items
-          WHERE user_id = :user_id AND group_id IS NOT NULL
+          WHERE user_id = ? AND group_id IS NOT NULL
           GROUP BY group_id
         ) LastItems ON LastItems.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = :user_id AND group_id IS NOT NULL AND item_status = :rcv_new
+          WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
       |]
@@ -739,13 +739,13 @@ findLocalChatPreviews_ db User {userId} pagination clq =
         LEFT JOIN (
           SELECT note_folder_id, chat_item_id, MAX(created_at)
           FROM chat_items
-          WHERE user_id = :user_id AND note_folder_id IS NOT NULL
+          WHERE user_id = ? AND note_folder_id IS NOT NULL
           GROUP BY note_folder_id
         ) LastItems ON LastItems.note_folder_id = nf.note_folder_id
         LEFT JOIN (
           SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = :user_id AND note_folder_id IS NOT NULL AND item_status = :rcv_new
+          WHERE user_id = ? AND note_folder_id IS NOT NULL AND item_status = ?
           GROUP BY note_folder_id
         ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
       |]
