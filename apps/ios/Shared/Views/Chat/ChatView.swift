@@ -1210,7 +1210,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal, moderate: false)
                     }
-                    if let di = deletingItem, di.meta.deletable && !di.localNote {
+                    if let di = deletingItem, di.meta.deletable && !di.localNote && !di.isReport {
                         Button(broadcastDeleteButtonText(chat), role: .destructive) {
                             deleteMessage(.cidmBroadcast, moderate: false)
                         }
@@ -1285,12 +1285,16 @@ struct ChatView: View {
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
             if let groupInfo = chat.chatInfo.groupInfo, ci.isReport, ci.meta.itemDeleted == nil {
-                archiveReportButton(ci, groupInfo)
-                if let qi = ci.quotedItem, ci.chatDir != .groupSnd {
-                    moderateReportedButton(qi, ci, groupInfo)
-                    if let rMember = qi.memberToModerate(chat.chatInfo) {
-                        if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
-                            blockMemberButton(rMember, groupInfo, qi, ci)
+                if ci.chatDir == .groupSnd {
+                    deleteButton(ci)
+                } else {
+                    archiveReportButton(ci, groupInfo)
+                    if let qi = ci.quotedItem {
+                        moderateReportedButton(qi, ci, groupInfo)
+                        if let rMember = qi.memberToModerate(chat.chatInfo) {
+                            if !rMember.blockedByAdmin, rMember.canBlockForAll(groupInfo: groupInfo) {
+                                blockMemberButton(rMember, groupInfo, qi, ci)
+                            }
                         }
                     }
                 }
@@ -1347,7 +1351,8 @@ struct ChatView: View {
                 if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
                     moderateButton(ci, groupInfo)
                 }
-                if ci.meta.itemDeleted == nil && chat.chatInfo.groupInfo != nil && ci.chatDir != .groupSnd {
+                
+                if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole < .moderator {
                     reportButton(ci)
                 }
             } else if ci.meta.itemDeleted != nil {
