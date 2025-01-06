@@ -34,6 +34,7 @@ struct MsgContentView: View {
     var meta: CIMeta? = nil
     var rightToLeft = false
     var showSecrets: Bool
+    var prefix: Text? = nil
     @State private var typingIdx = 0
     @State private var timer: Timer?
 
@@ -67,7 +68,7 @@ struct MsgContentView: View {
     }
 
     private func msgContentView() -> Text {
-        var v = messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary)
+        var v = messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
         if let mt = meta {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
@@ -89,9 +90,10 @@ struct MsgContentView: View {
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool, secondaryColor: Color) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool, secondaryColor: Color, prefix: Text? = nil) -> Text {
     let s = text
     var res: Text
+    
     if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
         res = formatText(ft[0], preview, showSecret: showSecrets)
         var i = 1
@@ -106,12 +108,18 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     if let i = icon {
         res = Text(Image(systemName: i)).foregroundColor(secondaryColor) + textSpace + res
     }
+    
+    let prefixTxt = if let p = prefix {
+        p + textSpace
+    } else {
+        Text("")
+    }
 
     if let s = sender {
         let t = Text(s)
-        return (preview ? t : t.fontWeight(.medium)) + Text(": ") + res
+        return (preview ? t : t.fontWeight(.medium)) + Text(": ") + prefixTxt + res
     } else {
-        return res
+        return prefixTxt + res
     }
 }
 

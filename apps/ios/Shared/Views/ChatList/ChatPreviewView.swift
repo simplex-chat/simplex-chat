@@ -248,7 +248,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary, prefix: prefix())
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
@@ -272,6 +272,13 @@ struct ChatPreviewView: View {
             case .video: return "video"
             case .voice: return "play.fill"
             default: return nil
+            }
+        }
+        
+        func prefix() -> Text {
+            switch cItem.content.msgContent {
+            case let .report(text, reason): return Text(!text.isEmpty ? "\(reason.text): " : reason.text).italic().foregroundColor(Color.red)
+            default: return Text("")
             }
         }
     }

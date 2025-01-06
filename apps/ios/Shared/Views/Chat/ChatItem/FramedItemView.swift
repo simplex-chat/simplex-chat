@@ -154,6 +154,8 @@ struct FramedItemView: View {
                 }
             case let .file(text):
                 ciFileView(chatItem, text)
+            case let .report(text, reason):
+                ciMsgContentView(chatItem, Text(text.isEmpty ? reason.text : "\(reason.text): ").italic().foregroundColor(.red))
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
@@ -290,7 +292,7 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem) -> some View {
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ txtPrefix: Text? = nil) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
@@ -300,7 +302,8 @@ struct FramedItemView: View {
             formattedText: ft,
             meta: ci.meta,
             rightToLeft: rtl,
-            showSecrets: showSecrets
+            showSecrets: showSecrets,
+            prefix: txtPrefix
         ))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
