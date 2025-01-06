@@ -3505,6 +3505,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCVideo(override val text: String, val image: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -3581,6 +3582,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     element("MCFile", buildClassSerialDescriptor("MCFile") {
       element<String>("text")
     })
+    element("MCReport", buildClassSerialDescriptor("MCReport") {
+      element<String>("text")
+      element<ReportReason>("reason")
+    })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
 
@@ -3611,6 +3616,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             MsgContent.MCVoice(text, duration)
           }
           "file" -> MsgContent.MCFile(text)
+          "report" -> {
+            val reason = Json.decodeFromString<ReportReason>(json["reason"].toString())
+            MsgContent.MCReport(text, reason)
+          }
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {
@@ -3658,6 +3667,12 @@ object MsgContentSerializer : KSerializer<MsgContent> {
         buildJsonObject {
           put("type", "file")
           put("text", value.text)
+        }
+      is MsgContent.MCReport ->
+        buildJsonObject {
+          put("type", "report")
+          put("text", value.text)
+          put("reason", json.encodeToJsonElement(value.reason))
         }
       is MsgContent.MCUnknown -> value.json
     }
@@ -3750,6 +3765,45 @@ enum class FormatColor(val color: String) {
     magenta -> Color.Magenta
     black -> MaterialTheme.colors.onBackground
     white -> MaterialTheme.colors.onBackground
+  }
+}
+
+
+@Serializable(with = ReportReasonSerializer::class)
+sealed class ReportReason {
+  @Serializable @SerialName("spam") object Spam: ReportReason()
+  @Serializable @SerialName("illegal") object Illegal: ReportReason()
+  @Serializable @SerialName("community") object Community: ReportReason()
+  @Serializable @SerialName("profile") object Profile: ReportReason()
+  @Serializable @SerialName("other") object Other: ReportReason()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
+}
+
+object ReportReasonSerializer : KSerializer<ReportReason> {
+  override val descriptor: SerialDescriptor =
+    PrimitiveSerialDescriptor("ReportReason", PrimitiveKind.STRING)
+
+  override fun deserialize(decoder: Decoder): ReportReason {
+    return when (val value = decoder.decodeString()) {
+      "spam" -> ReportReason.Spam
+      "illegal" -> ReportReason.Illegal
+      "community" -> ReportReason.Community
+      "profile" -> ReportReason.Profile
+      "other" -> ReportReason.Other
+      else -> ReportReason.Unknown(value)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: ReportReason) {
+    val stringValue = when (value) {
+      is ReportReason.Spam -> "spam"
+      is ReportReason.Illegal -> "illegal"
+      is ReportReason.Community -> "community"
+      is ReportReason.Profile -> "profile"
+      is ReportReason.Other -> "other"
+      is ReportReason.Unknown -> value.type
+    }
+    encoder.encodeString(stringValue)
   }
 }
 
