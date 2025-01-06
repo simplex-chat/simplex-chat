@@ -139,6 +139,7 @@
   <string name="error_sending_message">Error sending message</string>
   <string name="error_forwarding_messages">Error forwarding messages</string>
   <string name="error_creating_message">Error creating message</string>
+  <string name="error_creating_report">Error creating report</string>
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
