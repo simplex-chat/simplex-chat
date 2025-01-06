@@ -139,7 +139,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (NamedParam (..), Only (..), Query, ToRow, (:.) (..))
+import Database.SQLite.Simple (FromRow, NamedParam (..), Only (..), Query, ToRow, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), ContentFilter (..), PaginationByTime (..))
 import Simplex.Chat.Markdown
@@ -1339,46 +1339,54 @@ getGroupChatAround' db user g@GroupInfo {groupId} contentFilter aroundId count s
 
 getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
 getGroupChatInitial_ db user g contentFilter count =
-  liftIO (getGroupMinUnreadId_ db user g) >>= \case
+  liftIO (getGroupMinUnreadId_ db user g contentFilter) >>= \case
     Just minUnreadItemId -> do
-      unreadCount <- liftIO $ getGroupUnreadCount_ db user g
-      -- TODO [reports]
-      let stats = ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
+      unreadCount <- liftIO $ getGroupUnreadCount_ db user g Nothing
+      reportsCount <- getGroupUnreadCount_ db user g (Just (MCReport_, Just False))
+      let stats = ChatStats {unreadCount, reportsCount, minUnreadItemId, unreadChat = False}
       getGroupChatAround' db user g contentFilter minUnreadItemId count "" stats
     Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g contentFilter count ""
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> IO ChatStats
 getGroupStats_ db user g = do
-  minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g
-  unreadCount <- getGroupUnreadCount_ db user g
-  -- TODO [reports]
-  pure ChatStats {unreadCount, reportsCount = 0, minUnreadItemId, unreadChat = False}
+  minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g Nothing
+  unreadCount <- getGroupUnreadCount_ db user g Nothing
+  reportsCount <- getGroupUnreadCount_ db user g (Just (MCReport_, Just False))
+  pure ChatStats {unreadCount, reportsCount, minUnreadItemId, unreadChat = False}
 
-getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> IO (Maybe ChatItemId)
-getGroupMinUnreadId_ db User {userId} GroupInfo {groupId} =
+getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> IO (Maybe ChatItemId)
+getGroupMinUnreadId_ db user g contentFilter =
   fmap join . maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        SELECT chat_item_id
-        FROM chat_items
-        WHERE user_id = ? AND group_id = ? AND item_status = ?
-        ORDER BY item_ts ASC, chat_item_id ASC
-        LIMIT 1
-      |]
-      (userId, groupId, CISRcvNew)
+    queryUnreadGroupItems db user g contentFilter baseQuery orderLimit
+  where
+    baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
+    orderLimit = " ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1" 
 
-getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> IO Int
-getGroupUnreadCount_ db User {userId} GroupInfo {groupId} =
-  fromOnly . head
-    <$> DB.query
-      db
-      [sql|
-        SELECT COUNT(1)
-        FROM chat_items
-        WHERE user_id = ? AND group_id = ? AND item_status = ?
-      |]
-      (userId, groupId, CISRcvNew)
+getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> IO Int
+getGroupUnreadCount_ db user g contentFilter =
+  fromOnly . head <$> queryUnreadGroupItems db user g contentFilter baseQuery ""
+  where
+    baseQuery = "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? "
+
+queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> Query -> Query -> IO [r]
+queryUnreadGroupItems db User {userId} GroupInfo {groupId} contentFilter baseQuery orderLimit =
+  case contentFilter of
+    Just ContentFilter {mcTag, deleted} -> case deleted of
+      Just deleted' ->
+        DB.query
+          db
+          (baseQuery <> " AND msg_content_tag = ? AND item_deleted = ? AND item_status = ? " <> orderLimit)
+          (userId, groupId, mcTag, deleted', CISRcvNew)
+      Nothing ->
+        DB.query
+          db
+          (baseQuery <> " AND msg_content_tag = ? AND item_status = ? " <> orderLimit)
+          (userId, groupId, mcTag, CISRcvNew)
+    Nothing ->
+      DB.query
+        db
+        (baseQuery <> " AND item_status = ? " <> orderLimit)
+        (userId, groupId, CISRcvNew)
 
 getGroupNavInfo_ :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO NavigationInfo
 getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
