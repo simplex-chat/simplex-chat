@@ -715,26 +715,22 @@ struct ComposeView: View {
     
     
     private func reportReasonView(_ reason: ReportReason) -> some View {
-        HStack {
-            let reportText = switch reason {
-            case .spam: NSLocalizedString("spam", comment: "report reason")
-            case .profile: NSLocalizedString("member profile", comment: "report reason")
-            case .community: NSLocalizedString("violation", comment: "report reason")
-            case .illegal: NSLocalizedString("content", comment: "report reason")
-            case .other: NSLocalizedString("other", comment: "report reason")
-            case .unknown: "unknown" // Should never happen
-            }
-            Text(
-                String.localizedStringWithFormat(
-                    NSLocalizedString("Report %@: only group moderators will see it.",comment: "integrity error chat item"),
-                    reportText
-                )
-            ).italic()
+        let reportText = switch reason {
+        case .spam: NSLocalizedString("Report spam: only group moderators will see it.", comment: "report reason")
+        case .profile: NSLocalizedString("Report member profile: only group moderators will see it.", comment: "report reason")
+        case .community: NSLocalizedString("Report violation: only group moderators will see it.", comment: "report reason")
+        case .illegal: NSLocalizedString("Report content: only group moderators will see it.", comment: "report reason")
+        case .other: NSLocalizedString("Report other: only group moderators will see it.", comment: "report reason")
+        case .unknown: "" // Should never happen
         }
-        .padding(12)
-        .frame(minHeight: 54)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.thinMaterial)
+
+        return Text(reportText)
+            .italic()
+            .font(.caption)
+            .padding(12)
+            .frame(minHeight: 44)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
     }
 
 
