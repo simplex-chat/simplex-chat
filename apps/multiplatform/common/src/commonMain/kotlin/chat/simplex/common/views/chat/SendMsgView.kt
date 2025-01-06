@@ -162,6 +162,9 @@ fun SendMsgView(
             cancelLiveMessage?.invoke()
           }
         }
+        cs.contextItem is ComposeContextItem.ReportedItem -> {
+          SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
+        }
         else -> {
           val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) painterResource(MR.images.ic_check_filled) else painterResource(MR.images.ic_arrow_upward)

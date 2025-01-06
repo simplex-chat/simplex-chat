@@ -387,6 +387,10 @@ fun ChatItemView(
                 if (groupInfo != null && cItem.chatDir !is CIDirection.GroupSnd) {
                   ModerateItemAction(cItem, questionText = moderateMessageQuestionText(cInfo.featureEnabled(ChatFeature.FullDelete), 1), showMenu, deleteMessage)
                 }
+
+                if (cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group && cItem.chatDir is CIDirection.GroupRcv) {
+                  ReportItemAction(cItem, cInfo, showMenu)
+                }
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -779,6 +783,22 @@ fun ModerateItemAction(
     onClick = {
       showMenu.value = false
       moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+fun ReportItemAction(
+  cItem: ChatItem,
+  cInfo: ChatInfo.Group,
+  showMenu: MutableState<Boolean>,
+) {
+  ItemAction(
+    stringResource(MR.strings.report_verb),
+    painterResource(MR.images.ic_flag),
+    onClick = {
+      showMenu.value = false
     },
     color = Color.Red
   )

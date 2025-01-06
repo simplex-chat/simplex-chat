@@ -216,7 +216,16 @@ fun FramedItemView(
           .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
       ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          if (ci.meta.itemDeleted != null) {
+          if (ci.isReport) {
+            if (ci.meta.itemDeleted != null) {
+              FramedItemHeader(
+                stringResource(if (ci.chatDir.sent) MR.strings.report_item_visibility_submitter else MR.strings.report_item_visibility_moderators),
+                true,
+                painterResource(MR.images.ic_flag))
+            } else {
+              FramedItemHeader(stringResource(MR.strings.report_item_archived), true, painterResource(MR.images.ic_flag))
+            }
+          } else if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
               is CIDeleted.Moderated -> {
                 FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))

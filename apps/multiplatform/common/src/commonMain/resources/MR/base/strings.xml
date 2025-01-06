@@ -36,6 +36,9 @@
   <string name="marked_deleted_description">marked deleted</string>
   <string name="marked_deleted_items_description">%d messages marked deleted</string>
   <string name="moderated_item_description">moderated by %s</string>
+  <string name="report_item_visibility_submitter">Only you and moderators see it</string>
+  <string name="report_item_visibility_moderators">Only sender and moderators see it</string>
+  <string name="report_item_archived">archived report</string>
   <string name="moderated_items_description">%1$d messages moderated by %2$s</string>
   <string name="blocked_item_description">blocked</string>
   <string name="blocked_by_admin_item_description">blocked by admin</string>
@@ -94,6 +97,13 @@
   <string name="simplex_link_mode_browser">Via browser</string>
   <string name="simplex_link_mode_browser_warning">Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
 
+  <!-- Reports - ChatModel.kt -->
+  <string name="report_reason_spam">Spam</string>
+  <string name="report_reason_illegal">Inappropriate content</string>
+  <string name="report_reason_community">Community guidelines violation</string>
+  <string name="report_reason_profile">Inappropriate profile</string>
+  <string name="report_reason_other">Other</string>
+
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="error_saving_xftp_servers">Error saving XFTP servers</string>
@@ -139,6 +149,7 @@
   <string name="error_sending_message">Error sending message</string>
   <string name="error_forwarding_messages">Error forwarding messages</string>
   <string name="error_creating_message">Error creating message</string>
+  <string name="error_creating_report">Error creating report</string>
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
@@ -333,6 +344,7 @@
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
   <string name="moderate_verb">Moderate</string>
+  <string name="report_verb">Report</string>
   <string name="select_verb">Select</string>
   <string name="expand_verb">Expand</string>
   <string name="delete_message__question">Delete message?</string>
@@ -447,6 +459,11 @@
   <string name="maximum_message_size_reached_text">Please reduce the message size and send again.</string>
   <string name="maximum_message_size_reached_non_text">Please reduce the message size or remove media and send again.</string>
   <string name="maximum_message_size_reached_forwarding">You can copy and reduce the message size to send it.</string>
+  <string name="report_compose_reason_header_spam">Report spam: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_profile">Report member profile: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_community">Report violation: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_illegal">Report content: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_other">Report other: only group moderators will see it.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
