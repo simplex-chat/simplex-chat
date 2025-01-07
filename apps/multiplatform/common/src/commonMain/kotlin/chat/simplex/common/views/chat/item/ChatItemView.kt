@@ -77,7 +77,7 @@ fun ChatItemView(
   selectedChatItems: MutableState<Set<Long>?>,
   fillMaxWidth: Boolean = true,
   selectChatItem: () -> Unit,
-  deleteMessage: (Long, CIDeleteMode) -> Unit,
+  deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
@@ -112,6 +112,12 @@ fun ChatItemView(
   val fullDeleteAllowed = remember(cInfo) { cInfo.featureEnabled(ChatFeature.FullDelete) }
   val onLinkLongClick = { _: String -> showMenu.value = true }
   val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
+
+  val deleteMessageAsync: (Long, CIDeleteMode) -> Unit = { id, mode ->
+    withBGApi {
+      deleteMessage(id, mode)
+    }
+  }
 
   Box(
     modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
@@ -287,7 +293,7 @@ fun ChatItemView(
         @Composable
         fun DeleteItemMenu() {
           DefaultDropdownMenu(showMenu) {
-            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
             if (cItem.canBeDeletedForSelf) {
               Divider()
               SelectItemAction(showMenu, selectChatItem)
@@ -303,9 +309,9 @@ fun ChatItemView(
             cItem.isReport && cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group -> {
               DefaultDropdownMenu(showMenu) {
                 if (cItem.chatDir is CIDirection.GroupSnd) {
-                  DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                  DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
                 } else {
-                  ArchiveReportItemAction(cItem, showMenu, deleteMessage)
+                  ArchiveReportItemAction(cItem, showMenu, deleteMessageAsync)
                   val qItem = cItem.quotedItem
                   if (qItem != null) {
                     ModerateReportItemAction(rhId, cInfo, cItem, qItem, showMenu, deleteMessage)
@@ -412,11 +418,11 @@ fun ChatItemView(
                   CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
                 }
                 if (!(live && cItem.meta.isLive) && !preview) {
-                  DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                  DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
                 }
                 val groupInfo = cItem.memberToModerate(cInfo)?.first
                 if (groupInfo != null && cItem.chatDir !is CIDirection.GroupSnd) {
-                  ModerateItemAction(cItem, questionText = moderateMessageQuestionText(cInfo.featureEnabled(ChatFeature.FullDelete), 1), showMenu, deleteMessage)
+                  ModerateItemAction(cItem, questionText = moderateMessageQuestionText(cInfo.featureEnabled(ChatFeature.FullDelete), 1), showMenu, deleteMessageAsync)
                 } else if (cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group && cInfo.groupInfo.membership.memberRole < GroupMemberRole.Moderator) {
                   ReportItemAction(cItem, composeState, showMenu)
                 }
@@ -436,7 +442,7 @@ fun ChatItemView(
                   ExpandItemAction(revealed, showMenu, reveal)
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -446,7 +452,7 @@ fun ChatItemView(
             cItem.isDeletedContent -> {
               DefaultDropdownMenu(showMenu) {
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -460,7 +466,7 @@ fun ChatItemView(
                 } else {
                   ExpandItemAction(revealed, showMenu, reveal)
                 }
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
                 if (cItem.canBeDeletedForSelf) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -469,7 +475,7 @@ fun ChatItemView(
             }
             else -> {
               DefaultDropdownMenu(showMenu) {
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
                 if (selectedChatItems.value == null) {
                   Divider()
                   SelectItemAction(showMenu, selectChatItem)
@@ -486,7 +492,7 @@ fun ChatItemView(
               RevealItemAction(revealed, showMenu, reveal)
             }
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
             if (cItem.canBeDeletedForSelf) {
               Divider()
               SelectItemAction(showMenu, selectChatItem)
@@ -520,7 +526,7 @@ fun ChatItemView(
           DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+            DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessageAsync, deleteMessages)
             if (cItem.canBeDeletedForSelf) {
               Divider()
               SelectItemAction(showMenu, selectChatItem)
@@ -577,7 +583,7 @@ fun ChatItemView(
           MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-            DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
+            DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessageAsync, deleteMessages)
             if (cItem.canBeDeletedForSelf) {
               Divider()
               SelectItemAction(showMenu, selectChatItem)
@@ -919,7 +925,7 @@ private fun ModerateReportItemAction(
   cItem: ChatItem,
   reportedItem: CIQuote,
   showMenu: MutableState<Boolean>,
-  deleteMessage: (Long, CIDeleteMode) -> Unit
+  deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?
 ) {
   ItemAction(
     stringResource(MR.strings.moderate_verb),
@@ -932,9 +938,13 @@ private fun ModerateReportItemAction(
             reportedMessageId,
             questionText = moderateMessageQuestionText(chatInfo.featureEnabled(ChatFeature.FullDelete), 1),
             deleteMessage = { id, m ->
-              deleteMessage(id, m)
-              deleteMessage(reportedMessageId, CIDeleteMode.cidmInternalMark)
-            }
+              withApi {
+                val deleted = deleteMessage(id, m)
+                if (deleted != null) {
+                  deleteMessage(cItem.id, CIDeleteMode.cidmInternalMark)
+                }
+              }
+            },
           )
         }
       }
@@ -953,7 +963,7 @@ private fun BlockMemberAction(
   reportedItem: CIQuote,
   member: GroupMember,
   showMenu: MutableState<Boolean>,
-  deleteMessage: (Long, CIDeleteMode) -> Unit
+  deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?
 ) {
   ItemAction(
     stringResource(MR.strings.block_member_button),
@@ -964,28 +974,34 @@ private fun BlockMemberAction(
         buttons = {
           SectionItemView({
             AlertManager.shared.hideAlert()
+            withBGApi {
+              val reportedMessageId = getLocalIdForReportedMessage(rhId, chatInfo, reportedItem, cItem.id)
+              if (reportedMessageId != null) {
+
+              }
+            }
           }) {
             Text(generalGetString(MR.strings.report_block_and_moderate_block_and_moderate_action), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
           SectionItemView({
+            AlertManager.shared.hideAlert()
             withBGApi {
               val reportedMessageId = getLocalIdForReportedMessage(rhId, chatInfo, reportedItem, cItem.id)
-
               if (reportedMessageId != null) {
-                AlertManager.shared.hideAlert()
                 blockForAllAlert(rhId, gInfo = groupInfo, mem = member, blockMember = {
-                  blockMemberForAll(
-                    rhId,
-                    gInfo = groupInfo,
-                    member = member,
-                    blocked = true,
-                    close = {
-                      deleteMessage(
-                        reportedMessageId,
-                        CIDeleteMode.cidmInternalMark
+                  withBGApi {
+                    try {
+                      blockMemberForAll(
+                        rhId,
+                        gInfo = groupInfo,
+                        member = member,
+                        blocked = true
                       )
+                      deleteMessage(reportedMessageId, CIDeleteMode.cidmInternalMark)
+                    } catch (ex: Exception) {
+                      Log.e(TAG, "BlockMemberAction block and moderate ${ex.message}")
                     }
-                  )
+                  }
                 })
               }
             }
@@ -1403,7 +1419,7 @@ private suspend fun getLocalIdForReportedMessage(
   reportedItem: CIQuote,
   itemId: Long): Long? {
   if (reportedItem.itemId != null) {
-    return itemId
+    return reportedItem.itemId
   }
   val item = apiLoadSingleMessage(rhId, chatInfo.chatType, chatInfo.apiId, itemId)
 
@@ -1435,7 +1451,7 @@ fun PreviewChatItemView(
     range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
     selectChatItem = {},
-    deleteMessage = { _, _ -> },
+    deleteMessage = { _, _ -> null },
     deleteMessages = { _ -> },
     receiveFile = { _ -> },
     cancelFile = {},
@@ -1481,7 +1497,7 @@ fun PreviewChatItemViewDeletedContent() {
       range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
       selectChatItem = {},
-      deleteMessage = { _, _ -> },
+      deleteMessage = { _, _ -> null },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
       cancelFile = {},
