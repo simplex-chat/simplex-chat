@@ -10,17 +10,11 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -209,27 +203,30 @@ suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat
 
 suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(rhId, ChatType.Direct, contactId)
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long) = openChat(rhId, ChatType.Group, groupId)
+suspend fun openGroupChat(rhId: Long?, groupId: Long, contentFilter: ContentFilter? = null) = openChat(rhId, ChatType.Group, groupId, contentFilter)
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo) = openChat(rhId, chatInfo.chatType, chatInfo.apiId)
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, contentFilter: ContentFilter? = null) = openChat(rhId, chatInfo.chatType, chatInfo.apiId, contentFilter)
 
-private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long) =
-  apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
+private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long, contentFilter: ContentFilter? = null) =
+  apiLoadMessages(rhId, chatType, apiId, contentFilter, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 
-suspend fun openLoadedChat(chat: Chat) {
-  withChats {
-    chatModel.chatItemStatuses.clear()
+suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
+  withChats(contentTag) {
+    // LALAL TODO MOVE item statuses to chats context
+    if (contentTag == null) {
+      chatModel.chatItemStatuses.clear()
+    }
     chatItems.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
-    chatModel.chatState.clear()
+    chatModel.chatStateForContent(contentTag).clear()
   }
 }
 
-suspend fun apiFindMessages(ch: Chat, search: String) {
-  withChats {
+suspend fun apiFindMessages(ch: Chat, search: String, contentFilter: ContentFilter?) {
+  withChats(contentFilter?.mcTag) {
     chatItems.clearAndNotify()
   }
-  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), chatModel.chatState, search = search)
+  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentFilter, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search = search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {

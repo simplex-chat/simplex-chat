@@ -339,7 +339,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
       currentChatId.value?.let {
-        ChatView(currentChatId, reportsView = false, onComposed)
+        ChatView(currentChatId, reportsView = false, onComposed = onComposed)
       }
     }
   }

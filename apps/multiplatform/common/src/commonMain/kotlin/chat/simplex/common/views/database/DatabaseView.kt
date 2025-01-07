@@ -21,6 +21,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -530,6 +531,11 @@ fun deleteChatDatabaseFilesAndState() {
   chatModel.chatId.value = null
   withLongRunningApi {
     withChats {
+      chatItems.clearAndNotify()
+      chats.clear()
+      popChatCollector.clear()
+    }
+    withReportsChatsIfOpen {
       chatItems.clearAndNotify()
       chats.clear()
       popChatCollector.clear()

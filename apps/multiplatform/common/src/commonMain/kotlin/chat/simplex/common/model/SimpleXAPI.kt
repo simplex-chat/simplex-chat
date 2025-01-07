@@ -18,6 +18,7 @@ import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -896,8 +897,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
-    val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
+  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, contentFilter: ContentFilter? = null, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
+    val r = sendCmd(rh, CC.ApiGetChat(type, id, contentFilter, pagination, search))
     if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     if (pagination is ChatPagination.Around && r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.ChatItemNotFound) {
@@ -1498,6 +1499,9 @@ object ChatController {
       val updatedChatInfo = apiClearChat(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId)
       if (updatedChatInfo != null) {
         withChats {
+          clearChat(chat.remoteHostId, updatedChatInfo)
+        }
+        withChats(MsgContentTag.Report) {
           clearChat(chat.remoteHostId, updatedChatInfo)
         }
         ntfManager.cancelNotificationsForChat(chat.chatInfo.id)
@@ -2427,6 +2431,9 @@ object ChatController {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.toMember)
           }
+          withReportsChatsIfOpen {
+            upsertGroupMember(rhId, r.groupInfo, r.toMember)
+          }
         }
       }
       is CR.ContactsMerged -> {
@@ -2476,6 +2483,11 @@ object ChatController {
             withChats {
               addChatItem(rhId, cInfo, cItem)
             }
+            withReportsChatsIfOpen {
+              if (cItem.content.msgContent is MsgContent.MCReport) {
+                addChatItem(rhId, cInfo, cItem)
+              }
+            }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
             chatModel.increaseUnreadCounter(rhId, r.user)
           }
@@ -2500,6 +2512,11 @@ object ChatController {
             withChats {
               updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
             }
+            withReportsChatsIfOpen {
+              if (cItem.content.msgContent is MsgContent.MCReport) {
+                updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
+              }
+            }
           }
         }
       is CR.ChatItemUpdated ->
@@ -2508,6 +2525,11 @@ object ChatController {
         if (active(r.user)) {
           withChats {
             updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+          }
+          withReportsChatsIfOpen {
+            if (r.reaction.chatReaction.chatItem.content.msgContent is MsgContent.MCReport) {
+              updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
+            }
           }
         }
       }
@@ -2542,6 +2564,15 @@ object ChatController {
               removeChatItem(rhId, cInfo, cItem)
             } else {
               upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+            }
+          }
+          withReportsChatsIfOpen {
+            if (cItem.content.msgContent is MsgContent.MCReport) {
+              if (toChatItem == null) {
+                removeChatItem(rhId, cInfo, cItem)
+              } else {
+                upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+              }
             }
           }
         }
@@ -2603,10 +2634,16 @@ object ChatController {
           withChats {
             updateGroup(rhId, r.groupInfo)
           }
+          withReportsChatsIfOpen {
+            updateGroup(rhId, r.groupInfo)
+          }
         }
       is CR.DeletedMember ->
         if (active(r.user)) {
           withChats {
+            upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
+          }
+          withReportsChatsIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
           }
         }
@@ -2615,10 +2652,16 @@ object ChatController {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
+          withReportsChatsIfOpen {
+            upsertGroupMember(rhId, r.groupInfo, r.member)
+          }
         }
       is CR.MemberRole ->
         if (active(r.user)) {
           withChats {
+            upsertGroupMember(rhId, r.groupInfo, r.member)
+          }
+          withReportsChatsIfOpen {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
         }
@@ -2627,16 +2670,25 @@ object ChatController {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
+          withReportsChatsIfOpen {
+            upsertGroupMember(rhId, r.groupInfo, r.member)
+          }
         }
       is CR.MemberBlockedForAll ->
         if (active(r.user)) {
           withChats {
             upsertGroupMember(rhId, r.groupInfo, r.member)
           }
+          withReportsChatsIfOpen {
+            upsertGroupMember(rhId, r.groupInfo, r.member)
+          }
         }
       is CR.GroupDeleted -> // TODO update user member
         if (active(r.user)) {
           withChats {
+            updateGroup(rhId, r.groupInfo)
+          }
+          withReportsChatsIfOpen {
             updateGroup(rhId, r.groupInfo)
           }
         }
@@ -2665,6 +2717,9 @@ object ChatController {
       is CR.GroupUpdated ->
         if (active(r.user)) {
           withChats {
+            updateGroup(rhId, r.toGroup)
+          }
+          withReportsChatsIfOpen {
             updateGroup(rhId, r.toGroup)
           }
         }
@@ -3005,6 +3060,11 @@ object ChatController {
       val cInfo = aChatItem.chatInfo
       val cItem = aChatItem.chatItem
       withChats { upsertChatItem(rh, cInfo, cItem) }
+      withReportsChatsIfOpen {
+        if (cItem.content.msgContent is MsgContent.MCReport) {
+          upsertChatItem(rh, cInfo, cItem)
+        }
+      }
     }
   }
 
@@ -3014,10 +3074,14 @@ object ChatController {
     val notify = { ntfManager.notifyMessageReceived(rh, user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       notify()
-    } else if (withChats { upsertChatItem(rh, cInfo, cItem) }) {
-      notify()
-    } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
-      notify()
+    } else {
+      val createdChat = withChats { upsertChatItem(rh, cInfo, cItem) }
+      withReportsChatsIfOpen { if (cItem.content.msgContent is MsgContent.MCReport) { upsertChatItem(rh, cInfo, cItem) } }
+      if (createdChat) {
+        notify()
+      } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
+        notify()
+      }
     }
   }
 
@@ -3058,6 +3122,11 @@ object ChatController {
     chatModel.currentUser.value = user
     if (user == null) {
       withChats {
+        chatItems.clearAndNotify()
+        chats.clear()
+        popChatCollector.clear()
+      }
+      withReportsChatsIfOpen {
         chatItems.clearAndNotify()
         chats.clear()
         popChatCollector.clear()
@@ -3204,7 +3273,7 @@ sealed class CC {
   class ApiGetSettings(val settings: AppSettings): CC()
   class ApiGetChatTags(val userId: Long): CC()
   class ApiGetChats(val userId: Long): CC()
-  class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
+  class ApiGetChat(val type: ChatType, val id: Long, val contentFilter: ContentFilter?, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatTag(val tag: ChatTagData): CC()
@@ -3366,7 +3435,14 @@ sealed class CC {
     is ApiGetSettings -> "/_get app settings ${json.encodeToString(settings)}"
     is ApiGetChatTags -> "/_get tags $userId"
     is ApiGetChats -> "/_get chats $userId pcc=on"
-    is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
+    is ApiGetChat -> {
+      val filter = if (contentFilter == null) {
+        ""
+      } else {
+        " content=${contentFilter.mcTag.name.lowercase()} deleted=${onOff(contentFilter.deleted ?: true)}"
+      }
+      "/_get chat ${chatRef(type, id)}$filter ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
+    }
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id)} $itemId"
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
@@ -3701,6 +3777,11 @@ fun onOff(b: Boolean): String = if (b) "on" else "off"
 data class NewUser(
   val profile: Profile?,
   val pastTimestamp: Boolean
+)
+
+data class ContentFilter(
+  val mcTag: MsgContentTag,
+  val deleted: Boolean?
 )
 
 sealed class ChatPagination {

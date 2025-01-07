@@ -26,6 +26,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.item.CONSOLE_COMPOSE_LAYOUT_ID
 import chat.simplex.common.views.chat.item.AdaptingBottomPaddingLayout
 import chat.simplex.common.views.chatlist.NavigationBarBackground
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -54,6 +55,10 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
       // show "in progress"
       // TODO show active remote host in chat console?
       chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))
+      // LALAL
+//      for (i in 201..210) {
+//        chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console("/_report #5 5965 reason=community $i"))
+//      }
       composeState.value = ComposeState(useLinkPreviews = false)
       // hide "in progress"
     }

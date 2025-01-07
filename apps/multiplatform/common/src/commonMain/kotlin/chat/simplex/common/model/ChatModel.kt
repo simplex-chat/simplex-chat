@@ -8,7 +8,6 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.common.model.ChatModel.chatItemsChangesListener
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -59,25 +58,21 @@ object ChatModel {
   val ctrlInitInProgress = mutableStateOf(false)
   val dbMigrationInProgress = mutableStateOf(false)
   val incompleteInitializedDbRemoved = mutableStateOf(false)
-  private val _chats = mutableStateOf(SnapshotStateList<Chat>())
-  val chats: State<List<Chat>> = _chats
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  val chatsContext = ChatsContext(null)
+  val reportsChatsContext = ChatsContext(MsgContentTag.Report)
+  val chats: State<List<Chat>> = chatsContext.chats
   /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
    * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
    * If you use api call to get the items, use just [add] instead of [addAndNotify].
    * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
-  private val _chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
-  val chatItems: State<SnapshotStateList<ChatItem>> = _chatItems
   // declaration of chatsContext should be after any other variable that is directly attached to ChatsContext class, otherwise, strange crash with NullPointerException for "this" parameter in random functions
-  private val chatsContext = ChatsContext()
-  // set listener here that will be notified on every add/delete of a chat item
-  var chatItemsChangesListener: ChatItemsChangesListener? = null
-  val chatState = ActiveChatState()
+  val chatItems: State<SnapshotStateList<ChatItem>> = chatsContext.chatItems
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -178,6 +173,24 @@ object ChatModel {
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
 
+  fun chatItemsForContent(contentTag: MsgContentTag?): State<List<ChatItem>> = when(contentTag) {
+    null -> chatsContext.chatItems
+    MsgContentTag.Report -> reportsChatsContext.chatItems
+    else -> TODO()
+  }
+
+  fun chatStateForContent(contentTag: MsgContentTag?): ActiveChatState = when(contentTag) {
+    null -> chatsContext.chatState
+    MsgContentTag.Report -> reportsChatsContext.chatState
+    else -> TODO()
+  }
+
+  fun setChatItemsChangeListenerForContent(listener: ChatItemsChangesListener?, contentTag: MsgContentTag?) = when(contentTag) {
+    null -> chatsContext.chatItemsChangesListener = listener
+    MsgContentTag.Report -> reportsChatsContext.chatItemsChangesListener = listener
+    else -> TODO()
+  }
+
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {
@@ -250,7 +263,7 @@ object ChatModel {
     }
   }
 
-  fun addPresetChatTags(chatInfo: ChatInfo) {
+  private fun addPresetChatTags(chatInfo: ChatInfo) {
     for (tag in PresetTagKind.entries) {
       if (presetTagMatchesChat(tag, chatInfo)) {
         presetTags[tag] = (presetTags[tag] ?: 0) + 1
@@ -340,13 +353,29 @@ object ChatModel {
   }
 
   // running everything inside the block on main thread. Make sure any heavy computation is moved to a background thread
-  suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
-    chatsContext.action()
+  suspend fun <T> withChats(contentTag: MsgContentTag? = null, action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
+    when {
+      contentTag == null -> chatsContext.action()
+      contentTag == MsgContentTag.Report -> reportsChatsContext.action()
+      else -> TODO()
+    }
   }
 
-  class ChatsContext {
-    val chats = _chats
-    val chatItems = _chatItems
+  suspend fun <T> withReportsChatsIfOpen(action: suspend ChatsContext.() -> T) = withContext(Dispatchers.Main) {
+    if (ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) {
+      reportsChatsContext.action()
+    }
+  }
+
+  class ChatsContext(private val contentTag: MsgContentTag?) {
+    val chats = mutableStateOf(SnapshotStateList<Chat>())
+    val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+    // set listener here that will be notified on every add/delete of a chat item
+    var chatItemsChangesListener: ChatItemsChangesListener? = null
+    val chatState = ActiveChatState()
+
+    fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
+    private fun getChatIndex(rhId: Long?, id: String): Int = chats.value.indexOfFirst { it.id == id && it.remoteHostId == rhId }
 
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
@@ -743,8 +772,6 @@ object ChatModel {
     }
   }
 
-  private fun getChatIndex(rhId: Long?, id: String): Int = chats.value.indexOfFirst { it.id == id && it.remoteHostId == rhId }
-
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
     val current = currentUser.value ?: return
     val updated = current.copy(
@@ -816,7 +843,8 @@ object ChatModel {
         }
         i--
       }
-      chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
+      // TODO LALAL
+      chatsContext.chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
     }
     return markedRead
   }
@@ -1157,7 +1185,15 @@ data class Chat(
     }
 
   @Serializable
-  data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0, val unreadChat: Boolean = false)
+  data class ChatStats(
+    val unreadCount: Int = 0,
+    // actual only via getChats() and getChat(.initial), otherwise, zero
+    val reportsCount: Int = 0,
+    // actual only via getChat(.initial), otherwise, zero
+    val archivedReportsCount: Int = 0,
+    val minUnreadItemId: Long = 0,
+    val unreadChat: Boolean = false
+  )
 
   companion object {
     val sampleData = Chat(
@@ -2519,7 +2555,7 @@ fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
 }
 
 fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatModel.chatsContext.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
 }
 
 fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
@@ -2531,7 +2567,7 @@ fun <T> MutableList<T>.removeAll(predicate: (T) -> Boolean): Boolean = if (isEmp
 
 // Adds item to chatItems and notifies a listener about newly added item
 fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatModel.chatsContext.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
@@ -2560,7 +2596,8 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatIte
     }
   }
   if (toRemove.isNotEmpty()) {
-    chatItemsChangesListener?.removed(toRemove, value)
+    chatModel.chatsContext.chatItemsChangesListener?.removed(toRemove, value)
+    chatModel.reportsChatsContext.chatItemsChangesListener?.removed(toRemove, value)
   }
 }
 
@@ -2580,7 +2617,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
     val rem = removeLast()
     removed = Triple(rem.id, remIndex, rem.isRcvNew)
   }
-  chatItemsChangesListener?.removed(listOf(removed), value)
+  chatModel.chatsContext.chatItemsChangesListener?.removed(listOf(removed), value)
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
@@ -2594,7 +2631,8 @@ fun MutableState<SnapshotStateList<Chat>>.clear() {
 // Removes all chatItems and notifies a listener about it
 fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
   value = SnapshotStateList()
-  chatItemsChangesListener?.cleared()
+  chatModel.chatsContext.chatItemsChangesListener?.cleared()
+  chatModel.reportsChatsContext.chatItemsChangesListener?.cleared()
 }
 
 fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()
@@ -3676,6 +3714,17 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     }
     encoder.encodeJsonElement(json)
   }
+}
+
+@Serializable
+enum class MsgContentTag {
+  @SerialName("text") Text,
+  @SerialName("link") Link,
+  @SerialName("image") Image,
+  @SerialName("video") Video,
+  @SerialName("voice") Voice,
+  @SerialName("file") File,
+  @SerialName("report") Report,
 }
 
 @Serializable

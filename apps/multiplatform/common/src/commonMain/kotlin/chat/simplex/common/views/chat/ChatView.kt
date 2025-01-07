@@ -33,6 +33,7 @@ import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.markChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.group.*
@@ -57,10 +58,17 @@ data class ItemSeparation(val timestamp: Boolean, val largeGap: Boolean, val dat
 @Composable
 // staleChatId means the id that was before chatModel.chatId becomes null. It's needed for Android only to make transition from chat
 // to chat list smooth. Otherwise, chat view will become blank right before the transition starts
-fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: suspend (chatId: String) -> Unit) {
-  val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
+fun ChatView(
+  staleChatId: State<String?>,
+  reportsView: Boolean,
+  scrollToItemId: MutableState<Long?> = remember { mutableStateOf(null) },
+  onComposed: suspend (chatId: String) -> Unit
+) {
   val showSearch = rememberSaveable { mutableStateOf(false) }
+  // They have their own iterator inside for a reason to prevent crash "Reading a state that was created after the snapshot..."
+  val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
   val activeChatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatInfo } }
+  val activeChatStats = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats } }
   val user = chatModel.currentUser.value
   val chatInfo = activeChatInfo.value
   if (chatInfo == null || user == null) {
@@ -70,7 +78,11 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
     }
   } else {
     val showArchivedReports = remember { mutableStateOf(false) }
-    val groupReports = remember { derivedStateOf { GroupReports((activeChatInfo.value as? ChatInfo.Group)?.apiId?.toInt() ?: 0, reportsView, showArchivedReports.value) } }
+    val groupReports = remember { derivedStateOf {
+      val reportsCount = if (activeChatInfo.value is ChatInfo.Group) activeChatStats.value?.reportsCount ?: 0 else 0
+      GroupReports(reportsCount, reportsView, showArchivedReports.value) }
+    }
+    val reversedChatItems = remember { derivedStateOf { chatModel.chatItemsForContent(groupReports.value.contentTag).value.asReversed() } }
     val searchText = rememberSaveable { mutableStateOf("") }
     val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
     val composeState = rememberSaveable(saver = ComposeState.saver()) {
@@ -126,13 +138,14 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
             val c = chatModel.getChat(chatInfo.id) ?: return@onSearchValueChanged
             if (chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
             withBGApi {
-              apiFindMessages(c, value)
+              apiFindMessages(c, value, groupReports.value.toContentFilter())
               searchText.value = value
             }
           }
           ChatLayout(
             remoteHostId = remoteHostId,
             chatInfo = activeChatInfo,
+            reversedChatItems = reversedChatItems,
             unreadCount,
             composeState,
             composeView = {
@@ -161,7 +174,7 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
                 }
               } else {
                 SelectedItemsBottomToolbar(
-                  chatItems = remember { chatModel.chatItems }.value,
+                  reversedChatItems = reversedChatItems,
                   selectedChatItems = selectedChatItems,
                   chatInfo = chatInfo,
                   deleteItems = { canDeleteForAll ->
@@ -223,6 +236,8 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
               }
             },
             groupReports,
+            showArchivedReports,
+            scrollToItemId,
             attachmentOption,
             attachmentBottomSheetState,
             searchText,
@@ -291,28 +306,23 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
               }
             },
             showGroupReports = {
+              val info = activeChatInfo.value ?: return@ChatLayout
               if (ModalManager.end.hasModalsOpen()) {
                 ModalManager.end.closeModals()
                 return@ChatLayout
               }
               hideKeyboard(view)
-              ModalManager.end.showCustomModal(true) { close ->
-                ModalView({}, showAppBar = false) {
-                  val oneHandUI = remember { appPrefs.oneHandUI.state }
-                  val chatInfo = remember { activeChatInfo }.value
-                  if (chatInfo is ChatInfo.Group) {
-                    GroupReportsView(staleChatId)
-                    if (oneHandUI.value) {
-                      StatusBarBackground()
-                    }
-                    Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
-                      GroupReportsAppBar(groupReports, close, showArchived = { showHide ->
-                        showArchivedReports.value = showHide
-                      }, onSearchValueChanged)
-                    }
-                  } else {
-                    LaunchedEffect(Unit) {
-                      close()
+              scope.launch {
+                openChat(chatModel.remoteHostId(), info, ContentFilter(MsgContentTag.Report, false))
+                ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close ->
+                  ModalView({}, showAppBar = false) {
+                    val chatInfo = remember { activeChatInfo }.value
+                    if (chatInfo is ChatInfo.Group) {
+                      GroupReportsView(staleChatId, scrollToItemId)
+                    } else {
+                      LaunchedEffect(Unit) {
+                        close()
+                      }
                     }
                   }
                 }
@@ -341,16 +351,16 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
                 }
               }
             },
-            loadMessages = { chatId, pagination, chatState, visibleItemIndexes ->
+            loadMessages = { chatId, pagination, visibleItemIndexes ->
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, pagination, chatState, searchText.value, visibleItemIndexes)
+                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, groupReports.value.toContentFilter(), pagination, searchText.value, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
               withBGApi {
-                val toDeleteItem = chatModel.chatItems.value.firstOrNull { it.id == itemId }
+                val toDeleteItem = reversedChatItems.value.lastOrNull { it.id == itemId }
                 val toModerate = toDeleteItem?.memberToModerate(chatInfo)
                 val groupInfo = toModerate?.first
                 val groupMember = toModerate?.second
@@ -376,6 +386,13 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
                   deletedChatItem = deleted.deletedChatItem.chatItem
                   toChatItem = deleted.toChatItem?.chatItem
                   withChats {
+                    if (toChatItem != null) {
+                      upsertChatItem(chatRh, chatInfo, toChatItem)
+                    } else {
+                      removeChatItem(chatRh, chatInfo, deletedChatItem)
+                    }
+                  }
+                  withReportsChatsIfOpen {
                     if (toChatItem != null) {
                       upsertChatItem(chatRh, chatInfo, toChatItem)
                     } else {
@@ -556,6 +573,12 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
                     itemsIds
                   )
                 }
+                withReportsChatsIfOpen {
+                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
+                  withContext(Dispatchers.Main) {
+                    markChatItemsRead(chatRh, chatInfo, itemsIds)
+                  }
+                }
               }
             },
             markChatRead = {
@@ -571,6 +594,12 @@ fun ChatView(staleChatId: State<String?>, reportsView: Boolean, onComposed: susp
                     chatInfo.chatType,
                     chatInfo.apiId
                   )
+                }
+                withReportsChatsIfOpen {
+                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
+                  withContext(Dispatchers.Main) {
+                    markChatItemsRead(chatRh, chatInfo)
+                  }
                 }
               }
             },
@@ -632,10 +661,13 @@ fun startChatCall(remoteHostId: Long?, chatInfo: ChatInfo, media: CallMediaType)
 fun ChatLayout(
   remoteHostId: State<Long?>,
   chatInfo: State<ChatInfo?>,
+  reversedChatItems: State<List<ChatItem>>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
   composeView: (@Composable () -> Unit),
   groupReports: State<GroupReports>,
+  showArchivedReports: MutableState<Boolean>,
+  scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
   attachmentBottomSheetState: ModalBottomSheetState,
   searchValue: State<String>,
@@ -646,7 +678,7 @@ fun ChatLayout(
   info: () -> Unit,
   showGroupReports: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadMessages: suspend (ChatId, ChatPagination, ActiveChatState, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
+  loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -718,8 +750,8 @@ fun ChatLayout(
                 override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
               }) {
                 ChatItemsList(
-                  remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
-                  useLinkPreviews, linkMode, groupReports, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages,
+                  remoteHostId, chatInfo, reversedChatItems, unreadCount, composeState, composeViewHeight, searchValue,
+                  useLinkPreviews, linkMode, groupReports, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages,
                   receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
                   setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
@@ -771,6 +803,16 @@ fun ChatLayout(
           }
           if (groupReports.value.showBar && (!oneHandUI.value || !chatBottomBar.value)) {
             GroupReportsToolbar(groupReports, withStatusBar = false, showGroupReports)
+          }
+        }
+        if (groupReports.value.reportsView) {
+          if (oneHandUI.value) {
+            StatusBarBackground()
+          }
+          Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
+            GroupReportsAppBar(groupReports, { ModalManager.end.closeModal() }, showArchived = { showHide ->
+              showArchivedReports.value = showHide
+            }, onSearchValueChanged)
           }
         }
       }
@@ -1017,7 +1059,7 @@ private fun GroupReportsToolbar(
     ) {
       Icon(painterResource(MR.images.ic_flag), null, Modifier.size(22.dp), tint = MaterialTheme.colors.error)
       Spacer(Modifier.width(4.dp))
-      val reports = groupReports.value.activeReports
+      val reports = groupReports.value.reportsCount
       Text(
         if (reports == 1) {
           stringResource(MR.strings.group_reports_active_one)
@@ -1040,6 +1082,7 @@ private fun ContactVerifiedShield() {
 fun BoxScope.ChatItemsList(
   remoteHostId: Long?,
   chatInfo: ChatInfo,
+  reversedChatItems: State<List<ChatItem>>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
   composeViewHeight: State<Dp>,
@@ -1047,10 +1090,11 @@ fun BoxScope.ChatItemsList(
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
   groupReports: State<GroupReports>,
+  scrollToItemId: MutableState<Long?>,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
-  loadMessages: suspend (ChatId, ChatPagination, ActiveChatState, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
+  loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -1075,9 +1119,8 @@ fun BoxScope.ChatItemsList(
   showViaProxy: Boolean
 ) {
   val searchValueIsEmpty = remember { derivedStateOf { searchValue.value.isEmpty() } }
-  val reversedChatItems = remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val revealedItems = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(setOf<Long>()) }
-  val mergedItems = remember { derivedStateOf { MergedItems.create(reversedChatItems.value, unreadCount, revealedItems.value, chatModel.chatState) } }
+  val mergedItems = remember { derivedStateOf { MergedItems.create(reversedChatItems.value, unreadCount, revealedItems.value, chatModel.chatStateForContent(groupReports.value.contentTag)) } }
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent(chatView = !groupReports.value.reportsView, groupReports.value.showBar).roundToPx() })
   /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
    * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
@@ -1098,11 +1141,11 @@ fun BoxScope.ChatItemsList(
   val animatedScrollingInProgress = remember { mutableStateOf(false) }
   val ignoreLoadingRequests = remember(remoteHostId) { mutableSetOf<Long>() }
   if (!loadingMoreItems.value) {
-    PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
+    PreloadItems(chatInfo.id, if (searchValueIsEmpty.value) ignoreLoadingRequests else mutableSetOf(), reversedChatItems, mergedItems, listState, ChatPagination.UNTIL_PRELOAD_COUNT) { chatId, pagination ->
       if (loadingMoreItems.value) return@PreloadItems false
       try {
         loadingMoreItems.value = true
-        loadMessages(chatId, pagination, chatModel.chatState) {
+        loadMessages(chatId, pagination) {
           visibleItemIndexesNonReversed(mergedItems, listState.value)
         }
       } finally {
@@ -1116,21 +1159,27 @@ fun BoxScope.ChatItemsList(
   val chatInfoUpdated = rememberUpdatedState(chatInfo)
   val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
   val scope = rememberCoroutineScope()
-  val scrollToItem: (Long) -> Unit = remember { scrollToItem(searchValue, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages) }
-  val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem) }
-
-  LoadLastItems(loadingMoreItems, remoteHostId, chatInfo)
-  SmallScrollOnNewMessage(listState, chatModel.chatItems)
+  val scrollToItem: (Long) -> Unit = remember {
+    // In group reports just set the itemId to scroll to so the main ChatView will handle scrolling
+    if (groupReports.value.reportsView) return@remember { scrollToItemId.value = it }
+    scrollToItem(searchValue, loadingMoreItems, animatedScrollingInProgress, highlightedItems, chatInfoUpdated, maxHeight, scope, reversedChatItems, mergedItems, listState, loadMessages)
+  }
+  val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem, groupReports.value.contentTag) }
+  if (!groupReports.value.reportsView) {
+    LaunchedEffect(Unit) { snapshotFlow { scrollToItemId.value }.filterNotNull().collect { scrollToItem(it); scrollToItemId.value = null } }
+  }
+  LoadLastItems(loadingMoreItems, remoteHostId, chatInfo, groupReports)
+  SmallScrollOnNewMessage(listState, reversedChatItems)
   val finishedInitialComposition = remember { mutableStateOf(false) }
   NotifyChatListOnFinishingComposition(finishedInitialComposition, chatInfo, revealedItems, listState, onComposed)
 
   DisposableEffectOnGone(
     always = {
-      chatModel.chatItemsChangesListener = recalculateChatStatePositions(chatModel.chatState)
+      chatModel.setChatItemsChangeListenerForContent(recalculateChatStatePositions(chatModel.chatStateForContent(groupReports.value.contentTag)), groupReports.value.contentTag)
     },
     whenGone = {
       VideoPlayerHolder.releaseAll()
-      chatModel.chatItemsChangesListener = null
+      chatModel.setChatItemsChangeListenerForContent(recalculateChatStatePositions(chatModel.chatStateForContent(groupReports.value.contentTag)), groupReports.value.contentTag)
     }
   )
 
@@ -1152,7 +1201,7 @@ fun BoxScope.ChatItemsList(
         LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
       ) {
         val provider = {
-          providerForGallery(chatModel.chatItems.value, cItem.id) { indexInReversed ->
+          providerForGallery(reversedChatItems.value.asReversed(), cItem.id) { indexInReversed ->
             itemScope.launch {
               listState.value.scrollToItem(
                 min(reversedChatItems.value.lastIndex, indexInReversed + 1),
@@ -1177,7 +1226,7 @@ fun BoxScope.ChatItemsList(
                   highlightedItems.value = setOf()
                 }
             }
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -1363,7 +1412,7 @@ fun BoxScope.ChatItemsList(
             if (selectionVisible) {
               Box(Modifier.matchParentSize().clickable {
                 val checked = selectedChatItems.value?.contains(cItem.id) == true
-                selectUnselectChatItem(select = !checked, cItem, revealed, selectedChatItems)
+                selectUnselectChatItem(select = !checked, cItem, revealed, selectedChatItems, reversedChatItems)
               })
             }
           }
@@ -1448,14 +1497,14 @@ fun BoxScope.ChatItemsList(
 }
 
 @Composable
-private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, remoteHostId: Long?, chatInfo: ChatInfo) {
+private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, remoteHostId: Long?, chatInfo: ChatInfo, groupReports: State<GroupReports>) {
   LaunchedEffect(remoteHostId, chatInfo.id) {
     try {
       loadingMoreItems.value = true
-      if (chatModel.chatState.totalAfter.value <= 0) return@LaunchedEffect
+      if (chatModel.chatStateForContent(groupReports.value.contentTag).totalAfter.value <= 0) return@LaunchedEffect
       delay(500)
       withContext(Dispatchers.Default) {
-        apiLoadMessages(remoteHostId, chatInfo.chatType, chatInfo.apiId, ChatPagination.Last(ChatPagination.INITIAL_COUNT), chatModel.chatState)
+        apiLoadMessages(remoteHostId, chatInfo.chatType, chatInfo.apiId, groupReports.value.toContentFilter(), ChatPagination.Last(ChatPagination.INITIAL_COUNT))
       }
     } finally {
       loadingMoreItems.value = false
@@ -1464,20 +1513,20 @@ private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, remoteHostId:
 }
 
 @Composable
-private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: State<List<ChatItem>>) {
+private fun SmallScrollOnNewMessage(listState: State<LazyListState>, reversedChatItems: State<List<ChatItem>>) {
   val scrollDistance = with(LocalDensity.current) { -39.dp.toPx() }
   LaunchedEffect(Unit) {
-    var lastTotalItems = listState.value.layoutInfo.totalItemsCount
-    var lastItemId = chatItems.value.lastOrNull()?.id
+    var prevTotalItems = listState.value.layoutInfo.totalItemsCount
+    var newestItemId = reversedChatItems.value.firstOrNull()?.id
     snapshotFlow { listState.value.layoutInfo.totalItemsCount }
       .distinctUntilChanged()
       .drop(1)
       .collect {
-        val diff = listState.value.layoutInfo.totalItemsCount - lastTotalItems
-        val sameLastItem = lastItemId == chatItems.value.lastOrNull()?.id
-        lastTotalItems = listState.value.layoutInfo.totalItemsCount
-        lastItemId = chatItems.value.lastOrNull()?.id
-        if (diff < 1 || diff > 2 || sameLastItem) {
+        val diff = listState.value.layoutInfo.totalItemsCount - prevTotalItems
+        val sameNewestItem = newestItemId == reversedChatItems.value.firstOrNull()?.id
+        prevTotalItems = listState.value.layoutInfo.totalItemsCount
+        newestItemId = reversedChatItems.value.firstOrNull()?.id
+        if (diff < 1 || diff > 2 || sameNewestItem) {
           return@collect
         }
         try {
@@ -1488,7 +1537,7 @@ private fun SmallScrollOnNewMessage(listState: State<LazyListState>, chatItems: 
           }
         } catch (e: CancellationException) {
           /**
-           * When you tap and hold a finger on a lazy column with chatItems, and then you receive a message,
+           * When you tap and hold a finger on a lazy column with reversedChatItems, and then you receive a message,
            * this coroutine will be canceled with the message "Current mutation had a higher priority" because of animatedScroll.
            * Which breaks auto-scrolling to bottom. So just ignoring the exception
            * */
@@ -1618,6 +1667,7 @@ fun BoxScope.FloatingButtons(
 fun PreloadItems(
   chatId: String,
   ignoreLoadingRequests: MutableSet<Long>,
+  reversedChatItems: State<List<ChatItem>>,
   mergedItems: State<MergedItems>,
   listState: State<LazyListState>,
   remaining: Int,
@@ -1628,8 +1678,8 @@ fun PreloadItems(
   val chatId = rememberUpdatedState(chatId)
   val loadItems = rememberUpdatedState(loadItems)
   val ignoreLoadingRequests = rememberUpdatedState(ignoreLoadingRequests)
-  PreloadItemsBefore(allowLoad, chatId, ignoreLoadingRequests, mergedItems, listState, remaining, loadItems)
-  PreloadItemsAfter(allowLoad, chatId, mergedItems, listState, remaining, loadItems)
+  PreloadItemsBefore(allowLoad, chatId, ignoreLoadingRequests, reversedChatItems, mergedItems, listState, remaining, loadItems)
+  PreloadItemsAfter(allowLoad, chatId, reversedChatItems, mergedItems, listState, remaining, loadItems)
 }
 
 @Composable
@@ -1637,6 +1687,7 @@ private fun PreloadItemsBefore(
   allowLoad: State<Boolean>,
   chatId: State<String>,
   ignoreLoadingRequests: State<MutableSet<Long>>,
+  reversedChatItems: State<List<ChatItem>>,
   mergedItems: State<MergedItems>,
   listState: State<LazyListState>,
   remaining: Int,
@@ -1649,7 +1700,7 @@ private fun PreloadItemsBefore(
         val splits = mergedItems.value.splits
         val lastVisibleIndex = (listState.value.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0)
         var lastIndexToLoadFrom: Int? = findLastIndexToLoadFromInSplits(firstVisibleIndex, lastVisibleIndex, remaining, splits)
-        val items = chatModel.chatItems.value
+        val items = reversedChatItems.value
         if (splits.isEmpty() && items.isNotEmpty() && lastVisibleIndex > mergedItems.value.items.size - remaining && items.size >= ChatPagination.INITIAL_COUNT) {
           lastIndexToLoadFrom = items.lastIndex
         }
@@ -1663,10 +1714,10 @@ private fun PreloadItemsBefore(
       .filter { !ignoreLoadingRequests.value.contains(it) }
       .collect { loadFromItemId ->
         withBGApi {
-          val sizeWas = chatModel.chatItems.value.size
-          val firstItemIdWas = chatModel.chatItems.value.firstOrNull()?.id
+          val sizeWas = reversedChatItems.value.size
+          val oldestItemIdWas = reversedChatItems.value.lastOrNull()?.id
           val triedToLoad = loadItems.value(chatId.value, ChatPagination.Before(loadFromItemId, ChatPagination.PRELOAD_COUNT))
-          if (triedToLoad && sizeWas == chatModel.chatItems.value.size && firstItemIdWas == chatModel.chatItems.value.firstOrNull()?.id) {
+          if (triedToLoad && sizeWas == reversedChatItems.value.size && oldestItemIdWas == reversedChatItems.value.lastOrNull()?.id) {
             ignoreLoadingRequests.value.add(loadFromItemId)
           }
         }
@@ -1678,6 +1729,7 @@ private fun PreloadItemsBefore(
 private fun PreloadItemsAfter(
   allowLoad: MutableState<Boolean>,
   chatId: State<String>,
+  reversedChatItems: State<List<ChatItem>>,
   mergedItems: State<MergedItems>,
   listState: State<LazyListState>,
   remaining: Int,
@@ -1698,12 +1750,12 @@ private fun PreloadItemsAfter(
       snapshotFlow { listState.value.firstVisibleItemIndex }
         .distinctUntilChanged()
         .map { firstVisibleIndex ->
-          val items = chatModel.chatItems.value
+          val items = reversedChatItems.value
           val splits = mergedItems.value.splits
           val split = splits.lastOrNull { it.indexRangeInParentItems.contains(firstVisibleIndex) }
           // we're inside a splitRange (top --- [end of the splitRange --- we're here --- start of the splitRange] --- bottom)
           if (split != null && split.indexRangeInParentItems.first + remaining > firstVisibleIndex) {
-            items.getOrNull(items.lastIndex - split.indexRangeInReversed.first)?.id
+            items.getOrNull(split.indexRangeInReversed.first)?.id
           } else {
             null
           }
@@ -1984,7 +2036,7 @@ private fun scrollToItem(
   reversedChatItems: State<List<ChatItem>>,
   mergedItems: State<MergedItems>,
   listState: State<LazyListState>,
-  loadMessages: suspend (ChatId, ChatPagination, ActiveChatState, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
+  loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
 ): (Long) -> Unit = { itemId: Long ->
   withApi {
     try {
@@ -1998,7 +2050,7 @@ private fun scrollToItem(
         val pagination = ChatPagination.Around(itemId, ChatPagination.PRELOAD_COUNT * 2)
         val oldSize = reversedChatItems.value.size
         withContext(Dispatchers.Default) {
-          loadMessages(chatInfo.value.id, pagination, chatModel.chatState) {
+          loadMessages(chatInfo.value.id, pagination) {
             visibleItemIndexesNonReversed(mergedItems, listState.value)
           }
         }
@@ -2030,12 +2082,16 @@ private fun findQuotedItemFromItem(
   rhId: State<Long?>,
   chatInfo: State<ChatInfo>,
   scope: CoroutineScope,
-  scrollToItem: (Long) -> Unit
+  scrollToItem: (Long) -> Unit,
+  contentTag: MsgContentTag?
 ): (Long) -> Unit = { itemId: Long ->
   scope.launch(Dispatchers.Default) {
-    val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId)
+    val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId, contentTag)
     if (item != null) {
       withChats {
+        updateChatItem(chatInfo.value, item)
+      }
+      withReportsChatsIfOpen {
         updateChatItem(chatInfo.value, item)
       }
       if (item.quotedItem?.itemId != null) {
@@ -2134,7 +2190,13 @@ private fun SelectedChatItem(
   )
 }
 
-private fun selectUnselectChatItem(select: Boolean, ci: ChatItem, revealed: State<Boolean>, selectedChatItems: MutableState<Set<Long>?>) {
+private fun selectUnselectChatItem(
+  select: Boolean,
+  ci: ChatItem,
+  revealed: State<Boolean>,
+  selectedChatItems: MutableState<Set<Long>?>,
+  reversedChatItems: State<List<ChatItem>>
+) {
   val itemIds = mutableSetOf<Long>()
   if (!revealed.value) {
     val currIndex = chatModel.getChatItemIndexOrNull(ci)
@@ -2143,9 +2205,9 @@ private fun selectUnselectChatItem(select: Boolean, ci: ChatItem, revealed: Stat
       val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
       val range = chatViewItemsRange(currIndex, prevHidden)
       if (range != null) {
-        val reversedChatItems = chatModel.chatItems.asReversed()
+        val reversed = reversedChatItems.value
         for (i in range) {
-          itemIds.add(reversedChatItems[i].id)
+          itemIds.add(reversed[i].id)
         }
       } else {
         itemIds.add(ci.id)
@@ -2195,6 +2257,16 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
             }
           }
         }
+        withReportsChatsIfOpen {
+          for (di in deleted) {
+            val toChatItem = di.toChatItem?.chatItem
+            if (toChatItem != null) {
+              upsertChatItem(chatRh, chatInfo, toChatItem)
+            } else {
+              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+            }
+          }
+        }
         onSuccess()
       }
     }
@@ -2214,6 +2286,10 @@ private fun markUnreadChatAsRead(chatId: String) {
     )
     if (success) {
       withChats {
+        replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        markChatTagRead(chat)
+      }
+      withReportsChatsIfOpen {
         replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
         markChatTagRead(chat)
       }
@@ -2531,10 +2607,13 @@ fun PreviewChatLayout() {
     ChatLayout(
       remoteHostId = remember { mutableStateOf(null) },
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
+      reversedChatItems = remember { mutableStateOf(emptyList()) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       groupReports = remember { mutableStateOf(GroupReports(0, false)) },
+      showArchivedReports = remember { mutableStateOf(false) },
+      scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       searchValue,
@@ -2545,7 +2624,7 @@ fun PreviewChatLayout() {
       info = {},
       showGroupReports = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _, _, _ -> },
+      loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
@@ -2606,10 +2685,13 @@ fun PreviewGroupChatLayout() {
     ChatLayout(
       remoteHostId = remember { mutableStateOf(null) },
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
+      reversedChatItems = remember { mutableStateOf(emptyList()) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       groupReports = remember { mutableStateOf(GroupReports(0, false)) },
+      showArchivedReports = remember { mutableStateOf(false) },
+      scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       searchValue,
@@ -2620,7 +2702,7 @@ fun PreviewGroupChatLayout() {
       info = {},
       showGroupReports = {},
       showMemberInfo = { _, _ -> },
-      loadMessages = { _, _, _, _ -> },
+      loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = {},
       receiveFile = { _ -> },
