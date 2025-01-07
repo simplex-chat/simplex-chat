@@ -3950,7 +3950,7 @@ chatCommandP =
         ct -> ChatName ct <$> displayName
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
-    contentFilterP = ContentFilter <$> (" content=" *> strP) <*> optional (" deleted=" *> onOffP)
+    contentFilterP = ContentFilter <$> ("content=" *> strP) <*> optional (" deleted=" *> onOffP)
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("none" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
