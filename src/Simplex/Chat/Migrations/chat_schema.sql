@@ -403,8 +403,7 @@ CREATE TABLE chat_items(
   fwd_from_group_id INTEGER REFERENCES groups ON DELETE SET NULL,
   fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
   via_proxy INTEGER,
-  msg_content_tag TEXT,
-  processed_by_group_member_id BLOB
+  msg_content_tag TEXT
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(

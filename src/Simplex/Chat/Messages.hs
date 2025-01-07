@@ -310,9 +310,9 @@ data AChat = forall c. ChatTypeI c => AChat (SChatType c) (Chat c)
 deriving instance Show AChat
 
 data ChatStats = ChatStats
-  { unreadCount :: Int,
-    reportsCount :: Int,
-    archivedReportsCount :: Int,
+  { unreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    archivedReportsCount :: Int, -- only returned in /_get chat initial API
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }

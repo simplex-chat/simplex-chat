@@ -1842,7 +1842,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           Just sndMemberId
             | sameMemberId sndMemberId mem -> checkRole mem $ do
                 delete cci (Just m) >>= toView
-                archiveMessageReports cci m >>= toView
+                archiveMessageReports cci m
             | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId"
           _ -> messageError "x.msg.del: message of another member without memberId"
         checkRole GroupMember {memberRole} a
@@ -1853,10 +1853,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         delete cci byGroupMember
           | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCIs user gInfo [cci] False False byGroupMember brokerTs
           | otherwise = markGroupCIsDeleted user gInfo [cci] False byGroupMember brokerTs
-        archiveMessageReports :: CChatItem 'CTGroup -> GroupMember -> CM ChatResponse
-        archiveMessageReports (CChatItem _ ci) byMember = withStore' $ \db -> do
-          ciIds <- markMessageReportsDeleted db user gInfo ci byMember brokerTs
-          pure $ CRGroupChatItemsDeleted user gInfo ciIds False (Just byMember)
+        archiveMessageReports :: CChatItem 'CTGroup -> GroupMember -> CM ()
+        archiveMessageReports (CChatItem _ ci) byMember = do
+          ciIds <- withStore' $ \db -> markMessageReportsDeleted db user gInfo ci byMember brokerTs
+          unless (null ciIds) $ toView $ CRGroupChatItemsDeleted user gInfo ciIds False (Just byMember)
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> CM ()
