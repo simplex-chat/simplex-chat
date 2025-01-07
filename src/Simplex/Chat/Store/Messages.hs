@@ -58,6 +58,7 @@ module Simplex.Chat.Store.Messages
     markGroupChatItemDeleted,
     markGroupChatItemBlocked,
     markGroupCIBlockedByAdmin,
+    markMessageReportsDeleted,
     deleteLocalChatItem,
     updateDirectChatItemsRead,
     getDirectUnreadTimedItems,
@@ -671,11 +672,10 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL
             AND msg_content_tag = ? AND item_deleted = ?
-            AND item_status = ?
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
       |]
-    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, False, CISRcvNew)
+    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, False)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
         let q = baseQuery <> " WHERE g.user_id = ?"
@@ -1323,8 +1323,12 @@ getGroupUnreadCount_ db user g contentFilter =
     baseQuery = "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? "
 
 getGroupReportsCount_ :: DB.Connection -> User -> GroupInfo -> Bool -> IO Int
-getGroupReportsCount_ db user g archived =
-  getGroupUnreadCount_ db user g $ Just $ ContentFilter MCReport_ (Just archived)
+getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
+  fromOnly . head
+    <$> DB.query
+      db
+      "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ?"
+      (userId, groupId, MCReport_, archived)
 
 queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> Query -> Query -> IO [r]
 queryUnreadGroupItems db User {userId} GroupInfo {groupId} contentFilter baseQuery orderLimit =
@@ -2339,6 +2343,20 @@ markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta
     |]
     (DBCIBlockedByAdmin, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
   pure ci {meta = meta {itemDeleted = Just $ CIBlockedByAdmin $ Just deletedTs, editable = False, deletable = False}}
+
+markMessageReportsDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> GroupMember -> UTCTime -> IO [ChatItemId]
+markMessageReportsDeleted db User {userId} GroupInfo {groupId} ChatItem {meta = CIMeta {itemSharedMsgId}} GroupMember {groupMemberId} deletedTs = do
+  currentTs <- liftIO getCurrentTime
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        UPDATE chat_items
+        SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND quoted_shared_msg_id = ?
+        RETURNING chat_item_id;
+      |]
+      (DBCIDeleted, deletedTs, groupMemberId, currentTs, userId, groupId, MCReport_, itemSharedMsgId)
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do

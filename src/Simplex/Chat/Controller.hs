@@ -635,6 +635,7 @@ data ChatResponse
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
   | CRReactionMembers {user :: User, memberReactions :: [MemberReaction]}
   | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
+  | CRGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}

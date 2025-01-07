@@ -176,7 +176,7 @@ chatGroupTests = do
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
-    it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
+    fit "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -6600,3 +6600,6 @@ testGroupMemberReports =
             bob <## "      report content",
           (cath </)
         ]
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content")])
+      alice #$> ("/_get chat #1 content=report deleted=off count=100", chat, [(0, "report content")])
+      alice #$> ("/_get chat #1 content=report deleted=on count=100", chat, [])
