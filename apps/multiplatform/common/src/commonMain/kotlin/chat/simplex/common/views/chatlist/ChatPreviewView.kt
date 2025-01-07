@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
@@ -181,6 +182,16 @@ fun ChatPreviewView(
           ci.meta.itemDeleted == null -> ci.formattedText
           else -> null
         }
+        val prefix = when (val mc = ci.content.msgContent) {
+          is MsgContent.MCReport ->
+            buildAnnotatedString {
+              withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
+                append(if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+              }
+            }
+          else -> null
+        }
+
         MarkdownText(
           text,
           formattedText,
@@ -202,6 +213,7 @@ fun ChatPreviewView(
           ),
           inlineContent = inlineTextContent,
           modifier = Modifier.fillMaxWidth(),
+          prefix = prefix
         )
       }
     } else {
