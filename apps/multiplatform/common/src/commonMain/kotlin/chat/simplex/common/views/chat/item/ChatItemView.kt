@@ -977,7 +977,14 @@ private fun BlockMemberAction(
             withBGApi {
               val reportedMessageId = getLocalIdForReportedMessage(rhId, chatInfo, reportedItem, cItem.id)
               if (reportedMessageId != null) {
-
+                blockAndModerateAlertDialog(
+                  rhId,
+                  reportedMessageId = reportedMessageId,
+                  reportId = cItem.id,
+                  gInfo = groupInfo,
+                  mem = member,
+                  deleteMessage = deleteMessage,
+                )
               }
             }
           }) {
@@ -1408,6 +1415,36 @@ fun moderateMessagesAlertDialog(itemIds: List<Long>, questionText: String, delet
     confirmText = generalGetString(MR.strings.delete_verb),
     destructive = true,
     onConfirm = { deleteMessages(itemIds) }
+  )
+}
+
+private fun blockAndModerateAlertDialog(
+  rhId: Long?,
+  reportedMessageId: Long,
+  reportId: Long,
+  gInfo: GroupInfo,
+  mem: GroupMember,
+  deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?
+) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.report_block_and_moderate_confirmation_title),
+    text = generalGetString(
+      if (gInfo.fullGroupPreferences.fullDelete.on) MR.strings.report_block_and_moderate_confirmation_desc_full_delete else MR.strings.report_block_and_moderate_confirmation_desc_full_delete).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.report_block_and_moderate_confirmation_ok),
+    onConfirm = {
+      withBGApi {
+        try {
+          val deleted = deleteMessage(reportedMessageId, CIDeleteMode.cidmBroadcast)
+          if (deleted != null) {
+            blockMemberForAll(rhId, gInfo, mem, true)
+            deleteMessage(reportId, CIDeleteMode.cidmInternalMark)
+          }
+        } catch (ex: Exception) {
+          Log.e(TAG, "blockAndModerateAlertDialog block and moderate ${ex.message}")
+        }
+      }
+    },
+    destructive = true,
   )
 }
 

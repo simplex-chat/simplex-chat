@@ -308,6 +308,10 @@
   <string name="report_block_and_moderate_title">Block and moderate?</string>
   <string name="report_block_and_moderate_block_and_moderate_action">Block and moderate</string>
   <string name="report_block_and_moderate_only_block_action">Only block</string>
+  <string name="report_block_and_moderate_confirmation_title">Delete member message and block?</string>
+  <string name="report_block_and_moderate_confirmation_desc_full_delete">The message will be deleted for all members.\nAll new messages from %1$s will be hidden!</string>
+  <string name="report_block_and_moderate_confirmation_desc_mark_delete">The message will be marked as moderated for all members.\nAll new messages from %1$s will be hidden!</string>
+  <string name="report_block_and_moderate_confirmation_ok">Delete and block</string>
 
   <!-- CIStatus errors -->
   <string name="ci_status_other_error">Error: %1$s</string>
