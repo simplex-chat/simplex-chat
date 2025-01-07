@@ -2268,4 +2268,5 @@
     <string name="change_list">更改列表</string>
     <string name="change_order_chat_list_menu_action">更改顺序</string>
     <string name="error_creating_report">创建报告出错</string>
+    <string name="prefs_error_saving_settings">保存设置出错</string>
 </resources>
