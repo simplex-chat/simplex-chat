@@ -195,7 +195,7 @@ testPaginationAllChatTypes =
 
       -- * (notes)
       createCCNoteFolder alice
-      alice /* "psst"
+      alice >* "psst"
 
       ts7 <- iso8601Show <$> getCurrentTime
 

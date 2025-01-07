@@ -446,18 +446,16 @@ test-suite simplex-chat-test
       ChatTests.Local
       ChatTests.Profiles
       ChatTests.Utils
+      JSONFixtures
       JSONTests
       MarkdownTests
       MessageBatching
-      MobileTests
       OperatorTests
       ProtocolTests
       RandomServers
       RemoteTests
-      SchemaDump
       ValidNames
       ViewTests
-      WebRTCTests
       Broadcast.Bot
       Broadcast.Options
       Directory.Events
@@ -466,6 +464,11 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Paths_simplex_chat
+  if !flag(client_postgres)
+      other-modules:
+          MobileTests
+          SchemaDump
+          WebRTCTests
   hs-source-dirs:
       tests
       apps/simplex-broadcast-bot/src

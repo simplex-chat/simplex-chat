@@ -7,12 +7,8 @@
 
 module Simplex.Chat.Terminal where
 
-import Control.Exception (handle, throwIO)
 import Control.Monad
-import qualified Data.ByteArray as BA
 import qualified Data.List.NonEmpty as L
-import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat (defaultChatConfig, operatorSimpleXChat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
@@ -25,10 +21,14 @@ import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (NetworkConfig (..), SMPProxyFallback (..), SMPProxyMode (..), defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
-import System.IO (hFlush, hSetEcho, stdin, stdout)
 #if !defined(dbPostgres)
+import Control.Exception (handle, throwIO)
+import qualified Data.ByteArray as BA
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
+import System.IO (hFlush, hSetEcho, stdin, stdout)
 #endif
 
 terminalChatConfig :: ChatConfig

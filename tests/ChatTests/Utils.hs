@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -21,7 +22,6 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
-import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -45,6 +45,11 @@ import System.Info (os)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 import UnliftIO (timeout)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+#endif
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
@@ -362,8 +367,8 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-(/*) :: HasCallStack => TestCC -> String -> IO ()
-cc /* note = do
+(>*) :: HasCallStack => TestCC -> String -> IO ()
+cc >* note = do
   cc `send` ("/* " <> note)
   (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
 
