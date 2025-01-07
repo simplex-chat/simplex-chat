@@ -152,8 +152,8 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
@@ -261,10 +261,11 @@ setGroupLinkMemberRole db User {userId} userContactLinkId memberRole =
 
 getGroupAndMember :: DB.Connection -> User -> Int64 -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
 getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
-  gm <- ExceptT . firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
-    DB.query
-      db
-      [sql|
+  gm <-
+    ExceptT . firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
+      DB.query
+        db
+        [sql|
         SELECT
           -- GroupInfo
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
@@ -295,7 +296,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
         )
         WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
-      (userId, groupMemberId, userId, userContactId)
+        (userId, groupMemberId, userId, userContactId)
   liftIO $ bitraverse (addGroupChatTags db) pure gm
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
@@ -639,10 +640,11 @@ getUserGroups db vr user@User {userId} = do
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
-  g_ <- map (toGroupInfo vr userContactId [])
-    <$> DB.query
-      db
-      [sql|
+  g_ <-
+    map (toGroupInfo vr userContactId [])
+      <$> DB.query
+        db
+        [sql|
         SELECT
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
           g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
@@ -656,7 +658,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
         WHERE g.user_id = ? AND mu.contact_id = ?
           AND (gp.display_name LIKE '%' || ? || '%' OR gp.full_name LIKE '%' || ? || '%' OR gp.description LIKE '%' || ? || '%')
       |]
-      (userId, userContactId, search, search, search)
+        (userId, userContactId, search, search, search)
   mapM (addGroupChatTags db) g_
   where
     search = fromMaybe "" search_
@@ -1376,10 +1378,11 @@ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange
 
 getViaGroupMember :: DB.Connection -> VersionRangeChat -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
 getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
-  gm_ <- maybeFirstRow toGroupAndMember $
-    DB.query
-      db
-      [sql|
+  gm_ <-
+    maybeFirstRow toGroupAndMember $
+      DB.query
+        db
+        [sql|
         SELECT
           -- GroupInfo
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
@@ -1411,7 +1414,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
         )
         WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ? AND ct.deleted = 0
       |]
-      (userId, userId, contactId, userContactId)
+        (userId, userId, contactId, userContactId)
   mapM (bitraverse (addGroupChatTags db) pure) gm_
   where
     toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)

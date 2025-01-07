@@ -42,8 +42,8 @@ import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), ServerRoles (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)

@@ -9,7 +9,7 @@ module Simplex.Chat.Store.Remote where
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8, decodeASCII)
+import Data.Text.Encoding (decodeASCII, encodeUtf8)
 import Data.Word (Word16)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Shared

@@ -15,8 +15,8 @@ import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types (NoteFolder (..), NoteFolderId, User (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)

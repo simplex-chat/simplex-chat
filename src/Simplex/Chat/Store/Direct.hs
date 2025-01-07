@@ -101,8 +101,8 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util ((<$$>))
@@ -190,10 +190,11 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash = do
 
 getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> IO (Maybe Contact)
 getContactByConnReqHash db vr user@User {userId} cReqHash = do
-  ct_ <- maybeFirstRow (toContact vr user []) $
-    DB.query
-      db
-      [sql|
+  ct_ <-
+    maybeFirstRow (toContact vr user []) $
+      DB.query
+        db
+        [sql|
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
@@ -209,7 +210,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash = do
         ORDER BY c.created_at DESC
         LIMIT 1
       |]
-      (userId, cReqHash, CSActive)
+        (userId, cReqHash, CSActive)
   mapM (addDirectChatTags db) ct_
 
 createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
@@ -374,7 +375,7 @@ deleteUnusedProfile_ db userId profileId =
         )
     |]
     ( (userId, profileId, userId, profileId, userId, profileId)
-      :. (userId, profileId, userId, profileId, profileId)
+        :. (userId, profileId, userId, profileId, profileId)
     )
 
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
@@ -650,10 +651,11 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId = do
-      ct_ <- maybeFirstRow (toContact vr user []) $
-        DB.query
-          db
-          [sql|
+      ct_ <-
+        maybeFirstRow (toContact vr user []) $
+          DB.query
+            db
+            [sql|
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
@@ -669,15 +671,16 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
             ORDER BY c.created_at DESC
             LIMIT 1
           |]
-          (userId, xContactId)
+            (userId, xContactId)
       mapM (addDirectChatTags db) ct_
     getGroupInfo' :: XContactId -> IO (Maybe GroupInfo)
     getGroupInfo' xContactId = do
-      g_ <- maybeFirstRow (toGroupInfo vr userContactId []) $
-        DB.query
-          db
-          (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-          (xContactId, userId, userContactId)
+      g_ <-
+        maybeFirstRow (toGroupInfo vr userContactId []) $
+          DB.query
+            db
+            (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+            (xContactId, userId, userContactId)
       mapM (addGroupChatTags db) g_
     getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
     getContactRequestByXContactId xContactId =

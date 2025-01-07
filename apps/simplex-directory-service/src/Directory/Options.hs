@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatOpts (..), ChatCmdLog (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,

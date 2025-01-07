@@ -111,7 +111,7 @@ copyValidDirectoryFiles isFileError fromDir toDir = do
         Nothing ->
           (copyDirectoryFile f $> fileErrs)
             `E.catch` \(e :: E.SomeException) -> addErr $ show e
-        Just e ->  addErr e
+        Just e -> addErr e
       where
         addErr e = pure $ AEFileError f e : fileErrs
     copyDirectoryFile f = do

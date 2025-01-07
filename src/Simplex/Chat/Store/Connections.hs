@@ -35,8 +35,8 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
@@ -125,10 +125,12 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
        in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, uiThemes, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = do
-      gm <- ExceptT $ firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
-        DB.query
-          db
-          [sql|
+      gm <-
+        ExceptT $
+          firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
+            DB.query
+              db
+              [sql|
             SELECT
               -- GroupInfo
               g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
@@ -150,7 +152,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
-          (groupMemberId, userId, userContactId)
+              (groupMemberId, userId, userContactId)
       liftIO $ bitraverse (addGroupChatTags db) pure gm
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember c (groupInfoRow :. memberRow) =

@@ -260,7 +260,7 @@ data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknow
   deriving (Eq, Show)
 
 data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RROther | RRUnknown Text
-   deriving (Eq, Show)
+  deriving (Eq, Show)
 
 $(pure [])
 
@@ -583,9 +583,10 @@ durationText duration =
       | otherwise = show n
 
 msgContentHasText :: MsgContent -> Bool
-msgContentHasText = not . T.null . \case
-  MCVoice {text} -> text
-  mc -> msgContentText mc
+msgContentHasText =
+  not . T.null . \case
+    MCVoice {text} -> text
+    mc -> msgContentText mc
 
 isVoice :: MsgContent -> Bool
 isVoice = \case
