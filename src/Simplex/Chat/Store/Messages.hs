@@ -1175,8 +1175,8 @@ data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime 
 getGroupChatItemIDs :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> GroupItemIDsRange -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIDs db User {userId} GroupInfo {groupId} contentFilter range count search = case contentFilter of
   Just ContentFilter {mcTag, deleted} -> case deleted of
-    Just deleted' -> idsQuery (baseCond <> " msg_content_tag = ? AND item_deleted = ? ") (userId, groupId, mcTag, deleted')
-    Nothing -> idsQuery (baseCond <> " msg_content_tag = ? ") (userId, groupId, mcTag)
+    Just deleted' -> idsQuery (baseCond <> " AND msg_content_tag = ? AND item_deleted = ? ") (userId, groupId, mcTag, deleted')
+    Nothing -> idsQuery (baseCond <> " AND msg_content_tag = ? ") (userId, groupId, mcTag)
   Nothing -> idsQuery baseCond (userId, groupId)
   where
     baseQuery = " SELECT chat_item_id FROM chat_items WHERE "
