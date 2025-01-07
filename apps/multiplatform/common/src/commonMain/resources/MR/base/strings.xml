@@ -1546,6 +1546,7 @@
   <string name="group_member_role_observer">observer</string>
   <string name="group_member_role_author">author</string>
   <string name="group_member_role_member">member</string>
+  <string name="group_member_role_moderator">moderator</string>
   <string name="group_member_role_admin">admin</string>
   <string name="group_member_role_owner">owner</string>
 
