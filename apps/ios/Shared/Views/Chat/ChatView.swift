@@ -1288,7 +1288,7 @@ struct ChatView: View {
                 if ci.chatDir == .groupSnd {
                     deleteButton(ci)
                 } else {
-                    archiveReportButton(ci, groupInfo)
+                    archiveReportButton(ci)
                     if let qi = ci.quotedItem {
                         moderateReportedButton(qi, ci, groupInfo)
                         if let rMember = qi.memberToModerate(chat.chatInfo) {
@@ -1350,9 +1350,7 @@ struct ChatView: View {
                 }
                 if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
                     moderateButton(ci, groupInfo)
-                }
-                
-                if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole < .moderator {
+                } else if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole < .moderator {
                     reportButton(ci)
                 }
             } else if ci.meta.itemDeleted != nil {
@@ -1701,17 +1699,12 @@ struct ChatView: View {
             }
         }
         
-        private func archiveReportButton(_ cItem: ChatItem, _ groupInfo: GroupInfo) -> Button<some View> {
+        private func archiveReportButton(_ cItem: ChatItem) -> Button<some View> {
             Button(role: .destructive) {
-                let isOwnReport = cItem.chatDir == .groupSnd
                 AlertManager.shared.showAlert(
                     Alert(
                         title: Text("Archive report?"),
-                        message: Text(
-                            isOwnReport
-                            ? "The report will be archived for all moderators."
-                            : "The report will be archived for all moderators and reporter."
-                        ),
+                        message: Text("The report will be archived for all moderators and reporter."),
                         primaryButton: .destructive(Text("Archive")) {
                             deletingItem = cItem
                             deleteMessage(.cidmInternalMark, moderate: false)
@@ -1832,17 +1825,24 @@ struct ChatView: View {
         
         private func reportButton(_ ci: ChatItem) -> Button<some View> {
             Button(role: .destructive) {
+                var buttons: [ActionSheet.Button] = ReportReason.supportedReasons.map { reason in
+                    .default(Text(reason.text)) {
+                        withAnimation {
+                            if composeState.editing {
+                                composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                            } else {
+                                composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                            }
+                        }
+                    }
+                }
+                
+                buttons.append(.cancel())
+               
                 actionSheet = SomeActionSheet(
                     actionSheet: ActionSheet(
                         title: Text("Report reason?"),
-                        buttons: [
-                            reportReasonButton(.spam),
-                            reportReasonButton(.illegal),
-                            reportReasonButton(.community),
-                            reportReasonButton(.profile),
-                            reportReasonButton(.other),
-                            .cancel()
-                        ]
+                        buttons: buttons
                     ),
                     id: "reportChatMessage"
                 )
@@ -1854,18 +1854,6 @@ struct ChatView: View {
             }
         }
         
-        private func reportReasonButton(_ reason: ReportReason) -> ActionSheet.Button {
-            .default(Text(reason.text)) {
-                withAnimation {
-                    if composeState.editing {
-                        composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
-                    } else {
-                        composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
-                    }
-                }
-            }
-        }
-
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
             return n == 1 ? "Delete message?" : "Delete \(n) messages?"

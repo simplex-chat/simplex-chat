@@ -3940,6 +3940,8 @@ public enum ReportReason: Hashable {
     case other
     case unknown(type: String)
     
+    public static var supportedReasons: [ReportReason] = [.spam, .illegal, .community, .profile, .other]
+
     public var text: String {
         switch self {
         case .spam: return NSLocalizedString("Spam", comment: "report reason")
