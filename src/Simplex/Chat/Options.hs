@@ -1,4 +1,5 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -19,7 +20,6 @@ where
 
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -34,7 +34,10 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
+#if !defined(dbPostgres)
+import Data.ByteArray (ScrubbedBytes)
 import System.FilePath (combine)
+#endif
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
@@ -54,8 +57,14 @@ data ChatOpts = ChatOpts
   }
 
 data CoreChatOpts = CoreChatOpts
-  { dbFilePrefix :: String,
+  {
+#if defined(dbPostgres)
+    dbName :: String,
+    dbUser :: String,
+#else
+    dbFilePrefix :: String,
     dbKey :: ScrubbedBytes,
+#endif
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
     simpleNetCfg :: SimpleNetCfg,
@@ -82,14 +91,35 @@ agentLogLevel = \case
   CLLImportant -> LogInfo
 
 coreChatOptsP :: FilePath -> FilePath -> Parser CoreChatOpts
-coreChatOptsP appDir defaultDbFileName = do
+#if defined(dbPostgres)
+coreChatOptsP _appDir defaultDbName = do
+  dbName <-
+    strOption
+      ( long "database"
+          <> short 'd'
+          <> metavar "DB_NAME"
+          <> help "Database name"
+          <> value defaultDbName
+          <> showDefault
+      )
+  dbUser <-
+    strOption
+      ( long "database-user"
+          <> short 'u'
+          <> metavar "DB_USER"
+          <> help "Database user"
+          <> value "simplex"
+          <> showDefault
+      )
+#else
+coreChatOptsP appDir defaultDbName = do
   dbFilePrefix <-
     strOption
       ( long "database"
           <> short 'd'
           <> metavar "DB_FILE"
           <> help "Path prefix to chat and agent database files"
-          <> value defaultDbFilePath
+          <> value (combine appDir defaultDbName)
           <> showDefault
       )
   dbKey <-
@@ -100,6 +130,7 @@ coreChatOptsP appDir defaultDbFileName = do
           <> help "Database encryption key/pass-phrase"
           <> value ""
       )
+#endif
   smpServers <-
     option
       parseProtocolServers
@@ -248,8 +279,14 @@ coreChatOptsP appDir defaultDbFileName = do
       )
   pure
     CoreChatOpts
-      { dbFilePrefix,
+      {
+#if defined(dbPostgres)
+        dbName,
+        dbUser,
+#else
+        dbFilePrefix,
         dbKey,
+#endif
         smpServers,
         xftpServers,
         simpleNetCfg =
@@ -276,7 +313,6 @@ coreChatOptsP appDir defaultDbFileName = do
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
-    defaultDbFilePath = combine appDir defaultDbFileName
 
 defaultHostMode :: Maybe SocksProxyWithAuth -> HostMode
 defaultHostMode = \case
@@ -284,8 +320,8 @@ defaultHostMode = \case
   _ -> HMPublic
 
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
-chatOptsP appDir defaultDbFileName = do
-  coreOptions <- coreChatOptsP appDir defaultDbFileName
+chatOptsP appDir defaultDbName = do
+  coreOptions <- coreChatOptsP appDir defaultDbName
   deviceName <-
     optional $
       strOption
@@ -432,10 +468,10 @@ parseChatCmdLog = eitherReader $ \case
   _ -> Left "Invalid chat command log level"
 
 getChatOpts :: FilePath -> FilePath -> IO ChatOpts
-getChatOpts appDir defaultDbFileName =
+getChatOpts appDir defaultDbName =
   execParser $
     info
-      (helper <*> versionOption <*> chatOptsP appDir defaultDbFileName)
+      (helper <*> versionOption <*> chatOptsP appDir defaultDbName)
       (header versionStr <> fullDesc <> progDesc "Start chat with DB_FILE file and use SERVER as SMP server")
   where
     versionStr = versionString versionNumber

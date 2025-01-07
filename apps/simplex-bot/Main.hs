@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Main where
@@ -25,7 +26,13 @@ welcomeMessage = "Hello! I am a simple squaring bot.\nIf you send me a number, I
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix}} <- getChatOpts appDir "simplex_bot"
+  opts <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
+#if defined(dbPostgres)
+  let ChatOpts {coreOptions = CoreChatOpts {dbName}} = opts
+  putStrLn $ "db: " <> dbName
+#else
+  let ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix}} = opts
   putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
+#endif
   pure opts

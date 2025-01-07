@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -12,8 +13,6 @@ import qualified Data.ByteArray as BA
 import qualified Data.List.NonEmpty as L
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Database.SQLite.Simple (SQLError (..))
-import qualified Database.SQLite.Simple as DB
 import Simplex.Chat (defaultChatConfig, operatorSimpleXChat)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
@@ -27,6 +26,10 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (NetworkConfig (..), SMPProxyFallback (..), SMPProxyMode (..), defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
 import System.IO (hFlush, hSetEcho, stdin, stdout)
+#if !defined(dbPostgres)
+import Database.SQLite.Simple (SQLError (..))
+import qualified Database.SQLite.Simple as DB
+#endif
 
 terminalChatConfig :: ChatConfig
 terminalChatConfig =
@@ -61,6 +64,13 @@ terminalChatConfig =
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChatTerminal cfg options t = run options
   where
+#if defined(dbPostgres)
+    run opts =
+      simplexChatCore cfg opts $ \u cc -> do
+        ct <- newChatTerminal t opts
+        when (firstTime cc) . printToTerminal ct $ chatWelcome u
+        runChatTerminal ct cc opts
+#else
     run opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbKey}} =
       handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
         ct <- newChatTerminal t opts
@@ -82,6 +92,7 @@ simplexChatTerminal cfg options t = run options
           hSetEcho stdin True
           putStrLn ""
           pure opts {coreOptions = coreOptions {dbKey = BA.convert $ encodeUtf8 $ T.pack key}}
+#endif
 
 runChatTerminal :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
 runChatTerminal ct cc opts = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc opts, runInputLoop ct cc]

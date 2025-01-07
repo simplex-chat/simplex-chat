@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -32,16 +33,32 @@ import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+#endif
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
+#if defined(dbPostgres)
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbName, dbUser, logAgent, yesToUpMigrations}} chat =
+#else
 simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent, yesToUpMigrations, vacuumOnMigration}} chat =
+#endif
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
+#if defined(dbPostgres)
+    connectInfo =
+      defaultConnectInfo
+        { connectUser = dbUser,
+          connectDatabase = dbName
+        }
+    initRun = createChatDatabase connectInfo "" confirm' >>= either exit run
+#else
     initRun = createChatDatabase dbFilePrefix dbKey False confirm' vacuumOnMigration >>= either exit run
+#endif
     confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
     exit e = do
       putStrLn $ "Error opening database: " <> show e
@@ -96,10 +113,12 @@ getSelectActiveUser st = do
 createActiveUser :: ChatController -> IO User
 createActiveUser cc = do
   putStrLn
-    "No user profiles found, it will be created now.\n\
-    \Please choose your display name.\n\
-    \It will be sent to your contacts when you connect.\n\
-    \It is only stored on your device and you can change it later."
+    (
+      "No user profiles found, it will be created now.\n" <>
+      "Please choose your display name.\n" <>
+      "It will be sent to your contacts when you connect.\n" <>
+      "It is only stored on your device and you can change it later."
+    )
   loop
   where
     loop = do

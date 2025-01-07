@@ -38,11 +38,13 @@ import Simplex.Messaging.Agent.Store.SQLite (createDBStore)
 createChatStore :: ConnectInfo -> String -> MigrationConfirmation -> IO (Either MigrationError DBStore)
 createChatStore connectInfo schema = createDBStore connectInfo schema migrations
 
-chatSchema :: String
-chatSchema = "chat_schema"
+chatSchema :: String -> String
+chatSchema "" = "chat_schema"
+chatSchema prefix = prefix <> "_chat_schema"
 
-agentSchema :: String
-agentSchema = "agent_schema"
+agentSchema :: String -> String
+agentSchema "" = "agent_schema"
+agentSchema prefix = prefix <> "_agent_schema"
 #else
 createChatStore :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> Bool -> IO (Either MigrationError DBStore)
 createChatStore dbPath key keepKey = createDBStore dbPath key keepKey migrations

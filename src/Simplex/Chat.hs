@@ -189,10 +189,10 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 #if defined(dbPostgres)
-createChatDatabase :: ConnectInfo -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
-createChatDatabase connectInfo confirmMigrations = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore connectInfo chatSchema confirmMigrations
-  agentStore <- ExceptT $ createAgentStore connectInfo agentSchema confirmMigrations
+createChatDatabase :: ConnectInfo -> String -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
+createChatDatabase connectInfo schemaPrefix confirmMigrations = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore connectInfo (chatSchema schemaPrefix) confirmMigrations
+  agentStore <- ExceptT $ createAgentStore connectInfo (agentSchema schemaPrefix) confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
 #else
 createChatDatabase :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> Bool -> IO (Either MigrationError ChatDatabase)
