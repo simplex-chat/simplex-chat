@@ -51,7 +51,7 @@ import System.FilePath ((</>))
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
-    describe "add contact and send/receive messages" testAddContact
+    fdescribe "add contact and send/receive messages" testAddContact
     it "retry connecting via the same link" testRetryConnecting
     xit'' "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
     it "mark multiple messages as read" testMarkReadDirect

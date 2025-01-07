@@ -293,7 +293,7 @@ createDatabase _tmp CoreChatOpts {dbName, dbUser} schemaPrefix = do
           connectUser = dbUser,
           connectDatabase = dbName
         }
-  createChatDatabase connectInfo schemaPrefix MCError
+  createChatDatabase connectInfo ("client_" <> schemaPrefix) MCError
 
 insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users DEFAULT VALUES")

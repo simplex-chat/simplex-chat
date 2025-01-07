@@ -645,7 +645,7 @@ CREATE TABLE server_operators(
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE usage_conditions(
-  usage_conditions_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  usage_conditions_id BIGINT PRIMARY KEY,
   conditions_commit TEXT NOT NULL UNIQUE,
   notified_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),

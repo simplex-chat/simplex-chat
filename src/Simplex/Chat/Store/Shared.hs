@@ -145,7 +145,13 @@ data StoreError
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
 
 insertedRowId :: DB.Connection -> IO Int64
-insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
+insertedRowId db = fromOnly . head <$> DB.query_ db q
+  where
+#if defined(dbPostgres)
+    q = "SELECT lastval()"
+#else
+    q = "SELECT last_insert_rowid()"
+#endif
 
 checkConstraint :: StoreError -> ExceptT StoreError IO a -> ExceptT StoreError IO a
 checkConstraint err action = ExceptT $ runExceptT action `E.catch` (pure . Left . handleSQLError err)
