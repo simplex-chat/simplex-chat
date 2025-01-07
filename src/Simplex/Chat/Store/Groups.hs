@@ -1383,37 +1383,37 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
       DB.query
         db
         [sql|
-        SELECT
-          -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-          g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-          g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
-          -- GroupInfo {membership}
-          mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-          mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-          -- GroupInfo {membership = GroupMember {memberProfile}}
-          pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-          -- via GroupMember
-          m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-          m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
-          c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-        FROM group_members m
-        JOIN contacts ct ON ct.contact_id = m.contact_id
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_profiles gp USING (group_profile_id)
-        JOIN group_members mu ON g.group_id = mu.group_id
-        JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = m.group_member_id
-        )
-        WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ? AND ct.deleted = 0
-      |]
+          SELECT
+            -- GroupInfo
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+            g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+            -- GroupInfo {membership}
+            mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+            mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+            -- GroupInfo {membership = GroupMember {memberProfile}}
+            pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
+            -- via GroupMember
+            m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+            m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences,
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
+            c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+            c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+          FROM group_members m
+          JOIN contacts ct ON ct.contact_id = m.contact_id
+          JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+          JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
+          JOIN group_profiles gp USING (group_profile_id)
+          JOIN group_members mu ON g.group_id = mu.group_id
+          JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+          LEFT JOIN connections c ON c.connection_id = (
+            SELECT max(cc.connection_id)
+            FROM connections cc
+            where cc.user_id = ? AND cc.group_member_id = m.group_member_id
+          )
+          WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ? AND ct.deleted = 0
+        |]
         (userId, userId, contactId, userContactId)
   mapM (bitraverse (addGroupChatTags db) pure) gm_
   where
