@@ -1917,11 +1917,11 @@ private fun scrollToItem(
   }
 }
 
-private fun findQuotedItemFromItem(
+fun findQuotedItemFromItem(
   rhId: State<Long?>,
   chatInfo: State<ChatInfo>,
   scope: CoroutineScope,
-  scrollToItem: (Long) -> Unit
+  onQuoteFound: (Long) -> Unit
 ): (Long) -> Unit = { itemId: Long ->
   scope.launch(Dispatchers.Default) {
     val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId)
@@ -1930,7 +1930,7 @@ private fun findQuotedItemFromItem(
         updateChatItem(chatInfo.value, item)
       }
       if (item.quotedItem?.itemId != null) {
-        scrollToItem(item.quotedItem.itemId)
+        onQuoteFound(item.quotedItem.itemId)
       } else {
         showQuotedItemDoesNotExistAlert()
       }
