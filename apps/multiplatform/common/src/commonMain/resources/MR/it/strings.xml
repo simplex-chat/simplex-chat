@@ -2283,4 +2283,6 @@
     <string name="change_list">Cambia elenco</string>
     <string name="chat_list_notes">Note</string>
     <string name="change_order_chat_list_menu_action">Cambia ordine</string>
+    <string name="prefs_error_saving_settings">Errore di salvataggio delle impostazioni</string>
+    <string name="error_creating_report">Errore nella creazione del resoconto</string>
 </resources>
