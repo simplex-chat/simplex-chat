@@ -115,11 +115,11 @@ struct SelectedItemsBottomToolbar: View {
             (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
                     var (de, dee, me, onlyOwnGroupItems, fe, sel) = r
-                    de = de && ci.canBeDeletedForSelf
-                    dee = dee && ci.meta.deletable && !ci.localNote
-                    onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
-                    me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
-                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy
+                    de = de && ci.canBeDeletedForSelf && !ci.isReport
+                    dee = dee && ci.meta.deletable && !ci.localNote && !ci.isReport
+                    onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd && !ci.isReport
+                    me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil && !ci.isReport
+                    fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy && !ci.isReport
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
                     return (de, dee, me, onlyOwnGroupItems, fe, sel)
                 } else {
