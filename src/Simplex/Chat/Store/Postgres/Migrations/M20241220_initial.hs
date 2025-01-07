@@ -421,7 +421,8 @@ CREATE TABLE chat_items(
   fwd_from_contact_id BIGINT REFERENCES contacts ON DELETE SET NULL,
   fwd_from_group_id BIGINT REFERENCES groups ON DELETE SET NULL,
   fwd_from_chat_item_id BIGINT REFERENCES chat_items ON DELETE SET NULL,
-  via_proxy SMALLINT
+  via_proxy SMALLINT,
+  msg_content_tag TEXT
 );
 ALTER TABLE groups
 ADD CONSTRAINT fk_groups_chat_items
@@ -644,7 +645,7 @@ CREATE TABLE server_operators(
   updated_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 CREATE TABLE usage_conditions(
-  usage_conditions_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  usage_conditions_id BIGINT PRIMARY KEY,
   conditions_commit TEXT NOT NULL UNIQUE,
   notified_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),

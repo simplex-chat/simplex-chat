@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,11 +20,13 @@ import GHC.IO.Handle (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
-import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Types (Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
+#if !defined(dbPostgres)
+import Simplex.Chat.Options (CoreChatOpts (..))
+#endif
 
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
@@ -67,7 +70,12 @@ directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", im
 mkDirectoryOpts :: FilePath -> [KnownContact] -> DirectoryOpts
 mkDirectoryOpts tmp superUsers =
   DirectoryOpts
-    { coreOptions = testCoreOpts {dbFilePrefix = tmp </> serviceDbPrefix},
+    {
+#if defined(dbPostgres)
+      coreOptions = testCoreOpts,
+#else
+      coreOptions = testCoreOpts {dbFilePrefix = tmp </> serviceDbPrefix},
+#endif
       adminUsers = [],
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",

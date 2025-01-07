@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -93,8 +94,6 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (Only (..), (:.) (..))
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -102,12 +101,19 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Crypto.Ratchet (PQSupport)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util ((<$$>))
 import Simplex.Messaging.Version
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), (:.) (..))
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 getPendingContactConnection :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO PendingContactConnection
 getPendingContactConnection db userId connId = do
@@ -184,26 +190,27 @@ getConnReqContactXContactId db vr user@User {userId} cReqHash = do
 
 getContactByConnReqHash :: DB.Connection -> VersionRangeChat -> User -> ConnReqUriHash -> IO (Maybe Contact)
 getContactByConnReqHash db vr user@User {userId} cReqHash = do
-  ct_ <- maybeFirstRow (toContact vr user []) $
-    DB.query
-      db
-      [sql|
-        SELECT
-          -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
-          -- Connection
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-        FROM contacts ct
-        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-        JOIN connections c ON c.contact_id = ct.contact_id
-        WHERE c.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
-        ORDER BY c.created_at DESC
-        LIMIT 1
-      |]
-      (userId, cReqHash, CSActive)
+  ct_ <-
+    maybeFirstRow (toContact vr user []) $
+      DB.query
+        db
+        [sql|
+          SELECT
+            -- Contact
+            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
+            -- Connection
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+          FROM contacts ct
+          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+          JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE c.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
+          ORDER BY c.created_at DESC
+          LIMIT 1
+        |]
+        (userId, cReqHash, CSActive)
   mapM (addDirectChatTags db) ct_
 
 createDirectConnection :: DB.Connection -> User -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
@@ -368,7 +375,7 @@ deleteUnusedProfile_ db userId profileId =
         )
     |]
     ( (userId, profileId, userId, profileId, userId, profileId)
-      :. (userId, profileId, userId, profileId, profileId)
+        :. (userId, profileId, userId, profileId, profileId)
     )
 
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
@@ -644,34 +651,36 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId = do
-      ct_ <- maybeFirstRow (toContact vr user []) $
-        DB.query
-          db
-          [sql|
-            SELECT
-              -- Contact
-              ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
-              -- Connection
-              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-              c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-            FROM contacts ct
-            JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-            LEFT JOIN connections c ON c.contact_id = ct.contact_id
-            WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
-            ORDER BY c.created_at DESC
-            LIMIT 1
-          |]
-          (userId, xContactId)
+      ct_ <-
+        maybeFirstRow (toContact vr user []) $
+          DB.query
+            db
+            [sql|
+              SELECT
+                -- Contact
+                ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
+                -- Connection
+                c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+                c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+                c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+              FROM contacts ct
+              JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+              LEFT JOIN connections c ON c.contact_id = ct.contact_id
+              WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
+              ORDER BY c.created_at DESC
+              LIMIT 1
+            |]
+            (userId, xContactId)
       mapM (addDirectChatTags db) ct_
     getGroupInfo' :: XContactId -> IO (Maybe GroupInfo)
     getGroupInfo' xContactId = do
-      g_ <- maybeFirstRow (toGroupInfo vr userContactId []) $
-        DB.query
-          db
-          (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-          (xContactId, userId, userContactId)
+      g_ <-
+        maybeFirstRow (toGroupInfo vr userContactId []) $
+          DB.query
+            db
+            (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+            (xContactId, userId, userContactId)
       mapM (addGroupChatTags db) g_
     getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
     getContactRequestByXContactId xContactId =

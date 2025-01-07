@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -20,7 +21,6 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Data.Bifunctor (bimap, second)
-import Data.ByteArray (ScrubbedBytes)
 import Data.List (partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -42,14 +42,19 @@ import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), ServerRoles (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ConnectInfo (..))
+#else
+import Data.ByteArray (ScrubbedBytes)
+#endif
 
 operatorSimpleXChat :: NewServerOperator
 operatorSimpleXChat =
@@ -183,11 +188,19 @@ fluxXFTPServers =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
+#if defined(dbPostgres)
+createChatDatabase :: ConnectInfo -> String -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
+createChatDatabase connectInfo schemaPrefix confirmMigrations = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore connectInfo (chatSchema schemaPrefix) confirmMigrations
+  agentStore <- ExceptT $ createAgentStore connectInfo (agentSchema schemaPrefix) confirmMigrations
+  pure ChatDatabase {chatStore, agentStore}
+#else
 createChatDatabase :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> Bool -> IO (Either MigrationError ChatDatabase)
 createChatDatabase filePrefix key keepKey confirmMigrations vacuum = runExceptT $ do
   chatStore <- ExceptT $ createChatStore (chatStoreFile filePrefix) key keepKey confirmMigrations vacuum
   agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key keepKey confirmMigrations vacuum
   pure ChatDatabase {chatStore, agentStore}
+#endif
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
 newChatController

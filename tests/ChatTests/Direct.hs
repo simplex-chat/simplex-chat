@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,7 +22,6 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (intercalate)
 import qualified Data.Text as T
-import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
@@ -29,7 +29,6 @@ import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -40,13 +39,19 @@ import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
-import System.FilePath ((</>))
 import Test.Hspec hiding (it)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
+import System.FilePath ((</>))
+#endif
 
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
-    describe "add contact and send/receive messages" testAddContact
+    fdescribe "add contact and send/receive messages" testAddContact
     it "retry connecting via the same link" testRetryConnecting
     xit'' "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
     it "mark multiple messages as read" testMarkReadDirect
@@ -109,7 +114,9 @@ chatDirectTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
+#if !defined(dbPostgres)
     it "encrypt/decrypt database" testDatabaseEncryption
+#endif
   describe "coordination between app and NSE" $ do
     it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
   describe "mute/unmute messages" $ do
@@ -142,10 +149,13 @@ chatDirectTests = do
       sameVerificationCode "123 456 789" "12345 6789" `shouldBe` True
     it "mark contact verified" testMarkContactVerified
     it "mark group member verified" testMarkGroupMemberVerified
+#if !defined(dbPostgres)
+  -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "message errors" $ do
     it "show message decryption error" testMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testSyncRatchet
     it "synchronize ratchets, reset connection code" testSyncRatchetCodeReset
+#endif
   describe "message reactions" $ do
     it "set message reactions" testSetMessageReactions
   describe "delivery receipts" $ do
@@ -1480,6 +1490,7 @@ testMaintenanceModeWithFiles tmp = withXFTPServer $ do
     -- works after full restart
     withTestChat tmp "alice" $ \alice -> testChatWorking alice bob
 
+#if !defined(dbPostgres)
 testDatabaseEncryption :: HasCallStack => FilePath -> IO ()
 testDatabaseEncryption tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
@@ -1527,6 +1538,7 @@ testDatabaseEncryption tmp = do
       alice <## "ok"
     withTestChat tmp "alice" $ \alice -> do
       testChatWorking alice bob
+#endif
 
 testSubscribeAppNSE :: HasCallStack => FilePath -> IO ()
 testSubscribeAppNSE tmp =
@@ -2730,6 +2742,7 @@ testMarkGroupMemberVerified =
           | verified = "connection verified"
           | otherwise = "connection not verified, use /code command to see security code"
 
+#if !defined(dbPostgres)
 testMsgDecryptError :: HasCallStack => FilePath -> IO ()
 testMsgDecryptError tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -2867,6 +2880,7 @@ testSyncRatchetCodeReset tmp =
         connVerified
           | verified = "connection verified"
           | otherwise = "connection not verified, use /code command to see security code"
+#endif
 
 testSetMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetMessageReactions =

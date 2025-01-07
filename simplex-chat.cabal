@@ -33,7 +33,6 @@ library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.AppSettings
-      Simplex.Chat.Archive
       Simplex.Chat.Bot
       Simplex.Chat.Bot.KnownContacts
       Simplex.Chat.Call
@@ -49,10 +48,8 @@ library
       Simplex.Chat.Messages.Batch
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Messages.CIContent.Events
-      Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
-      Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
       Simplex.Chat.Options
@@ -96,6 +93,9 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
   else
       exposed-modules:
+          Simplex.Chat.Archive
+          Simplex.Chat.Mobile
+          Simplex.Chat.Mobile.WebRTC
           Simplex.Chat.Store.SQLite.Migrations
           Simplex.Chat.Store.SQLite.Migrations.M20220101_initial
           Simplex.Chat.Store.SQLite.Migrations.M20220122_v1_1
@@ -300,6 +300,8 @@ executable simplex-bot
     , directory ==1.3.*
     , simplex-chat
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
 
 executable simplex-bot-advanced
   main-is: Main.hs
@@ -318,6 +320,8 @@ executable simplex-bot-advanced
     , simplexmq >=6.3
     , stm ==2.5.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -346,6 +350,8 @@ executable simplex-broadcast-bot
     , simplexmq >=6.3
     , stm ==2.5.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -375,6 +381,8 @@ executable simplex-chat
     , unliftio ==0.2.*
     , websockets ==0.12.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -411,6 +419,8 @@ executable simplex-directory-service
     , stm ==2.5.*
     , time ==1.12.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -436,18 +446,16 @@ test-suite simplex-chat-test
       ChatTests.Local
       ChatTests.Profiles
       ChatTests.Utils
+      JSONFixtures
       JSONTests
       MarkdownTests
       MessageBatching
-      MobileTests
       OperatorTests
       ProtocolTests
       RandomServers
       RemoteTests
-      SchemaDump
       ValidNames
       ViewTests
-      WebRTCTests
       Broadcast.Bot
       Broadcast.Options
       Directory.Events
@@ -456,6 +464,11 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Paths_simplex_chat
+  if !flag(client_postgres)
+      other-modules:
+          MobileTests
+          SchemaDump
+          WebRTCTests
   hs-source-dirs:
       tests
       apps/simplex-broadcast-bot/src

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,11 +9,8 @@ module Simplex.Chat.Store.Remote where
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8, decodeASCII)
+import Data.Text.Encoding (decodeASCII, encodeUtf8)
 import Data.Word (Word16)
-import Database.SQLite.Simple (Only (..))
-import qualified Database.SQLite.Simple as SQL
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
@@ -21,6 +19,13 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.RemoteControl.Types
 import UnliftIO
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), Query)
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), Query)
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 insertRemoteHost :: DB.Connection -> Text -> FilePath -> Maybe RCCtrlAddress -> Maybe Word16 -> RCHostPairing -> ExceptT StoreError IO RemoteHostId
 insertRemoteHost db hostDeviceName storePath rcAddr_ bindPort_ RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do
@@ -54,7 +59,7 @@ getRemoteHostByFingerprint db fingerprint =
   maybeFirstRow toRemoteHost $
     DB.query db (remoteHostQuery <> " WHERE host_fingerprint = ?") (Only fingerprint)
 
-remoteHostQuery :: SQL.Query
+remoteHostQuery :: Query
 remoteHostQuery =
   [sql|
     SELECT remote_host_id, host_device_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub, bind_iface, bind_addr, bind_port
@@ -117,7 +122,7 @@ getRemoteCtrlByFingerprint db fingerprint =
   maybeFirstRow toRemoteCtrl $
     DB.query db (remoteCtrlQuery <> " WHERE ctrl_fingerprint = ?") (Only fingerprint)
 
-remoteCtrlQuery :: SQL.Query
+remoteCtrlQuery :: Query
 remoteCtrlQuery =
   [sql|
     SELECT remote_ctrl_id, ctrl_device_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key

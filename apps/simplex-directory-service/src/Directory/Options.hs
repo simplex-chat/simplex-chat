@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatOpts (..), ChatCmdLog (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
@@ -28,8 +28,8 @@ data DirectoryOpts = DirectoryOpts
   }
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
-directoryOpts appDir defaultDbFileName = do
-  coreOptions <- coreChatOptsP appDir defaultDbFileName
+directoryOpts appDir defaultDbName = do
+  coreOptions <- coreChatOptsP appDir defaultDbName
   adminUsers <-
     option
       parseKnownContacts
@@ -70,10 +70,10 @@ directoryOpts appDir defaultDbFileName = do
       }
 
 getDirectoryOpts :: FilePath -> FilePath -> IO DirectoryOpts
-getDirectoryOpts appDir defaultDbFileName =
+getDirectoryOpts appDir defaultDbName =
   execParser $
     info
-      (helper <*> versionOption <*> directoryOpts appDir defaultDbFileName)
+      (helper <*> versionOption <*> directoryOpts appDir defaultDbName)
       (header versionStr <> fullDesc <> progDesc "Start SimpleX Directory Service with DB_FILE, DIRECTORY_FILE and SUPER_USERS options")
   where
     versionStr = versionString versionNumber

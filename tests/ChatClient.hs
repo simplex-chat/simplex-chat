@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -18,7 +19,6 @@ import Control.Exception (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.ByteArray (ScrubbedBytes)
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
@@ -44,7 +44,7 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store (closeStore)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
@@ -59,14 +59,31 @@ import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransp
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
-import System.FilePath ((</>))
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+#else
+import Data.ByteArray (ScrubbedBytes)
+import System.FilePath ((</>))
+#endif
 
-testDBPrefix :: FilePath
-testDBPrefix = "tests/tmp/test"
+#if defined(dbPostgres)
+testDBName :: String
+testDBName = "test_chat_db"
+
+testDBUser :: String
+testDBUser = "test_chat_user"
+
+testDBConnectInfo :: ConnectInfo
+testDBConnectInfo =
+  defaultConnectInfo {
+    connectUser = testDBUser,
+    connectDatabase = testDBName
+  }
+#endif
 
 serverPort :: ServiceName
 serverPort = "7001"
@@ -93,8 +110,14 @@ testOpts =
 testCoreOpts :: CoreChatOpts
 testCoreOpts =
   CoreChatOpts
-    { dbFilePrefix = "./simplex_v1",
+    {
+#if defined(dbPostgres)
+      dbName = testDBName,
+      dbUser = testDBUser,
+#else
+      dbFilePrefix = "./simplex_v1",
       dbKey = "",
+#endif
       -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
       xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
@@ -110,8 +133,10 @@ testCoreOpts =
       vacuumOnMigration = True
     }
 
+#if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
 getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = testCoreOpts {dbKey}}
+#endif
 
 termSettings :: VirtualTerminalSettings
 termSettings =
@@ -248,17 +273,38 @@ groupLinkViaContactVRange :: VersionRangeChat
 groupLinkViaContactVRange = mkVersionRange (VersionChat 1) (VersionChat 2)
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey, vacuumOnMigration}} dbPrefix profile = do
-  Right db@ChatDatabase {chatStore, agentStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError vacuumOnMigration
-  withTransaction agentStore (`DB.execute_` "INSERT INTO users (user_id) VALUES (1);")
+createTestChat tmp cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
+  Right db@ChatDatabase {chatStore, agentStore} <- createDatabase tmp coreOptions dbPrefix
+  insertUser agentStore
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
-startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey, vacuumOnMigration}} dbPrefix = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError vacuumOnMigration
+startTestChat tmp cfg opts@ChatOpts {coreOptions} dbPrefix = do
+  Right db@ChatDatabase {chatStore} <- createDatabase tmp coreOptions dbPrefix
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
+
+#if defined(dbPostgres)
+createDatabase :: FilePath -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
+createDatabase _tmp CoreChatOpts {dbName, dbUser} schemaPrefix = do
+  let connectInfo =
+        defaultConnectInfo {
+          connectUser = dbUser,
+          connectDatabase = dbName
+        }
+  createChatDatabase connectInfo ("client_" <> schemaPrefix) MCError
+
+insertUser :: DBStore -> IO ()
+insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users DEFAULT VALUES")
+#else
+createDatabase ::FilePath -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
+createDatabase tmp CoreChatOpts {dbKey, vacuumOnMigration} dbPrefix =
+  createChatDatabase (tmp </> dbPrefix) dbKey False MCError vacuumOnMigration
+
+insertUser :: DBStore -> IO ()
+insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) VALUES (1)")
+#endif
 
 startTestChat_ :: ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
 startTestChat_ db cfg opts user = do

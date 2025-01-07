@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -86,8 +87,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Database.SQLite.Simple (Only (..), Query, (:.) (..))
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -101,8 +100,8 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
@@ -110,6 +109,13 @@ import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), Query, (:.) (..))
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
 createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
@@ -771,21 +777,21 @@ acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> UTCTime -> Bool 
 acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt autoAccepted = do
   acceptedAt_ :: Maybe (Maybe UTCTime) <- maybeFirstRow fromOnly $ DB.query db "SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit == ?" (operatorId, conditionsCommit)
   case acceptedAt_ of
-        Just Nothing ->
-          DB.execute
-            db
-            (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO UPDATE SET accepted_at = ?, auto_accepted = ?")
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted, acceptedAt, BI autoAccepted)
-        Just (Just _) ->
-          DB.execute
-            db
-            (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO NOTHING")
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
-        Nothing ->
-          DB.execute
-            db
-            q
-            (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
+    Just Nothing ->
+      DB.execute
+        db
+        (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO UPDATE SET accepted_at = ?, auto_accepted = ?")
+        (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted, acceptedAt, BI autoAccepted)
+    Just (Just _) ->
+      DB.execute
+        db
+        (q <> "ON CONFLICT (server_operator_id, conditions_commit) DO NOTHING")
+        (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
+    Nothing ->
+      DB.execute
+        db
+        q
+        (operatorId, operatorTag, conditionsCommit, acceptedAt, BI autoAccepted)
   where
     q =
       [sql|
