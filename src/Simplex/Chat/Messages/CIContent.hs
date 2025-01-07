@@ -17,6 +17,7 @@ module Simplex.Chat.Messages.CIContent where
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -103,15 +104,33 @@ msgDirectionIntP = \case
   1 -> Just MDSnd
   _ -> Nothing
 
-data CIDeleteMode = CIDMBroadcast | CIDMInternal
+data CIDeleteMode = CIDMBroadcast | CIDMInternal | CIDMInternalMark
   deriving (Show)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "CIDM") ''CIDeleteMode)
+instance StrEncoding CIDeleteMode where
+  strEncode = \case
+    CIDMBroadcast -> "broadcast"
+    CIDMInternal -> "internal"
+    CIDMInternalMark -> "internalMark"
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "broadcast" -> pure CIDMBroadcast
+      "internal" -> pure CIDMInternal
+      "internalMark" -> pure CIDMInternalMark
+      _ -> fail "bad CIDeleteMode"
+
+instance ToJSON CIDeleteMode where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromJSON CIDeleteMode where
+  parseJSON = strParseJSON "CIDeleteMode"
 
 ciDeleteModeToText :: CIDeleteMode -> Text
 ciDeleteModeToText = \case
   CIDMBroadcast -> "this item is deleted (broadcast)"
-  CIDMInternal -> "this item is deleted (internal)"
+  CIDMInternal -> "this item is deleted (locally)"
+  CIDMInternalMark -> "this item is deleted (locally)"
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! Nested sum types also have to use different encodings for database and API

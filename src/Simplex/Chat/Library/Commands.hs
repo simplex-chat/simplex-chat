@@ -514,7 +514,7 @@ processChatCommand' vr = \case
         Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
           Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
         _ -> pure Nothing
-  APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> case cType of
+  APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case cType of
     CTDirect ->
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
@@ -544,9 +544,28 @@ processChatCommand' vr = \case
   APIReorderChatTags tagIds -> withUser $ \user -> do
     withFastStore' $ \db -> reorderChatTags db user $ L.toList tagIds
     ok user
-  APICreateChatItems folderId cms -> withUser $ \user ->
+  APICreateChatItems folderId cms -> withUser $ \user -> do
+    mapM_ assertAllowedContent' cms
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
-  APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
+  APIReportMessage gId reportedItemId reportReason reportText -> withUser $ \user ->
+    withGroupLock "reportMessage" gId $ do
+      (gInfo, ms) <-
+        withFastStore $ \db -> do
+          gInfo <- getGroupInfo db vr user gId
+          (gInfo,) <$> liftIO (getGroupModerators db vr user gInfo)
+      let ms' = filter compatibleModerator ms
+          mc = MCReport reportText reportReason
+          cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc}
+      when (null ms') $ throwChatError $ CECommandError "no moderators support receiving reports"
+      sendGroupContentMessages_ user gInfo ms' False Nothing [(cm, Nothing)]
+    where
+      compatibleModerator GroupMember {activeConn, memberChatVRange} =
+        maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
+  ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
+    gId <- withFastStore $ \db -> getGroupIdByName db user groupName
+    reportedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId contactName_ reportedMessage
+    processChatCommand $ APIReportMessage gId reportedItemId reportReason ""
+  APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> assertAllowedContent mc >> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
@@ -614,6 +633,7 @@ processChatCommand' vr = \case
       (ct, items) <- getCommandDirectChatItems user chatId itemIds
       case mode of
         CIDMInternal -> deleteDirectCIs user ct items True False
+        CIDMInternalMark -> markDirectCIsDeleted user ct items True =<< liftIO getCurrentTime
         CIDMBroadcast -> do
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
@@ -629,6 +649,7 @@ processChatCommand' vr = \case
       ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
       case mode of
         CIDMInternal -> deleteGroupCIs user gInfo items True False Nothing =<< liftIO getCurrentTime
+        CIDMInternalMark -> markGroupCIsDeleted user gInfo items True Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
@@ -659,7 +680,7 @@ processChatCommand' vr = \case
     (gInfo@GroupInfo {membership}, items) <- getCommandGroupChatItems user gId itemIds
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
     assertDeletable gInfo items
-    assertUserGroupRole gInfo GRAdmin
+    assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
     let msgMemIds = itemsMsgMemIds gInfo items
         events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
     mapM_ (sendGroupMessages user gInfo ms) events
@@ -780,6 +801,7 @@ processChatCommand' vr = \case
                 MCVideo {text} -> text /= ""
                 MCVoice {text} -> text /= ""
                 MCFile t -> t /= ""
+                MCReport {} -> True
                 MCUnknown {} -> True
   APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemIds itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
@@ -1537,6 +1559,7 @@ processChatCommand' vr = \case
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
     m <- withFastStore $ \db -> getGroupMember db vr user gId mId
     let GroupInfo {membership = GroupMember {memberRole = membershipRole}} = gInfo
+    -- TODO GRModerator when most users migrate
     when (membershipRole >= GRAdmin) $ throwChatError $ CECantBlockMemberForSelf gInfo m showMessages
     let settings = (memberSettings m) {showMessages}
     processChatCommand $ APISetMemberSettings gId mId settings
@@ -1961,6 +1984,7 @@ processChatCommand' vr = \case
       Nothing -> throwChatError $ CEException "expected to find a single blocked member"
       Just (bm, remainingMembers) -> do
         let GroupMember {memberId = bmMemberId, memberRole = bmRole, memberProfile = bmp} = bm
+        -- TODO GRModerator when most users migrate
         assertUserGroupRole gInfo $ max GRAdmin bmRole
         when (blocked == blockedByAdmin bm) $ throwChatError $ CECommandError $ if blocked then "already blocked" else "already unblocked"
         withGroupLock "blockForAll" groupId . procCmd $ do
@@ -2847,6 +2871,12 @@ processChatCommand' vr = \case
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTDirect contactId, itemId)
         _ -> pure () -- prohibited
+    assertAllowedContent :: MsgContent -> CM ()
+    assertAllowedContent = \case
+      MCReport {} -> throwChatError $ CECommandError "sending reports via this API is not supported"
+      _ -> pure ()
+    assertAllowedContent' :: ComposedMessage -> CM ()
+    assertAllowedContent' ComposedMessage {msgContent} = assertAllowedContent msgContent        
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cmrs = do
       assertMultiSendable live cmrs
@@ -2907,13 +2937,16 @@ processChatCommand' vr = \case
     sendGroupContentMessages :: User -> GroupId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendGroupContentMessages user groupId live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      g@(Group gInfo _) <- withFastStore $ \db -> getGroup db vr user groupId
+      Group gInfo ms <- withFastStore $ \db -> getGroup db vr user groupId
+      sendGroupContentMessages_ user gInfo ms live itemTTL cmrs
+    sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
+    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} ms live itemTTL cmrs = do
       assertUserGroupRole gInfo GRAuthor
-      assertGroupContentAllowed gInfo
-      processComposedMessages g
+      assertGroupContentAllowed
+      processComposedMessages
       where
-        assertGroupContentAllowed :: GroupInfo -> CM ()
-        assertGroupContentAllowed gInfo@GroupInfo {membership} =
+        assertGroupContentAllowed :: CM ()
+        assertGroupContentAllowed =
           case findProhibited (L.toList cmrs) of
             Just f -> throwChatError (CECommandError $ "feature not allowed " <> T.unpack (groupFeatureNameText f))
             Nothing -> pure ()
@@ -2923,8 +2956,8 @@ processChatCommand' vr = \case
               foldr'
                 (\(ComposedMessage {fileSource, msgContent = mc}, _) acc -> prohibitedGroupContent gInfo membership mc fileSource <|> acc)
                 Nothing
-        processComposedMessages :: Group -> CM ChatResponse
-        processComposedMessages g@(Group gInfo ms) = do
+        processComposedMessages :: CM ChatResponse
+        processComposedMessages = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
@@ -2945,7 +2978,7 @@ processChatCommand' vr = \case
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _) -> case file_ of
                 Just file -> do
                   fileSize <- checkSndFile file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup g
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo ms
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposeMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTGroup)))
@@ -3003,7 +3036,7 @@ processChatCommand' vr = \case
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
-        CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
+        CGGroup _ ms -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
           where
             -- we are not sending files to pending members, same as with inline files
             saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
@@ -3550,8 +3583,10 @@ chatCommandP =
       "/_update tag " *> (APIUpdateChatTag <$> A.decimal <* A.space <*> jsonP),
       "/_reorder tags " *> (APIReorderChatTags <$> strP),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
+      "/_report #" *> (APIReportMessage <$> A.decimal <* A.space <*> A.decimal <*> (" reason=" *> strP) <*> (A.space *> textP <|> pure "")),
+      "/report #" *> (ReportMessage <$> displayName <*> optional (" @" *> displayName) <*> _strP <* A.space <*> msgTextP),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
-      "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
+      "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <*> _strP),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
@@ -3834,7 +3869,6 @@ chatCommandP =
         <|> (PTBefore <$ "before=" <*> strP <* A.space <* "count=" <*> A.decimal)
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
-    ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
     chatDeleteMode =
       A.choice
         [ " full" *> (CDMFull <$> notifyP),
@@ -3904,6 +3938,7 @@ chatCommandP =
       A.choice
         [ " owner" $> GROwner,
           " admin" $> GRAdmin,
+          " moderator" $> GRModerator,
           " member" $> GRMember,
           " observer" $> GRObserver
         ]
