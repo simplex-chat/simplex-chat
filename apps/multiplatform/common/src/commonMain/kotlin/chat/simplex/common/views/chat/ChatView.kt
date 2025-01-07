@@ -1921,7 +1921,7 @@ fun findQuotedItemFromItem(
   rhId: State<Long?>,
   chatInfo: State<ChatInfo>,
   scope: CoroutineScope,
-  onQuoteFound: (Long) -> Unit
+  scrollToItem: (Long) -> Unit
 ): (Long) -> Unit = { itemId: Long ->
   scope.launch(Dispatchers.Default) {
     val item = apiLoadSingleMessage(rhId.value, chatInfo.value.chatType, chatInfo.value.apiId, itemId)
@@ -1930,7 +1930,7 @@ fun findQuotedItemFromItem(
         updateChatItem(chatInfo.value, item)
       }
       if (item.quotedItem?.itemId != null) {
-        onQuoteFound(item.quotedItem.itemId)
+        scrollToItem(item.quotedItem.itemId)
       } else {
         showQuotedItemDoesNotExistAlert()
       }
@@ -2507,7 +2507,7 @@ fun PreviewGroupChatLayout() {
       info = {},
       showMemberInfo = { _, _ -> },
       loadMessages = { _, _, _, _ -> },
-      deleteMessage = { _, _ -> null},
+      deleteMessage = { _, _ -> null },
       deleteMessages = {},
       receiveFile = { _ -> },
       cancelFile = {},

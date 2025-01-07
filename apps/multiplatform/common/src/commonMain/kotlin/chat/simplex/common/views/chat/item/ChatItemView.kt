@@ -900,11 +900,18 @@ private fun ReportItemAction(
       AlertManager.shared.showAlertDialogButtons(
         title = generalGetString(MR.strings.report_reason_alert_title),
         buttons = {
-          ReportReasonOption(ReportReason.Spam, cItem, composeState)
-          ReportReasonOption(ReportReason.Illegal, cItem, composeState)
-          ReportReasonOption(ReportReason.Community, cItem, composeState)
-          ReportReasonOption(ReportReason.Profile, cItem, composeState)
-          ReportReasonOption(ReportReason.Other, cItem, composeState)
+          ReportReason.supportedReasons.forEach { reason ->
+            SectionItemView({
+              if (composeState.value.editing) {
+                composeState.value = ComposeState(contextItem = ComposeContextItem.ReportedItem(cItem, reason), useLinkPreviews = composeState.value.useLinkPreviews)
+              } else {
+                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.ReportedItem(cItem, reason))
+              }
+              AlertManager.shared.hideAlert()
+            }) {
+              Text(reason.text, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+            }
+          }
           SectionItemView({
             AlertManager.shared.hideAlert()
           }) {
@@ -1026,20 +1033,6 @@ private fun BlockMemberAction(
     },
     color = Color.Red
   )
-}
-
-@Composable
-private fun ReportReasonOption(reason: ReportReason, cItem: ChatItem, composeState: MutableState<ComposeState>, ) {
-  SectionItemView({
-    if (composeState.value.editing) {
-      composeState.value = ComposeState(contextItem = ComposeContextItem.ReportedItem(cItem, reason), useLinkPreviews = composeState.value.useLinkPreviews)
-    } else {
-      composeState.value = composeState.value.copy(contextItem = ComposeContextItem.ReportedItem(cItem, reason))
-    }
-    AlertManager.shared.hideAlert()
-  }) {
-    Text(reason.text, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-  }
 }
 
 @Composable

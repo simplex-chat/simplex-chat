@@ -2965,7 +2965,7 @@ class CIQuote (
   fun memberToModerate(chatInfo: ChatInfo): GroupMember? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole) {
+      if (m.memberRole >= GroupMemberRole.Moderator && m.memberRole >= chatDir.groupMember.memberRole) {
         chatDir.groupMember
       } else {
         null
@@ -3618,6 +3618,10 @@ sealed class ReportReason {
   @Serializable @SerialName("profile") object Profile: ReportReason()
   @Serializable @SerialName("other") object Other: ReportReason()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
+
+  companion object {
+    val supportedReasons: List<ReportReason> = listOf(Spam, Illegal, Community, Profile, Other)
+  }
 
   val text: String get() = when (this) {
     Spam -> generalGetString(MR.strings.report_reason_spam)

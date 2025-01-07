@@ -186,7 +186,7 @@ fun ChatPreviewView(
           is MsgContent.MCReport ->
             buildAnnotatedString {
               withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
-                append(if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+                append(if (text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
               }
             }
           else -> null
