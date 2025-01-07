@@ -943,6 +943,7 @@
   <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
+  <string name="prefs_error_saving_settings">Error saving settings</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
