@@ -2247,4 +2247,5 @@
     <string name="change_list">Lista megváltoztatása</string>
     <string name="change_order_chat_list_menu_action">Elrendezés megváltoztatása</string>
     <string name="error_creating_report">Hiba a jelentés létrehozásakor</string>
+    <string name="prefs_error_saving_settings">Hiba a beállítások mentésekor</string>
 </resources>
