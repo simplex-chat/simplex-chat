@@ -2280,4 +2280,6 @@
     <string name="chat_list_notes">Нотатки</string>
     <string name="change_list">Список змін</string>
     <string name="change_order_chat_list_menu_action">Змінити порядок</string>
+    <string name="prefs_error_saving_settings">Помилка збереження налаштувань</string>
+    <string name="error_creating_report">Помилка при створенні звіту</string>
 </resources>
