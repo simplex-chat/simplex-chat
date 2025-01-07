@@ -2355,4 +2355,5 @@
     <string name="chat_list_notes">Anmerkungen</string>
     <string name="change_order_chat_list_menu_action">Anordnung ändern</string>
     <string name="change_list">Liste ändern</string>
+    <string name="error_creating_report">Fehler beim Erstellen des Berichts</string>
 </resources>
