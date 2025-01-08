@@ -2634,9 +2634,6 @@ object ChatController {
           withChats {
             updateGroup(rhId, r.groupInfo)
           }
-          withReportsChatsIfOpen {
-            updateGroup(rhId, r.groupInfo)
-          }
         }
       is CR.DeletedMember ->
         if (active(r.user)) {
@@ -2688,9 +2685,6 @@ object ChatController {
           withChats {
             updateGroup(rhId, r.groupInfo)
           }
-          withReportsChatsIfOpen {
-            updateGroup(rhId, r.groupInfo)
-          }
         }
       is CR.UserJoinedGroup ->
         if (active(r.user)) {
@@ -2717,9 +2711,6 @@ object ChatController {
       is CR.GroupUpdated ->
         if (active(r.user)) {
           withChats {
-            updateGroup(rhId, r.toGroup)
-          }
-          withReportsChatsIfOpen {
             updateGroup(rhId, r.toGroup)
           }
         }
@@ -3050,9 +3041,6 @@ object ChatController {
     val groupInfo = apiLeaveGroup(rh, groupId)
     if (groupInfo != null) {
       withChats {
-        updateGroup(rh, groupInfo)
-      }
-      withReportsChatsIfOpen {
         updateGroup(rh, groupInfo)
       }
     }

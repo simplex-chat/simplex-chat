@@ -43,9 +43,6 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
           withChats {
             updateGroup(rhId, gInfo)
           }
-          withReportsChatsIfOpen {
-            updateGroup(rhId, gInfo)
-          }
           close.invoke()
         }
       }

@@ -54,9 +54,6 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
         withChats {
           updateGroup(rhId, res)
         }
-        withReportsChatsIfOpen {
-          updateGroup(rhId, res)
-        }
         welcomeText.value = welcome ?: ""
       }
       afterSave()

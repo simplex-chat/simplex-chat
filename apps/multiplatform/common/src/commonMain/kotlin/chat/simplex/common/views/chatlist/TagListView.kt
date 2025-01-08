@@ -426,9 +426,6 @@ private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {
             withChats {
               updateGroup(rhId, group)
             }
-            withReportsChatsIfOpen {
-              updateGroup(rhId, group)
-            }
           }
 
           else -> {}
@@ -464,9 +461,6 @@ private fun deleteTag(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) 
             is ChatInfo.Group -> {
               val group = cInfo.groupInfo.copy(chatTags = cInfo.groupInfo.chatTags.filter { it != tagId })
               withChats {
-                updateGroup(rhId, group)
-              }
-              withReportsChatsIfOpen {
                 updateGroup(rhId, group)
               }
             }

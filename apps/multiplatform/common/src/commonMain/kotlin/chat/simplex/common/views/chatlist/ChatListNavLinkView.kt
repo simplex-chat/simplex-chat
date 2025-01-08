@@ -593,9 +593,6 @@ fun markChatRead(c: Chat) {
           replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
           markChatTagRead(chat)
         }
-        withReportsChatsIfOpen {
-          replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-        }
       }
     }
   }
@@ -617,9 +614,6 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
       withChats {
         replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
         updateChatTagRead(chat, wasUnread)
-      }
-      withReportsChatsIfOpen {
-        replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
       }
     }
   }
@@ -874,9 +868,6 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withChats {
-        updateChatInfo(remoteHostId, newChatInfo)
-      }
-      withReportsChatsIfOpen {
         updateChatInfo(remoteHostId, newChatInfo)
       }
       if (chatSettings.enableNtfs != MsgFilter.All) {

@@ -670,10 +670,10 @@ object ChatModel {
 
     fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, itemIds: List<Long>? = null) {
       val cInfo = chatInfo
-      val markedRead = markItemsReadInCurrentChat(chatInfo, contentTag, itemIds)
+      val markedRead = markItemsReadInCurrentChat(chatInfo, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, cInfo.id)
-      if (chatIdx >= 0) {
+      if (chatIdx >= 0 && contentTag == null) {
         val chat = chats[chatIdx]
         val lastId = chat.chatItems.lastOrNull()?.id
         if (lastId != null) {
@@ -686,6 +686,39 @@ object ChatModel {
           updateChatTagRead(chats[chatIdx], wasUnread)
         }
       }
+    }
+
+    private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, itemIds: List<Long>? = null): Int {
+      val cInfo = chatInfo
+      var markedRead = 0
+      if (chatId.value == cInfo.id) {
+        val items = chatItems.value
+        var i = items.lastIndex
+        val itemIdsFromRange = itemIds?.toMutableSet() ?: mutableSetOf()
+        val markedReadIds = mutableSetOf<Long>()
+        while (i >= 0) {
+          val item = items[i]
+          if (item.meta.itemStatus is CIStatus.RcvNew && (itemIds == null || itemIdsFromRange.contains(item.id))) {
+            val newItem = item.withStatus(CIStatus.RcvRead())
+            items[i] = newItem
+            if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
+              items[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
+                deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
+              )
+            }
+            markedReadIds.add(item.id)
+            markedRead++
+            if (itemIds != null) {
+              itemIdsFromRange.remove(item.id)
+              // already set all needed items as read, can finish the loop
+              if (itemIdsFromRange.isEmpty()) break
+            }
+          }
+          i--
+        }
+        chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
+      }
+      return markedRead
     }
 
     private fun decreaseCounterInChat(rhId: Long?, chatId: ChatId) {
@@ -812,40 +845,6 @@ object ChatModel {
         }
       }
     }
-  }
-
-  private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, contentTag: MsgContentTag?, itemIds: List<Long>? = null): Int {
-    val cInfo = chatInfo
-    var markedRead = 0
-    if (chatId.value == cInfo.id) {
-      val items = chatItemsForContent(contentTag).value
-      var i = items.lastIndex
-      val itemIdsFromRange = itemIds?.toMutableSet() ?: mutableSetOf()
-      val markedReadIds = mutableSetOf<Long>()
-      while (i >= 0) {
-        val item = items[i]
-        if (item.meta.itemStatus is CIStatus.RcvNew && (itemIds == null || itemIdsFromRange.contains(item.id))) {
-          val newItem = item.withStatus(CIStatus.RcvRead())
-          items[i] = newItem
-          if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
-            items[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
-              deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
-            )
-          }
-          markedReadIds.add(item.id)
-          markedRead++
-          if (itemIds != null) {
-            itemIdsFromRange.remove(item.id)
-            // already set all needed items as read, can finish the loop
-            if (itemIdsFromRange.isEmpty()) break
-          }
-        }
-        i--
-      }
-      // TODO LALAL
-      chatsContext.chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
-    }
-    return markedRead
   }
 
   fun increaseUnreadCounter(rhId: Long?, user: UserLike) {

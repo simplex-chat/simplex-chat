@@ -1251,11 +1251,6 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
         updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
       }
     }
-    withReportsChatsIfOpen {
-      if (chat.chatInfo is ChatInfo.Group) {
-        updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
-      }
-    }
   }
 }
 

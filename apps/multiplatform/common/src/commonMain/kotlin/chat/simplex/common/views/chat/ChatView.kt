@@ -396,10 +396,12 @@ fun ChatView(
                     }
                   }
                   withReportsChatsIfOpen {
-                    if (toChatItem != null) {
-                      upsertChatItem(chatRh, chatInfo, toChatItem)
-                    } else {
-                      removeChatItem(chatRh, chatInfo, deletedChatItem)
+                    if (deletedChatItem.content.msgContent is MsgContent.MCReport) {
+                      if (toChatItem != null) {
+                        upsertChatItem(chatRh, chatInfo, toChatItem)
+                      } else {
+                        removeChatItem(chatRh, chatInfo, deletedChatItem)
+                      }
                     }
                   }
                 }
@@ -584,10 +586,7 @@ fun ChatView(
                   )
                 }
                 withReportsChatsIfOpen {
-                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
-                  withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo, itemsIds)
-                  }
+                  markChatItemsRead(chatRh, chatInfo, itemsIds)
                 }
               }
             },
@@ -606,10 +605,7 @@ fun ChatView(
                   )
                 }
                 withReportsChatsIfOpen {
-                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
-                  withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo)
-                  }
+                  markChatItemsRead(chatRh, chatInfo)
                 }
               }
             },
@@ -2291,11 +2287,13 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
         }
         withReportsChatsIfOpen {
           for (di in deleted) {
-            val toChatItem = di.toChatItem?.chatItem
-            if (toChatItem != null) {
-              upsertChatItem(chatRh, chatInfo, toChatItem)
-            } else {
-              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+            if (di.deletedChatItem.chatItem.content.msgContent is MsgContent.MCReport) {
+              val toChatItem = di.toChatItem?.chatItem
+              if (toChatItem != null) {
+                upsertChatItem(chatRh, chatInfo, toChatItem)
+              } else {
+                removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+              }
             }
           }
         }
@@ -2320,9 +2318,6 @@ private fun markUnreadChatAsRead(chatId: String) {
       withChats {
         replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
         markChatTagRead(chat)
-      }
-      withReportsChatsIfOpen {
-        replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
       }
     }
   }
