@@ -16,6 +16,7 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var disableEditing: Bool
     @Binding var height: CGFloat
     @Binding var focused: Bool
+    @Binding var placeholder: String?
     let onImagesAdded: ([UploadContent]) -> Void
     
     private let minHeight: CGFloat = 37
@@ -50,6 +51,7 @@ struct NativeTextEditor: UIViewRepresentable {
         field.setOnFocusChangedListener { focused = $0 }
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
+        field.setPlaceholderView()
         updateFont(field)
         updateHeight(field)
         return field
@@ -61,6 +63,11 @@ struct NativeTextEditor: UIViewRepresentable {
             field.textAlignment = alignment(text)
             updateFont(field)
             updateHeight(field)
+        }
+        
+        let castedField = field as! CustomUITextField
+        if castedField.placeholder != placeholder {
+            castedField.placeholder = placeholder
         }
     }
 
@@ -97,11 +104,18 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
     var onFocusChanged: (Bool) -> Void = { focused in }
     
+    private let placeholderLabel: UILabel = UILabel()
+
     init(height: Binding<CGFloat>) {
         self.height = height
         super.init(frame: .zero, textContainer: nil)
     }
 
+    var placeholder: String? {
+        get { placeholderLabel.text }
+        set { placeholderLabel.text = newValue }
+    }
+    
     required init?(coder: NSCoder) {
         fatalError("Not implemented")
     }
@@ -123,6 +137,20 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
 
     func setOnTextChangedListener(onTextChanged: @escaping (String, [UploadContent]) -> Void) {
         self.onTextChanged = onTextChanged
+    }
+    
+    func setPlaceholderView() {
+        placeholderLabel.textColor = .lightGray
+        placeholderLabel.font = UIFont.preferredFont(forTextStyle: .body)
+        placeholderLabel.isHidden = !text.isEmpty
+        placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(placeholderLabel)
+        
+        NSLayoutConstraint.activate([
+            placeholderLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 7),
+            placeholderLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -7),
+            placeholderLabel.topAnchor.constraint(equalTo: topAnchor, constant: 8)
+        ])
     }
 
     func setOnFocusChangedListener(onFocusChanged: @escaping (Bool) -> Void) {
@@ -172,6 +200,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     func textViewDidChange(_ textView: UITextView) {
+        placeholderLabel.isHidden = !text.isEmpty
         if textView.markedTextRange == nil {
             var images: [UploadContent] = []
             var rangeDiff = 0
@@ -217,6 +246,7 @@ struct NativeTextEditor_Previews: PreviewProvider{
             disableEditing: Binding.constant(false),
             height: Binding.constant(100),
             focused: Binding.constant(false),
+            placeholder: Binding.constant("Placeholder"),
             onImagesAdded: { _ in }
         )
         .fixedSize(horizontal: false, vertical: true)

@@ -3020,9 +3020,10 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} m count = do
             LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
             WHERE i.user_id = ? AND i.group_id = ?
               AND i.item_content_tag IN (?,?)
+              AND i.msg_content_tag NOT IN (?)
               AND i.item_deleted = 0
               AND s.group_snd_item_status_id IS NULL
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
-          (groupMemberId' m, userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)
+          (groupMemberId' m, userId, groupId, rcvMsgContentTag, sndMsgContentTag, MCReport_, count)

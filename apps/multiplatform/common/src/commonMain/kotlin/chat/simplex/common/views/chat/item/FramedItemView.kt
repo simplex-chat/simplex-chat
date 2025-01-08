@@ -88,7 +88,7 @@ fun FramedItemView(
   }
 
   @Composable
-  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false) {
+  fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false, iconColor: Color? = null) {
     val sentColor = MaterialTheme.appColors.sentQuote
     val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
@@ -104,7 +104,7 @@ fun FramedItemView(
           icon,
           caption,
           Modifier.size(18.dp),
-          tint = if (isInDarkTheme()) FileDark else FileLight
+          tint = iconColor ?: if (isInDarkTheme()) FileDark else FileLight
         )
       }
       Text(
@@ -216,7 +216,18 @@ fun FramedItemView(
           .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
       ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          if (ci.meta.itemDeleted != null) {
+          if (ci.isReport) {
+            if (ci.meta.itemDeleted == null) {
+              FramedItemHeader(
+                stringResource(if (ci.chatDir.sent) MR.strings.report_item_visibility_submitter else MR.strings.report_item_visibility_moderators),
+                true,
+                painterResource(MR.images.ic_flag),
+                iconColor = Color.Red
+              )
+            } else {
+              FramedItemHeader(stringResource(MR.strings.report_item_archived), true, painterResource(MR.images.ic_flag))
+            }
+          } else if (ci.meta.itemDeleted != null) {
             when (ci.meta.itemDeleted) {
               is CIDeleted.Moderated -> {
                 FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
@@ -288,6 +299,14 @@ fun FramedItemView(
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
                 }
               }
+              is MsgContent.MCReport -> {
+                val prefix = buildAnnotatedString {
+                  withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
+                    append(if (mc.text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+                  }
+                }
+                CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix)
+              }
               else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
             }
           }
@@ -315,13 +334,14 @@ fun CIMarkdownText(
   onLinkLongClick: (link: String) -> Unit = {},
   showViaProxy: Boolean,
   showTimestamp: Boolean,
+  prefix: AnnotatedString? = null
 ) {
   Box(Modifier.padding(vertical = 7.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
     )
   }
 }
