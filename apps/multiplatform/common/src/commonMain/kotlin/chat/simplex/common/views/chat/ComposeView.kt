@@ -91,6 +91,11 @@ data class ComposeState(
       is ComposeContextItem.ForwardingItems -> true
       else -> false
     }
+  val reporting: Boolean
+    get() = when (contextItem) {
+      is ComposeContextItem.ReportedItem -> true
+      else -> false
+    }
   val submittingValidReport: Boolean
     get() = when (contextItem) {
       is ComposeContextItem.ReportedItem -> {
@@ -131,7 +136,7 @@ data class ComposeState(
 
   val attachmentDisabled: Boolean
     get() {
-      if (editing || forwarding || liveMessage != null || inProgress) return true
+      if (editing || forwarding || liveMessage != null || inProgress || reporting) return true
       return when (preview) {
         ComposePreview.NoPreview -> false
         is ComposePreview.CLinkPreview -> false
@@ -999,7 +1004,6 @@ fun ComposeView(
               && userCanSend.value
               && !isGroupAndProhibitedFiles
               && !nextSendGrpInv.value
-              && composeState.value.contextItem !is ComposeContextItem.ReportedItem
         IconButton(
           attachmentClicked,
           Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
