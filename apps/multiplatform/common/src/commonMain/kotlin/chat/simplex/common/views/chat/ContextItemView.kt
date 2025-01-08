@@ -87,7 +87,6 @@ fun ContextItemView(
 
   Row(
     Modifier
-      .padding(top = 8.dp)
       .background(if (sent) sentColor else receivedColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
