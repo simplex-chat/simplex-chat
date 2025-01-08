@@ -51,7 +51,7 @@ import System.FilePath ((</>))
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
-    fdescribe "add contact and send/receive messages" testAddContact
+    describe "add contact and send/receive messages" testAddContact
     it "retry connecting via the same link" testRetryConnecting
     xit'' "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
     it "mark multiple messages as read" testMarkReadDirect
@@ -191,18 +191,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      print 1
-      -- chatsEmpty
-      -- alice @@@ [("@bob", lastChatFeature)]
-      alice ##> "/_get chats 1 pcc=on"
-      r <- getTermLine alice
-      print $ "1a r: " <> show r
-      alice #$> ("/_get chat @2 count=100", chat, features)
-      print "1b"
-      bob @@@ [("@alice", lastChatFeature)]
-      print "1c"
-      bob #$> ("/_get chat @2 count=100", chat, features)
-      print 2
+      chatsEmpty
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
       alice ##> "/_unread chat @2 on"

@@ -572,14 +572,21 @@ findDirectChatPreviews_ db User {userId} pagination clq =
       ACPD SCTDirect $ DirectChatPD ts contactId lastItemId_ (toChatStats statsRow)
     baseQuery =
       [sql|
-        SELECT ct.contact_id, ct.chat_ts as ts, LastItems.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), 0, COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
+        SELECT
+          ct.contact_id,
+          ct.chat_ts as ts,
+          (
+            SELECT chat_item_id
+            FROM chat_items ci
+            WHERE ci.user_id = ? AND ci.contact_id = ct.contact_id
+            ORDER BY ci.created_at DESC
+            LIMIT 1
+          ) AS chat_item_id,
+          COALESCE(ChatStats.UnreadCount, 0),
+          0,
+          COALESCE(ChatStats.MinUnread, 0),
+          ct.unread_chat
         FROM contacts ct
-        LEFT JOIN (
-          SELECT contact_id, chat_item_id, MAX(created_at)
-          FROM chat_items
-          WHERE user_id = ? AND contact_id IS NOT NULL
-          GROUP BY contact_id
-        ) LastItems ON LastItems.contact_id = ct.contact_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -590,14 +597,14 @@ findDirectChatPreviews_ db User {userId} pagination clq =
     baseParams = (userId, userId, CISRcvNew)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
-        let q = baseQuery <> " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used"
+        let q = baseQuery <> " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1"
             p = baseParams :. Only userId
         queryWithPagination db q p pagination
       CLQFilters {favorite = True, unread = False} -> do
         let q =
               baseQuery
                 <> [sql|
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND ct.favorite = 1
                   |]
             p = baseParams :. Only userId
@@ -606,7 +613,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
         let q =
               baseQuery
                 <> [sql|
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
             p = baseParams :. Only userId
@@ -615,7 +622,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
         let q =
               baseQuery
                 <> [sql|
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND (ct.favorite = 1
                           OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                   |]
@@ -626,7 +633,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
               baseQuery
                 <> [sql|
                       JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
                         AND (
                           ct.local_display_name LIKE '%' || ? || '%'
                           OR cp.display_name LIKE '%' || ? || '%'
@@ -660,14 +667,21 @@ findGroupChatPreviews_ db User {userId} pagination clq =
       ACPD SCTGroup $ GroupChatPD ts groupId lastItemId_ (toChatStats statsRow)
     baseQuery =
       [sql|
-        SELECT g.group_id, g.chat_ts as ts, LastItems.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ReportCount.Count, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
+        SELECT
+          g.group_id,
+          g.chat_ts as ts,
+          (
+            SELECT chat_item_id
+            FROM chat_items ci
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id
+            ORDER BY ci.item_ts DESC
+            LIMIT 1
+          ) AS chat_item_id,
+          COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ReportCount.Count, 0),
+          COALESCE(ChatStats.MinUnread, 0),
+          g.unread_chat
         FROM groups g
-        LEFT JOIN (
-          SELECT group_id, chat_item_id, MAX(item_ts)
-          FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL
-          GROUP BY group_id
-        ) LastItems ON LastItems.group_id = g.group_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -749,14 +763,21 @@ findLocalChatPreviews_ db User {userId} pagination clq =
       ACPD SCTLocal $ LocalChatPD ts noteFolderId lastItemId_ (toChatStats statsRow)
     baseQuery =
       [sql|
-        SELECT nf.note_folder_id, nf.chat_ts as ts, LastItems.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), 0, COALESCE(ChatStats.MinUnread, 0), nf.unread_chat
+        SELECT
+          nf.note_folder_id,
+          nf.chat_ts as ts,
+          (
+            SELECT chat_item_id
+            FROM chat_items ci
+            WHERE ci.user_id = ? AND ci.note_folder_id = nf.note_folder_id
+            ORDER BY ci.created_at DESC
+            LIMIT 1
+          ) AS chat_item_id,
+          COALESCE(ChatStats.UnreadCount, 0),
+          0,
+          COALESCE(ChatStats.MinUnread, 0),
+          nf.unread_chat
         FROM note_folders nf
-        LEFT JOIN (
-          SELECT note_folder_id, chat_item_id, MAX(created_at)
-          FROM chat_items
-          WHERE user_id = ? AND note_folder_id IS NOT NULL
-          GROUP BY note_folder_id
-        ) LastItems ON LastItems.note_folder_id = nf.note_folder_id
         LEFT JOIN (
           SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -907,7 +928,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
           AND contact_id IS NULL
           AND conn_level = 0
           AND via_contact IS NULL
-          AND (via_group_link = 0 || (via_group_link = 1 AND group_link_id IS NOT NULL))
+          AND (via_group_link = 0 OR (via_group_link = 1 AND group_link_id IS NOT NULL))
           AND local_alias LIKE '%' || ? || '%'
       |]
     params search = (userId, ConnContact, ConnPrepared, search)
