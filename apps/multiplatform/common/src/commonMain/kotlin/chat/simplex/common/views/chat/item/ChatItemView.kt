@@ -905,9 +905,19 @@ private fun ReportItemAction(
           ReportReason.supportedReasons.forEach { reason ->
             SectionItemView({
               if (composeState.value.editing) {
-                composeState.value = ComposeState(contextItem = ComposeContextItem.ReportedItem(cItem, reason), useLinkPreviews = composeState.value.useLinkPreviews)
+                composeState.value = ComposeState(
+                  contextItem = ComposeContextItem.ReportedItem(cItem, reason),
+                  useLinkPreviews = false,
+                  preview = ComposePreview.NoPreview,
+                  liveMessage = composeState.value.liveMessage?.copy(sent = true),
+                )
               } else {
-                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.ReportedItem(cItem, reason))
+                composeState.value = composeState.value.copy(
+                  contextItem = ComposeContextItem.ReportedItem(cItem, reason),
+                  useLinkPreviews = false,
+                  preview = ComposePreview.NoPreview,
+                  liveMessage = composeState.value.liveMessage?.copy(sent = true),
+                )
               }
               AlertManager.shared.hideAlert()
             }) {

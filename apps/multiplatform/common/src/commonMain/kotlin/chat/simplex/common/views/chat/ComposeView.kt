@@ -999,6 +999,7 @@ fun ComposeView(
               && userCanSend.value
               && !isGroupAndProhibitedFiles
               && !nextSendGrpInv.value
+              && composeState.value.contextItem !is ComposeContextItem.ReportedItem
         IconButton(
           attachmentClicked,
           Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
