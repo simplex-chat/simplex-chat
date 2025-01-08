@@ -19,8 +19,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.markChatTagRead
-import chat.simplex.common.model.ChatModel.updateChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
@@ -569,10 +567,10 @@ fun markChatRead(c: Chat) {
   withApi {
     if (chat.chatStats.unreadCount > 0) {
       withChats {
-        markChatItemsRead(chat.remoteHostId, chat.chatInfo)
+        markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
       withReportsChatsIfOpen {
-        markChatItemsRead(chat.remoteHostId, chat.chatInfo)
+        markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
@@ -613,7 +611,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withChats {
         replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        updateChatTagRead(chat, wasUnread)
+        updateChatTagReadNoContentTag(chat, wasUnread)
       }
     }
   }
@@ -875,7 +873,9 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       }
       val updatedChat = chatModel.getChat(chatInfo.id)
       if (updatedChat != null) {
-        chatModel.updateChatTagRead(updatedChat, wasUnread)
+        withChats {
+          updateChatTagReadNoContentTag(updatedChat, wasUnread)
+        }
       }
       val current = currentState?.value
       if (current != null) {

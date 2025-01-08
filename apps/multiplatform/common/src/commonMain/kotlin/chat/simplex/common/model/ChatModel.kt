@@ -68,10 +68,6 @@ object ChatModel {
   val reportsChatsContext = ChatsContext(MsgContentTag.Report)
   // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions
   val chats: State<List<Chat>> = chatsContext.chats
-  /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
-   * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
-   * If you use api call to get the items, use just [add] instead of [addAndNotify].
-   * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -172,6 +168,12 @@ object ChatModel {
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
 
+  fun chatsForContent(contentTag: MsgContentTag?): State<SnapshotStateList<Chat>> = when(contentTag) {
+    null -> chatsContext.chats
+    MsgContentTag.Report -> reportsChatsContext.chats
+    else -> TODO()
+  }
+
   fun chatItemsForContent(contentTag: MsgContentTag?): State<SnapshotStateList<ChatItem>> = when(contentTag) {
     null -> chatsContext.chatItems
     MsgContentTag.Report -> reportsChatsContext.chatItems
@@ -181,6 +183,12 @@ object ChatModel {
   fun chatStateForContent(contentTag: MsgContentTag?): ActiveChatState = when(contentTag) {
     null -> chatsContext.chatState
     MsgContentTag.Report -> reportsChatsContext.chatState
+    else -> TODO()
+  }
+
+  fun chatItemsChangesListenerForContent(contentTag: MsgContentTag?): ChatItemsChangesListener? = when(contentTag) {
+    null -> chatsContext.chatItemsChangesListener
+    MsgContentTag.Report -> reportsChatsContext.chatItemsChangesListener
     else -> TODO()
   }
 
@@ -281,27 +289,6 @@ object ChatModel {
     }
   }
 
-  fun markChatTagRead(chat: Chat) {
-    if (chat.unreadTag) {
-      chat.chatInfo.chatTags?.let { tags ->
-        markChatTagRead_(chat, tags)
-      }
-    }
-  }
-
-  fun updateChatTagRead(chat: Chat, wasUnread: Boolean) {
-    val tags = chat.chatInfo.chatTags ?: return
-    val nowUnread = chat.unreadTag
-
-    if (nowUnread && !wasUnread) {
-      tags.forEach { tag ->
-        unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
-      }
-    } else if (!nowUnread && wasUnread) {
-      markChatTagRead_(chat, tags)
-    }
-  }
-
   fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
     if (chat.unreadTag) {
       oldTags?.forEach { t ->
@@ -316,18 +303,6 @@ object ChatModel {
       }
     }
   }
-
-  private fun markChatTagRead_(chat: Chat, tags: List<Long>) {
-    for (tag in tags) {
-      val count = unreadTags[tag]
-      if (count != null) {
-        unreadTags[tag] = maxOf(0, count - 1)
-      }
-    }
-  }
-
-  // toList() here is to prevent ConcurrentModificationException that is rarely happens but happens
-  fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
   // TODO pass rhId?
   fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
@@ -368,11 +343,16 @@ object ChatModel {
 
   class ChatsContext(private val contentTag: MsgContentTag?) {
     val chats = mutableStateOf(SnapshotStateList<Chat>())
+    /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
+     * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
+     * If you use api call to get the items, use just [add] instead of [addAndNotify].
+     * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
     // set listener here that will be notified on every add/delete of a chat item
     var chatItemsChangesListener: ChatItemsChangesListener? = null
     val chatState = ActiveChatState()
 
+    fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
     fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
     private fun getChatIndex(rhId: Long?, id: String): Int = chats.value.indexOfFirst { it.id == id && it.remoteHostId == rhId }
 
@@ -491,7 +471,7 @@ object ChatModel {
           else
             chat.chatStats
         )
-        updateChatTagRead(chats[i], wasUnread)
+        updateChatTagReadNoContentTag(chats[i], wasUnread)
 
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
           reorderChat(chats[i], 0)
@@ -507,9 +487,9 @@ object ChatModel {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem, contentTag)
             } else {
-              chatItems.addAndNotify(cItem)
+              chatItems.addAndNotify(cItem, contentTag)
             }
           }
         }
@@ -528,7 +508,7 @@ object ChatModel {
           chats[i] = chat.copy(chatItems = arrayListOf(cItem))
           if (pItem.isRcvNew && !cItem.isRcvNew) {
             // status changed from New to Read, update counter
-            decreaseCounterInChat(rhId, cInfo.id)
+            decreaseCounterInChatNoContentTag(rhId, cInfo.id)
           }
         }
         res = false
@@ -554,7 +534,7 @@ object ChatModel {
             } else {
               cItem
             }
-            chatItems.addAndNotify(ci)
+            chatItems.addAndNotify(ci, contentTag)
             true
           }
         } else {
@@ -579,7 +559,7 @@ object ChatModel {
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       if (cItem.isRcvNew) {
-        decreaseCounterInChat(rhId, cInfo.id)
+        decreaseCounterInChatNoContentTag(rhId, cInfo.id)
       }
       // update previews
       val i = getChatIndex(rhId, cInfo.id)
@@ -668,12 +648,11 @@ object ChatModel {
       }
     }
 
-    fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, itemIds: List<Long>? = null) {
-      val cInfo = chatInfo
-      val markedRead = markItemsReadInCurrentChat(chatInfo, itemIds)
+    fun markChatItemsRead(remoteHostId: Long?, id: ChatId, itemIds: List<Long>? = null) {
+      val markedRead = markItemsReadInCurrentChat(id, itemIds)
       // update preview
-      val chatIdx = getChatIndex(remoteHostId, cInfo.id)
-      if (chatIdx >= 0 && contentTag == null) {
+      val chatIdx = getChatIndex(remoteHostId, id)
+      if (chatIdx >= 0) {
         val chat = chats[chatIdx]
         val lastId = chat.chatItems.lastOrNull()?.id
         if (lastId != null) {
@@ -683,15 +662,14 @@ object ChatModel {
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount)
           )
-          updateChatTagRead(chats[chatIdx], wasUnread)
+          updateChatTagReadNoContentTag(chats[chatIdx], wasUnread)
         }
       }
     }
 
-    private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, itemIds: List<Long>? = null): Int {
-      val cInfo = chatInfo
+    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): Int {
       var markedRead = 0
-      if (chatId.value == cInfo.id) {
+      if (chatId.value == id) {
         val items = chatItems.value
         var i = items.lastIndex
         val itemIdsFromRange = itemIds?.toMutableSet() ?: mutableSetOf()
@@ -721,7 +699,10 @@ object ChatModel {
       return markedRead
     }
 
-    private fun decreaseCounterInChat(rhId: Long?, chatId: ChatId) {
+    private fun decreaseCounterInChatNoContentTag(rhId: Long?, chatId: ChatId) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
       val chatIndex = getChatIndex(rhId, chatId)
       if (chatIndex == -1) return
 
@@ -734,7 +715,7 @@ object ChatModel {
           unreadCount = unreadCount,
         )
       )
-      updateChatTagRead(chats[chatIndex], wasUnread)
+      updateChatTagReadNoContentTag(chats[chatIndex], wasUnread)
     }
 
     fun removeChat(rhId: Long?, id: String) {
@@ -802,6 +783,60 @@ object ChatModel {
         upsertGroupMember(rhId, groupInfo, updatedMember)
       }
     }
+
+    fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
+      changeUnreadCounterNoContentTag(rhId, user, 1)
+    }
+
+    fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
+      changeUnreadCounterNoContentTag(rhId, user, -by)
+    }
+
+    private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
+      val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
+      if (i != -1) {
+        users[i] = users[i].copy(unreadCount = users[i].unreadCount + by)
+      }
+    }
+
+    fun updateChatTagReadNoContentTag(chat: Chat, wasUnread: Boolean) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
+      val tags = chat.chatInfo.chatTags ?: return
+      val nowUnread = chat.unreadTag
+
+      if (nowUnread && !wasUnread) {
+        tags.forEach { tag ->
+          unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
+        }
+      } else if (!nowUnread && wasUnread) {
+        markChatTagReadNoContentTag_(chat, tags)
+      }
+    }
+
+    fun markChatTagRead(chat: Chat) {
+      if (chat.unreadTag) {
+        chat.chatInfo.chatTags?.let { tags ->
+          markChatTagReadNoContentTag_(chat, tags)
+        }
+      }
+    }
+
+    private fun markChatTagReadNoContentTag_(chat: Chat, tags: List<Long>) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
+      for (tag in tags) {
+        val count = unreadTags[tag]
+        if (count != null) {
+          unreadTags[tag] = maxOf(0, count - 1)
+        }
+      }
+    }
   }
 
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
@@ -832,7 +867,7 @@ object ChatModel {
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
     withChats {
-      chatItems.addAndNotify(cItem)
+      chatItems.addAndNotify(cItem, contentTag = null)
     }
     return cItem
   }
@@ -841,24 +876,9 @@ object ChatModel {
     if (chatItemsForContent(null).value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       withApi {
         withChats {
-          chatItems.removeLastAndNotify()
+          chatItems.removeLastAndNotify(contentTag = null)
         }
       }
-    }
-  }
-
-  fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
-    changeUnreadCounter(rhId, user, 1)
-  }
-
-  fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
-    changeUnreadCounter(rhId, user, -by)
-  }
-
-  private fun changeUnreadCounter(rhId: Long?, user: UserLike, by: Int) {
-    val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
-    if (i != -1) {
-      users[i] = users[i].copy(unreadCount = users[i].unreadCount + by)
     }
   }
 
@@ -2548,8 +2568,8 @@ fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
   value = SnapshotStateList<Chat>().apply { addAll(value); add(index, elem) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatModel.chatsContext.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem, contentTag: MsgContentTag?) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatModel.chatItemsChangesListenerForContent(contentTag)?.added(elem.id to elem.isRcvNew, index) }
 }
 
 fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
@@ -2560,8 +2580,8 @@ fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
 fun <T> MutableList<T>.removeAll(predicate: (T) -> Boolean): Boolean = if (isEmpty()) false else remAll(predicate)
 
 // Adds item to chatItems and notifies a listener about newly added item
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatModel.chatsContext.chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem, contentTag: MsgContentTag?) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatModel.chatItemsChangesListenerForContent(contentTag)?.added(elem.id to elem.isRcvNew, lastIndex) }
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
@@ -2603,7 +2623,7 @@ fun MutableState<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
   return res
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
+fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify(contentTag: MsgContentTag?) {
   val removed: Triple<Long, Int, Boolean>
   value = SnapshotStateList<ChatItem>().apply {
     addAll(value)
@@ -2611,7 +2631,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
     val rem = removeLast()
     removed = Triple(rem.id, remIndex, rem.isRcvNew)
   }
-  chatModel.chatsContext.chatItemsChangesListener?.removed(listOf(removed), value)
+  chatModel.chatItemsChangesListenerForContent(contentTag)?.removed(listOf(removed), value)
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {

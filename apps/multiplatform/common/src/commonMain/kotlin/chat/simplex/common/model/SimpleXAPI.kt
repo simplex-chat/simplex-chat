@@ -2409,7 +2409,7 @@ object ChatController {
         val cInfo = ChatInfo.ContactRequest(contactRequest)
         if (active(r.user)) {
           withChats {
-            if (chatModel.hasChat(rhId, contactRequest.id)) {
+            if (hasChat(rhId, contactRequest.id)) {
               updateChatInfo(rhId, cInfo)
             } else {
               addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = listOf()))
@@ -2419,7 +2419,7 @@ object ChatController {
         ntfManager.notifyContactRequestReceived(r.user, cInfo)
       }
       is CR.ContactUpdated -> {
-        if (active(r.user) && chatModel.hasChat(rhId, r.toContact.id)) {
+        if (active(r.user) && chatModel.chatsContext.hasChat(rhId, r.toContact.id)) {
           val cInfo = ChatInfo.Direct(r.toContact)
           withChats {
             updateChatInfo(rhId, cInfo)
@@ -2437,7 +2437,7 @@ object ChatController {
         }
       }
       is CR.ContactsMerged -> {
-        if (active(r.user) && chatModel.hasChat(rhId, r.mergedContact.id)) {
+        if (active(r.user) && chatModel.chatsContext.hasChat(rhId, r.mergedContact.id)) {
           if (chatModel.chatId.value == r.mergedContact.id) {
             chatModel.chatId.value = r.intoContact.id
           }
@@ -2489,7 +2489,9 @@ object ChatController {
               }
             }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
-            chatModel.increaseUnreadCounter(rhId, r.user)
+            withChats {
+              increaseUnreadCounter(rhId, r.user)
+            }
           }
           val file = cItem.file
           val mc = cItem.content.msgContent
@@ -2537,7 +2539,9 @@ object ChatController {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
             if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled) {
-              chatModel.decreaseUnreadCounter(rhId, r.user)
+              withChats {
+                decreaseUnreadCounter(rhId, r.user)
+              }
             }
           }
           return

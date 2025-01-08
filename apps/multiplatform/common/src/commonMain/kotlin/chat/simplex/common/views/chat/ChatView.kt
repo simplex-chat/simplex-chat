@@ -31,7 +31,6 @@ import chat.simplex.common.model.CIDirection.GroupRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.activeCall
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.markChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
@@ -108,7 +107,9 @@ fun ChatView(
           .distinctUntilChanged()
           .filterNotNull()
           .collect { chatId ->
-            markUnreadChatAsRead(chatId)
+            if (!groupReports.value.reportsView) {
+              markUnreadChatAsRead(chatId)
+            }
             showSearch.value = false
             searchText.value = ""
             selectedChatItems.value = null
@@ -121,7 +122,7 @@ fun ChatView(
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == activeChatInfo.value?.id }?.chatStats?.unreadCount ?: 0
+        chatModel.chatsForContent(if (reportsView) MsgContentTag.Report else null).value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current
@@ -575,7 +576,7 @@ fun ChatView(
                 withChats {
                   // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
                   withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo, itemsIds)
+                    markChatItemsRead(chatRh, chatInfo.id, itemsIds)
                   }
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatItemsRead(
@@ -586,7 +587,7 @@ fun ChatView(
                   )
                 }
                 withReportsChatsIfOpen {
-                  markChatItemsRead(chatRh, chatInfo, itemsIds)
+                  markChatItemsRead(chatRh, chatInfo.id, itemsIds)
                 }
               }
             },
@@ -595,7 +596,7 @@ fun ChatView(
                 withChats {
                   // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
                   withContext(Dispatchers.Main) {
-                    markChatItemsRead(chatRh, chatInfo)
+                    markChatItemsRead(chatRh, chatInfo.id)
                   }
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatRead(
@@ -605,7 +606,7 @@ fun ChatView(
                   )
                 }
                 withReportsChatsIfOpen {
-                  markChatItemsRead(chatRh, chatInfo)
+                  markChatItemsRead(chatRh, chatInfo.id)
                 }
               }
             },
