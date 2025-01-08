@@ -12,8 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.chatModel
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.group.LocalContentTag
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
@@ -42,10 +44,10 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: State<
 
 @Composable
 private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>) {
-  var i = getChatItemIndexOrNull(chatItem)
+  val reversedChatItems = chatModel.chatItemsForContent(LocalContentTag.current).value.asReversed()
+  var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   val ciCategory = chatItem.mergeCategory
   val text =  if (!revealed.value && ciCategory != null && i != null) {
-    val reversedChatItems = ChatModel.chatItems.asReversed()
     var moderated = 0
     var blocked = 0
     var blockedByAdmin = 0

@@ -81,6 +81,9 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
           chatModel.chatId.value = null
           chatItems.clearAndNotify()
         }
+        withChats {
+          chatItems.clearAndNotify()
+        }
       }
     } else {
       // ChatList, nothing to do. Maybe to show other view except ChatList

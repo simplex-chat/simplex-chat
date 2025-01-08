@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
@@ -40,6 +41,9 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
         val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
         if (gInfo != null) {
           withChats {
+            updateGroup(rhId, gInfo)
+          }
+          withReportsChatsIfOpen {
             updateGroup(rhId, gInfo)
           }
           close.invoke()

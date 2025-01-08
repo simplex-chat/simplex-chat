@@ -17,6 +17,8 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+val LocalContentTag: ProvidableCompositionLocal<MsgContentTag?> = staticCompositionLocalOf { null }
+
 data class GroupReports(
   val reportsCount: Int,
   val reportsView: Boolean,

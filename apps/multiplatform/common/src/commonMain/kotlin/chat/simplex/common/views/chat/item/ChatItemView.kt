@@ -28,6 +28,7 @@ import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.group.LocalContentTag
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
@@ -500,8 +501,8 @@ fun ChatItemView(
           DeleteItemMenu()
         }
 
-        fun mergedGroupEventText(chatItem: ChatItem): String? {
-          val (count, ns) = chatModel.getConnectedMemberNames(chatItem)
+        fun mergedGroupEventText(chatItem: ChatItem, reversedChatItems: List<ChatItem>): String? {
+          val (count, ns) = chatModel.getConnectedMemberNames(chatItem, reversedChatItems)
           val members = when {
             ns.size == 1 -> String.format(generalGetString(MR.strings.rcv_group_event_1_member_connected), ns[0])
             ns.size == 2 -> String.format(generalGetString(MR.strings.rcv_group_event_2_members_connected), ns[0], ns[1])
@@ -520,9 +521,9 @@ fun ChatItemView(
           }
         }
 
-        fun eventItemViewText(): AnnotatedString {
+        fun eventItemViewText(reversedChatItems: List<ChatItem>): AnnotatedString {
           val memberDisplayName = cItem.memberDisplayName
-          val t = mergedGroupEventText(cItem)
+          val t = mergedGroupEventText(cItem, reversedChatItems)
           return if (!revealed.value && t != null) {
             chatEventText(t, cItem.timestampText)
           } else if (memberDisplayName != null) {
@@ -536,7 +537,8 @@ fun ChatItemView(
         }
 
         @Composable fun EventItemView() {
-          CIEventView(eventItemViewText())
+          val reversedChatItems = chatModel.chatItemsForContent(LocalContentTag.current).value.asReversed()
+          CIEventView(eventItemViewText(reversedChatItems))
         }
 
         @Composable
@@ -729,20 +731,21 @@ fun DeleteItemAction(
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
 ) {
+  val contentTag = LocalContentTag.current
   ItemAction(
     stringResource(MR.strings.delete_verb),
     painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false
       if (!revealed.value) {
-        val currIndex = chatModel.getChatItemIndexOrNull(cItem)
+        val reversedChatItems = chatModel.chatItemsForContent(contentTag).value.asReversed()
+        val currIndex = chatModel.getChatItemIndexOrNull(cItem, reversedChatItems)
         val ciCategory = cItem.mergeCategory
         if (currIndex != null && ciCategory != null) {
-          val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
+          val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory, reversedChatItems)
           val range = chatViewItemsRange(currIndex, prevHidden)
           if (range != null) {
             val itemIds: ArrayList<Long> = arrayListOf()
-            val reversedChatItems = chatModel.chatItems.asReversed()
             for (i in range) {
               itemIds.add(reversedChatItems[i].id)
             }

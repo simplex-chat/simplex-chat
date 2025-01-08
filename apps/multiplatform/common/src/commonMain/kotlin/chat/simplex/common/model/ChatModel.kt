@@ -66,13 +66,12 @@ object ChatModel {
   val chatId = mutableStateOf<String?>(null)
   val chatsContext = ChatsContext(null)
   val reportsChatsContext = ChatsContext(MsgContentTag.Report)
+  // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions
   val chats: State<List<Chat>> = chatsContext.chats
   /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
    * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
    * If you use api call to get the items, use just [add] instead of [addAndNotify].
    * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
-  // declaration of chatsContext should be after any other variable that is directly attached to ChatsContext class, otherwise, strange crash with NullPointerException for "this" parameter in random functions
-  val chatItems: State<SnapshotStateList<ChatItem>> = chatsContext.chatItems
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -173,7 +172,7 @@ object ChatModel {
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
 
-  fun chatItemsForContent(contentTag: MsgContentTag?): State<List<ChatItem>> = when(contentTag) {
+  fun chatItemsForContent(contentTag: MsgContentTag?): State<SnapshotStateList<ChatItem>> = when(contentTag) {
     null -> chatsContext.chatItems
     MsgContentTag.Report -> reportsChatsContext.chatItems
     else -> TODO()
@@ -619,9 +618,9 @@ object ChatModel {
       }
     }
 
-    val popChatCollector = PopChatCollector()
+    val popChatCollector = PopChatCollector(contentTag)
 
-    class PopChatCollector {
+    class PopChatCollector(contentTag: MsgContentTag?) {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
@@ -631,7 +630,7 @@ object ChatModel {
           subject
             .throttleLatest(2000)
             .collect {
-              withChats {
+              withChats(contentTag) {
                 chats.replaceAll(popCollectedChats())
               }
             }
@@ -671,7 +670,7 @@ object ChatModel {
 
     fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, itemIds: List<Long>? = null) {
       val cInfo = chatInfo
-      val markedRead = markItemsReadInCurrentChat(chatInfo, itemIds)
+      val markedRead = markItemsReadInCurrentChat(chatInfo, contentTag, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, cInfo.id)
       if (chatIdx >= 0) {
@@ -806,7 +805,7 @@ object ChatModel {
   }
 
   fun removeLiveDummy() {
-    if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+    if (chatItemsForContent(null).value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       withApi {
         withChats {
           chatItems.removeLastAndNotify()
@@ -815,11 +814,11 @@ object ChatModel {
     }
   }
 
-  private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, itemIds: List<Long>? = null): Int {
+  private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, contentTag: MsgContentTag?, itemIds: List<Long>? = null): Int {
     val cInfo = chatInfo
     var markedRead = 0
     if (chatId.value == cInfo.id) {
-      val items = chatItems.value
+      val items = chatItemsForContent(contentTag).value
       var i = items.lastIndex
       val itemIdsFromRange = itemIds?.toMutableSet() ?: mutableSetOf()
       val markedReadIds = mutableSetOf<Long>()
@@ -864,19 +863,17 @@ object ChatModel {
     }
   }
 
-  fun getChatItemIndexOrNull(cItem: ChatItem): Int? {
-    val reversedChatItems = chatItems.asReversed()
+  fun getChatItemIndexOrNull(cItem: ChatItem, reversedChatItems: List<ChatItem>): Int? {
     val index = reversedChatItems.indexOfFirst { it.id == cItem.id }
     return if (index != -1) index else null
   }
 
   // this function analyses "connected" events and assumes that each member will be there only once
-  fun getConnectedMemberNames(cItem: ChatItem): Pair<Int, List<String>> {
+  fun getConnectedMemberNames(cItem: ChatItem, reversedChatItems: List<ChatItem>): Pair<Int, List<String>> {
     var count = 0
     val ns = mutableListOf<String>()
-    var idx = getChatItemIndexOrNull(cItem)
+    var idx = getChatItemIndexOrNull(cItem, reversedChatItems)
     if (cItem.mergeCategory != null && idx != null) {
-      val reversedChatItems = chatItems.asReversed()
       while (idx < reversedChatItems.size) {
         val ci = reversedChatItems[idx]
         if (ci.mergeCategory != cItem.mergeCategory) break
@@ -893,9 +890,8 @@ object ChatModel {
 
   // returns the index of the first item in the same merged group (the first hidden item)
   // and the previous visible item with another merge category
-  fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?): Pair<Int?, ChatItem?> {
+  fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?, reversedChatItems: List<ChatItem>): Pair<Int?, ChatItem?> {
     var i = ciIndex ?: return null to null
-    val reversedChatItems = chatItems.asReversed()
     val fst = reversedChatItems.lastIndex
     while (i < fst) {
       i++
@@ -908,8 +904,7 @@ object ChatModel {
   }
 
   // returns the previous member in the same merge group and the count of members in this group
-  fun getPrevHiddenMember(member: GroupMember, range: IntRange): Pair<GroupMember?, Int> {
-    val reversedChatItems = chatItems.asReversed()
+  fun getPrevHiddenMember(member: GroupMember, range: IntRange, reversedChatItems: List<ChatItem>): Pair<GroupMember?, Int> {
     var prevMember: GroupMember? = null
     val names: MutableSet<Long> = mutableSetOf()
     for (i in range) {

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -196,6 +197,9 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
         val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
         if (updatedMember != null) {
           withChats {
+            upsertGroupMember(rhId, groupInfo, updatedMember)
+          }
+          withReportsChatsIfOpen {
             upsertGroupMember(rhId, groupInfo, updatedMember)
           }
         }

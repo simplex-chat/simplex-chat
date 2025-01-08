@@ -32,6 +32,7 @@ import chat.simplex.common.model.ChatController.apiDeleteChatTag
 import chat.simplex.common.model.ChatController.apiSetChatTags
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -425,6 +426,9 @@ private fun setTag(rhId: Long?, tagId: Long?, chat: Chat, close: () -> Unit) {
             withChats {
               updateGroup(rhId, group)
             }
+            withReportsChatsIfOpen {
+              updateGroup(rhId, group)
+            }
           }
 
           else -> {}
@@ -460,6 +464,9 @@ private fun deleteTag(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) 
             is ChatInfo.Group -> {
               val group = cInfo.groupInfo.copy(chatTags = cInfo.groupInfo.chatTags.filter { it != tagId })
               withChats {
+                updateGroup(rhId, group)
+              }
+              withReportsChatsIfOpen {
                 updateGroup(rhId, group)
               }
             }

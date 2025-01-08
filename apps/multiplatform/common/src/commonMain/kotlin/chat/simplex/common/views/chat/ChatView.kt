@@ -77,7 +77,7 @@ fun ChatView(
       ModalManager.end.closeModals()
     }
   } else {
-    val showArchivedReports = remember { mutableStateOf(false) }
+    val showArchivedReports = remember { mutableStateOf(if (reportsView) reportsShowArchived else false) }
     val groupReports = remember { derivedStateOf {
       val reportsCount = if (activeChatInfo.value is ChatInfo.Group) activeChatStats.value?.reportsCount ?: 0 else 0
       GroupReports(reportsCount, reportsView, showArchivedReports.value) }
@@ -125,7 +125,10 @@ fun ChatView(
       }
     }
     val clipboard = LocalClipboardManager.current
-    CompositionLocalProvider(LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false)) {
+    CompositionLocalProvider(
+      LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
+      LocalContentTag provides groupReports.value.contentTag
+    ) {
     when (chatInfo) {
       is ChatInfo.Direct, is ChatInfo.Group, is ChatInfo.Local -> {
         var groupMembersJob: Job = remember { Job() }
@@ -511,6 +514,11 @@ fun ChatView(
                   withChats {
                     updateChatItem(cInfo, updatedCI)
                   }
+                  withReportsChatsIfOpen {
+                    if (cItem.content.msgContent is MsgContent.MCReport) {
+                      updateChatItem(cInfo, updatedCI)
+                    }
+                  }
                 }
               }
             },
@@ -528,7 +536,9 @@ fun ChatView(
               groupMembersJob.cancel()
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 var initialCiInfo = loadChatItemInfo() ?: return@launch
-                ModalManager.end.closeModals()
+                if (!ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) {
+                  ModalManager.end.closeModals()
+                }
                 ModalManager.end.showModalCloseable(endButtons = {
                   ShareButton {
                     clipboard.shareText(itemInfoShareText(chatModel, cItem, initialCiInfo, chatModel.controller.appPrefs.developerTools.get()))
@@ -1078,6 +1088,10 @@ private fun ContactVerifiedShield() {
   Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp * fontSizeSqrtMultiplier).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
 }
 
+/** Saves current scroll position when [GroupReports] are open and user opens [ChatItemInfoView], for example, and goes back */
+private var reportsListState: LazyListState? = null
+private var reportsShowArchived: Boolean = false
+
 @Composable
 fun BoxScope.ChatItemsList(
   remoteHostId: Long?,
@@ -1130,12 +1144,18 @@ fun BoxScope.ChatItemsList(
   )
   val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, saver = LazyListState.Saver) {
     val index = mergedItems.value.items.indexOfLast { it.hasUnread() }
-    if (index <= 0) {
+    val reportsState = reportsListState
+    if (reportsState != null) {
+      reportsListState = null
+      reportsShowArchived = false
+      reportsState
+    } else if (index <= 0) {
       LazyListState(0, 0)
     } else {
       LazyListState(index + 1, -maxHeightForList.value)
     }
   })
+  SaveReportsStateOnDispose(groupReports, listState)
   val maxHeight = remember { derivedStateOf { listState.value.layoutInfo.viewportEndOffset - topPaddingToContentPx.value } }
   val loadingMoreItems = remember { mutableStateOf(false) }
   val animatedScrollingInProgress = remember { mutableStateOf(false) }
@@ -1146,7 +1166,7 @@ fun BoxScope.ChatItemsList(
       try {
         loadingMoreItems.value = true
         loadMessages(chatId, pagination) {
-          visibleItemIndexesNonReversed(mergedItems, listState.value)
+          visibleItemIndexesNonReversed(mergedItems, reversedChatItems.value.size, listState.value)
         }
       } finally {
         loadingMoreItems.value = false
@@ -1304,7 +1324,7 @@ fun BoxScope.ChatItemsList(
                         val rangeValue = range.value
                         val (prevMember, memCount) =
                           if (rangeValue != null) {
-                            chatModel.getPrevHiddenMember(member, rangeValue)
+                            chatModel.getPrevHiddenMember(member, rangeValue, reversedChatItems.value)
                           } else {
                             null to 1
                           }
@@ -1702,7 +1722,7 @@ private fun PreloadItemsBefore(
         var lastIndexToLoadFrom: Int? = findLastIndexToLoadFromInSplits(firstVisibleIndex, lastVisibleIndex, remaining, splits)
         val items = reversedChatItems.value
         if (splits.isEmpty() && items.isNotEmpty() && lastVisibleIndex > mergedItems.value.items.size - remaining && items.size >= ChatPagination.INITIAL_COUNT) {
-          lastIndexToLoadFrom = items.lastIndex
+          lastIndexToLoadFrom = 0
         }
         if (allowLoad.value && lastIndexToLoadFrom != null) {
           items.getOrNull(items.lastIndex - lastIndexToLoadFrom)?.id
@@ -1911,6 +1931,16 @@ private fun FloatingDate(
 }
 
 @Composable
+private fun SaveReportsStateOnDispose(groupReports: State<GroupReports>, listState: State<LazyListState>) {
+  DisposableEffect(Unit) {
+    onDispose {
+      reportsListState = if (groupReports.value.reportsView && ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) listState.value else null
+      reportsShowArchived = if (groupReports.value.reportsView && ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) groupReports.value.showArchived else false
+    }
+  }
+}
+
+@Composable
 private fun DownloadFilesButton(
   forwardConfirmation: ForwardConfirmation.FilesNotAccepted,
   rhId: Long?,
@@ -2051,7 +2081,7 @@ private fun scrollToItem(
         val oldSize = reversedChatItems.value.size
         withContext(Dispatchers.Default) {
           loadMessages(chatInfo.value.id, pagination) {
-            visibleItemIndexesNonReversed(mergedItems, listState.value)
+            visibleItemIndexesNonReversed(mergedItems, reversedChatItems.value.size, listState.value)
           }
         }
         var repeatsLeft = 50
@@ -2199,10 +2229,10 @@ private fun selectUnselectChatItem(
 ) {
   val itemIds = mutableSetOf<Long>()
   if (!revealed.value) {
-    val currIndex = chatModel.getChatItemIndexOrNull(ci)
+    val currIndex = chatModel.getChatItemIndexOrNull(ci, reversedChatItems.value)
     val ciCategory = ci.mergeCategory
     if (currIndex != null && ciCategory != null) {
-      val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
+      val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory, reversedChatItems.value)
       val range = chatViewItemsRange(currIndex, prevHidden)
       if (range != null) {
         val reversed = reversedChatItems.value
@@ -2251,7 +2281,9 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              upsertChatItem(chatRh, chatInfo, toChatItem)
+              if (toChatItem.content.msgContent is MsgContent.MCReport) {
+                upsertChatItem(chatRh, chatInfo, toChatItem)
+              }
             } else {
               removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
@@ -2291,7 +2323,6 @@ private fun markUnreadChatAsRead(chatId: String) {
       }
       withReportsChatsIfOpen {
         replaceChat(chatRh, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
-        markChatTagRead(chat)
       }
     }
   }
@@ -2470,7 +2501,7 @@ private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConf
 private fun forwardContent(chatItemsIds: List<Long>, chatInfo: ChatInfo) {
   chatModel.chatId.value = null
   chatModel.sharedContent.value = SharedContent.Forward(
-    chatModel.chatItems.value.filter { chatItemsIds.contains(it.id) },
+    chatModel.chatItemsForContent(null).value.filter { chatItemsIds.contains(it.id) },
     chatInfo
   )
 }

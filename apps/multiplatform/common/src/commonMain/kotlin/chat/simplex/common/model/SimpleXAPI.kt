@@ -3052,6 +3052,9 @@ object ChatController {
       withChats {
         updateGroup(rh, groupInfo)
       }
+      withReportsChatsIfOpen {
+        updateGroup(rh, groupInfo)
+      }
     }
   }
 

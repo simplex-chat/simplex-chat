@@ -27,6 +27,7 @@ import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatJsonLength
@@ -51,6 +52,9 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
       if (res != null) {
         gInfo = res
         withChats {
+          updateGroup(rhId, res)
+        }
+        withReportsChatsIfOpen {
           updateGroup(rhId, res)
         }
         welcomeText.value = welcome ?: ""
