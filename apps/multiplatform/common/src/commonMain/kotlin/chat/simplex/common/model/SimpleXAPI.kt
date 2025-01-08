@@ -2581,6 +2581,47 @@ object ChatController {
           }
         }
       }
+      is CR.GroupChatItemsDeleted -> {
+        if (!active(r.user)) {
+          val users = chatController.listUsers(rhId)
+          chatModel.users.clear()
+          chatModel.users.addAll(users)
+          return
+        }
+        val cInfo = ChatInfo.Group(r.groupInfo)
+        withChats {
+          r.chatItemIDs.forEach { itemId ->
+            val cItem = chatItems.value.firstOrNull { it.id == itemId } ?: return@forEach
+            if (chatModel.chatId.value != null) {
+              // Stop voice playback only inside a chat, allow to play in a chat list
+              AudioPlayer.stop(cItem)
+            }
+            val isLastChatItem = getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
+            if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
+              ntfManager.cancelNotificationsForChat(cInfo.id)
+              ntfManager.displayNotification(
+                r.user,
+                cInfo.id,
+                cInfo.displayName,
+                generalGetString(MR.strings.marked_deleted_description)
+              )
+            }
+            val deleted = if (r.member_ != null) CIDeleted.Moderated(Clock.System.now(), r.member_) else CIDeleted.Deleted(Clock.System.now())
+            upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+          }
+        }
+        withReportsChatsIfOpen {
+          r.chatItemIDs.forEach { itemId ->
+            val cItem = chatItems.value.firstOrNull { it.id == itemId } ?: return@forEach
+            if (chatModel.chatId.value != null) {
+              // Stop voice playback only inside a chat, allow to play in a chat list
+              AudioPlayer.stop(cItem)
+            }
+            val deleted = if (r.member_ != null) CIDeleted.Moderated(Clock.System.now(), r.member_) else CIDeleted.Deleted(Clock.System.now())
+            upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+          }
+        }
+      }
       is CR.ReceivedGroupInvitation -> {
         if (active(r.user)) {
           withChats {
@@ -5615,6 +5656,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
   @Serializable @SerialName("reactionMembers") class ReactionMembers(val user: UserRef, val memberReactions: List<MemberReaction>): CR()
   @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
+  @Serializable @SerialName("groupChatItemsDeleted") class GroupChatItemsDeleted(val user: UserRef, val groupInfo: GroupInfo, val chatItemIDs: List<Long>, val byUser: Boolean, val member_: GroupMember?): CR()
   @Serializable @SerialName("forwardPlan") class ForwardPlan(val user: UserRef, val itemsCount: Int, val chatItemIds: List<Long>, val forwardConfirmation: ForwardConfirmation? = null): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
@@ -5799,6 +5841,7 @@ sealed class CR {
     is ChatItemReaction -> "chatItemReaction"
     is ReactionMembers -> "reactionMembers"
     is ChatItemsDeleted -> "chatItemsDeleted"
+    is GroupChatItemsDeleted -> "groupChatItemsDeleted"
     is ForwardPlan -> "forwardPlan"
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
@@ -5975,6 +6018,7 @@ sealed class CR {
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
     is ReactionMembers -> withUser(user, "memberReactions: ${json.encodeToString(memberReactions)}")
     is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
+    is GroupChatItemsDeleted -> withUser(user, "chatItemIDs: $chatItemIDs\nbyUser: $byUser\nmember_: $member_")
     is ForwardPlan -> withUser(user, "itemsCount: $itemsCount\nchatItemIds: ${json.encodeToString(chatItemIds)}\nforwardConfirmation: ${json.encodeToString(forwardConfirmation)}")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
