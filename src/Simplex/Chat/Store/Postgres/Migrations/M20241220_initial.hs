@@ -234,7 +234,7 @@ CREATE TABLE snd_files(
   PRIMARY KEY(file_id, connection_id)
 );
 CREATE TABLE rcv_files(
-  file_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY REFERENCES files ON DELETE CASCADE,
+  file_id BIGINT PRIMARY KEY REFERENCES files ON DELETE CASCADE,
   file_status TEXT NOT NULL,
   group_member_id BIGINT REFERENCES group_members ON DELETE CASCADE,
   file_queue_info BYTEA,

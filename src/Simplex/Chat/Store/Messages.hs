@@ -1803,10 +1803,10 @@ type ChatItemRow =
     :. ChatItemModeRow
     :. MaybeCIFIleRow
 
-type QuoteRow = (Maybe ChatItemId, Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool)
+type QuoteRow = (Maybe ChatItemId, Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe BoolInt)
 
 toDirectQuote :: QuoteRow -> Maybe (CIQuote 'CTDirect)
-toDirectQuote qr@(_, _, _, _, quotedSent) = toQuote qr $ direction <$> quotedSent
+toDirectQuote qr@(_, _, _, _, quotedSent) = toQuote qr $ direction . unBI <$> quotedSent
   where
     direction sent = if sent then CIQDirectSnd else CIQDirectRcv
 
@@ -1866,9 +1866,9 @@ type GroupQuoteRow = QuoteRow :. MaybeGroupMemberRow
 toGroupQuote :: QuoteRow -> Maybe GroupMember -> Maybe (CIQuote 'CTGroup)
 toGroupQuote qr@(_, _, _, _, quotedSent) quotedMember_ = toQuote qr $ direction quotedSent quotedMember_
   where
-    direction (Just True) _ = Just CIQGroupSnd
-    direction (Just False) (Just member) = Just . CIQGroupRcv $ Just member
-    direction (Just False) Nothing = Just $ CIQGroupRcv Nothing
+    direction (Just (BI True)) _ = Just CIQGroupSnd
+    direction (Just (BI False)) (Just member) = Just . CIQGroupRcv $ Just member
+    direction (Just (BI False)) Nothing = Just $ CIQGroupRcv Nothing
     direction _ _ = Nothing
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
