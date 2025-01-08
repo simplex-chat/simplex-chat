@@ -155,7 +155,7 @@ struct FramedItemView: View {
             case let .file(text):
                 ciFileView(chatItem, text)
             case let .report(text, reason):
-                ciMsgContentView(chatItem, Text(text.isEmpty ? reason.text : "\(reason.text):").italic().foregroundColor(.red))
+                ciMsgContentView(chatItem, Text(text.isEmpty ? reason.text : "\(reason.text): ").italic().foregroundColor(.red))
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)

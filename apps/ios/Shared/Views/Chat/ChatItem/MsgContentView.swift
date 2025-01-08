@@ -109,17 +109,15 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
         res = Text(Image(systemName: i)).foregroundColor(secondaryColor) + textSpace + res
     }
     
-    let prefixTxt = if let p = prefix {
-        p + textSpace
-    } else {
-        Text("")
+    if let p = prefix {
+        res = p + res
     }
 
     if let s = sender {
         let t = Text(s)
-        return (preview ? t : t.fontWeight(.medium)) + Text(": ") + prefixTxt + res
+        return (preview ? t : t.fontWeight(.medium)) + Text(": ") + res
     } else {
-        return prefixTxt + res
+        return res
     }
 }
 
