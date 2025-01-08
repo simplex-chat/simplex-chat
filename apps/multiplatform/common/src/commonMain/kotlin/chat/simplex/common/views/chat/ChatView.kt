@@ -1917,7 +1917,7 @@ private fun scrollToItem(
   }
 }
 
-fun findQuotedItemFromItem(
+private fun findQuotedItemFromItem(
   rhId: State<Long?>,
   chatInfo: State<ChatInfo>,
   scope: CoroutineScope,
