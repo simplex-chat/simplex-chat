@@ -1383,11 +1383,7 @@ data class Connection(
 }
 
 @Serializable
-data class VersionRange(val minVersion: Int, val maxVersion: Int) {
-
-  fun isCompatibleRange(vRange: VersionRange): Boolean =
-    this.minVersion <= vRange.maxVersion && vRange.minVersion <= this.maxVersion
-}
+data class VersionRange(val minVersion: Int, val maxVersion: Int)
 
 @Serializable
 data class SecurityCode(val securityCode: String, val verifiedAt: Instant)
