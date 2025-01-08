@@ -91,14 +91,6 @@ chatInfoChatTs = \case
   GroupChat GroupInfo {chatTs} -> chatTs
   _ -> Nothing
 
-chatInfoUpdatedAt :: ChatInfo c -> UTCTime
-chatInfoUpdatedAt = \case
-  DirectChat Contact {updatedAt} -> updatedAt
-  GroupChat GroupInfo {updatedAt} -> updatedAt
-  LocalChat NoteFolder {updatedAt} -> updatedAt
-  ContactRequest UserContactRequest {updatedAt} -> updatedAt
-  ContactConnection PendingContactConnection {updatedAt} -> updatedAt
-
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> ChatRef CTDirect contactId
@@ -318,11 +310,16 @@ data AChat = forall c. ChatTypeI c => AChat (SChatType c) (Chat c)
 deriving instance Show AChat
 
 data ChatStats = ChatStats
-  { unreadCount :: Int,
+  { unreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    archivedReportsCount :: Int, -- only returned in /_get chat initial API
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }
   deriving (Show)
+
+emptyChatStats :: ChatStats
+emptyChatStats = ChatStats 0 0 0 0 False
 
 data NavigationInfo = NavigationInfo
   { afterUnread :: Int,
