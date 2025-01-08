@@ -978,6 +978,17 @@ object ChatController {
     }
   }
 
+  suspend fun apiReportMessage(rh: Long?, groupId: Long, chatItemId: Long, reportReason: ReportReason, reportText: String): List<AChatItem>? {
+    val r = sendCmd(rh, CC.ApiReportMessage(groupId, chatItemId, reportReason, reportText))
+    return when (r) {
+      is CR.NewChatItems -> r.chatItems
+      else -> {
+        apiErrorAlert("apiReportMessage", generalGetString(MR.strings.error_creating_report), r)
+        null
+      }
+    }
+  }
+
   suspend fun apiGetChatItemInfo(rh: Long?, type: ChatType, id: Long, itemId: Long): ChatItemInfo? {
     return when (val r = sendCmd(rh, CC.ApiGetChatItemInfo(type, id, itemId))) {
       is CR.ApiChatItemInfo -> r.chatItemInfo
@@ -3157,8 +3168,12 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 
   init {
     this.set = { value ->
-      set(value)
-      _state.value = value
+      try {
+        set(value)
+        _state.value = value
+      } catch (e: Exception) {
+        Log.e(TAG, "Error saving settings: ${e.stackTraceToString()}")
+      }
     }
   }
 }
@@ -3202,6 +3217,7 @@ sealed class CC {
   class ApiUpdateChatTag(val tagId: Long, val tagData: ChatTagData): CC()
   class ApiReorderChatTags(val tagIds: List<Long>): CC()
   class ApiCreateChatItems(val noteFolderId: Long, val composedMessages: List<ComposedMessage>): CC()
+  class ApiReportMessage(val groupId: Long, val chatItemId: Long, val reportReason: ReportReason, val reportText: String): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
@@ -3370,6 +3386,7 @@ sealed class CC {
       val msgs = json.encodeToString(composedMessages)
       "/_create *$noteFolderId json $msgs"
     }
+    is ApiReportMessage -> "/_report #$groupId $chatItemId reason=$reportReason $reportText"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
@@ -3533,6 +3550,7 @@ sealed class CC {
     is ApiUpdateChatTag -> "apiUpdateChatTag"
     is ApiReorderChatTags -> "apiReorderChatTags"
     is ApiCreateChatItems -> "apiCreateChatItems"
+    is ApiReportMessage -> "apiReportMessage"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"

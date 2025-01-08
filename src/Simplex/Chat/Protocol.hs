@@ -78,7 +78,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 -- 9 - batch sending in direct connections (2024-07-24)
 -- 10 - business chats (2024-11-29)
 -- 11 - fix profile update in business chats (2024-12-05)
--- 12 - fix profile update in business chats (2025-01-03)
+-- 12 - support sending and receiving content reports (2025-01-03)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
@@ -450,7 +450,7 @@ instance FromJSON MREmojiChar where
 
 mrEmojiChar :: Char -> Either String MREmojiChar
 mrEmojiChar c
-  | c `elem` ("👍👎😀😢❤️🚀" :: String) = Right $ MREmojiChar c
+  | c `elem` ("👍👎😀😂😢❤️🚀✅" :: String) = Right $ MREmojiChar c
   | otherwise = Left "bad emoji"
 
 data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
@@ -492,7 +492,7 @@ cmToQuotedMsg = \case
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCReport_ | MCUnknown_ Text
-  deriving (Eq)
+  deriving (Eq, Show)
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
@@ -529,6 +529,7 @@ instance ToField MsgContentTag where toField = toField . strEncode
 data MsgContainer
   = MCSimple ExtMsgContent
   | MCQuote QuotedMsg ExtMsgContent
+  | MCComment MsgRef ExtMsgContent
   | MCForward ExtMsgContent
   deriving (Eq, Show)
 
@@ -536,12 +537,8 @@ mcExtMsgContent :: MsgContainer -> ExtMsgContent
 mcExtMsgContent = \case
   MCSimple c -> c
   MCQuote _ c -> c
+  MCComment _ c -> c
   MCForward c -> c
-
-isQuote :: MsgContainer -> Bool
-isQuote = \case
-  MCQuote {} -> True
-  _ -> False
 
 data MsgContent
   = MCText Text
@@ -570,9 +567,6 @@ msgContentText = \case
     where
       msg = "report " <> safeDecodeUtf8 (strEncode reason)
   MCUnknown {text} -> text
-
-toMCText :: MsgContent -> MsgContent
-toMCText = MCText . msgContentText
 
 durationText :: Int -> Text
 durationText duration =
@@ -665,7 +659,10 @@ markCompressedBatch = B.cons 'X'
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
+    <|> MCComment <$> v .: "parent" <*> mc
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    -- The support for arbitrary object in "forward" property is added to allow
+    -- forward compatibility with forwards that include public group links.
     <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
     <|> MCSimple <$> mc
   where
@@ -716,6 +713,7 @@ unknownMsgType = "unknown message type"
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON = \case
   MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
+  MCComment ref mc -> o $ ("parent" .= ref) : msgContent mc
   MCForward mc -> o $ ("forward" .= True) : msgContent mc
   MCSimple mc -> o $ msgContent mc
   where

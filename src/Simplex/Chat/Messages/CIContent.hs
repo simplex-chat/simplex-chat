@@ -18,6 +18,7 @@ module Simplex.Chat.Messages.CIContent where
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -112,7 +113,24 @@ msgDirectionIntP = \case
 data CIDeleteMode = CIDMBroadcast | CIDMInternal | CIDMInternalMark
   deriving (Show)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "CIDM") ''CIDeleteMode)
+instance StrEncoding CIDeleteMode where
+  strEncode = \case
+    CIDMBroadcast -> "broadcast"
+    CIDMInternal -> "internal"
+    CIDMInternalMark -> "internalMark"
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "broadcast" -> pure CIDMBroadcast
+      "internal" -> pure CIDMInternal
+      "internalMark" -> pure CIDMInternalMark
+      _ -> fail "bad CIDeleteMode"
+
+instance ToJSON CIDeleteMode where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+instance FromJSON CIDeleteMode where
+  parseJSON = strParseJSON "CIDeleteMode"
 
 ciDeleteModeToText :: CIDeleteMode -> Text
 ciDeleteModeToText = \case
