@@ -118,6 +118,13 @@ struct ComposeState {
         }
     }
     
+    var reporting: Bool {
+        switch contextItem {
+        case .reportedItem: return true
+        default: return false
+        }
+    }
+    
     var submittingValidReport: Bool {
         switch contextItem {
         case let .reportedItem(_, reason):
@@ -187,7 +194,7 @@ struct ComposeState {
     }
 
     var attachmentDisabled: Bool {
-        if editing || forwarding || liveMessage != nil || inProgress { return true }
+        if editing || forwarding || liveMessage != nil || inProgress || reporting { return true }
         switch preview {
         case .noPreview: return false
         case .linkPreview: return false

@@ -1348,10 +1348,12 @@ struct ChatView: View {
                 if !live || !ci.meta.isLive {
                     deleteButton(ci)
                 }
-                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
-                    moderateButton(ci, groupInfo)
-                } else if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole < .moderator {
-                    reportButton(ci)
+                if ci.chatDir != .groupSnd {
+                    if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                        moderateButton(ci, groupInfo)
+                    } else if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole < .moderator, !live, composeState.voiceMessageRecordingState == .noRecording {
+                        reportButton(ci)
+                    }
                 }
             } else if ci.meta.itemDeleted != nil {
                 if revealed {
@@ -1829,9 +1831,9 @@ struct ChatView: View {
                     .default(Text(reason.text)) {
                         withAnimation {
                             if composeState.editing {
-                                composeState = ComposeState(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                                composeState = ComposeState(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
                             } else {
-                                composeState = composeState.copy(contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                                composeState = composeState.copy(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
                             }
                         }
                     }
