@@ -690,8 +690,8 @@ getRcvFileTransfer_ db userId fileId = do
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN connections c ON r.file_id = c.rcv_file_id
-          LEFT JOIN contacts cs USING (contact_id)
-          LEFT JOIN group_members m USING (group_member_id)
+          LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
+          LEFT JOIN group_members m ON m.group_member_id = r.group_member_id
           WHERE f.user_id = ? AND f.file_id = ?
         |]
         (userId, fileId)
@@ -936,8 +936,8 @@ getSndFileTransfers_ db userId fileId =
         FROM snd_files s
         JOIN files f USING (file_id)
         JOIN connections c USING (connection_id)
-        LEFT JOIN contacts cs USING (contact_id)
-        LEFT JOIN group_members m USING (group_member_id)
+        LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
+        LEFT JOIN group_members m ON m.group_member_id = s.group_member_id
         WHERE f.user_id = ? AND f.file_id = ?
       |]
       (userId, fileId)

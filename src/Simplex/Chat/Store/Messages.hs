@@ -2264,7 +2264,7 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
       SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
-    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
+    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
@@ -2602,7 +2602,7 @@ updateLocalChatItem_ db userId noteFolderId ChatItem {meta, content} = do
       SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, updated_at = ?
       WHERE user_id = ? AND note_folder_id = ? AND chat_item_id = ?
     |]
-    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', itemEdited, updatedAt) :. (userId, noteFolderId, itemId))
+    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, updatedAt) :. (userId, noteFolderId, itemId))
 
 deleteLocalChatItem :: DB.Connection -> User -> NoteFolder -> ChatItem 'CTLocal d -> IO ()
 deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do
