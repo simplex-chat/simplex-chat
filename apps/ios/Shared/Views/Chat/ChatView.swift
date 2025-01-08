@@ -1706,7 +1706,7 @@ struct ChatView: View {
                 AlertManager.shared.showAlert(
                     Alert(
                         title: Text("Archive report?"),
-                        message: Text("The report will be archived for all moderators and reporter."),
+                        message: Text("The report will be archived for you."),
                         primaryButton: .destructive(Text("Archive")) {
                             deletingItem = cItem
                             deleteMessage(.cidmInternalMark, moderate: false)
