@@ -304,7 +304,7 @@
   <string name="message_deleted_or_not_received_error_desc">This message was deleted or not received yet.</string>
   <string name="report_reason_alert_title">Report reason?</string>
   <string name="report_archive_alert_title">Archive report?</string>
-  <string name="report_archive_alert_desc">The report will be archived for all moderators.</string>
+  <string name="report_archive_alert_desc">The report will be archived for you.</string>
   <string name="report_block_and_moderate_title">Block and moderate?</string>
   <string name="report_block_and_moderate_block_and_moderate_action">Block and moderate</string>
   <string name="report_block_and_moderate_only_block_action">Only block</string>
