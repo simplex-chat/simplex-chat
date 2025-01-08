@@ -1642,7 +1642,7 @@ data class GroupMember (
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (!canBeRemoved(groupInfo)) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.supportedRoles.filter { it <= userRole }
+      GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
@@ -1698,7 +1698,7 @@ enum class GroupMemberRole(val memberRole: String) {
   @SerialName("owner") Owner("owner");
 
   companion object {
-    val supportedRoles: List<GroupMemberRole> = listOf(Observer, Member, Admin, Owner)
+    val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Admin, Owner)
   }
 
   val text: String get() = when (this) {

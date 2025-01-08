@@ -209,7 +209,7 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = GroupMemberRole.supportedRoles
+    val values = GroupMemberRole.selectableRoles
       .filter { it <= groupInfo.membership.memberRole }
       .map { it to it.text }
     ExposedDropDownSettingRow(
