@@ -329,6 +329,9 @@ fun ChatItemView(
                       )
                     }
                   }
+
+                  Divider()
+                  SelectItemAction(showMenu, selectChatItem)
                 }
               }
             }
