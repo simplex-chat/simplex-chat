@@ -191,7 +191,18 @@ testAddContact = versionTestMatrix2 runTestAddContact
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      chatsEmpty
+      print 1
+      -- chatsEmpty
+      -- alice @@@ [("@bob", lastChatFeature)]
+      alice ##> "/_get chats 1 pcc=on"
+      r <- getTermLine alice
+      print $ "1a r: " <> show r
+      alice #$> ("/_get chat @2 count=100", chat, features)
+      print "1b"
+      bob @@@ [("@alice", lastChatFeature)]
+      print "1c"
+      bob #$> ("/_get chat @2 count=100", chat, features)
+      print 2
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
       alice ##> "/_unread chat @2 on"

@@ -894,7 +894,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
                 WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
                 ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
                 LIMIT 1
-              )
+              ) cc
             )
             OR c.connection_id IS NULL
           )

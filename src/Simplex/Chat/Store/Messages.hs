@@ -1125,7 +1125,7 @@ getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
               FROM chat_items
               WHERE user_id = ? AND contact_id = ? AND item_status = ?
                 AND created_at = ? AND chat_item_id > ?
-            )
+            ) ci
           |]
           ( (userId, contactId, CISRcvNew, ciCreatedAt afterCI)
               :. (userId, contactId, CISRcvNew, ciCreatedAt afterCI, cChatItemId afterCI)
@@ -1147,7 +1147,7 @@ getContactNavInfo_ db User {userId} Contact {contactId} afterCI = do
               FROM chat_items
               WHERE user_id = ? AND contact_id = ?
                 AND created_at = ? AND chat_item_id > ?
-            )
+            ) ci
           |]
           ( (userId, contactId, ciCreatedAt afterCI)
               :. (userId, contactId, ciCreatedAt afterCI, cChatItemId afterCI)
@@ -1363,7 +1363,7 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
               FROM chat_items
               WHERE user_id = ? AND group_id = ? AND item_status = ?
                 AND item_ts = ? AND chat_item_id > ?
-            )
+            ) ci
           |]
           ( (userId, groupId, CISRcvNew, chatItemTs afterCI)
               :. (userId, groupId, CISRcvNew, chatItemTs afterCI, cChatItemId afterCI)
@@ -1385,7 +1385,7 @@ getGroupNavInfo_ db User {userId} GroupInfo {groupId} afterCI = do
               FROM chat_items
               WHERE user_id = ? AND group_id = ?
                 AND item_ts = ? AND chat_item_id > ?
-            )
+            ) ci
           |]
           ( (userId, groupId, chatItemTs afterCI)
               :. (userId, groupId, chatItemTs afterCI, cChatItemId afterCI)
@@ -1585,7 +1585,7 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
               FROM chat_items
               WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
                 AND created_at = ? AND chat_item_id > ?
-            )
+            ) ci
           |]
           ( (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI)
               :. (userId, noteFolderId, CISRcvNew, ciCreatedAt afterCI, cChatItemId afterCI)
@@ -1607,7 +1607,7 @@ getLocalNavInfo_ db User {userId} NoteFolder {noteFolderId} afterCI = do
               FROM chat_items
               WHERE user_id = ? AND note_folder_id = ?
                 AND created_at = ? AND chat_item_id > ?
-            )
+            ) ci
           |]
           ( (userId, noteFolderId, ciCreatedAt afterCI)
               :. (userId, noteFolderId, ciCreatedAt afterCI, cChatItemId afterCI)
