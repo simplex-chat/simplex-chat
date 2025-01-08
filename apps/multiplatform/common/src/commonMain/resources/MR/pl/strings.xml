@@ -277,7 +277,7 @@
     <string name="scan_code_from_contacts_app">Zeskanuj kod bezpieczeństwa z aplikacji Twojego kontaktu.</string>
     <string name="security_code">Kod bezpieczeństwa</string>
     <string name="icon_descr_settings">Ustawienia</string>
-    <string name="share_invitation_link">Udostępnij 1-razowy link</string>
+    <string name="share_invitation_link">Udostępnij link jednorazowy</string>
     <string name="show_QR_code">Pokaż kod QR</string>
     <string name="is_verified">%s jest zweryfikowany</string>
     <string name="this_QR_code_is_not_a_link">Ten kod QR nie jest linkiem!</string>
@@ -1131,7 +1131,7 @@
     <string name="error_setting_address">Błąd ustawiania adresu</string>
     <string name="auth_open_chat_profiles">Otwórz profile czatu</string>
     <string name="learn_more_about_address">O adresie SimpleX</string>
-    <string name="one_time_link_short">1-razowy link</string>
+    <string name="one_time_link_short">link jednorazowy</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Przeczytaj więcej w <font color="#0088ff">Podręczniku Użytkownika</font>.]]></string>
     <string name="simplex_address">Adres SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Kiedy ludzie proszą o połączenie, możesz je zaakceptować lub odrzucić.</string>
@@ -1373,9 +1373,7 @@
     <string name="v5_3_new_interface_languages_descr">Arabski, bułgarski, fiński, hebrajski, tajski i ukraiński - dzięki użytkownikom i Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Utwórz nowy profil w aplikacji desktopowej. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Przełącz incognito przy połączeniu.</string>
-    <string name="v5_3_discover_join_groups_descr">- połącz się z usługą katalogową (BETA)!
-\n- potwierdzenia dostaw (do 20 członków).
-\n- szybszy i stabilniejszy.</string>
+    <string name="v5_3_discover_join_groups_descr">- połącz się z usługą katalogową (BETA)!\n- potwierdzenia dostaw (do 20 członków).\n- szybszy i stabilniejszy.</string>
     <string name="rcv_group_event_open_chat">Otwórz</string>
     <string name="error_creating_member_contact">Błąd tworzenia kontaktu członka</string>
     <string name="compose_send_direct_message_to_connect">Wyślij wiadomość bezpośrednią aby połączyć</string>
@@ -1499,15 +1497,15 @@
     <string name="disconnect_desktop_question">Rozłączyć komputer?</string>
     <string name="loading_remote_file_desc">Proszę poczekać na załadowanie pliku z połączonego telefonu</string>
     <string name="verify_connection">Zweryfikuj połączenie</string>
-    <string name="refresh_qr_code">Odświerz</string>
+    <string name="refresh_qr_code">Odśwież</string>
     <string name="you_can_make_address_visible_via_settings">Możesz ustawić go jako widoczny dla swoich kontaktów SimpleX w Ustawieniach.</string>
     <string name="random_port">Losowy</string>
     <string name="error_showing_content">błąd wyświetlania zawartości</string>
     <string name="error_showing_message">błąd wyświetlania wiadomości</string>
-    <string name="open_port_in_firewall_desc">Aby umożliwić aplikacji mobilnej łączenie się z komputerem, otwórz ten port w zaporze sieciowej, jeśli jest ona włączona</string>
+    <string name="open_port_in_firewall_desc">Aby umożliwić aplikacji mobilnej połączenie z komputerem stacjonarnym, otwórz ten port w swojej zaporze sieciowej, jeśli jest włączona.</string>
     <string name="create_chat_profile">Utwórz profil czatu</string>
     <string name="app_was_crashed">Widok uległ awarii</string>
-    <string name="open_port_in_firewall_title">Otwórz port w zaporze</string>
+    <string name="open_port_in_firewall_title">Otwórz port w zaporze sieciowej</string>
     <string name="disconnect_remote_hosts">Rozłącz telefony</string>
     <string name="no_connected_mobile">Brak połączonych telefonów</string>
     <string name="recent_history_is_not_sent_to_new_members">Historia nie jest wysyłana do nowych członków.</string>
@@ -1523,7 +1521,7 @@
     <string name="enable_camera_access">Włącz dostęp do kamery</string>
     <string name="you_can_view_invitation_link_again">Możesz zobaczyć link zaproszenia ponownie w szczegółach połączenia.</string>
     <string name="keep_unused_invitation_question">Zachować nieużyte zaproszenie?</string>
-    <string name="share_this_1_time_link">Udostępnij ten jednorazowy link</string>
+    <string name="share_this_1_time_link">Udostępnij ten jednorazowy link zaproszenia</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Utwórz grupę</b>: aby utworzyć nową grupę.]]></string>
     <string name="recent_history">Widoczna historia</string>
     <string name="la_app_passcode">Pin aplikacji</string>
@@ -1851,8 +1849,7 @@
     <string name="remote_ctrl_connection_stopped_identity_desc">Ten link dostał użyty z innym urządzeniem mobilnym, proszę stworzyć nowy link na komputerze.</string>
     <string name="file_error">Błąd pliku</string>
     <string name="file_error_relay">Błąd serwera plików: %1$s</string>
-    <string name="remote_ctrl_connection_stopped_desc">Sprawdź, czy telefon i komputer są podłączone do tej samej sieci lokalnej i czy zapora sieciowa komputera umożliwia połączenie.
-\nProszę podzielić się innymi problemami z deweloperami.</string>
+    <string name="remote_ctrl_connection_stopped_desc">Sprawdź, czy telefon i komputer są podłączone do tej samej sieci lokalnej i czy zapora sieciowa komputera umożliwia połączenie.\nProszę zgłoś wszystkie inne problemy deweloperom.</string>
     <string name="temporary_file_error">Tymczasowy błąd pliku</string>
     <string name="file_error_auth">Zły klucz lub nieznany adres fragmentu pliku - najprawdopodobniej plik został usunięty.</string>
     <string name="cannot_share_message_alert_title">Nie można wysłać wiadomości</string>
@@ -2113,4 +2110,10 @@
     <string name="v6_1_delete_many_messages_descr">Usuń lub moderuj do 200 wiadomości.</string>
     <string name="v6_1_forward_many_messages_descr">Przekazywanie do 20 wiadomości jednocześnie.</string>
     <string name="v6_1_switch_chat_profile_descr">Przełącz profil czatu dla zaproszeń jednorazowych.</string>
+    <string name="create_1_time_link">Utwórz link jednorazowy</string>
+    <string name="share_1_time_link_with_a_friend">Udostępnij jednorazowy link znajomemu</string>
+    <string name="simplex_address_or_1_time_link">Adres SimpleX czy link jednorazowy?</string>
+    <string name="address_or_1_time_link">Adres lub link jednorazowy?</string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Link jednorazowy może być użyty <i>tylko z jednym kontaktem</i> - udostępnij go osobiście lub przez dowolny komunikator.]]></string>
+    <string name="simplex_address_and_1_time_links_are_safe_to_share">Adres SimpleX i jednorazowe linki są bezpieczne do udostępniania przez dowolny komunikator.</string>
 </resources>
