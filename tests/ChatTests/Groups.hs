@@ -6606,9 +6606,14 @@ testGroupMemberReports =
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content")])
       bob #$> ("/_get chat #1 content=report deleted=off count=100", chat, [(0, "report content")])
       bob #$> ("/_get chat #1 content=report deleted=on count=100", chat, [])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
+      dan #$> ("/_get chat #1 content=report deleted=off count=100", chat, [(1, "report content")])
+      dan #$> ("/_get chat #1 content=report deleted=on count=100", chat, [])
       alice ##> "\\\\ #jokes cath inappropriate joke"
       concurrentlyN_
-        [ alice <## "message marked deleted by you",
+        [ do
+            alice <## "#jokes: 1 messages deleted by member alice"
+            alice <## "message marked deleted by you",
           do
             bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
             bob <## "#jokes: 1 messages deleted by member alice",
@@ -6617,10 +6622,12 @@ testGroupMemberReports =
             dan <# "#jokes cath> [marked deleted by alice] inappropriate joke"
             dan <## "#jokes: 1 messages deleted by member alice"
         ]
-      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content")])
-      -- TODO auto remove sent reports
-      -- alice #$> ("/_get chat #1 content=report deleted=off count=100", chat, [])
-      -- alice #$> ("/_get chat #1 content=report deleted=on count=100", chat, [(0, "report content")])
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
+      alice #$> ("/_get chat #1 content=report deleted=off count=100", chat, [])
+      alice #$> ("/_get chat #1 content=report deleted=on count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       bob #$> ("/_get chat #1 content=report deleted=off count=100", chat, [])
       bob #$> ("/_get chat #1 content=report deleted=on count=100", chat, [(0, "report content [marked deleted by alice]")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
+      dan #$> ("/_get chat #1 content=report deleted=off count=100", chat, [])
+      dan #$> ("/_get chat #1 content=report deleted=on count=100", chat, [(1, "report content [marked deleted by alice]")])

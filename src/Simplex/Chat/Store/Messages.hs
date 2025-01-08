@@ -552,7 +552,6 @@ data AChatPreviewData = forall c. ChatTypeI c => ACPD (SChatType c) (ChatPreview
 
 type ChatStatsRow = (Int, Int, ChatItemId, BoolInt)
 
--- TODO [reports]
 toChatStats :: ChatStatsRow -> ChatStats
 toChatStats (unreadCount, reportsCount, minUnreadItemId, BI unreadChat) = ChatStats {unreadCount, reportsCount, archivedReportsCount = 0, minUnreadItemId, unreadChat}
 
@@ -671,11 +670,11 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           SELECT group_id, COUNT(1) AS Count
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL
-            AND msg_content_tag = ? AND item_deleted = ?
+            AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
       |]
-    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, False)
+    baseParams = (userId, userId, CISRcvNew, userId, MCReport_, BI False)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
         let q = baseQuery <> " WHERE g.user_id = ?"
@@ -1175,7 +1174,7 @@ data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime 
 getGroupChatItemIDs :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> GroupItemIDsRange -> Int -> String -> IO [ChatItemId]
 getGroupChatItemIDs db User {userId} GroupInfo {groupId} contentFilter range count search = case contentFilter of
   Just ContentFilter {mcTag, deleted} -> case deleted of
-    Just deleted' -> idsQuery (baseCond <> " AND msg_content_tag = ? AND item_deleted = ? ") (userId, groupId, mcTag, deleted')
+    Just deleted' -> idsQuery (baseCond <> " AND msg_content_tag = ? AND item_deleted = ? ") (userId, groupId, mcTag, BI deleted')
     Nothing -> idsQuery (baseCond <> " AND msg_content_tag = ? ") (userId, groupId, mcTag)
   Nothing -> idsQuery baseCond (userId, groupId)
   where
@@ -1327,8 +1326,8 @@ getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
   fromOnly . head
     <$> DB.query
       db
-      "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ?"
-      (userId, groupId, MCReport_, archived)
+      "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0"
+      (userId, groupId, MCReport_, BI archived)
 
 queryUnreadGroupItems :: FromRow r => DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> Query -> Query -> IO [r]
 queryUnreadGroupItems db User {userId} GroupInfo {groupId} contentFilter baseQuery orderLimit =
@@ -1338,7 +1337,7 @@ queryUnreadGroupItems db User {userId} GroupInfo {groupId} contentFilter baseQue
         DB.query
           db
           (baseQuery <> " AND msg_content_tag = ? AND item_deleted = ? AND item_status = ? " <> orderLimit)
-          (userId, groupId, mcTag, deleted', CISRcvNew)
+          (userId, groupId, mcTag, BI deleted', CISRcvNew)
       Nothing ->
         DB.query
           db

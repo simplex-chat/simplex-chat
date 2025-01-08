@@ -2641,6 +2641,9 @@ processChatCommand' vr = \case
     delGroupChatItems :: User -> GroupInfo -> [CChatItem 'CTGroup] -> Maybe GroupMember -> CM ChatResponse
     delGroupChatItems user gInfo items byGroupMember = do
       deletedTs <- liftIO getCurrentTime
+      forM_ byGroupMember $ \byMember -> do
+        ciIds <- concat <$> withStore' (\db -> forM items $ \(CChatItem _ ci) -> markMessageReportsDeleted db user gInfo ci byMember deletedTs)
+        unless (null ciIds) $ toView $ CRGroupChatItemsDeleted user gInfo ciIds False (Just byMember)
       if groupFeatureAllowed SGFFullDelete gInfo
         then deleteGroupCIs user gInfo items True False byGroupMember deletedTs
         else markGroupCIsDeleted user gInfo items True byGroupMember deletedTs
