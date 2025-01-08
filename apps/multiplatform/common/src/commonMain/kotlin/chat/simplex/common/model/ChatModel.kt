@@ -1383,11 +1383,7 @@ data class Connection(
 }
 
 @Serializable
-data class VersionRange(val minVersion: Int, val maxVersion: Int) {
-
-  fun isCompatibleRange(vRange: VersionRange): Boolean =
-    this.minVersion <= vRange.maxVersion && vRange.minVersion <= this.maxVersion
-}
+data class VersionRange(val minVersion: Int, val maxVersion: Int)
 
 @Serializable
 data class SecurityCode(val securityCode: String, val verifiedAt: Instant)
@@ -2552,7 +2548,7 @@ fun getTimestampDateText(t: Instant): String {
   val time = t.toLocalDateTime(tz).toJavaLocalDateTime()
   val weekday = time.format(DateTimeFormatter.ofPattern("EEE"))
   val dayMonthYear = time.format(DateTimeFormatter.ofPattern(
-    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM YYYY")
+    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM yyyy")
   )
 
   return "$weekday, $dayMonthYear"
