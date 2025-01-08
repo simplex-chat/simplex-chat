@@ -2133,7 +2133,7 @@ data class ChatItem (
   }
 
   val canBeDeletedForSelf: Boolean
-    get() = !isReport && ((content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete)
+    get() = (content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete
 
   val showNotification: Boolean get() =
     when (content) {

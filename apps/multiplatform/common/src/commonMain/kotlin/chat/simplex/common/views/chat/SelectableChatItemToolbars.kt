@@ -137,7 +137,7 @@ private fun recheckItems(chatInfo: ChatInfo,
   val rSelectedChatItems = mutableSetOf<Long>()
   for (ci in chatItems) {
     if (selected.contains(ci.id)) {
-      rDeleteEnabled = rDeleteEnabled && ci.canBeDeletedForSelf && !ci.isReport
+      rDeleteEnabled = rDeleteEnabled && ci.canBeDeletedForSelf
       rDeleteForEveryoneEnabled = rDeleteForEveryoneEnabled && ci.meta.deletable && !ci.localNote && !ci.isReport
       rOnlyOwnGroupItems = rOnlyOwnGroupItems && ci.chatDir is CIDirection.GroupSnd && !ci.isReport
       rModerateEnabled = rModerateEnabled && ci.content.msgContent != null && ci.memberToModerate(chatInfo) != null && !ci.isReport
