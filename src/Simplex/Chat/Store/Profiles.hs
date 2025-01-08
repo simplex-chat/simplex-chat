@@ -628,7 +628,6 @@ getUpdateServerOperators db presetOps newUser = do
       DBEntityId _ -> do
         updateOperator op
         getOperatorConditions_ db op currentConds latestAcceptedConds_ now >>= \case
-          CARequired Nothing | operatorTag op == Just OTSimplex -> autoAcceptConditions op currentConds now
           CARequired (Just ts) | ts < now -> autoAcceptConditions op currentConds now
           ca -> pure op {conditionsAcceptance = ca}
   where
