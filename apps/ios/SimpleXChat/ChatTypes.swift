@@ -2585,7 +2585,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var canBeDeletedForSelf: Bool {
-        !isReport && ((content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete)
+        (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
     }
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {
@@ -3958,44 +3958,27 @@ extension ReportReason: Encodable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
-        case .spam:
-            try container.encode("spam")
-        case .illegal:
-            try container.encode("illegal")
-        case .community:
-            try container.encode("community")
-        case .profile:
-            try container.encode("profile")
-        case .other:
-            try container.encode("other")
-        case .unknown(let type):
-            try container.encode(type)
+        case .spam: try container.encode("spam")
+        case .illegal: try container.encode("illegal")
+        case .community: try container.encode("community")
+        case .profile: try container.encode("profile")
+        case .other: try container.encode("other")
+        case let .unknown(type): try container.encode(type)
         }
     }
 }
 
 extension ReportReason: Decodable {
     public init(from decoder: Decoder) throws {
-        do {
-            let container = try decoder.singleValueContainer()
-            let type = try container.decode(String.self)
-
-            switch type {
-            case "spam":
-                self = .spam
-            case "illegal":
-                self = .illegal
-            case "community":
-                self = .community
-            case "profile":
-                self = .profile
-            case "other":
-                self = .other
-            default:
-                self = .unknown(type: type)
-            }
-        } catch {
-            self = .unknown(type: "")
+        let container = try decoder.singleValueContainer()
+        let type = try container.decode(String.self)
+        switch type {
+        case "spam": self = .spam
+        case "illegal": self = .illegal
+        case "community": self = .community
+        case "profile": self = .profile
+        case "other": self = .other
+        default: self = .unknown(type: type)
         }
     }
 }

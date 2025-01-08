@@ -115,7 +115,7 @@ struct SelectedItemsBottomToolbar: View {
             (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
                     var (de, dee, me, onlyOwnGroupItems, fe, sel) = r
-                    de = de && ci.canBeDeletedForSelf && !ci.isReport
+                    de = de && ci.canBeDeletedForSelf
                     dee = dee && ci.meta.deletable && !ci.localNote && !ci.isReport
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd && !ci.isReport
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil && !ci.isReport
