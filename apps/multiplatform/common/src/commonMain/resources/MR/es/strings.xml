@@ -2282,5 +2282,6 @@
     <string name="chat_list_notes">Notas</string>
     <string name="change_order_chat_list_menu_action">Reordenar</string>
     <string name="change_list">Cambiar lista</string>
-    <string name="error_creating_report">Error al crear reporte</string>
+    <string name="error_creating_report">Error al crear informe</string>
+    <string name="prefs_error_saving_settings">Error al guardar la configuración</string>
 </resources>
