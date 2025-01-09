@@ -589,7 +589,7 @@ CREATE TABLE remote_hosts(
   host_dh_pub BYTEA NOT NULL,
   bind_addr TEXT,
   bind_iface TEXT,
-  bind_port BIGINT
+  bind_port INTEGER
 );
 CREATE TABLE remote_controllers(
   remote_ctrl_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
