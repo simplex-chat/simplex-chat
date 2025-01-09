@@ -2249,19 +2249,13 @@
     <string name="error_creating_report">Hiba a jelentés létrehozásakor</string>
     <string name="prefs_error_saving_settings">Hiba a beállítások mentésekor</string>
     <string name="report_archive_alert_desc">A jelentés archiválásra kerül az Ön számára.</string>
-    <string name="report_block_and_moderate_only_block_action">Csak tiltás</string>
     <string name="report_compose_reason_header_illegal">Tartalom jelentése: csak a csoport moderátorai látják.</string>
-    <string name="report_block_and_moderate_confirmation_desc_mark_delete">Az üzenet minden tag számára moderáltként lesz megjelölve.\nAz összes új üzenet elrejtésre kerül a következőtől: %1$s!</string>
     <string name="archive_verb">Archívum</string>
     <string name="report_archive_alert_title">Jelentés archíválása?</string>
-    <string name="report_block_and_moderate_block_and_moderate_action">Tiltás és moderálás</string>
-    <string name="report_block_and_moderate_confirmation_title">Tag tiltása és üzenetének törlése?</string>
-    <string name="report_block_and_moderate_title">Tiltás és moderálás?</string>
     <string name="report_item_archived">archívált jelentés</string>
     <string name="group_member_role_moderator">moderátor</string>
     <string name="report_reason_community">Közösségi irányelvek megsértése</string>
     <string name="report_compose_reason_header_spam">Kéretlen tartalom jelentése: csak a csoport moderátorai látják.</string>
-    <string name="report_block_and_moderate_confirmation_desc_full_delete">Az üzenet minden tag számára törlésre kerül.\nAz összes új üzenet elrejtésre kerül a következőtől: %1$s!</string>
     <string name="report_item_visibility_moderators">Csak a küldő és a moderátorok látják</string>
     <string name="report_item_visibility_submitter">Csak Ön és a moderátorok látják</string>
     <string name="report_reason_alert_title">Jelentés indoklása?</string>
@@ -2269,7 +2263,6 @@
     <string name="report_reason_other">Egyéb indoklás</string>
     <string name="report_reason_illegal">Kifogásolt tartalom</string>
     <string name="report_reason_profile">Kifogásolt profil</string>
-    <string name="report_block_and_moderate_confirmation_ok">Törlés és tiltás</string>
     <string name="report_verb">Jelentés</string>
     <string name="report_compose_reason_header_profile">Tag profiljának jelentése: csak a csoport moderátorai látják.</string>
     <string name="report_compose_reason_header_other">Egyéb jelentés: csak a csoport moderátorai látják.</string>

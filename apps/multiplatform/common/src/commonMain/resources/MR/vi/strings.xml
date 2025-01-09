@@ -1808,7 +1808,6 @@
     <string name="archive_verb">Lưu trữ</string>
     <string name="report_reason_other">Một lý do khác</string>
     <string name="group_member_role_moderator">kiểm duyệt viên</string>
-    <string name="report_block_and_moderate_title">Chặn và kiểm duyệt?</string>
     <string name="report_compose_reason_header_profile">Báo cáo hồ sơ thành viên: sẽ chỉ có các kiểm duyệt viên trong nhóm là xem được.</string>
     <string name="icon_descr_simplex_team">Đội ngũ SimpleX</string>
     <string name="v6_1_better_security_descr">Các giao thức SimpleX đã được xem xét bởi Trail of Bits.</string>
@@ -1817,10 +1816,6 @@
     <string name="report_reason_illegal">Nội dung không phù hợp</string>
     <string name="report_reason_profile">Hồ sơ không phù hợp</string>
     <string name="report_item_visibility_submitter">Chỉ bạn và các kiểm duyệt viên mới xem được</string>
-    <string name="report_block_and_moderate_block_and_moderate_action">Chặn và kiểm duyệt</string>
-    <string name="report_block_and_moderate_confirmation_ok">Xóa và chặn</string>
-    <string name="report_block_and_moderate_confirmation_title">Xóa tin nhắn của thành viên và chặn?</string>
-    <string name="report_block_and_moderate_only_block_action">Chỉ chặn</string>
     <string name="report_verb">Báo cáo</string>
     <string name="report_reason_alert_title">Lý do báo cáo?</string>
     <string name="report_compose_reason_header_other">Báo cáo khác: sẽ chỉ có các kiểm duyệt viên trong nhóm là xem được.</string>

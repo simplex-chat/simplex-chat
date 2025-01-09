@@ -2283,10 +2283,8 @@
     <string name="prefs_error_saving_settings">‐Fout bij het opslaan van instellingen</string>
     <string name="error_creating_report">Fout bij maken van rapport</string>
     <string name="archive_verb">Archief</string>
-    <string name="report_block_and_moderate_confirmation_desc_full_delete">Het bericht wordt voor alle leden verwijderd.\nAlle nieuwe berichten van %1$s worden verborgen!</string>
     <string name="report_reason_community">Schending van de communityrichtlijnen</string>
     <string name="report_reason_other">Een andere reden</string>
-    <string name="report_block_and_moderate_confirmation_ok">Verwijderen en blokkeren</string>
     <string name="report_compose_reason_header_profile">Rapporteer ledenprofiel: alleen groepsmoderators kunnen dit zien.</string>
     <string name="group_member_role_moderator">moderator</string>
     <string name="report_compose_reason_header_illegal">Inhoud melden: alleen groepsmoderators kunnen dit zien.</string>
@@ -2297,13 +2295,8 @@
     <string name="report_item_visibility_submitter">Alleen jij en moderators zien het</string>
     <string name="report_reason_spam">Spam</string>
     <string name="report_archive_alert_title">Archief rapport?</string>
-    <string name="report_block_and_moderate_block_and_moderate_action">Blokkeren en modereren</string>
-    <string name="report_block_and_moderate_title">Blokkeren en modereren?</string>
-    <string name="report_block_and_moderate_confirmation_title">Bericht van lid verwijderen en blokkeren?</string>
-    <string name="report_block_and_moderate_only_block_action">Alleen blokkeren</string>
     <string name="report_verb">Rapport</string>
     <string name="report_reason_alert_title">Reden melding?</string>
-    <string name="report_block_and_moderate_confirmation_desc_mark_delete">Het bericht wordt gemarkeerd als gemodereerd voor alle leden.\nAlle nieuwe berichten van %1$s worden verborgen!</string>
     <string name="report_archive_alert_desc">Het rapport wordt voor u gearchiveerd.</string>
     <string name="report_compose_reason_header_other">Anders melden: alleen groepsmoderators kunnen het zien.</string>
     <string name="report_compose_reason_header_spam">Spam melden: alleen groepsmoderators kunnen het zien.</string>
