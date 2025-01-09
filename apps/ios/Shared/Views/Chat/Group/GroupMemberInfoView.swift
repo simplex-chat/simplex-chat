@@ -764,18 +764,12 @@ func updateMemberSettings(_ gInfo: GroupInfo, _ member: GroupMember, _ memberSet
     }
 }
 
-func blockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember, _ onBlocked: (() -> Void)? = nil) -> Alert {
+func blockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
     Alert(
         title: Text("Block member for all?"),
         message: Text("All new messages from \(mem.chatViewName) will be hidden!"),
         primaryButton: .destructive(Text("Block for all")) {
-            Task {
-                let uMember = await blockMemberForAll(gInfo, mem, true)
-                
-                if uMember != nil {
-                    onBlocked?()
-                }
-            }
+            blockMemberForAll(gInfo, mem, true)
         },
         secondaryButton: .cancel()
     )
@@ -786,25 +780,23 @@ func unblockForAllAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
         title: Text("Unblock member for all?"),
         message: Text("Messages from \(mem.chatViewName) will be shown!"),
         primaryButton: .default(Text("Unblock for all")) {
-            Task {
-                await blockMemberForAll(gInfo, mem, false)
-            }
+            blockMemberForAll(gInfo, mem, false)
         },
         secondaryButton: .cancel()
     )
 }
 
-func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool) async -> GroupMember? {
-    do {
-        let updatedMember = try await apiBlockMemberForAll(gInfo.groupId, member.groupMemberId, blocked)
-        await MainActor.run {
-            _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
+func blockMemberForAll(_ gInfo: GroupInfo, _ member: GroupMember, _ blocked: Bool) {
+    Task {
+        do {
+            let updatedMember = try await apiBlockMemberForAll(gInfo.groupId, member.groupMemberId, blocked)
+            await MainActor.run {
+                _ = ChatModel.shared.upsertGroupMember(gInfo, updatedMember)
+            }
+        } catch let error {
+            logger.error("apiBlockMemberForAll error: \(responseError(error))")
         }
-        return updatedMember
-    } catch let error {
-        logger.error("apiBlockMemberForAll error: \(responseError(error))")
     }
-    return nil
 }
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
