@@ -302,7 +302,7 @@ fun ChatItemView(
                 if (cItem.chatDir !is CIDirection.GroupSnd && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
                   ArchiveReportItemAction(cItem, showMenu, deleteMessage)
                 }
-                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
                 Divider()
                 SelectItemAction(showMenu, selectChatItem)
               }
@@ -744,9 +744,10 @@ fun DeleteItemAction(
   questionText: String,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
+  buttonText: String = stringResource(MR.strings.delete_verb),
 ) {
   ItemAction(
-    stringResource(MR.strings.delete_verb),
+    buttonText,
     painterResource(MR.images.ic_delete),
     onClick = {
       showMenu.value = false

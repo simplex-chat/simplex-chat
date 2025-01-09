@@ -1288,7 +1288,7 @@ struct ChatView: View {
                 if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
                     archiveReportButton(ci)
                 }
-                deleteButton(ci)
+                deleteButton(ci, label: "Delete report")
             } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
@@ -1618,7 +1618,7 @@ struct ChatView: View {
             }
         }
 
-        private func deleteButton(_ ci: ChatItem) -> Button<some View> {
+        private func deleteButton(_ ci: ChatItem, label: LocalizedStringKey = "Delete") -> Button<some View> {
             Button(role: .destructive) {
                 if !revealed,
                    let currIndex = m.getChatItemIndex(ci),
@@ -1640,10 +1640,7 @@ struct ChatView: View {
                     deletingItem = ci
                 }
             } label: {
-                Label(
-                    NSLocalizedString("Delete", comment: "chat item action"),
-                    systemImage: "trash"
-                )
+                Label(label, systemImage: "trash")
             }
         }
 
@@ -1694,10 +1691,7 @@ struct ChatView: View {
                     )
                 )
             } label: {
-                Label(
-                    NSLocalizedString("Archive report", comment: "chat item action"),
-                    systemImage: "archivebox"
-                )
+                Label("Archive report", systemImage: "archivebox")
             }
         }
 

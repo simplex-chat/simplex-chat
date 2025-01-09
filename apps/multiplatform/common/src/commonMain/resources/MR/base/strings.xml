@@ -332,6 +332,7 @@
   <string name="search_verb">Search</string>
   <string name="archive_verb">Archive</string>
   <string name="archive_report">Archive report</string>
+  <string name="delete_report">Delete report</string>
   <string name="sent_message">Sent message</string>
   <string name="received_message">Received message</string>
   <string name="edit_history">History</string>
