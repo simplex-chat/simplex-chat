@@ -21,6 +21,7 @@ import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Types (Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.FilePath ((</>))
@@ -68,12 +69,17 @@ directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", im
 mkDirectoryOpts :: FilePath -> [KnownContact] -> DirectoryOpts
 mkDirectoryOpts tmp superUsers =
   DirectoryOpts
-    {
+    { coreOptions =
+        testCoreOpts
+          { dbOptions =
+              (dbOptions testCoreOpts)
 #if defined(dbPostgres)
-      coreOptions = testCoreOpts {dbSchemaPrefix = "client_" <> serviceDbPrefix},
+                {dbSchemaPrefix = "client_" <> serviceDbPrefix}
 #else
-      coreOptions = testCoreOpts {dbFilePrefix = tmp </> serviceDbPrefix},
+                {dbFilePrefix = tmp </> serviceDbPrefix}
 #endif
+
+          },
       adminUsers = [],
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",

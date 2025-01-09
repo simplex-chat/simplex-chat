@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Main where
@@ -7,6 +6,7 @@ import Simplex.Chat.Bot
 import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal (terminalChatConfig)
 import System.Directory (getAppUserDataDirectory)
 import Text.Read
@@ -28,11 +28,5 @@ welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
   opts <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
-#if defined(dbPostgres)
-  let ChatOpts {coreOptions = CoreChatOpts {dbName}} = opts
-  putStrLn $ "db: " <> dbName
-#else
-  let ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix}} = opts
-  putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
-#endif
+  putStrLn $ "db: " <> dbString (dbOptions $ coreOptions opts)
   pure opts

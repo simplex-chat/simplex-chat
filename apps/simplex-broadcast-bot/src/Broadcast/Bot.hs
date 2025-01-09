@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -20,6 +19,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
 import Simplex.Messaging.Util (tshow)
@@ -28,15 +28,9 @@ import System.Directory (getAppUserDataDirectory)
 welcomeGetOpts :: IO BroadcastBotOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts <- getBroadcastBotOpts appDir "simplex_status_bot"
+  opts@BroadcastBotOpts {coreOptions} <- getBroadcastBotOpts appDir "simplex_status_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
-#if defined(dbPostgres)
-  let BroadcastBotOpts {coreOptions = CoreChatOpts {dbName}} = opts
-  putStrLn $ "db: " <> dbName
-#else
-  let BroadcastBotOpts {coreOptions = CoreChatOpts {dbFilePrefix}} = opts
-  putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
-#endif
+  putStrLn $ "db: " <> dbString (dbOptions coreOptions)
   pure opts
 
 broadcastBot :: BroadcastBotOpts -> User -> ChatController -> IO ()

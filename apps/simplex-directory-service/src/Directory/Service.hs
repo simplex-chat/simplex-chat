@@ -36,6 +36,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -75,16 +76,10 @@ newServiceState = do
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@DirectoryOpts {testing} <- getDirectoryOpts appDir "simplex_directory_service"
+  opts@DirectoryOpts {coreOptions, testing} <- getDirectoryOpts appDir "simplex_directory_service"
   unless testing $ do
     putStrLn $ "SimpleX Directory Service Bot v" ++ versionNumber
-#if defined(dbPostgres)
-    let DirectoryOpts {coreOptions = CoreChatOpts {dbName}} = opts
-    putStrLn $ "db: " <> dbName
-#else
-    let DirectoryOpts {coreOptions = CoreChatOpts {dbFilePrefix}} = opts
-    putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
-#endif
+    putStrLn $ "db: " <> dbString (dbOptions coreOptions)
   pure opts
 
 directoryServiceCLI :: DirectoryStore -> DirectoryOpts -> IO ()

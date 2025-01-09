@@ -16,4 +16,4 @@ schemaMigrations =
 migrations :: [Migration]
 migrations = sortOn name $ map migration schemaMigrations
   where
-    migration (name, up, down) = Migration {name, up, down = down}
+    migration (name, up, down) = Migration {name, up, down}

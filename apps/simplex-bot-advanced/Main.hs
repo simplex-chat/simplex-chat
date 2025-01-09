@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -18,6 +17,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types
 import Simplex.Messaging.Util (tshow)
@@ -34,13 +34,7 @@ welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
   opts <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
-#if defined(dbPostgres)
-  let ChatOpts {coreOptions = CoreChatOpts {dbName}} = opts
-  putStrLn $ "db: " <> dbName
-#else
-  let ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix}} = opts
-  putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
-#endif
+  putStrLn $ "db: " <> dbString (dbOptions $ coreOptions opts)
   pure opts
 
 welcomeMessage :: Text

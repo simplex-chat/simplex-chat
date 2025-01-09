@@ -602,9 +602,10 @@ findDirectChatPreviews_ db User {userId} pagination clq =
       CLQFilters {favorite = True, unread = False} -> do
         let q =
               baseQuery
-                <> ( " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1"
-                      <> " AND ct.favorite = 1"
-                   )
+                <> [sql|
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
+                        AND ct.favorite = 1
+                   |]
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQFilters {favorite = False, unread = True} -> do

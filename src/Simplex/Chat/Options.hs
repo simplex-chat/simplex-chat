@@ -1,5 +1,4 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -34,10 +33,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
-#if !defined(dbPostgres)
-import Data.ByteArray (ScrubbedBytes)
-import System.FilePath (combine)
-#endif
+import Simplex.Chat.Options.DB
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
@@ -57,15 +53,7 @@ data ChatOpts = ChatOpts
   }
 
 data CoreChatOpts = CoreChatOpts
-  {
-#if defined(dbPostgres)
-    dbName :: String,
-    dbUser :: String,
-    dbSchemaPrefix :: String,
-#else
-    dbFilePrefix :: String,
-    dbKey :: ScrubbedBytes,
-#endif
+  { dbOptions :: ChatDbOpts,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
     simpleNetCfg :: SimpleNetCfg,
@@ -76,8 +64,7 @@ data CoreChatOpts = CoreChatOpts
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
     highlyAvailable :: Bool,
-    yesToUpMigrations :: Bool,
-    vacuumOnMigration :: Bool
+    yesToUpMigrations :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -92,46 +79,8 @@ agentLogLevel = \case
   CLLImportant -> LogInfo
 
 coreChatOptsP :: FilePath -> FilePath -> Parser CoreChatOpts
-#if defined(dbPostgres)
-coreChatOptsP _appDir defaultDbName = do
-  dbName <-
-    strOption
-      ( long "database"
-          <> short 'd'
-          <> metavar "DB_NAME"
-          <> help "Database name"
-          <> value defaultDbName
-          <> showDefault
-      )
-  dbUser <-
-    strOption
-      ( long "database-user"
-          <> short 'u'
-          <> metavar "DB_USER"
-          <> help "Database user"
-          <> value "simplex"
-          <> showDefault
-      )
-#else
 coreChatOptsP appDir defaultDbName = do
-  dbFilePrefix <-
-    strOption
-      ( long "database"
-          <> short 'd'
-          <> metavar "DB_FILE"
-          <> help "Path prefix to chat and agent database files"
-          <> value (combine appDir defaultDbName)
-          <> showDefault
-      )
-  dbKey <-
-    strOption
-      ( long "key"
-          <> short 'k'
-          <> metavar "KEY"
-          <> help "Database encryption key/pass-phrase"
-          <> value ""
-      )
-#endif
+  dbOptions <- chatDbOptsP appDir defaultDbName
   smpServers <-
     option
       parseProtocolServers
@@ -273,22 +222,9 @@ coreChatOptsP appDir defaultDbName = do
           <> short 'y'
           <> help "Automatically confirm \"up\" database migrations"
       )
-  disableVacuum <-
-    switch
-      ( long "disable-vacuum"
-          <> help "Do not vacuum database after migrations"
-      )
   pure
     CoreChatOpts
-      {
-#if defined(dbPostgres)
-        dbName,
-        dbUser,
-        dbSchemaPrefix = "",
-#else
-        dbFilePrefix,
-        dbKey,
-#endif
+      { dbOptions,
         smpServers,
         xftpServers,
         simpleNetCfg =
@@ -310,8 +246,7 @@ coreChatOptsP appDir defaultDbName = do
         logFile,
         tbqSize,
         highlyAvailable,
-        yesToUpMigrations,
-        vacuumOnMigration = not disableVacuum
+        yesToUpMigrations
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p

@@ -14,6 +14,7 @@ import Control.Exception (bracket)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Types (Profile (..))
 import Test.Hspec hiding (it)
 #if !defined(dbPostgres)
@@ -34,14 +35,19 @@ broadcastBotProfile :: Profile
 broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", image = Nothing, contactLink = Nothing, preferences = Nothing}
 
 mkBotOpts :: FilePath -> [KnownContact] -> BroadcastBotOpts
-mkBotOpts _tmp publishers =
+mkBotOpts tmp publishers =
   BroadcastBotOpts
-    {
+    { coreOptions =
+        testCoreOpts
+          { dbOptions =
+              (dbOptions testCoreOpts)
 #if defined(dbPostgres)
-      coreOptions = testCoreOpts {dbSchemaPrefix = "client_" <> botDbPrefix},
+                {dbSchemaPrefix = "client_" <> botDbPrefix}
 #else
-      coreOptions = testCoreOpts {dbFilePrefix = _tmp </> botDbPrefix},
+                {dbFilePrefix = tmp </> botDbPrefix}
 #endif
+
+          },
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers

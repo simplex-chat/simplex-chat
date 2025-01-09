@@ -33,30 +33,16 @@ import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
-#endif
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = coreOpts@CoreChatOpts {logAgent, yesToUpMigrations}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-#if defined(dbPostgres)
-    CoreChatOpts {dbName, dbUser, dbSchemaPrefix} = coreOpts
-    connectInfo =
-      defaultConnectInfo
-        { connectUser = dbUser,
-          connectDatabase = dbName
-        }
-    initRun = createChatDatabase connectInfo dbSchemaPrefix confirm' >>= either exit run
-#else
-    CoreChatOpts {dbFilePrefix, dbKey, vacuumOnMigration} = coreOpts
-    initRun = createChatDatabase dbFilePrefix dbKey False confirm' vacuumOnMigration >>= either exit run
-#endif
+    initRun = createChatDatabase dbOptions confirm' >>= either exit run
     confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
     exit e = do
       putStrLn $ "Error opening database: " <> show e

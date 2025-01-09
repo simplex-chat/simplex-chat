@@ -32,6 +32,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
@@ -51,9 +52,7 @@ import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (ConnectInfo (..))
-#else
-import Data.ByteArray (ScrubbedBytes)
+import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
 #endif
 
 operatorSimpleXChat :: NewServerOperator
@@ -188,17 +187,18 @@ fluxXFTPServers =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
+createChatDatabase :: ChatDbOpts -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
+createChatDatabase dbOpts confirmMigrations = runExceptT $ do
 #if defined(dbPostgres)
-createChatDatabase :: ConnectInfo -> String -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
-createChatDatabase connectInfo schemaPrefix confirmMigrations = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore connectInfo (chatSchema schemaPrefix) confirmMigrations
-  agentStore <- ExceptT $ createAgentStore connectInfo (agentSchema schemaPrefix) confirmMigrations
+  let ChatDbOpts {dbName, dbUser, dbSchemaPrefix} = dbOpts
+      connectInfo = defaultConnectInfo {connectUser = dbUser, connectDatabase = dbName}
+  chatStore <- ExceptT $ createChatStore connectInfo (chatSchema dbSchemaPrefix) confirmMigrations
+  agentStore <- ExceptT $ createAgentStore connectInfo (agentSchema dbSchemaPrefix) confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
 #else
-createChatDatabase :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> Bool -> IO (Either MigrationError ChatDatabase)
-createChatDatabase filePrefix key keepKey confirmMigrations vacuum = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore (chatStoreFile filePrefix) key keepKey confirmMigrations vacuum
-  agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key keepKey confirmMigrations vacuum
+  let ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration} = dbOpts
+  chatStore <- ExceptT $ createChatStore (chatStoreFile dbFilePrefix) dbKey False confirmMigrations vacuumOnMigration
+  agentStore <- ExceptT $ createAgentStore (agentStoreFile dbFilePrefix) dbKey False confirmMigrations vacuumOnMigration
   pure ChatDatabase {chatStore, agentStore}
 #endif
 
