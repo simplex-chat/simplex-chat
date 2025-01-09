@@ -2975,7 +2975,7 @@ class CIQuote (
     val member = memberToModerate(chatInfo)
     if (member != null) return true
 
-    if (allowSentItems && chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupSnd) {
+    if (allowSentItems && chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupSnd/* && meta.itemDeleted == null*/) {
       val m = chatInfo.groupInfo.membership
       return m.memberRole >= GroupMemberRole.Admin
     }
