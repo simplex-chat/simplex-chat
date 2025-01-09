@@ -299,7 +299,7 @@ fun ChatItemView(
             // cItem.id check is a special case for live message chat item which has negative ID while not sent yet
             cItem.isReport && cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group -> {
               DefaultDropdownMenu(showMenu) {
-                if (cItem.chatDir !is CIDirection.GroupSnd) {
+                if (cItem.chatDir !is CIDirection.GroupSnd && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
                   ArchiveReportItemAction(cItem, showMenu, deleteMessage)
                 }
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)

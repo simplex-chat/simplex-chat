@@ -1284,8 +1284,8 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if let groupInfo = chat.chatInfo.groupInfo, ci.isReport, ci.meta.itemDeleted == nil {
-                if ci.chatDir != .groupSnd {
+            if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
+                if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
                     archiveReportButton(ci)
                 }
                 deleteButton(ci)
@@ -1873,13 +1873,6 @@ struct ChatView: View {
             }
         }
     }
-}
-
-private func showNoMessageMessageAlert() {
-    AlertManager.shared.showAlertMsg(
-        title: LocalizedStringKey("No message"),
-        message: LocalizedStringKey("This message was deleted or not received yet.")
-    )
 }
 
 private func broadcastDeleteButtonText(_ chat: Chat) -> LocalizedStringKey {
