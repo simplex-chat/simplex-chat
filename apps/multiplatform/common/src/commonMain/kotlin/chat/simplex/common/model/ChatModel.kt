@@ -2971,6 +2971,17 @@ class CIQuote (
     }
   }
 
+  fun canModerate(chatInfo: ChatInfo, allowSentItems: Boolean): Boolean {
+    val member = memberToModerate(chatInfo)
+    if (member != null) return true
+
+    if (allowSentItems && chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupSnd) {
+      val m = chatInfo.groupInfo.membership
+      return m.memberRole >= GroupMemberRole.Admin
+    }
+    return false
+  }
+
   companion object {
     fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
       CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))

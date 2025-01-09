@@ -314,15 +314,17 @@ fun ChatItemView(
                   ArchiveReportItemAction(cItem, showMenu, deleteMessageAsync)
                   val qItem = cItem.quotedItem
                   if (qItem != null) {
-                    ModerateReportItemAction(rhId, cInfo, cItem, qItem, showMenu, deleteMessage)
                     val rMember = qItem.memberToModerate(cInfo)
+                    if (rMember != null || qItem.canModerate(cInfo, true)) {
+                      ModerateReportItemAction(rhId, cInfo, cItem, qItem, showMenu, deleteMessage)
+                    }
                     if (rMember != null && !rMember.blockedByAdmin && rMember.canBlockForAll(cInfo.groupInfo)) {
                       BlockMemberAction(
                         rhId,
                         chatInfo = cInfo,
                         groupInfo = cInfo.groupInfo,
                         cItem = cItem,
-                        reportedItem = qItem,
+                        reportedQuote = qItem,
                         member = rMember,
                         showMenu = showMenu,
                         deleteMessage = deleteMessage
@@ -942,7 +944,7 @@ private fun ModerateReportItemAction(
   rhId: Long?,
   chatInfo: ChatInfo,
   cItem: ChatItem,
-  reportedItem: CIQuote,
+  reportedQuote: CIQuote,
   showMenu: MutableState<Boolean>,
   deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?
 ) {
@@ -951,16 +953,17 @@ private fun ModerateReportItemAction(
     painterResource(MR.images.ic_flag),
     onClick = {
       withBGApi {
-        val reportedMessageId = getLocalIdForReportedMessage(rhId, chatInfo, reportedItem, cItem.id)
+        val reportId = cItem.id
+        val reportedMessageId = reportedQuote.itemId ?: getLocalIdForReportedMessage(rhId, chatInfo, reportId)
         if (reportedMessageId != null) {
           moderateMessageAlertDialog(
             reportedMessageId,
             questionText = moderateMessageQuestionText(chatInfo.featureEnabled(ChatFeature.FullDelete), 1),
-            deleteMessage = { id, m ->
+            deleteMessage = { _, m ->
               withApi {
-                val deleted = deleteMessage(id, m)
-                if (deleted != null) {
-                  deleteMessage(cItem.id, CIDeleteMode.cidmInternalMark)
+                val moderated = deleteMessage(reportedMessageId, m)
+                if (moderated != null) {
+                  deleteMessage(reportId, CIDeleteMode.cidmInternalMark)
                 }
               }
             },
@@ -979,7 +982,7 @@ private fun BlockMemberAction(
   chatInfo: ChatInfo,
   groupInfo: GroupInfo,
   cItem: ChatItem,
-  reportedItem: CIQuote,
+  reportedQuote: CIQuote,
   member: GroupMember,
   showMenu: MutableState<Boolean>,
   deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?
@@ -994,7 +997,7 @@ private fun BlockMemberAction(
           SectionItemView({
             AlertManager.shared.hideAlert()
             withBGApi {
-              val reportedMessageId = getLocalIdForReportedMessage(rhId, chatInfo, reportedItem, cItem.id)
+              val reportedMessageId = reportedQuote.itemId ?: getLocalIdForReportedMessage(rhId, chatInfo, cItem.id)
               if (reportedMessageId != null) {
                 blockAndModerateAlertDialog(
                   rhId,
@@ -1012,7 +1015,7 @@ private fun BlockMemberAction(
           SectionItemView({
             AlertManager.shared.hideAlert()
             withBGApi {
-              val reportedMessageId = getLocalIdForReportedMessage(rhId, chatInfo, reportedItem, cItem.id)
+              val reportedMessageId = reportedQuote.itemId ?: getLocalIdForReportedMessage(rhId, chatInfo, cItem.id)
               if (reportedMessageId != null) {
                 blockForAllAlert(rhId, gInfo = groupInfo, mem = member, blockMember = {
                   withBGApi {
@@ -1023,7 +1026,8 @@ private fun BlockMemberAction(
                         member = member,
                         blocked = true
                       )
-                      deleteMessage(reportedMessageId, CIDeleteMode.cidmInternalMark)
+                      val reportId = cItem.id
+                      deleteMessage(reportId, CIDeleteMode.cidmInternalMark)
                     } catch (ex: Exception) {
                       Log.e(TAG, "BlockMemberAction block and moderate ${ex.message}")
                     }
@@ -1057,7 +1061,8 @@ private fun ArchiveReportItemAction(cItem: ChatItem, showMenu: MutableState<Bool
         title = generalGetString(MR.strings.report_archive_alert_title),
         text = generalGetString(MR.strings.report_archive_alert_desc),
         onConfirm = {
-          deleteMessage(cItem.id, CIDeleteMode.cidmInternalMark)
+          val reportId = cItem.id
+          deleteMessage(reportId, CIDeleteMode.cidmInternalMark)
         },
         destructive = true,
         confirmText = generalGetString(MR.strings.archive_verb),
@@ -1439,8 +1444,8 @@ private fun blockAndModerateAlertDialog(
     onConfirm = {
       withBGApi {
         try {
-          val deleted = deleteMessage(reportedMessageId, CIDeleteMode.cidmBroadcast)
-          if (deleted != null) {
+          val moderated = deleteMessage(reportedMessageId, CIDeleteMode.cidmBroadcast)
+          if (moderated != null) {
             blockMemberForAll(rhId, gInfo, mem, true)
             deleteMessage(reportId, CIDeleteMode.cidmInternalMark)
           }
@@ -1458,13 +1463,8 @@ expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 private suspend fun getLocalIdForReportedMessage(
   rhId: Long?,
   chatInfo: ChatInfo,
-  reportedItem: CIQuote,
   itemId: Long): Long? {
-  if (reportedItem.itemId != null) {
-    return reportedItem.itemId
-  }
   val item = apiLoadSingleMessage(rhId, chatInfo.chatType, chatInfo.apiId, itemId)
-
   if (item?.quotedItem?.itemId != null) {
     withChats {
       updateChatItem(chatInfo, item)
