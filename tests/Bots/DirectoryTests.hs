@@ -78,6 +78,7 @@ mkDirectoryOpts tmp superUsers =
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",
+      runCLI = False,
       searchResults = 3,
       testing = True
     }

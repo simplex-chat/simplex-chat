@@ -23,6 +23,7 @@ data DirectoryOpts = DirectoryOpts
     superUsers :: [KnownContact],
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
+    runCLI :: Bool,
     searchResults :: Int,
     testing :: Bool
   }
@@ -58,6 +59,11 @@ directoryOpts appDir defaultDbName = do
           <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
           <> value "SimpleX-Directory"
       )
+  runCLI <- 
+    switch
+      ( long "run-cli"
+          <> help "Run directory service as CLI"
+      )
   pure
     DirectoryOpts
       { coreOptions,
@@ -65,6 +71,7 @@ directoryOpts appDir defaultDbName = do
         superUsers,
         directoryLog,
         serviceName = T.pack serviceName,
+        runCLI,
         searchResults = 10,
         testing = False
       }
