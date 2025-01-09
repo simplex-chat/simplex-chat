@@ -69,7 +69,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>
     }
     val total = moderated + blocked + blockedByAdmin + deleted
     if (total <= 1)
-      markedDeletedText(chatItem.meta)
+      markedDeletedText(chatItem)
     else if (total == moderated)
       stringResource(MR.strings.moderated_items_description).format(total, moderatedBy.joinToString(", "))
     else if (total == blockedByAdmin)
@@ -79,7 +79,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>
     else
       stringResource(MR.strings.marked_deleted_items_description).format(total)
   } else {
-    markedDeletedText(chatItem.meta)
+    markedDeletedText(chatItem)
   }
 
   Text(
@@ -93,10 +93,11 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>
   )
 }
 
-fun markedDeletedText(meta: CIMeta): String =
-  when (meta.itemDeleted) {
+fun markedDeletedText(cItem: ChatItem): String =
+  if (cItem.meta.itemDeleted != null && cItem.isReport) generalGetString(MR.strings.report_item_archived)
+  else when (cItem.meta.itemDeleted) {
     is CIDeleted.Moderated ->
-      String.format(generalGetString(MR.strings.moderated_item_description), meta.itemDeleted.byGroupMember.displayName)
+      String.format(generalGetString(MR.strings.moderated_item_description), cItem.meta.itemDeleted.byGroupMember.displayName)
     is CIDeleted.Blocked ->
       generalGetString(MR.strings.blocked_item_description)
     is CIDeleted.BlockedByAdmin ->

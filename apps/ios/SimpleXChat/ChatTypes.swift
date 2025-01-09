@@ -9,6 +9,12 @@
 import Foundation
 import SwiftUI
 
+// version to establishing direct connection with a group member (xGrpDirectInvVRange in core)
+public let CREATE_MEMBER_CONTACT_VERSION = 2
+
+// version to receive reports (MCReport)
+public let REPORTS_VERSION = 12
+
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
     public var agentUserId: String
@@ -1695,7 +1701,7 @@ public struct Connection: Decodable, Hashable {
     static let sampleData = Connection(
         connId: 1,
         agentConnId: "abc",
-        peerChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
+        peerChatVRange: VersionRange(1, 1),
         connStatus: .ready,
         connLevel: 0,
         viaGroupLink: false,
@@ -1707,17 +1713,13 @@ public struct Connection: Decodable, Hashable {
 }
 
 public struct VersionRange: Decodable, Hashable {
-    public init(minVersion: Int, maxVersion: Int) {
+    public init(_ minVersion: Int, _ maxVersion: Int) {
         self.minVersion = minVersion
         self.maxVersion = maxVersion
     }
 
     public var minVersion: Int
     public var maxVersion: Int
-
-    public func isCompatibleRange(_ vRange: VersionRange) -> Bool {
-        self.minVersion <= vRange.maxVersion && vRange.minVersion <= self.maxVersion
-    }
 }
 
 public struct SecurityCode: Decodable, Equatable, Hashable {
@@ -1769,7 +1771,7 @@ public struct UserContactRequest: Decodable, NamedChat, Hashable {
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
         userContactLinkId: 1,
-        cReqChatVRange: VersionRange(minVersion: 1, maxVersion: 1),
+        cReqChatVRange: VersionRange(1, 1),
         localDisplayName: "alice",
         profile: Profile.sampleData,
         createdAt: .now,
@@ -2008,6 +2010,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var memberContactId: Int64?
     public var memberContactProfileId: Int64
     public var activeConn: Connection?
+    public var memberChatVRange: VersionRange
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -2110,7 +2113,19 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .admin
             && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
+    
+    public var canReceiveReports: Bool {
+        memberRole >= .moderator && versionRange.maxVersion >= REPORTS_VERSION
+    }
 
+    public var versionRange: VersionRange {
+        if let activeConn {
+            activeConn.peerChatVRange
+        } else {
+            memberChatVRange
+        }
+    }
+    
     public var memberIncognito: Bool {
         memberProfile.profileId != memberContactProfileId
     }
@@ -2129,7 +2144,8 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         memberProfile: LocalProfile.sampleData,
         memberContactId: 1,
         memberContactProfileId: 1,
-        activeConn: Connection.sampleData
+        activeConn: Connection.sampleData,
+        memberChatVRange: VersionRange(2, 12)
     )
 }
 
@@ -2148,19 +2164,23 @@ public struct GroupMemberIds: Decodable, Hashable {
 }
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable, Hashable {
-    case observer = "observer"
-    case author = "author"
-    case member = "member"
-    case admin = "admin"
-    case owner = "owner"
+    case observer
+    case author
+    case member
+    case moderator
+    case admin
+    case owner
 
     public var id: Self { self }
 
+    public static var supportedRoles: [GroupMemberRole] = [.observer, .member, .admin, .owner]
+    
     public var text: String {
         switch self {
         case .observer: return NSLocalizedString("observer", comment: "member role")
         case .author: return NSLocalizedString("author", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
+        case .moderator: return NSLocalizedString("moderator", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
         }
@@ -2168,11 +2188,12 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
 
     private var comparisonValue: Int {
         switch self {
-        case .observer: return 0
-        case .author: return 1
-        case .member: return 2
-        case .admin: return 3
-        case .owner: return 4
+        case .observer: 0
+        case .author: 1
+        case .member: 2
+        case .moderator: 3
+        case .admin: 4
+        case .owner: 5
         }
     }
 
@@ -2578,6 +2599,17 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         default: return true
         }
     }
+    
+    public var isReport: Bool {
+        switch content {
+        case let .sndMsgContent(msgContent), let .rcvMsgContent(msgContent):
+            switch msgContent {
+            case .report: true
+            default: false
+            }
+        default: false
+        }
+    }
 
     public var canBeDeletedForSelf: Bool {
         (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
@@ -2660,6 +2692,34 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             meta: CIMeta.getSample(1, .now, content.text, .rcvRead),
             content: content,
             quotedItem: nil,
+            file: nil
+        )
+    }
+    
+    public static func getReportSample(text: String, reason: ReportReason, item: ChatItem, sender: GroupMember? = nil) -> ChatItem {
+        let chatDir = if let sender = sender {
+            CIDirection.groupRcv(groupMember: sender)
+        } else {
+            CIDirection.groupSnd
+        }
+        
+        return ChatItem(
+            chatDir: chatDir,
+            meta: CIMeta(
+                itemId: -2,
+                itemTs: .now,
+                itemText: "",
+                itemStatus: .rcvRead,
+                createdAt: .now,
+                updatedAt: .now,
+                itemDeleted: nil,
+                itemEdited: false,
+                itemLive: false,
+                deletable: false,
+                editable: false
+            ),
+            content: .sndMsgContent(msgContent: .report(text: text, reason: reason)),
+            quotedItem: CIQuote.getSample(item.id, item.meta.createdAt, item.text, chatDir: item.chatDir),
             file: nil
         )
     }
@@ -3277,14 +3337,12 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
     public var sentAt: Date
     public var content: MsgContent
     public var formattedText: [FormattedText]?
-
     public var text: String {
         switch (content.text, content) {
         case let ("", .voice(_, duration)): return durationText(duration)
         default: return content.text
         }
     }
-
     public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
         case .directSnd: return "you"
@@ -3305,6 +3363,17 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
             mc = .text(text)
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
+    }
+    
+    public func memberToModerate(_ chatInfo: ChatInfo) -> GroupMember? {
+        switch (chatInfo, chatDir) {
+        case let (.group(groupInfo), .groupRcv(groupMember)):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole
+                    ? groupMember
+                    : nil
+        default: return nil
+        }
     }
 }
 
@@ -3348,9 +3417,11 @@ public enum MREmojiChar: String, Codable, CaseIterable, Hashable {
     case thumbsup = "👍"
     case thumbsdown = "👎"
     case smile = "😀"
+    case laugh = "😂"
     case sad = "😢"
     case heart = "❤"
     case launch = "🚀"
+    case check = "✅"
 }
 
 extension MsgReaction: Decodable {
@@ -3647,6 +3718,7 @@ public enum MsgContent: Equatable, Hashable {
     case video(text: String, image: String, duration: Int)
     case voice(text: String, duration: Int)
     case file(String)
+    case report(text: String, reason: ReportReason)
     // TODO include original JSON, possibly using https://github.com/zoul/generic-json-swift
     case unknown(type: String, text: String)
 
@@ -3658,6 +3730,7 @@ public enum MsgContent: Equatable, Hashable {
         case let .video(text, _, _): return text
         case let .voice(text, _): return text
         case let .file(text): return text
+        case let .report(text, _): return text
         case let .unknown(_, text): return text
         }
     }
@@ -3717,6 +3790,7 @@ public enum MsgContent: Equatable, Hashable {
         case preview
         case image
         case duration
+        case reason
     }
 
     public static func == (lhs: MsgContent, rhs: MsgContent) -> Bool {
@@ -3727,6 +3801,7 @@ public enum MsgContent: Equatable, Hashable {
         case let (.video(lt, li, ld), .video(rt, ri, rd)): return lt == rt && li == ri && ld == rd
         case let (.voice(lt, ld), .voice(rt, rd)): return lt == rt && ld == rd
         case let (.file(lf), .file(rf)): return lf == rf
+        case let (.report(lt, lr), .report(rt, rr)): return lt == rt && lr == rr
         case let (.unknown(lType, lt), .unknown(rType, rt)): return lType == rType && lt == rt
         default: return false
         }
@@ -3762,6 +3837,10 @@ extension MsgContent: Decodable {
             case "file":
                 let text = try container.decode(String.self, forKey: CodingKeys.text)
                 self = .file(text)
+            case "report":
+                let text = try container.decode(String.self, forKey: CodingKeys.text)
+                let reason = try container.decode(ReportReason.self, forKey: CodingKeys.reason)
+                self = .report(text: text, reason: reason)
             default:
                 let text = try? container.decode(String.self, forKey: CodingKeys.text)
                 self = .unknown(type: type, text: text ?? "unknown message format")
@@ -3799,6 +3878,10 @@ extension MsgContent: Encodable {
         case let .file(text):
             try container.encode("file", forKey: .type)
             try container.encode(text, forKey: .text)
+        case let .report(text, reason):
+            try container.encode("report", forKey: .type)
+            try container.encode(text, forKey: .text)
+            try container.encode(reason, forKey: .reason)
         // TODO use original JSON and type
         case let .unknown(_, text):
             try container.encode("text", forKey: .type)
@@ -3874,6 +3957,57 @@ public enum FormatColor: String, Decodable, Hashable {
             case .black: return .primary
             case .white: return .primary
             }
+        }
+    }
+}
+
+public enum ReportReason: Hashable {
+    case spam
+    case illegal
+    case community
+    case profile
+    case other
+    case unknown(type: String)
+    
+    public static var supportedReasons: [ReportReason] = [.spam, .illegal, .community, .profile, .other]
+
+    public var text: String {
+        switch self {
+        case .spam: return NSLocalizedString("Spam", comment: "report reason")
+        case .illegal: return NSLocalizedString("Inappropriate content", comment: "report reason")
+        case .community: return NSLocalizedString("Community guidelines violation", comment: "report reason")
+        case .profile: return NSLocalizedString("Inappropriate profile", comment: "report reason")
+        case .other: return NSLocalizedString("Another reason", comment: "report reason")
+        case let .unknown(type): return type
+        }
+    }
+}
+
+extension ReportReason: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .spam: try container.encode("spam")
+        case .illegal: try container.encode("illegal")
+        case .community: try container.encode("community")
+        case .profile: try container.encode("profile")
+        case .other: try container.encode("other")
+        case let .unknown(type): try container.encode(type)
+        }
+    }
+}
+
+extension ReportReason: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let type = try container.decode(String.self)
+        switch type {
+        case "spam": self = .spam
+        case "illegal": self = .illegal
+        case "community": self = .community
+        case "profile": self = .profile
+        case "other": self = .other
+        default: self = .unknown(type: type)
         }
     }
 }

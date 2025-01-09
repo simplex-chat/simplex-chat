@@ -51,6 +51,7 @@ public enum ChatCommand {
     case apiUpdateChatTag(tagId: Int64, tagData: ChatTagData)
     case apiReorderChatTags(tagIds: [Int64])
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
+    case apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
@@ -221,6 +222,8 @@ public enum ChatCommand {
             case let .apiCreateChatItems(noteFolderId, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
+            case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
+                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
@@ -390,6 +393,7 @@ public enum ChatCommand {
             case .apiUpdateChatTag: return "apiUpdateChatTag"
             case .apiReorderChatTags: return "apiReorderChatTags"
             case .apiCreateChatItems: return "apiCreateChatItems"
+            case .apiReportMessage: return "apiReportMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
@@ -1186,12 +1190,14 @@ public enum ChatPagination {
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
     case before(chatItemId: Int64, count: Int)
+    case around(chatItemId: Int64, count: Int)
 
     var cmdString: String {
         switch self {
         case let .last(count): return "count=\(count)"
         case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
         case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
+        case let .around(chatItemId, count): return "around=\(chatItemId) count=\(count)"
         }
     }
 }

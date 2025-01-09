@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
@@ -51,6 +52,7 @@ sealed class ComposeContextItem {
   @Serializable class QuotedItem(val chatItem: ChatItem): ComposeContextItem()
   @Serializable class EditingItem(val chatItem: ChatItem): ComposeContextItem()
   @Serializable class ForwardingItems(val chatItems: List<ChatItem>, val fromChatInfo: ChatInfo): ComposeContextItem()
+  @Serializable class ReportedItem(val chatItem: ChatItem, val reason: ReportReason): ComposeContextItem()
 }
 
 @Serializable
@@ -89,13 +91,28 @@ data class ComposeState(
       is ComposeContextItem.ForwardingItems -> true
       else -> false
     }
+  val reporting: Boolean
+    get() = when (contextItem) {
+      is ComposeContextItem.ReportedItem -> true
+      else -> false
+    }
+  val submittingValidReport: Boolean
+    get() = when (contextItem) {
+      is ComposeContextItem.ReportedItem -> {
+        when (contextItem.reason) {
+          is ReportReason.Other -> message.isNotEmpty()
+          else -> true
+        }
+      }
+      else -> false
+    }
   val sendEnabled: () -> Boolean
     get() = {
       val hasContent = when (preview) {
         is ComposePreview.MediaPreview -> true
         is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
-        else -> message.isNotEmpty() || forwarding || liveMessage != null
+        else -> message.isNotEmpty() || forwarding || liveMessage != null || submittingValidReport
       }
       hasContent && !inProgress
     }
@@ -119,7 +136,7 @@ data class ComposeState(
 
   val attachmentDisabled: Boolean
     get() {
-      if (editing || forwarding || liveMessage != null || inProgress) return true
+      if (editing || forwarding || liveMessage != null || inProgress || reporting) return true
       return when (preview) {
         ComposePreview.NoPreview -> false
         is ComposePreview.CLinkPreview -> false
@@ -134,6 +151,12 @@ data class ComposeState(
       is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
       is ComposePreview.VoicePreview -> false
       is ComposePreview.FilePreview -> true
+    }
+
+  val placeholder: String
+    get() = when (contextItem) {
+      is ComposeContextItem.ReportedItem -> contextItem.reason.text
+      else -> generalGetString(MR.strings.compose_message_placeholder)
     }
 
   val empty: Boolean
@@ -489,6 +512,19 @@ fun ComposeView(
       }
     }
 
+    suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
+      val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
+      if (cItems != null) {
+        withChats {
+          cItems.forEach { chatItem ->
+            addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
+          }
+        }
+      }
+
+      return cItems?.map { it.chatItem }
+    }
+
     suspend fun sendMemberContactInvitation() {
       val mc = checkLinkPreview()
       val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
@@ -554,6 +590,8 @@ fun ComposeView(
     } else if (liveMessage != null && liveMessage.sent) {
       val updatedMessage = updateMessage(liveMessage.chatItem, chat, live)
       sent = if (updatedMessage != null) listOf(updatedMessage) else null
+    } else if (cs.contextItem is ComposeContextItem.ReportedItem) {
+      sent = sendReport(cs.contextItem.reason, cs.contextItem.chatItem.id)
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
@@ -835,11 +873,30 @@ fun ComposeView(
 
   @Composable
   fun MsgNotAllowedView(reason: String, icon: Painter) {
-    val color = MaterialTheme.appColors.receivedMessage
-    Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
+    val color = MaterialTheme.appColors.receivedQuote
+    Row(Modifier.fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, null, tint = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Text(reason, fontStyle = FontStyle.Italic)
+    }
+  }
+
+  @Composable
+  fun ReportReasonView(reason: ReportReason) {
+    val reportText = when (reason) {
+      is ReportReason.Spam -> generalGetString(MR.strings.report_compose_reason_header_spam)
+      is ReportReason.Illegal -> generalGetString(MR.strings.report_compose_reason_header_illegal)
+      is ReportReason.Profile -> generalGetString(MR.strings.report_compose_reason_header_profile)
+      is ReportReason.Community -> generalGetString(MR.strings.report_compose_reason_header_community)
+      is ReportReason.Other -> generalGetString(MR.strings.report_compose_reason_header_other)
+      is ReportReason.Unknown -> null // should never happen
+    }
+
+    if (reportText != null) {
+      val color = MaterialTheme.appColors.receivedQuote
+      Row(Modifier.fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
+        Text(reportText, fontStyle = FontStyle.Italic, fontSize = 12.sp)
+      }
     }
   }
 
@@ -854,6 +911,9 @@ fun ComposeView(
         clearState()
       }
       is ComposeContextItem.ForwardingItems -> ContextItemView(contextItem.chatItems, painterResource(MR.images.ic_forward), showSender = false,  chatType = chat.chatInfo.chatType) {
+        composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
+      }
+      is ComposeContextItem.ReportedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_flag), chatType = chat.chatInfo.chatType, contextIconColor = Color.Red) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
     }
@@ -892,6 +952,10 @@ fun ComposeView(
   Column {
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
+    }
+    val ctx = composeState.value.contextItem
+    if (ctx is ComposeContextItem.ReportedItem) {
+      ReportReasonView(ctx.reason)
     }
     val simplexLinkProhibited = hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
     val fileProhibited = composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
@@ -1050,7 +1114,7 @@ fun ComposeView(
           sendButtonColor = sendButtonColor,
           timedMessageAllowed = timedMessageAllowed,
           customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
-          placeholder = stringResource(MR.strings.compose_message_placeholder),
+          placeholder = composeState.value.placeholder,
           sendMessage = { ttl ->
             sendMessage(ttl)
             resetLinkPreview()
