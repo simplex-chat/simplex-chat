@@ -2603,7 +2603,11 @@ object ChatController {
                 generalGetString(MR.strings.marked_deleted_description)
               )
             }
-            val deleted = if (r.member_ != null) CIDeleted.Moderated(Clock.System.now(), r.member_) else CIDeleted.Deleted(Clock.System.now())
+            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_) {
+              CIDeleted.Moderated(Clock.System.now(), r.member_)
+            } else {
+              CIDeleted.Deleted(Clock.System.now())
+            }
             upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
           }
         }
@@ -2614,7 +2618,11 @@ object ChatController {
               // Stop voice playback only inside a chat, allow to play in a chat list
               AudioPlayer.stop(cItem)
             }
-            val deleted = if (r.member_ != null) CIDeleted.Moderated(Clock.System.now(), r.member_) else CIDeleted.Deleted(Clock.System.now())
+            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_) {
+              CIDeleted.Moderated(Clock.System.now(), r.member_)
+            } else {
+              CIDeleted.Deleted(Clock.System.now())
+            }
             upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
           }
         }
