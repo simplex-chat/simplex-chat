@@ -630,10 +630,10 @@ findDirectChatPreviews_ db User {userId} pagination clq =
                 <> ( " JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id"
                       <> " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1"
                       <> "   AND ("
-                      <> "     ct.local_display_name LIKE '%' || ? || '%'"
-                      <> "     OR cp.display_name LIKE '%' || ? || '%'"
-                      <> "     OR cp.full_name LIKE '%' || ? || '%'"
-                      <> "     OR cp.local_alias LIKE '%' || ? || '%'"
+                      <> "     LOWER(ct.local_display_name) LIKE '%' || LOWER(?) || '%'"
+                      <> "     OR LOWER(cp.display_name) LIKE '%' || LOWER(?) || '%'"
+                      <> "     OR LOWER(cp.full_name) LIKE '%' || LOWER(?) || '%'"
+                      <> "     OR LOWER(cp.local_alias) LIKE '%' || LOWER(?) || '%'"
                       <> "   )"
                    )
             p = baseParams :. (userId, search, search, search, search)
@@ -723,10 +723,10 @@ findGroupChatPreviews_ db User {userId} pagination clq =
                 <> ( " JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id"
                       <> " WHERE g.user_id = ?"
                       <> "   AND ("
-                      <> "     g.local_display_name LIKE '%' || ? || '%'"
-                      <> "     OR gp.display_name LIKE '%' || ? || '%'"
-                      <> "     OR gp.full_name LIKE '%' || ? || '%'"
-                      <> "     OR gp.description LIKE '%' || ? || '%'"
+                      <> "     LOWER(g.local_display_name) LIKE '%' || LOWER(?) || '%'"
+                      <> "     OR LOWER(gp.display_name) LIKE '%' || LOWER(?) || '%'"
+                      <> "     OR LOWER(gp.full_name) LIKE '%' || LOWER(?) || '%'"
+                      <> "     OR LOWER(gp.description) LIKE '%' || LOWER(?) || '%'"
                       <> "   )"
                    )
             p = baseParams :. (userId, search, search, search, search)
@@ -882,9 +882,9 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
           AND uc.local_display_name = ''
           AND uc.group_id IS NULL
           AND (
-            cr.local_display_name LIKE '%' || ? || '%'
-            OR p.display_name LIKE '%' || ? || '%'
-            OR p.full_name LIKE '%' || ? || '%'
+            LOWER(cr.local_display_name) LIKE '%' || LOWER(?) || '%'
+            OR LOWER(p.display_name) LIKE '%' || LOWER(?) || '%'
+            OR LOWER(p.full_name) LIKE '%' || LOWER(?) || '%'
           )
       |]
     params search = (userId, userId, search, search, search)
@@ -919,7 +919,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
           AND conn_level = 0
           AND via_contact IS NULL
           AND (via_group_link = 0 OR (via_group_link = 1 AND group_link_id IS NOT NULL))
-          AND local_alias LIKE '%' || ? || '%'
+          AND LOWER(local_alias) LIKE '%' || LOWER(?) || '%'
       |]
     params search = (userId, ConnContact, ConnPrepared, search)
     getPreviews search = case pagination of
@@ -961,7 +961,7 @@ getDirectChatItemIdsLast_ db User {userId} Contact {contactId} count search =
       [sql|
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
+        WHERE user_id = ? AND contact_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
         ORDER BY created_at DESC, chat_item_id DESC
         LIMIT ?
       |]
@@ -1025,7 +1025,7 @@ getDirectCIsAfter_ db User {userId} Contact {contactId} afterCI count search =
       [sql|
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
+        WHERE user_id = ? AND contact_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
           AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
         ORDER BY created_at ASC, chat_item_id ASC
         LIMIT ?
@@ -1048,7 +1048,7 @@ getDirectCIsBefore_ db User {userId} Contact {contactId} beforeCI count search =
       [sql|
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND contact_id = ? AND item_text LIKE '%' || ? || '%'
+        WHERE user_id = ? AND contact_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
           AND (created_at < ? OR (created_at = ? AND chat_item_id < ?))
         ORDER BY created_at DESC, chat_item_id DESC
         LIMIT ?
@@ -1218,7 +1218,7 @@ getGroupChatItemIDs db User {userId} GroupInfo {groupId} contentFilter range cou
     rangeQuery :: ToRow p => Query -> p -> Query -> IO [ChatItemId]
     rangeQuery c p ob
       | null search = searchQuery "" ()
-      | otherwise = searchQuery " AND item_text LIKE '%' || ? || '%' " (Only search)
+      | otherwise = searchQuery " AND LOWER(item_text) LIKE '%' || LOWER(?) || '%' " (Only search)
       where
         searchQuery :: ToRow p' => Query -> p' -> IO [ChatItemId]
         searchQuery c' p' =
@@ -1447,7 +1447,7 @@ getLocalChatItemIdsLast_ db User {userId} NoteFolder {noteFolderId} count search
       [sql|
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
+        WHERE user_id = ? AND note_folder_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
         ORDER BY created_at DESC, chat_item_id DESC
         LIMIT ?
       |]
@@ -1495,7 +1495,7 @@ getLocalCIsAfter_ db User {userId} NoteFolder {noteFolderId} afterCI count searc
       [sql|
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
+        WHERE user_id = ? AND note_folder_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
           AND (created_at > ? OR (created_at = ? AND chat_item_id > ?))
         ORDER BY created_at ASC, chat_item_id ASC
         LIMIT ?
@@ -1518,7 +1518,7 @@ getLocalCIsBefore_ db User {userId} NoteFolder {noteFolderId} beforeCI count sea
       [sql|
         SELECT chat_item_id
         FROM chat_items
-        WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
+        WHERE user_id = ? AND note_folder_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
           AND (created_at < ? OR (created_at = ? AND chat_item_id < ?))
         ORDER BY created_at DESC, chat_item_id DESC
         LIMIT ?
@@ -1931,7 +1931,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
           [sql|
             SELECT chat_item_id, contact_id, group_id, note_folder_id
             FROM chat_items
-            WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
@@ -1942,7 +1942,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
         [sql|
           SELECT chat_item_id, contact_id, group_id, note_folder_id
           FROM chat_items
-          WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
+          WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
             AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
           ORDER BY item_ts ASC, chat_item_id ASC
           LIMIT ?
@@ -1955,7 +1955,7 @@ getAllChatItems db vr user@User {userId} pagination search_ = do
           [sql|
             SELECT chat_item_id, contact_id, group_id, note_folder_id
             FROM chat_items
-            WHERE user_id = ? AND item_text LIKE '%' || ? || '%'
+            WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
               AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
