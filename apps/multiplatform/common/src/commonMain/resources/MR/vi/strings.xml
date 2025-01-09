@@ -1829,4 +1829,6 @@
     <string name="size">Kích thước</string>
     <string name="is_verified">%s đã được xác minh</string>
     <string name="is_not_verified">%s chưa được xác minh</string>
+    <string name="alert_title_skipped_messages">Các tin nhắn bị bỏ qua</string>
+    <string name="skip_inviting_button">Bỏ qua việc mời các thành viên</string>
 </resources>
