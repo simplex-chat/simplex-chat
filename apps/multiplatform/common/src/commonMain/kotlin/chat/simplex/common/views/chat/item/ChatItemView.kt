@@ -959,7 +959,7 @@ private fun ModerateReportItemAction(
           moderateMessageAlertDialog(
             reportedMessageId,
             questionText = moderateMessageQuestionText(chatInfo.featureEnabled(ChatFeature.FullDelete), 1),
-            deleteMessage = { _, m ->
+            deleteMessage = { reportedMessageId, m ->
               withApi {
                 val moderated = deleteMessage(reportedMessageId, m)
                 if (moderated != null) {
