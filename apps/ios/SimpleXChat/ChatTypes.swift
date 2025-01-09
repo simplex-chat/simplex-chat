@@ -2078,7 +2078,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if !canBeRemoved(groupInfo: groupInfo) { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.allCases.filter { $0 <= userRole && $0 != .author }
+        return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
@@ -3336,17 +3336,6 @@ public struct CIQuote: Decodable, ItemContent, Hashable {
             mc = .text(text)
         }
         return CIQuote(chatDir: chatDir, itemId: itemId, sentAt: sentAt, content: mc)
-    }
-    
-    public func memberToModerate(_ chatInfo: ChatInfo) -> GroupMember? {
-        switch (chatInfo, chatDir) {
-        case let (.group(groupInfo), .groupRcv(groupMember)):
-            let m = groupInfo.membership
-            return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole
-                    ? groupMember
-                    : nil
-        default: return nil
-        }
     }
 }
 

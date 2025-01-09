@@ -2958,19 +2958,6 @@ class CIQuote (
     null -> null
   }
 
-  fun memberToModerate(chatInfo: ChatInfo): GroupMember? {
-    return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
-      val m = chatInfo.groupInfo.membership
-      if (m.memberRole >= GroupMemberRole.Moderator && m.memberRole >= chatDir.groupMember.memberRole) {
-        chatDir.groupMember
-      } else {
-        null
-      }
-    } else {
-      null
-    }
-  }
-
   companion object {
     fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
       CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))
