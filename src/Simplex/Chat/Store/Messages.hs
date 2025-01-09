@@ -459,11 +459,11 @@ getChatItemQuote_ :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirectio
 getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRef = MsgRef {msgId, sentAt, sent, memberId}, content} =
   case chatDirection of
     CDDirectRcv Contact {contactId} -> getDirectChatItemQuote_ contactId (not sent)
-    CDGroupRcv GroupInfo {groupId, membership = GroupMember {memberId = userMemberId}} sender@GroupMember {memberId = senderMemberId} ->
+    CDGroupRcv GroupInfo {groupId, membership = GroupMember {memberId = userMemberId}} sender@GroupMember {groupMemberId = senderGMId, memberId = senderMemberId} ->
       case memberId of
         Just mId
           | mId == userMemberId -> (`ciQuote` CIQGroupSnd) <$> getUserGroupChatItemId_ groupId
-          | mId == senderMemberId -> (`ciQuote` CIQGroupRcv (Just sender)) <$> getGroupChatItemId_ groupId mId
+          | mId == senderMemberId -> (`ciQuote` CIQGroupRcv (Just sender)) <$> getGroupChatItemId_ groupId senderGMId
           | otherwise -> getGroupChatItemQuote_ groupId mId
         _ -> pure . ciQuote Nothing $ CIQGroupRcv Nothing
   where
@@ -486,13 +486,13 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
           db
           "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id IS NULL"
           (userId, groupId, msgId, MDSnd)
-    getGroupChatItemId_ :: Int64 -> MemberId -> IO (Maybe ChatItemId)
-    getGroupChatItemId_ groupId mId =
+    getGroupChatItemId_ :: Int64 -> GroupMemberId -> IO (Maybe ChatItemId)
+    getGroupChatItemId_ groupId groupMemberId =
       maybeFirstRow fromOnly $
         DB.query
           db
           "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id = ?"
-          (userId, groupId, msgId, MDRcv, mId)
+          (userId, groupId, msgId, MDRcv, groupMemberId)
     getGroupChatItemQuote_ :: Int64 -> MemberId -> IO (CIQuote 'CTGroup)
     getGroupChatItemQuote_ groupId mId = do
       ciQuoteGroup
@@ -2273,7 +2273,7 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
       SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, item_live = ?, updated_at = ?, timed_ttl = ?, timed_delete_at = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
-    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
+    ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
