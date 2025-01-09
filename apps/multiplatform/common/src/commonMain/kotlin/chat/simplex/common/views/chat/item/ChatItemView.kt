@@ -1020,14 +1020,12 @@ private fun BlockMemberAction(
                 blockForAllAlert(rhId, gInfo = groupInfo, mem = member, blockMember = {
                   withBGApi {
                     try {
-                      blockMemberForAll(
-                        rhId,
-                        gInfo = groupInfo,
-                        member = member,
-                        blocked = true
-                      )
+                      blockMemberForAll(rhId, groupInfo, member, true)
                       val reportId = cItem.id
-                      deleteMessage(reportId, CIDeleteMode.cidmInternalMark)
+                      val moderated = deleteMessage(reportedMessageId, CIDeleteMode.cidmBroadcast)
+                      if (moderated != null) {
+                        deleteMessage(reportId, CIDeleteMode.cidmInternalMark)
+                      }
                     } catch (ex: Exception) {
                       Log.e(TAG, "BlockMemberAction block and moderate ${ex.message}")
                     }
