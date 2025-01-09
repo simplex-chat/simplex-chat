@@ -314,10 +314,8 @@ fun ChatItemView(
                   ArchiveReportItemAction(cItem, showMenu, deleteMessageAsync)
                   val qItem = cItem.quotedItem
                   if (qItem != null) {
+                    ModerateReportItemAction(rhId, cInfo, cItem, qItem, showMenu, deleteMessage)
                     val rMember = qItem.memberToModerate(cInfo)
-                    if (rMember != null || qItem.canModerate(cInfo, true)) {
-                      ModerateReportItemAction(rhId, cInfo, cItem, qItem, showMenu, deleteMessage)
-                    }
                     if (rMember != null && !rMember.blockedByAdmin && rMember.canBlockForAll(cInfo.groupInfo)) {
                       BlockMemberAction(
                         rhId,
