@@ -163,6 +163,7 @@ library
       Simplex.Chat.Migrations.M20241223_chat_tags
       Simplex.Chat.Migrations.M20241230_reports
       Simplex.Chat.Migrations.M20250105_indexes
+      Simplex.Chat.Migrations.M20250109_indexes
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

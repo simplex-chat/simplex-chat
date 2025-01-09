@@ -975,3 +975,7 @@ CREATE INDEX idx_chat_items_groups_msg_content_tag_item_deleted_item_ts ON chat_
   item_deleted,
   item_ts
 );
+CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_snd_item_statuses(
+  chat_item_id,
+  group_member_id
+);

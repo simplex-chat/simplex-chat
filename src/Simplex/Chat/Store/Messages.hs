@@ -139,7 +139,7 @@ import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
-import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Database.SQLite.Simple (FromRow, NamedParam (..), Only (..), Query, ToRow, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), ContentFilter (..), PaginationByTime (..))
@@ -3010,7 +3010,9 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} m count = do
   reverse <$> mapM (runExceptT . getGroupChatItem db user groupId) ciIds
   where
     getLastItemIds_ :: IO [ChatItemId]
-    getLastItemIds_ =
+    getLastItemIds_ = do
+      ts <- getCurrentTime
+      let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       map fromOnly
         <$> DB.query
           db
@@ -3018,7 +3020,7 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} m count = do
             SELECT i.chat_item_id
             FROM chat_items i
             LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
-            WHERE i.user_id = ? AND i.group_id = ?
+            WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts > ?
               AND i.item_content_tag IN (?,?)
               AND i.msg_content_tag NOT IN (?)
               AND i.item_deleted = 0
@@ -3026,4 +3028,4 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} m count = do
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
-          (groupMemberId' m, userId, groupId, rcvMsgContentTag, sndMsgContentTag, MCReport_, count)
+          (groupMemberId' m, userId, groupId, cutoffTs, rcvMsgContentTag, sndMsgContentTag, MCReport_, count)
