@@ -174,7 +174,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
     processInvitation :: Contact -> GroupInfo -> IO ()
     processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = do
       void $ addGroupReg st ct g GRSProposed
-      r <- sendChatCmd cc $ APIJoinGroup groupId
+      r <- sendChatCmd cc $ APIJoinGroup groupId MFNone
       sendMessage cc ct $ case r of
         CRUserAcceptedGroupSent {} -> "Joining the group " <> displayName <> "…"
         _ -> "Error joining group " <> displayName <> ", please re-send the invitation!"
