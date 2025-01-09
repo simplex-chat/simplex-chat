@@ -1556,11 +1556,7 @@ data class Connection(
 }
 
 @Serializable
-data class VersionRange(val minVersion: Int, val maxVersion: Int) {
-
-  fun isCompatibleRange(vRange: VersionRange): Boolean =
-    this.minVersion <= vRange.maxVersion && vRange.minVersion <= this.maxVersion
-}
+data class VersionRange(val minVersion: Int, val maxVersion: Int)
 
 @Serializable
 data class SecurityCode(val securityCode: String, val verifiedAt: Instant)
@@ -1824,7 +1820,7 @@ data class GroupMember (
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (!canBeRemoved(groupInfo)) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.values().filter { it <= userRole && it != GroupMemberRole.Author }
+      GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
@@ -1875,13 +1871,19 @@ enum class GroupMemberRole(val memberRole: String) {
   @SerialName("observer") Observer("observer"), // order matters in comparisons
   @SerialName("author") Author("author"),
   @SerialName("member") Member("member"),
+  @SerialName("moderator") Moderator("moderator"),
   @SerialName("admin") Admin("admin"),
   @SerialName("owner") Owner("owner");
+
+  companion object {
+    val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Admin, Owner)
+  }
 
   val text: String get() = when (this) {
     Observer -> generalGetString(MR.strings.group_member_role_observer)
     Author -> generalGetString(MR.strings.group_member_role_author)
     Member -> generalGetString(MR.strings.group_member_role_member)
+    Moderator -> generalGetString(MR.strings.group_member_role_moderator)
     Admin -> generalGetString(MR.strings.group_member_role_admin)
     Owner -> generalGetString(MR.strings.group_member_role_owner)
   }
@@ -2301,6 +2303,12 @@ data class ChatItem (
       is CIContent.RcvGroupE2EEInfo -> false
       else -> true
     }
+
+  val isReport: Boolean get() = when (content) {
+    is CIContent.SndMsgContent, is CIContent.RcvMsgContent ->
+      content.msgContent is MsgContent.MCReport
+    else -> false
+  }
 
   val canBeDeletedForSelf: Boolean
     get() = (content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete
@@ -2722,7 +2730,7 @@ fun getTimestampDateText(t: Instant): String {
   val time = t.toLocalDateTime(tz).toJavaLocalDateTime()
   val weekday = time.format(DateTimeFormatter.ofPattern("EEE"))
   val dayMonthYear = time.format(DateTimeFormatter.ofPattern(
-    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM YYYY")
+    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM yyyy")
   )
 
   return "$weekday, $dayMonthYear"
@@ -3130,6 +3138,19 @@ class CIQuote (
     is CIDirection.LocalSnd -> generalGetString(MR.strings.sender_you_pronoun)
     is CIDirection.LocalRcv -> null
     null -> null
+  }
+
+  fun memberToModerate(chatInfo: ChatInfo): GroupMember? {
+    return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
+      val m = chatInfo.groupInfo.membership
+      if (m.memberRole >= GroupMemberRole.Moderator && m.memberRole >= chatDir.groupMember.memberRole) {
+        chatDir.groupMember
+      } else {
+        null
+      }
+    } else {
+      null
+    }
   }
 
   companion object {
@@ -3777,6 +3798,19 @@ sealed class ReportReason {
   @Serializable @SerialName("profile") object Profile: ReportReason()
   @Serializable @SerialName("other") object Other: ReportReason()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
+
+  companion object {
+    val supportedReasons: List<ReportReason> = listOf(Spam, Illegal, Community, Profile, Other)
+  }
+
+  val text: String get() = when (this) {
+    Spam -> generalGetString(MR.strings.report_reason_spam)
+    Illegal -> generalGetString(MR.strings.report_reason_illegal)
+    Community -> generalGetString(MR.strings.report_reason_community)
+    Profile -> generalGetString(MR.strings.report_reason_profile)
+    Other -> generalGetString(MR.strings.report_reason_other)
+    is Unknown -> type
+  }
 }
 
 object ReportReasonSerializer : KSerializer<ReportReason> {
