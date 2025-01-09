@@ -13,10 +13,10 @@ import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (bracket)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
+import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Types (Profile (..))
 import Test.Hspec hiding (it)
 #if !defined(dbPostgres)
-import Simplex.Chat.Options (CoreChatOpts (..))
 import System.FilePath ((</>))
 #endif
 
@@ -38,7 +38,7 @@ mkBotOpts _tmp publishers =
   BroadcastBotOpts
     {
 #if defined(dbPostgres)
-      coreOptions = testCoreOpts,
+      coreOptions = testCoreOpts {dbSchemaPrefix = "client_" <> botDbPrefix},
 #else
       coreOptions = testCoreOpts {dbFilePrefix = _tmp </> botDbPrefix},
 #endif

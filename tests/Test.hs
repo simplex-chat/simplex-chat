@@ -35,6 +35,7 @@ main = do
     . afterAll_ (dropDatabaseAndUser testDBConnectInfo)
 #endif
     $ do
+-- TODO [postgres] schema dump for postgres
 #if !defined(dbPostgres)
       describe "Schema dump" schemaDumpTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests

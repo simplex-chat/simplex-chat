@@ -38,11 +38,7 @@ import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
 #endif
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-#if defined(dbPostgres)
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbName, dbUser, logAgent, yesToUpMigrations}} chat =
-#else
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent, yesToUpMigrations, vacuumOnMigration}} chat =
-#endif
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = coreOpts@CoreChatOpts {logAgent, yesToUpMigrations}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -50,13 +46,15 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
     _ -> initRun
   where
 #if defined(dbPostgres)
+    CoreChatOpts {dbName, dbUser, dbSchemaPrefix} = coreOpts
     connectInfo =
       defaultConnectInfo
         { connectUser = dbUser,
           connectDatabase = dbName
         }
-    initRun = createChatDatabase connectInfo "" confirm' >>= either exit run
+    initRun = createChatDatabase connectInfo dbSchemaPrefix confirm' >>= either exit run
 #else
+    CoreChatOpts {dbFilePrefix, dbKey, vacuumOnMigration} = coreOpts
     initRun = createChatDatabase dbFilePrefix dbKey False confirm' vacuumOnMigration >>= either exit run
 #endif
     confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations

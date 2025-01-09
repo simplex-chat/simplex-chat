@@ -656,7 +656,10 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
           JOIN group_members mu USING (group_id)
           JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
           WHERE g.user_id = ? AND mu.contact_id = ?
-            AND (gp.display_name LIKE '%' || ? || '%' OR gp.full_name LIKE '%' || ? || '%' OR gp.description LIKE '%' || ? || '%')
+            AND (LOWER(gp.display_name) LIKE '%' || LOWER(?) || '%'
+              OR LOWER(gp.full_name) LIKE '%' || LOWER(?) || '%'
+              OR LOWER(gp.description) LIKE '%' || LOWER(?) || '%'
+            )
         |]
         (userId, userContactId, search, search, search)
   mapM (addGroupChatTags db) g_

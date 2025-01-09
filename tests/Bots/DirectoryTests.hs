@@ -20,13 +20,11 @@ import GHC.IO.Handle (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
+import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Types (Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
-#if !defined(dbPostgres)
-import Simplex.Chat.Options (CoreChatOpts (..))
-#endif
 
 directoryServiceTests :: SpecWith FilePath
 directoryServiceTests = do
@@ -72,7 +70,7 @@ mkDirectoryOpts tmp superUsers =
   DirectoryOpts
     {
 #if defined(dbPostgres)
-      coreOptions = testCoreOpts,
+      coreOptions = testCoreOpts {dbSchemaPrefix = "client_" <> serviceDbPrefix},
 #else
       coreOptions = testCoreOpts {dbFilePrefix = tmp </> serviceDbPrefix},
 #endif
