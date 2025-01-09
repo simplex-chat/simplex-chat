@@ -1924,12 +1924,12 @@ processChatCommand' vr = \case
                 pure $ CRSentGroupInvitation user gInfo contact member {memberRole = memRole}
               Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
-  APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
+  APIJoinGroup groupId enableNtfs -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId . procCmd $ do
       (invitation, ct) <- withFastStore $ \db -> do
         inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db vr user groupId
         (inv,) <$> getContactViaMember db vr user fromMember
-      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
+      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership, chatSettings}} = invitation
           GroupMember {memberId = membershipMemId} = membership
           Contact {activeConn} = ct
       case activeConn of
@@ -1946,7 +1946,9 @@ processChatCommand' vr = \case
           withFastStore' $ \db -> do
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
-          void (withAgent $ \a -> joinConnection a (aUserId user) agentConnId True connRequest dm PQSupportOff subMode)
+            -- MFAll is default for new groups
+            unless (enableNtfs == MFAll) $ updateGroupSettings db user groupId chatSettings {enableNtfs}
+          void (withAgent $ \a -> joinConnection a (aUserId user) agentConnId (enableNtfs /= MFNone) connRequest dm PQSupportOff subMode)
             `catchChatError` \e -> do
               withFastStore' $ \db -> do
                 updateGroupMemberStatus db userId fromMember GSMemInvited
@@ -2043,9 +2045,9 @@ processChatCommand' vr = \case
   AddMember gName cName memRole -> withUser $ \user -> do
     (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
     processChatCommand $ APIAddMember groupId contactId memRole
-  JoinGroup gName -> withUser $ \user -> do
+  JoinGroup gName enableNtfs -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIJoinGroup groupId
+    processChatCommand $ APIJoinGroup groupId enableNtfs
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMemberRole gId gMemberId memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMemberForAll gId gMemberId blocked
   RemoveMember gName gMemberName -> withMemberName gName gMemberName APIRemoveMember
@@ -3630,7 +3632,7 @@ chatCommandP =
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
       "/_ntf conn messages " *> (ApiGetConnNtfMessages <$> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
-      "/_join #" *> (APIJoinGroup <$> A.decimal),
+      "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_block #" *> (APIBlockMemberForAll <$> A.decimal <* A.space <*> A.decimal <* A.space <* "blocked=" <*> onOffP),
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
@@ -3712,7 +3714,7 @@ chatCommandP =
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
-      ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
+      ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName <*> (" mute" $> MFNone <|> pure MFAll)),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
       "/block for all #" *> (BlockForAll <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure False),
