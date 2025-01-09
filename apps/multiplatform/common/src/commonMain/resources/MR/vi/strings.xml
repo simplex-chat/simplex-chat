@@ -1826,4 +1826,7 @@
     <string name="report_compose_reason_header_other">Báo cáo khác: sẽ chỉ có các kiểm duyệt viên trong nhóm là xem được.</string>
     <string name="report_compose_reason_header_spam">Báo cáo tin nhắn rác: chỉ có các kiểm duyệt viên trong nhóm là xem được.</string>
     <string name="report_compose_reason_header_community">Báo cáo vi phạm: sẽ chỉ có các kiểm duyệt viên trong nhóm là xem được.</string>
+    <string name="size">Kích thước</string>
+    <string name="is_verified">%s đã được xác minh</string>
+    <string name="is_not_verified">%s chưa được xác minh</string>
 </resources>
