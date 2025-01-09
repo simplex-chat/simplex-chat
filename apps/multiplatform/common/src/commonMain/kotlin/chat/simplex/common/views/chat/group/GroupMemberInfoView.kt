@@ -747,13 +747,13 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
   }
 }
 
-fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember, blockMember: () -> Unit = { withBGApi { blockMemberForAll(rhId, gInfo, mem, true) } }) {
+fun blockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.block_for_all_question),
     text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.block_for_all),
     onConfirm = {
-      blockMember()
+      blockMemberForAll(rhId, gInfo, mem, true)
     },
     destructive = true,
   )
@@ -765,15 +765,17 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
     text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.unblock_for_all),
     onConfirm = {
-      withBGApi { blockMemberForAll(rhId, gInfo, mem, false) }
+      blockMemberForAll(rhId, gInfo, mem, false)
     },
   )
 }
 
-suspend fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocked: Boolean) {
-  val updatedMember = ChatController.apiBlockMemberForAll(rhId, gInfo.groupId, member.groupMemberId, blocked)
-  withChats {
-    upsertGroupMember(rhId, gInfo, updatedMember)
+fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocked: Boolean) {
+  withBGApi {
+    val updatedMember = ChatController.apiBlockMemberForAll(rhId, gInfo.groupId, member.groupMemberId, blocked)
+    withChats {
+      upsertGroupMember(rhId, gInfo, updatedMember)
+    }
   }
 }
 
