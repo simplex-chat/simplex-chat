@@ -894,7 +894,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
                 WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
                 ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
                 LIMIT 1
-              )
+              ) cc
             )
             OR c.connection_id IS NULL
           )
@@ -957,9 +957,13 @@ getConnectionById db vr User {userId} connId = ExceptT $ do
 
 getConnectionsContacts :: DB.Connection -> [ConnId] -> IO [ContactRef]
 getConnectionsContacts db agentConnIds = do
-  DB.execute_ db "DROP TABLE IF EXISTS temp.conn_ids"
-  DB.execute_ db "CREATE TABLE temp.conn_ids (conn_id BLOB)"
-  DB.executeMany db "INSERT INTO temp.conn_ids (conn_id) VALUES (?)" $ map Only agentConnIds
+  DB.execute_ db "DROP TABLE IF EXISTS temp_conn_ids"
+#if defined(dbPostgres)
+  DB.execute_ db "CREATE TABLE temp_conn_ids (conn_id BYTEA)"
+#else
+  DB.execute_ db "CREATE TABLE temp_conn_ids (conn_id BLOB)"
+#endif
+  DB.executeMany db "INSERT INTO temp_conn_ids (conn_id) VALUES (?)" $ map Only agentConnIds
   conns <-
     map toContactRef
       <$> DB.query
@@ -968,12 +972,12 @@ getConnectionsContacts db agentConnIds = do
           SELECT ct.contact_id, c.connection_id, c.agent_conn_id, ct.local_display_name
           FROM contacts ct
           JOIN connections c ON c.contact_id = ct.contact_id
-          WHERE c.agent_conn_id IN (SELECT conn_id FROM temp.conn_ids)
+          WHERE c.agent_conn_id IN (SELECT conn_id FROM temp_conn_ids)
             AND c.conn_type = ?
             AND ct.deleted = 0
         |]
         (Only ConnContact)
-  DB.execute_ db "DROP TABLE temp.conn_ids"
+  DB.execute_ db "DROP TABLE temp_conn_ids"
   pure conns
   where
     toContactRef :: (ContactId, Int64, ConnId, ContactName) -> ContactRef

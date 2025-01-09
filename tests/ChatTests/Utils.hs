@@ -98,7 +98,7 @@ skip = before_ . pendingWith
 -- Bool is pqExpected - see testAddContact
 versionTestMatrix2 :: (HasCallStack => Bool -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  fit "current" $ testChat2 aliceProfile bobProfile (runTest True)
+  it "current" $ testChat2 aliceProfile bobProfile (runTest True)
   it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False)
   it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False)
   it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False)

@@ -51,7 +51,7 @@ import System.FilePath ((</>))
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
-    fdescribe "add contact and send/receive messages" testAddContact
+    describe "add contact and send/receive messages" testAddContact
     it "retry connecting via the same link" testRetryConnecting
     xit'' "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
     it "mark multiple messages as read" testMarkReadDirect
@@ -111,10 +111,10 @@ chatDirectTests = do
       xit'' "curr/v5" $ testFullAsyncSlow testCfg testCfgSlow
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
+#if !defined(dbPostgres)
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
-#if !defined(dbPostgres)
     it "encrypt/decrypt database" testDatabaseEncryption
 #endif
   describe "coordination between app and NSE" $ do
@@ -1373,6 +1373,7 @@ testNegotiateCall =
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: accepted")])
     alice <## "bob accepted your WebRTC video call (e2e encrypted)"
     repeatM_ 3 $ getTermLine alice
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: accepted")])
     -- alice confirms call by sending WebRTC answer
     alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)

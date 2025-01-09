@@ -221,7 +221,7 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
             WHERE user_id = ? AND via_contact_uri_hash IN (?,?) AND conn_status != ?
             ORDER BY conn_ord DESC, created_at DESC
             LIMIT 1
-          )
+          ) c
         |]
         (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_

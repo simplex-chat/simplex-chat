@@ -114,11 +114,15 @@ testCoreOpts =
 #if defined(dbPostgres)
       dbName = testDBName,
       dbUser = testDBUser,
+      -- dbSchemaPrefix is not used in tests (except bot tests where it's redefined),
+      -- instead different schema prefix is passed per client so that single test database is used
+      dbSchemaPrefix = "",
 #else
+      -- dbFilePrefix is not used in tests (except bot tests where it's redefined)
       dbFilePrefix = "./simplex_v1",
       dbKey = "",
-#endif
       -- dbKey = "this is a pass-phrase to encrypt the database",
+#endif
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
       xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
       simpleNetCfg = defaultSimpleNetCfg,

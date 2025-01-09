@@ -775,7 +775,7 @@ acceptConditions db condId opIds acceptedAt = do
 
 acceptConditions_ :: DB.Connection -> ServerOperator -> Text -> UTCTime -> Bool -> IO ()
 acceptConditions_ db ServerOperator {operatorId, operatorTag} conditionsCommit acceptedAt autoAccepted = do
-  acceptedAt_ :: Maybe (Maybe UTCTime) <- maybeFirstRow fromOnly $ DB.query db "SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit == ?" (operatorId, conditionsCommit)
+  acceptedAt_ :: Maybe (Maybe UTCTime) <- maybeFirstRow fromOnly $ DB.query db "SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?" (operatorId, conditionsCommit)
   case acceptedAt_ of
     Just Nothing ->
       DB.execute

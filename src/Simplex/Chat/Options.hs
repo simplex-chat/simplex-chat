@@ -61,6 +61,7 @@ data CoreChatOpts = CoreChatOpts
 #if defined(dbPostgres)
     dbName :: String,
     dbUser :: String,
+    dbSchemaPrefix :: String,
 #else
     dbFilePrefix :: String,
     dbKey :: ScrubbedBytes,
@@ -283,6 +284,7 @@ coreChatOptsP appDir defaultDbName = do
 #if defined(dbPostgres)
         dbName,
         dbUser,
+        dbSchemaPrefix = "",
 #else
         dbFilePrefix,
         dbKey,
