@@ -308,13 +308,6 @@
   <string name="report_reason_alert_title">Report reason?</string>
   <string name="report_archive_alert_title">Archive report?</string>
   <string name="report_archive_alert_desc">The report will be archived for you.</string>
-  <string name="report_block_and_moderate_title">Block and moderate?</string>
-  <string name="report_block_and_moderate_block_and_moderate_action">Block and moderate</string>
-  <string name="report_block_and_moderate_only_block_action">Only block</string>
-  <string name="report_block_and_moderate_confirmation_title">Delete member message and block?</string>
-  <string name="report_block_and_moderate_confirmation_desc_full_delete">The message will be deleted for all members.\nAll new messages from %1$s will be hidden!</string>
-  <string name="report_block_and_moderate_confirmation_desc_mark_delete">The message will be marked as moderated for all members.\nAll new messages from %1$s will be hidden!</string>
-  <string name="report_block_and_moderate_confirmation_ok">Delete and block</string>
 
   <!-- CIStatus errors -->
   <string name="ci_status_other_error">Error: %1$s</string>
@@ -341,6 +334,8 @@
   <string name="info_menu">Info</string>
   <string name="search_verb">Search</string>
   <string name="archive_verb">Archive</string>
+  <string name="archive_report">Archive report</string>
+  <string name="delete_report">Delete report</string>
   <string name="sent_message">Sent message</string>
   <string name="received_message">Received message</string>
   <string name="edit_history">History</string>
