@@ -1,13 +1,18 @@
 package chat.simplex.common.views.chat.group
 
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.ChatView
-import chat.simplex.common.views.chat.apiLoadMessages
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -15,7 +20,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 
 val LocalContentTag: ProvidableCompositionLocal<MsgContentTag?> = staticCompositionLocalOf { null }
 
@@ -69,29 +73,40 @@ fun GroupReportsAppBar(
       IconButton({ showMenu.value = true }) {
         Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
-      val onClosedAction = remember { mutableStateOf({}) }
-      DefaultDropdownMenu(
-        showMenu,
-        onClosed = onClosedAction
-      ) {
-        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
-          showMenu.value = false
-          showSearch.value = true
-        })
-        ItemAction(
-          if (groupReports.value.showArchived) stringResource(MR.strings.group_reports_show_active) else stringResource(MR.strings.group_reports_show_archived),
-          painterResource(if (groupReports.value.showArchived) MR.images.ic_flag else MR.images.ic_inventory_2),
-          onClick = {
-            onClosedAction.value = {
-              showArchived(!groupReports.value.showArchived)
-              onClosedAction.value = {}
-            }
-            showMenu.value = false
-          }
-        )
-      }
     }
   )
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
+    val density = LocalDensity.current
+    val width = remember { mutableStateOf(250.dp) }
+    val height = remember { mutableStateOf(0.dp) }
+
+    val onClosedAction = remember { mutableStateOf({}) }
+    DefaultDropdownMenu(
+      showMenu,
+      modifier = Modifier.onSizeChanged { with(density) {
+        width.value = it.width.toDp().coerceAtLeast(250.dp)
+        if (oneHandUI.value && (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 30)) height.value = it.height.toDp()
+      } },
+      offset = DpOffset(-width.value, if (oneHandUI.value) -height.value else AppBarHeight),
+      onClosed = onClosedAction
+    ) {
+      ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        showMenu.value = false
+        showSearch.value = true
+      })
+      ItemAction(
+        if (groupReports.value.showArchived) stringResource(MR.strings.group_reports_show_active) else stringResource(MR.strings.group_reports_show_archived),
+        painterResource(if (groupReports.value.showArchived) MR.images.ic_flag else MR.images.ic_inventory_2),
+        onClick = {
+          onClosedAction.value = {
+            showArchived(!groupReports.value.showArchived)
+            onClosedAction.value = {}
+          }
+          showMenu.value = false
+        }
+      )
+    }
+  }
   ItemsReload(groupReports)
 }
 

@@ -128,17 +128,6 @@ fun FramedItemView(
       Modifier
         .background(if (sent) sentColor else receivedColor)
         .fillMaxWidth()
-        .combinedClickable(
-          onLongClick = { showMenu.value = true },
-          onClick = {
-            if (qi.itemId != null) {
-              scrollToItem(qi.itemId)
-            } else {
-              scrollToQuotedItemFromItem(ci.id)
-            }
-          }
-        )
-        .onRightClick { showMenu.value = true }
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
@@ -216,39 +205,61 @@ fun FramedItemView(
           .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
       ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
-          if (ci.isReport) {
-            if (ci.meta.itemDeleted == null) {
-              FramedItemHeader(
-                stringResource(if (ci.chatDir.sent) MR.strings.report_item_visibility_submitter else MR.strings.report_item_visibility_moderators),
-                true,
-                painterResource(MR.images.ic_flag),
-                iconColor = Color.Red
-              )
-            } else {
-              FramedItemHeader(stringResource(MR.strings.report_item_archived), true, painterResource(MR.images.ic_flag))
+          @Composable
+          fun Header() {
+            if (ci.isReport) {
+              if (ci.meta.itemDeleted == null) {
+                FramedItemHeader(
+                  stringResource(if (ci.chatDir.sent) MR.strings.report_item_visibility_submitter else MR.strings.report_item_visibility_moderators),
+                  true,
+                  painterResource(MR.images.ic_flag),
+                  iconColor = Color.Red
+                )
+              } else {
+                FramedItemHeader(stringResource(MR.strings.report_item_archived), true, painterResource(MR.images.ic_flag))
+              }
+            } else if (ci.meta.itemDeleted != null) {
+              when (ci.meta.itemDeleted) {
+                is CIDeleted.Moderated -> {
+                  FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
+                }
+                is CIDeleted.Blocked -> {
+                  FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
+                }
+                is CIDeleted.BlockedByAdmin -> {
+                  FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
+                }
+                is CIDeleted.Deleted -> {
+                  FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
+                }
+              }
+            } else if (ci.meta.isLive) {
+              FramedItemHeader(stringResource(MR.strings.live), false)
             }
-          } else if (ci.meta.itemDeleted != null) {
-            when (ci.meta.itemDeleted) {
-              is CIDeleted.Moderated -> {
-                FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
-              }
-              is CIDeleted.Blocked -> {
-                FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
-              }
-              is CIDeleted.BlockedByAdmin -> {
-                FramedItemHeader(stringResource(MR.strings.blocked_by_admin_item_description), true, painterResource(MR.images.ic_back_hand))
-              }
-              is CIDeleted.Deleted -> {
-                FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
-              }
-            }
-          } else if (ci.meta.isLive) {
-            FramedItemHeader(stringResource(MR.strings.live), false)
           }
           if (ci.quotedItem != null) {
-            ciQuoteView(ci.quotedItem)
-          } else if (ci.meta.itemForwarded != null) {
-            FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+            Column(
+              Modifier
+                .combinedClickable(
+                  onLongClick = { showMenu.value = true },
+                  onClick = {
+                    if (ci.quotedItem.itemId != null) {
+                      scrollToItem(ci.quotedItem.itemId)
+                    } else {
+                      scrollToQuotedItemFromItem(ci.id)
+                    }
+                  }
+                )
+                .onRightClick { showMenu.value = true }
+            ) {
+              Header()
+              ciQuoteView(ci.quotedItem)
+            }
+          } else {
+            Header()
+            if (ci.meta.itemForwarded != null) {
+              FramedItemHeader(ci.meta.itemForwarded.text(chatInfo.chatType), true, painterResource(MR.images.ic_forward), pad = true)
+            }
           }
           if (ci.file == null && ci.formattedText == null && !ci.meta.isLive && isShortEmoji(ci.content.text)) {
             Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {

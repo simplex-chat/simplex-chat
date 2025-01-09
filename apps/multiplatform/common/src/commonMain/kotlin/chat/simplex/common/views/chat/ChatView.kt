@@ -347,7 +347,9 @@ fun ChatView(
                 setGroupMembers(chatRh, groupInfo, chatModel)
                 if (!isActive) return@launch
 
-                ModalManager.end.closeModals()
+                if (!groupReports.value.reportsView) {
+                  ModalManager.end.closeModals()
+                }
                 ModalManager.end.showModalCloseable(true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
                     GroupMemberInfoView(chatRh, groupInfo, mem, stats, code, chatModel, close, close)
@@ -744,7 +746,7 @@ fun ChatLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       val composeViewHeight = remember { mutableStateOf(0.dp) }
-      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer)) {
+      Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, !groupReports.value.reportsView)) {
         val remoteHostId = remember { remoteHostId }.value
         val chatInfo = remember { chatInfo }.value
         val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -766,7 +768,42 @@ fun ChatLayout(
               }
             }
           }
-          if (!groupReports.value.reportsView) {
+          if (groupReports.value.reportsView) {
+            Column(
+              Modifier
+                .layoutId(CHAT_COMPOSE_LAYOUT_ID)
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .imePadding()
+            ) {
+              AnimatedVisibility(selectedChatItems.value != null) {
+                if (chatInfo != null) {
+                  SelectedItemsBottomToolbar(
+                    reversedChatItems = reversedChatItems,
+                    selectedChatItems = selectedChatItems,
+                    chatInfo = chatInfo,
+                    deleteItems = { _ ->
+                      val itemIds = selectedChatItems.value
+                      val questionText = generalGetString(MR.strings.delete_messages_cannot_be_undone_warning)
+                      if (itemIds != null) {
+                        deleteMessagesAlertDialog(itemIds.sorted(), questionText = questionText, forAll = false, deleteMessages = { ids, _ ->
+                          deleteMessages(remoteHostId, chatInfo, ids, false, moderate = false) {
+                            selectedChatItems.value = null
+                          }
+                        })
+                      }
+                    },
+                    moderateItems = {},
+                    forwardItems = {}
+                  )
+                }
+              }
+              if (oneHandUI.value) {
+                // That's placeholder to take some space for bottom app bar in oneHandUI
+                Box(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
+              }
+            }
+          } else {
             Box(
               Modifier
                 .layoutId(CHAT_COMPOSE_LAYOUT_ID)
@@ -777,49 +814,46 @@ fun ChatLayout(
             ) {
               composeView()
             }
-          } else {
-            // That's placeholder to take some space for bottom app bar in oneHandUI
-            Box(
-              Modifier
-                .layoutId(CHAT_COMPOSE_LAYOUT_ID)
-                .align(Alignment.BottomCenter)
-                .height(if (oneHandUI.value) AppBarHeight * fontSizeSqrtMultiplier else 0.dp)
-            )
           }
         }
         if (oneHandUI.value && chatBottomBar.value) {
-            if (groupReports.value.showBar) {
-              GroupReportsToolbar(groupReports, withStatusBar = true, showGroupReports)
-            } else {
-              StatusBarBackground()
-            }
+          if (groupReports.value.showBar) {
+            ReportedCountToolbar(groupReports, withStatusBar = true, showGroupReports)
+          } else {
+            StatusBarBackground()
+          }
         } else {
           NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
         }
-        Column(if (oneHandUI.value && chatBottomBar.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
-          if (!groupReports.value.reportsView) {
+        if (groupReports.value.reportsView) {
+          if (oneHandUI.value) {
+            StatusBarBackground()
+          }
+          Column(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
+            Box {
+              if (selectedChatItems.value == null) {
+                GroupReportsAppBar(groupReports, { ModalManager.end.closeModal() }, showArchived = { showHide ->
+                  showArchivedReports.value = showHide
+                }, onSearchValueChanged)
+              } else {
+                SelectedItemsTopToolbar(selectedChatItems, !oneHandUI.value)
+              }
+            }
+          }
+        } else {
+          Column(if (oneHandUI.value && chatBottomBar.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
             Box {
               if (selectedChatItems.value == null) {
                 if (chatInfo != null) {
                   ChatInfoToolbar(chatInfo, groupReports, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
                 }
               } else {
-                SelectedItemsTopToolbar(selectedChatItems)
+                SelectedItemsTopToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
               }
             }
-          }
-          if (groupReports.value.showBar && (!oneHandUI.value || !chatBottomBar.value)) {
-            GroupReportsToolbar(groupReports, withStatusBar = false, showGroupReports)
-          }
-        }
-        if (groupReports.value.reportsView) {
-          if (oneHandUI.value) {
-            StatusBarBackground()
-          }
-          Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
-            GroupReportsAppBar(groupReports, { ModalManager.end.closeModal() }, showArchived = { showHide ->
-              showArchivedReports.value = showHide
-            }, onSearchValueChanged)
+            if (groupReports.value.showBar && (!oneHandUI.value || !chatBottomBar.value)) {
+              ReportedCountToolbar(groupReports, withStatusBar = false, showGroupReports)
+            }
           }
         }
       }
@@ -1047,7 +1081,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 }
 
 @Composable
-private fun GroupReportsToolbar(
+private fun ReportedCountToolbar(
   groupReports: State<GroupReports>,
   withStatusBar: Boolean,
   showGroupReports: () -> Unit
@@ -1139,7 +1173,7 @@ fun BoxScope.ChatItemsList(
   val maxHeightForList = rememberUpdatedState(
     with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
   )
-  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, saver = LazyListState.Saver) {
+  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, groupReports.value.showArchived, saver = LazyListState.Saver) {
     val index = mergedItems.value.items.indexOfLast { it.hasUnread() }
     val reportsState = reportsListState
     if (reportsState != null) {
@@ -1187,7 +1221,13 @@ fun BoxScope.ChatItemsList(
   }
   val scrollToQuotedItemFromItem: (Long) -> Unit = remember { findQuotedItemFromItem(remoteHostIdUpdated, chatInfoUpdated, scope, scrollToItem, groupReports.value.contentTag) }
   if (!groupReports.value.reportsView) {
-    LaunchedEffect(Unit) { snapshotFlow { scrollToItemId.value }.filterNotNull().collect { scrollToItem(it); scrollToItemId.value = null } }
+    LaunchedEffect(Unit) { snapshotFlow { scrollToItemId.value }.filterNotNull().collect {
+      if (appPlatform.isAndroid) {
+        ModalManager.end.closeModals()
+      }
+      scrollToItem(it)
+      scrollToItemId.value = null }
+    }
   }
   LoadLastItems(loadingMoreItems, remoteHostId, chatInfo, groupReports)
   SmallScrollOnNewMessage(listState, reversedChatItems)
@@ -2347,7 +2387,8 @@ fun Modifier.chatViewBackgroundModifier(
   colors: Colors,
   wallpaper: AppWallpaper,
   backgroundGraphicsLayerSize: MutableState<IntSize>?,
-  backgroundGraphicsLayer: GraphicsLayer?
+  backgroundGraphicsLayer: GraphicsLayer?,
+  drawWallpaper: Boolean
 ): Modifier {
   val wallpaperImage = wallpaper.type.image
   val wallpaperType = wallpaper.type
@@ -2355,7 +2396,7 @@ fun Modifier.chatViewBackgroundModifier(
   val tintColor = wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
 
   return this
-    .then(if (wallpaperImage != null)
+    .then(if (wallpaperImage != null && drawWallpaper)
       Modifier.drawWithCache { chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, backgroundGraphicsLayerSize, backgroundGraphicsLayer) }
     else
       Modifier.drawWithCache { onDrawBehind { copyBackgroundToAppBar(backgroundGraphicsLayerSize, backgroundGraphicsLayer) { drawRect(backgroundColor) } } }

@@ -21,11 +21,10 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
+fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>, onTop: Boolean) {
   val onBackClicked = { selectedChatItems.value = null }
   BackHandler(onBack = onBackClicked)
   val count = selectedChatItems.value?.size ?: 0
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
   DefaultAppBar(
     navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
     title = {
@@ -41,7 +40,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
       )
     },
     onTitleClick = null,
-    onTop = !oneHandUI.value,
+    onTop = onTop,
     onSearchValueChanged = {},
   )
 }
