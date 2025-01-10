@@ -447,7 +447,7 @@ struct ChatPreviewView: View {
 }
 
 @ViewBuilder func groupReportsIcon(size: CGFloat) -> some View {
-    Image(systemName: "flag.fill")
+    Image(systemName: "flag")
         .resizable()
         .scaledToFit()
         .frame(width: size, height: size)
