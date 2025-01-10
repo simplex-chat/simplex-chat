@@ -21,11 +21,10 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
+fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>, onTop: Boolean) {
   val onBackClicked = { selectedChatItems.value = null }
   BackHandler(onBack = onBackClicked)
   val count = selectedChatItems.value?.size ?: 0
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
   DefaultAppBar(
     navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
     title = {
@@ -41,7 +40,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
       )
     },
     onTitleClick = null,
-    onTop = !oneHandUI.value,
+    onTop = onTop,
     onSearchValueChanged = {},
   )
 }
@@ -49,7 +48,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
 @Composable
 fun SelectedItemsBottomToolbar(
   chatInfo: ChatInfo,
-  chatItems: List<ChatItem>,
+  reversedChatItems: State<List<ChatItem>>,
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   moderateItems: () -> Unit,
@@ -108,8 +107,8 @@ fun SelectedItemsBottomToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  LaunchedEffect(chatInfo, chatItems, selectedChatItems.value) {
-    recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
+  LaunchedEffect(chatInfo, reversedChatItems.value, selectedChatItems.value) {
+    recheckItems(chatInfo, reversedChatItems.value.asReversed(), selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
   }
 }
 

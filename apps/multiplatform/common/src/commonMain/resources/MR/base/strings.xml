@@ -40,6 +40,7 @@
   <string name="report_item_visibility_submitter">Only you and moderators see it</string>
   <string name="report_item_visibility_moderators">Only sender and moderators see it</string>
   <string name="report_item_archived">archived report</string>
+  <string name="report_item_archived_by">archived report by %s</string>
   <string name="blocked_item_description">blocked</string>
   <string name="blocked_by_admin_item_description">blocked by admin</string>
   <string name="blocked_items_description">%d messages blocked</string>
@@ -440,8 +441,13 @@
   <string name="chat_list_groups">Groups</string>
   <string name="chat_list_businesses">Businesses</string>
   <string name="chat_list_notes">Notes</string>
+  <string name="chat_list_group_reports">Reports</string>
   <string name="chat_list_all">All</string>
   <string name="chat_list_add_list">Add list</string>
+  <string name="group_reports_active_one">1 report</string>
+  <string name="group_reports_active">%d reports</string>
+  <string name="group_reports_member_reports">Member reports</string>
+  <string name="group_reports_archived_member_reports">Archived member reports</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>

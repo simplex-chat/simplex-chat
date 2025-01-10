@@ -32,6 +32,7 @@ import chat.simplex.common.model.ChatController.apiDeleteChatTag
 import chat.simplex.common.model.ChatController.apiSetChatTags
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -72,11 +73,11 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode:
 
   LazyColumnWithScrollBar(
     modifier = if (reorderMode) Modifier.dragContainer(dragDropState) else Modifier,
+    state = listState,
     contentPadding = PaddingValues(
       top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
       bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
     ),
-    state = listState,
     verticalArrangement = if (oneHandUI.value) Arrangement.Bottom else Arrangement.Top,
   ) {
     @Composable fun CreateList() {

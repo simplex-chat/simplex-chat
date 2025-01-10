@@ -175,7 +175,7 @@ fun ChatPreviewView(
         val (text: CharSequence, inlineTextContent) = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message to messageDraft(chatModelDraft, sp20) }
           ci.meta.itemDeleted == null -> ci.text to null
-          else -> markedDeletedText(ci) to null
+          else -> markedDeletedText(ci, chat.chatInfo) to null
         }
         val formattedText = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> null
@@ -322,6 +322,8 @@ fun ChatPreviewView(
     } else if (cInfo is ChatInfo.Group) {
       if (progressByTimeout) {
         progressView()
+      } else if (chat.chatStats.reportsCount > 0) {
+        GroupReportsIcon()
       } else {
         IncognitoIcon(chat.chatInfo.incognito)
       }
@@ -467,6 +469,18 @@ fun IncognitoIcon(incognito: Boolean) {
         .offset(x = 1.sp.toDp())
     )
   }
+}
+
+@Composable
+fun GroupReportsIcon() {
+  Icon(
+    painterResource(MR.images.ic_flag),
+    contentDescription = null,
+    tint = MaterialTheme.colors.error,
+    modifier = Modifier
+      .size(21.sp.toDp())
+      .offset(x = 2.sp.toDp())
+  )
 }
 
 @Composable

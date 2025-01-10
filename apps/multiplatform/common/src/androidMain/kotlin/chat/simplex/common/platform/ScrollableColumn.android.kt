@@ -29,6 +29,7 @@ actual fun LazyColumnWithScrollBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
   fillMaxSize: Boolean,
   content: LazyListScope.() -> Unit
@@ -92,6 +93,7 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   flingBehavior: FlingBehavior,
   userScrollEnabled: Boolean,
   additionalBarOffset: State<Dp>?,
+  additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
   content: LazyListScope.() -> Unit
 ) {
