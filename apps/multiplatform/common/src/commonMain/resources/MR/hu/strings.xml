@@ -29,7 +29,7 @@
     <string name="accept_connection_request__question">Kapcsolatkérés elfogadása?</string>
     <string name="accept_contact_button">Elfogadás</string>
     <string name="accept">Elfogadás</string>
-    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy az ismerősei megoszthassák másokkal. A profilfrissítés elküldésre kerül az ismerősök számára.</string>
+    <string name="add_address_to_your_profile">Cím hozzáadása a profilhoz, hogy az ismerősei megoszthassák másokkal. A profilfrissítés elküldésre fog kerülni az Ön ismerősei számára.</string>
     <string name="color_primary_variant">További kiemelés</string>
     <string name="callstatus_error">híváshiba</string>
     <string name="v5_4_block_group_members">Csoporttagok letiltása</string>
@@ -48,9 +48,9 @@
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító-kiszolgálók SOCKS-proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">Az ismerőseivel kapcsolatban marad. A profil-változtatások frissítésre kerülnek az ismerősöknél.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Az ismerőseivel kapcsolatban marad. A profilfrissítés elküldésre fog kerülni az Ön ismerősei számára.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
-    <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil lesz megosztva.</string>
+    <string name="connect__a_new_random_profile_will_be_shared">Egy új véletlenszerű profil kerül megosztásra.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="app_version_code">Az alkalmazás összeállítási száma: %s</string>
     <string name="audio_video_calls">Hang- és videóhívások</string>
@@ -135,7 +135,7 @@
     <string name="group_member_role_author">szerző</string>
     <string name="allow_your_contacts_irreversibly_delete">Az elküldött üzenetek végleges törlése engedélyezve van az ismerősei számára. (24 óra)</string>
     <string name="cancel_verb">Mégse</string>
-    <string name="notifications_mode_off_desc">Az alkalmazás csak akkor tud értesítéseket fogadni, amikor meg van nyitva. A háttérszolgáltatás nem indul el</string>
+    <string name="notifications_mode_off_desc">Az alkalmazás csak akkor tud értesítéseket fogadni, amikor meg van nyitva. A háttérszolgáltatás nem fog elndúlni</string>
     <string name="v5_1_better_messages">Továbbfejlesztett üzenetek</string>
     <string name="abort_switch_receiving_address_desc">A cím megváltoztatása meg fog szakadni. A régi fogadási cím kerül felhasználásra.</string>
     <string name="allow_verb">Engedélyezés</string>
@@ -344,15 +344,15 @@
     <string name="clear_chat_question">Üzenetek kiürítése?</string>
     <string name="database_downgrade">Adatbázis visszafejlesztése</string>
     <string name="clear_chat_button">Üzenetek kiürítése</string>
-    <string name="database_passphrase_will_be_updated">Adatbázis titkosítási jelmondat frissítve lesz.</string>
+    <string name="database_passphrase_will_be_updated">Az datbázis titkosítási jelmondata frissítve lesz.</string>
     <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
     <string name="database_error">Adatbázishiba</string>
-    <string name="database_encryption_will_be_updated_in_settings">Adatbázis titkosítási jelmondat frissül és eltárolásra kerül a beállításokban.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Az adatbázis titkosítási jelmondata frissülni fog és a beállításokban lesz tárolva.</string>
     <string name="info_row_database_id">Adatbázis-azonosító</string>
     <string name="share_text_database_id">Adatbázis-azonosító: %d</string>
     <string name="developer_options">Adatbázis-azonosítók és átvitel-izolációs beállítások.</string>
-    <string name="database_encryption_will_be_updated">Az adatbázis-titkosítási jelmondat megváltoztatásra és mentésre kerül a Keystore-ban.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Az adatbázis titkosításra kerül és a jelmondat eltárolásra a beállításokban.</string>
+    <string name="database_encryption_will_be_updated">Az adatbázis titkosítási jelmondata frissülni fog és a Keystore-ban lesz tárolva.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Az adatbázis titkosításra kerül, a jelmondat pedig a beállításokban lesz tárolva.</string>
     <string name="smp_servers_delete_server">Kiszolgáló törlése</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Az eszközön nincs beállítva a képernyőzár. A SimpleX-zár ki van kapcsolva.</string>
     <string name="no_call_on_lock_screen">Letiltás</string>
@@ -422,7 +422,7 @@
     <string name="delete_files_and_media_all">Az összes fájl törlése</string>
     <string name="database_will_be_encrypted">Az adatbázis titkosításra kerül.</string>
     <string name="database_passphrase_and_export">Adatbázis-jelmondat és -exportálás</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">Az adatbázis titkosításra kerül és a jelmondat a Keystore-ban lesz tárolva.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">Az adatbázis titkosításra kerül, a jelmondat pedig a Keystore-ban lesz tárolva.</string>
     <string name="enable_automatic_deletion_question">Automatikus üzenet törlés engedélyezése?</string>
     <string name="delete_contact_menu_action">Törlés</string>
     <string name="mtr_error_no_down_migration">az adatbázis verziója újabb, mint az alkalmazásé, visszafelé átköltöztetés nem lehetséges a következőhöz: %s</string>
@@ -1038,7 +1038,7 @@
     <string name="smp_servers_save">Kiszolgálók mentése</string>
     <string name="group_welcome_title">Üdvözlőüzenet</string>
     <string name="network_option_seconds_label">mp</string>
-    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés elküldésre került az ismerősök számára.</string>
+    <string name="profile_update_will_be_sent_to_contacts">A profilfrissítés elküldésre fog kerülni az Ön ismerősei számára.</string>
     <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognitómód</string>
     <string name="save_welcome_message_question">Üdvözlőüzenet mentése?</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Új csevegési fiók létrehozásához indítsa újra az alkalmazást.</string>
@@ -1446,7 +1446,7 @@
     <string name="v5_2_message_delivery_receipts_descr">A második jelölés, amit kihagytunk! ✅</string>
     <string name="relay_server_protects_ip">A továbbító-kiszolgáló megvédi az IP-címet, de megfigyelheti a hívás időtartamát.</string>
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
-    <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók eltávolításra kerülnek.</string>
+    <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók el lesznek távolítva.</string>
     <string name="receipts_groups_override_enabled">A kézbesítési jelentések engedélyezve vannak %d csoportban</string>
     <string name="member_role_will_be_changed_with_notification">A szerepkör meg fog változni a következőre: %s. A csoport tagjai értesítést fognak kapni.</string>
     <string name="users_delete_with_connections">Profil és kiszolgálókapcsolatok</string>
@@ -2236,7 +2236,7 @@
     <string name="no_unread_chats">Nincsenek olvasatlan csevegések</string>
     <string name="create_list">Lista létrehozása</string>
     <string name="save_list">Lista mentése</string>
-    <string name="delete_chat_list_warning">Az összes csevegés el lesz távolítva a következő listáról, és a lista is törlődik: %s</string>
+    <string name="delete_chat_list_warning">Az összes csevegés eltávolításra kerül a következő listáról, és a lista is törlődik: %s</string>
     <string name="delete_chat_list_menu_action">Törlés</string>
     <string name="delete_chat_list_question">Lista törlése?</string>
     <string name="edit_chat_list_menu_action">Szerkesztés</string>
@@ -2267,4 +2267,5 @@
     <string name="report_compose_reason_header_profile">Tag profiljának jelentése: csak a csoport moderátorai látják.</string>
     <string name="report_compose_reason_header_other">Egyéb jelentés: csak a csoport moderátorai látják.</string>
     <string name="report_compose_reason_header_community">Szabálysértés jelentése: csak a csoport moderátorai látják.</string>
+    <string name="archive_report">Jelentés archíválása</string>
 </resources>
