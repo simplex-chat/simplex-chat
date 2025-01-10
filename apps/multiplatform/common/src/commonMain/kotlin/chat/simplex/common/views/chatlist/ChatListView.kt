@@ -49,7 +49,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
-enum class PresetTagKind { FAVORITES, CONTACTS, GROUPS, BUSINESS, NOTES, GROUP_REPORTS }
+enum class PresetTagKind { GROUP_REPORTS, FAVORITES, CONTACTS, GROUPS, BUSINESS, NOTES }
 
 sealed class ActiveFilter {
   data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
@@ -939,10 +939,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   TagsRow {
     if (collapsedPresetTags.size > 1) {
       if (presetTags.size + userTags.value.size <= 3) {
-        val comparator = Comparator<PresetTagKind> { t1, t2 ->
-          if (t1 == PresetTagKind.GROUP_REPORTS) -1 else if (t2 == PresetTagKind.GROUP_REPORTS) 1 else 0
-        }
-        PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.sortedWith(comparator).forEach { tag ->
+        PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
           ExpandedTagFilterView(tag)
         }
       } else {
@@ -1230,6 +1227,10 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
 
 fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat.ChatStats): Boolean =
   when (tag) {
+    PresetTagKind.GROUP_REPORTS -> when (chatInfo) {
+      is ChatInfo.Group -> chatStats.reportsCount > 0
+      else -> false
+    }
     PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
     PresetTagKind.CONTACTS -> when (chatInfo) {
       is ChatInfo.Direct -> !(chatInfo.contact.activeConn == null && chatInfo.contact.profile.contactLink != null && chatInfo.contact.active) && !chatInfo.contact.chatDeleted
@@ -1250,20 +1251,16 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
       is ChatInfo.Local -> !chatInfo.noteFolder.chatDeleted
       else -> false
     }
-    PresetTagKind.GROUP_REPORTS -> when (chatInfo) {
-      is ChatInfo.Group -> chatStats.reportsCount > 0
-      else -> false
-    }
   }
 
 private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResource, StringResource> =
   when (tag) {
+    PresetTagKind.GROUP_REPORTS -> (if (active) MR.images.ic_flag_filled else MR.images.ic_flag) to MR.strings.chat_list_group_reports
     PresetTagKind.FAVORITES -> (if (active) MR.images.ic_star_filled else MR.images.ic_star) to MR.strings.chat_list_favorites
     PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
     PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
     PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
     PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed) to MR.strings.chat_list_notes
-    PresetTagKind.GROUP_REPORTS -> (if (active) MR.images.ic_flag_filled else MR.images.ic_flag) to MR.strings.chat_list_group_reports
   }
 
 private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {
