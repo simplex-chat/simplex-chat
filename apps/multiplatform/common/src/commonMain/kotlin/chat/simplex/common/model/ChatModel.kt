@@ -799,11 +799,6 @@ object ChatModel {
       changeUnreadCounterNoContentTag(rhId, user, -by)
     }
 
-    private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
-      if (by == 0 || contentTag != null) return
-      presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
-    }
-
     private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {
       // updates anything only in main ChatView, not GroupReportsView or anything else from the future
       if (contentTag != null) return
@@ -874,6 +869,11 @@ object ChatModel {
         val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
         changeGroupReportsTagNoContentTag(by)
       }
+    }
+
+    private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
+      if (by == 0 || contentTag != null) return
+      presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
     }
   }
 
