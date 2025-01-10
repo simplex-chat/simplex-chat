@@ -2479,6 +2479,10 @@ object ChatController {
           if (active(r.user)) {
             withChats {
               addChatItem(rhId, cInfo, cItem)
+              val isActiveReport = cItem.isReport && !cItem.isDeletedContent && cItem.meta.itemDeleted == null
+              if (isActiveReport) {
+                increaseGroupReportsCounter(rhId, cInfo.id)
+              }
             }
             withReportsChatsIfOpen {
               if (cItem.isReport) {

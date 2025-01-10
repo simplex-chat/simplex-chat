@@ -799,8 +799,19 @@ object ChatModel {
       changeUnreadCounterNoContentTag(rhId, user, -by)
     }
 
+    fun increaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        val chat = chats.value[i]
+        chats[i] = chat.copy(
+          chatStats = chat.chatStats.copy(
+            reportsCount = chat.chatStats.reportsCount + 1
+          )
+        )
+      }
+    }
+
     fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId, wasArchived: Boolean) {
-      return
       val i = getChatIndex(rhId, chatId)
       if (i >= 0) {
         val chat = chats.value[i]
