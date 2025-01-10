@@ -2392,6 +2392,8 @@ data class ChatItem (
     else -> false
   }
 
+  val isActiveReport: Boolean get() = isReport && !isDeletedContent && meta.itemDeleted == null
+
   val canBeDeletedForSelf: Boolean
     get() = (content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete
 

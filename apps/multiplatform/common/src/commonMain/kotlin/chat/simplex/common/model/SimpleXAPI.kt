@@ -2479,8 +2479,7 @@ object ChatController {
           if (active(r.user)) {
             withChats {
               addChatItem(rhId, cInfo, cItem)
-              val isActiveReport = cItem.isReport && !cItem.isDeletedContent && cItem.meta.itemDeleted == null
-              if (isActiveReport) {
+              if (cItem.isActiveReport) {
                 increaseGroupReportsCounter(rhId, cInfo.id)
               }
             }
@@ -2614,8 +2613,7 @@ object ChatController {
               CIDeleted.Deleted(Clock.System.now())
             }
             upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
-            val isActiveReport = cItem.isReport && !cItem.isDeletedContent && cItem.meta.itemDeleted == null
-            if (isActiveReport) {
+            if (cItem.isActiveReport) {
               decreaseGroupReportsCounter(rhId, cInfo.id, wasModerated)
             }
           }

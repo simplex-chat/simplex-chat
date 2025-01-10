@@ -398,8 +398,7 @@ fun ChatView(
                       removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
                     val deletedItem = deleted.deletedChatItem.chatItem
-                    val isActiveReport = deletedItem.isReport == true && !deletedItem.isDeletedContent && deletedItem.meta.itemDeleted == null
-                    if (isActiveReport) {
+                    if (deletedItem.isActiveReport) {
                       decreaseGroupReportsCounter(chatRh, chatInfo.id, toChatItem != null)
                     }
                   }
@@ -2334,8 +2333,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
               removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
             val deletedItem = di.deletedChatItem.chatItem
-            val isActiveReport = deletedItem.isReport && !deletedItem.isDeletedContent && deletedItem.meta.itemDeleted == null
-            if (isActiveReport) {
+            if (deletedItem.isActiveReport) {
               decreaseGroupReportsCounter(chatRh, chatInfo.id, toChatItem != null)
             }
           }
