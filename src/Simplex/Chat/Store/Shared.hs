@@ -157,16 +157,21 @@ checkConstraint :: StoreError -> ExceptT StoreError IO a -> ExceptT StoreError I
 checkConstraint err action = ExceptT $ runExceptT action `E.catch` (pure . Left . handleSQLError err)
 
 #if defined(dbPostgres)
-handleSQLError :: StoreError -> SqlError -> StoreError
-handleSQLError err e = case constraintViolation e of
-  Just _ -> err
-  Nothing -> SEInternalError $ show e
+type SQLError = SqlError
+#endif
+
+constraintError :: SQLError -> Bool
+#if defined(dbPostgres)
+constraintError = isJust . constraintViolation
 #else
+constraintError e = SQL.sqlError e == SQL.ErrorConstraint
+#endif
+{-# INLINE constraintError #-}
+
 handleSQLError :: StoreError -> SQLError -> StoreError
 handleSQLError err e
-  | SQL.sqlError e == SQL.ErrorConstraint = err
+  | constraintError e = err
   | otherwise = SEInternalError $ show e
-#endif
 
 storeFinally :: ExceptT StoreError IO a -> ExceptT StoreError IO b -> ExceptT StoreError IO a
 storeFinally = allFinally mkStoreError
@@ -510,15 +515,9 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
               VALUES (?,?,?,?,?,?)
             |]
             (ldn, displayName, ldnSuffix, userId, ts, ts)
-#if defined(dbPostgres)
-    handleErr ldnSuffix attempts e = case constraintViolation e of
-      Just _ -> tryCreateName (ldnSuffix + 1) (attempts - 1)
-      Nothing -> E.throwIO e
-#else
     handleErr ldnSuffix attempts e
-      | SQL.sqlError e == SQL.ErrorConstraint = tryCreateName (ldnSuffix + 1) (attempts - 1)
+      | constraintError e = tryCreateName (ldnSuffix + 1) (attempts - 1)
       | otherwise = E.throwIO e
-#endif
 
 createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomId = createWithRandomBytes 12
@@ -539,15 +538,9 @@ createWithRandomBytes' size gVar create = tryCreate 3
       liftIO (E.try $ create id') >>= \case
         Right x -> liftEither x
         Left e -> handleErr n e
-#if defined(dbPostgres)
-    handleErr n e = case constraintViolation e of
-      Just _ -> tryCreate (n - 1)
-      Nothing -> throwError . SEInternalError $ show e
-#else
     handleErr n e
-      | SQL.sqlError e == SQL.ErrorConstraint = tryCreate (n - 1)
+      | constraintError e = tryCreate (n - 1)
       | otherwise = throwError . SEInternalError $ show e
-#endif
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
