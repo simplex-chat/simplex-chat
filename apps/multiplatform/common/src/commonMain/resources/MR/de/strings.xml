@@ -2378,4 +2378,10 @@
     <string name="archive_report">Bericht archivieren</string>
     <string name="delete_report">Bericht löschen</string>
     <string name="report_reason_community">Verstoß gegen die Gemeinschaftsrichtlinien</string>
+    <string name="report_item_archived_by">Von %s archivierter Bericht</string>
+    <string name="group_reports_active_one">1 Bericht</string>
+    <string name="group_reports_active">%d Berichte</string>
+    <string name="group_reports_member_reports">Mitglieds-Berichte</string>
+    <string name="chat_list_group_reports">Berichte</string>
+    <string name="group_reports_archived_member_reports">Archivierte Mitglieds-Berichte</string>
 </resources>
