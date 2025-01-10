@@ -2590,8 +2590,9 @@ object ChatController {
         }
         val cInfo = ChatInfo.Group(r.groupInfo)
         withChats {
+          decreaseGroupReportsCounter(rhId, cInfo.id)
           r.chatItemIDs.forEach { itemId ->
-            val cItem = chatItems.value.firstOrNull { it.id == itemId } ?: return@forEach
+            val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
             if (chatModel.chatId.value != null) {
               // Stop voice playback only inside a chat, allow to play in a chat list
               AudioPlayer.stop(cItem)
@@ -2606,25 +2607,22 @@ object ChatController {
                 generalGetString(MR.strings.marked_deleted_description)
               )
             }
-            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_) {
+            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
               CIDeleted.Moderated(Clock.System.now(), r.member_)
             } else {
               CIDeleted.Deleted(Clock.System.now())
             }
             upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
-            if (cItem.isActiveReport) {
-              decreaseGroupReportsCounter(rhId, cInfo.id)
-            }
           }
         }
         withReportsChatsIfOpen {
           r.chatItemIDs.forEach { itemId ->
-            val cItem = chatItems.value.firstOrNull { it.id == itemId } ?: return@forEach
+            val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
             if (chatModel.chatId.value != null) {
               // Stop voice playback only inside a chat, allow to play in a chat list
               AudioPlayer.stop(cItem)
             }
-            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_) {
+            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
               CIDeleted.Moderated(Clock.System.now(), r.member_)
             } else {
               CIDeleted.Deleted(Clock.System.now())
