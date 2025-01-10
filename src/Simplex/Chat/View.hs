@@ -2221,10 +2221,7 @@ viewChatError isCmd logLevel testView = \case
     CMD PROHIBITED cxt -> [withConnEntity <> plain ("error: command is prohibited, " <> cxt)]
     SMP _ SMP.AUTH ->
       [ withConnEntity
-          <> (
-               "error: connection authorization failed - this could happen if connection was deleted," <>
-               " secured with different credentials, or due to a bug - please re-create the connection"
-             )
+          <> "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       ]
     BROKER _ NETWORK | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []
