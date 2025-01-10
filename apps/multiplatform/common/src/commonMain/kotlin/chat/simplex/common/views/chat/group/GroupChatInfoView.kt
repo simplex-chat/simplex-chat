@@ -46,7 +46,7 @@ import kotlinx.coroutines.*
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
+fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, scrollToItemId: MutableState<Long?>, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
@@ -71,6 +71,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
         .sortedByDescending { it.memberRole },
       developerTools,
       groupLink,
+      scrollToItemId,
       addMembers = {
         scope.launch(Dispatchers.Default) {
           setGroupMembers(rhId, groupInfo, chatModel)
@@ -286,6 +287,7 @@ fun ModalData.GroupChatInfoLayout(
   members: List<GroupMember>,
   developerTools: Boolean,
   groupLink: String?,
+  scrollToItemId: MutableState<Long?>,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
@@ -362,6 +364,13 @@ fun ModalData.GroupChatInfoLayout(
         }
         val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
         GroupPreferencesButton(prefsTitleId, openPreferences)
+        if (chat.chatStats.reportsCount > 0 || chat.chatStats.archivedReportsCount > 0) {
+          GroupReportsButton(chat.chatStats) {
+            scope.launch {
+              showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
+            }
+          }
+        }
         if (members.filter { it.memberCurrent }.size <= SMALL_GROUPS_RCPS_MEM_LIMIT) {
           SendReceiptsOption(currentUser, sendReceipts, setSendReceipts)
         } else {
@@ -487,6 +496,15 @@ private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit)
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
     stringResource(titleId),
+    click = onClick
+  )
+}
+
+@Composable
+private fun GroupReportsButton(chatStats: Chat.ChatStats, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_flag),
+    stringResource(if (chatStats.reportsCount > 0) MR.strings.group_reports_member_reports else MR.strings.group_reports_archived_member_reports),
     click = onClick
   )
 }
@@ -741,6 +759,7 @@ fun PreviewGroupChatInfoLayout() {
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       groupLink = null,
+      scrollToItemId = remember { mutableStateOf(null) },
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {},
     )
   }

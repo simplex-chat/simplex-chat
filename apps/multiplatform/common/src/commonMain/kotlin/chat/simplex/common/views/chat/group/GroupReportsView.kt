@@ -39,7 +39,7 @@ data class GroupReports(
 }
 
 @Composable
-fun GroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
+private fun GroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
   ChatView(staleChatId, reportsView = true, scrollToItemId, onComposed = {})
 }
 
@@ -140,6 +140,24 @@ private fun ItemsReload(groupReports: State<GroupReports>) {
       }
   }
 }
+
+suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
+  openChat(chatModel.remoteHostId(), chatInfo, ContentFilter(MsgContentTag.Report, false))
+  ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close ->
+    ModalView({}, showAppBar = false) {
+      val chatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatInfo } }.value
+      val chatStats = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatStats } }.value
+      if (chatInfo is ChatInfo.Group && chatStats != null && (chatStats.reportsCount > 0 || chatStats.archivedReportsCount > 0)) {
+        GroupReportsView(staleChatId, scrollToItemId)
+      } else {
+        LaunchedEffect(Unit) {
+          close()
+        }
+      }
+    }
+  }
+}
+
 private suspend fun reloadItems(chat: Chat, groupReports: State<GroupReports>) {
   val contentFilter = groupReports.value.toContentFilter()
   if (chat.chatStats.reportsCount > 0 || contentFilter?.deleted == true) {

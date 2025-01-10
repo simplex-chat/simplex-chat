@@ -297,7 +297,7 @@ fun ChatView(
                       link = chatModel.controller.apiGetGroupLink(chatRh, chatInfo.groupInfo.groupId)
                       preloadedLink = link
                     }
-                    GroupChatInfoView(chatModel, chatRh, chatInfo.id, link?.first, link?.second, {
+                    GroupChatInfoView(chatModel, chatRh, chatInfo.id, link?.first, link?.second, scrollToItemId, {
                       link = it
                       preloadedLink = it
                     }, close, { showSearch.value = true })
@@ -317,19 +317,7 @@ fun ChatView(
               }
               hideKeyboard(view)
               scope.launch {
-                openChat(chatModel.remoteHostId(), info, ContentFilter(MsgContentTag.Report, false))
-                ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close ->
-                  ModalView({}, showAppBar = false) {
-                    val chatInfo = remember { activeChatInfo }.value
-                    if (chatInfo is ChatInfo.Group) {
-                      GroupReportsView(staleChatId, scrollToItemId)
-                    } else {
-                      LaunchedEffect(Unit) {
-                        close()
-                      }
-                    }
-                  }
-                }
+                showGroupReportsView(staleChatId, scrollToItemId, info)
               }
             },
             showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->

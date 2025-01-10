@@ -447,6 +447,7 @@
   <string name="group_reports_active_one">1 report</string>
   <string name="group_reports_active">%d reports</string>
   <string name="group_reports_member_reports">Member reports</string>
+  <string name="group_reports_archived_member_reports">Archived member reports</string>
   <string name="group_reports_show_archived">Show archived</string>
   <string name="group_reports_show_active">Show active</string>
 
