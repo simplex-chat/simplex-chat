@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
@@ -184,12 +183,11 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
     deContactConnected ct = when (contactDirect ct) $ do
       logInfo $ (viewContactName ct) <> " connected"
       sendMessage cc ct $
-        ("Welcome to " <> serviceName <> " service!\n"
-          <> "Send a search string to find groups or */help* to learn how to add groups to directory.\n\n"
-          <> "For example, send _privacy_ to find groups about privacy.\n"
-          <> "Or send */all* or */new* to list groups.\n\n"
-          <> "Content and privacy policy: https://simplex.chat/docs/directory.html"
-        )
+        ("Welcome to " <> serviceName <> " service!\n")
+          <> "Send a search string to find groups or */help* to learn how to add groups to directory.\n\n\
+             \For example, send _privacy_ to find groups about privacy.\n\
+             \Or send */all* or */new* to list groups.\n\n\
+             \Content and privacy policy: https://simplex.chat/docs/directory.html"
 
     deGroupInvitation :: Contact -> GroupInfo -> GroupMemberRole -> GroupMemberRole -> IO ()
     deGroupInvitation ct g@GroupInfo {groupProfile = GroupProfile {displayName, fullName}} fromMemberRole memberRole = do
@@ -250,11 +248,9 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
               setGroupStatus st gr GRSPendingUpdate
               notifyOwner
                 gr
-                (
-                  "Created the public link to join the group via this directory service that is always online.\n\n"
-                  <> "Please add it to the group welcome message.\n"
-                  <> "For example, add:"
-                )
+                "Created the public link to join the group via this directory service that is always online.\n\n\
+                \Please add it to the group welcome message.\n\
+                \For example, add:"
               notifyOwner gr $ "Link to join the group " <> displayName <> ": " <> strEncodeTxt (simplexChatContact connReqContact)
             CRChatCmdError _ (ChatError e) -> case e of
               CEGroupUserRole {} -> notifyOwner gr "Failed creating group link, as service is no longer an admin."
@@ -445,15 +441,17 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case
       DCHelp ->
-        sendMessage cc ct
-          (
-            "You must be the owner to add the group to the directory:\n"
-            <> ("1. Invite " <> serviceName <> " bot to your group as *admin* (you can send `/list` to see all groups you submitted).\n")
-            <> ("2. " <> serviceName <> " bot will create a public group link for the new members to join even when you are offline.\n")
-            <> "3. You will then need to add this link to the group welcome message.\n"
-            <> "4. Once the link is added, service admins will approve the group (it can take up to 48 hours), and everybody will be able to find it in directory.\n\n"
-            <> "Start from inviting the bot to your group as admin - it will guide you through the process"
-          )
+        sendMessage cc ct $
+          "You must be the owner to add the group to the directory:\n\
+          \1. Invite "
+            <> serviceName
+            <> " bot to your group as *admin* (you can send `/list` to see all groups you submitted).\n\
+               \2. "
+            <> serviceName
+            <> " bot will create a public group link for the new members to join even when you are offline.\n\
+               \3. You will then need to add this link to the group welcome message.\n\
+               \4. Once the link is added, service admins will approve the group (it can take up to 48 hours), and everybody will be able to find it in directory.\n\n\
+               \Start from inviting the bot to your group as admin - it will guide you through the process"
       DCSearchGroup s -> withFoundListedGroups (Just s) $ sendSearchResults s
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case

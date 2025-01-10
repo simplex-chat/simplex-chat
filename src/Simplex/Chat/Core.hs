@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -97,12 +96,10 @@ getSelectActiveUser st = do
 createActiveUser :: ChatController -> IO User
 createActiveUser cc = do
   putStrLn
-    (
-      "No user profiles found, it will be created now.\n" <>
-      "Please choose your display name.\n" <>
-      "It will be sent to your contacts when you connect.\n" <>
-      "It is only stored on your device and you can change it later."
-    )
+    "No user profiles found, it will be created now.\n\
+    \Please choose your display name.\n\
+    \It will be sent to your contacts when you connect.\n\
+    \It is only stored on your device and you can change it later."
   loop
   where
     loop = do
