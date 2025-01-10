@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
@@ -58,7 +59,6 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -73,6 +73,9 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
 import Simplex.RemoteControl.Types (RCCtrlAddress (..), RCErrorType (..))
 import System.Console.ANSI.Types
+#if !defined(dbPostgres)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+#endif
 
 type CurrentTime = UTCTime
 
@@ -390,6 +393,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlStopped {rcStopReason} -> viewRemoteCtrlStopped rcStopReason
   CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption enabled"]
   CRSQLResult rows -> map plain rows
+#if !defined(dbPostgres)
+  CRArchiveExported archiveErrs -> if null archiveErrs then ["ok"] else ["archive export errors: " <> plain (show archiveErrs)]
+  CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
           ("count: " <> sShow count)
@@ -397,6 +403,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
+#endif
   CRDebugLocks {chatLockName, chatEntityLocks, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       "chat entity locks: " <> viewJSON chatEntityLocks,
@@ -441,8 +448,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
-  CRArchiveExported archiveErrs -> if null archiveErrs then ["ok"] else ["archive export errors: " <> plain (show archiveErrs)]
-  CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRTimedAction _ _ -> []
   CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
@@ -2216,8 +2221,7 @@ viewChatError isCmd logLevel testView = \case
     CMD PROHIBITED cxt -> [withConnEntity <> plain ("error: command is prohibited, " <> cxt)]
     SMP _ SMP.AUTH ->
       [ withConnEntity
-          <> "error: connection authorization failed - this could happen if connection was deleted,\
-             \ secured with different credentials, or due to a bug - please re-create the connection"
+          <> "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       ]
     BROKER _ NETWORK | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []

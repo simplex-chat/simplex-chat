@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -96,9 +97,6 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
 import Data.Word (Word32)
-import Database.SQLite.Simple (Only (..), (:.) (..))
-import Database.SQLite.Simple.QQ (sql)
-import Database.SQLite.Simple.ToField (ToField)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
@@ -110,7 +108,8 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (week)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -118,6 +117,15 @@ import Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Version
 import System.FilePath (takeFileName)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+import Database.PostgreSQL.Simple.ToField (ToField)
+#else
+import Database.SQLite.Simple (Only (..), (:.) (..))
+import Database.SQLite.Simple.QQ (sql)
+import Database.SQLite.Simple.ToField (ToField)
+#endif
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -283,7 +291,7 @@ createSndFTDescrXFTP db User {userId} m Connection {connId} FileTransferMeta {fi
   DB.execute
     db
     "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-    (userId, fileDescrText, fileDescrPartNo, fileDescrComplete, currentTs, currentTs)
+    (userId, fileDescrText, fileDescrPartNo, BI fileDescrComplete, currentTs, currentTs)
   fileDescrId <- insertedRowId db
   DB.execute
     db
@@ -308,7 +316,7 @@ updateSndFTDescrXFTP db user@User {userId} sft@SndFileTransfer {fileId, fileDesc
       SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?, updated_at = ?
       WHERE user_id = ? AND file_descr_id = ?
     |]
-    (rfdText, 1 :: Int, True, currentTs, userId, fileDescrId)
+    (rfdText, 1 :: Int, BI True, currentTs, userId, fileDescrId)
   updateCIFileStatus db user fileId $ CIFSSndTransfer 1 1
   updateSndFileStatus db sft FSConnected
 
@@ -574,7 +582,7 @@ createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, file
     DB.execute
       db
       "INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (userId, fileDescrText, fileDescrPartNo, fileDescrComplete, currentTs, currentTs)
+      (userId, fileDescrText, fileDescrPartNo, BI fileDescrComplete, currentTs, currentTs)
     insertedRowId db
   pure RcvFileDescr {fileDescrId, fileDescrPartNo, fileDescrText, fileDescrComplete}
 
@@ -607,7 +615,7 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
               SET file_descr_text = ?, file_descr_part_no = ?, file_descr_complete = ?
               WHERE file_descr_id = ?
             |]
-            (fileDescrText', fileDescrPartNo, fileDescrComplete, fileDescrId)
+            (fileDescrText', fileDescrPartNo, BI fileDescrComplete, fileDescrId)
         pure RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
 
 getRcvFileDescrByRcvFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
@@ -650,8 +658,8 @@ getRcvFileDescrBySndFileId_ db fileId =
       |]
       (Only fileId)
 
-toRcvFileDescr :: (Int64, Text, Int, Bool) -> RcvFileDescr
-toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
+toRcvFileDescr :: (Int64, Text, Int, BoolInt) -> RcvFileDescr
+toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, BI fileDescrComplete) =
   RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
 
 updateRcvFileAgentId :: DB.Connection -> FileTransferId -> Maybe AgentRcvFileId -> IO ()
@@ -682,8 +690,8 @@ getRcvFileTransfer_ db userId fileId = do
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN connections c ON r.file_id = c.rcv_file_id
-          LEFT JOIN contacts cs USING (contact_id)
-          LEFT JOIN group_members m USING (group_member_id)
+          LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
+          LEFT JOIN group_members m ON m.group_member_id = r.group_member_id
           WHERE f.user_id = ? AND f.file_id = ?
         |]
         (userId, fileId)
@@ -692,9 +700,9 @@ getRcvFileTransfer_ db userId fileId = do
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, Bool, Bool) :. (Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) :. (Maybe Int64, Maybe AgentConnId) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, agentRcvFileDeleted, userApprovedRelays) :. (connId_, agentConnId_)) =
+    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, BI agentRcvFileDeleted, BI userApprovedRelays) :. (connId_, agentConnId_)) =
       case contactName_ <|> memberName_ <|> standaloneName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name ->
@@ -717,7 +725,7 @@ getRcvFileTransfer_ db userId fileId = do
         rfi_ = case (filePath_, connId_, agentConnId_) of
           (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           _ -> pure Nothing
-        cancelled = fromMaybe False cancelled_
+        cancelled = maybe False unBI cancelled_
 
 acceptRcvFileTransfer :: DB.Connection -> VersionRangeChat -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
 acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
@@ -726,7 +734,7 @@ acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus f
   DB.execute
     db
     "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at, to_subscribe) VALUES (?,?,?,?,?,?,?,?)"
-    (acId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs, subMode == SMOnlyCreate)
+    (acId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs, BI (subMode == SMOnlyCreate))
   connId <- insertedRowId db
   setCommandConnId db user cmdId connId
   runExceptT $ getChatItemByFileId db vr user fileId
@@ -763,7 +771,7 @@ acceptRcvFT_ db User {userId} fileId filePath userApprovedRelays rcvFileInline c
   DB.execute
     db
     "UPDATE rcv_files SET user_approved_relays = ?, rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"
-    (userApprovedRelays, rcvFileInline, FSAccepted, currentTs, fileId)
+    (BI userApprovedRelays, rcvFileInline, FSAccepted, currentTs, fileId)
 
 setRcvFileToReceive :: DB.Connection -> FileTransferId -> Bool -> Maybe CryptoFileArgs -> IO ()
 setRcvFileToReceive db fileId userApprovedRelays cfArgs_ = do
@@ -775,7 +783,7 @@ setRcvFileToReceive db fileId userApprovedRelays cfArgs_ = do
       SET to_receive = 1, user_approved_relays = ?, updated_at = ?
       WHERE file_id = ?
     |]
-    (userApprovedRelays, currentTs, fileId)
+    (BI userApprovedRelays, currentTs, fileId)
   forM_ cfArgs_ $ \cfArgs -> setFileCryptoArgs_ db fileId cfArgs currentTs
 
 setFileCryptoArgs :: DB.Connection -> FileTransferId -> CryptoFileArgs -> IO ()
@@ -928,8 +936,8 @@ getSndFileTransfers_ db userId fileId =
         FROM snd_files s
         JOIN files f USING (file_id)
         JOIN connections c USING (connection_id)
-        LEFT JOIN contacts cs USING (contact_id)
-        LEFT JOIN group_members m USING (group_member_id)
+        LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
+        LEFT JOIN group_members m ON m.group_member_id = s.group_member_id
         WHERE f.user_id = ? AND f.file_id = ?
       |]
       (userId, fileId)
@@ -955,11 +963,11 @@ getFileTransferMeta_ db userId fileId =
       |]
       (userId, fileId)
   where
-    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe AgentSndFileId, Bool, Maybe Text, Maybe Bool, Maybe FileTransferId) -> FileTransferMeta
-    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileKey, fileNonce, fileInline, aSndFileId_, agentSndFileDeleted, privateSndFileDescr, cancelled_, xftpRedirectFor) =
+    fileTransferMeta :: (String, Integer, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe AgentSndFileId, BoolInt, Maybe Text, Maybe BoolInt, Maybe FileTransferId) -> FileTransferMeta
+    fileTransferMeta (fileName, fileSize, chunkSize, filePath, fileKey, fileNonce, fileInline, aSndFileId_, BI agentSndFileDeleted, privateSndFileDescr, cancelled_, xftpRedirectFor) =
       let cryptoArgs = CFArgs <$> fileKey <*> fileNonce
           xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
-       in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
+       in FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = maybe False unBI cancelled_}
 
 lookupFileTransferRedirectMeta :: DB.Connection -> User -> Int64 -> IO [FileTransferMeta]
 lookupFileTransferRedirectMeta db User {userId} fileId = do
