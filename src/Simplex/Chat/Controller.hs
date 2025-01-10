@@ -1524,22 +1524,17 @@ withStoreBatch actions = do
   ChatController {chatStore} <- ask
   liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
 
--- TODO [postgres] postgres specific error handling
-#if defined(dbPostgres)
 handleDBErrors :: [E.Handler IO (Either ChatError a)]
 handleDBErrors =
-  [ E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
-  ]
-#else
-handleDBErrors :: [E.Handler IO (Either ChatError a)]
-handleDBErrors =
-  [ E.Handler $ \(e :: SQLError) ->
+#if !defined(dbPostgres)
+  ( E.Handler $ \(e :: SQLError) ->
       let se = SQL.sqlError e
           busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
-       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
-    E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
-  ]
+       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e
+  ) :
 #endif
+  [ E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
+  ]
 
 withStoreBatch' :: Traversable t => (DB.Connection -> t (IO a)) -> CM' (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
