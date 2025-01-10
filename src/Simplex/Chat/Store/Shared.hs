@@ -505,8 +505,8 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
       E.try (insertName ldn currentTs) >>= \case
         Right () -> action ldn
         Left e
-          | constraintError e = tryCreateName (ldnSuffix + 1) (attempts - 1)
-          | otherwise = E.throwIO e
+          | constraintError e -> tryCreateName (ldnSuffix + 1) (attempts - 1)
+          | otherwise -> E.throwIO e
       where
         insertName ldn ts =
           DB.execute
