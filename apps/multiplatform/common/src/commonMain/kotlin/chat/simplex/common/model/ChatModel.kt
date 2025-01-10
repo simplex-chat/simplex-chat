@@ -799,32 +799,6 @@ object ChatModel {
       changeUnreadCounterNoContentTag(rhId, user, -by)
     }
 
-    fun increaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
-      changeGroupReportsCounter(rhId, chatId, 1)
-    }
-
-    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
-      changeGroupReportsCounter(rhId, chatId, -1)
-    }
-
-    private fun changeGroupReportsCounter(rhId: Long?, chatId: ChatId, by: Int = 0) {
-      if (by == 0) return
-
-      val i = getChatIndex(rhId, chatId)
-      if (i >= 0) {
-        val chat = chats.value[i]
-        chats[i] = chat.copy(
-          chatStats = chat.chatStats.copy(
-            reportsCount = (chat.chatStats.reportsCount + by).coerceAtLeast(0),
-          )
-        )
-        val wasReportsCount = chat.chatStats.reportsCount
-        val nowReportsCount = chats[i].chatStats.reportsCount
-        val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
-        changeGroupReportsTagNoContentTag(by)
-      }
-    }
-
     private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
       if (by == 0 || contentTag != null) return
       presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
@@ -873,6 +847,32 @@ object ChatModel {
         if (count != null) {
           unreadTags[tag] = maxOf(0, count - 1)
         }
+      }
+    }
+
+    fun increaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
+      changeGroupReportsCounter(rhId, chatId, 1)
+    }
+
+    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
+      changeGroupReportsCounter(rhId, chatId, -1)
+    }
+
+    private fun changeGroupReportsCounter(rhId: Long?, chatId: ChatId, by: Int = 0) {
+      if (by == 0) return
+
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        val chat = chats.value[i]
+        chats[i] = chat.copy(
+          chatStats = chat.chatStats.copy(
+            reportsCount = (chat.chatStats.reportsCount + by).coerceAtLeast(0),
+          )
+        )
+        val wasReportsCount = chat.chatStats.reportsCount
+        val nowReportsCount = chats[i].chatStats.reportsCount
+        val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
+        changeGroupReportsTagNoContentTag(by)
       }
     }
   }
