@@ -1202,7 +1202,7 @@ getGroupChat db vr user groupId contentFilter pagination search_ = do
   let search = fromMaybe "" search_
   g <- getGroupInfo db vr user groupId
   case pagination of
-    CPLast count -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g contentFilter count search
+    CPLast count -> liftIO $ (,Nothing) <$> getGroupChatLast_ db user g contentFilter count search emptyChatStats
     CPAfter afterId count -> (,Nothing) <$> getGroupChatAfter_ db user g contentFilter afterId count search
     CPBefore beforeId count -> (,Nothing) <$> getGroupChatBefore_ db user g contentFilter beforeId count search
     CPAround aroundId count -> getGroupChatAround_ db user g contentFilter aroundId count search
@@ -1210,12 +1210,12 @@ getGroupChat db vr user groupId contentFilter pagination search_ = do
       unless (null search) $ throwError $ SEInternalError "initial chat pagination doesn't support search"
       getGroupChatInitial_ db user g contentFilter count
 
-getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> Int -> String -> IO (Chat 'CTGroup)
-getGroupChatLast_ db user g contentFilter count search = do
+getGroupChatLast_ :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> Int -> String -> ChatStats -> IO (Chat 'CTGroup)
+getGroupChatLast_ db user g contentFilter count search stats = do
   ciIds <- getGroupChatItemIDs db user g contentFilter GRLast count search
   ts <- getCurrentTime
   cis <- mapM (safeGetGroupItem db user g ts) ciIds
-  pure $ Chat (GroupChat g) (reverse cis) emptyChatStats
+  pure $ Chat (GroupChat g) (reverse cis) stats
 
 data GroupItemIDsRange = GRLast | GRAfter UTCTime ChatItemId | GRBefore UTCTime ChatItemId
 
@@ -1337,15 +1337,19 @@ getGroupChatAround' db user g@GroupInfo {groupId} contentFilter aroundId count s
       cis -> getGroupNavInfo_ db user g (last cis)
 
 getGroupChatInitial_ :: DB.Connection -> User -> GroupInfo -> Maybe ContentFilter -> Int -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatInitial_ db user g contentFilter count =
+getGroupChatInitial_ db user g contentFilter count = do
   liftIO (getGroupMinUnreadId_ db user g contentFilter) >>= \case
     Just minUnreadItemId -> do
-      unreadCount <- liftIO $ getGroupUnreadCount_ db user g Nothing
-      reportsCount <- liftIO $ getGroupReportsCount_ db user g False
-      archivedReportsCount <- liftIO $ getGroupReportsCount_ db user g True
-      let stats = ChatStats {unreadCount, reportsCount, archivedReportsCount, minUnreadItemId, unreadChat = False}
+      stats <- liftIO $ getStats minUnreadItemId =<< getGroupUnreadCount_ db user g Nothing
       getGroupChatAround' db user g contentFilter minUnreadItemId count "" stats
-    Nothing -> liftIO $ (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g contentFilter count ""
+    Nothing -> liftIO $ do
+      stats <- getStats 0 0
+      (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g contentFilter count "" stats
+  where
+    getStats minUnreadItemId unreadCount = do
+      reportsCount <- getGroupReportsCount_ db user g False
+      archivedReportsCount <- getGroupReportsCount_ db user g True
+      pure ChatStats {unreadCount, reportsCount, archivedReportsCount, minUnreadItemId, unreadChat = False}
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> IO ChatStats
 getGroupStats_ db user g = do
