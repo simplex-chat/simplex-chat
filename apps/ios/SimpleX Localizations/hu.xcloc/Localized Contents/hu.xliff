@@ -1020,24 +1020,24 @@
         <target>Alkalmazás erre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive and upload" xml:space="preserve">
+      <trans-unit id="Archive and upload" xml:space="preserve" approved="no">
         <source>Archive and upload</source>
-        <target>Archiválás és feltöltés</target>
+        <target state="translated">Archiválás és feltöltés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive contacts to chat later." xml:space="preserve">
+      <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">
         <source>Archive contacts to chat later.</source>
-        <target>Az ismerősök archiválása a későbbi csevegéshez.</target>
+        <target state="translated">Az ismerősök archiválása a későbbi csevegéshez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archived contacts" xml:space="preserve">
+      <trans-unit id="Archived contacts" xml:space="preserve" approved="no">
         <source>Archived contacts</source>
-        <target>Archivált ismerősök</target>
+        <target state="translated">Archivált ismerősök</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archiving database" xml:space="preserve">
+      <trans-unit id="Archiving database" xml:space="preserve" approved="no">
         <source>Archiving database</source>
-        <target>Adatbázis archiválása</target>
+        <target state="translated">Adatbázis archiválása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -6588,9 +6588,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>A beállítások megváltoztak.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Shape profile images" xml:space="preserve">
+      <trans-unit id="Shape profile images" xml:space="preserve" approved="no">
         <source>Shape profile images</source>
-        <target>Profilkép alakzat</target>
+        <target state="translated">Profilkép alakzata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -8194,9 +8194,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Mostantól küldhet üzeneteket %@ számára</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
+      <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve" approved="no">
         <source>You can send messages to %@ from Archived contacts.</source>
-        <target>Az „Archivált ismerősökből” továbbra is küldhet üzeneteket neki: %@.</target>
+        <target state="translated">Az „Archivált ismerősökből” továbbra is küldhet üzeneteket neki: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can set connection name, to remember who the link was shared with." xml:space="preserve">
