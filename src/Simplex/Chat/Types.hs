@@ -467,14 +467,14 @@ msgFilterIntP = \case
 
 fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> FieldParser a
 #if defined(dbPostgres)
-fromIntField_ fromInt f val = fromField f val >>= parseInt f
+fromIntField_ fromInt f val = fromField f val >>= parseInt
 #else
-fromIntField_ fromInt f = fromField f >>= parseInt f
+fromIntField_ fromInt f = fromField f >>= parseInt
 #endif
   where
-    parseInt f' i = case fromInt i of
+    parseInt i = case fromInt i of
       Just x -> pure x
-      _ -> returnError ConversionFailed f' $ "invalid integer: " <> show i
+      _ -> returnError ConversionFailed f $ "invalid integer: " <> show i
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
