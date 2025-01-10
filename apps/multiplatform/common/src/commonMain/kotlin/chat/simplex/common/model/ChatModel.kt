@@ -230,7 +230,7 @@ object ChatModel {
 
     for (chat in chats.value.filter { it.remoteHostId == rhId }) {
       for (tag in PresetTagKind.entries) {
-        if (presetTagMatchesChat(tag, chat.chatInfo)) {
+        if (presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats)) {
           newPresetTags[tag] = (newPresetTags[tag] ?: 0) + 1
         }
       }
@@ -270,17 +270,17 @@ object ChatModel {
     }
   }
 
-  private fun addPresetChatTags(chatInfo: ChatInfo) {
+  private fun addPresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
     for (tag in PresetTagKind.entries) {
-      if (presetTagMatchesChat(tag, chatInfo)) {
+      if (presetTagMatchesChat(tag, chatInfo, chatStats)) {
         presetTags[tag] = (presetTags[tag] ?: 0) + 1
       }
     }
   }
 
-  fun removePresetChatTags(chatInfo: ChatInfo) {
+  fun removePresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
     for (tag in PresetTagKind.entries) {
-      if (presetTagMatchesChat(tag, chatInfo)) {
+      if (presetTagMatchesChat(tag, chatInfo, chatStats)) {
         val count = presetTags[tag]
         if (count != null) {
           presetTags[tag] = maxOf(0, count - 1)
@@ -417,7 +417,7 @@ object ChatModel {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf()))
-        addPresetChatTags(cInfo)
+        addPresetChatTags(cInfo, Chat.ChatStats())
       }
     }
 
@@ -726,17 +726,17 @@ object ChatModel {
     }
 
     fun removeChat(rhId: Long?, id: String) {
-      var removed: ChatInfo? = null
+      var removed: Chat? = null
       chats.removeAll {
         val found = it.id == id && it.remoteHostId == rhId
         if (found) {
-          removed = it.chatInfo
+          removed = it
         }
         found
       }
 
       removed?.let {
-        removePresetChatTags(it)
+        removePresetChatTags(it.chatInfo, it.chatStats)
       }
     }
 
