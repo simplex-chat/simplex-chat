@@ -1524,6 +1524,7 @@ withStoreBatch actions = do
   ChatController {chatStore} <- ask
   liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
 
+-- TODO [postgres] postgres specific error handling
 handleDBErrors :: [E.Handler IO (Either ChatError a)]
 handleDBErrors =
 #if !defined(dbPostgres)
