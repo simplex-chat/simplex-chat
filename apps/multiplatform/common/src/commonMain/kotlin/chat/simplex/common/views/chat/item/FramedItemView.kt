@@ -216,7 +216,7 @@ fun FramedItemView(
                   iconColor = Color.Red
                 )
               } else {
-                val text = if (ci.meta.itemDeleted is CIDeleted.Moderated) {
+                val text = if (ci.meta.itemDeleted is CIDeleted.Moderated && ci.meta.itemDeleted.byGroupMember.groupMemberId != (chatInfo as ChatInfo.Group?)?.groupInfo?.membership?.groupMemberId) {
                   stringResource(MR.strings.report_item_archived_by).format(ci.meta.itemDeleted.byGroupMember.displayName)
                 } else {
                   stringResource(MR.strings.report_item_archived)
