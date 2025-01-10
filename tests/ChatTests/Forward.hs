@@ -224,7 +224,7 @@ testForwardNotesToContact =
       createCCNoteFolder alice
       connectUsers alice cath
 
-      alice /* "hi"
+      alice >* "hi"
 
       alice `send` "@cath <- * hi"
       alice <# "@cath hi"
@@ -237,7 +237,7 @@ testForwardNotesToGroup =
       createCCNoteFolder alice
       createGroup2 "team" alice cath
 
-      alice /* "hi"
+      alice >* "hi"
 
       alice `send` "#team <- * hi"
       alice <# "#team hi"
@@ -248,7 +248,7 @@ testForwardNotesToNotes tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     createCCNoteFolder alice
 
-    alice /* "hi"
+    alice >* "hi"
 
     alice `send` "* <- * hi"
     alice <# "* hi"

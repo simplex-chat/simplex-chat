@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,6 +21,7 @@ import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Types (Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.FilePath ((</>))
@@ -67,7 +69,17 @@ directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", im
 mkDirectoryOpts :: FilePath -> [KnownContact] -> DirectoryOpts
 mkDirectoryOpts tmp superUsers =
   DirectoryOpts
-    { coreOptions = testCoreOpts {dbFilePrefix = tmp </> serviceDbPrefix},
+    { coreOptions =
+        testCoreOpts
+          { dbOptions =
+              (dbOptions testCoreOpts)
+#if defined(dbPostgres)
+                {dbSchemaPrefix = "client_" <> serviceDbPrefix}
+#else
+                {dbFilePrefix = tmp </> serviceDbPrefix}
+#endif
+
+          },
       adminUsers = [],
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",

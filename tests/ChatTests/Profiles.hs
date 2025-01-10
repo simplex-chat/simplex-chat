@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
@@ -1121,16 +1122,20 @@ testPlanAddressContactViaAddress =
           bob ##> ("/c " <> cLink)
           connecting alice bob
 
-          bob ##> "/_delete @2 notify=off"
+          bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
-          alice ##> "/_delete @2 notify=off"
+          alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
           void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api
+#if defined(dbPostgres)
+          bob ##> "/_connect contact 1 4"
+#else
           bob ##> "/_connect contact 1 2"
+#endif
           connecting alice bob
   where
     connecting alice bob = do
@@ -1264,9 +1269,10 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
+    -- GUI /_accept api
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice ##> "/accept incognito bob"
+    alice ##> "/_accept incognito=on 1"
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     aliceIncognitoBob <- getTermLine alice
     concurrentlyN_
@@ -1291,10 +1297,10 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
-    -- /_accept api
+    -- terminal /accept api
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice ##> "/_accept incognito=on 1"
+    alice ##> "/accept incognito cath"
     alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     aliceIncognitoCath <- getTermLine alice
     concurrentlyN_

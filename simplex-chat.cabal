@@ -24,11 +24,15 @@ flag swift
   manual: True
   default: False
 
+flag client_postgres
+  description: Build with PostgreSQL instead of SQLite.
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Simplex.Chat
       Simplex.Chat.AppSettings
-      Simplex.Chat.Archive
       Simplex.Chat.Bot
       Simplex.Chat.Bot.KnownContacts
       Simplex.Chat.Call
@@ -44,132 +48,12 @@ library
       Simplex.Chat.Messages.Batch
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Messages.CIContent.Events
-      Simplex.Chat.Migrations.M20220101_initial
-      Simplex.Chat.Migrations.M20220122_v1_1
-      Simplex.Chat.Migrations.M20220205_chat_item_status
-      Simplex.Chat.Migrations.M20220210_deduplicate_contact_requests
-      Simplex.Chat.Migrations.M20220224_messages_fks
-      Simplex.Chat.Migrations.M20220301_smp_servers
-      Simplex.Chat.Migrations.M20220302_profile_images
-      Simplex.Chat.Migrations.M20220304_msg_quotes
-      Simplex.Chat.Migrations.M20220321_chat_item_edited
-      Simplex.Chat.Migrations.M20220404_files_status_fields
-      Simplex.Chat.Migrations.M20220514_profiles_user_id
-      Simplex.Chat.Migrations.M20220626_auto_reply
-      Simplex.Chat.Migrations.M20220702_calls
-      Simplex.Chat.Migrations.M20220715_groups_chat_item_id
-      Simplex.Chat.Migrations.M20220811_chat_items_indices
-      Simplex.Chat.Migrations.M20220812_incognito_profiles
-      Simplex.Chat.Migrations.M20220818_chat_notifications
-      Simplex.Chat.Migrations.M20220822_groups_host_conn_custom_user_profile_id
-      Simplex.Chat.Migrations.M20220823_delete_broken_group_event_chat_items
-      Simplex.Chat.Migrations.M20220824_profiles_local_alias
-      Simplex.Chat.Migrations.M20220909_commands
-      Simplex.Chat.Migrations.M20220926_connection_alias
-      Simplex.Chat.Migrations.M20220928_settings
-      Simplex.Chat.Migrations.M20221001_shared_msg_id_indices
-      Simplex.Chat.Migrations.M20221003_delete_broken_integrity_error_chat_items
-      Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
-      Simplex.Chat.Migrations.M20221011_user_contact_links_group_id
-      Simplex.Chat.Migrations.M20221012_inline_files
-      Simplex.Chat.Migrations.M20221019_unread_chat
-      Simplex.Chat.Migrations.M20221021_auto_accept__group_links
-      Simplex.Chat.Migrations.M20221024_contact_used
-      Simplex.Chat.Migrations.M20221025_chat_settings
-      Simplex.Chat.Migrations.M20221029_group_link_id
-      Simplex.Chat.Migrations.M20221112_server_password
-      Simplex.Chat.Migrations.M20221115_server_cfg
-      Simplex.Chat.Migrations.M20221129_delete_group_feature_items
-      Simplex.Chat.Migrations.M20221130_delete_item_deleted
-      Simplex.Chat.Migrations.M20221209_verified_connection
-      Simplex.Chat.Migrations.M20221210_idxs
-      Simplex.Chat.Migrations.M20221211_group_description
-      Simplex.Chat.Migrations.M20221212_chat_items_timed
-      Simplex.Chat.Migrations.M20221214_live_message
-      Simplex.Chat.Migrations.M20221222_chat_ts
-      Simplex.Chat.Migrations.M20221223_idx_chat_items_item_status
-      Simplex.Chat.Migrations.M20221230_idxs
-      Simplex.Chat.Migrations.M20230107_connections_auth_err_counter
-      Simplex.Chat.Migrations.M20230111_users_agent_user_id
-      Simplex.Chat.Migrations.M20230117_fkey_indexes
-      Simplex.Chat.Migrations.M20230118_recreate_smp_servers
-      Simplex.Chat.Migrations.M20230129_drop_chat_items_group_idx
-      Simplex.Chat.Migrations.M20230206_item_deleted_by_group_member_id
-      Simplex.Chat.Migrations.M20230303_group_link_role
-      Simplex.Chat.Migrations.M20230317_hidden_profiles
-      Simplex.Chat.Migrations.M20230318_file_description
-      Simplex.Chat.Migrations.M20230321_agent_file_deleted
-      Simplex.Chat.Migrations.M20230328_files_protocol
-      Simplex.Chat.Migrations.M20230402_protocol_servers
-      Simplex.Chat.Migrations.M20230411_extra_xftp_file_descriptions
-      Simplex.Chat.Migrations.M20230420_rcv_files_to_receive
-      Simplex.Chat.Migrations.M20230422_profile_contact_links
-      Simplex.Chat.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
-      Simplex.Chat.Migrations.M20230505_chat_item_versions
-      Simplex.Chat.Migrations.M20230511_reactions
-      Simplex.Chat.Migrations.M20230519_item_deleted_ts
-      Simplex.Chat.Migrations.M20230526_indexes
-      Simplex.Chat.Migrations.M20230529_indexes
-      Simplex.Chat.Migrations.M20230608_deleted_contacts
-      Simplex.Chat.Migrations.M20230618_favorite_chats
-      Simplex.Chat.Migrations.M20230621_chat_item_moderations
-      Simplex.Chat.Migrations.M20230705_delivery_receipts
-      Simplex.Chat.Migrations.M20230721_group_snd_item_statuses
-      Simplex.Chat.Migrations.M20230814_indexes
-      Simplex.Chat.Migrations.M20230827_file_encryption
-      Simplex.Chat.Migrations.M20230829_connections_chat_vrange
-      Simplex.Chat.Migrations.M20230903_connections_to_subscribe
-      Simplex.Chat.Migrations.M20230913_member_contacts
-      Simplex.Chat.Migrations.M20230914_member_probes
-      Simplex.Chat.Migrations.M20230926_contact_status
-      Simplex.Chat.Migrations.M20231002_conn_initiated
-      Simplex.Chat.Migrations.M20231009_via_group_link_uri_hash
-      Simplex.Chat.Migrations.M20231010_member_settings
-      Simplex.Chat.Migrations.M20231019_indexes
-      Simplex.Chat.Migrations.M20231030_xgrplinkmem_received
-      Simplex.Chat.Migrations.M20231107_indexes
-      Simplex.Chat.Migrations.M20231113_group_forward
-      Simplex.Chat.Migrations.M20231114_remote_control
-      Simplex.Chat.Migrations.M20231126_remote_ctrl_address
-      Simplex.Chat.Migrations.M20231207_chat_list_pagination
-      Simplex.Chat.Migrations.M20231214_item_content_tag
-      Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries
-      Simplex.Chat.Migrations.M20240102_note_folders
-      Simplex.Chat.Migrations.M20240104_members_profile_update
-      Simplex.Chat.Migrations.M20240115_block_member_for_all
-      Simplex.Chat.Migrations.M20240122_indexes
-      Simplex.Chat.Migrations.M20240214_redirect_file_id
-      Simplex.Chat.Migrations.M20240222_app_settings
-      Simplex.Chat.Migrations.M20240226_users_restrict
-      Simplex.Chat.Migrations.M20240228_pq
-      Simplex.Chat.Migrations.M20240313_drop_agent_ack_cmd_id
-      Simplex.Chat.Migrations.M20240324_custom_data
-      Simplex.Chat.Migrations.M20240402_item_forwarded
-      Simplex.Chat.Migrations.M20240430_ui_theme
-      Simplex.Chat.Migrations.M20240501_chat_deleted
-      Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
-      Simplex.Chat.Migrations.M20240515_rcv_files_user_approved_relays
-      Simplex.Chat.Migrations.M20240528_quota_err_counter
-      Simplex.Chat.Migrations.M20240827_calls_uuid
-      Simplex.Chat.Migrations.M20240920_user_order
-      Simplex.Chat.Migrations.M20241008_indexes
-      Simplex.Chat.Migrations.M20241010_contact_requests_contact_id
-      Simplex.Chat.Migrations.M20241023_chat_item_autoincrement_id
-      Simplex.Chat.Migrations.M20241027_server_operators
-      Simplex.Chat.Migrations.M20241125_indexes
-      Simplex.Chat.Migrations.M20241128_business_chats
-      Simplex.Chat.Migrations.M20241205_business_chat_members
-      Simplex.Chat.Migrations.M20241222_operator_conditions
-      Simplex.Chat.Migrations.M20241223_chat_tags
-      Simplex.Chat.Migrations.M20241230_reports
-      Simplex.Chat.Migrations.M20250105_indexes
-      Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
-      Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
       Simplex.Chat.Options
+      Simplex.Chat.Options.DB
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
@@ -187,7 +71,6 @@ library
       Simplex.Chat.Store.Files
       Simplex.Chat.Store.Groups
       Simplex.Chat.Store.Messages
-      Simplex.Chat.Store.Migrations
       Simplex.Chat.Store.NoteFolders
       Simplex.Chat.Store.Profiles
       Simplex.Chat.Store.Remote
@@ -205,6 +88,137 @@ library
       Simplex.Chat.Types.Util
       Simplex.Chat.Util
       Simplex.Chat.View
+  if flag(client_postgres)
+      exposed-modules:
+          Simplex.Chat.Options.Postgres
+          Simplex.Chat.Store.Postgres.Migrations
+          Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
+  else
+      exposed-modules:
+          Simplex.Chat.Archive
+          Simplex.Chat.Mobile
+          Simplex.Chat.Mobile.WebRTC
+          Simplex.Chat.Options.SQLite
+          Simplex.Chat.Store.SQLite.Migrations
+          Simplex.Chat.Store.SQLite.Migrations.M20220101_initial
+          Simplex.Chat.Store.SQLite.Migrations.M20220122_v1_1
+          Simplex.Chat.Store.SQLite.Migrations.M20220205_chat_item_status
+          Simplex.Chat.Store.SQLite.Migrations.M20220210_deduplicate_contact_requests
+          Simplex.Chat.Store.SQLite.Migrations.M20220224_messages_fks
+          Simplex.Chat.Store.SQLite.Migrations.M20220301_smp_servers
+          Simplex.Chat.Store.SQLite.Migrations.M20220302_profile_images
+          Simplex.Chat.Store.SQLite.Migrations.M20220304_msg_quotes
+          Simplex.Chat.Store.SQLite.Migrations.M20220321_chat_item_edited
+          Simplex.Chat.Store.SQLite.Migrations.M20220404_files_status_fields
+          Simplex.Chat.Store.SQLite.Migrations.M20220514_profiles_user_id
+          Simplex.Chat.Store.SQLite.Migrations.M20220626_auto_reply
+          Simplex.Chat.Store.SQLite.Migrations.M20220702_calls
+          Simplex.Chat.Store.SQLite.Migrations.M20220715_groups_chat_item_id
+          Simplex.Chat.Store.SQLite.Migrations.M20220811_chat_items_indices
+          Simplex.Chat.Store.SQLite.Migrations.M20220812_incognito_profiles
+          Simplex.Chat.Store.SQLite.Migrations.M20220818_chat_notifications
+          Simplex.Chat.Store.SQLite.Migrations.M20220822_groups_host_conn_custom_user_profile_id
+          Simplex.Chat.Store.SQLite.Migrations.M20220823_delete_broken_group_event_chat_items
+          Simplex.Chat.Store.SQLite.Migrations.M20220824_profiles_local_alias
+          Simplex.Chat.Store.SQLite.Migrations.M20220909_commands
+          Simplex.Chat.Store.SQLite.Migrations.M20220926_connection_alias
+          Simplex.Chat.Store.SQLite.Migrations.M20220928_settings
+          Simplex.Chat.Store.SQLite.Migrations.M20221001_shared_msg_id_indices
+          Simplex.Chat.Store.SQLite.Migrations.M20221003_delete_broken_integrity_error_chat_items
+          Simplex.Chat.Store.SQLite.Migrations.M20221004_idx_msg_deliveries_message_id
+          Simplex.Chat.Store.SQLite.Migrations.M20221011_user_contact_links_group_id
+          Simplex.Chat.Store.SQLite.Migrations.M20221012_inline_files
+          Simplex.Chat.Store.SQLite.Migrations.M20221019_unread_chat
+          Simplex.Chat.Store.SQLite.Migrations.M20221021_auto_accept__group_links
+          Simplex.Chat.Store.SQLite.Migrations.M20221024_contact_used
+          Simplex.Chat.Store.SQLite.Migrations.M20221025_chat_settings
+          Simplex.Chat.Store.SQLite.Migrations.M20221029_group_link_id
+          Simplex.Chat.Store.SQLite.Migrations.M20221112_server_password
+          Simplex.Chat.Store.SQLite.Migrations.M20221115_server_cfg
+          Simplex.Chat.Store.SQLite.Migrations.M20221129_delete_group_feature_items
+          Simplex.Chat.Store.SQLite.Migrations.M20221130_delete_item_deleted
+          Simplex.Chat.Store.SQLite.Migrations.M20221209_verified_connection
+          Simplex.Chat.Store.SQLite.Migrations.M20221210_idxs
+          Simplex.Chat.Store.SQLite.Migrations.M20221211_group_description
+          Simplex.Chat.Store.SQLite.Migrations.M20221212_chat_items_timed
+          Simplex.Chat.Store.SQLite.Migrations.M20221214_live_message
+          Simplex.Chat.Store.SQLite.Migrations.M20221222_chat_ts
+          Simplex.Chat.Store.SQLite.Migrations.M20221223_idx_chat_items_item_status
+          Simplex.Chat.Store.SQLite.Migrations.M20221230_idxs
+          Simplex.Chat.Store.SQLite.Migrations.M20230107_connections_auth_err_counter
+          Simplex.Chat.Store.SQLite.Migrations.M20230111_users_agent_user_id
+          Simplex.Chat.Store.SQLite.Migrations.M20230117_fkey_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20230118_recreate_smp_servers
+          Simplex.Chat.Store.SQLite.Migrations.M20230129_drop_chat_items_group_idx
+          Simplex.Chat.Store.SQLite.Migrations.M20230206_item_deleted_by_group_member_id
+          Simplex.Chat.Store.SQLite.Migrations.M20230303_group_link_role
+          Simplex.Chat.Store.SQLite.Migrations.M20230317_hidden_profiles
+          Simplex.Chat.Store.SQLite.Migrations.M20230318_file_description
+          Simplex.Chat.Store.SQLite.Migrations.M20230321_agent_file_deleted
+          Simplex.Chat.Store.SQLite.Migrations.M20230328_files_protocol
+          Simplex.Chat.Store.SQLite.Migrations.M20230402_protocol_servers
+          Simplex.Chat.Store.SQLite.Migrations.M20230411_extra_xftp_file_descriptions
+          Simplex.Chat.Store.SQLite.Migrations.M20230420_rcv_files_to_receive
+          Simplex.Chat.Store.SQLite.Migrations.M20230422_profile_contact_links
+          Simplex.Chat.Store.SQLite.Migrations.M20230504_recreate_msg_delivery_events_cleanup_messages
+          Simplex.Chat.Store.SQLite.Migrations.M20230505_chat_item_versions
+          Simplex.Chat.Store.SQLite.Migrations.M20230511_reactions
+          Simplex.Chat.Store.SQLite.Migrations.M20230519_item_deleted_ts
+          Simplex.Chat.Store.SQLite.Migrations.M20230526_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20230529_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20230608_deleted_contacts
+          Simplex.Chat.Store.SQLite.Migrations.M20230618_favorite_chats
+          Simplex.Chat.Store.SQLite.Migrations.M20230621_chat_item_moderations
+          Simplex.Chat.Store.SQLite.Migrations.M20230705_delivery_receipts
+          Simplex.Chat.Store.SQLite.Migrations.M20230721_group_snd_item_statuses
+          Simplex.Chat.Store.SQLite.Migrations.M20230814_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20230827_file_encryption
+          Simplex.Chat.Store.SQLite.Migrations.M20230829_connections_chat_vrange
+          Simplex.Chat.Store.SQLite.Migrations.M20230903_connections_to_subscribe
+          Simplex.Chat.Store.SQLite.Migrations.M20230913_member_contacts
+          Simplex.Chat.Store.SQLite.Migrations.M20230914_member_probes
+          Simplex.Chat.Store.SQLite.Migrations.M20230926_contact_status
+          Simplex.Chat.Store.SQLite.Migrations.M20231002_conn_initiated
+          Simplex.Chat.Store.SQLite.Migrations.M20231009_via_group_link_uri_hash
+          Simplex.Chat.Store.SQLite.Migrations.M20231010_member_settings
+          Simplex.Chat.Store.SQLite.Migrations.M20231019_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20231030_xgrplinkmem_received
+          Simplex.Chat.Store.SQLite.Migrations.M20231107_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20231113_group_forward
+          Simplex.Chat.Store.SQLite.Migrations.M20231114_remote_control
+          Simplex.Chat.Store.SQLite.Migrations.M20231126_remote_ctrl_address
+          Simplex.Chat.Store.SQLite.Migrations.M20231207_chat_list_pagination
+          Simplex.Chat.Store.SQLite.Migrations.M20231214_item_content_tag
+          Simplex.Chat.Store.SQLite.Migrations.M20231215_recreate_msg_deliveries
+          Simplex.Chat.Store.SQLite.Migrations.M20240102_note_folders
+          Simplex.Chat.Store.SQLite.Migrations.M20240104_members_profile_update
+          Simplex.Chat.Store.SQLite.Migrations.M20240115_block_member_for_all
+          Simplex.Chat.Store.SQLite.Migrations.M20240122_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20240214_redirect_file_id
+          Simplex.Chat.Store.SQLite.Migrations.M20240222_app_settings
+          Simplex.Chat.Store.SQLite.Migrations.M20240226_users_restrict
+          Simplex.Chat.Store.SQLite.Migrations.M20240228_pq
+          Simplex.Chat.Store.SQLite.Migrations.M20240313_drop_agent_ack_cmd_id
+          Simplex.Chat.Store.SQLite.Migrations.M20240324_custom_data
+          Simplex.Chat.Store.SQLite.Migrations.M20240402_item_forwarded
+          Simplex.Chat.Store.SQLite.Migrations.M20240430_ui_theme
+          Simplex.Chat.Store.SQLite.Migrations.M20240501_chat_deleted
+          Simplex.Chat.Store.SQLite.Migrations.M20240510_chat_items_via_proxy
+          Simplex.Chat.Store.SQLite.Migrations.M20240515_rcv_files_user_approved_relays
+          Simplex.Chat.Store.SQLite.Migrations.M20240528_quota_err_counter
+          Simplex.Chat.Store.SQLite.Migrations.M20240827_calls_uuid
+          Simplex.Chat.Store.SQLite.Migrations.M20240920_user_order
+          Simplex.Chat.Store.SQLite.Migrations.M20241008_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20241010_contact_requests_contact_id
+          Simplex.Chat.Store.SQLite.Migrations.M20241023_chat_item_autoincrement_id
+          Simplex.Chat.Store.SQLite.Migrations.M20241027_server_operators
+          Simplex.Chat.Store.SQLite.Migrations.M20241125_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20241128_business_chats
+          Simplex.Chat.Store.SQLite.Migrations.M20241205_business_chat_members
+          Simplex.Chat.Store.SQLite.Migrations.M20241222_operator_conditions
+          Simplex.Chat.Store.SQLite.Migrations.M20241223_chat_tags
+          Simplex.Chat.Store.SQLite.Migrations.M20241230_reports
+          Simplex.Chat.Store.SQLite.Migrations.M20250105_indexes
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -224,7 +238,6 @@ library
     , containers ==0.6.*
     , crypton ==0.34.*
     , data-default ==0.7.*
-    , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
@@ -243,7 +256,6 @@ library
     , simple-logger ==0.1.*
     , simplexmq >=6.3
     , socks ==0.6.*
-    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
@@ -255,6 +267,16 @@ library
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if flag(client_postgres)
+    build-depends:
+        postgresql-libpq >=0.10.0.0
+      , postgresql-simple ==0.7.*
+      , raw-strings-qq ==1.1.*
+    cpp-options: -DdbPostgres
+  else
+    build-depends:
+        direct-sqlcipher ==2.3.*
+      , sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -282,6 +304,8 @@ executable simplex-bot
     , directory ==1.3.*
     , simplex-chat
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
 
 executable simplex-bot-advanced
   main-is: Main.hs
@@ -300,6 +324,8 @@ executable simplex-bot-advanced
     , simplexmq >=6.3
     , stm ==2.5.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -328,6 +354,8 @@ executable simplex-broadcast-bot
     , simplexmq >=6.3
     , stm ==2.5.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -357,6 +385,8 @@ executable simplex-chat
     , unliftio ==0.2.*
     , websockets ==0.12.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -393,6 +423,8 @@ executable simplex-directory-service
     , stm ==2.5.*
     , time ==1.12.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    cpp-options: -DdbPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -418,18 +450,16 @@ test-suite simplex-chat-test
       ChatTests.Local
       ChatTests.Profiles
       ChatTests.Utils
+      JSONFixtures
       JSONTests
       MarkdownTests
       MessageBatching
-      MobileTests
       OperatorTests
       ProtocolTests
       RandomServers
       RemoteTests
-      SchemaDump
       ValidNames
       ViewTests
-      WebRTCTests
       Broadcast.Bot
       Broadcast.Options
       Directory.Events
@@ -438,6 +468,11 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Paths_simplex_chat
+  if !flag(client_postgres)
+      other-modules:
+          MobileTests
+          SchemaDump
+          WebRTCTests
   hs-source-dirs:
       tests
       apps/simplex-broadcast-bot/src
@@ -469,12 +504,18 @@ test-suite simplex-chat-test
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=6.3
-    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
     , unliftio ==0.2.*
   default-language: Haskell2010
+  if flag(client_postgres)
+    build-depends:
+        postgresql-simple ==0.7.*
+    cpp-options: -DdbPostgres
+  else
+    build-depends:
+        sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*

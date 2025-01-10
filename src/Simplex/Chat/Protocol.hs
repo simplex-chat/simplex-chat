@@ -1,8 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -42,21 +45,26 @@ import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple.FromField (FromField (..))
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 -- Chat version history:
 -- 1 - support chat versions in connections (9/1/2023)
@@ -217,10 +225,9 @@ instance StrEncoding AppMessageBinary where
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField SharedMsgId where fromField f = SharedMsgId <$> fromField f
-
-instance ToField SharedMsgId where toField (SharedMsgId m) = toField m
+instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ DB.Binary m
 
 instance StrEncoding SharedMsgId where
   strEncode (SharedMsgId m) = strEncode m
@@ -253,7 +260,7 @@ data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknow
   deriving (Eq, Show)
 
 data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RROther | RRUnknown Text
-   deriving (Eq, Show)
+  deriving (Eq, Show)
 
 $(pure [])
 
@@ -515,7 +522,7 @@ instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField MsgContentTag where fromField = fromBlobField_ strDecode
+instance FromField MsgContentTag where fromField = blobFieldDecoder strDecode
 
 instance ToField MsgContentTag where toField = toField . strEncode
 
@@ -570,9 +577,10 @@ durationText duration =
       | otherwise = show n
 
 msgContentHasText :: MsgContent -> Bool
-msgContentHasText = not . T.null . \case
-  MCVoice {text} -> text
-  mc -> msgContentText mc
+msgContentHasText =
+  not . T.null . \case
+    MCVoice {text} -> text
+    mc -> msgContentText mc
 
 isVoice :: MsgContent -> Bool
 isVoice = \case
