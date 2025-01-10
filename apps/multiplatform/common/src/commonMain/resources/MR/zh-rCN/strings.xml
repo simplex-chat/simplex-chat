@@ -1232,7 +1232,7 @@
     <string name="abort_switch_receiving_address">中止地址更改</string>
     <string name="allow_to_send_files">允许发送文件和媒体。</string>
     <string name="files_and_media">文件和媒体</string>
-    <string name="only_owners_can_enable_files_and_media">只有组主可以启用文件和媒体。</string>
+    <string name="only_owners_can_enable_files_and_media">只有群主可以启用文件和媒体。</string>
     <string name="files_are_prohibited_in_group">文件和媒体被禁止。</string>
     <string name="group_members_can_send_files">成员可以发送文件和媒体。</string>
     <string name="prohibit_sending_files">禁止发送文件和媒体。</string>
@@ -2269,4 +2269,25 @@
     <string name="change_order_chat_list_menu_action">更改顺序</string>
     <string name="error_creating_report">创建报告出错</string>
     <string name="prefs_error_saving_settings">保存设置出错</string>
+    <string name="archive_verb">存档</string>
+    <string name="delete_report">删除报告</string>
+    <string name="report_verb">报告</string>
+    <string name="report_compose_reason_header_other">报告其他：仅群主会看到。</string>
+    <string name="report_compose_reason_header_profile">报告成员个人资料：仅群主会看到。</string>
+    <string name="report_compose_reason_header_community">报告违规：仅群主会看到。</string>
+    <string name="archive_report">存档报告</string>
+    <string name="report_compose_reason_header_illegal">报告内容：仅群主会看到。</string>
+    <string name="report_compose_reason_header_spam">报告垃圾信息：仅群主会看到。</string>
+    <string name="group_member_role_moderator">群主</string>
+    <string name="report_reason_other">另一个理由</string>
+    <string name="report_item_archived">已存档的报告</string>
+    <string name="report_reason_community">违反社区指导方针</string>
+    <string name="report_reason_illegal">不恰当的内容</string>
+    <string name="report_reason_profile">不恰当的个人资料</string>
+    <string name="report_item_visibility_moderators">仅发送人和群主能看到</string>
+    <string name="report_item_visibility_submitter">只有你和群主能看到</string>
+    <string name="report_reason_spam">垃圾信息</string>
+    <string name="report_archive_alert_title">存档报告？</string>
+    <string name="report_reason_alert_title">报告理由？</string>
+    <string name="report_archive_alert_desc">将为你存档该报告。</string>
 </resources>
