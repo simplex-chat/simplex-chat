@@ -22,9 +22,9 @@ data class GroupReports(
 ) {
   val showBar: Boolean = reportsCount > 0 && !reportsView
 
-  fun toContentFilter(): ContentFilter? {
+  fun toContentTag(): MsgContentTag? {
     if (!reportsView) return null
-    return ContentFilter(MsgContentTag.Report)
+    return MsgContentTag.Report
   }
 
   val contentTag: MsgContentTag? = if (!reportsView) null else MsgContentTag.Report
@@ -85,7 +85,7 @@ private fun ItemsReload(groupReports: State<GroupReports>) {
 }
 
 suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
-  openChat(chatModel.remoteHostId(), chatInfo, ContentFilter(MsgContentTag.Report))
+  openChat(chatModel.remoteHostId(), chatInfo, MsgContentTag.Report)
   ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close ->
     ModalView({}, showAppBar = false) {
       val chatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatInfo } }.value
@@ -101,6 +101,6 @@ suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: Mu
 }
 
 private suspend fun reloadItems(chat: Chat, groupReports: State<GroupReports>) {
-  val contentFilter = groupReports.value.toContentFilter()
+  val contentFilter = groupReports.value.toContentTag()
   apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, contentFilter, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 }

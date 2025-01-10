@@ -894,8 +894,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, contentFilter: ContentFilter? = null, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
-    val r = sendCmd(rh, CC.ApiGetChat(type, id, contentFilter, pagination, search))
+  suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, contentTag: MsgContentTag? = null, pagination: ChatPagination, search: String = ""): Pair<Chat, NavigationInfo>? {
+    val r = sendCmd(rh, CC.ApiGetChat(type, id, contentTag, pagination, search))
     if (r is CR.ApiChat) return if (rh == null) r.chat to r.navInfo else r.chat.copy(remoteHostId = rh) to r.navInfo
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     if (pagination is ChatPagination.Around && r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.ChatItemNotFound) {
@@ -3324,7 +3324,7 @@ sealed class CC {
   class ApiGetSettings(val settings: AppSettings): CC()
   class ApiGetChatTags(val userId: Long): CC()
   class ApiGetChats(val userId: Long): CC()
-  class ApiGetChat(val type: ChatType, val id: Long, val contentFilter: ContentFilter?, val pagination: ChatPagination, val search: String = ""): CC()
+  class ApiGetChat(val type: ChatType, val id: Long, val contentTag: MsgContentTag?, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatTag(val tag: ChatTagData): CC()
@@ -3487,12 +3487,12 @@ sealed class CC {
     is ApiGetChatTags -> "/_get tags $userId"
     is ApiGetChats -> "/_get chats $userId pcc=on"
     is ApiGetChat -> {
-      val filter = if (contentFilter == null) {
+      val tag = if (contentTag == null) {
         ""
       } else {
-        " content=${contentFilter.mcTag.name.lowercase()}"
+        " content=${contentTag.name.lowercase()}"
       }
-      "/_get chat ${chatRef(type, id)}$filter ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
+      "/_get chat ${chatRef(type, id)}$tag ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id)} $itemId"
     is ApiSendMessages -> {
@@ -3828,10 +3828,6 @@ fun onOff(b: Boolean): String = if (b) "on" else "off"
 data class NewUser(
   val profile: Profile?,
   val pastTimestamp: Boolean
-)
-
-data class ContentFilter(
-  val mcTag: MsgContentTag
 )
 
 sealed class ChatPagination {

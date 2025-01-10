@@ -17,8 +17,7 @@ suspend fun apiLoadSingleMessage(
   itemId: Long,
   contentTag: MsgContentTag?,
 ): ChatItem? = coroutineScope {
-  val contentFilter = if (contentTag != null) ContentFilter(contentTag) else null
-  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentFilter, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
+  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
   chat.chatItems.firstOrNull()
 }
 
@@ -26,20 +25,19 @@ suspend fun apiLoadMessages(
   rhId: Long?,
   chatType: ChatType,
   apiId: Long,
-  contentFilter: ContentFilter?,
+  contentTag: MsgContentTag?,
   pagination: ChatPagination,
   search: String = "",
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentFilter, pagination, search) ?: return@coroutineScope
+  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
     || !isActive) return@coroutineScope
 
-  val chatState = chatModel.chatStateForContent(contentFilter?.mcTag)
-  val contentTag = contentFilter?.mcTag
+  val chatState = chatModel.chatStateForContent(contentTag)
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
-  val oldItems = chatModel.chatItemsForContent(contentFilter?.mcTag).value
+  val oldItems = chatModel.chatItemsForContent(contentTag).value
   val newItems = SnapshotStateList<ChatItem>()
   when (pagination) {
     is ChatPagination.Initial -> {

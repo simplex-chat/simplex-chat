@@ -141,7 +141,7 @@ fun ChatView(
             val c = chatModel.getChat(chatInfo.id) ?: return@onSearchValueChanged
             if (chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
             withBGApi {
-              apiFindMessages(c, value, groupReports.value.toContentFilter())
+              apiFindMessages(c, value, groupReports.value.toContentTag())
               searchText.value = value
             }
           }
@@ -347,7 +347,7 @@ fun ChatView(
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, groupReports.value.toContentFilter(), pagination, searchText.value, visibleItemIndexes)
+                apiLoadMessages(c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, groupReports.value.toContentTag(), pagination, searchText.value, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -1550,7 +1550,7 @@ private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, remoteHostId:
       if (chatModel.chatStateForContent(groupReports.value.contentTag).totalAfter.value <= 0) return@LaunchedEffect
       delay(500)
       withContext(Dispatchers.Default) {
-        apiLoadMessages(remoteHostId, chatInfo.chatType, chatInfo.apiId, groupReports.value.toContentFilter(), ChatPagination.Last(ChatPagination.INITIAL_COUNT))
+        apiLoadMessages(remoteHostId, chatInfo.chatType, chatInfo.apiId, groupReports.value.toContentTag(), ChatPagination.Last(ChatPagination.INITIAL_COUNT))
       }
     } finally {
       loadingMoreItems.value = false

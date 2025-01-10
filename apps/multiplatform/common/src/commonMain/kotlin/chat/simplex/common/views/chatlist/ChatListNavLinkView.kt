@@ -202,12 +202,12 @@ suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat
 
 suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(rhId, ChatType.Direct, contactId)
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, contentFilter: ContentFilter? = null) = openChat(rhId, ChatType.Group, groupId, contentFilter)
+suspend fun openGroupChat(rhId: Long?, groupId: Long, contentTag: MsgContentTag? = null) = openChat(rhId, ChatType.Group, groupId, contentTag)
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, contentFilter: ContentFilter? = null) = openChat(rhId, chatInfo.chatType, chatInfo.apiId, contentFilter)
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, contentTag: MsgContentTag? = null) = openChat(rhId, chatInfo.chatType, chatInfo.apiId, contentTag)
 
-private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long, contentFilter: ContentFilter? = null) =
-  apiLoadMessages(rhId, chatType, apiId, contentFilter, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
+private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long, contentTag: MsgContentTag? = null) =
+  apiLoadMessages(rhId, chatType, apiId, contentTag, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 
 suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
   withChats(contentTag) {
@@ -221,11 +221,11 @@ suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
   }
 }
 
-suspend fun apiFindMessages(ch: Chat, search: String, contentFilter: ContentFilter?) {
-  withChats(contentFilter?.mcTag) {
+suspend fun apiFindMessages(ch: Chat, search: String, contentTag: MsgContentTag?) {
+  withChats(contentTag) {
     chatItems.clearAndNotify()
   }
-  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentFilter, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search = search)
+  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentTag, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search = search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
