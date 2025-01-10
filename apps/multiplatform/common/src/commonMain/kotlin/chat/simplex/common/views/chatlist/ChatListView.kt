@@ -1115,11 +1115,9 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
     else -> null
   }
 
-  val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
-  Box(rowSizeModifier
-    .padding(vertical = 4.dp)
+  Box(Modifier
     .clip(shape = CircleShape)
-    .size(30.sp.toDp())
+    .size(TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
     .clickable { showMenu.value = true },
     contentAlignment = Alignment.Center
   ) {
