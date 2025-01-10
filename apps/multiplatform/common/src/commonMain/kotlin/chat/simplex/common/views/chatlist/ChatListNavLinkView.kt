@@ -211,10 +211,7 @@ private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long, conte
 
 suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
   withChats(contentTag) {
-    // LALAL TODO MOVE item statuses to chats context
-    if (contentTag == null) {
-      chatModel.chatItemStatuses.clear()
-    }
+    chatItemStatuses.clear()
     chatItems.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
     chatModel.chatStateForContent(contentTag).clear()

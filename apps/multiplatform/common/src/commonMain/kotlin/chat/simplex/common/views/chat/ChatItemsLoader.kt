@@ -54,7 +54,7 @@ suspend fun apiLoadMessages(
         }
       }
       withChats(contentTag) {
-        chatModel.chatItemStatuses.clear()
+        chatItemStatuses.clear()
         chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.chatInfo.id
         splits.value = newSplits

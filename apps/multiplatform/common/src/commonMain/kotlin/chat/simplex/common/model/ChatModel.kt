@@ -70,7 +70,6 @@ object ChatModel {
   val chats: State<List<Chat>> = chatsContext.chats
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
-  val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
   val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
 
@@ -348,6 +347,7 @@ object ChatModel {
      * If you use api call to get the items, use just [add] instead of [addAndNotify].
      * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
     val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+    val chatItemStatuses = mutableMapOf<Long, CIStatus>()
     // set listener here that will be notified on every add/delete of a chat item
     var chatItemsChangesListener: ChatItemsChangesListener? = null
     val chatState = ActiveChatState()
