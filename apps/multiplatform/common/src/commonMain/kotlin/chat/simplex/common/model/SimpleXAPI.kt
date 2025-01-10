@@ -2590,8 +2590,8 @@ object ChatController {
         }
         val cInfo = ChatInfo.Group(r.groupInfo)
         withChats {
-          decreaseGroupReportsCounter(rhId, cInfo.id)
           r.chatItemIDs.forEach { itemId ->
+            decreaseGroupReportsCounter(rhId, cInfo.id)
             val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
             if (chatModel.chatId.value != null) {
               // Stop voice playback only inside a chat, allow to play in a chat list
