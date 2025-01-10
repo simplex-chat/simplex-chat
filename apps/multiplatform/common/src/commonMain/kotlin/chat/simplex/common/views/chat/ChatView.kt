@@ -365,50 +365,50 @@ fun ChatView(
               }
             },
             deleteMessage = { itemId, mode ->
-              val toDeleteItem = reversedChatItems.value.lastOrNull { it.id == itemId }
-              val toModerate = toDeleteItem?.memberToModerate(chatInfo)
-              val groupInfo = toModerate?.first
-              val groupMember = toModerate?.second
-              val deletedChatItem: ChatItem?
-              val toChatItem: ChatItem?
-              val r = if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
-                chatModel.controller.apiDeleteMemberChatItems(
-                  chatRh,
-                  groupId = groupInfo.groupId,
-                  itemIds = listOf(itemId)
-                )
-              } else {
-                chatModel.controller.apiDeleteChatItems(
-                  chatRh,
-                  type = chatInfo.chatType,
-                  id = chatInfo.apiId,
-                  itemIds = listOf(itemId),
-                  mode = mode
-                )
-              }
-              val deleted = r?.firstOrNull()
-              if (deleted != null) {
-                deletedChatItem = deleted.deletedChatItem.chatItem
-                toChatItem = deleted.toChatItem?.chatItem
-                withChats {
-                  if (toChatItem != null) {
-                    upsertChatItem(chatRh, chatInfo, toChatItem)
-                  } else {
-                    removeChatItem(chatRh, chatInfo, deletedChatItem)
-                  }
+              withBGApi {
+                val toDeleteItem = reversedChatItems.value.lastOrNull { it.id == itemId }
+                val toModerate = toDeleteItem?.memberToModerate(chatInfo)
+                val groupInfo = toModerate?.first
+                val groupMember = toModerate?.second
+                val deletedChatItem: ChatItem?
+                val toChatItem: ChatItem?
+                val r = if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
+                  chatModel.controller.apiDeleteMemberChatItems(
+                    chatRh,
+                    groupId = groupInfo.groupId,
+                    itemIds = listOf(itemId)
+                  )
+                } else {
+                  chatModel.controller.apiDeleteChatItems(
+                    chatRh,
+                    type = chatInfo.chatType,
+                    id = chatInfo.apiId,
+                    itemIds = listOf(itemId),
+                    mode = mode
+                  )
                 }
-                withReportsChatsIfOpen {
-                  if (deletedChatItem.content.msgContent is MsgContent.MCReport) {
+                val deleted = r?.firstOrNull()
+                if (deleted != null) {
+                  deletedChatItem = deleted.deletedChatItem.chatItem
+                  toChatItem = deleted.toChatItem?.chatItem
+                  withChats {
                     if (toChatItem != null) {
                       upsertChatItem(chatRh, chatInfo, toChatItem)
                     } else {
                       removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
                   }
+                  withReportsChatsIfOpen {
+                    if (deletedChatItem.content.msgContent is MsgContent.MCReport) {
+                      if (toChatItem != null) {
+                        upsertChatItem(chatRh, chatInfo, toChatItem)
+                      } else {
+                        removeChatItem(chatRh, chatInfo, deletedChatItem)
+                      }
+                    }
+                  }
                 }
               }
-
-              deleted
             },
             deleteMessages = { itemIds -> deleteMessages(chatRh, chatInfo, itemIds, false, moderate = false) },
             receiveFile = { fileId ->
@@ -688,7 +688,7 @@ fun ChatLayout(
   showGroupReports: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
-  deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?,
+  deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
@@ -1140,7 +1140,7 @@ fun BoxScope.ChatItemsList(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   showChatInfo: () -> Unit,
   loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
-  deleteMessage: suspend (Long, CIDeleteMode) -> ChatItemDeletion?,
+  deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
@@ -2697,7 +2697,7 @@ fun PreviewChatLayout() {
       showGroupReports = {},
       showMemberInfo = { _, _ -> },
       loadMessages = { _, _, _ -> },
-      deleteMessage = { _, _ -> null },
+      deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
       cancelFile = {},
@@ -2775,7 +2775,7 @@ fun PreviewGroupChatLayout() {
       showGroupReports = {},
       showMemberInfo = { _, _ -> },
       loadMessages = { _, _, _ -> },
-      deleteMessage = { _, _ -> null },
+      deleteMessage = { _, _ -> },
       deleteMessages = {},
       receiveFile = { _ -> },
       cancelFile = {},
