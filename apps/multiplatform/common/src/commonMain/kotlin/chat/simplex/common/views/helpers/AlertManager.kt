@@ -297,7 +297,7 @@ private fun AlertContent(
   belowTextContent: @Composable (() -> Unit) = {},
   content: @Composable (() -> Unit)
 ) {
-  BoxWithConstraints(Modifier.verticalScroll(rememberScrollState())) {
+  BoxWithConstraints {
     Column(
       Modifier
         .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
@@ -311,6 +311,7 @@ private fun AlertContent(
         if (text != null) {
           Column(Modifier.heightIn(max = this@BoxWithConstraints.maxHeight * 0.7f)
             .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING)
+            .verticalScroll(rememberScrollState())
           ) {
             SelectionContainer {
               Text(
@@ -333,9 +334,10 @@ private fun AlertContent(
 
 @Composable
 private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
-  BoxWithConstraints(Modifier.verticalScroll(rememberScrollState())) {
+  BoxWithConstraints {
     Column(
       Modifier
+        .verticalScroll(rememberScrollState())
         .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
     ) {
       if (appPlatform.isDesktop) {
@@ -347,6 +349,7 @@ private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>
         if (text != null) {
           Column(
             Modifier.heightIn(max = this@BoxWithConstraints.maxHeight * 0.7f)
+              .verticalScroll(rememberScrollState())
           ) {
             SelectionContainer {
               Text(
