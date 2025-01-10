@@ -537,10 +537,9 @@ createWithRandomBytes' size gVar create = tryCreate 3
       id' <- liftIO $ encodedRandomBytes gVar size
       liftIO (E.try $ create id') >>= \case
         Right x -> liftEither x
-        Left e -> handleErr n e
-    handleErr n e
-      | constraintError e = tryCreate (n - 1)
-      | otherwise = throwError . SEInternalError $ show e
+        Left e
+          | constraintError e -> tryCreate (n - 1)
+          | otherwise -> throwError . SEInternalError $ show e
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
 encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
