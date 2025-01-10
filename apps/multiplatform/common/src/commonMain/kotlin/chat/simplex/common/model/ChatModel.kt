@@ -811,14 +811,13 @@ object ChatModel {
       }
     }
 
-    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId, wasArchived: Boolean) {
+    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
       val i = getChatIndex(rhId, chatId)
       if (i >= 0) {
         val chat = chats.value[i]
         chats[i] = chat.copy(
           chatStats = chat.chatStats.copy(
             reportsCount = (chat.chatStats.reportsCount - 1).coerceAtLeast(0),
-            archivedReportsCount = if (wasArchived) chat.chatStats.archivedReportsCount + 1 else chat.chatStats.archivedReportsCount
           )
         )
       }
@@ -1235,8 +1234,6 @@ data class Chat(
     val unreadCount: Int = 0,
     // actual only via getChats() and getChat(.initial), otherwise, zero
     val reportsCount: Int = 0,
-    // actual only via getChat(.initial), otherwise, zero
-    val archivedReportsCount: Int = 0,
     val minUnreadItemId: Long = 0,
     val unreadChat: Boolean = false
   )
@@ -1758,6 +1755,9 @@ data class GroupInfo (
 
   val canAddMembers: Boolean
     get() = membership.memberRole >= GroupMemberRole.Admin && membership.memberActive
+
+  val canModerate: Boolean
+    get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
 
   companion object {
     val sampleData = GroupInfo(

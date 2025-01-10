@@ -76,10 +76,9 @@ fun ChatView(
       ModalManager.end.closeModals()
     }
   } else {
-    val showArchivedReports = remember { mutableStateOf(if (reportsView) reportsShowArchived else false) }
     val groupReports = remember { derivedStateOf {
       val reportsCount = if (activeChatInfo.value is ChatInfo.Group) activeChatStats.value?.reportsCount ?: 0 else 0
-      GroupReports(reportsCount, reportsView, showArchivedReports.value) }
+      GroupReports(reportsCount, reportsView) }
     }
     val reversedChatItems = remember { derivedStateOf { chatModel.chatItemsForContent(groupReports.value.contentTag).value.asReversed() } }
     val searchText = rememberSaveable { mutableStateOf("") }
@@ -240,7 +239,6 @@ fun ChatView(
               }
             },
             groupReports,
-            showArchivedReports,
             scrollToItemId,
             attachmentOption,
             attachmentBottomSheetState,
@@ -387,7 +385,7 @@ fun ChatView(
                     }
                     val deletedItem = deleted.deletedChatItem.chatItem
                     if (deletedItem.isActiveReport) {
-                      decreaseGroupReportsCounter(chatRh, chatInfo.id, toChatItem != null)
+                      decreaseGroupReportsCounter(chatRh, chatInfo.id)
                     }
                   }
                   withReportsChatsIfOpen {
@@ -667,7 +665,6 @@ fun ChatLayout(
   composeState: MutableState<ComposeState>,
   composeView: (@Composable () -> Unit),
   groupReports: State<GroupReports>,
-  showArchivedReports: MutableState<Boolean>,
   scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
   attachmentBottomSheetState: ModalBottomSheetState,
@@ -824,9 +821,7 @@ fun ChatLayout(
           Column(if (oneHandUI.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
             Box {
               if (selectedChatItems.value == null) {
-                GroupReportsAppBar(groupReports, { ModalManager.end.closeModal() }, showArchived = { showHide ->
-                  showArchivedReports.value = showHide
-                }, onSearchValueChanged)
+                GroupReportsAppBar(groupReports, { ModalManager.end.closeModal() }, onSearchValueChanged)
               } else {
                 SelectedItemsTopToolbar(selectedChatItems, !oneHandUI.value)
               }
@@ -1113,7 +1108,6 @@ private fun ContactVerifiedShield() {
 
 /** Saves current scroll position when [GroupReports] are open and user opens [ChatItemInfoView], for example, and goes back */
 private var reportsListState: LazyListState? = null
-private var reportsShowArchived: Boolean = false
 
 @Composable
 fun BoxScope.ChatItemsList(
@@ -1165,12 +1159,11 @@ fun BoxScope.ChatItemsList(
   val maxHeightForList = rememberUpdatedState(
     with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
   )
-  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, groupReports.value.showArchived, saver = LazyListState.Saver) {
+  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, saver = LazyListState.Saver) {
     val index = mergedItems.value.items.indexOfLast { it.hasUnread() }
     val reportsState = reportsListState
     if (reportsState != null) {
       reportsListState = null
-      reportsShowArchived = false
       reportsState
     } else if (index <= 0) {
       LazyListState(0, 0)
@@ -1968,7 +1961,6 @@ private fun SaveReportsStateOnDispose(groupReports: State<GroupReports>, listSta
   DisposableEffect(Unit) {
     onDispose {
       reportsListState = if (groupReports.value.reportsView && ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) listState.value else null
-      reportsShowArchived = if (groupReports.value.reportsView && ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) groupReports.value.showArchived else false
     }
   }
 }
@@ -2322,7 +2314,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
             }
             val deletedItem = di.deletedChatItem.chatItem
             if (deletedItem.isActiveReport) {
-              decreaseGroupReportsCounter(chatRh, chatInfo.id, toChatItem != null)
+              decreaseGroupReportsCounter(chatRh, chatInfo.id)
             }
           }
         }
@@ -2680,7 +2672,6 @@ fun PreviewChatLayout() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       groupReports = remember { mutableStateOf(GroupReports(0, false)) },
-      showArchivedReports = remember { mutableStateOf(false) },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
@@ -2758,7 +2749,6 @@ fun PreviewGroupChatLayout() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       groupReports = remember { mutableStateOf(GroupReports(0, false)) },
-      showArchivedReports = remember { mutableStateOf(false) },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),

@@ -17,7 +17,7 @@ suspend fun apiLoadSingleMessage(
   itemId: Long,
   contentTag: MsgContentTag?,
 ): ChatItem? = coroutineScope {
-  val contentFilter = if (contentTag != null) ContentFilter(contentTag, true) else null
+  val contentFilter = if (contentTag != null) ContentFilter(contentTag) else null
   val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentFilter, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
   chat.chatItems.firstOrNull()
 }

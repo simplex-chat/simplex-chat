@@ -26,13 +26,12 @@ val LocalContentTag: ProvidableCompositionLocal<MsgContentTag?> = staticComposit
 data class GroupReports(
   val reportsCount: Int,
   val reportsView: Boolean,
-  val showArchived: Boolean = false
 ) {
   val showBar: Boolean = reportsCount > 0 && !reportsView
 
   fun toContentFilter(): ContentFilter? {
     if (!reportsView) return null
-    return ContentFilter(MsgContentTag.Report, deleted = showArchived)
+    return ContentFilter(MsgContentTag.Report)
   }
 
   val contentTag: MsgContentTag? = if (!reportsView) null else MsgContentTag.Report
@@ -47,7 +46,6 @@ private fun GroupReportsView(staleChatId: State<String?>, scrollToItemId: Mutabl
 fun GroupReportsAppBar(
   groupReports: State<GroupReports>,
   close: () -> Unit,
-  showArchived: (Boolean) -> Unit,
   onSearchValueChanged: (String) -> Unit
 ) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -97,28 +95,7 @@ fun GroupReportsAppBar(
           showSearch.value = true
         })
       }
-
-      @Composable
-      fun ShowHideArchived() {
-        ItemAction(
-          if (groupReports.value.showArchived) stringResource(MR.strings.group_reports_show_active) else stringResource(MR.strings.group_reports_show_archived),
-          painterResource(if (groupReports.value.showArchived) MR.images.ic_flag else MR.images.ic_inventory_2),
-          onClick = {
-            onClosedAction.value = {
-              showArchived(!groupReports.value.showArchived)
-              onClosedAction.value = {}
-            }
-            showMenu.value = false
-          }
-        )
-      }
-      if (oneHandUI.value) {
-        ShowHideArchived()
-        Search()
-      } else {
-        Search()
-        ShowHideArchived()
-      }
+      Search()
     }
   }
   ItemsReload(groupReports)
@@ -127,10 +104,9 @@ fun GroupReportsAppBar(
 @Composable
 private fun ItemsReload(groupReports: State<GroupReports>) {
   LaunchedEffect(Unit) {
-    snapshotFlow { groupReports.value.showArchived to chatModel.chatId.value }
+    snapshotFlow { chatModel.chatId.value }
       .distinctUntilChanged()
       .drop(1)
-      .map { it.second }
       .filterNotNull()
       .map { chatModel.getChat(it) }
       .filterNotNull()
@@ -142,12 +118,11 @@ private fun ItemsReload(groupReports: State<GroupReports>) {
 }
 
 suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>, chatInfo: ChatInfo) {
-  openChat(chatModel.remoteHostId(), chatInfo, ContentFilter(MsgContentTag.Report, false))
+  openChat(chatModel.remoteHostId(), chatInfo, ContentFilter(MsgContentTag.Report))
   ModalManager.end.showCustomModal(true, id = ModalViewId.GROUP_REPORTS) { close ->
     ModalView({}, showAppBar = false) {
       val chatInfo = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatInfo } }.value
-      val chatStats = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chatModel.chatId.value }?.chatStats } }.value
-      if (chatInfo is ChatInfo.Group && chatStats != null && (chatStats.reportsCount > 0 || chatStats.archivedReportsCount > 0)) {
+      if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canModerate) {
         GroupReportsView(staleChatId, scrollToItemId)
       } else {
         LaunchedEffect(Unit) {
@@ -160,9 +135,5 @@ suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: Mu
 
 private suspend fun reloadItems(chat: Chat, groupReports: State<GroupReports>) {
   val contentFilter = groupReports.value.toContentFilter()
-  if (chat.chatStats.reportsCount > 0 || contentFilter?.deleted == true) {
-    apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, contentFilter, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
-  } else {
-    openLoadedChat(chat.copy(chatItems = emptyList()), contentTag = contentFilter?.mcTag)
-  }
+  apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, contentFilter, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 }

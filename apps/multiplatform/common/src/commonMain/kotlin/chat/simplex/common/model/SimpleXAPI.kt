@@ -2606,15 +2606,14 @@ object ChatController {
                 generalGetString(MR.strings.marked_deleted_description)
               )
             }
-            val wasModerated = r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_
-            val deleted = if (wasModerated && r.member_ != null) {
+            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_) {
               CIDeleted.Moderated(Clock.System.now(), r.member_)
             } else {
               CIDeleted.Deleted(Clock.System.now())
             }
             upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
             if (cItem.isActiveReport) {
-              decreaseGroupReportsCounter(rhId, cInfo.id, wasModerated)
+              decreaseGroupReportsCounter(rhId, cInfo.id)
             }
           }
         }
@@ -3491,7 +3490,7 @@ sealed class CC {
       val filter = if (contentFilter == null) {
         ""
       } else {
-        " content=${contentFilter.mcTag.name.lowercase()} deleted=${onOff(contentFilter.deleted ?: true)}"
+        " content=${contentFilter.mcTag.name.lowercase()}"
       }
       "/_get chat ${chatRef(type, id)}$filter ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
@@ -3832,8 +3831,7 @@ data class NewUser(
 )
 
 data class ContentFilter(
-  val mcTag: MsgContentTag,
-  val deleted: Boolean?
+  val mcTag: MsgContentTag
 )
 
 sealed class ChatPagination {

@@ -364,8 +364,8 @@ fun ModalData.GroupChatInfoLayout(
         }
         val prefsTitleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
         GroupPreferencesButton(prefsTitleId, openPreferences)
-        if (chat.chatStats.reportsCount > 0 || chat.chatStats.archivedReportsCount > 0) {
-          GroupReportsButton(chat.chatStats) {
+        if (groupInfo.canModerate) {
+          GroupReportsButton {
             scope.launch {
               showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
             }
@@ -501,10 +501,10 @@ private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit)
 }
 
 @Composable
-private fun GroupReportsButton(chatStats: Chat.ChatStats, onClick: () -> Unit) {
+private fun GroupReportsButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_flag),
-    stringResource(if (chatStats.reportsCount > 0) MR.strings.group_reports_member_reports else MR.strings.group_reports_archived_member_reports),
+    stringResource(MR.strings.group_reports_member_reports),
     click = onClick
   )
 }
