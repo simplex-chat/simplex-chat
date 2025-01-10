@@ -821,9 +821,7 @@ object ChatModel {
         val wasReportsCount = chat.chatStats.reportsCount
         val nowReportsCount = chats[i].chatStats.reportsCount
         val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
-        println("LALAL WAS $wasReportsCount now $nowReportsCount, by $by, contentTag $contentTag, ${presetTags}")
         changeGroupReportsTagNoContentTag(by)
-        println("LALAL PRESET ${presetTags}")
       }
     }
 
