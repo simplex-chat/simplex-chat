@@ -74,10 +74,10 @@ newServiceState = do
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@DirectoryOpts {coreOptions = CoreChatOpts {dbFilePrefix}, testing} <- getDirectoryOpts appDir "simplex_directory_service"
+  opts@DirectoryOpts {coreOptions, testing} <- getDirectoryOpts appDir "simplex_directory_service"
   unless testing $ do
     putStrLn $ "SimpleX Directory Service Bot v" ++ versionNumber
-    putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
+    printDbOpts coreOptions
   pure opts
 
 directoryServiceCLI :: DirectoryStore -> DirectoryOpts -> IO ()

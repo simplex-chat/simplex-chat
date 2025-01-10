@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -16,22 +17,26 @@ import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
-import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
+import Test.Hspec hiding (it)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import Test.Hspec hiding (it)
+#endif
 
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
@@ -104,10 +109,13 @@ chatGroupTests = do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
     it "group link without contact - connecting (slow handshake)" testPlanGroupLinkNoContactConnectingSlow
+#if !defined(dbPostgres)
+  -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
     it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
+#endif
   describe "group message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
   describe "group delivery receipts" $ do
@@ -3549,6 +3557,7 @@ testPlanGroupLinkNoContactConnectingSlow tmp = do
     bob ##> ("/c " <> gLink)
     bob <## "group link: connecting to group #team"
 
+#if !defined(dbPostgres)
 testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
 testGroupMsgDecryptError tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -3692,6 +3701,7 @@ testGroupSyncRatchetCodeReset tmp =
         connVerified
           | verified = "connection verified"
           | otherwise = "connection not verified, use /code command to see security code"
+#endif
 
 testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetGroupMessageReactions =

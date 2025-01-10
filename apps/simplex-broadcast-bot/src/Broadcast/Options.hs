@@ -27,8 +27,8 @@ defaultProhibitedMessage :: [KnownContact] -> Text
 defaultProhibitedMessage ps = "Sorry, only these users can broadcast messages: " <> knownContactNames ps <> ". Your message is deleted."
 
 broadcastBotOpts :: FilePath -> FilePath -> Parser BroadcastBotOpts
-broadcastBotOpts appDir defaultDbFileName = do
-  coreOptions <- coreChatOptsP appDir defaultDbFileName
+broadcastBotOpts appDir defaultDbName = do
+  coreOptions <- coreChatOptsP appDir defaultDbName
   publishers <-
     option
       parseKnownContacts
@@ -61,10 +61,10 @@ broadcastBotOpts appDir defaultDbFileName = do
       }
 
 getBroadcastBotOpts :: FilePath -> FilePath -> IO BroadcastBotOpts
-getBroadcastBotOpts appDir defaultDbFileName =
+getBroadcastBotOpts appDir defaultDbName =
   execParser $
     info
-      (helper <*> versionOption <*> broadcastBotOpts appDir defaultDbFileName)
+      (helper <*> versionOption <*> broadcastBotOpts appDir defaultDbName)
       (header versionStr <> fullDesc <> progDesc "Start chat bot with DB_FILE file and use SERVER as SMP server")
   where
     versionStr = versionString versionNumber

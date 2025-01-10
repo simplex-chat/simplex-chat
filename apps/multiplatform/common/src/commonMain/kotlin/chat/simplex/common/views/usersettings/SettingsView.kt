@@ -444,17 +444,19 @@ fun doWithAuth(title: String, desc: String, block: () -> Unit) {
           runAuth(title, desc, onFinishAuth)
         }
       }
-      Box(
-        Modifier.fillMaxSize().background(MaterialTheme.colors.background),
-        contentAlignment = Alignment.Center
-      ) {
-        SimpleButton(
-          stringResource(MR.strings.auth_unlock),
-          icon = painterResource(MR.images.ic_lock),
-          click = {
-            runAuth(title, desc, onFinishAuth)
-          }
-        )
+      Surface(color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
+        Box(
+          Modifier.fillMaxSize(),
+          contentAlignment = Alignment.Center
+        ) {
+          SimpleButton(
+            stringResource(MR.strings.auth_unlock),
+            icon = painterResource(MR.images.ic_lock),
+            click = {
+              runAuth(title, desc, onFinishAuth)
+            }
+          )
+        }
       }
     }
   }
