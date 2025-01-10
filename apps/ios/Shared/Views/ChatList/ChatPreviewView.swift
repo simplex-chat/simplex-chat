@@ -277,7 +277,7 @@ struct ChatPreviewView: View {
         
         func prefix() -> Text {
             switch cItem.content.msgContent {
-            case let .report(text, reason): return Text(!text.isEmpty ? "\(reason.text): " : reason.text).italic().foregroundColor(Color.red)
+            case let .report(_, reason): return Text(!itemText.isEmpty ? "\(reason.text): " : reason.text).italic().foregroundColor(Color.red)
             default: return Text("")
             }
         }
