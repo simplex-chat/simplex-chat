@@ -522,9 +522,7 @@ instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField MsgContentTag where fromField = blobFieldDecoder strDecode
-
-instance ToField MsgContentTag where toField = toField . strEncode
+instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
 
 data MsgContainer
   = MCSimple ExtMsgContent
