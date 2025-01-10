@@ -707,11 +707,11 @@ findGroupChatPreviews_ db User {userId} pagination clq =
       CLQFilters {favorite = True, unread = False} -> do
         let q =
               baseQuery
-               <> " "
-               <> [sql|
+                <> " "
+                <> [sql|
                       WHERE g.user_id = ?
                         AND g.favorite = 1
-                  |]
+                   |]
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQFilters {favorite = False, unread = True} -> do
@@ -721,7 +721,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
                 <> [sql|
                       WHERE g.user_id = ?
                         AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                  |]
+                   |]
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQFilters {favorite = True, unread = True} -> do
@@ -732,7 +732,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
                       WHERE g.user_id = ?
                         AND (g.favorite = 1
                           OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                  |]
+                   |]
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQSearch {search} -> do
@@ -748,7 +748,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
                           OR LOWER(gp.full_name) LIKE '%' || LOWER(?) || '%'
                           OR LOWER(gp.description) LIKE '%' || LOWER(?) || '%'
                         )
-                  |]
+                   |]
             p = baseParams :. (userId, search, search, search, search)
         queryWithPagination q p
     queryWithPagination :: ToRow p => Query -> p -> IO [(GroupId, UTCTime, Maybe ChatItemId) :. ChatStatsRow]
@@ -809,7 +809,7 @@ findLocalChatPreviews_ db User {userId} pagination clq =
                 <> [sql|
                       WHERE nf.user_id = ?
                         AND nf.favorite = 1
-                  |]
+                   |]
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQFilters {favorite = False, unread = True} -> do
@@ -819,7 +819,7 @@ findLocalChatPreviews_ db User {userId} pagination clq =
                 <> [sql|
                       WHERE nf.user_id = ?
                         AND (nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                  |]
+                   |]
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQFilters {favorite = True, unread = True} -> do
@@ -830,7 +830,7 @@ findLocalChatPreviews_ db User {userId} pagination clq =
                       WHERE nf.user_id = ?
                         AND (nf.favorite = 1
                           OR nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-                  |]
+                   |]
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQSearch {} -> pure []
