@@ -106,6 +106,8 @@ class ChatTagsModel: ObservableObject {
     @Published var userTags: [ChatTag] = []
     @Published var activeFilter: ActiveFilter? = nil
     @Published var presetTags: [PresetTag:Int] = [:]
+    @Published var collapsiblePresetTags: [PresetTag:Int] = [:]
+    @Published var alwaysShownPresetTags: [PresetTag:Int] = [:]
     @Published var unreadTags: [Int64:Int] = [:]
     
     func updateChatTags(_ chats: [Chat]) {
@@ -114,7 +116,7 @@ class ChatTagsModel: ObservableObject {
         var newUnreadTags: [Int64:Int] = [:]
         for chat in chats {
             for tag in PresetTag.allCases {
-                if presetTagMatchesChat(tag, chat.chatInfo) {
+                if presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats) {
                     newPresetTags[tag] = (newPresetTags[tag] ?? 0) + 1
                 }
             }
@@ -128,6 +130,8 @@ class ChatTagsModel: ObservableObject {
             activeFilter = nil
         }
         presetTags = newPresetTags
+        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) })
+        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) })
         unreadTags = newUnreadTags
     }
 
@@ -143,22 +147,26 @@ class ChatTagsModel: ObservableObject {
         }
     }
 
-    func addPresetChatTags(_ chatInfo: ChatInfo) {
+    func addPresetChatTags(_ chatInfo: ChatInfo, _ chatStats: ChatStats) {
         for tag in PresetTag.allCases {
-            if presetTagMatchesChat(tag, chatInfo) {
+            if presetTagMatchesChat(tag, chatInfo, chatStats) {
                 presetTags[tag] = (presetTags[tag] ?? 0) + 1
             }
         }
+        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) })
+        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) })
     }
 
-    func removePresetChatTags(_ chatInfo: ChatInfo) {
+    func removePresetChatTags(_ chatInfo: ChatInfo, _ chatStats: ChatStats) {
         for tag in PresetTag.allCases {
-            if presetTagMatchesChat(tag, chatInfo) {
+            if presetTagMatchesChat(tag, chatInfo, chatStats) {
                 if let count = presetTags[tag] {
                     presetTags[tag] = max(0, count - 1)
                 }
             }
         }
+        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) })
+        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) })
     }
     
     func markChatTagRead(_ chat: Chat) -> Void {
@@ -432,7 +440,7 @@ final class ChatModel: ObservableObject {
             updateChatInfo(cInfo)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
-            ChatTagsModel.shared.addPresetChatTags(cInfo)
+            ChatTagsModel.shared.addPresetChatTags(cInfo, ChatStats())
         }
     }
 
@@ -956,7 +964,7 @@ final class ChatModel: ObservableObject {
         withAnimation {
             if let i = getChatIndex(id) {
                 let removed = chats.remove(at: i)
-                ChatTagsModel.shared.removePresetChatTags(removed.chatInfo)
+                ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
             }
         }
     }
