@@ -473,7 +473,7 @@ fromIntField_ fromInt f = fromField f >>= parseInt f
 #endif
   where
     parseInt f' i = case fromInt i of
-      Just x -> Ok x
+      Just x -> pure x
       _ -> returnError ConversionFailed f' $ "invalid integer: " <> show i
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
