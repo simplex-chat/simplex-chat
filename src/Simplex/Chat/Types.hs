@@ -64,7 +64,6 @@ import Database.PostgreSQL.Simple.ToField (ToField (..))
 #else
 import Database.SQLite.Simple (ResultError (..))
 import Database.SQLite.Simple.FromField (FromField (..), FieldParser, returnError)
-import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 #endif
 
