@@ -62,9 +62,8 @@ import Database.PostgreSQL.Simple (ResultError (..))
 import Database.PostgreSQL.Simple.FromField (FromField(..), FieldParser, returnError)
 import Database.PostgreSQL.Simple.ToField (ToField (..))
 #else
-import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (FromField (..), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
+import Database.SQLite.Simple (ResultError (..))
+import Database.SQLite.Simple.FromField (FromField (..), FieldParser, returnError)
 import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 #endif
@@ -466,23 +465,16 @@ msgFilterIntP = \case
   2 -> Just MFMentions
   _ -> Just MFAll
 
--- TODO [postgres] review
-#if defined(dbPostgres)
 fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> FieldParser a
-fromIntField_ fromInt f val = do
-  i <- fromField f val
-  case fromInt i of
-    Just x -> pure x
-    _ -> returnError ConversionFailed f "invalid integer value"
+#if defined(dbPostgres)
+fromIntField_ fromInt f val = fromField f val >>= parseInt f
 #else
-fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
-fromIntField_ fromInt = \case
-  f@(Field (SQLInteger i) _) ->
-    case fromInt i of
-      Just x -> Ok x
-      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
-  f -> returnError ConversionFailed f "expecting SQLInteger column type"
+fromIntField_ fromInt f = fromField f >>= parseInt f
 #endif
+  where
+    parseInt f' i = case fromInt i of
+      Just x -> Ok x
+      _ -> returnError ConversionFailed f' $ "invalid integer: " <> show i
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
