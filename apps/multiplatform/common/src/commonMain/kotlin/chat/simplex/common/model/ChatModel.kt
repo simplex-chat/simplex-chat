@@ -800,27 +800,36 @@ object ChatModel {
     }
 
     fun increaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
-      val i = getChatIndex(rhId, chatId)
-      if (i >= 0) {
-        val chat = chats.value[i]
-        chats[i] = chat.copy(
-          chatStats = chat.chatStats.copy(
-            reportsCount = chat.chatStats.reportsCount + 1
-          )
-        )
-      }
+      changeGroupReportsCounter(rhId, chatId, 1)
     }
 
     fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
+      changeGroupReportsCounter(rhId, chatId, -1)
+    }
+
+    private fun changeGroupReportsCounter(rhId: Long?, chatId: ChatId, by: Int = 0) {
+      if (by == 0) return
+
       val i = getChatIndex(rhId, chatId)
       if (i >= 0) {
         val chat = chats.value[i]
         chats[i] = chat.copy(
           chatStats = chat.chatStats.copy(
-            reportsCount = (chat.chatStats.reportsCount - 1).coerceAtLeast(0),
+            reportsCount = (chat.chatStats.reportsCount + by).coerceAtLeast(0),
           )
         )
+        val wasReportsCount = chat.chatStats.reportsCount
+        val nowReportsCount = chats[i].chatStats.reportsCount
+        val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
+        println("LALAL WAS $wasReportsCount now $nowReportsCount, by $by, contentTag $contentTag, ${presetTags}")
+        changeGroupReportsTagNoContentTag(by)
+        println("LALAL PRESET ${presetTags}")
       }
+    }
+
+    private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
+      if (by == 0 || contentTag != null) return
+      presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
     }
 
     private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {

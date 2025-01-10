@@ -928,8 +928,8 @@ private val TAG_MIN_HEIGHT = 35.dp
 private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val userTags = remember { chatModel.userTags }
   val presetTags = remember { chatModel.presetTags }
-  val collapsiblePresetTags = presetTags.filter { presetCanBeCollapsed(it.key) }
-  val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) }
+  val collapsiblePresetTags = presetTags.filter { presetCanBeCollapsed(it.key) && it.value > 0 }
+  val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) && it.value > 0 }
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val unreadTags = remember { chatModel.unreadTags }
   val rhId = chatModel.remoteHostId()
@@ -938,7 +938,7 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
 
   TagsRow {
     if (collapsiblePresetTags.size > 1) {
-      if (presetTags.size + userTags.value.size <= 3) {
+      if (collapsiblePresetTags.size + alwaysShownPresetTags.size + userTags.value.size <= 3) {
         PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
           ExpandedTagFilterView(tag)
         }
