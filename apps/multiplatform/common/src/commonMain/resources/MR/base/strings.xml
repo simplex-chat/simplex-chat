@@ -40,6 +40,7 @@
   <string name="report_item_visibility_submitter">Only you and moderators see it</string>
   <string name="report_item_visibility_moderators">Only sender and moderators see it</string>
   <string name="report_item_archived">archived report</string>
+  <string name="report_item_archived_by">archived report by %s</string>
   <string name="blocked_item_description">blocked</string>
   <string name="blocked_by_admin_item_description">blocked by admin</string>
   <string name="blocked_items_description">%d messages blocked</string>

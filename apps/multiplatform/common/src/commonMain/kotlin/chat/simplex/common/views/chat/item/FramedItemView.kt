@@ -216,7 +216,12 @@ fun FramedItemView(
                   iconColor = Color.Red
                 )
               } else {
-                FramedItemHeader(stringResource(MR.strings.report_item_archived), true, painterResource(MR.images.ic_flag))
+                val text = if (ci.meta.itemDeleted is CIDeleted.Moderated) {
+                  stringResource(MR.strings.report_item_archived_by).format(ci.meta.itemDeleted.byGroupMember.displayName)
+                } else {
+                  stringResource(MR.strings.report_item_archived)
+                }
+                FramedItemHeader(text, true, painterResource(MR.images.ic_flag))
               }
             } else if (ci.meta.itemDeleted != null) {
               when (ci.meta.itemDeleted) {

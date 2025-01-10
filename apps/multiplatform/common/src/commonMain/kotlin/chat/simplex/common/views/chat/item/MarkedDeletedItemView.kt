@@ -94,7 +94,13 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: State<Boolean>
 }
 
 fun markedDeletedText(cItem: ChatItem): String =
-  if (cItem.meta.itemDeleted != null && cItem.isReport) generalGetString(MR.strings.report_item_archived)
+  if (cItem.meta.itemDeleted != null && cItem.isReport) {
+    if (cItem.meta.itemDeleted is CIDeleted.Moderated) {
+      generalGetString(MR.strings.report_item_archived_by).format(cItem.meta.itemDeleted.byGroupMember.displayName)
+    } else {
+      generalGetString(MR.strings.report_item_archived)
+    }
+  }
   else when (cItem.meta.itemDeleted) {
     is CIDeleted.Moderated ->
       String.format(generalGetString(MR.strings.moderated_item_description), cItem.meta.itemDeleted.byGroupMember.displayName)
