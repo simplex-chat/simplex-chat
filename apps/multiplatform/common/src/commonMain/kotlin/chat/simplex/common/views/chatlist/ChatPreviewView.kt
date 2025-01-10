@@ -474,7 +474,7 @@ fun IncognitoIcon(incognito: Boolean) {
 @Composable
 fun GroupReportsIcon() {
   Icon(
-    painterResource(MR.images.ic_flag_filled),
+    painterResource(MR.images.ic_flag),
     contentDescription = null,
     tint = MaterialTheme.colors.error,
     modifier = Modifier
