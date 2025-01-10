@@ -393,6 +393,13 @@ object ChatModel {
       }
     }
 
+    fun updateChatStats(rhId: Long?, chatId: ChatId, chatStats: Chat.ChatStats) {
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        chats[i] = chats[i].copy(chatStats = chatStats)
+      }
+    }
+
     suspend fun updateContactConnection(rhId: Long?, contactConnection: PendingContactConnection) = updateChat(rhId, ChatInfo.ContactConnection(contactConnection))
 
     suspend fun updateContact(rhId: Long?, contact: Contact) = updateChat(rhId, ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
@@ -790,6 +797,20 @@ object ChatModel {
 
     fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
       changeUnreadCounterNoContentTag(rhId, user, -by)
+    }
+
+    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId, wasArchived: Boolean) {
+      return
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        val chat = chats.value[i]
+        chats[i] = chat.copy(
+          chatStats = chat.chatStats.copy(
+            reportsCount = (chat.chatStats.reportsCount - 1).coerceAtLeast(0),
+            archivedReportsCount = if (wasArchived) chat.chatStats.archivedReportsCount + 1 else chat.chatStats.archivedReportsCount
+          )
+        )
+      }
     }
 
     private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {

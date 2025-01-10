@@ -90,21 +90,35 @@ fun GroupReportsAppBar(
       offset = DpOffset(-width.value, if (oneHandUI.value) -height.value else AppBarHeight),
       onClosed = onClosedAction
     ) {
-      ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
-        showMenu.value = false
-        showSearch.value = true
-      })
-      ItemAction(
-        if (groupReports.value.showArchived) stringResource(MR.strings.group_reports_show_active) else stringResource(MR.strings.group_reports_show_archived),
-        painterResource(if (groupReports.value.showArchived) MR.images.ic_flag else MR.images.ic_inventory_2),
-        onClick = {
-          onClosedAction.value = {
-            showArchived(!groupReports.value.showArchived)
-            onClosedAction.value = {}
-          }
+      @Composable
+      fun Search() {
+        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
           showMenu.value = false
-        }
-      )
+          showSearch.value = true
+        })
+      }
+
+      @Composable
+      fun ShowHideArchived() {
+        ItemAction(
+          if (groupReports.value.showArchived) stringResource(MR.strings.group_reports_show_active) else stringResource(MR.strings.group_reports_show_archived),
+          painterResource(if (groupReports.value.showArchived) MR.images.ic_flag else MR.images.ic_inventory_2),
+          onClick = {
+            onClosedAction.value = {
+              showArchived(!groupReports.value.showArchived)
+              onClosedAction.value = {}
+            }
+            showMenu.value = false
+          }
+        )
+      }
+      if (oneHandUI.value) {
+        ShowHideArchived()
+        Search()
+      } else {
+        Search()
+        ShowHideArchived()
+      }
     }
   }
   ItemsReload(groupReports)

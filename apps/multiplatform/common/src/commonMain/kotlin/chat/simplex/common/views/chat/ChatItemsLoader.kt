@@ -44,11 +44,15 @@ suspend fun apiLoadMessages(
   when (pagination) {
     is ChatPagination.Initial -> {
       val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
-      withChats(contentTag) {
-        if (getChat(chat.id) == null) {
-          addChat(chat)
-        } else {
-          updateChatInfo(chat.remoteHostId, chat.chatInfo)
+      if (contentTag == null) {
+        // update main chats, not content tagged
+        withChats {
+          if (getChat(chat.id) == null) {
+            addChat(chat)
+          } else {
+            updateChatInfo(chat.remoteHostId, chat.chatInfo)
+            updateChatStats(chat.remoteHostId, chat.id, chat.chatStats)
+          }
         }
       }
       withChats(contentTag) {

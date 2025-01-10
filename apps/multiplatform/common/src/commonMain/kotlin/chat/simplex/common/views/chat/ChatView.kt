@@ -397,9 +397,14 @@ fun ChatView(
                     } else {
                       removeChatItem(chatRh, chatInfo, deletedChatItem)
                     }
+                    val deletedItem = deleted.deletedChatItem.chatItem
+                    val isActiveReport = deletedItem.isReport == true && !deletedItem.isDeletedContent && deletedItem.meta.itemDeleted == null
+                    if (isActiveReport) {
+                      decreaseGroupReportsCounter(chatRh, chatInfo.id, toChatItem != null)
+                    }
                   }
                   withReportsChatsIfOpen {
-                    if (deletedChatItem.content.msgContent is MsgContent.MCReport) {
+                    if (deletedChatItem.isReport) {
                       if (toChatItem != null) {
                         upsertChatItem(chatRh, chatInfo, toChatItem)
                       } else {
@@ -520,7 +525,7 @@ fun ChatView(
                     updateChatItem(cInfo, updatedCI)
                   }
                   withReportsChatsIfOpen {
-                    if (cItem.content.msgContent is MsgContent.MCReport) {
+                    if (cItem.isReport) {
                       updateChatItem(cInfo, updatedCI)
                     }
                   }
@@ -2322,17 +2327,22 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              if (toChatItem.content.msgContent is MsgContent.MCReport) {
+              if (toChatItem.isReport) {
                 upsertChatItem(chatRh, chatInfo, toChatItem)
               }
             } else {
               removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
+            val deletedItem = di.deletedChatItem.chatItem
+            val isActiveReport = deletedItem.isReport && !deletedItem.isDeletedContent && deletedItem.meta.itemDeleted == null
+            if (isActiveReport) {
+              decreaseGroupReportsCounter(chatRh, chatInfo.id, toChatItem != null)
+            }
           }
         }
         withReportsChatsIfOpen {
           for (di in deleted) {
-            if (di.deletedChatItem.chatItem.content.msgContent is MsgContent.MCReport) {
+            if (di.deletedChatItem.chatItem.isReport) {
               val toChatItem = di.toChatItem?.chatItem
               if (toChatItem != null) {
                 upsertChatItem(chatRh, chatInfo, toChatItem)

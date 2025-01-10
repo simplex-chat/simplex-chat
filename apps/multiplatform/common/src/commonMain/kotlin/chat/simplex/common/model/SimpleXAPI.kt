@@ -2481,7 +2481,7 @@ object ChatController {
               addChatItem(rhId, cInfo, cItem)
             }
             withReportsChatsIfOpen {
-              if (cItem.content.msgContent is MsgContent.MCReport) {
+              if (cItem.isReport) {
                 addChatItem(rhId, cInfo, cItem)
               }
             }
@@ -2512,7 +2512,7 @@ object ChatController {
               updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
             }
             withReportsChatsIfOpen {
-              if (cItem.content.msgContent is MsgContent.MCReport) {
+              if (cItem.isReport) {
                 updateChatItem(cInfo, cItem, status = cItem.meta.itemStatus)
               }
             }
@@ -2526,7 +2526,7 @@ object ChatController {
             updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
           }
           withReportsChatsIfOpen {
-            if (r.reaction.chatReaction.chatItem.content.msgContent is MsgContent.MCReport) {
+            if (r.reaction.chatReaction.chatItem.isReport) {
               updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
             }
           }
@@ -2568,7 +2568,7 @@ object ChatController {
             }
           }
           withReportsChatsIfOpen {
-            if (cItem.content.msgContent is MsgContent.MCReport) {
+            if (cItem.isReport) {
               if (toChatItem == null) {
                 removeChatItem(rhId, cInfo, cItem)
               } else {
@@ -2603,12 +2603,17 @@ object ChatController {
                 generalGetString(MR.strings.marked_deleted_description)
               )
             }
-            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_) {
+            val wasModerated = r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember != r.member_
+            val deleted = if (wasModerated && r.member_ != null) {
               CIDeleted.Moderated(Clock.System.now(), r.member_)
             } else {
               CIDeleted.Deleted(Clock.System.now())
             }
             upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+            val isActiveReport = cItem.isReport && !cItem.isDeletedContent && cItem.meta.itemDeleted == null
+            if (isActiveReport) {
+              decreaseGroupReportsCounter(rhId, cInfo.id, wasModerated)
+            }
           }
         }
         withReportsChatsIfOpen {
@@ -3102,7 +3107,7 @@ object ChatController {
       val cItem = aChatItem.chatItem
       withChats { upsertChatItem(rh, cInfo, cItem) }
       withReportsChatsIfOpen {
-        if (cItem.content.msgContent is MsgContent.MCReport) {
+        if (cItem.isReport) {
           upsertChatItem(rh, cInfo, cItem)
         }
       }
@@ -5953,7 +5958,7 @@ sealed class CR {
     is ChatRunning -> noDetails()
     is ChatStopped -> noDetails()
     is ApiChats -> withUser(user, json.encodeToString(chats))
-    is ApiChat -> withUser(user, "chat: ${json.encodeToString(chat)}\nnavInfo: ${navInfo}")
+    is ApiChat -> withUser(user, "remoteHostId: ${chat.remoteHostId}\nchatInfo: ${chat.chatInfo}\nchatStats: ${chat.chatStats}\nnavInfo: ${navInfo}\nchatItems: ${chat.chatItems}")
     is ChatTags -> withUser(user, "userTags: ${json.encodeToString(userTags)}")
     is ApiChatItemInfo -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\n${json.encodeToString(chatItemInfo)}")
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
