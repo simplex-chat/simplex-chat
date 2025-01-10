@@ -635,9 +635,9 @@
         <target>Aktív kapcsolatok száma</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
-        <target>Cím hozzáadása a profilhoz, hogy az ismerősei megoszthassák másokkal. A profilfrissítés elküldésre kerül az ismerősei számára.</target>
+        <target state="translated">Cím hozzáadása a profilhoz, hogy az ismerősei megoszthassák másokkal. A profilfrissítés elküldésre fog kerülni az Ön ismerősei számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add friends" xml:space="preserve">
@@ -800,9 +800,9 @@
         <target>Az összes ismerősével kapcsolatban marad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
-        <target>Az ismerőseivel kapcsolatban marad. A profil-változtatások frissítésre kerülnek az ismerősöknél.</target>
+        <target state="translated">Az ismerőseivel kapcsolatban marad. A profilfrissítés elküldésre fog kerülni az Ön ismerősei számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve" approved="no">
@@ -2126,17 +2126,17 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Adatbázis titkosítva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated and stored in the keychain.
 </source>
-        <target>Az adatbázis titkosítási jelmondata frissítve lesz és a kulcstartóban kerül tárolásra.
+        <target state="translated">Az adatbázis titkosítási jelmondata frissülni fog és a kulcstartóban lesz tárolva.
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated.
 </source>
-        <target>Az datbázis titkosítási jelmondata frissítve lesz.
+        <target state="translated">Az datbázis titkosítási jelmondata frissülni fog.
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5519,9 +5519,9 @@ Hiba: %@</target>
         <target>Profiltéma</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Profile update will be sent to your contacts.</source>
-        <target>A profilfrissítés elküldésre került az ismerősök számára.</target>
+        <target state="translated">A profilfrissítés elküldésre fog kerülni az Ön ismerősei számára.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
@@ -8486,9 +8486,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>A profilja az eszközön van tárolva és csak az ismerőseivel kerül megosztásra. A SimpleX-kiszolgálók nem láthatják a profilját.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
+      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve" approved="no">
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
-        <target>A profilja megváltozott. Ha elmenti, a frissített profil elküldésre kerül az összes ismerősének.</target>
+        <target state="translated">A profilja megváltozott. Ha elmenti, a profilfrissítés elküldésre fog kerülni az Ön ismerősei számára.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
