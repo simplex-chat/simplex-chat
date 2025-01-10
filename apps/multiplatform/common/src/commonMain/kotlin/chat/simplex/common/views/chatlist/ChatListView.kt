@@ -1227,10 +1227,7 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
 
 fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat.ChatStats): Boolean =
   when (tag) {
-    PresetTagKind.GROUP_REPORTS -> when (chatInfo) {
-      is ChatInfo.Group -> chatStats.reportsCount > 0
-      else -> false
-    }
+    PresetTagKind.GROUP_REPORTS -> chatStats.reportsCount > 0
     PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
     PresetTagKind.CONTACTS -> when (chatInfo) {
       is ChatInfo.Direct -> !(chatInfo.contact.activeConn == null && chatInfo.contact.profile.contactLink != null && chatInfo.contact.active) && !chatInfo.contact.chatDeleted
