@@ -2268,4 +2268,5 @@
     <string name="report_compose_reason_header_other">Egyéb jelentés: csak a csoport moderátorai látják.</string>
     <string name="report_compose_reason_header_community">Szabálysértés jelentése: csak a csoport moderátorai látják.</string>
     <string name="archive_report">Jelentés archíválása</string>
+    <string name="delete_report">Jelentés törlése</string>
 </resources>
