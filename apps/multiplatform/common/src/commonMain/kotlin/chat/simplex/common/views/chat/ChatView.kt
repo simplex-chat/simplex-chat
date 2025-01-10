@@ -2380,7 +2380,7 @@ fun Modifier.chatViewBackgroundModifier(
 ): Modifier {
   val wallpaperImage = wallpaper.type.image
   val wallpaperType = wallpaper.type
-  val backgroundColor = wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, colors.background)
+  val backgroundColor = if (drawWallpaper) wallpaper.background ?: wallpaperType.defaultBackgroundColor(CurrentColors.value.base, colors.background) else colors.background
   val tintColor = wallpaper.tint ?: wallpaperType.defaultTintColor(CurrentColors.value.base)
 
   return this
