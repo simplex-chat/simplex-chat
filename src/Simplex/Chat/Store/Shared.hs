@@ -504,7 +504,9 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
       let ldn = displayName <> (if ldnSuffix == 0 then "" else T.pack $ '_' : show ldnSuffix)
       E.try (insertName ldn currentTs) >>= \case
         Right () -> action ldn
-        Left e -> handleErr ldnSuffix attempts e
+        Left e
+          | constraintError e = tryCreateName (ldnSuffix + 1) (attempts - 1)
+          | otherwise = E.throwIO e
       where
         insertName ldn ts =
           DB.execute
@@ -515,9 +517,6 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
               VALUES (?,?,?,?,?,?)
             |]
             (ldn, displayName, ldnSuffix, userId, ts, ts)
-    handleErr ldnSuffix attempts e
-      | constraintError e = tryCreateName (ldnSuffix + 1) (attempts - 1)
-      | otherwise = E.throwIO e
 
 createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomId = createWithRandomBytes 12
