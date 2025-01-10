@@ -2294,11 +2294,13 @@
     <string name="report_item_visibility_moderators">Alleen de verzender en moderators zien het</string>
     <string name="report_item_visibility_submitter">Alleen jij en moderators zien het</string>
     <string name="report_reason_spam">Spam</string>
-    <string name="report_archive_alert_title">Archief rapport?</string>
+    <string name="report_archive_alert_title">Rapport archiveren?</string>
     <string name="report_verb">Rapport</string>
     <string name="report_reason_alert_title">Reden melding?</string>
     <string name="report_archive_alert_desc">Het rapport wordt voor u gearchiveerd.</string>
     <string name="report_compose_reason_header_other">Anders melden: alleen groepsmoderators kunnen het zien.</string>
     <string name="report_compose_reason_header_spam">Spam melden: alleen groepsmoderators kunnen het zien.</string>
     <string name="report_compose_reason_header_community">Rapporteer overtreding: alleen groepsmoderators kunnen dit zien.</string>
+    <string name="archive_report">Rapport archiveren</string>
+    <string name="delete_report">Rapport verwijderen</string>
 </resources>
