@@ -1992,6 +1992,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             await MainActor.run {
                 if active(user) {
                     m.addChatItem(cInfo, cItem)
+                    if cItem.isActiveReport {
+                        m.increaseGroupReportsCounter(cInfo.id)
+                    }
                 } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                     m.increaseUnreadCounter(user: user)
                 }
@@ -2052,6 +2055,37 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
+                }
+            }
+        }
+    case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
+        if !active(user) {
+            do {
+                let users = try listUsers()
+                await MainActor.run {
+                    m.users = users
+                }
+            } catch {
+                logger.error("Error loading users: \(error)")
+            }
+            return
+        }
+        let im = ItemsModel.shared
+        let cInfo = ChatInfo.group(groupInfo: groupInfo)
+        for itemId in chatItemIDs {
+            await MainActor.run {
+                m.decreaseGroupReportsCounter(cInfo.id)
+            }
+            if let cItem = im.reversedChatItems.first(where: { $0.id == itemId }) {
+                let deleted = if case let .groupRcv(groupMember) = cItem.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
+                    CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
+                } else {
+                    CIDeleted.deleted(deletedTs: Date.now)
+                }
+                await MainActor.run {
+                    var newItem = cItem
+                    newItem.meta.itemDeleted = deleted
+                    _ = m.upsertChatItem(cInfo, newItem)
                 }
             }
         }

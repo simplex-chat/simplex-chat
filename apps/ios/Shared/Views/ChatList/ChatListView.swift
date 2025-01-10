@@ -682,7 +682,7 @@ struct ChatTagsView: View {
     
     @ViewBuilder private func tagsView() -> some View {
         if chatTagsModel.collapsiblePresetTags.count > 1 {
-            if chatTagsModel.presetTags.count + chatTagsModel.userTags.count <= 3 {
+            if chatTagsModel.collapsiblePresetTags.count + chatTagsModel.alwaysShownPresetTags.count + chatTagsModel.userTags.count <= 3 {
                 expandedPresetTagsFiltersView()
             } else {
                 collapsedTagsFilterView()

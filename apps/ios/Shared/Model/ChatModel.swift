@@ -130,9 +130,13 @@ class ChatTagsModel: ObservableObject {
             activeFilter = nil
         }
         presetTags = newPresetTags
-        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) })
-        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) })
+        adaptDerivedFromPresetTags()
         unreadTags = newUnreadTags
+    }
+
+    func adaptDerivedFromPresetTags() {
+        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) && elem.value > 0 })
+        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) && elem.value > 0 })
     }
 
     func updateChatFavorite(favorite: Bool, wasFavorite: Bool) {
@@ -153,8 +157,7 @@ class ChatTagsModel: ObservableObject {
                 presetTags[tag] = (presetTags[tag] ?? 0) + 1
             }
         }
-        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) })
-        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) })
+        adaptDerivedFromPresetTags()
     }
 
     func removePresetChatTags(_ chatInfo: ChatInfo, _ chatStats: ChatStats) {
@@ -165,8 +168,7 @@ class ChatTagsModel: ObservableObject {
                 }
             }
         }
-        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) })
-        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) })
+        adaptDerivedFromPresetTags()
     }
     
     func markChatTagRead(_ chat: Chat) -> Void {
@@ -193,6 +195,12 @@ class ChatTagsModel: ObservableObject {
                 unreadTags[tag] = max(0, count - 1)
             }
         }
+    }
+
+    func changeGroupReportsTag(_ by: Int = 0) {
+        if by == 0 { return }
+        presetTags[.groupReports] = (presetTags[.groupReports] ?? 0) + by
+        adaptDerivedFromPresetTags()
     }
 }
 
@@ -879,6 +887,27 @@ final class ChatModel: ObservableObject {
     func totalUnreadCountForAllUsers() -> Int {
         chats.filter { $0.chatInfo.ntfsEnabled }.reduce(0, { count, chat in count + chat.chatStats.unreadCount }) +
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
+    }
+
+    func increaseGroupReportsCounter(_ chatId: ChatId) {
+        changeGroupReportsCounter(chatId, 1)
+    }
+
+    func decreaseGroupReportsCounter(_ chatId: ChatId) {
+        changeGroupReportsCounter(chatId, -1)
+    }
+
+    private func changeGroupReportsCounter(_ chatId: ChatId, _ by: Int = 0) {
+        if by == 0 { return }
+
+        if let i = getChatIndex(chatId) {
+            let chat = chats[i]
+            let wasReportsCount = chat.chatStats.reportsCount
+            chat.chatStats.reportsCount = max(0, chat.chatStats.reportsCount + by)
+            let nowReportsCount = chat.chatStats.reportsCount
+            let by = wasReportsCount == 0 && nowReportsCount > 0 ? 1 : (wasReportsCount > 0 && nowReportsCount == 0) ? -1 : 0
+            ChatTagsModel.shared.changeGroupReportsTag(by)
+        }
     }
 
     // this function analyses "connected" events and assumes that each member will be there only once

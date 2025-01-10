@@ -650,6 +650,7 @@ public enum ChatResponse: Decodable, Error {
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItems(user: UserRef, chatItems: [AChatItem])
+    case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: [Int64], byUser: Bool, member_: GroupMember?)
     case forwardPlan(user: UserRef, chatItemIds: [Int64], forwardConfirmation: ForwardConfirmation?)
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
@@ -829,6 +830,7 @@ public enum ChatResponse: Decodable, Error {
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItems: return "newChatItems"
+            case .groupChatItemsDeleted: return "groupChatItemsDeleted"
             case .forwardPlan: return "forwardPlan"
             case .chatItemsStatusesUpdated: return "chatItemsStatusesUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
@@ -1008,6 +1010,8 @@ public enum ChatResponse: Decodable, Error {
             case let .newChatItems(u, chatItems):
                 let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
                 return withUser(u, itemsString)
+            case let .groupChatItemsDeleted(u, gInfo, chatItemIDs, byUser, member_):
+                return withUser(u, "chatItemIDs: \(String(describing: chatItemIDs))\ngroupInfo: \(String(describing: gInfo))\nbyUser: \(byUser)\nmember_: \(String(describing: member_))")
             case let .forwardPlan(u, chatItemIds, forwardConfirmation): return withUser(u, "items: \(chatItemIds) forwardConfirmation: \(String(describing: forwardConfirmation))")
             case let .chatItemsStatusesUpdated(u, chatItems):
                 let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")

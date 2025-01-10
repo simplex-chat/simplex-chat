@@ -1825,6 +1825,10 @@ struct ChatView: View {
                                 } else {
                                     m.removeChatItem(chat.chatInfo, itemDeletion.deletedChatItem.chatItem)
                                 }
+                                let deletedItem = itemDeletion.deletedChatItem.chatItem
+                                if deletedItem.isActiveReport {
+                                    m.decreaseGroupReportsCounter(chat.chatInfo.id)
+                                }
                             }
                         }
                     }
@@ -1901,6 +1905,10 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                             _ = ChatModel.shared.upsertChatItem(chat.chatInfo, toItem.chatItem)
                         } else {
                             ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
+                        }
+                        let deletedItem = di.deletedChatItem.chatItem
+                        if deletedItem.isActiveReport {
+                            ChatModel.shared.decreaseGroupReportsCounter(chat.chatInfo.id)
                         }
                     }
                 }
