@@ -258,7 +258,7 @@ fun ChatItemView(
 
         @Composable
         fun MsgReactionsMenu() {
-          val rs = MsgReaction.values.mapNotNull { r ->
+          val rs = MsgReaction.old.mapNotNull { r ->
             if (null == cItem.reactions.find { it.userReacted && it.reaction.text == r.text }) {
               r
             } else {
