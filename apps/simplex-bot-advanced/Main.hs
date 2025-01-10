@@ -17,7 +17,6 @@ import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options
-import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types
 import Simplex.Messaging.Util (tshow)
@@ -32,9 +31,9 @@ main = do
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts <- getChatOpts appDir "simplex_bot"
+  opts@ChatOpts {coreOptions} <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
-  putStrLn $ "db: " <> dbString (dbOptions $ coreOptions opts)
+  printDbOpts coreOptions
   pure opts
 
 welcomeMessage :: Text

@@ -57,7 +57,7 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
           putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
 
 welcome :: ChatConfig -> ChatOpts -> IO ()
-welcome ChatConfig {presetServers = PresetServers {netCfg}} ChatOpts {coreOptions = opts@CoreChatOpts {dbOptions, simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_}}} =
+welcome ChatConfig {presetServers = PresetServers {netCfg}} ChatOpts {coreOptions = CoreChatOpts {dbOptions, simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_}}} =
   mapM_
     putStrLn
     [ versionString versionNumber,

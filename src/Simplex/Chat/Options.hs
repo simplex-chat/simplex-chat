@@ -14,6 +14,7 @@ module Simplex.Chat.Options
     getChatOpts,
     protocolServersP,
     defaultHostMode,
+    printDbOpts,
   )
 where
 
@@ -414,3 +415,6 @@ getChatOpts appDir defaultDbName =
     versionStr = versionString versionNumber
     versionOption = infoOption versionAndUpdate (long "version" <> short 'v' <> help "Show version")
     versionAndUpdate = versionStr <> "\n" <> updateStr
+
+printDbOpts :: CoreChatOpts -> IO ()
+printDbOpts opts = putStrLn $ "db: " <> dbString (dbOptions opts)

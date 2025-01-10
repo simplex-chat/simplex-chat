@@ -6,7 +6,6 @@ import Simplex.Chat.Bot
 import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal (terminalChatConfig)
 import System.Directory (getAppUserDataDirectory)
 import Text.Read
@@ -26,7 +25,7 @@ welcomeMessage = "Hello! I am a simple squaring bot.\nIf you send me a number, I
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts <- getChatOpts appDir "simplex_bot"
+  opts@ChatOpts {coreOptions} <- getChatOpts appDir "simplex_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
-  putStrLn $ "db: " <> dbString (dbOptions $ coreOptions opts)
+  printDbOpts coreOptions
   pure opts
