@@ -205,7 +205,7 @@ instance ToJSON CustomData where
 instance FromJSON CustomData where
   parseJSON = J.withObject "CustomData" (pure . CustomData)
 
-instance ToField CustomData where toField (CustomData v) = toField . Binary . LB.toStrict . J.encode $ v
+instance ToField CustomData where toField (CustomData v) = toField . Binary . LB.toStrict $ J.encode v
 
 instance FromField CustomData where fromField = blobFieldDecoder J.eitherDecodeStrict
 
