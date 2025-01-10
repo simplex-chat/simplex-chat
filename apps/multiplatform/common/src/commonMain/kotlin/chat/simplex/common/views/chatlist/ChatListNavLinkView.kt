@@ -10,24 +10,17 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.markChatTagRead
-import chat.simplex.common.model.ChatModel.updateChatTagRead
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -209,27 +202,27 @@ suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) = openChat
 
 suspend fun openDirectChat(rhId: Long?, contactId: Long) = openChat(rhId, ChatType.Direct, contactId)
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long) = openChat(rhId, ChatType.Group, groupId)
+suspend fun openGroupChat(rhId: Long?, groupId: Long, contentTag: MsgContentTag? = null) = openChat(rhId, ChatType.Group, groupId, contentTag)
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo) = openChat(rhId, chatInfo.chatType, chatInfo.apiId)
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, contentTag: MsgContentTag? = null) = openChat(rhId, chatInfo.chatType, chatInfo.apiId, contentTag)
 
-private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long) =
-  apiLoadMessages(rhId, chatType, apiId, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
+private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long, contentTag: MsgContentTag? = null) =
+  apiLoadMessages(rhId, chatType, apiId, contentTag, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 
-suspend fun openLoadedChat(chat: Chat) {
-  withChats {
-    chatModel.chatItemStatuses.clear()
+suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
+  withChats(contentTag) {
+    chatItemStatuses.clear()
     chatItems.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
-    chatModel.chatState.clear()
+    chatModel.chatStateForContent(contentTag).clear()
   }
 }
 
-suspend fun apiFindMessages(ch: Chat, search: String) {
-  withChats {
+suspend fun apiFindMessages(ch: Chat, search: String, contentTag: MsgContentTag?) {
+  withChats(contentTag) {
     chatItems.clearAndNotify()
   }
-  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), chatModel.chatState, search = search)
+  apiLoadMessages(ch.remoteHostId, ch.chatInfo.chatType, ch.chatInfo.apiId, contentTag, pagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search = search)
 }
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
@@ -255,7 +248,7 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
 fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (contact.activeConn != null) {
     if (showMarkRead) {
-      MarkReadChatAction(chat, chatModel, showMenu)
+      MarkReadChatAction(chat, showMenu)
     } else {
       MarkUnreadChatAction(chat, chatModel, showMenu)
     }
@@ -295,7 +288,7 @@ fun GroupMenuItems(
     }
     else -> {
       if (showMarkRead) {
-        MarkReadChatAction(chat, chatModel, showMenu)
+        MarkReadChatAction(chat, showMenu)
       } else {
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
@@ -316,7 +309,7 @@ fun GroupMenuItems(
 @Composable
 fun NoteFolderMenuItems(chat: Chat, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (showMarkRead) {
-    MarkReadChatAction(chat, chatModel, showMenu)
+    MarkReadChatAction(chat, showMenu)
   } else {
     MarkUnreadChatAction(chat, chatModel, showMenu)
   }
@@ -324,12 +317,12 @@ fun NoteFolderMenuItems(chat: Chat, showMenu: MutableState<Boolean>, showMarkRea
 }
 
 @Composable
-fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun MarkReadChatAction(chat: Chat, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.mark_read),
     painterResource(MR.images.ic_check),
     onClick = {
-      markChatRead(chat, chatModel)
+      markChatRead(chat)
       ntfManager.cancelNotificationsForChat(chat.id)
       showMenu.value = false
     }
@@ -566,12 +559,15 @@ private fun InvalidDataView() {
   }
 }
 
-fun markChatRead(c: Chat, chatModel: ChatModel) {
+fun markChatRead(c: Chat) {
   var chat = c
   withApi {
     if (chat.chatStats.unreadCount > 0) {
       withChats {
-        markChatItemsRead(chat.remoteHostId, chat.chatInfo)
+        markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
+      }
+      withReportsChatsIfOpen {
+        markChatItemsRead(chat.remoteHostId, chat.chatInfo.id)
       }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
@@ -612,7 +608,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withChats {
         replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        updateChatTagRead(chat, wasUnread)
+        updateChatTagReadNoContentTag(chat, wasUnread)
       }
     }
   }
@@ -874,7 +870,9 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       }
       val updatedChat = chatModel.getChat(chatInfo.id)
       if (updatedChat != null) {
-        chatModel.updateChatTagRead(updatedChat, wasUnread)
+        withChats {
+          updateChatTagReadNoContentTag(updatedChat, wasUnread)
+        }
       }
       val current = currentState?.value
       if (current != null) {

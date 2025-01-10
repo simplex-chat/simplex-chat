@@ -45,7 +45,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
           withChats {
             updateGroup(rhId = rhId, groupInfo)
             chatItems.clearAndNotify()
-            chatModel.chatItemStatuses.clear()
+            chatItemStatuses.clear()
             chatModel.chatId.value = groupInfo.id
           }
           setGroupMembers(rhId, groupInfo, chatModel)

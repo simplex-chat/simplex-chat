@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
@@ -62,6 +63,9 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
             withChats {
+              upsertGroupMember(rhId, groupInfo, member)
+            }
+            withReportsChatsIfOpen {
               upsertGroupMember(rhId, groupInfo, member)
             }
           } else {

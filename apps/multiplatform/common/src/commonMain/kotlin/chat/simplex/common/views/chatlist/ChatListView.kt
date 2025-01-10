@@ -49,7 +49,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.seconds
 
-enum class PresetTagKind { FAVORITES, CONTACTS, GROUPS, BUSINESS, NOTES }
+enum class PresetTagKind { GROUP_REPORTS, FAVORITES, CONTACTS, GROUPS, BUSINESS, NOTES }
 
 sealed class ActiveFilter {
   data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
@@ -152,7 +152,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
 
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
-      if (chatModel.chatId.value != null) {
+      if (chatModel.chatId.value != null && !ModalManager.end.isLastModalOpen(ModalViewId.GROUP_REPORTS)) {
         ModalManager.end.closeModalsExceptFirst()
       }
       AudioPlayer.stop()
@@ -928,6 +928,8 @@ private val TAG_MIN_HEIGHT = 35.dp
 private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val userTags = remember { chatModel.userTags }
   val presetTags = remember { chatModel.presetTags }
+  val collapsiblePresetTags = presetTags.filter { presetCanBeCollapsed(it.key) && it.value > 0 }
+  val alwaysShownPresetTags = presetTags.filter { !presetCanBeCollapsed(it.key) && it.value > 0 }
   val activeFilter = remember { chatModel.activeChatTagFilter }
   val unreadTags = remember { chatModel.unreadTags }
   val rhId = chatModel.remoteHostId()
@@ -935,13 +937,16 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
   val rowSizeModifier = Modifier.sizeIn(minHeight = TAG_MIN_HEIGHT * fontSizeSqrtMultiplier)
 
   TagsRow {
-    if (presetTags.size > 1) {
-      if (presetTags.size + userTags.value.size <= 3) {
+    if (collapsiblePresetTags.size > 1) {
+      if (collapsiblePresetTags.size + alwaysShownPresetTags.size + userTags.value.size <= 3) {
         PresetTagKind.entries.filter { t -> (presetTags[t] ?: 0) > 0 }.forEach { tag ->
           ExpandedTagFilterView(tag)
         }
       } else {
         CollapsedTagsFilterView(searchText)
+        alwaysShownPresetTags.forEach { tag ->
+          ExpandedTagFilterView(tag.key)
+        }
       }
     }
 
@@ -1106,7 +1111,7 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
   val showMenu = remember { mutableStateOf(false) }
 
   val selectedPresetTag = when (val af = activeFilter.value) {
-    is ActiveFilter.PresetTag -> af.tag
+    is ActiveFilter.PresetTag -> if (presetCanBeCollapsed(af.tag)) af.tag else null
     else -> null
   }
 
@@ -1152,7 +1157,7 @@ private fun CollapsedTagsFilterView(searchText: MutableState<TextFieldValue>) {
         )
       }
       PresetTagKind.entries.forEach { tag ->
-        if ((presetTags[tag] ?: 0) > 0) {
+        if ((presetTags[tag] ?: 0) > 0 && presetCanBeCollapsed(tag)) {
           ItemPresetFilterAction(tag, tag == selectedPresetTag, showMenu, onCloseMenuAction)
         }
       }
@@ -1214,14 +1219,15 @@ fun filteredChats(
 
 private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
-    is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo)
+    is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
     is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
     is ActiveFilter.Unread -> chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
     else -> true
   }
 
-fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo): Boolean =
+fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat.ChatStats): Boolean =
   when (tag) {
+    PresetTagKind.GROUP_REPORTS -> chatStats.reportsCount > 0
     PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
     PresetTagKind.CONTACTS -> when (chatInfo) {
       is ChatInfo.Direct -> !(chatInfo.contact.activeConn == null && chatInfo.contact.profile.contactLink != null && chatInfo.contact.active) && !chatInfo.contact.chatDeleted
@@ -1246,12 +1252,18 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo): Boolean =
 
 private fun presetTagLabel(tag: PresetTagKind, active: Boolean): Pair<ImageResource, StringResource> =
   when (tag) {
+    PresetTagKind.GROUP_REPORTS -> (if (active) MR.images.ic_flag_filled else MR.images.ic_flag) to MR.strings.chat_list_group_reports
     PresetTagKind.FAVORITES -> (if (active) MR.images.ic_star_filled else MR.images.ic_star) to MR.strings.chat_list_favorites
     PresetTagKind.CONTACTS -> (if (active) MR.images.ic_person_filled else MR.images.ic_person) to MR.strings.chat_list_contacts
     PresetTagKind.GROUPS -> (if (active) MR.images.ic_group_filled else MR.images.ic_group) to MR.strings.chat_list_groups
     PresetTagKind.BUSINESS -> (if (active) MR.images.ic_work_filled else MR.images.ic_work) to MR.strings.chat_list_businesses
     PresetTagKind.NOTES -> (if (active) MR.images.ic_folder_closed_filled else MR.images.ic_folder_closed) to MR.strings.chat_list_notes
   }
+
+private fun presetCanBeCollapsed(tag: PresetTagKind): Boolean = when (tag) {
+  PresetTagKind.GROUP_REPORTS -> false
+  else -> true
+}
 
 fun scrollToBottom(scope: CoroutineScope, listState: LazyListState) {
   scope.launch { try { listState.animateScrollToItem(0) } catch (e: Exception) { Log.e(TAG, e.stackTraceToString()) } }
