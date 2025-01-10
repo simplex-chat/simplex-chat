@@ -2304,4 +2304,6 @@
     <string name="report_compose_reason_header_spam">Segnala spam: solo i moderatori del gruppo lo vedranno.</string>
     <string name="report_compose_reason_header_community">Segnala violazione: solo i moderatori del gruppo lo vedranno.</string>
     <string name="group_member_role_moderator">moderatore</string>
+    <string name="archive_report">Archivia la segnalazione</string>
+    <string name="delete_report">Elimina la segnalazione</string>
 </resources>
