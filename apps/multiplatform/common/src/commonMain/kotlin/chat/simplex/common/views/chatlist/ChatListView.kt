@@ -152,7 +152,7 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
 
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
-      if (chatModel.chatId.value != null) {
+      if (chatModel.chatId.value != null && !ModalManager.end.isLastModalOpen(ModalViewId.GROUP_REPORTS)) {
         ModalManager.end.closeModalsExceptFirst()
       }
       AudioPlayer.stop()

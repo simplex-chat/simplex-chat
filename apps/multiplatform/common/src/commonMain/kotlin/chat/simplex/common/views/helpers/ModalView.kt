@@ -101,6 +101,8 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun hasModalOpen(id: ModalViewId): Boolean = modalViews.any { it.id == id }
 
+  fun isLastModalOpen(id: ModalViewId): Boolean = modalViews.lastOrNull()?.id == id
+
   fun showModal(settings: Boolean = false, showClose: Boolean = true, id: ModalViewId? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     showCustomModal(id = id) { close ->
       ModalView(close, showClose = showClose, endButtons = endButtons, content = { content() })
