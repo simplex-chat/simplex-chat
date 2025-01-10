@@ -1288,7 +1288,7 @@ fun BoxScope.ChatItemsList(
           val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
             if (it == DismissValue.DismissedToStart) {
               itemScope.launch {
-                if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local) {
+                if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chatInfo !is ChatInfo.Local && !cItem.isReport) {
                   if (composeState.value.editing) {
                     composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
                   } else if (cItem.id != ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
