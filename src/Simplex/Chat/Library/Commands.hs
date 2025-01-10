@@ -3593,7 +3593,7 @@ chatCommandP =
               <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
-      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> optional (contentFilterP <* A.space) <*> chatPaginationP <*> optional (" search=" *> stringP)),
+      "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
@@ -3968,7 +3968,6 @@ chatCommandP =
         ct -> ChatName ct <$> displayName
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
-    contentFilterP = ContentFilter <$> ("content=" *> strP) <*> optional (" deleted=" *> onOffP)
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("none" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =

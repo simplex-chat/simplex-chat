@@ -1002,11 +1002,4 @@ CREATE INDEX idx_chat_items_groups_msg_content_tag_item_ts ON chat_items(
   msg_content_tag,
   item_ts
 );
-CREATE INDEX idx_chat_items_groups_msg_content_tag_item_deleted_item_ts ON chat_items(
-  user_id,
-  group_id,
-  msg_content_tag,
-  item_deleted,
-  item_ts
-);
 |]
