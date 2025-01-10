@@ -40,6 +40,10 @@ enum PresetTag: Int, Identifiable, CaseIterable, Equatable {
     case notes = 5
 
     var id: Int { rawValue }
+    
+    var сollapse: Bool {
+        self != .groupReports
+    }
 }
 
 enum ActiveFilter: Identifiable, Equatable {
@@ -681,13 +685,15 @@ struct ChatTagsView: View {
     }
     
     @ViewBuilder private func tagsView() -> some View {
-        if chatTagsModel.collapsiblePresetTags.count > 1 {
-            if chatTagsModel.collapsiblePresetTags.count + chatTagsModel.alwaysShownPresetTags.count + chatTagsModel.userTags.count <= 3 {
+        if chatTagsModel.presetTags.count > 1 {
+            if chatTagsModel.presetTags.count + chatTagsModel.userTags.count <= 3 {
                 expandedPresetTagsFiltersView()
             } else {
                 collapsedTagsFilterView()
-                ForEach(Array(chatTagsModel.alwaysShownPresetTags), id: \.key) { tag in
-                    expandedTagFilterView(tag.key)
+                ForEach(PresetTag.allCases, id: \.id) { (tag: PresetTag) in
+                    if !tag.сollapse && (chatTagsModel.presetTags[tag] ?? 0) > 0 {
+                        expandedTagFilterView(tag)
+                    }
                 }
             }
         }
@@ -812,7 +818,7 @@ struct ChatTagsView: View {
                 }
             }
             ForEach(PresetTag.allCases, id: \.id) { tag in
-                if (chatTagsModel.presetTags[tag] ?? 0) > 0 && presetCanBeCollapsed(tag) {
+                if (chatTagsModel.presetTags[tag] ?? 0) > 0 && tag.сollapse {
                     Button {
                         setActiveFilter(filter: .presetTag(tag))
                     } label: {
@@ -825,7 +831,7 @@ struct ChatTagsView: View {
                 }
             }
         } label: {
-            if let tag = selectedPresetTag {
+            if let tag = selectedPresetTag, tag.сollapse {
                 let (systemName, _) = presetTagLabel(tag: tag, active: true)
                 Image(systemName: systemName)
                     .foregroundColor(.accentColor)
@@ -865,13 +871,6 @@ func chatStoppedIcon() -> some View {
         )
     } label: {
         Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
-    }
-}
-
-func presetCanBeCollapsed(_ tag: PresetTag) -> Bool {
-    switch tag {
-    case .groupReports: false
-    default: true
     }
 }
 

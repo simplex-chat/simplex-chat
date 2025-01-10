@@ -106,8 +106,6 @@ class ChatTagsModel: ObservableObject {
     @Published var userTags: [ChatTag] = []
     @Published var activeFilter: ActiveFilter? = nil
     @Published var presetTags: [PresetTag:Int] = [:]
-    @Published var collapsiblePresetTags: [PresetTag:Int] = [:]
-    @Published var alwaysShownPresetTags: [PresetTag:Int] = [:]
     @Published var unreadTags: [Int64:Int] = [:]
     
     func updateChatTags(_ chats: [Chat]) {
@@ -130,13 +128,7 @@ class ChatTagsModel: ObservableObject {
             activeFilter = nil
         }
         presetTags = newPresetTags
-        adaptDerivedFromPresetTags()
         unreadTags = newUnreadTags
-    }
-
-    func adaptDerivedFromPresetTags() {
-        collapsiblePresetTags = presetTags.filter({ elem in presetCanBeCollapsed(elem.key) && elem.value > 0 })
-        alwaysShownPresetTags = presetTags.filter({ elem in !presetCanBeCollapsed(elem.key) && elem.value > 0 })
     }
 
     func updateChatFavorite(favorite: Bool, wasFavorite: Bool) {
@@ -157,7 +149,6 @@ class ChatTagsModel: ObservableObject {
                 presetTags[tag] = (presetTags[tag] ?? 0) + 1
             }
         }
-        adaptDerivedFromPresetTags()
     }
 
     func removePresetChatTags(_ chatInfo: ChatInfo, _ chatStats: ChatStats) {
@@ -168,7 +159,6 @@ class ChatTagsModel: ObservableObject {
                 }
             }
         }
-        adaptDerivedFromPresetTags()
     }
     
     func markChatTagRead(_ chat: Chat) -> Void {
@@ -200,7 +190,6 @@ class ChatTagsModel: ObservableObject {
     func changeGroupReportsTag(_ by: Int = 0) {
         if by == 0 { return }
         presetTags[.groupReports] = (presetTags[.groupReports] ?? 0) + by
-        adaptDerivedFromPresetTags()
     }
 }
 
