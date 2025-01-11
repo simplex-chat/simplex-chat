@@ -569,7 +569,7 @@ struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            ScrollView([.horizontal], showsIndicators: false) { ChatTagsView(parentSheet: $parentSheet, searchText: $searchText) }
+            ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
@@ -671,7 +671,7 @@ struct ChatListSearchBar: View {
     }
 }
 
-struct ChatTagsView: View {
+struct TagsView: View {
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -732,7 +732,7 @@ struct ChatTagsView: View {
                         content: {
                             AnyView(
                                 NavigationView {
-                                    ChatListTag(chat: nil)
+                                    TagListView(chat: nil)
                                         .modifier(ThemedBackground(grouped: true))
                                 }
                             )
@@ -749,7 +749,7 @@ struct ChatTagsView: View {
                 content: {
                     AnyView(
                         NavigationView {
-                            ChatListTagEditor()
+                            TagListEditor()
                         }
                     )
                 },
