@@ -2072,21 +2072,24 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
         let im = ItemsModel.shared
         let cInfo = ChatInfo.group(groupInfo: groupInfo)
-        for itemId in chatItemIDs {
-            await MainActor.run {
-                m.decreaseGroupReportsCounter(cInfo.id)
-            }
-            if let cItem = im.reversedChatItems.first(where: { $0.id == itemId }) {
-                let deleted = if case let .groupRcv(groupMember) = cItem.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
+        await MainActor.run {
+            m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
+        }
+        var notFound = chatItemIDs.count
+        for ci in im.reversedChatItems {
+            if chatItemIDs.contains(ci.id) {
+                let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
                     CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
                 } else {
                     CIDeleted.deleted(deletedTs: Date.now)
                 }
                 await MainActor.run {
-                    var newItem = cItem
+                    var newItem = ci
                     newItem.meta.itemDeleted = deleted
                     _ = m.upsertChatItem(cInfo, newItem)
                 }
+                notFound -= 1
+                if notFound == 0 { break }
             }
         }
     case let .receivedGroupInvitation(user, groupInfo, _, _):
