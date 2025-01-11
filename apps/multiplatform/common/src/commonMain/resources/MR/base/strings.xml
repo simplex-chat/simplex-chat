@@ -37,6 +37,10 @@
   <string name="marked_deleted_items_description">%d messages marked deleted</string>
   <string name="moderated_item_description">moderated by %s</string>
   <string name="moderated_items_description">%1$d messages moderated by %2$s</string>
+  <string name="report_item_visibility_submitter">Only you and moderators see it</string>
+  <string name="report_item_visibility_moderators">Only sender and moderators see it</string>
+  <string name="report_item_archived">archived report</string>
+  <string name="report_item_archived_by">archived report by %s</string>
   <string name="blocked_item_description">blocked</string>
   <string name="blocked_by_admin_item_description">blocked by admin</string>
   <string name="blocked_items_description">%d messages blocked</string>
@@ -94,6 +98,13 @@
   <string name="simplex_link_mode_browser">Via browser</string>
   <string name="simplex_link_mode_browser_warning">Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.</string>
 
+  <!-- Reports - ChatModel.kt -->
+  <string name="report_reason_spam">Spam</string>
+  <string name="report_reason_illegal">Inappropriate content</string>
+  <string name="report_reason_community">Community guidelines violation</string>
+  <string name="report_reason_profile">Inappropriate profile</string>
+  <string name="report_reason_other">Another reason</string>
+
   <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="error_saving_xftp_servers">Error saving XFTP servers</string>
@@ -139,6 +150,7 @@
   <string name="error_sending_message">Error sending message</string>
   <string name="error_forwarding_messages">Error forwarding messages</string>
   <string name="error_creating_message">Error creating message</string>
+  <string name="error_creating_report">Error creating report</string>
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
@@ -294,6 +306,9 @@
   <string name="message_delivery_error_desc">Most likely this contact has deleted the connection with you.</string>
   <string name="message_deleted_or_not_received_error_title">No message</string>
   <string name="message_deleted_or_not_received_error_desc">This message was deleted or not received yet.</string>
+  <string name="report_reason_alert_title">Report reason?</string>
+  <string name="report_archive_alert_title">Archive report?</string>
+  <string name="report_archive_alert_desc">The report will be archived for you.</string>
 
   <!-- CIStatus errors -->
   <string name="ci_status_other_error">Error: %1$s</string>
@@ -319,6 +334,9 @@
   <string name="edit_verb">Edit</string>
   <string name="info_menu">Info</string>
   <string name="search_verb">Search</string>
+  <string name="archive_verb">Archive</string>
+  <string name="archive_report">Archive report</string>
+  <string name="delete_report">Delete report</string>
   <string name="sent_message">Sent message</string>
   <string name="received_message">Received message</string>
   <string name="edit_history">History</string>
@@ -336,6 +354,7 @@
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
   <string name="moderate_verb">Moderate</string>
+  <string name="report_verb">Report</string>
   <string name="select_verb">Select</string>
   <string name="expand_verb">Expand</string>
   <string name="delete_message__question">Delete message?</string>
@@ -422,8 +441,13 @@
   <string name="chat_list_groups">Groups</string>
   <string name="chat_list_businesses">Businesses</string>
   <string name="chat_list_notes">Notes</string>
+  <string name="chat_list_group_reports">Reports</string>
   <string name="chat_list_all">All</string>
   <string name="chat_list_add_list">Add list</string>
+  <string name="group_reports_active_one">1 report</string>
+  <string name="group_reports_active">%d reports</string>
+  <string name="group_reports_member_reports">Member reports</string>
+  <string name="group_reports_archived_member_reports">Archived member reports</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
@@ -462,6 +486,11 @@
   <string name="maximum_message_size_reached_text">Please reduce the message size and send again.</string>
   <string name="maximum_message_size_reached_non_text">Please reduce the message size or remove media and send again.</string>
   <string name="maximum_message_size_reached_forwarding">You can copy and reduce the message size to send it.</string>
+  <string name="report_compose_reason_header_spam">Report spam: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_profile">Report member profile: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_community">Report violation: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_illegal">Report content: only group moderators will see it.</string>
+  <string name="report_compose_reason_header_other">Report other: only group moderators will see it.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -942,6 +971,7 @@
   <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
+  <string name="prefs_error_saving_settings">Error saving settings</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -1555,6 +1585,7 @@
   <string name="group_member_role_observer">observer</string>
   <string name="group_member_role_author">author</string>
   <string name="group_member_role_member">member</string>
+  <string name="group_member_role_moderator">moderator</string>
   <string name="group_member_role_admin">admin</string>
   <string name="group_member_role_owner">owner</string>
 

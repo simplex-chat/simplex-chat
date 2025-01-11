@@ -46,8 +46,6 @@ import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
-import Database.SQLite.Simple (SQLError)
-import qualified Database.SQLite.Simple as SQL
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -73,10 +71,9 @@ import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWo
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite.Common (DBStore, withTransaction, withTransactionPriority)
-import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -97,6 +94,11 @@ import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
+#if !defined(dbPostgres)
+import Database.SQLite.Simple (SQLError)
+import qualified Database.SQLite.Simple as SQL
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+#endif
 
 versionNumber :: String
 versionNumber = showVersion SC.version
@@ -284,20 +286,22 @@ data ChatCommand
   | APISetAppFilePaths AppFilePathsConfig
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
+#if !defined(dbPostgres)
   | APIExportArchive ArchiveConfig
   | ExportArchive
   | APIImportArchive ArchiveConfig
-  | APISaveAppSettings AppSettings
-  | APIGetAppSettings (Maybe AppSettings)
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
   | TestStorageEncryption DBEncryptionKey
+  | SlowSQLQueries
+#endif
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
-  | SlowSQLQueries
+  | APISaveAppSettings AppSettings
+  | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat ChatRef ChatPagination (Maybe String)
+  | APIGetChat ChatRef (Maybe MsgContentTag) ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
@@ -307,6 +311,8 @@ data ChatCommand
   | APIUpdateChatTag ChatTagId ChatTagData
   | APIReorderChatTags (NonEmpty ChatTagId)
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
+  | APIReportMessage {groupId :: GroupId, chatItemId :: ChatItemId, reportReason :: ReportReason, reportText :: Text}
+  | ReportMessage {groupName :: GroupName, contactName_ :: Maybe ContactName, reportReason :: ReportReason, reportedMessage :: Text}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
@@ -347,7 +353,7 @@ data ChatCommand
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
-  | APIJoinGroup GroupId
+  | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter} 
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
   | APIBlockMemberForAll GroupId GroupMemberId Bool
   | APIRemoveMember GroupId GroupMemberId
@@ -465,7 +471,7 @@ data ChatCommand
   | APINewGroup UserId IncognitoEnabled GroupProfile
   | NewGroup IncognitoEnabled GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
-  | JoinGroup GroupName
+  | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | MemberRole GroupName ContactName GroupMemberRole
   | BlockForAll GroupName ContactName Bool
   | RemoveMember GroupName ContactName
@@ -557,11 +563,14 @@ allowRemoteCommand = \case
   SetFilesFolder _ -> False
   SetRemoteHostsFolder _ -> False
   APISetEncryptLocalFiles _ -> False
+#if !defined(dbPostgres)
   APIExportArchive _ -> False
   APIImportArchive _ -> False
   ExportArchive -> False
   APIDeleteStorage -> False
   APIStorageEncryption _ -> False
+  SlowSQLQueries -> False
+#endif
   APISetNetworkConfig _ -> False
   APIGetNetworkConfig -> False
   SetLocalDeviceName _ -> False
@@ -581,7 +590,6 @@ allowRemoteCommand = \case
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
-  SlowSQLQueries -> False
   _ -> True
 
 data ChatResponse
@@ -633,6 +641,7 @@ data ChatResponse
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
   | CRReactionMembers {user :: User, memberReactions :: [MemberReaction]}
   | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
+  | CRGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
@@ -795,7 +804,11 @@ data ChatResponse
   | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
   | CRContactPQEnabled {user :: User, contact :: Contact, pqEnabled :: PQEncryption}
   | CRSQLResult {rows :: [Text]}
+#if !defined(dbPostgres)
+  | CRArchiveExported {archiveErrors :: [ArchiveError]}
+  | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
+#endif
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentSubsTotal {user :: User, subsTotal :: SMPServerSubs, hasSession :: Bool}
   | CRAgentServersSummary {user :: User, serversSummary :: PresentedServersSummary}
@@ -814,8 +827,6 @@ data ChatResponse
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
-  | CRArchiveExported {archiveErrors :: [ArchiveError]}
-  | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
@@ -843,7 +854,9 @@ allowRemoteEvent = \case
   CRRemoteCtrlConnected _ -> False
   CRRemoteCtrlStopped {} -> False
   CRSQLResult _ -> False
+#if !defined(dbPostgres)
   CRSlowSQLQueries {} -> False
+#endif
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
@@ -1172,11 +1185,13 @@ data CoreVersionInfo = CoreVersionInfo
   }
   deriving (Show)
 
+#if !defined(dbPostgres)
 data SlowSQLQuery = SlowSQLQuery
   { query :: Text,
     queryStats :: SlowQueryStats
   }
   deriving (Show)
+#endif
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
@@ -1503,13 +1518,17 @@ withStoreBatch actions = do
   ChatController {chatStore} <- ask
   liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
 
+-- TODO [postgres] postgres specific error handling
 handleDBErrors :: [E.Handler IO (Either ChatError a)]
 handleDBErrors =
-  [ E.Handler $ \(e :: SQLError) ->
+#if !defined(dbPostgres)
+  ( E.Handler $ \(e :: SQLError) ->
       let se = SQL.sqlError e
           busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
-       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e,
-    E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
+       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e
+  ) :
+#endif
+  [ E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
   ]
 
 withStoreBatch' :: Traversable t => (DB.Connection -> t (IO a)) -> CM' (t (Either ChatError a))
@@ -1582,7 +1601,9 @@ $(JQ.deriveJSON defaultJSON ''ChatItemDeletion)
 
 $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 
+#if !defined(dbPostgres)
 $(JQ.deriveJSON defaultJSON ''SlowSQLQuery)
+#endif
 
 -- instance ProtocolTypeI p => FromJSON (ProtoServersConfig p) where
 --   parseJSON = $(JQ.mkParseJSON defaultJSON ''ProtoServersConfig)

@@ -42,6 +42,7 @@ import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
@@ -189,8 +190,12 @@ mobileChatOpts dbFilePrefix =
   ChatOpts
     { coreOptions =
         CoreChatOpts
-          { dbFilePrefix,
-            dbKey = "", -- for API database is already opened, and the key in options is not used
+          { dbOptions =
+              ChatDbOpts
+                { dbFilePrefix,
+                  dbKey = "", -- for API database is already opened, and the key in options is not used
+                  vacuumOnMigration = True
+                },
             smpServers = [],
             xftpServers = [],
             simpleNetCfg = defaultSimpleNetCfg,
@@ -201,8 +206,7 @@ mobileChatOpts dbFilePrefix =
             logFile = Nothing,
             tbqSize = 1024,
             highlyAvailable = False,
-            yesToUpMigrations = False,
-            vacuumOnMigration = True
+            yesToUpMigrations = False
           },
       deviceName = Nothing,
       chatCmd = "",
@@ -247,7 +251,7 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
       newChatController db user_ defaultMobileConfig opts backgroundMode
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations (vacuumOnMigration $ coreOptions opts))
+        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations (vacuumOnMigration $ dbOptions $ coreOptions opts))
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where

@@ -3,7 +3,7 @@ package chat.simplex.common.platform
 import androidx.compose.runtime.Composable
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.charleskorn.kaml.*
 import kotlinx.serialization.encodeToString
@@ -11,6 +11,8 @@ import java.io.*
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 expect val dataDir: File
 expect val tmpDir: File
@@ -20,6 +22,7 @@ expect val wallpapersDir: File
 expect val coreTmpDir: File
 expect val dbAbsolutePrefixPath: String
 expect val preferencesDir: File
+expect val preferencesTmpDir: File
 
 expect val chatDatabaseFileName: String
 expect val agentDatabaseFileName: String
@@ -142,16 +145,23 @@ fun readThemeOverrides(): List<ThemeOverrides> {
   }
 }
 
+private const val lock = "themesWriter"
+
 fun writeThemeOverrides(overrides: List<ThemeOverrides>): Boolean =
-  try {
-    File(getPreferenceFilePath("themes.yaml")).outputStream().use {
-      val string = yaml.encodeToString(ThemesFile(themes = overrides))
-      it.bufferedWriter().use { it.write(string) }
+  synchronized(lock) {
+    try {
+      val themesFile = File(getPreferenceFilePath("themes.yaml"))
+      createTmpFileAndDelete(preferencesTmpDir) { tmpFile ->
+        val string = yaml.encodeToString(ThemesFile(themes = overrides))
+        tmpFile.bufferedWriter().use { it.write(string) }
+        themesFile.parentFile.mkdirs()
+        Files.move(tmpFile.toPath(), themesFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+      }
+      true
+    } catch (e: Exception) {
+      Log.e(TAG, "Error writing themes file: ${e.stackTraceToString()}")
+      false
     }
-    true
-  } catch (e: Throwable) {
-    Log.e(TAG, "Error while writing themes file: ${e.stackTraceToString()}")
-    false
   }
 
 private fun fileReady(file: CIFile, filePath: String) =

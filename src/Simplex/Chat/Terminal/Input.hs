@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -25,9 +26,6 @@ import Data.Maybe (isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Database.SQLite.Simple (Only (..))
-import qualified Database.SQLite.Simple as SQL
-import Database.SQLite.Simple.QQ (sql)
 import GHC.Weak (deRefWeak)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
@@ -36,12 +34,19 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Output
 import Simplex.Chat.Types (User (..))
-import Simplex.Messaging.Agent.Store.SQLite.Common (DBStore, withTransaction)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (catchAll_, safeDecodeUtf8, whenM)
 import System.Exit (exitSuccess)
 import System.Terminal hiding (insertChars)
 import UnliftIO.STM
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), Query, ToRow)
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), Query, ToRow)
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 getKey :: MonadTerminal m => m (Key, Modifiers)
 getKey =
@@ -321,7 +326,7 @@ updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputStr
             getNameSfxs table pfx =
               getNameSfxs_ pfx (userId, pfx <> "%") $
                 "SELECT local_display_name FROM " <> table <> " WHERE user_id = ? AND local_display_name LIKE ?"
-            getNameSfxs_ :: SQL.ToRow p => Text -> p -> SQL.Query -> IO [String]
+            getNameSfxs_ :: ToRow p => Text -> p -> Query -> IO [String]
             getNameSfxs_ pfx ps q =
               withTransaction st (\db -> hasPfx pfx . map fromOnly <$> DB.query db q ps) `catchAll_` pure []
             commands =

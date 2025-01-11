@@ -917,6 +917,7 @@ struct ChatView: View {
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
+        @State private var actionSheet: SomeActionSheet? = nil
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -1001,6 +1002,7 @@ struct ChatView: View {
                     }
                 }
             }
+            .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
         private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
@@ -1208,7 +1210,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal, moderate: false)
                     }
-                    if let di = deletingItem, di.meta.deletable && !di.localNote {
+                    if let di = deletingItem, di.meta.deletable && !di.localNote && !di.isReport {
                         Button(broadcastDeleteButtonText(chat), role: .destructive) {
                             deleteMessage(.cidmBroadcast, moderate: false)
                         }
@@ -1282,7 +1284,12 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+            if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
+                if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
+                    archiveReportButton(ci)
+                }
+                deleteButton(ci, label: "Delete report")
+            } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
                     reactionsGroup
@@ -1332,8 +1339,12 @@ struct ChatView: View {
                 if !live || !ci.meta.isLive {
                     deleteButton(ci)
                 }
-                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
-                    moderateButton(ci, groupInfo)
+                if ci.chatDir != .groupSnd {
+                    if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                        moderateButton(ci, groupInfo)
+                    } else if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole == .member, !live, composeState.voiceMessageRecordingState == .noRecording {
+                        reportButton(ci)
+                    }
                 }
             } else if ci.meta.itemDeleted != nil {
                 if revealed {
@@ -1607,7 +1618,7 @@ struct ChatView: View {
             }
         }
 
-        private func deleteButton(_ ci: ChatItem) -> Button<some View> {
+        private func deleteButton(_ ci: ChatItem, label: LocalizedStringKey = "Delete") -> Button<some View> {
             Button(role: .destructive) {
                 if !revealed,
                    let currIndex = m.getChatItemIndex(ci),
@@ -1629,10 +1640,7 @@ struct ChatView: View {
                     deletingItem = ci
                 }
             } label: {
-                Label(
-                    NSLocalizedString("Delete", comment: "chat item action"),
-                    systemImage: "trash"
-                )
+                Label(label, systemImage: "trash")
             }
         }
 
@@ -1651,10 +1659,10 @@ struct ChatView: View {
                 AlertManager.shared.showAlert(Alert(
                     title: Text("Delete member message?"),
                     message: Text(
-                                groupInfo.fullGroupPreferences.fullDelete.on
-                                ? "The message will be deleted for all members."
-                                : "The message will be marked as moderated for all members."
-                            ),
+                        groupInfo.fullGroupPreferences.fullDelete.on
+                        ? "The message will be deleted for all members."
+                        : "The message will be marked as moderated for all members."
+                    ),
                     primaryButton: .destructive(Text("Delete")) {
                         deletingItem = ci
                         deleteMessage(.cidmBroadcast, moderate: true)
@@ -1666,6 +1674,24 @@ struct ChatView: View {
                     NSLocalizedString("Moderate", comment: "chat item action"),
                     systemImage: "flag"
                 )
+            }
+        }
+        
+        private func archiveReportButton(_ cItem: ChatItem) -> Button<some View> {
+            Button(role: .destructive) {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text("Archive report?"),
+                        message: Text("The report will be archived for you."),
+                        primaryButton: .destructive(Text("Archive")) {
+                            deletingItem = cItem
+                            deleteMessage(.cidmInternalMark, moderate: false)
+                        },
+                        secondaryButton: .cancel()
+                    )
+                )
+            } label: {
+                Label("Archive report", systemImage: "archivebox")
             }
         }
 
@@ -1707,7 +1733,38 @@ struct ChatView: View {
                 )
             }
         }
-
+        
+        private func reportButton(_ ci: ChatItem) -> Button<some View> {
+            Button(role: .destructive) {
+                var buttons: [ActionSheet.Button] = ReportReason.supportedReasons.map { reason in
+                    .default(Text(reason.text)) {
+                        withAnimation {
+                            if composeState.editing {
+                                composeState = ComposeState(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                            } else {
+                                composeState = composeState.copy(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                            }
+                        }
+                    }
+                }
+                
+                buttons.append(.cancel())
+               
+                actionSheet = SomeActionSheet(
+                    actionSheet: ActionSheet(
+                        title: Text("Report reason?"),
+                        buttons: buttons
+                    ),
+                    id: "reportChatMessage"
+                )
+            } label: {
+                Label (
+                    NSLocalizedString("Report", comment: "chat item action"),
+                    systemImage: "flag"
+                )
+            }
+        }
+        
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
             return n == 1 ? "Delete message?" : "Delete \(n) messages?"
@@ -1768,11 +1825,15 @@ struct ChatView: View {
                                 } else {
                                     m.removeChatItem(chat.chatInfo, itemDeletion.deletedChatItem.chatItem)
                                 }
+                                let deletedItem = itemDeletion.deletedChatItem.chatItem
+                                if deletedItem.isActiveReport {
+                                    m.decreaseGroupReportsCounter(chat.chatInfo.id)
+                                }
                             }
                         }
                     }
                 } catch {
-                    logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+                    logger.error("ChatView.deleteMessage error: \(error)")
                 }
             }
         }
@@ -1844,6 +1905,10 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                             _ = ChatModel.shared.upsertChatItem(chat.chatInfo, toItem.chatItem)
                         } else {
                             ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
+                        }
+                        let deletedItem = di.deletedChatItem.chatItem
+                        if deletedItem.isActiveReport {
+                            ChatModel.shared.decreaseGroupReportsCounter(chat.chatInfo.id)
                         }
                     }
                 }

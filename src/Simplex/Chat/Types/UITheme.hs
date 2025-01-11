@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -13,12 +14,17 @@ import qualified Data.Aeson.TH as JQ
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple.FromField (FromField (..))
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 data UITheme = UITheme
   { themeId :: Text,

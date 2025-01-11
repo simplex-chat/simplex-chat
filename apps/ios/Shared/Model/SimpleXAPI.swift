@@ -15,12 +15,6 @@ import SimpleXChat
 
 private var chatController: chat_ctrl?
 
-// currentChatVersion in core
-public let CURRENT_CHAT_VERSION: Int = 2
-
-// version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
-public let CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion: 2, maxVersion: CURRENT_CHAT_VERSION)
-
 private let networkStatusesLock = DispatchQueue(label: "chat.simplex.app.network-statuses.lock")
 
 enum TerminalItem: Identifiable {
@@ -457,6 +451,18 @@ func apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage]
     let r = await chatSendCmd(.apiCreateChatItems(noteFolderId: noteFolderId, composedMessages: composedMessages))
     if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
     createChatItemsErrorAlert(r)
+    return nil
+}
+
+func apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String) async -> [ChatItem]? {
+    let r = await chatSendCmd(.apiReportMessage(groupId: groupId, chatItemId: chatItemId, reportReason: reportReason, reportText: reportText))
+    if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
+
+    logger.error("apiReportMessage error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating report",
+        message: "Error: \(responseError(r))"
+    )
     return nil
 }
 
@@ -1986,6 +1992,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             await MainActor.run {
                 if active(user) {
                     m.addChatItem(cInfo, cItem)
+                    if cItem.isActiveReport {
+                        m.increaseGroupReportsCounter(cInfo.id)
+                    }
                 } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                     m.increaseUnreadCounter(user: user)
                 }
@@ -2047,6 +2056,40 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
                 }
+            }
+        }
+    case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
+        if !active(user) {
+            do {
+                let users = try listUsers()
+                await MainActor.run {
+                    m.users = users
+                }
+            } catch {
+                logger.error("Error loading users: \(error)")
+            }
+            return
+        }
+        let im = ItemsModel.shared
+        let cInfo = ChatInfo.group(groupInfo: groupInfo)
+        await MainActor.run {
+            m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
+        }
+        var notFound = chatItemIDs.count
+        for ci in im.reversedChatItems {
+            if chatItemIDs.contains(ci.id) {
+                let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
+                    CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
+                } else {
+                    CIDeleted.deleted(deletedTs: Date.now)
+                }
+                await MainActor.run {
+                    var newItem = ci
+                    newItem.meta.itemDeleted = deleted
+                    _ = m.upsertChatItem(cInfo, newItem)
+                }
+                notFound -= 1
+                if notFound == 0 { break }
             }
         }
     case let .receivedGroupInvitation(user, groupInfo, _, _):

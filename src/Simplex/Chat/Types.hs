@@ -1,17 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -29,6 +33,7 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -37,11 +42,6 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (FromField (..), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
-import Database.SQLite.Simple.Ok
-import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -49,13 +49,23 @@ import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ResultError (..))
+import Database.PostgreSQL.Simple.FromField (FromField(..), FieldParser, returnError)
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple (ResultError (..))
+import Database.SQLite.Simple.FromField (FromField (..), FieldParser, returnError)
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 class IsContact a where
   contactId' :: a -> ContactId
@@ -98,7 +108,7 @@ instance ToJSON AgentUserId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentUserId where fromField f = AgentUserId <$> fromField f
+deriving newtype instance FromField AgentUserId
 
 instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 
@@ -131,10 +141,9 @@ data NewUser = NewUser
 
 newtype B64UrlByteString = B64UrlByteString ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField B64UrlByteString where fromField f = B64UrlByteString <$> fromField f
-
-instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField m
+instance ToField B64UrlByteString where toField (B64UrlByteString m) = toField $ Binary m
 
 instance StrEncoding B64UrlByteString where
   strEncode (B64UrlByteString m) = strEncode m
@@ -195,9 +204,9 @@ instance ToJSON CustomData where
 instance FromJSON CustomData where
   parseJSON = J.withObject "CustomData" (pure . CustomData)
 
-instance ToField CustomData where toField (CustomData v) = toField $ J.encode v
+instance ToField CustomData where toField (CustomData v) = toField . Binary . LB.toStrict $ J.encode v
 
-instance FromField CustomData where fromField = fromBlobField_ J.eitherDecodeStrict
+instance FromField CustomData where fromField = blobFieldDecoder J.eitherDecodeStrict
 
 contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
@@ -316,10 +325,9 @@ data UserContactRequest = UserContactRequest
 
 newtype XContactId = XContactId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField XContactId where fromField f = XContactId <$> fromField f
-
-instance ToField XContactId where toField (XContactId m) = toField m
+instance ToField XContactId where toField (XContactId m) = toField $ Binary m
 
 instance StrEncoding XContactId where
   strEncode (XContactId m) = strEncode m
@@ -335,10 +343,9 @@ instance ToJSON XContactId where
 
 newtype ConnReqUriHash = ConnReqUriHash {unConnReqUriHash :: ByteString}
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField ConnReqUriHash where fromField f = ConnReqUriHash <$> fromField f
-
-instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField m
+instance ToField ConnReqUriHash where toField (ConnReqUriHash m) = toField $ Binary m
 
 instance StrEncoding ConnReqUriHash where
   strEncode (ConnReqUriHash m) = strEncode m
@@ -415,12 +422,12 @@ data GroupSummary = GroupSummary
   }
   deriving (Show)
 
-data ContactOrGroup = CGContact Contact | CGGroup Group
+data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
   CGContact Contact {contactId} -> (Just contactId, Nothing)
-  CGGroup (Group GroupInfo {groupId} _) -> (Nothing, Just groupId)
+  CGGroup GroupInfo {groupId} _ -> (Nothing, Just groupId)
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
@@ -457,13 +464,16 @@ msgFilterIntP = \case
   2 -> Just MFMentions
   _ -> Just MFAll
 
-fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
-fromIntField_ fromInt = \case
-  f@(Field (SQLInteger i) _) ->
-    case fromInt i of
-      Just x -> Ok x
-      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
-  f -> returnError ConversionFailed f "expecting SQLInteger column type"
+fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> FieldParser a
+#if defined(dbPostgres)
+fromIntField_ fromInt f val = fromField f val >>= parseInt
+#else
+fromIntField_ fromInt f = fromField f >>= parseInt
+#endif
+  where
+    parseInt i = case fromInt i of
+      Just x -> pure x
+      _ -> returnError ConversionFailed f $ "invalid integer: " <> show i
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
@@ -593,16 +603,15 @@ instance ToJSON ImageData where
 
 instance ToField ImageData where toField (ImageData t) = toField t
 
-instance FromField ImageData where fromField = fmap ImageData . fromField
+deriving newtype instance FromField ImageData
 
 data CReqClientData = CRDataGroup {groupLinkId :: GroupLinkId}
 
 newtype GroupLinkId = GroupLinkId {unGroupLinkId :: ByteString} -- used to identify invitation via group link
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField GroupLinkId where fromField f = GroupLinkId <$> fromField f
-
-instance ToField GroupLinkId where toField (GroupLinkId g) = toField g
+instance ToField GroupLinkId where toField (GroupLinkId g) = toField $ Binary g
 
 instance StrEncoding GroupLinkId where
   strEncode (GroupLinkId g) = strEncode g
@@ -679,7 +688,7 @@ data MemberRestrictionStatus
   | MRSUnknown Text
   deriving (Eq, Show)
 
-instance FromField MemberRestrictionStatus where fromField = fromBlobField_ strDecode
+instance FromField MemberRestrictionStatus where fromField = blobFieldDecoder strDecode
 
 instance ToField MemberRestrictionStatus where toField = toField . strEncode
 
@@ -808,10 +817,9 @@ data NewGroupMember = NewGroupMember
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField MemberId where fromField f = MemberId <$> fromField f
-
-instance ToField MemberId where toField (MemberId m) = toField m
+instance ToField MemberId where toField (MemberId m) = toField $ Binary m
 
 instance StrEncoding MemberId where
   strEncode (MemberId m) = strEncode m
@@ -1162,6 +1170,9 @@ liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Ord, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentConnId where toField (AgentConnId m) = toField $ Binary m
 
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
@@ -1175,12 +1186,11 @@ instance ToJSON AgentConnId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentConnId where fromField f = AgentConnId <$> fromField f
-
-instance ToField AgentConnId where toField (AgentConnId m) = toField m
-
 newtype AgentSndFileId = AgentSndFileId SndFileId
   deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField $ Binary m
 
 instance StrEncoding AgentSndFileId where
   strEncode (AgentSndFileId connId) = strEncode connId
@@ -1194,12 +1204,11 @@ instance ToJSON AgentSndFileId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentSndFileId where fromField f = AgentSndFileId <$> fromField f
-
-instance ToField AgentSndFileId where toField (AgentSndFileId m) = toField m
-
 newtype AgentRcvFileId = AgentRcvFileId RcvFileId
   deriving (Eq, Show)
+  deriving newtype (FromField)
+
+instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField $ Binary m
 
 instance StrEncoding AgentRcvFileId where
   strEncode (AgentRcvFileId connId) = strEncode connId
@@ -1212,10 +1221,6 @@ instance FromJSON AgentRcvFileId where
 instance ToJSON AgentRcvFileId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
-
-instance FromField AgentRcvFileId where fromField f = AgentRcvFileId <$> fromField f
-
-instance ToField AgentRcvFileId where toField (AgentRcvFileId m) = toField m
 
 newtype AgentInvId = AgentInvId InvitationId
   deriving (Eq, Show)
@@ -1232,7 +1237,7 @@ instance ToJSON AgentInvId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-instance FromField AgentInvId where fromField f = AgentInvId <$> fromField f
+deriving newtype instance FromField AgentInvId
 
 instance ToField AgentInvId where toField (AgentInvId m) = toField m
 
