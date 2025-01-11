@@ -1539,13 +1539,16 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
 }
 
 public struct ChatStats: Decodable, Hashable {
-    public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
+    public init(unreadCount: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
+        self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
     }
 
     public var unreadCount: Int = 0
+    // actual only via getChats() and getChat(.initial), otherwise, zero
+    public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
     public var unreadChat: Bool = false
 }
@@ -2609,6 +2612,10 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             }
         default: false
         }
+    }
+
+    public var isActiveReport: Bool {
+        isReport && !isDeletedContent && meta.itemDeleted == nil
     }
 
     public var canBeDeletedForSelf: Bool {
