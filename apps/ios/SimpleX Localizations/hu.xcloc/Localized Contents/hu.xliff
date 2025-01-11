@@ -2165,9 +2165,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Adatbázis-jelmondat és -exportálás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target>Az adatbázis jelmondata eltér a kulcstartóban mentettől.</target>
+        <target state="translated">Az adatbázis jelmondata nem egyezik a kulcstartóba mentettől.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
@@ -9632,9 +9632,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App is locked!" xml:space="preserve">
+      <trans-unit id="App is locked!" xml:space="preserve" approved="no">
         <source>App is locked!</source>
-        <target>Az alkalmazás zárolva!</target>
+        <target state="translated">Az alkalmazás zárolva van!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -9677,14 +9677,14 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Adatbázishiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target>Az adatbázis jelmondata eltér a kulcstartóban lévőtől.</target>
+        <target state="translated">Az adatbázis jelmondata nem egyezik a kulcstartóba mentettől.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
         <source>Database passphrase is required to open chat.</source>
-        <target>Adatbázis-jelmondat szükséges a csevegés megnyitásához.</target>
+        <target state="translated">A csevegés megnyitásához adja meg az adatbázis jelmondatát.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database upgrade required" xml:space="preserve">
