@@ -3684,6 +3684,7 @@ public enum CIFileStatus: Decodable, Equatable, Hashable {
 
 public enum FileError: Decodable, Equatable, Hashable {
     case auth
+    case blocked(server: String, blockInfo: BlockingInfo)
     case noFile
     case relay(srvError: SrvError)
     case other(fileError: String)
@@ -3691,6 +3692,7 @@ public enum FileError: Decodable, Equatable, Hashable {
     var id: String {
         switch self {
         case .auth: return "auth"
+        case let .blocked(srv, info): return "blocked \(srv) \(info)"
         case .noFile: return "noFile"
         case let .relay(srvError): return "relay \(srvError)"
         case let .other(fileError): return "other \(fileError)"
@@ -3700,6 +3702,7 @@ public enum FileError: Decodable, Equatable, Hashable {
     public var errorInfo: String {
         switch self {
         case .auth: NSLocalizedString("Wrong key or unknown file chunk address - most likely file is deleted.", comment: "file error text")
+        case let .blocked(_, info): NSLocalizedString("File is blocked by server operator. Reason: \(info.reason.text)", comment: "file error text")
         case .noFile: NSLocalizedString("File not found - most likely file was deleted or cancelled.", comment: "file error text")
         case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("File server error: %@", comment: "file error text"), srvError.errorInfo)
         case let .other(fileError): String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "file error text"), fileError)
