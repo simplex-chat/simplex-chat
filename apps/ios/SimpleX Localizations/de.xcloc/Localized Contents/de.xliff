@@ -577,9 +577,9 @@
         <target>Über SimpleX Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About operators" xml:space="preserve">
+      <trans-unit id="About operators" xml:space="preserve" approved="no">
         <source>About operators</source>
-        <target>Über Betreiber</target>
+        <target state="translated">Über die Betreiber</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve">
@@ -4455,9 +4455,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen. (24 Stunden)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can send SimpleX links." xml:space="preserve">
+      <trans-unit id="Members can send SimpleX links." xml:space="preserve" approved="no">
         <source>Members can send SimpleX links.</source>
-        <target>Gruppenmitglieder können SimpleX-Links senden.</target>
+        <target state="translated">Gruppenmitglieder können SimpleX-Links versenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can send direct messages." xml:space="preserve">
@@ -4465,14 +4465,14 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Gruppenmitglieder können Direktnachrichten versenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve" approved="no">
         <source>Members can send disappearing messages.</source>
-        <target>Gruppenmitglieder können verschwindende Nachrichten senden.</target>
+        <target state="translated">Gruppenmitglieder können verschwindende Nachrichten versenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can send files and media." xml:space="preserve">
+      <trans-unit id="Members can send files and media." xml:space="preserve" approved="no">
         <source>Members can send files and media.</source>
-        <target>Gruppenmitglieder können Dateien und Medien senden.</target>
+        <target state="translated">Gruppenmitglieder können Dateien und Medien versenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can send voice messages." xml:space="preserve">
@@ -8361,9 +8361,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve">
+      <trans-unit id="You will stop receiving messages from this chat. Chat history will be preserved." xml:space="preserve" approved="no">
         <source>You will stop receiving messages from this chat. Chat history will be preserved.</source>
-        <target>Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</target>
+        <target state="translated">Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf bleibt erhalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
@@ -8551,9 +8551,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Anruf angenommen</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="accepted invitation" xml:space="preserve">
+      <trans-unit id="accepted invitation" xml:space="preserve" approved="no">
         <source>accepted invitation</source>
-        <target>Einladung akzeptiert</target>
+        <target state="translated">Einladung angenommen</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
