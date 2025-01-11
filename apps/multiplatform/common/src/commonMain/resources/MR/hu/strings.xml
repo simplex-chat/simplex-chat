@@ -2269,10 +2269,10 @@
     <string name="report_compose_reason_header_community">Szabálysértés jelentése: csak a csoport moderátorai látják.</string>
     <string name="archive_report">Jelentés archiválása</string>
     <string name="delete_report">Jelentés törlése</string>
-    <string name="group_reports_member_reports">Jelentések a tagoktól</string>
+    <string name="group_reports_member_reports">Tagok jelentései</string>
     <string name="group_reports_active_one">1 jelentés</string>
     <string name="chat_list_group_reports">Jelentések</string>
     <string name="report_item_archived_by">%s által archivált jelentés</string>
     <string name="group_reports_active">%d jelentés</string>
-    <string name="group_reports_archived_member_reports">Archivált jelentések a tagoktól</string>
+    <string name="group_reports_archived_member_reports">Tagok archivált jelentései</string>
 </resources>
