@@ -2520,6 +2520,7 @@ public enum XFTPErrorType: Decodable, Hashable {
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
     case AUTH
+    case BLOCKED(blockInfo: BlockingInfo)
     case SIZE
     case QUOTA
     case DIGEST

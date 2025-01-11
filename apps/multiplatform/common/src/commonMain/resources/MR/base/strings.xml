@@ -132,6 +132,8 @@
   <string name="for_chat_profile">For chat profile %s:</string>
   <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
+  <string name="blocking_reason_spam">Spam</string>
+  <string name="blocking_reason_content">Content violates conditions of use</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
@@ -168,6 +170,8 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
+  <string name="connection_error_blocked">Connection blocked</string>
+  <string name="connection_error_blocked_desc">Connection is blocked by server operator for: %1$s.</string>
   <string name="connection_error_quota">Undelivered messages</string>
   <string name="connection_error_quota_desc">The connection reached the limit of undelivered messages, your contact may be offline.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
@@ -323,6 +327,7 @@
 
   <!-- CIFileStatus errors -->
   <string name="file_error_auth">Wrong key or unknown file chunk address - most likely file is deleted.</string>
+  <string name="file_error_blocked">File is blocked by server operator for: %1$s.</string>
   <string name="file_error_no_file">File not found - most likely file was deleted or cancelled.</string>
   <string name="file_error_relay">File server error: %1$s</string>
 

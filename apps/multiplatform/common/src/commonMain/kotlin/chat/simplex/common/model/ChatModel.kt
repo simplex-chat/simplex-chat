@@ -3591,12 +3591,14 @@ sealed class CIFileStatus {
 @Serializable
 sealed class FileError {
   @Serializable @SerialName("auth") class Auth: FileError()
+  @Serializable @SerialName("blocked") class Blocked(val server: String, val blockInfo: BlockingInfo): FileError()
   @Serializable @SerialName("noFile") class NoFile: FileError()
   @Serializable @SerialName("relay") class Relay(val srvError: SrvError): FileError()
   @Serializable @SerialName("other") class Other(val fileError: String): FileError()
 
   val errorInfo: String get() = when (this) {
     is FileError.Auth -> generalGetString(MR.strings.file_error_auth)
+    is FileError.Blocked -> generalGetString(MR.strings.file_error_blocked).format(blockInfo.reason.text)
     is FileError.NoFile -> generalGetString(MR.strings.file_error_no_file)
     is FileError.Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
     is FileError.Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)

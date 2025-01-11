@@ -855,7 +855,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
     case let .chatCmdError(_, .errorAgent(.SMP(_, .BLOCKED(info)))):
         let alert = mkAlert(
             title: "Connection blocked",
-            message: "Connection is blocked by server operator. Reason: \(info.reason.text)"
+            message: "Connection is blocked by server operator for: \(info.reason.text)"
         )
         return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
