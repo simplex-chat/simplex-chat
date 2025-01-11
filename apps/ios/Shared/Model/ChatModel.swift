@@ -155,7 +155,11 @@ class ChatTagsModel: ObservableObject {
         for tag in PresetTag.allCases {
             if presetTagMatchesChat(tag, chatInfo, chatStats) {
                 if let count = presetTags[tag] {
-                    presetTags[tag] = max(0, count - 1)
+                    if count > 1 {
+                        presetTags[tag] = count - 1
+                    } else {
+                        presetTags.removeValue(forKey: tag)
+                    }
                 }
             }
         }
