@@ -853,9 +853,15 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         )
         return (nil, alert)
     case let .chatCmdError(_, .errorAgent(.SMP(_, .BLOCKED(info)))):
-        let alert = mkAlert(
-            title: "Connection blocked",
-            message: "Connection is blocked by server operator for: \(info.reason.text)"
+        let alert = Alert(
+            title: Text("Connection blocked"),
+            message: Text("Connection is blocked by server operator: \(BlockingReason.content.text)"),
+            primaryButton: .default(Text("Ok")),
+            secondaryButton: .default(Text("How it works")) {
+                DispatchQueue.main.async {
+                    UIApplication.shared.open(contentModerationPostLink)
+                }
+            }
         )
         return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
