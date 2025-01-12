@@ -51,6 +51,8 @@ typealias ChatCtrl = Long
 // version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
 val CREATE_MEMBER_CONTACT_VERSION = 2
 
+val contentModerationPostLink = "https://simplex.chat/blog/20250112-simplex-network-privacy-preserving-content-moderation.html"
+
 enum class CallOnLockScreen {
   DISABLE,
   SHOW,
@@ -1415,9 +1417,11 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.BLOCKED -> {
-        AlertManager.shared.showAlertMsg(
+        AlertManager.shared.showAlertDialog(
           generalGetString(MR.strings.connection_error_blocked),
-          generalGetString(MR.strings.connection_error_blocked_desc).format(r.chatError.agentError.smpErr.blockInfo.reason.text)
+          generalGetString(MR.strings.connection_error_blocked_desc).format(r.chatError.agentError.smpErr.blockInfo.reason.text),
+          dismissText = generalGetString(MR.strings.how_it_works),
+          onDismiss = {}
         )
         return null
       }

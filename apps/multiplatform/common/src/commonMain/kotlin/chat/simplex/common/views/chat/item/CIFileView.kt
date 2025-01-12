@@ -92,25 +92,13 @@ fun CIFileView(
             FileProtocol.LOCAL -> {}
           }
         file.fileStatus is CIFileStatus.RcvError ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.file_error),
-            file.fileStatus.rcvFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.rcvFileError)
         file.fileStatus is CIFileStatus.RcvWarning ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.temporary_file_error),
-            file.fileStatus.rcvFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
         file.fileStatus is CIFileStatus.SndError ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.file_error),
-            file.fileStatus.sndFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.sndFileError)
         file.fileStatus is CIFileStatus.SndWarning ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.temporary_file_error),
-            file.fileStatus.sndFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -234,6 +222,16 @@ fun CIFileView(
 }
 
 fun fileSizeValid(file: CIFile): Boolean = file.fileSize <= getMaxFileSize(file.fileProtocol)
+
+fun showFileErrorAlert(err: FileError, temporary: Boolean = false) {
+  val title: String = generalGetString(if (temporary) MR.strings.temporary_file_error else MR.strings.file_error)
+  val btn = err.moreInfoButton
+  if (btn != null) {
+    AlertManager.shared.showAlertMsg(title, err.errorInfo) // TODO button
+  } else {
+    AlertManager.shared.showAlertMsg(title, err.errorInfo)
+  }
+}
 
 @Composable
 expect fun SaveOrOpenFileMenu(

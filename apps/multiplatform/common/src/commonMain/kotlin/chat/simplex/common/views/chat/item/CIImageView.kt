@@ -238,25 +238,13 @@ fun CIImageView(
                 FileProtocol.LOCAL -> {}
               }
             file.fileStatus is CIFileStatus.RcvError ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.file_error),
-                file.fileStatus.rcvFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.rcvFileError)
             file.fileStatus is CIFileStatus.RcvWarning ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.temporary_file_error),
-                file.fileStatus.rcvFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
             file.fileStatus is CIFileStatus.SndError ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.file_error),
-                file.fileStatus.sndFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.sndFileError)
             file.fileStatus is CIFileStatus.SndWarning ->
-              AlertManager.shared.showAlertMsg(
-                generalGetString(MR.strings.temporary_file_error),
-                file.fileStatus.sndFileError.errorInfo
-              )
+              showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
             file.fileStatus is CIFileStatus.RcvTransfer -> {} // ?
             file.fileStatus is CIFileStatus.RcvComplete -> {} // ?
             file.fileStatus is CIFileStatus.RcvCancelled -> {} // TODO

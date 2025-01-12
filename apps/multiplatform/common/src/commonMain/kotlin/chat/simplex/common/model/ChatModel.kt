@@ -3597,11 +3597,16 @@ sealed class FileError {
   @Serializable @SerialName("other") class Other(val fileError: String): FileError()
 
   val errorInfo: String get() = when (this) {
-    is FileError.Auth -> generalGetString(MR.strings.file_error_auth)
-    is FileError.Blocked -> generalGetString(MR.strings.file_error_blocked).format(blockInfo.reason.text)
-    is FileError.NoFile -> generalGetString(MR.strings.file_error_no_file)
-    is FileError.Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
-    is FileError.Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)
+    is Auth -> generalGetString(MR.strings.file_error_auth)
+    is Blocked -> generalGetString(MR.strings.file_error_blocked).format(blockInfo.reason.text)
+    is NoFile -> generalGetString(MR.strings.file_error_no_file)
+    is Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
+    is Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)
+  }
+
+  val moreInfoButton: Pair<String, String>? get() = when(this) {
+    is Blocked -> generalGetString(MR.strings.how_it_works) to contentModerationPostLink
+    else -> null
   }
 }
 
