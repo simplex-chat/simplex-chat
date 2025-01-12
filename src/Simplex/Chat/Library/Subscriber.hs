@@ -284,6 +284,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
 agentFileError :: AgentErrorType -> FileError
 agentFileError = \case
   XFTP _ XFTP.AUTH -> FileErrAuth
+  XFTP srv (XFTP.BLOCKED info) -> FileErrBlocked srv info
   FILE NO_FILE -> FileErrNoFile
   BROKER _ e -> brokerError FileErrRelay e
   e -> FileErrOther $ tshow e

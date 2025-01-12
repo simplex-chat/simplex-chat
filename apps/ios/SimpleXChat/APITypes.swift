@@ -2481,6 +2481,7 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case CMD(cmdErr: ProtocolCommandError)
     indirect case PROXY(proxyErr: ProxyError)
     case AUTH
+    case BLOCKED(blockInfo: BlockingInfo)
     case CRYPTO
     case QUOTA
     case STORE(storeErr: String)
@@ -2497,11 +2498,28 @@ public enum ProxyError: Decodable, Hashable {
     case NO_SESSION
 }
 
+public struct BlockingInfo: Decodable, Equatable, Hashable {
+    public var reason: BlockingReason
+}
+
+public enum BlockingReason: String, Decodable {
+    case spam
+    case content
+
+    public var text: String {
+        switch self {
+        case .spam: NSLocalizedString("Spam", comment: "blocking reason")
+        case .content: NSLocalizedString("Content violates conditions of use", comment: "blocking reason")
+        }
+    }
+}
+
 public enum XFTPErrorType: Decodable, Hashable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
     case AUTH
+    case BLOCKED(blockInfo: BlockingInfo)
     case SIZE
     case QUOTA
     case DIGEST

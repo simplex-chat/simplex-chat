@@ -852,6 +852,18 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
         return (nil, alert)
+    case let .chatCmdError(_, .errorAgent(.SMP(_, .BLOCKED(info)))):
+        let alert = Alert(
+            title: Text("Connection blocked"),
+            message: Text("Connection is blocked by server operator:\n\(info.reason.text)"),
+            primaryButton: .default(Text("Ok")),
+            secondaryButton: .default(Text("How it works")) {
+                DispatchQueue.main.async {
+                    UIApplication.shared.open(contentModerationPostLink)
+                }
+            }
+        )
+        return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
         let alert = mkAlert(
             title: "Undelivered messages",

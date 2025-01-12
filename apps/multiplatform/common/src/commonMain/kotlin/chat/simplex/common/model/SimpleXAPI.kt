@@ -19,10 +19,12 @@ import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
+import chat.simplex.common.model.SMPErrorType.BLOCKED
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.migration.MigrationFileLinkData
@@ -1408,6 +1410,15 @@ object ChatController {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.connection_error_auth),
           generalGetString(MR.strings.connection_error_auth_desc)
+        )
+        return null
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.BLOCKED -> {
+        showContentBlockedAlert(
+          generalGetString(MR.strings.connection_error_blocked),
+          generalGetString(MR.strings.connection_error_blocked_desc).format(r.chatError.agentError.smpErr.blockInfo.reason.text),
         )
         return null
       }
@@ -6756,6 +6767,7 @@ sealed class BrokerErrorType {
   @Serializable @SerialName("TIMEOUT") object TIMEOUT: BrokerErrorType()
 }
 
+// ProtocolErrorType
 @Serializable
 sealed class SMPErrorType {
   val string: String get() = when (this) {
@@ -6764,9 +6776,10 @@ sealed class SMPErrorType {
     is CMD -> "CMD ${cmdErr.string}"
     is PROXY -> "PROXY ${proxyErr.string}"
     is AUTH -> "AUTH"
+    is BLOCKED -> "BLOCKED ${json.encodeToString(blockInfo)}"
     is CRYPTO -> "CRYPTO"
     is QUOTA -> "QUOTA"
-    is STORE -> "STORE ${storeErr}"
+    is STORE -> "STORE $storeErr"
     is NO_MSG -> "NO_MSG"
     is LARGE_MSG -> "LARGE_MSG"
     is EXPIRED -> "EXPIRED"
@@ -6777,6 +6790,7 @@ sealed class SMPErrorType {
   @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): SMPErrorType()
   @Serializable @SerialName("PROXY") class PROXY(val proxyErr: ProxyError): SMPErrorType()
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
+  @Serializable @SerialName("BLOCKED") class BLOCKED(val blockInfo: BlockingInfo): SMPErrorType()
   @Serializable @SerialName("CRYPTO") class CRYPTO: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
   @Serializable @SerialName("STORE") class STORE(val storeErr: String): SMPErrorType()
@@ -6798,6 +6812,22 @@ sealed class ProxyError {
   @Serializable @SerialName("BROKER") class BROKER(val brokerErr: BrokerErrorType): ProxyError()
   @Serializable @SerialName("BASIC_AUTH") class BASIC_AUTH: ProxyError()
   @Serializable @SerialName("NO_SESSION") class NO_SESSION: ProxyError()
+}
+
+@Serializable
+data class BlockingInfo(
+  val reason: BlockingReason
+)
+
+@Serializable
+enum class BlockingReason {
+  @SerialName("spam") Spam,
+  @SerialName("content") Content;
+
+  val text: String get() = when (this) {
+    Spam -> generalGetString(MR.strings.blocking_reason_spam)
+    Content -> generalGetString(MR.strings.blocking_reason_content)
+  }
 }
 
 @Serializable
@@ -6875,6 +6905,7 @@ sealed class XFTPErrorType {
     is SESSION -> "SESSION"
     is CMD -> "CMD ${cmdErr.string}"
     is AUTH -> "AUTH"
+    is BLOCKED -> "BLOCKED ${json.encodeToString(blockInfo)}"
     is SIZE -> "SIZE"
     is QUOTA -> "QUOTA"
     is DIGEST -> "DIGEST"
@@ -6890,6 +6921,7 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("SESSION") object SESSION: XFTPErrorType()
   @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): XFTPErrorType()
   @Serializable @SerialName("AUTH") object AUTH: XFTPErrorType()
+  @Serializable @SerialName("BLOCKED") class BLOCKED(val blockInfo: BlockingInfo): XFTPErrorType()
   @Serializable @SerialName("SIZE") object SIZE: XFTPErrorType()
   @Serializable @SerialName("QUOTA") object QUOTA: XFTPErrorType()
   @Serializable @SerialName("DIGEST") object DIGEST: XFTPErrorType()

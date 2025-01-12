@@ -12,6 +12,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
@@ -22,7 +23,6 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlin.collections.removeAll as remAll
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
@@ -3591,15 +3591,22 @@ sealed class CIFileStatus {
 @Serializable
 sealed class FileError {
   @Serializable @SerialName("auth") class Auth: FileError()
+  @Serializable @SerialName("blocked") class Blocked(val server: String, val blockInfo: BlockingInfo): FileError()
   @Serializable @SerialName("noFile") class NoFile: FileError()
   @Serializable @SerialName("relay") class Relay(val srvError: SrvError): FileError()
   @Serializable @SerialName("other") class Other(val fileError: String): FileError()
 
   val errorInfo: String get() = when (this) {
-    is FileError.Auth -> generalGetString(MR.strings.file_error_auth)
-    is FileError.NoFile -> generalGetString(MR.strings.file_error_no_file)
-    is FileError.Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
-    is FileError.Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)
+    is Auth -> generalGetString(MR.strings.file_error_auth)
+    is Blocked -> generalGetString(MR.strings.file_error_blocked).format(blockInfo.reason.text)
+    is NoFile -> generalGetString(MR.strings.file_error_no_file)
+    is Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
+    is Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)
+  }
+
+  val moreInfoButton: Pair<String, String>? get() = when(this) {
+    is Blocked -> generalGetString(MR.strings.how_it_works) to contentModerationPostLink
+    else -> null
   }
 }
 

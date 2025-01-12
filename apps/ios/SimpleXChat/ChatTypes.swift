@@ -15,6 +15,8 @@ public let CREATE_MEMBER_CONTACT_VERSION = 2
 // version to receive reports (MCReport)
 public let REPORTS_VERSION = 12
 
+public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250112-simplex-network-privacy-preserving-content-moderation.html")!
+
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
     public var agentUserId: String
@@ -3024,7 +3026,7 @@ public enum SndError: Decodable, Hashable {
     case proxyRelay(proxyServer: String, srvError: SrvError)
     case other(sndError: String)
 
-    public var errorInfo: String {
+      public var errorInfo: String {
         switch self {
         case .auth: NSLocalizedString("Wrong key or unknown connection - most likely this connection is deleted.", comment: "snd error text")
         case .quota: NSLocalizedString("Capacity exceeded - recipient did not receive previously sent messages.", comment: "snd error text")
@@ -3684,6 +3686,7 @@ public enum CIFileStatus: Decodable, Equatable, Hashable {
 
 public enum FileError: Decodable, Equatable, Hashable {
     case auth
+    case blocked(server: String, blockInfo: BlockingInfo)
     case noFile
     case relay(srvError: SrvError)
     case other(fileError: String)
@@ -3691,6 +3694,7 @@ public enum FileError: Decodable, Equatable, Hashable {
     var id: String {
         switch self {
         case .auth: return "auth"
+        case let .blocked(srv, info): return "blocked \(srv) \(info)"
         case .noFile: return "noFile"
         case let .relay(srvError): return "relay \(srvError)"
         case let .other(fileError): return "other \(fileError)"
@@ -3700,9 +3704,17 @@ public enum FileError: Decodable, Equatable, Hashable {
     public var errorInfo: String {
         switch self {
         case .auth: NSLocalizedString("Wrong key or unknown file chunk address - most likely file is deleted.", comment: "file error text")
+        case let .blocked(_, info): NSLocalizedString("File is blocked by server operator:\n\(info.reason.text).", comment: "file error text")
         case .noFile: NSLocalizedString("File not found - most likely file was deleted or cancelled.", comment: "file error text")
         case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("File server error: %@", comment: "file error text"), srvError.errorInfo)
         case let .other(fileError): String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "file error text"), fileError)
+        }
+    }
+    
+    public var moreInfoButton: (label: LocalizedStringKey, link: URL)? {
+        switch self {
+        case .blocked: ("How it works", contentModerationPostLink)
+        default: nil
         }
     }
 }

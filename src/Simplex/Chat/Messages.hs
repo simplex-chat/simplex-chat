@@ -52,7 +52,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
-import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
@@ -741,6 +741,7 @@ aciFileStatusJSON = \case
 
 data FileError
   = FileErrAuth
+  | FileErrBlocked {server :: String, blockInfo :: BlockingInfo}
   | FileErrNoFile
   | FileErrRelay {srvError :: SrvError}
   | FileErrOther {fileError :: Text}
@@ -749,14 +750,16 @@ data FileError
 instance StrEncoding FileError where
   strEncode = \case
     FileErrAuth -> "auth"
+    FileErrBlocked srv info -> "blocked " <> strEncode (srv, info)
     FileErrNoFile -> "no_file"
     FileErrRelay srvErr -> "relay " <> strEncode srvErr
     FileErrOther e -> "other " <> encodeUtf8 e
   strP =
     A.takeWhile1 (/= ' ') >>= \case
       "auth" -> pure FileErrAuth
+      "blocked" -> FileErrBlocked <$> _strP <*> _strP
       "no_file" -> pure FileErrNoFile
-      "relay" -> FileErrRelay <$> (A.space *> strP)
+      "relay" -> FileErrRelay <$> _strP
       "other" -> FileErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       s -> FileErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString
 
