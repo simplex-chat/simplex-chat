@@ -2301,4 +2301,12 @@
     <string name="report_reason_profile">Неприпустимий профіль</string>
     <string name="report_reason_spam">Спам</string>
     <string name="report_compose_reason_header_other">Повідомити інше: тільки модератори групи побачать це.</string>
+    <string name="archive_report">Архівувати повідомлення</string>
+    <string name="report_item_archived_by">архівоване повідомлення від %s</string>
+    <string name="delete_report">Видалити повідомлення</string>
+    <string name="group_reports_active_one">1 повідомлення</string>
+    <string name="group_reports_active">%d повідомлень</string>
+    <string name="group_reports_member_reports">Повідомлення учасників</string>
+    <string name="chat_list_group_reports">Повідомлення</string>
+    <string name="group_reports_archived_member_reports">Архівовані повідомлення учасників</string>
 </resources>
