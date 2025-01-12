@@ -757,7 +757,7 @@ instance StrEncoding FileError where
   strP =
     A.takeWhile1 (/= ' ') >>= \case
       "auth" -> pure FileErrAuth
-      "block" -> FileErrBlocked <$> _strP <*> _strP
+      "blocked" -> FileErrBlocked <$> _strP <*> _strP
       "no_file" -> pure FileErrNoFile
       "relay" -> FileErrRelay <$> _strP
       "other" -> FileErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
