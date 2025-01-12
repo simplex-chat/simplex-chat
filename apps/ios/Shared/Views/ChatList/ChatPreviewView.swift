@@ -248,16 +248,20 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary, prefix: prefix())
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
         func markedDeletedText() -> String {
-            switch cItem.meta.itemDeleted {
-            case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
-            case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
-            case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
-            case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+            if cItem.meta.itemDeleted != nil, cItem.isReport {
+                "archived report"
+            } else {
+                switch cItem.meta.itemDeleted {
+                case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
+                case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
+                case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
+                case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+                }
             }
         }
 
@@ -268,6 +272,13 @@ struct ChatPreviewView: View {
             case .video: return "video"
             case .voice: return "play.fill"
             default: return nil
+            }
+        }
+        
+        func prefix() -> Text {
+            switch cItem.content.msgContent {
+            case let .report(_, reason): return Text(!itemText.isEmpty ? "\(reason.text): " : reason.text).italic().foregroundColor(Color.red)
+            default: return Text("")
             }
         }
     }

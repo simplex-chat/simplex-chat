@@ -46,11 +46,8 @@ import java.util.Date
 
 typealias ChatCtrl = Long
 
-// currentChatVersion in core
-const val CURRENT_CHAT_VERSION: Int = 2
-
 // version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
-val CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion = 2, maxVersion = CURRENT_CHAT_VERSION)
+val CREATE_MEMBER_CONTACT_VERSION = 2
 
 enum class CallOnLockScreen {
   DISABLE,
@@ -80,6 +77,7 @@ class AppPreferences {
     if (!runServiceInBackground.get()) NotificationsMode.OFF else NotificationsMode.default
   )  { NotificationsMode.values().firstOrNull { it.name == this } }
   val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
+  val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
@@ -358,6 +356,7 @@ class AppPreferences {
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
     private const val SHARED_PREFS_NOTIFICATION_PREVIEW_MODE = "NotificationPreviewMode"
+    private const val SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS = "CanAskToEnableNotifications"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
@@ -934,6 +933,17 @@ object ChatController {
       is CR.NewChatItems -> r.chatItems
       else -> {
         apiErrorAlert("apiCreateChatItems", generalGetString(MR.strings.error_creating_message), r)
+        null
+      }
+    }
+  }
+
+  suspend fun apiReportMessage(rh: Long?, groupId: Long, chatItemId: Long, reportReason: ReportReason, reportText: String): List<AChatItem>? {
+    val r = sendCmd(rh, CC.ApiReportMessage(groupId, chatItemId, reportReason, reportText))
+    return when (r) {
+      is CR.NewChatItems -> r.chatItems
+      else -> {
+        apiErrorAlert("apiReportMessage", generalGetString(MR.strings.error_creating_report), r)
         null
       }
     }
@@ -3157,6 +3167,7 @@ sealed class CC {
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessages(val type: ChatType, val id: Long, val live: Boolean, val ttl: Int?, val composedMessages: List<ComposedMessage>): CC()
   class ApiCreateChatItems(val noteFolderId: Long, val composedMessages: List<ComposedMessage>): CC()
+  class ApiReportMessage(val groupId: Long, val chatItemId: Long, val reportReason: ReportReason, val reportText: String): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
@@ -3319,6 +3330,7 @@ sealed class CC {
       val msgs = json.encodeToString(composedMessages)
       "/_create *$noteFolderId json $msgs"
     }
+    is ApiReportMessage -> "/_report #$groupId $chatItemId reason=${json.encodeToString(reportReason).trim('"')} $reportText"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
@@ -3476,6 +3488,7 @@ sealed class CC {
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessages -> "apiSendMessages"
     is ApiCreateChatItems -> "apiCreateChatItems"
+    is ApiReportMessage -> "apiReportMessage"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
@@ -3757,7 +3770,7 @@ data class ServerOperatorConditionsDetail(
 
 @Serializable()
 sealed class ConditionsAcceptance {
-  @Serializable @SerialName("accepted") data class Accepted(val acceptedAt: Instant?) : ConditionsAcceptance()
+  @Serializable @SerialName("accepted") data class Accepted(val acceptedAt: Instant?, val autoAccepted: Boolean) : ConditionsAcceptance()
   @Serializable @SerialName("required") data class Required(val deadline: Instant?) : ConditionsAcceptance()
 
   val conditionsAccepted: Boolean
@@ -3801,7 +3814,7 @@ data class ServerOperator(
       tradeName = "SimpleX Chat",
       legalName = "SimpleX Chat Ltd",
       serverDomains = listOf("simplex.im"),
-      conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null, autoAccepted = false),
       enabled = true,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
@@ -3883,7 +3896,7 @@ data class UserOperatorServers(
       tradeName = "",
       legalName = null,
       serverDomains = emptyList(),
-      conditionsAcceptance = ConditionsAcceptance.Accepted(null),
+      conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)

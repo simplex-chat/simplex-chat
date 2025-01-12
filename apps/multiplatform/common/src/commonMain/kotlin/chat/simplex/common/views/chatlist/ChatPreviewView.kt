@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
@@ -174,13 +175,23 @@ fun ChatPreviewView(
         val (text: CharSequence, inlineTextContent) = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message to messageDraft(chatModelDraft, sp20) }
           ci.meta.itemDeleted == null -> ci.text to null
-          else -> markedDeletedText(ci.meta) to null
+          else -> markedDeletedText(ci) to null
         }
         val formattedText = when {
           chatModelDraftChatId == chat.id && chatModelDraft != null -> null
           ci.meta.itemDeleted == null -> ci.formattedText
           else -> null
         }
+        val prefix = when (val mc = ci.content.msgContent) {
+          is MsgContent.MCReport ->
+            buildAnnotatedString {
+              withStyle(SpanStyle(color = Color.Red, fontStyle = FontStyle.Italic)) {
+                append(if (text.isEmpty()) mc.reason.text else "${mc.reason.text}: ")
+              }
+            }
+          else -> null
+        }
+
         MarkdownText(
           text,
           formattedText,
@@ -202,6 +213,7 @@ fun ChatPreviewView(
           ),
           inlineContent = inlineTextContent,
           modifier = Modifier.fillMaxWidth(),
+          prefix = prefix
         )
       }
     } else {

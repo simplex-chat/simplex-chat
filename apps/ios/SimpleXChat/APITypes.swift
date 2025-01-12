@@ -45,6 +45,7 @@ public enum ChatCommand {
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
     case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
+    case apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
@@ -209,6 +210,8 @@ public enum ChatCommand {
             case let .apiCreateChatItems(noteFolderId, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
+            case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
+                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
@@ -372,6 +375,7 @@ public enum ChatCommand {
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
             case .apiSendMessages: return "apiSendMessages"
             case .apiCreateChatItems: return "apiCreateChatItems"
+            case .apiReportMessage: return "apiReportMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
@@ -1162,12 +1166,14 @@ public enum ChatPagination {
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
     case before(chatItemId: Int64, count: Int)
+    case around(chatItemId: Int64, count: Int)
 
     var cmdString: String {
         switch self {
         case let .last(count): return "count=\(count)"
         case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
         case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
+        case let .around(chatItemId, count): return "around=\(chatItemId) count=\(count)"
         }
     }
 }
@@ -1290,7 +1296,7 @@ public struct ServerOperatorConditions: Decodable {
 }
 
 public enum ConditionsAcceptance: Equatable, Codable, Hashable {
-    case accepted(acceptedAt: Date?)
+    case accepted(acceptedAt: Date?, autoAccepted: Bool)
     // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
     // No deadline indicates it's required to accept conditions for the operator to start using it.
     case required(deadline: Date?)
@@ -1364,7 +1370,7 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         tradeName: "SimpleX Chat",
         legalName: "SimpleX Chat Ltd",
         serverDomains: ["simplex.im"],
-        conditionsAcceptance: .accepted(acceptedAt: nil),
+        conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
         enabled: true,
         smpRoles: ServerRoles(storage: true, proxy: true),
         xftpRoles: ServerRoles(storage: true, proxy: true)
@@ -1397,7 +1403,7 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
                 tradeName: "",
                 legalName: "",
                 serverDomains: [],
-                conditionsAcceptance: .accepted(acceptedAt: nil),
+                conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
                 smpRoles: ServerRoles(storage: true, proxy: true),
                 xftpRoles: ServerRoles(storage: true, proxy: true)
