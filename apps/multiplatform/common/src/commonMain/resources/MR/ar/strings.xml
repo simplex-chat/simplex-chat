@@ -2042,8 +2042,7 @@
     <string name="reset_all_hints">صفّر كافة التلميحات</string>
     <string name="error_parsing_uri_desc">يُرجى التأكد من أن رابط SimpleX صحيح.</string>
     <string name="error_parsing_uri_title">الرابط غير صالح</string>
-    <string name="n_file_errors">%1$d خطأ في الملف:
-\n%2$s</string>
+    <string name="n_file_errors">%1$d خطأ في الملف:\n%2$s</string>
     <string name="forward_files_failed_to_receive_desc">فشل تنزيل %1$d ملف/ات.</string>
     <string name="forward_files_not_accepted_desc">لم يتم تنزيل %1$d ملف/ات.</string>
     <string name="forward_files_not_accepted_receive_files">نزّل</string>
@@ -2272,4 +2271,31 @@
     <string name="change_order_chat_list_menu_action">تغيير الترتيب</string>
     <string name="prefs_error_saving_settings">خطأ في حفظ الإعدادات</string>
     <string name="error_creating_report">خطأ في إنشاء التقرير</string>
+    <string name="report_item_visibility_submitter">أنت والمشرفون فقط هم من يرون ذلك</string>
+    <string name="report_item_archived">بلاغ مؤرشف</string>
+    <string name="report_item_visibility_moderators">لا يراه إلا المُرسِل والمُشرفين</string>
+    <string name="archive_verb">أرشف</string>
+    <string name="archive_report">أرشف البلاغ</string>
+    <string name="delete_report">احذف البلاغ</string>
+    <string name="report_verb">بلّغ</string>
+    <string name="report_reason_profile">ملف تعريفي غير لائق</string>
+    <string name="report_reason_spam">إزعاج (spam)</string>
+    <string name="report_reason_other">سبب آخر</string>
+    <string name="chat_list_group_reports">البلاغات</string>
+    <string name="group_reports_active_one">1 بلاغ</string>
+    <string name="group_reports_archived_member_reports">بلاغات الأعضاء المؤرشفة</string>
+    <string name="group_reports_active">%d بلاغات</string>
+    <string name="group_reports_member_reports">بلاغات الأعضاء</string>
+    <string name="report_compose_reason_header_illegal">بلّغ عن المحتوى: سيراه مشرفو المجموعة فقط.</string>
+    <string name="report_compose_reason_header_other">بلّغ عن أُخرى: سيراه مشرفو المجموعة فقط.</string>
+    <string name="group_member_role_moderator">مشرف</string>
+    <string name="report_item_archived_by">بلاغ مؤرشف بواسطة %s</string>
+    <string name="report_compose_reason_header_profile">بلّغ عن ملف تعريف العضو: سيراه مشرفو المجموعة فقط.</string>
+    <string name="report_reason_community">انتهاك إرشادات المجتمع</string>
+    <string name="report_reason_illegal">محتوى غير لائق</string>
+    <string name="report_compose_reason_header_community">بلّغ عن مخالفة: سيراه مشرفو المجموعة فقط.</string>
+    <string name="report_compose_reason_header_spam">بلّغ عن إزعاج (spam): سيراه مشرفو المجموعة فقط.</string>
+    <string name="report_archive_alert_title">أرشفة البلاغ؟</string>
+    <string name="report_reason_alert_title">سبب الإبلاغ؟</string>
+    <string name="report_archive_alert_desc">سيتم أرشفة البلاغ لك.</string>
 </resources>
