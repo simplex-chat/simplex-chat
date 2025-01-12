@@ -114,12 +114,12 @@
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
         <source>%lld %@</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
@@ -144,12 +144,12 @@
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
         <source>%lldd</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldh" xml:space="preserve">
         <source>%lldh</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
@@ -158,7 +158,7 @@
       </trans-unit>
       <trans-unit id="%lldm" xml:space="preserve">
         <source>%lldm</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldmth" xml:space="preserve">
@@ -3612,6 +3612,10 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="# %@" xml:space="preserve" approved="no">
+        <source># %@</source>
+        <target state="translated"># %@</target>
       </trans-unit>
     </body>
   </file>
