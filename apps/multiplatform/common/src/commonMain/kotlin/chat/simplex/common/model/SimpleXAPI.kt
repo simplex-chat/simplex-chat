@@ -6817,7 +6817,6 @@ sealed class ProxyError {
 @Serializable
 data class BlockingInfo(
   val reason: BlockingReason
-  // val restriction: ClientRestriction?
 )
 
 @Serializable

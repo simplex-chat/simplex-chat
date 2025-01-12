@@ -2224,11 +2224,11 @@ viewChatError isCmd logLevel testView = \case
           <> "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       ]
     SMP _ (SMP.BLOCKED BlockingInfo {reason}) ->
-      [withConnEntity <> "error: connection blocked by server operator for " <> reasonStr]
+      [withConnEntity <> "error: connection blocked by server operator: " <> reasonStr]
       where
         reasonStr = case reason of
           BRSpam -> "spam"
-          BRContent -> "content violating conditions of use"
+          BRContent -> "content violates conditions of use"
     BROKER _ NETWORK | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]

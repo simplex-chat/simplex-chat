@@ -2500,7 +2500,6 @@ public enum ProxyError: Decodable, Hashable {
 
 public struct BlockingInfo: Decodable, Equatable, Hashable {
     public var reason: BlockingReason
-//    var restriction: ClientRestriction?
 }
 
 public enum BlockingReason: String, Decodable {

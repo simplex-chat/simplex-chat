@@ -3704,7 +3704,7 @@ public enum FileError: Decodable, Equatable, Hashable {
     public var errorInfo: String {
         switch self {
         case .auth: NSLocalizedString("Wrong key or unknown file chunk address - most likely file is deleted.", comment: "file error text")
-        case let .blocked(_, info): NSLocalizedString("File is blocked by server operator: \(info.reason.text).", comment: "file error text")
+        case let .blocked(_, info): NSLocalizedString("File is blocked by server operator:\n\(info.reason.text).", comment: "file error text")
         case .noFile: NSLocalizedString("File not found - most likely file was deleted or cancelled.", comment: "file error text")
         case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("File server error: %@", comment: "file error text"), srvError.errorInfo)
         case let .other(fileError): String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "file error text"), fileError)
