@@ -2296,4 +2296,9 @@
     <string name="group_reports_member_reports">成员举报</string>
     <string name="group_reports_archived_member_reports">已存档的成员举报</string>
     <string name="group_reports_active">%d 个举报</string>
+    <string name="blocking_reason_spam">垃圾信息</string>
+    <string name="connection_error_blocked">连接被阻止</string>
+    <string name="connection_error_blocked_desc">连接被服务器运营者阻止：\n%1$s.</string>
+    <string name="blocking_reason_content">内容违反使用条款</string>
+    <string name="file_error_blocked">文件被服务器运营者阻止：\n%1$s.</string>
 </resources>
