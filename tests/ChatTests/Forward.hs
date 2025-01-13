@@ -9,9 +9,9 @@ import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate)
 import qualified Data.Text as T
-import System.Directory (copyFile, doesFileExist, removeFile)
-import Simplex.Chat (fixedImagePreview)
+import Simplex.Chat.Library.Commands (fixedImagePreview)
 import Simplex.Chat.Types (ImageData (..))
+import System.Directory (copyFile, doesFileExist, removeFile)
 import Test.Hspec hiding (it)
 
 chatForwardTests :: SpecWith FilePath
@@ -224,7 +224,7 @@ testForwardNotesToContact =
       createCCNoteFolder alice
       connectUsers alice cath
 
-      alice /* "hi"
+      alice >* "hi"
 
       alice `send` "@cath <- * hi"
       alice <# "@cath hi"
@@ -237,7 +237,7 @@ testForwardNotesToGroup =
       createCCNoteFolder alice
       createGroup2 "team" alice cath
 
-      alice /* "hi"
+      alice >* "hi"
 
       alice `send` "#team <- * hi"
       alice <# "#team hi"
@@ -248,7 +248,7 @@ testForwardNotesToNotes tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     createCCNoteFolder alice
 
-    alice /* "hi"
+    alice >* "hi"
 
     alice `send` "* <- * hi"
     alice <# "* hi"
@@ -740,7 +740,7 @@ testMultiForwardFiles =
 
       -- IDs to forward
       let msgId1 = (read msgIdZero :: Int) + 1
-          msgIds = intercalate "," $ map (show . (msgId1 +)) [0..5]
+          msgIds = intercalate "," $ map (show . (msgId1 +)) [0 .. 5]
       bob ##> ("/_forward plan @2 " <> msgIds)
       bob <## "Files can be received: 1, 2, 3, 4"
       bob <## "5 message(s) out of 6 can be forwarded"

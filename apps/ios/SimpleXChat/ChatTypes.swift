@@ -15,6 +15,8 @@ public let CREATE_MEMBER_CONTACT_VERSION = 2
 // version to receive reports (MCReport)
 public let REPORTS_VERSION = 12
 
+public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250112-simplex-network-privacy-preserving-content-moderation.html")!
+
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
     public var agentUserId: String
@@ -1340,6 +1342,13 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var contactCard: Bool {
+        switch self {
+        case let .direct(contact): contact.activeConn == nil && contact.profile.contactLink != nil && contact.active
+        default: false
+        }
+    }
+    
     public var groupInfo: GroupInfo? {
         switch self {
         case let .group(groupInfo): return groupInfo
@@ -1450,6 +1459,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         default: return nil
         }
     }
+    
+    public var chatTags: [Int64]? {
+        switch self {
+        case let .direct(contact): return contact.chatTags
+        case let .group(groupInfo): return groupInfo.chatTags
+        default: return nil
+        }
+    }
 
     var createdAt: Date {
         switch self {
@@ -1524,13 +1541,16 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
 }
 
 public struct ChatStats: Decodable, Hashable {
-    public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
+    public init(unreadCount: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
+        self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
     }
 
     public var unreadCount: Int = 0
+    // actual only via getChats() and getChat(.initial), otherwise, zero
+    public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
     public var unreadChat: Bool = false
 }
@@ -1551,6 +1571,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
+    public var chatTags: [Int64]
     public var uiThemes: ThemeModeOverrides?
     public var chatDeleted: Bool
     
@@ -1621,6 +1642,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         createdAt: .now,
         updatedAt: .now,
         contactGrpInvSent: false,
+        chatTags: [],
         chatDeleted: false
     )
 }
@@ -1912,6 +1934,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
     public var localAlias: String { "" }
+    public var chatTags: [Int64]
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -1934,7 +1957,8 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         hostConnCustomUserProfileId: nil,
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
-        updatedAt: .now
+        updatedAt: .now,
+        chatTags: []
     )
 }
 
@@ -1994,6 +2018,14 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     public var memberChatVRange: VersionRange
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var ready: Bool { get { activeConn?.connStatus == .ready } }
+    public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
+    public var sendMsgEnabled: Bool { get {
+        sndReady
+        && memberCurrent
+        && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
+        && !(activeConn?.connDisabled ?? true)
+    } }
     public var displayName: String {
         get {
             let p = memberProfile
@@ -2584,6 +2616,10 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
+    public var isActiveReport: Bool {
+        isReport && !isDeletedContent && meta.itemDeleted == nil
+    }
+
     public var canBeDeletedForSelf: Bool {
         (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
     }
@@ -2990,7 +3026,7 @@ public enum SndError: Decodable, Hashable {
     case proxyRelay(proxyServer: String, srvError: SrvError)
     case other(sndError: String)
 
-    public var errorInfo: String {
+      public var errorInfo: String {
         switch self {
         case .auth: NSLocalizedString("Wrong key or unknown connection - most likely this connection is deleted.", comment: "snd error text")
         case .quota: NSLocalizedString("Capacity exceeded - recipient did not receive previously sent messages.", comment: "snd error text")
@@ -3379,9 +3415,11 @@ public enum MREmojiChar: String, Codable, CaseIterable, Hashable {
     case thumbsup = "👍"
     case thumbsdown = "👎"
     case smile = "😀"
+    case laugh = "😂"
     case sad = "😢"
     case heart = "❤"
     case launch = "🚀"
+    case check = "✅"
 }
 
 extension MsgReaction: Decodable {
@@ -3648,6 +3686,7 @@ public enum CIFileStatus: Decodable, Equatable, Hashable {
 
 public enum FileError: Decodable, Equatable, Hashable {
     case auth
+    case blocked(server: String, blockInfo: BlockingInfo)
     case noFile
     case relay(srvError: SrvError)
     case other(fileError: String)
@@ -3655,6 +3694,7 @@ public enum FileError: Decodable, Equatable, Hashable {
     var id: String {
         switch self {
         case .auth: return "auth"
+        case let .blocked(srv, info): return "blocked \(srv) \(info)"
         case .noFile: return "noFile"
         case let .relay(srvError): return "relay \(srvError)"
         case let .other(fileError): return "other \(fileError)"
@@ -3664,9 +3704,17 @@ public enum FileError: Decodable, Equatable, Hashable {
     public var errorInfo: String {
         switch self {
         case .auth: NSLocalizedString("Wrong key or unknown file chunk address - most likely file is deleted.", comment: "file error text")
+        case let .blocked(_, info): NSLocalizedString("File is blocked by server operator:\n\(info.reason.text).", comment: "file error text")
         case .noFile: NSLocalizedString("File not found - most likely file was deleted or cancelled.", comment: "file error text")
         case let .relay(srvError): String.localizedStringWithFormat(NSLocalizedString("File server error: %@", comment: "file error text"), srvError.errorInfo)
         case let .other(fileError): String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "file error text"), fileError)
+        }
+    }
+    
+    public var moreInfoButton: (label: LocalizedStringKey, link: URL)? {
+        switch self {
+        case .blocked: ("How it works", contentModerationPostLink)
+        default: nil
         }
     }
 }
@@ -4329,6 +4377,20 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
         return lhs.comparisonValue < rhs.comparisonValue
+    }
+}
+
+public struct ChatTag: Decodable, Hashable {
+    public var chatTagId: Int64
+    public var chatTagText: String
+    public var chatTagEmoji: String?
+    
+    public var id: Int64 { chatTagId }
+    
+    public init(chatTagId: Int64, chatTagText: String, chatTagEmoji: String?) {
+        self.chatTagId = chatTagId
+        self.chatTagText = chatTagText
+        self.chatTagEmoji = chatTagEmoji
     }
 }
 

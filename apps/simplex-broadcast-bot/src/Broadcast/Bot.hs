@@ -27,9 +27,9 @@ import System.Directory (getAppUserDataDirectory)
 welcomeGetOpts :: IO BroadcastBotOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@BroadcastBotOpts {coreOptions = CoreChatOpts {dbFilePrefix}} <- getBroadcastBotOpts appDir "simplex_status_bot"
+  opts@BroadcastBotOpts {coreOptions} <- getBroadcastBotOpts appDir "simplex_status_bot"
   putStrLn $ "SimpleX Chat Bot v" ++ versionNumber
-  putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
+  printDbOpts coreOptions
   pure opts
 
 broadcastBot :: BroadcastBotOpts -> User -> ChatController -> IO ()

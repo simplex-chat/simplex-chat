@@ -355,18 +355,12 @@ struct CIVideoView: View {
             case let .sndError(sndFileError):
                 fileIcon("xmark", 10, 13)
                     .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("File error"),
-                            message: Text(sndFileError.errorInfo)
-                        ))
+                        showFileErrorAlert(sndFileError)
                     }
             case let .sndWarning(sndFileError):
                 fileIcon("exclamationmark.triangle.fill", 10, 13)
                     .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("Temporary file error"),
-                            message: Text(sndFileError.errorInfo)
-                        ))
+                        showFileErrorAlert(sndFileError, temporary: true)
                     }
             case .rcvInvitation: fileIcon("arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
@@ -382,18 +376,12 @@ struct CIVideoView: View {
             case let .rcvError(rcvFileError):
                 fileIcon("xmark", 10, 13)
                     .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("File error"),
-                            message: Text(rcvFileError.errorInfo)
-                        ))
+                        showFileErrorAlert(rcvFileError)
                     }
             case let .rcvWarning(rcvFileError):
                 fileIcon("exclamationmark.triangle.fill", 10, 13)
                     .onTapGesture {
-                        AlertManager.shared.showAlert(Alert(
-                            title: Text("Temporary file error"),
-                            message: Text(rcvFileError.errorInfo)
-                        ))
+                        showFileErrorAlert(rcvFileError, temporary: true)
                     }
             case .invalid: fileIcon("questionmark", 10, 13)
             }

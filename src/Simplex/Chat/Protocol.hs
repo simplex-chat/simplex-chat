@@ -1,8 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -42,13 +45,12 @@ import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -56,6 +58,13 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstTo
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple.FromField (FromField (..))
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 -- Chat version history:
 -- 1 - support chat versions in connections (9/1/2023)
@@ -69,7 +78,7 @@ import Simplex.Messaging.Version hiding (version)
 -- 9 - batch sending in direct connections (2024-07-24)
 -- 10 - business chats (2024-11-29)
 -- 11 - fix profile update in business chats (2024-12-05)
--- 12 - fix profile update in business chats (2025-01-03)
+-- 12 - support sending and receiving content reports (2025-01-03)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
@@ -216,10 +225,9 @@ instance StrEncoding AppMessageBinary where
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField SharedMsgId where fromField f = SharedMsgId <$> fromField f
-
-instance ToField SharedMsgId where toField (SharedMsgId m) = toField m
+instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ DB.Binary m
 
 instance StrEncoding SharedMsgId where
   strEncode (SharedMsgId m) = strEncode m
@@ -252,7 +260,7 @@ data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknow
   deriving (Eq, Show)
 
 data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RROther | RRUnknown Text
-   deriving (Eq, Show)
+  deriving (Eq, Show)
 
 $(pure [])
 
@@ -442,7 +450,7 @@ instance FromJSON MREmojiChar where
 
 mrEmojiChar :: Char -> Either String MREmojiChar
 mrEmojiChar c
-  | c `elem` ("👍👎😀😢❤️🚀" :: String) = Right $ MREmojiChar c
+  | c `elem` ("👍👎😀😂😢❤️🚀✅" :: String) = Right $ MREmojiChar c
   | otherwise = Left "bad emoji"
 
 data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
@@ -484,7 +492,7 @@ cmToQuotedMsg = \case
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCReport_ | MCUnknown_ Text
-  deriving (Eq)
+  deriving (Eq, Show)
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
@@ -519,6 +527,7 @@ instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEnc
 data MsgContainer
   = MCSimple ExtMsgContent
   | MCQuote QuotedMsg ExtMsgContent
+  | MCComment MsgRef ExtMsgContent
   | MCForward ExtMsgContent
   deriving (Eq, Show)
 
@@ -526,12 +535,8 @@ mcExtMsgContent :: MsgContainer -> ExtMsgContent
 mcExtMsgContent = \case
   MCSimple c -> c
   MCQuote _ c -> c
+  MCComment _ c -> c
   MCForward c -> c
-
-isQuote :: MsgContainer -> Bool
-isQuote = \case
-  MCQuote {} -> True
-  _ -> False
 
 data MsgContent
   = MCText Text
@@ -561,9 +566,6 @@ msgContentText = \case
       msg = "report " <> safeDecodeUtf8 (strEncode reason)
   MCUnknown {text} -> text
 
-toMCText :: MsgContent -> MsgContent
-toMCText = MCText . msgContentText
-
 durationText :: Int -> Text
 durationText duration =
   let (mins, secs) = duration `divMod` 60 in T.pack $ "(" <> with0 mins <> ":" <> with0 secs <> ")"
@@ -573,9 +575,10 @@ durationText duration =
       | otherwise = show n
 
 msgContentHasText :: MsgContent -> Bool
-msgContentHasText = not . T.null . \case
-  MCVoice {text} -> text
-  mc -> msgContentText mc
+msgContentHasText =
+  not . T.null . \case
+    MCVoice {text} -> text
+    mc -> msgContentText mc
 
 isVoice :: MsgContent -> Bool
 isVoice = \case
@@ -654,7 +657,10 @@ markCompressedBatch = B.cons 'X'
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
+    <|> MCComment <$> v .: "parent" <*> mc
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    -- The support for arbitrary object in "forward" property is added to allow
+    -- forward compatibility with forwards that include public group links.
     <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
     <|> MCSimple <$> mc
   where
@@ -705,6 +711,7 @@ unknownMsgType = "unknown message type"
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON = \case
   MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
+  MCComment ref mc -> o $ ("parent" .= ref) : msgContent mc
   MCForward mc -> o $ ("forward" .= True) : msgContent mc
   MCSimple mc -> o $ msgContent mc
   where

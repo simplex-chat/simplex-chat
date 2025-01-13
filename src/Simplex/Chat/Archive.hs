@@ -11,7 +11,6 @@ module Simplex.Chat.Archive
     deleteStorage,
     sqlCipherExport,
     sqlCipherTestKey,
-    archiveFilesFolder,
   )
 where
 
@@ -28,7 +27,8 @@ import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Chat.Util ()
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, keyString, sqlString, storeKey)
+import Simplex.Messaging.Agent.Store.SQLite (closeDBStore, keyString, sqlString, storeKey)
+import Simplex.Messaging.Agent.Store.SQLite.Common (DBStore (..))
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
@@ -74,7 +74,7 @@ importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
     fs@StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
-    liftIO $ closeSQLiteStore `withStores` fs
+    liftIO $ closeDBStore `withStores` fs
     backup `withDBs` fs
     copyFile (dir </> archiveChatDbFile) $ dbFilePath chatStore
     copyFile (dir </> archiveAgentDbFile) $ dbFilePath agentStore
@@ -111,7 +111,7 @@ copyValidDirectoryFiles isFileError fromDir toDir = do
         Nothing ->
           (copyDirectoryFile f $> fileErrs)
             `E.catch` \(e :: E.SomeException) -> addErr $ show e
-        Just e ->  addErr e
+        Just e -> addErr e
       where
         addErr e = pure $ AEFileError f e : fileErrs
     copyDirectoryFile f = do
@@ -122,7 +122,7 @@ copyValidDirectoryFiles isFileError fromDir toDir = do
 deleteStorage :: CM ()
 deleteStorage = do
   fs <- lift storageFiles
-  liftIO $ closeSQLiteStore `withStores` fs
+  liftIO $ closeDBStore `withStores` fs
   remove `withDBs` fs
   mapM_ removeDir $ filesPath fs
   mapM_ removeDir $ assetsPath fs
@@ -132,8 +132,8 @@ deleteStorage = do
     removeDir d = whenM (doesDirectoryExist d) $ removePathForcibly d
 
 data StorageFiles = StorageFiles
-  { chatStore :: SQLiteStore,
-    agentStore :: SQLiteStore,
+  { chatStore :: DBStore,
+    agentStore :: DBStore,
     filesPath :: Maybe FilePath,
     assetsPath :: Maybe FilePath
   }
@@ -156,20 +156,20 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
     removeExported `withDBs` fs
     export `withDBs` fs
     -- closing after encryption prevents closing in case wrong encryption key was passed
-    liftIO $ closeSQLiteStore `withStores` fs
+    liftIO $ closeDBStore `withStores` fs
     (moveExported `withStores` fs)
       `catchChatError` \e -> (restore `withDBs` fs) >> throwError e
   where
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
     checkFile f = unlessM (doesFileExist f) $ throwDBError $ DBErrorNoFile f
-    checkEncryption SQLiteStore {dbKey} = do
+    checkEncryption DBStore {dbKey} = do
       enc <- maybe True (not . BA.null) <$> readTVarIO dbKey
       when (enc && BA.null key) $ throwDBError DBErrorEncrypted
       when (not enc && not (BA.null key)) $ throwDBError DBErrorPlaintext
     exported = (<> ".exported")
     removeExported f = whenM (doesFileExist $ exported f) $ removeFile (exported f)
-    moveExported SQLiteStore {dbFilePath = f, dbKey} = do
+    moveExported DBStore {dbFilePath = f, dbKey} = do
       renameFile (exported f) f
       atomically $ writeTVar dbKey $ storeKey key' (fromMaybe False keepKey)
     export f = do
@@ -219,5 +219,5 @@ sqlCipherTestKey (DBEncryptionKey key) = do
 withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
 action `withDBs` StorageFiles {chatStore, agentStore} = action (dbFilePath chatStore) >> action (dbFilePath agentStore)
 
-withStores :: Monad m => (SQLiteStore -> m b) -> StorageFiles -> m b
+withStores :: Monad m => (DBStore -> m b) -> StorageFiles -> m b
 action `withStores` StorageFiles {chatStore, agentStore} = action chatStore >> action agentStore

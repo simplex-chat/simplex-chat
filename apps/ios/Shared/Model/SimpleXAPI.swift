@@ -312,6 +312,20 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     throw r
 }
 
+func apiGetChatTags() throws -> [ChatTag] {
+    let userId = try currentUserId("apiGetChatTags")
+    let r = chatSendCmdSync(.apiGetChatTags(userId: userId))
+    if case let .chatTags(_, tags) = r { return tags }
+    throw r
+}
+
+func apiGetChatTagsAsync() async throws -> [ChatTag] {
+    let userId = try currentUserId("apiGetChatTags")
+    let r = await chatSendCmd(.apiGetChatTags(userId: userId))
+    if case let .chatTags(_, tags) = r { return tags }
+    throw r
+}
+
 let loadItemsPerPage = 50
 
 func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
@@ -360,6 +374,34 @@ func apiPlanForwardChatItems(type: ChatType, id: Int64, itemIds: [Int64]) async 
 func apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?) async -> [ChatItem]? {
     let cmd: ChatCommand = .apiForwardChatItems(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemIds: itemIds, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
+}
+
+func apiCreateChatTag(tag: ChatTagData) async throws -> [ChatTag] {
+    let r = await chatSendCmd(.apiCreateChatTag(tag: tag))
+    if case let .chatTags(_, userTags) = r {
+        return userTags
+    }
+    throw r
+}
+
+func apiSetChatTags(type: ChatType, id: Int64, tagIds: [Int64]) async throws -> ([ChatTag], [Int64]) {
+    let r = await chatSendCmd(.apiSetChatTags(type: type, id: id, tagIds: tagIds))
+    if case let .tagsUpdated(_, userTags, chatTags) = r {
+        return (userTags, chatTags)
+    }
+    throw r
+}
+
+func apiDeleteChatTag(tagId: Int64) async throws  {
+    try await sendCommandOkResp(.apiDeleteChatTag(tagId: tagId))
+}
+
+func apiUpdateChatTag(tagId: Int64, tag: ChatTagData) async throws  {
+    try await sendCommandOkResp(.apiUpdateChatTag(tagId: tagId, tagData: tag))
+}
+
+func apiReorderChatTags(tagIds: [Int64]) async throws {
+    try await sendCommandOkResp(.apiReorderChatTags(tagIds: tagIds))
 }
 
 func apiSendMessages(type: ChatType, id: Int64, live: Bool = false, ttl: Int? = nil, composedMessages: [ComposedMessage]) async -> [ChatItem]? {
@@ -808,6 +850,18 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         let alert = mkAlert(
             title: "Connection error (AUTH)",
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
+        )
+        return (nil, alert)
+    case let .chatCmdError(_, .errorAgent(.SMP(_, .BLOCKED(info)))):
+        let alert = Alert(
+            title: Text("Connection blocked"),
+            message: Text("Connection is blocked by server operator:\n\(info.reason.text)"),
+            primaryButton: .default(Text("Ok")),
+            secondaryButton: .default(Text("How it works")) {
+                DispatchQueue.main.async {
+                    UIApplication.shared.open(contentModerationPostLink)
+                }
+            }
         )
         return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
@@ -1752,24 +1806,37 @@ func getUserChatData() throws {
     m.userAddress = try apiGetUserAddress()
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
+    let tags = try apiGetChatTags()
     m.updateChats(chats)
+    let tm = ChatTagsModel.shared
+    tm.activeFilter = nil
+    tm.userTags = tags
+    tm.updateChatTags(m.chats)
 }
 
 private func getUserChatDataAsync() async throws {
     let m = ChatModel.shared
+    let tm = ChatTagsModel.shared
     if m.currentUser != nil {
         let userAddress = try await apiGetUserAddressAsync()
         let chatItemTTL = try await getChatItemTTLAsync()
         let chats = try await apiGetChatsAsync()
+        let tags = try await apiGetChatTagsAsync()
         await MainActor.run {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
             m.updateChats(chats)
+            tm.activeFilter = nil
+            tm.userTags = tags
+            tm.updateChatTags(m.chats)
         }
     } else {
         await MainActor.run {
             m.userAddress = nil
             m.updateChats([])
+            tm.activeFilter = nil
+            tm.userTags = []
+            tm.presetTags = [:]
         }
     }
 }
@@ -1937,6 +2004,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             await MainActor.run {
                 if active(user) {
                     m.addChatItem(cInfo, cItem)
+                    if cItem.isActiveReport {
+                        m.increaseGroupReportsCounter(cInfo.id)
+                    }
                 } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                     m.increaseUnreadCounter(user: user)
                 }
@@ -1998,6 +2068,40 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
                 }
+            }
+        }
+    case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
+        if !active(user) {
+            do {
+                let users = try listUsers()
+                await MainActor.run {
+                    m.users = users
+                }
+            } catch {
+                logger.error("Error loading users: \(error)")
+            }
+            return
+        }
+        let im = ItemsModel.shared
+        let cInfo = ChatInfo.group(groupInfo: groupInfo)
+        await MainActor.run {
+            m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
+        }
+        var notFound = chatItemIDs.count
+        for ci in im.reversedChatItems {
+            if chatItemIDs.contains(ci.id) {
+                let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
+                    CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
+                } else {
+                    CIDeleted.deleted(deletedTs: Date.now)
+                }
+                await MainActor.run {
+                    var newItem = ci
+                    newItem.meta.itemDeleted = deleted
+                    _ = m.upsertChatItem(cInfo, newItem)
+                }
+                notFound -= 1
+                if notFound == 0 { break }
             }
         }
     case let .receivedGroupInvitation(user, groupInfo, _, _):

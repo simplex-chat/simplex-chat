@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -13,9 +14,12 @@ import Control.Exception (bracket)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Types (Profile (..))
-import System.FilePath ((</>))
 import Test.Hspec hiding (it)
+#if !defined(dbPostgres)
+import System.FilePath ((</>))
+#endif
 
 broadcastBotTests :: SpecWith FilePath
 broadcastBotTests = do
@@ -33,7 +37,17 @@ broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadc
 mkBotOpts :: FilePath -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts tmp publishers =
   BroadcastBotOpts
-    { coreOptions = testCoreOpts {dbFilePrefix = tmp </> botDbPrefix},
+    { coreOptions =
+        testCoreOpts
+          { dbOptions =
+              (dbOptions testCoreOpts)
+#if defined(dbPostgres)
+                {dbSchemaPrefix = "client_" <> botDbPrefix}
+#else
+                {dbFilePrefix = tmp </> botDbPrefix}
+#endif
+
+          },
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers

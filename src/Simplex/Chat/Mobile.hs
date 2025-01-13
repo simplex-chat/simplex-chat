@@ -36,18 +36,21 @@ import Foreign.Storable (poke)
 import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (closeDBStore, reopenSQLiteStore)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
@@ -187,8 +190,12 @@ mobileChatOpts dbFilePrefix =
   ChatOpts
     { coreOptions =
         CoreChatOpts
-          { dbFilePrefix,
-            dbKey = "", -- for API database is already opened, and the key in options is not used
+          { dbOptions =
+              ChatDbOpts
+                { dbFilePrefix,
+                  dbKey = "", -- for API database is already opened, and the key in options is not used
+                  vacuumOnMigration = True
+                },
             smpServers = [],
             xftpServers = [],
             simpleNetCfg = defaultSimpleNetCfg,
@@ -225,7 +232,7 @@ defaultMobileConfig =
       deviceNameForRemote = "Mobile"
     }
 
-getActiveUser_ :: SQLiteStore -> IO (Maybe User)
+getActiveUser_ :: DBStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
@@ -238,12 +245,13 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
   agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
+    opts = mobileChatOpts dbFilePrefix
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix) backgroundMode
+      newChatController db user_ defaultMobileConfig opts backgroundMode
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations)
+        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations (vacuumOnMigration $ dbOptions $ coreOptions opts))
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where
@@ -254,8 +262,8 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
 
 chatCloseStore :: ChatController -> IO String
 chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
-  closeSQLiteStore chatStore
-  closeSQLiteStore $ agentClientStore smpAgent
+  closeDBStore chatStore
+  closeDBStore $ agentClientStore smpAgent
 
 chatReopenStore :: ChatController -> IO String
 chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do

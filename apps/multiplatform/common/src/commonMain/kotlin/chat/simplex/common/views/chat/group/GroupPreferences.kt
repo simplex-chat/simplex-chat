@@ -45,6 +45,9 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
           updateGroup(rhId, g)
           currentPreferences = preferences
         }
+        withChats {
+          updateGroup(rhId, g)
+        }
       }
       afterSave()
     }

@@ -410,6 +410,8 @@ struct ChatPreviewView: View {
         case .group:
             if progressByTimeout {
                 ProgressView()
+            } else if chat.chatStats.reportsCount > 0 {
+                groupReportsIcon(size: size * 0.8)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -453,6 +455,14 @@ struct ChatPreviewView: View {
     } else {
         EmptyView()
     }
+}
+
+@ViewBuilder func groupReportsIcon(size: CGFloat) -> some View {
+    Image(systemName: "flag")
+        .resizable()
+        .scaledToFit()
+        .frame(width: size, height: size)
+        .foregroundColor(.red)
 }
 
 func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {
