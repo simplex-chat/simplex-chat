@@ -2317,4 +2317,10 @@
     <string name="file_error_blocked">Il file è bloccato dall\'operatore del server:\n%1$s.</string>
     <string name="connection_error_blocked_desc">La connessione è bloccata dall\'operatore del server:\n%1$s.</string>
     <string name="blocking_reason_content">Il contenuto viola le condizioni di utilizzo</string>
+    <string name="privacy_chat_list_open_web_link_question">Aprire il link?</string>
+    <string name="privacy_chat_list_open_links_yes">Sì</string>
+    <string name="privacy_chat_list_open_links">Apri i link dall\'elenco delle chat</string>
+    <string name="privacy_chat_list_open_links_no">No</string>
+    <string name="privacy_chat_list_open_web_link">Apri link</string>
+    <string name="privacy_chat_list_open_links_ask">Chiedi</string>
 </resources>
