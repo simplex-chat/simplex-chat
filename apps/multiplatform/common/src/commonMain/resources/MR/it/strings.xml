@@ -2312,4 +2312,9 @@
     <string name="report_item_archived_by">segnalazione archiviata da %s</string>
     <string name="group_reports_active">%d segnalazioni</string>
     <string name="group_reports_member_reports">Segnalazioni membro</string>
+    <string name="blocking_reason_spam">Spam</string>
+    <string name="connection_error_blocked">Connessione bloccata</string>
+    <string name="file_error_blocked">Il file è bloccato dall\'operatore del server:\n%1$s.</string>
+    <string name="connection_error_blocked_desc">La connessione è bloccata dall\'operatore del server:\n%1$s.</string>
+    <string name="blocking_reason_content">Il contenuto viola le condizioni di utilizzo</string>
 </resources>
