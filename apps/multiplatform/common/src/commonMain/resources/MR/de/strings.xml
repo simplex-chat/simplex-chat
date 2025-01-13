@@ -2344,7 +2344,7 @@
     <string name="delete_chat_list_question">Liste löschen?</string>
     <string name="edit_chat_list_menu_action">Bearbeiten</string>
     <string name="list_name_field_placeholder">Listenname...</string>
-    <string name="duplicated_list_error">Der Listenname und das Emoji sollten für alle Listen unterschiedlich sein.</string>
+    <string name="duplicated_list_error">Der Listenname und das Emoji sollen für alle Listen unterschiedlich sein.</string>
     <string name="save_list">Liste speichern</string>
     <string name="delete_chat_list_warning">Alle Chats werden von der Liste %s entfernt und die Liste wird gelöscht</string>
     <string name="chat_list_groups">Gruppen</string>
@@ -2389,4 +2389,10 @@
     <string name="connection_error_blocked">Verbindung blockiert</string>
     <string name="file_error_blocked">Die Datei wird vom Serverbetreiber blockiert:\n%1$s.</string>
     <string name="connection_error_blocked_desc">Die Verbindung wird vom Serverbetreiber blockiert:\n%1$s.</string>
+    <string name="privacy_chat_list_open_links_ask">Frage</string>
+    <string name="privacy_chat_list_open_links_no">Nein</string>
+    <string name="privacy_chat_list_open_web_link">Link öffnen</string>
+    <string name="privacy_chat_list_open_links">Links aus der Chat-Liste öffnen</string>
+    <string name="privacy_chat_list_open_web_link_question">Web-Link öffnen?</string>
+    <string name="privacy_chat_list_open_links_yes">Ja</string>
 </resources>
