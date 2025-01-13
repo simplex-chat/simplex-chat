@@ -2286,14 +2286,14 @@
     <string name="prefs_error_saving_settings">Error al guardar la configuración</string>
     <string name="report_item_archived_by">informe archivado por %s</string>
     <string name="report_archive_alert_title">¿Archivar informe?</string>
-    <string name="report_archive_alert_desc">El informe será archivado para tí.</string>
+    <string name="report_archive_alert_desc">El informe será archivado para ti.</string>
     <string name="report_verb">Informe</string>
     <string name="delete_report">Borrar informe</string>
     <string name="group_reports_active_one">1 informe</string>
     <string name="chat_list_group_reports">Informes</string>
-    <string name="report_compose_reason_header_spam">Informar de spam: solo los moderadores del grupo lo verán.</string>
-    <string name="report_compose_reason_header_community">Informar de violación: solo los moderadores del grupo lo verán.</string>
-    <string name="report_compose_reason_header_illegal">Informar de contenido; sólo los moderadores del grupo lo verán.</string>
+    <string name="report_compose_reason_header_spam">Informar de spam: sólo los moderadores del grupo lo verán.</string>
+    <string name="report_compose_reason_header_community">Informar de violación: sólo los moderadores del grupo lo verán.</string>
+    <string name="report_compose_reason_header_illegal">Informar de contenido: sólo los moderadores del grupo lo verán.</string>
     <string name="report_compose_reason_header_other">Informar de otros: sólo los moderadores del grupo lo verán.</string>
     <string name="group_member_role_moderator">moderador</string>
     <string name="blocking_reason_content">El contenido viola las condiciones de uso.</string>
@@ -2314,6 +2314,6 @@
     <string name="report_reason_illegal">Contenido inapropiado</string>
     <string name="report_reason_profile">Perfil inapropiado</string>
     <string name="report_item_visibility_moderators">Solo el remitente y el moderador pueden verlo</string>
-    <string name="report_item_visibility_submitter">Solo tu y el moderador podéis verlo</string>
+    <string name="report_item_visibility_submitter">Solo tú y el moderador podéis verlo</string>
     <string name="report_reason_spam">Spam</string>
 </resources>
