@@ -75,7 +75,7 @@ struct PrivacySettings: View {
                                 privacyLinkPreviewsGroupDefault.set(linkPreviews)
                             }
                     }
-                    settingsRow("network", color: theme.colors.secondary) {
+                    settingsRow("arrow.up.right.circle", color: theme.colors.secondary) {
                         Picker("Open links from chat list", selection: $chatListOpenLinks) {
                             ForEach(PrivacyChatListOpenLinksMode.allCases) { mode in
                                 Text(mode.text)
