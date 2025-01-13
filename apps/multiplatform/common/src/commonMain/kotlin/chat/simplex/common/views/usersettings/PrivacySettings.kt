@@ -63,6 +63,9 @@ fun PrivacySettingsView(
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
       SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
+      ChatListLinksOptions(appPrefs.privacyChatListOpenLinks.state, onSelected = {
+        appPrefs.privacyChatListOpenLinks.set(it)
+      })
       SettingsPreferenceItem(
         painterResource(MR.images.ic_chat_bubble),
         stringResource(MR.strings.privacy_show_last_messages),
@@ -197,6 +200,26 @@ fun PrivacySettingsView(
     }
     SectionBottomSpacer()
   }
+}
+
+@Composable
+private fun ChatListLinksOptions(state: State<PrivacyChatListOpenLinksMode>, onSelected: (PrivacyChatListOpenLinksMode) -> Unit) {
+  val values = remember {
+    PrivacyChatListOpenLinksMode.entries.map {
+      when (it) {
+        PrivacyChatListOpenLinksMode.YES -> it to generalGetString(MR.strings.privacy_chat_list_open_links_yes)
+        PrivacyChatListOpenLinksMode.NO -> it to generalGetString(MR.strings.privacy_chat_list_open_links_no)
+        PrivacyChatListOpenLinksMode.ASK -> it to generalGetString(MR.strings.privacy_chat_list_open_links_ask)
+      }
+    }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.privacy_chat_list_open_links),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_open_in_new),
+    onSelected = onSelected
+  )
 }
 
 @Composable
