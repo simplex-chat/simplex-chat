@@ -337,6 +337,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         { groupId,
           localDisplayName = ldn,
           groupProfile,
+          localAlias = "",
           businessChat = Nothing,
           fullGroupPreferences,
           membership,
@@ -347,6 +348,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatTs = Just currentTs,
           userMemberProfileSentAt = Just currentTs,
           chatTags = [],
+          chatItemTTL = Nothing,
           uiThemes = Nothing,
           customData = Nothing
         }
@@ -406,6 +408,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                 { groupId,
                   localDisplayName,
                   groupProfile,
+                  localAlias = "",
                   businessChat = Nothing,
                   fullGroupPreferences,
                   membership,
@@ -416,6 +419,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTs = Just currentTs,
                   userMemberProfileSentAt = Just currentTs,
                   chatTags = [],
+                  chatItemTTL = Nothing,
                   uiThemes = Nothing,
                   customData = Nothing
                 },
@@ -2074,7 +2078,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, chatTags = [], uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -2111,7 +2115,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, chatTags = [], uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where

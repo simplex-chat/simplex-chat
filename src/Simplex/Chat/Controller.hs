@@ -379,6 +379,7 @@ data ChatCommand
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
   | APIAcceptConditions Int64 (NonEmpty Int64)
+  | APISetChatTTL UserId ChatRef (Maybe Int64)
   | APISetChatItemTTL UserId (Maybe Int64)
   | SetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL UserId
