@@ -546,7 +546,11 @@ object ChatModel {
     }
 
     fun removeChat(rhId: Long?, id: String) {
-      chats.removeAll { it.id == id && it.remoteHostId == rhId }
+      val i = getChatIndex(rhId, id)
+      if (i != -1) {
+        val chat = chats.removeAt(i)
+        removeWallpaperFilesFromChat(chat)
+      }
     }
 
     suspend fun upsertGroupMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember): Boolean {
