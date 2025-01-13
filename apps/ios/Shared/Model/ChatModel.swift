@@ -909,9 +909,10 @@ final class ChatModel: ObservableObject {
 
     func removeWallpaperFilesFromAllChats(_ user: User) {
         // Currently, only removing everything from currently active user is supported. Inactive users are TODO
-        if user.userId != currentUser?.userId { return }
-        chats.forEach {
-            removeWallpaperFilesFromChat($0)
+        if user.userId == currentUser?.userId {
+            chats.forEach {
+                removeWallpaperFilesFromChat($0)
+            }
         }
     }
 }
