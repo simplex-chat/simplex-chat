@@ -33,7 +33,7 @@ struct StorageView: View {
     private func directoryView(_ name: LocalizedStringKey, _ contents: [String: Int64]) -> some View {
         Text(name).font(.headline)
         ForEach(Array(contents), id: \.key) { (key, value) in
-            Text(key).bold() + Text("  ") +                            Text("\(ByteCountFormatter.string(fromByteCount: value, countStyle: .binary))")
+            Text(key).bold() + Text("   ") + Text("\(ByteCountFormatter.string(fromByteCount: value, countStyle: .binary))")
         }
     }
 
