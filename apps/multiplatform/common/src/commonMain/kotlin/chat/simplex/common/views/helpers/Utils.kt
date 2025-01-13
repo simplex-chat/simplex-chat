@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.ThemeModeOverrides
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
 import chat.simplex.res.MR
@@ -314,6 +315,30 @@ fun removeWallpaperFile(fileName: String? = null) {
     if (it.name == fileName) it.delete()
   }
   WallpaperType.cachedImages.remove(fileName)
+}
+
+fun removeWallpaperFilesFromTheme(theme: ThemeModeOverrides?) {
+  if (theme != null) {
+    removeWallpaperFile(theme.light?.wallpaper?.imageFile)
+    removeWallpaperFile(theme.dark?.wallpaper?.imageFile)
+  }
+}
+
+fun removeWallpaperFilesFromChat(chat: Chat) {
+  if (chat.chatInfo is ChatInfo.Direct) {
+    removeWallpaperFilesFromTheme(chat.chatInfo.contact.uiThemes)
+  } else if (chat.chatInfo is ChatInfo.Group) {
+    removeWallpaperFilesFromTheme(chat.chatInfo.groupInfo.uiThemes)
+  }
+}
+
+fun removeWallpaperFilesFromAllChats(user: User) {
+  // Currently, only removing everything from currently active user is supported. Inactive users are TODO
+  if (user.userId == chatModel.currentUser.value?.userId) {
+    chatModel.chats.value.forEach {
+      removeWallpaperFilesFromChat(it)
+    }
+  }
 }
 
 fun <T> createTmpFileAndDelete(dir: File = tmpDir, onCreated: (File) -> T): T {

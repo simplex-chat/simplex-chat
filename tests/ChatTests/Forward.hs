@@ -785,8 +785,9 @@ testMultiForwardFiles =
       bob <## "      message without file"
 
       bob <# "@cath <- @alice"
-      bob <## "      test_1.jpg"
-      bob <# "/f @cath test_1.jpg"
+
+      jpgFileName <- T.unpack . T.strip . T.pack <$> getTermLine bob
+      bob <# ("/f @cath " <> jpgFileName)
       bob <## "use /fc 5 to cancel sending"
 
       bob <# "@cath <- @alice"
@@ -808,8 +809,8 @@ testMultiForwardFiles =
       cath <## "      message without file"
 
       cath <# "bob> -> forwarded"
-      cath <## "      test_1.jpg"
-      cath <# "bob> sends file test_1.jpg (136.5 KiB / 139737 bytes)"
+      cath <## ("      " <> jpgFileName)
+      cath <# ("bob> sends file " <> jpgFileName <> " (136.5 KiB / 139737 bytes)")
       cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
       cath <# "bob> -> forwarded"
@@ -824,15 +825,15 @@ testMultiForwardFiles =
       cath <## ""
 
       -- file transfer
-      bob <## "completed uploading file 5 (test_1.jpg) for cath"
+      bob <## ("completed uploading file 5 (" <> jpgFileName <> ") for cath")
       bob <## "completed uploading file 6 (test_1.pdf) for cath"
 
       cath ##> "/fr 1"
       cath
-        <### [ "saving file 1 from bob to test_1.jpg",
-               "started receiving file 1 (test_1.jpg) from bob"
+        <### [ ConsoleString $ "saving file 1 from bob to " <> jpgFileName,
+               ConsoleString $ "started receiving file 1 (" <> jpgFileName <> ") from bob"
              ]
-      cath <## "completed receiving file 1 (test_1.jpg) from bob"
+      cath <## ("completed receiving file 1 (" <> jpgFileName <> ") from bob")
 
       cath ##> "/fr 2"
       cath
@@ -841,9 +842,9 @@ testMultiForwardFiles =
              ]
       cath <## "completed receiving file 2 (test_1.pdf) from bob"
 
-      src1B <- B.readFile "./tests/tmp/bob_app_files/test_1.jpg"
+      src1B <- B.readFile ("./tests/tmp/bob_app_files/" <> jpgFileName)
       src1B `shouldBe` dest1
-      dest1C <- B.readFile "./tests/tmp/cath_app_files/test_1.jpg"
+      dest1C <- B.readFile ("./tests/tmp/cath_app_files/" <> jpgFileName)
       dest1C `shouldBe` src1B
 
       src2B <- B.readFile "./tests/tmp/bob_app_files/test_1.pdf"
@@ -886,5 +887,5 @@ testMultiForwardFiles =
       checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
         bob ##> "/clear alice"
         bob <## "alice: all messages are removed locally ONLY"
-      fwdFileExists <- doesFileExist "./tests/tmp/bob_app_files/test_1.jpg"
+      fwdFileExists <- doesFileExist ("./tests/tmp/bob_app_files/" <> jpgFileName)
       fwdFileExists `shouldBe` True

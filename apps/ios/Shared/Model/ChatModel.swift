@@ -987,6 +987,7 @@ final class ChatModel: ObservableObject {
             if let i = getChatIndex(id) {
                 let removed = chats.remove(at: i)
                 ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
+                removeWallpaperFilesFromChat(removed)
             }
         }
     }
@@ -1023,6 +1024,23 @@ final class ChatModel: ObservableObject {
             var updatedMember = member
             updatedMember.activeConn = conn
             _ = upsertGroupMember(groupInfo, updatedMember)
+        }
+    }
+
+    func removeWallpaperFilesFromChat(_ chat: Chat) {
+        if case let .direct(contact) = chat.chatInfo {
+            removeWallpaperFilesFromTheme(contact.uiThemes)
+        } else if case let .group(groupInfo) = chat.chatInfo {
+            removeWallpaperFilesFromTheme(groupInfo.uiThemes)
+        }
+    }
+
+    func removeWallpaperFilesFromAllChats(_ user: User) {
+        // Currently, only removing everything from currently active user is supported. Inactive users are TODO
+        if user.userId == currentUser?.userId {
+            chats.forEach {
+                removeWallpaperFilesFromChat($0)
+            }
         }
     }
 }

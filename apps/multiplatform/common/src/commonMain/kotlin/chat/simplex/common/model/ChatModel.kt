@@ -726,17 +726,11 @@ object ChatModel {
     }
 
     fun removeChat(rhId: Long?, id: String) {
-      var removed: Chat? = null
-      chats.removeAll {
-        val found = it.id == id && it.remoteHostId == rhId
-        if (found) {
-          removed = it
-        }
-        found
-      }
-
-      removed?.let {
-        removePresetChatTags(it.chatInfo, it.chatStats)
+      val i = getChatIndex(rhId, id)
+      if (i != -1) {
+        val chat = chats.removeAt(i)
+        removePresetChatTags(chat.chatInfo, chat.chatStats)
+        removeWallpaperFilesFromChat(chat)
       }
     }
 

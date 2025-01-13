@@ -106,7 +106,7 @@ import Simplex.Messaging.Version
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
-import System.FilePath (takeFileName, (</>))
+import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
 import System.Random (randomRIO)
 import UnliftIO.Async
@@ -145,6 +145,15 @@ imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
 
 fixedImagePreview :: ImageData
 fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg=="
+
+imageFilePrefix :: String
+imageFilePrefix = "IMG_"
+
+voiceFilePrefix :: String
+voiceFilePrefix = "voice_"
+
+videoFilePrefix :: String
+videoFilePrefix = "video_"
 
 -- enableSndFiles has no effect when mainApp is True
 startChatController :: Bool -> Bool -> CM' (Async ())
@@ -897,7 +906,8 @@ processChatCommand' vr = \case
                       ifM
                         (doesFileExist fsFromPath)
                         ( do
-                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                            newFileName <- liftIO $ maybe (pure fileName) (generateNewFileName fileName) $ mediaFilePrefix mc
+                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` newFileName
                             liftIO $ B.writeFile fsNewPath "" -- create empty file
                             encrypt <- chatReadVar encryptLocalFiles
                             cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
@@ -934,6 +944,17 @@ processChatCommand' vr = \case
                 when (B.length ch /= chSize') $ throwError $ CF.FTCEFileIOError "encrypting file: unexpected EOF"
                 liftIO . CF.hPut w $ LB.fromStrict ch
                 when (size' > 0) $ copyChunks r w size'
+          mediaFilePrefix :: MsgContent -> Maybe FilePath
+          mediaFilePrefix = \case
+            MCImage {} -> Just imageFilePrefix
+            MCVoice {} -> Just voiceFilePrefix
+            MCVideo {} -> Just videoFilePrefix
+            _ -> Nothing
+          generateNewFileName fileName prefix = do
+            currentDate <- liftIO getCurrentTime
+            let formattedDate = formatTime defaultTimeLocale "%Y%m%d_%H%M%S" currentDate
+            let ext = takeExtension fileName
+            pure $ prefix <> formattedDate <> ext
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId) -> withUser $ \_ -> case cType of
