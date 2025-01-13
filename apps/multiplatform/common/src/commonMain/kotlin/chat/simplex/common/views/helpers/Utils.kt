@@ -318,10 +318,10 @@ fun removeWallpaperFile(fileName: String? = null) {
 }
 
 fun removeWallpaperFilesFromTheme(theme: ThemeModeOverrides?) {
-  if (theme == null) return
-
-  removeWallpaperFile(theme.light?.wallpaper?.imageFile)
-  removeWallpaperFile(theme.dark?.wallpaper?.imageFile)
+  if (theme != null) {
+    removeWallpaperFile(theme.light?.wallpaper?.imageFile)
+    removeWallpaperFile(theme.dark?.wallpaper?.imageFile)
+  }
 }
 
 fun removeWallpaperFilesFromChat(chat: Chat) {
@@ -334,9 +334,10 @@ fun removeWallpaperFilesFromChat(chat: Chat) {
 
 fun removeWallpaperFilesFromAllChats(user: User) {
   // Currently, only removing everything from currently active user is supported. Inactive users are TODO
-  if (user.userId != chatModel.currentUser.value?.userId) return
-  chatModel.chats.value.forEach {
-   removeWallpaperFilesFromChat(it)
+  if (user.userId == chatModel.currentUser.value?.userId) {
+    chatModel.chats.value.forEach {
+      removeWallpaperFilesFromChat(it)
+    }
   }
 }
 
