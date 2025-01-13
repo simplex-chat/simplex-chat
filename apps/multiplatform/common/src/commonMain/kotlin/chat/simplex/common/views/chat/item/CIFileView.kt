@@ -236,7 +236,7 @@ fun showFileErrorAlert(err: FileError, temporary: Boolean = false) {
   }
 }
 
-val contentModerationPostLink = "https://simplex.chat/blog/20250114-simplex-network-privacy-preserving-content-moderation.html"
+val contentModerationPostLink = "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html"
 
 fun showContentBlockedAlert(title: String, message: String) {
   AlertManager.shared.showAlertDialogButtonsColumn(title, text = message, buttons = {
