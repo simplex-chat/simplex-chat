@@ -2248,4 +2248,8 @@
     <string name="delete_chat_list_question">Hapus daftar</string>
     <string name="edit_chat_list_menu_action">Sunting</string>
     <string name="chat_list_all">Semua</string>
+    <string name="group_reports_active_one">1 laporan</string>
+    <string name="archive_verb">Arsip</string>
+    <string name="group_reports_archived_member_reports">Laporan anggota arsip</string>
+    <string name="report_reason_other">Alasan lain</string>
 </resources>
