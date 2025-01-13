@@ -61,6 +61,7 @@ struct SendMessageView: View {
                             disableEditing: $composeState.inProgress,
                             height: $teHeight,
                             focused: $keyboardVisible,
+                            placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
                             onImagesAdded: onMediaAdded
                         )
                         .allowsTightening(false)
@@ -105,6 +106,8 @@ struct SendMessageView: View {
         let vmrs = composeState.voiceMessageRecordingState
         if nextSendGrpInv {
             inviteMemberContactButton()
+        } else if case .reportedItem = composeState.contextItem {
+            sendMessageButton()
         } else if showVoiceMessageButton
             && composeState.message.isEmpty
             && !composeState.editing

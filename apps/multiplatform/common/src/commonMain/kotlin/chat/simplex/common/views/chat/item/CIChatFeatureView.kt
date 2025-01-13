@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.platform.onRightClick
+import chat.simplex.common.views.chat.group.LocalContentTag
 
 @Composable
 fun CIChatFeatureView(
@@ -75,9 +76,9 @@ private fun mergedFeatures(chatItem: ChatItem, chatInfo: ChatInfo): List<Feature
   val m = ChatModel
   val fs: ArrayList<FeatureInfo> = arrayListOf()
   val icons: MutableSet<PainterBox> = mutableSetOf()
-  var i = getChatItemIndexOrNull(chatItem)
+  val reversedChatItems = m.chatItemsForContent(LocalContentTag.current).value.asReversed()
+  var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   if (i != null) {
-    val reversedChatItems = m.chatItems.asReversed()
     while (i < reversedChatItems.size) {
       val f = featureInfo(reversedChatItems[i], chatInfo) ?: break
       if (!icons.contains(f.icon)) {

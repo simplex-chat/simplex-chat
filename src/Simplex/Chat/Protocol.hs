@@ -1,8 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -42,13 +45,12 @@ import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -56,6 +58,13 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstTo
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple.FromField (FromField (..))
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 -- Chat version history:
 -- 1 - support chat versions in connections (9/1/2023)
@@ -69,12 +78,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 9 - batch sending in direct connections (2024-07-24)
 -- 10 - business chats (2024-11-29)
 -- 11 - fix profile update in business chats (2024-12-05)
+-- 12 - support sending and receiving content reports (2025-01-03)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 11
+currentChatVersion = VersionChat 12
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -120,6 +130,10 @@ businessChatsVersion = VersionChat 10
 -- support updating preferences in business chats (XGrpPrefs message)
 businessChatPrefsVersion :: VersionChat
 businessChatPrefsVersion = VersionChat 11
+
+-- support sending and receiving content reports (MCReport message content)
+contentReportsVersion :: VersionChat
+contentReportsVersion = VersionChat 12
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -211,10 +225,9 @@ instance StrEncoding AppMessageBinary where
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
+  deriving newtype (FromField)
 
-instance FromField SharedMsgId where fromField f = SharedMsgId <$> fromField f
-
-instance ToField SharedMsgId where toField (SharedMsgId m) = toField m
+instance ToField SharedMsgId where toField (SharedMsgId m) = toField $ DB.Binary m
 
 instance StrEncoding SharedMsgId where
   strEncode (SharedMsgId m) = strEncode m
@@ -246,6 +259,9 @@ data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text,
 data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
 
+data ReportReason = RRSpam | RRContent | RRCommunity | RRProfile | RROther | RRUnknown Text
+  deriving (Eq, Show)
+
 $(pure [])
 
 instance FromJSON LinkContent where
@@ -264,6 +280,30 @@ instance ToJSON LinkContent where
     v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
 
 $(JQ.deriveJSON defaultJSON ''LinkPreview)
+
+instance StrEncoding ReportReason where
+  strEncode = \case
+    RRSpam -> "spam"
+    RRContent -> "content"
+    RRCommunity -> "community"
+    RRProfile -> "profile"
+    RROther -> "other"
+    RRUnknown t -> encodeUtf8 t
+  strP =
+    A.takeTill (== ' ') >>= \case
+      "spam" -> pure RRSpam
+      "content" -> pure RRContent
+      "community" -> pure RRCommunity
+      "profile" -> pure RRProfile
+      "other" -> pure RROther
+      t -> pure $ RRUnknown $ safeDecodeUtf8 t
+
+instance FromJSON ReportReason where
+  parseJSON = strParseJSON "ReportReason"
+
+instance ToJSON ReportReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRangeChat,
@@ -410,7 +450,7 @@ instance FromJSON MREmojiChar where
 
 mrEmojiChar :: Char -> Either String MREmojiChar
 mrEmojiChar c
-  | c `elem` ("👍👎😀😢❤️🚀" :: String) = Right $ MREmojiChar c
+  | c `elem` ("👍👎😀😂😢❤️🚀✅" :: String) = Right $ MREmojiChar c
   | otherwise = Left "bad emoji"
 
 data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
@@ -451,8 +491,8 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCUnknown_ Text
-  deriving (Eq)
+data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCVideo_ | MCVoice_ | MCFile_ | MCReport_ | MCUnknown_ Text
+  deriving (Eq, Show)
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
@@ -462,6 +502,7 @@ instance StrEncoding MsgContentTag where
     MCVideo_ -> "video"
     MCFile_ -> "file"
     MCVoice_ -> "voice"
+    MCReport_ -> "report"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
@@ -470,6 +511,7 @@ instance StrEncoding MsgContentTag where
     "video" -> Right MCVideo_
     "voice" -> Right MCVoice_
     "file" -> Right MCFile_
+    "report" -> Right MCReport_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -480,9 +522,12 @@ instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
+
 data MsgContainer
   = MCSimple ExtMsgContent
   | MCQuote QuotedMsg ExtMsgContent
+  | MCComment MsgRef ExtMsgContent
   | MCForward ExtMsgContent
   deriving (Eq, Show)
 
@@ -490,12 +535,8 @@ mcExtMsgContent :: MsgContainer -> ExtMsgContent
 mcExtMsgContent = \case
   MCSimple c -> c
   MCQuote _ c -> c
+  MCComment _ c -> c
   MCForward c -> c
-
-isQuote :: MsgContainer -> Bool
-isQuote = \case
-  MCQuote {} -> True
-  _ -> False
 
 data MsgContent
   = MCText Text
@@ -504,6 +545,7 @@ data MsgContent
   | MCVideo {text :: Text, image :: ImageData, duration :: Int}
   | MCVoice {text :: Text, duration :: Int}
   | MCFile Text
+  | MCReport {text :: Text, reason :: ReportReason}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -518,10 +560,11 @@ msgContentText = \case
     where
       msg = "voice message " <> durationText duration
   MCFile t -> t
+  MCReport {text, reason} ->
+    if T.null text then msg else msg <> ": " <> text
+    where
+      msg = "report " <> safeDecodeUtf8 (strEncode reason)
   MCUnknown {text} -> text
-
-toMCText :: MsgContent -> MsgContent
-toMCText = MCText . msgContentText
 
 durationText :: Int -> Text
 durationText duration =
@@ -532,16 +575,10 @@ durationText duration =
       | otherwise = show n
 
 msgContentHasText :: MsgContent -> Bool
-msgContentHasText = \case
-  MCText t -> hasText t
-  MCLink {text} -> hasText text
-  MCImage {text} -> hasText text
-  MCVideo {text} -> hasText text
-  MCVoice {text} -> hasText text
-  MCFile t -> hasText t
-  MCUnknown {text} -> hasText text
-  where
-    hasText = not . T.null
+msgContentHasText =
+  not . T.null . \case
+    MCVoice {text} -> text
+    mc -> msgContentText mc
 
 isVoice :: MsgContent -> Bool
 isVoice = \case
@@ -556,6 +593,7 @@ msgContentTag = \case
   MCVideo {} -> MCVideo_
   MCVoice {} -> MCVoice_
   MCFile {} -> MCFile_
+  MCReport {} -> MCReport_
   MCUnknown {tag} -> MCUnknown_ tag
 
 data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
@@ -619,7 +657,10 @@ markCompressedBatch = B.cons 'X'
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
   MCQuote <$> v .: "quote" <*> mc
+    <|> MCComment <$> v .: "parent" <*> mc
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    -- The support for arbitrary object in "forward" property is added to allow
+    -- forward compatibility with forwards that include public group links.
     <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
     <|> MCSimple <$> mc
   where
@@ -654,6 +695,10 @@ instance FromJSON MsgContent where
         duration <- v .: "duration"
         pure MCVoice {text, duration}
       MCFile_ -> MCFile <$> v .: "text"
+      MCReport_ -> do
+        text <- v .: "text"
+        reason <- v .: "reason"
+        pure MCReport {text, reason}
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -666,6 +711,7 @@ unknownMsgType = "unknown message type"
 msgContainerJSON :: MsgContainer -> J.Object
 msgContainerJSON = \case
   MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
+  MCComment ref mc -> o $ ("parent" .= ref) : msgContent mc
   MCForward mc -> o $ ("forward" .= True) : msgContent mc
   MCSimple mc -> o $ msgContent mc
   where
@@ -681,6 +727,7 @@ instance ToJSON MsgContent where
     MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
     MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
     MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
+    MCReport {text, reason} -> J.object ["type" .= MCReport_, "text" .= text, "reason" .= reason]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
@@ -689,6 +736,7 @@ instance ToJSON MsgContent where
     MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
     MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
     MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
+    MCReport {text, reason} -> J.pairs $ "type" .= MCReport_ <> "text" .= text <> "reason" .= reason
 
 instance ToField MsgContent where
   toField = toField . encodeJSON

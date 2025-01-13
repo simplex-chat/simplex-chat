@@ -69,25 +69,13 @@ struct CIImageView: View {
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
                             case let .rcvError(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(rcvFileError)
                             case let .rcvWarning(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(rcvFileError, temporary: true)
                             case let .sndError(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(sndFileError)
                             case let .sndWarning(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(sndFileError, temporary: true)
                             default: ()
                             }
                         }

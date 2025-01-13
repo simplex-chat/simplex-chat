@@ -114,7 +114,7 @@ class ChatTagsModel: ObservableObject {
         var newUnreadTags: [Int64:Int] = [:]
         for chat in chats {
             for tag in PresetTag.allCases {
-                if presetTagMatchesChat(tag, chat.chatInfo) {
+                if presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats) {
                     newPresetTags[tag] = (newPresetTags[tag] ?? 0) + 1
                 }
             }
@@ -143,19 +143,23 @@ class ChatTagsModel: ObservableObject {
         }
     }
 
-    func addPresetChatTags(_ chatInfo: ChatInfo) {
+    func addPresetChatTags(_ chatInfo: ChatInfo, _ chatStats: ChatStats) {
         for tag in PresetTag.allCases {
-            if presetTagMatchesChat(tag, chatInfo) {
+            if presetTagMatchesChat(tag, chatInfo, chatStats) {
                 presetTags[tag] = (presetTags[tag] ?? 0) + 1
             }
         }
     }
 
-    func removePresetChatTags(_ chatInfo: ChatInfo) {
+    func removePresetChatTags(_ chatInfo: ChatInfo, _ chatStats: ChatStats) {
         for tag in PresetTag.allCases {
-            if presetTagMatchesChat(tag, chatInfo) {
+            if presetTagMatchesChat(tag, chatInfo, chatStats) {
                 if let count = presetTags[tag] {
-                    presetTags[tag] = max(0, count - 1)
+                    if count > 1 {
+                        presetTags[tag] = count - 1
+                    } else {
+                        presetTags.removeValue(forKey: tag)
+                    }
                 }
             }
         }
@@ -185,6 +189,11 @@ class ChatTagsModel: ObservableObject {
                 unreadTags[tag] = max(0, count - 1)
             }
         }
+    }
+
+    func changeGroupReportsTag(_ by: Int = 0) {
+        if by == 0 { return }
+        presetTags[.groupReports] = (presetTags[.groupReports] ?? 0) + by
     }
 }
 
@@ -432,7 +441,7 @@ final class ChatModel: ObservableObject {
             updateChatInfo(cInfo)
         } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
-            ChatTagsModel.shared.addPresetChatTags(cInfo)
+            ChatTagsModel.shared.addPresetChatTags(cInfo, ChatStats())
         }
     }
 
@@ -873,6 +882,27 @@ final class ChatModel: ObservableObject {
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
+    func increaseGroupReportsCounter(_ chatId: ChatId) {
+        changeGroupReportsCounter(chatId, 1)
+    }
+
+    func decreaseGroupReportsCounter(_ chatId: ChatId, by: Int = 1) {
+        changeGroupReportsCounter(chatId, -1)
+    }
+
+    private func changeGroupReportsCounter(_ chatId: ChatId, _ by: Int = 0) {
+        if by == 0 { return }
+
+        if let i = getChatIndex(chatId) {
+            let chat = chats[i]
+            let wasReportsCount = chat.chatStats.reportsCount
+            chat.chatStats.reportsCount = max(0, chat.chatStats.reportsCount + by)
+            let nowReportsCount = chat.chatStats.reportsCount
+            let by = wasReportsCount == 0 && nowReportsCount > 0 ? 1 : (wasReportsCount > 0 && nowReportsCount == 0) ? -1 : 0
+            ChatTagsModel.shared.changeGroupReportsTag(by)
+        }
+    }
+
     // this function analyses "connected" events and assumes that each member will be there only once
     func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String]) {
         var count = 0
@@ -956,7 +986,8 @@ final class ChatModel: ObservableObject {
         withAnimation {
             if let i = getChatIndex(id) {
                 let removed = chats.remove(at: i)
-                ChatTagsModel.shared.removePresetChatTags(removed.chatInfo)
+                ChatTagsModel.shared.removePresetChatTags(removed.chatInfo, removed.chatStats)
+                removeWallpaperFilesFromChat(removed)
             }
         }
     }
@@ -993,6 +1024,23 @@ final class ChatModel: ObservableObject {
             var updatedMember = member
             updatedMember.activeConn = conn
             _ = upsertGroupMember(groupInfo, updatedMember)
+        }
+    }
+
+    func removeWallpaperFilesFromChat(_ chat: Chat) {
+        if case let .direct(contact) = chat.chatInfo {
+            removeWallpaperFilesFromTheme(contact.uiThemes)
+        } else if case let .group(groupInfo) = chat.chatInfo {
+            removeWallpaperFilesFromTheme(groupInfo.uiThemes)
+        }
+    }
+
+    func removeWallpaperFilesFromAllChats(_ user: User) {
+        // Currently, only removing everything from currently active user is supported. Inactive users are TODO
+        if user.userId == currentUser?.userId {
+            chats.forEach {
+                removeWallpaperFilesFromChat($0)
+            }
         }
     }
 }
