@@ -278,6 +278,12 @@ public func removeWallpaperFile(fileName: String? = nil) {
     }
 }
 
+public func removeWallpaperFilesFromTheme(_ theme: ThemeModeOverrides?) {
+    guard let theme else { return }
+    removeWallpaperFile(fileName: theme.light?.wallpaper?.imageFile)
+    removeWallpaperFile(fileName: theme.dark?.wallpaper?.imageFile)
+}
+
 public func generateNewFileName(_ prefix: String, _ ext: String, fullPath: Bool = false) -> String {
     uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)", fullPath: fullPath)
 }
