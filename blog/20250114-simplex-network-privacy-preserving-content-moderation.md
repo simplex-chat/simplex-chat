@@ -1,17 +1,17 @@
 ---
 layout: layouts/article.html
 title: "SimpleX network: privacy preserving content moderation"
-date: 2024-12-18
+date: 2025-01-14
 preview: How network operators prevent distribution of CSAM without compromising users privacy and security.
 # image: images/20241218-pub.jpg
 # imageWide: true
 draft: true
-permalink: "/blog/20250112-simplex-network-privacy-preserving-content-moderation.html"
+permalink: "/blog/20250114-simplex-network-privacy-preserving-content-moderation.html"
 ---
 
 # SimpleX network: privacy preserving content moderation
 
-**Will be published:** Jan 12, 2025
+**Will be published:** Jan 14, 2025
 
 This blog post will cover our approach to removing CSAM that has:
 - NO user identification, thus preserving privacy of the users.
