@@ -217,7 +217,7 @@ private fun ChatListLinksOptions(state: State<PrivacyChatListOpenLinksMode>, onS
     generalGetString(MR.strings.privacy_chat_list_open_links),
     values,
     state,
-    icon = null,
+    icon = painterResource(MR.images.ic_open_in_new),
     onSelected = onSelected
   )
 }

@@ -261,11 +261,13 @@ fun ChatPreviewView(
               text = mc.preview.uri,
               buttons = {
                 Column {
-                  SectionItemView({
-                    AlertManager.shared.hideAlert()
-                    defaultClickAction()
-                  }) {
-                    Text(stringResource(MR.strings.open_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                  if (chatModel.chatId.value != chat.id) {
+                    SectionItemView({
+                      AlertManager.shared.hideAlert()
+                      defaultClickAction()
+                    }) {
+                      Text(stringResource(MR.strings.open_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                    }
                   }
                   SectionItemView({
                     AlertManager.shared.hideAlert()
