@@ -569,8 +569,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
     toPreview :: (ContactId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
     toPreview ((contactId, ts, lastItemId_) :. statsRow) =
       ACPD SCTDirect $ DirectChatPD ts contactId lastItemId_ (toChatStats statsRow)
-    baseQueryDBSpecific =
-#if defined(db_postgres)
+    baseQuery =
       [sql|
         SELECT
           ct.contact_id,
@@ -587,37 +586,13 @@ findDirectChatPreviews_ db User {userId} pagination clq =
           COALESCE(ChatStats.MinUnread, 0),
           ct.unread_chat
         FROM contacts ct
-      |]
-#else
-      [sql|
-        SELECT
-          ct.contact_id,
-          ct.chat_ts,
-          LastItems.chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          ct.unread_chat
-        FROM contacts ct
         LEFT JOIN (
-          SELECT contact_id, chat_item_id, MAX(created_at)
+          SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = ? AND contact_id IS NOT NULL
+          WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
           GROUP BY contact_id
-        ) LastItems ON LastItems.contact_id = ct.contact_id
+        ) ChatStats ON ChatStats.contact_id = ct.contact_id
       |]
-#endif
-    baseQuery =
-      baseQueryDBSpecific
-        <> " "
-        <> [sql|
-              LEFT JOIN (
-                SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-                FROM chat_items
-                WHERE user_id = ? AND contact_id IS NOT NULL AND item_status = ?
-                GROUP BY contact_id
-              ) ChatStats ON ChatStats.contact_id = ct.contact_id
-           |]
     baseParams = (userId, userId, CISRcvNew)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
@@ -692,8 +667,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
     toPreview :: (GroupId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
     toPreview ((groupId, ts, lastItemId_) :. statsRow) =
       ACPD SCTGroup $ GroupChatPD ts groupId lastItemId_ (toChatStats statsRow)
-    baseQueryDBSpecific =
-#if defined(db_postgres)
+    baseQuery =
       [sql|
         SELECT
           g.group_id,
@@ -710,44 +684,20 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
-      |]
-#else
-      [sql|
-        SELECT
-          g.group_id,
-          g.chat_ts,
-          LastItems.chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          COALESCE(ReportCount.Count, 0),
-          COALESCE(ChatStats.MinUnread, 0),
-          g.unread_chat
-        FROM groups g
         LEFT JOIN (
-          SELECT group_id, chat_item_id, MAX(item_ts)
+          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          FROM chat_items
+          WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
+          GROUP BY group_id
+        ) ChatStats ON ChatStats.group_id = g.group_id
+        LEFT JOIN (
+          SELECT group_id, COUNT(1) AS Count
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL
+            AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
-        ) LastItems ON LastItems.group_id = g.group_id
+        ) ReportCount ON ReportCount.group_id = g.group_id
       |]
-#endif
-    baseQuery =
-      baseQueryDBSpecific
-        <> " "
-        <> [sql|
-              LEFT JOIN (
-                SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-                FROM chat_items
-                WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
-                GROUP BY group_id
-              ) ChatStats ON ChatStats.group_id = g.group_id
-              LEFT JOIN (
-                SELECT group_id, COUNT(1) AS Count
-                FROM chat_items
-                WHERE user_id = ? AND group_id IS NOT NULL
-                  AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
-                GROUP BY group_id
-              ) ReportCount ON ReportCount.group_id = g.group_id
-           |]
     baseParams = (userId, userId, CISRcvNew, userId, MCReport_, BI False)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
@@ -822,8 +772,7 @@ findLocalChatPreviews_ db User {userId} pagination clq =
     toPreview :: (NoteFolderId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
     toPreview ((noteFolderId, ts, lastItemId_) :. statsRow) =
       ACPD SCTLocal $ LocalChatPD ts noteFolderId lastItemId_ (toChatStats statsRow)
-    baseQueryDBSpecific =
-#if defined(db_postgres)
+    baseQuery =
       [sql|
         SELECT
           nf.note_folder_id,
@@ -840,37 +789,13 @@ findLocalChatPreviews_ db User {userId} pagination clq =
           COALESCE(ChatStats.MinUnread, 0),
           nf.unread_chat
         FROM note_folders nf
-      |]
-#else
-      [sql|
-        SELECT
-          nf.note_folder_id,
-          nf.chat_ts,
-          LastItems.chat_item_id,
-          COALESCE(ChatStats.UnreadCount, 0),
-          0,
-          COALESCE(ChatStats.MinUnread, 0),
-          nf.unread_chat
-        FROM note_folders nf
         LEFT JOIN (
-          SELECT note_folder_id, chat_item_id, MAX(created_at)
+          SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = ? AND note_folder_id IS NOT NULL
+          WHERE user_id = ? AND note_folder_id IS NOT NULL AND item_status = ?
           GROUP BY note_folder_id
-        ) LastItems ON LastItems.note_folder_id = nf.note_folder_id
+        ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
       |]
-#endif
-    baseQuery =
-      baseQueryDBSpecific
-        <> " "
-        <> [sql|
-              LEFT JOIN (
-                SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-                FROM chat_items
-                WHERE user_id = ? AND note_folder_id IS NOT NULL AND item_status = ?
-                GROUP BY note_folder_id
-              ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
-           |]
     baseParams = (userId, userId, CISRcvNew)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
