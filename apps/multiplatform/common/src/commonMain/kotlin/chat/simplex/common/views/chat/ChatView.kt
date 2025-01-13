@@ -2306,9 +2306,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           for (di in deleted) {
             val toChatItem = di.toChatItem?.chatItem
             if (toChatItem != null) {
-              if (toChatItem.isReport) {
-                upsertChatItem(chatRh, chatInfo, toChatItem)
-              }
+              upsertChatItem(chatRh, chatInfo, toChatItem)
             } else {
               removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
             }
