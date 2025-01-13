@@ -200,6 +200,7 @@
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
 		8CB3476C2CF5CFFA006787A5 /* Ink in Frameworks */ = {isa = PBXBuildFile; productRef = 8CB3476B2CF5CFFA006787A5 /* Ink */; };
 		8CB3476E2CF5F58B006787A5 /* ConditionsWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB3476D2CF5F58B006787A5 /* ConditionsWebView.swift */; };
+		8CBC14862D357CDB00BBD901 /* StorageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CBC14852D357CDB00BBD901 /* StorageView.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		8CE848A32C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */; };
@@ -548,6 +549,7 @@
 		8C86EBE42C0DAE4F00E12243 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeModeEditor.swift; sourceTree = "<group>"; };
 		8CB3476D2CF5F58B006787A5 /* ConditionsWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionsWebView.swift; sourceTree = "<group>"; };
+		8CBC14852D357CDB00BBD901 /* StorageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageView.swift; sourceTree = "<group>"; };
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableChatItemToolbars.swift; sourceTree = "<group>"; };
@@ -943,6 +945,7 @@
 				64D0C2C129FA57AB00B38D5F /* UserAddressLearnMore.swift */,
 				5CEBD7472A5F115D00665FE2 /* SetDeliveryReceiptsView.swift */,
 				8C69FE7C2B8C7D2700267E38 /* AppSettings.swift */,
+				8CBC14852D357CDB00BBD901 /* StorageView.swift */,
 			);
 			path = UserSettings;
 			sourceTree = "<group>";
@@ -1453,6 +1456,7 @@
 				8C7F8F0E2C19C0C100D16888 /* ViewModifiers.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
 				5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */,
+				8CBC14862D357CDB00BBD901 /* StorageView.swift in Sources */,
 				5C9A5BDB2871E05400A5B906 /* SetNotificationsMode.swift in Sources */,
 				5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */,
 				6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */,
