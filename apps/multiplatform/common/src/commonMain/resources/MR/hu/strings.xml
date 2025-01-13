@@ -2276,8 +2276,8 @@
     <string name="group_reports_active">%d jelentés</string>
     <string name="group_reports_archived_member_reports">Tagok archivált jelentései</string>
     <string name="blocking_reason_spam">Kéretlen tartalom</string>
-    <string name="blocking_reason_content">A tartalom sérti a felhasználási feltételeket</string>
-    <string name="connection_error_blocked">Kapcsolat letiltva</string>
+    <string name="blocking_reason_content">A tartalom sérti a használati feltételeket</string>
+    <string name="connection_error_blocked">A kapcsolat le van tiltva</string>
     <string name="file_error_blocked">A kiszolgáló üzemeltetője letiltotta a fájlt:\n%1$s.</string>
     <string name="connection_error_blocked_desc">A kiszolgáló üzemeltetője letiltotta a kapcsolatot:\n%1$s.</string>
 </resources>
