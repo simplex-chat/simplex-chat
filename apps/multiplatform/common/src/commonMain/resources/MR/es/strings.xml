@@ -2316,4 +2316,10 @@
     <string name="report_item_visibility_moderators">Solo el remitente y el moderador pueden verlo</string>
     <string name="report_item_visibility_submitter">Solo tú y el moderador podéis verlo</string>
     <string name="report_reason_spam">Spam</string>
+    <string name="privacy_chat_list_open_links">Abrir enlace desde la lista de chat</string>
+    <string name="privacy_chat_list_open_links_yes">Si</string>
+    <string name="privacy_chat_list_open_links_no">No</string>
+    <string name="privacy_chat_list_open_web_link_question">¿Abrir enlace web?</string>
+    <string name="privacy_chat_list_open_links_ask">Preguntar</string>
+    <string name="privacy_chat_list_open_web_link">Abrir enlace</string>
 </resources>
