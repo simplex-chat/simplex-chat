@@ -2280,4 +2280,6 @@
     <string name="connection_error_blocked">A kapcsolat le van tiltva</string>
     <string name="file_error_blocked">A kiszolgáló üzemeltetője letiltotta a fájlt:\n%1$s.</string>
     <string name="connection_error_blocked_desc">A kiszolgáló üzemeltetője letiltotta a kapcsolatot:\n%1$s.</string>
+    <string name="privacy_chat_list_open_links_ask">Kérés</string>
+    <string name="privacy_chat_list_open_links_yes">Igen</string>
 </resources>
