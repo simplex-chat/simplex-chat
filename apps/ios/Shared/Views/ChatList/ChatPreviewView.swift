@@ -313,6 +313,7 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder func chatItemContentPreview(_ chat: Chat, _ ci: ChatItem) -> some View {
+        let linkClicksEnabled = privacyChatListOpenLinksDefault.get() != PrivacyChatListOpenLinksMode.no
         let mc = ci.content.msgContent
         switch mc {
         case let .link(_, preview):
@@ -334,7 +335,17 @@ struct ChatPreviewView: View {
                     .cornerRadius(8)
                 }
                 .onTapGesture {
-                    UIApplication.shared.open(preview.uri)
+                    switch privacyChatListOpenLinksDefault.get() {
+                    case .yes:  UIApplication.shared.open(preview.uri)
+                    case .no: ItemsModel.shared.loadOpenChat(chat.id)
+                    case .ask: AlertManager.shared.showAlert(
+                        Alert(title: Text("Open web link?"),
+                              message: Text(preview.uri.absoluteString),
+                              primaryButton: .default(Text("Open chat"), action: { ItemsModel.shared.loadOpenChat(chat.id) }),
+                              secondaryButton: .default(Text("Open link"), action: { UIApplication.shared.open(preview.uri) })
+                             )
+                    )
+                    }
                 }
             }
         case let .image(_, image):

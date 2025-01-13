@@ -14,6 +14,7 @@ struct PrivacySettings: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
+    @State private var chatListOpenLinks = privacyChatListOpenLinksDefault.get()
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
@@ -73,6 +74,17 @@ struct PrivacySettings: View {
                             .onChange(of: useLinkPreviews) { linkPreviews in
                                 privacyLinkPreviewsGroupDefault.set(linkPreviews)
                             }
+                    }
+                    settingsRow("network", color: theme.colors.secondary) {
+                        Picker("Open links from chat list", selection: $chatListOpenLinks) {
+                            ForEach(PrivacyChatListOpenLinksMode.allCases) { mode in
+                                Text(mode.text)
+                            }
+                        }
+                    }
+                    .frame(height: 36)
+                    .onChange(of: chatListOpenLinks) { mode in
+                        privacyChatListOpenLinksDefault.set(mode)
                     }
                     settingsRow("message", color: theme.colors.secondary) {
                         Toggle("Show last messages", isOn: $showChatPreviews)

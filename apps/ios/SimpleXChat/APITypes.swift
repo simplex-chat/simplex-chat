@@ -2175,6 +2175,22 @@ public enum NotificationPreviewMode: String, SelectableItem, Codable {
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
 }
 
+public enum PrivacyChatListOpenLinksMode: String, CaseIterable, Codable, RawRepresentable, Identifiable {
+    case yes
+    case no
+    case ask
+
+    public var id: Self { self }
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .yes: return "Yes"
+        case .no: return "No"
+        case .ask: return "Ask"
+        }
+    }
+}
+
 public struct RemoteCtrlInfo: Decodable {
     public var remoteCtrlId: Int64
     public var ctrlDeviceName: String
@@ -2598,6 +2614,7 @@ public struct AppSettings: Codable, Equatable {
     public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
     public var privacyLinkPreviews: Bool? = nil
+    public var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = nil
     public var privacyShowChatPreviews: Bool? = nil
     public var privacySaveLastDraft: Bool? = nil
     public var privacyProtectScreen: Bool? = nil
@@ -2633,6 +2650,7 @@ public struct AppSettings: Codable, Equatable {
         if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
+        if privacyChatListOpenLinks != def.privacyChatListOpenLinks { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
@@ -2669,6 +2687,7 @@ public struct AppSettings: Codable, Equatable {
             privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
+            privacyChatListOpenLinks: .ask,
             privacyShowChatPreviews: true,
             privacySaveLastDraft: true,
             privacyProtectScreen: false,
