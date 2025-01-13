@@ -148,7 +148,7 @@
     <string name="images_limit_title">Trop d’images !</string>
     <string name="share_file">Partager le fichier…</string>
     <string name="attach">Joindre</string>
-    <string name="icon_descr_cancel_image_preview">Annuler l’aperçu d’image</string>
+    <string name="icon_descr_cancel_image_preview">Annuler l\'aperçu de l\'image</string>
     <string name="icon_descr_cancel_file_preview">Annuler l’aperçu du fichier</string>
     <string name="icon_descr_sent_msg_status_send_failed">échec d’envoi</string>
     <string name="icon_descr_received_msg_status_unread">non lu</string>
@@ -575,7 +575,7 @@
     <string name="contact_wants_to_connect_via_call">%1$s veut se connecter à vous via</string>
     <string name="your_calls">Vos appels</string>
     <string name="always_use_relay">Se connecter via relais</string>
-    <string name="call_on_lock_screen">Appels en écran verrouillé :</string>
+    <string name="call_on_lock_screen">Appels sur l\'écran de verrouillage :</string>
     <string name="show_call_on_lock_screen">Afficher</string>
     <string name="no_call_on_lock_screen">Désactiver</string>
     <string name="your_ice_servers">Vos serveurs ICE</string>
@@ -828,7 +828,7 @@
     <string name="allow_irreversible_message_deletion_only_if">Autoriser la suppression irréversible des messages uniquement si votre contact vous l\'autorise. (24 heures)</string>
     <string name="only_your_contact_can_delete">Seul votre contact peut supprimer de manière irréversible des messages (vous pouvez les marquer comme supprimé). (24 heures)</string>
     <string name="only_your_contact_can_send_disappearing">Seulement votre contact peut envoyer des messages éphémères.</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">Vous et votre contact êtes tous deux en mesure d\'envoyer des messages éphémères.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">Vous et votre contact pouvez envoyer des messages éphémères.</string>
     <string name="voice_messages_are_prohibited">Les messages vocaux sont interdits dans ce groupe.</string>
     <string name="group_display_name_field">Saisir le nom du groupe :</string>
     <string name="conn_level_desc_indirect">indirecte (%1$s)</string>
@@ -842,9 +842,9 @@
     <string name="network_options_reset_to_defaults">Réinitialisation des valeurs par défaut</string>
     <string name="network_option_protocol_timeout">Délai du protocole</string>
     <string name="network_option_ping_interval">Intervalle de PING</string>
-    <string name="both_you_and_your_contacts_can_delete">Vous et votre contact êtes tous deux en mesure de supprimer de manière irréversible les messages envoyés. (24 heures)</string>
+    <string name="both_you_and_your_contacts_can_delete">Vous et votre contact pouvez supprimer de manière irréversible les messages envoyés. (24 heures)</string>
     <string name="message_deletion_prohibited">La suppression irréversible de message est interdite dans ce chat.</string>
-    <string name="both_you_and_your_contact_can_send_voice">Vous et votre contact êtes tous deux en mesure d\'envoyer des messages vocaux.</string>
+    <string name="both_you_and_your_contact_can_send_voice">Vous et votre contact pouvez envoyer des messages vocaux.</string>
     <string name="only_your_contact_can_send_voice">Seul votre contact peut envoyer des messages vocaux.</string>
     <string name="voice_prohibited_in_this_chat">Les messages vocaux sont interdits dans ce chat.</string>
     <string name="disappearing_prohibited_in_this_chat">Les messages éphémères sont interdits dans cette discussion.</string>
@@ -916,7 +916,7 @@
     <string name="failed_to_create_user_duplicate_desc">Vous avez déjà un profil de chat avec ce même nom affiché. Veuillez choisir un autre nom.</string>
     <string name="failed_to_create_user_duplicate_title">Nom d\'affichage en double !</string>
     <string name="v4_4_french_interface">Interface en français</string>
-    <string name="v4_5_transport_isolation_descr">Par profil de chat (par défaut) ou par connexion (BETA).</string>
+    <string name="v4_5_transport_isolation_descr">Par profil de discussion (par défaut) ou par connexion (BETA).</string>
     <string name="v4_5_italian_interface">Interface en italien</string>
     <string name="v4_5_message_draft">Brouillon de message</string>
     <string name="v4_5_reduced_battery_usage_descr">Plus d\'améliorations à venir !</string>
@@ -1074,7 +1074,7 @@
     <string name="stop_snd_file__message">L\'envoi du fichier sera interrompu.</string>
     <string name="alert_text_fragment_please_report_to_developers">Veuillez le signaler aux développeurs.</string>
     <string name="submit_passcode">Soumettre</string>
-    <string name="both_you_and_your_contact_can_make_calls">Vous et votre contact pouvez tous deux passer des appels.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Vous et votre contact pouvez passer des appels.</string>
     <string name="only_you_can_make_calls">Vous seul pouvez passer des appels.</string>
     <string name="calls_prohibited_with_this_contact">Les appels audio/vidéo sont interdits.</string>
     <string name="confirm_passcode">Confirmer le code d\'accès</string>
@@ -1423,7 +1423,7 @@
     <string name="unblock_member_desc">Les messages de %s seront affichés !</string>
     <string name="error_sending_message_contact_invitation">Erreur lors de l\'envoi de l\'invitation</string>
     <string name="non_content_uri_alert_text">Vous avez partagé un chemin de fichier non valide. Signalez le problème aux développeurs de l\'application.</string>
-    <string name="block_member_question">Bloquer ce membre ?</string>
+    <string name="block_member_question">Bloquer ce membre ?</string>
     <string name="rcv_group_events_count">%d événements de groupe</string>
     <string name="invalid_name">Nom invalide !</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Voici votre lien pour le groupe <b>%1$s</b> !]]></string>
@@ -2015,7 +2015,7 @@
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Veuillez demander à votre contact d\'autoriser les appels.</string>
     <string name="cant_call_member_send_message_alert_text">Envoyer un message pour activer les appels.</string>
     <string name="v6_0_your_contacts_descr">Archiver les contacts pour discuter plus tard.</string>
-    <string name="v6_0_privacy_blur">Rendez les images floues et protégez-les contre les regards indiscrets.</string>
+    <string name="v6_0_privacy_blur">Flouter pour une meilleure confidentialité.</string>
     <string name="v6_0_connect_faster_descr">Connectez-vous à vos amis plus rapidement.</string>
     <string name="v6_0_connection_servers_status_descr">État de la connexion et des serveurs.</string>
     <string name="chat_database_exported_title">Exportation de la base de données des discussions</string>
@@ -2135,4 +2135,7 @@
     <string name="chat_list_all">Tous</string>
     <string name="onboarding_network_about_operators">À propos des opérateurs</string>
     <string name="report_archive_alert_title">Archiver le rapport ?</string>
+    <string name="business_address">Adresse professionnelle</string>
+    <string name="v6_2_business_chats">Discussions professionnelles</string>
+    <string name="appearance_bars_blur_radius">Flouter</string>
 </resources>
