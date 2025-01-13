@@ -2275,4 +2275,5 @@
     <string name="report_item_archived_by">%s által archivált jelentés</string>
     <string name="group_reports_active">%d jelentés</string>
     <string name="group_reports_archived_member_reports">Tagok archivált jelentései</string>
+    <string name="blocking_reason_spam">Kéretlen tartalom</string>
 </resources>
