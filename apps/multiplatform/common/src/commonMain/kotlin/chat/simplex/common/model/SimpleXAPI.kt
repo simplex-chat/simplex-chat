@@ -6858,6 +6858,7 @@ data class AppSettings(
   var privacyAskToApproveRelays: Boolean? = null,
   var privacyAcceptImages: Boolean? = null,
   var privacyLinkPreviews: Boolean? = null,
+  var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = null,
   var privacyShowChatPreviews: Boolean? = null,
   var privacySaveLastDraft: Boolean? = null,
   var privacyProtectScreen: Boolean? = null,
@@ -6893,6 +6894,7 @@ data class AppSettings(
     if (privacyAskToApproveRelays != def.privacyAskToApproveRelays) { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
     if (privacyAcceptImages != def.privacyAcceptImages) { empty.privacyAcceptImages = privacyAcceptImages }
     if (privacyLinkPreviews != def.privacyLinkPreviews) { empty.privacyLinkPreviews = privacyLinkPreviews }
+    if (privacyChatListOpenLinks != def.privacyChatListOpenLinks) { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
     if (privacyProtectScreen != def.privacyProtectScreen) { empty.privacyProtectScreen = privacyProtectScreen }
@@ -6939,6 +6941,7 @@ data class AppSettings(
     privacyAskToApproveRelays?.let { def.privacyAskToApproveRelays.set(it) }
     privacyAcceptImages?.let { def.privacyAcceptImages.set(it) }
     privacyLinkPreviews?.let { def.privacyLinkPreviews.set(it) }
+    privacyChatListOpenLinks?.let { def.privacyChatListOpenLinks.set(it) }
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
     privacyProtectScreen?.let { def.privacyProtectScreen.set(it) }
@@ -6975,6 +6978,7 @@ data class AppSettings(
         privacyAskToApproveRelays = true,
         privacyAcceptImages = true,
         privacyLinkPreviews = true,
+        privacyChatListOpenLinks = PrivacyChatListOpenLinksMode.ASK,
         privacyShowChatPreviews = true,
         privacySaveLastDraft = true,
         privacyProtectScreen = false,
@@ -7012,6 +7016,7 @@ data class AppSettings(
           privacyAskToApproveRelays = def.privacyAskToApproveRelays.get(),
           privacyAcceptImages = def.privacyAcceptImages.get(),
           privacyLinkPreviews = def.privacyLinkPreviews.get(),
+          privacyChatListOpenLinks = def.privacyChatListOpenLinks.get(),
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
           privacySaveLastDraft = def.privacySaveLastDraft.get(),
           privacyProtectScreen = def.privacyProtectScreen.get(),
