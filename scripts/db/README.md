@@ -55,7 +55,7 @@
 
    All tables except `migrations` tables should have 0 rows.
 
-2. Export data from SQLite via `export_sqlite.sh` script.
+3. Export data from SQLite via `export_sqlite.sh` script.
 
    ```sh
    ./scripts/db/export_sqlite.sh <sqlite_db_prefix> <output_folder>
@@ -63,7 +63,7 @@
 
    This should export data into csv files with table names inside `agent_db` and `chat_db` subfolders of the output folder.
 
-3. Import data to Postgres database.
+4. Import data to Postgres database.
 
    ```sh
    ./scripts/db/import_postgres.sh <exported_tables_folder> <postgres_user> <postgres_database>
