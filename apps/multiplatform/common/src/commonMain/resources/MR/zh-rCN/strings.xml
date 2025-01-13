@@ -2301,4 +2301,10 @@
     <string name="connection_error_blocked_desc">连接被服务器运营者阻止：\n%1$s.</string>
     <string name="blocking_reason_content">内容违反使用条款</string>
     <string name="file_error_blocked">文件被服务器运营者阻止：\n%1$s.</string>
+    <string name="privacy_chat_list_open_links_ask">询问</string>
+    <string name="privacy_chat_list_open_links_no">否</string>
+    <string name="privacy_chat_list_open_links_yes">是</string>
+    <string name="privacy_chat_list_open_web_link_question">打开 web 链接？</string>
+    <string name="privacy_chat_list_open_web_link">打开链接</string>
+    <string name="privacy_chat_list_open_links">打开来自聊天列表的链接</string>
 </resources>
