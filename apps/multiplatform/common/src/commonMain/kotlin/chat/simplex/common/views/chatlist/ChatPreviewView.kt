@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
@@ -45,7 +47,8 @@ fun ChatPreviewView(
   disabled: Boolean,
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
-  progressByTimeout: Boolean
+  progressByTimeout: Boolean,
+  defaultClickAction: () -> Unit
 ) {
   val cInfo = chat.chatInfo
 
@@ -248,7 +251,36 @@ fun ChatPreviewView(
     val uriHandler = LocalUriHandler.current
     when (mc) {
       is MsgContent.MCLink -> SmallContentPreview {
-        IconButton({ uriHandler.openUriCatching(mc.preview.uri) }, Modifier.desktopPointerHoverIconHand()) {
+        val linkClicksEnabled = remember { appPrefs.privacyChatListOpenLinks.state }.value != PrivacyChatListOpenLinksMode.NO
+        IconButton({
+          when (appPrefs.privacyChatListOpenLinks.get()) {
+            PrivacyChatListOpenLinksMode.YES -> uriHandler.openUriCatching(mc.preview.uri)
+            PrivacyChatListOpenLinksMode.NO -> defaultClickAction()
+            PrivacyChatListOpenLinksMode.ASK -> AlertManager.shared.showAlertDialogButtonsColumn(
+              title = generalGetString(MR.strings.privacy_chat_list_open_web_link_question),
+              text = mc.preview.uri,
+              buttons = {
+                Column {
+                  SectionItemView({
+                    AlertManager.shared.hideAlert()
+                    defaultClickAction()
+                  }) {
+                    Text(stringResource(MR.strings.open_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                  }
+                  SectionItemView({
+                    AlertManager.shared.hideAlert()
+                    uriHandler.openUriCatching(mc.preview.uri)
+                  }
+                  ) {
+                    Text(stringResource(MR.strings.privacy_chat_list_open_web_link), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                  }
+                }
+              }
+            )
+          }
+        },
+          if (linkClicksEnabled) Modifier.desktopPointerHoverIconHand() else Modifier,
+        ) {
           Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
         }
         Box(Modifier.align(Alignment.TopEnd).size(15.sp.toDp()).background(Color.Black.copy(0.25f), CircleShape), contentAlignment = Alignment.Center) {
@@ -513,6 +545,6 @@ private data class ActiveVoicePreview(
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false)
+    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), disabled = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false, {})
   }
 }

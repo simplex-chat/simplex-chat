@@ -1268,6 +1268,12 @@
   <string name="privacy_media_blur_radius_soft">Soft</string>
   <string name="privacy_media_blur_radius_medium">Medium</string>
   <string name="privacy_media_blur_radius_strong">Strong</string>
+  <string name="privacy_chat_list_open_links">Open links from chat list</string>
+  <string name="privacy_chat_list_open_links_yes">Yes</string>
+  <string name="privacy_chat_list_open_links_no">No</string>
+  <string name="privacy_chat_list_open_links_ask">Ask</string>
+  <string name="privacy_chat_list_open_web_link_question">Open web link?</string>
+  <string name="privacy_chat_list_open_web_link">Open link</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>

@@ -66,13 +66,14 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
+      val defaultClickAction = { if (chatModel.chatId.value != chat.id) scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } }
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false, defaultClickAction)
           }
         },
-        click = { if (chatModel.chatId.value != chat.id) scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } },
+        click = defaultClickAction,
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu, showMarkRead)
@@ -84,14 +85,15 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         nextChatSelected,
       )
     }
-    is ChatInfo.Group ->
+    is ChatInfo.Group -> {
+      val defaultClickAction = { if (!inProgress.value && chatModel.chatId.value != chat.id) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } }
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout, defaultClickAction)
           }
         },
-        click = { if (!inProgress.value && chatModel.chatId.value != chat.id) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } },
+        click = defaultClickAction,
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, inProgress, showMarkRead)
@@ -102,11 +104,12 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         selectedChat,
         nextChatSelected,
       )
+    }
     is ChatInfo.Local -> {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false, {})
           }
         },
         click = { if (chatModel.chatId.value != chat.id) scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
@@ -883,7 +886,8 @@ fun PreviewChatListNavLinkDirect() {
           disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
-          progressByTimeout = false
+          progressByTimeout = false,
+          {}
         )
       },
       click = {},
@@ -928,7 +932,8 @@ fun PreviewChatListNavLinkGroup() {
           disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
-          progressByTimeout = false
+          progressByTimeout = false,
+          {}
         )
       },
       click = {},
