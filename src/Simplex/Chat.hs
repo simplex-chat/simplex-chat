@@ -129,7 +129,7 @@ import Simplex.Messaging.Version
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
-import System.FilePath (takeFileName, (</>))
+import System.FilePath (takeExtension, takeFileName, (</>))
 import qualified System.FilePath as FP
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush)
 import System.Random (randomRIO)
@@ -291,6 +291,15 @@ fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEA
 
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
+
+imageFilePrefix :: String
+imageFilePrefix = "IMG_"
+
+voiceFilePrefix :: String
+voiceFilePrefix = "voice_"
+
+videoFilePrefix :: String
+videoFilePrefix = "video_"
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
@@ -1237,7 +1246,12 @@ processChatCommand' vr = \case
                       ifM
                         (doesFileExist fsFromPath)
                         ( do
-                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` fileName
+                            newFileName <- case mc of
+                              MCImage {} -> liftIO $ generateNewFileName fileName imageFilePrefix
+                              MCVoice {} -> liftIO $ generateNewFileName fileName voiceFilePrefix
+                              MCVideo {} -> liftIO $ generateNewFileName fileName videoFilePrefix
+                              _ -> pure fileName
+                            fsNewPath <- liftIO $ filesFolder `uniqueCombine` newFileName
                             liftIO $ B.writeFile fsNewPath "" -- create empty file
                             encrypt <- chatReadVar encryptLocalFiles
                             cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
@@ -1274,6 +1288,12 @@ processChatCommand' vr = \case
                 when (B.length ch /= chSize') $ throwError $ CF.FTCEFileIOError "encrypting file: unexpected EOF"
                 liftIO . CF.hPut w $ LB.fromStrict ch
                 when (size' > 0) $ copyChunks r w size'
+          generateNewFileName :: String -> String -> IO String
+          generateNewFileName fileName prefix = do
+            currentDate <- liftIO getCurrentTime
+            let formattedDate = formatTime defaultTimeLocale "%Y%m%d_%H%M%S" currentDate
+            let ext = takeExtension fileName
+            pure $ prefix <> formattedDate <> ext
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
   APIChatRead chatRef@(ChatRef cType chatId) -> withUser $ \_ -> case cType of
