@@ -400,9 +400,9 @@ fun ChatItemView(
                   val groupInfo = cItem.memberToModerate(cInfo)?.first
                   if (groupInfo != null) {
                     ModerateItemAction(cItem, questionText = moderateMessageQuestionText(cInfo.featureEnabled(ChatFeature.FullDelete), 1), showMenu, deleteMessage)
-                  } else if (cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group && cInfo.groupInfo.membership.memberRole == GroupMemberRole.Member && !live) {
-                    ReportItemAction(cItem, composeState, showMenu)
-                  }
+                  } // else if (cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group && cInfo.groupInfo.membership.memberRole == GroupMemberRole.Member && !live) {
+                    // ReportItemAction(cItem, composeState, showMenu)
+                  // }
                 }
                 if (cItem.canBeDeletedForSelf) {
                   Divider()

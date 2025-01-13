@@ -40,7 +40,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeASCII', decodeLatin1, encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
@@ -296,7 +296,7 @@ instance StrEncoding ReportReason where
       "community" -> pure RRCommunity
       "profile" -> pure RRProfile
       "other" -> pure RROther
-      t -> maybe (fail "bad ReportReason") (pure . RRUnknown) $ decodeASCII' t
+      t -> pure $ RRUnknown $ safeDecodeUtf8 t
 
 instance FromJSON ReportReason where
   parseJSON = strParseJSON "ReportReason"
