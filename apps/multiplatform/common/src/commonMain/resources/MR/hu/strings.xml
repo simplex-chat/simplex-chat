@@ -2282,4 +2282,7 @@
     <string name="connection_error_blocked_desc">A kiszolgáló üzemeltetője letiltotta a kapcsolatot:\n%1$s.</string>
     <string name="privacy_chat_list_open_links_ask">Kérés</string>
     <string name="privacy_chat_list_open_links_yes">Igen</string>
+    <string name="privacy_chat_list_open_web_link">Hivatkozás megnyitása</string>
+    <string name="privacy_chat_list_open_links">Hivatkozás megnyitása a csevegési listából</string>
+    <string name="privacy_chat_list_open_links_no">Nem</string>
 </resources>
