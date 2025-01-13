@@ -2309,4 +2309,15 @@
     <string name="group_reports_member_reports">Повідомлення учасників</string>
     <string name="chat_list_group_reports">Повідомлення</string>
     <string name="group_reports_archived_member_reports">Архівовані повідомлення учасників</string>
+    <string name="blocking_reason_content">Вміст порушує умови використання</string>
+    <string name="blocking_reason_spam">Спам</string>
+    <string name="file_error_blocked">Файл заблоковано оператором сервера:  \n%1$s.</string>
+    <string name="privacy_chat_list_open_links_yes">Так</string>
+    <string name="privacy_chat_list_open_web_link">Відкрити посилання</string>
+    <string name="privacy_chat_list_open_web_link_question">Відкрити вебпосилання?</string>
+    <string name="connection_error_blocked">Підключення заблоковано</string>
+    <string name="privacy_chat_list_open_links_ask">Запитати</string>
+    <string name="privacy_chat_list_open_links">Відкрити посилання зі списку чату</string>
+    <string name="connection_error_blocked_desc">Підключення заблоковано оператором сервера:  \n%1$s.</string>
+    <string name="privacy_chat_list_open_links_no">Ні</string>
 </resources>
