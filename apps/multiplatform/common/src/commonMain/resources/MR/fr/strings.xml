@@ -80,7 +80,7 @@
     <string name="service_notifications">Notifications instantanées !</string>
     <string name="service_notifications_disabled">Les notifications instantanées sont désactivées !</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Il peut être désactivé via les paramètres</b> - les notifications seront toujours affichées lorsque l\'application est en cours d\'exécution.]]></string>
-    <string name="turning_off_service_and_periodic">L\'optimisation de la batterie est active et désactive le service de fond et les demandes périodiques de nouveaux messages. Vous pouvez les réactiver via les paramètres.</string>
+    <string name="turning_off_service_and_periodic">Lorsque l\'optimisation de la batterie est activée, le service en arrière-plan et les demandes périodiques de nouveaux messages sont désactivés. Il est possible de les réactiver dans les paramètres.</string>
     <string name="periodic_notifications">Notifications périodiques</string>
     <string name="periodic_notifications_disabled">Les notifications périodiques sont désactivées !</string>
     <string name="enter_passphrase_notification_title">Une phrase secrète est nécessaire</string>
@@ -147,7 +147,7 @@
     <string name="you_have_no_chats">Vous n\'avez aucune discussion</string>
     <string name="images_limit_title">Trop d’images !</string>
     <string name="share_file">Partager le fichier…</string>
-    <string name="attach">Attacher</string>
+    <string name="attach">Joindre</string>
     <string name="icon_descr_cancel_image_preview">Annuler l’aperçu d’image</string>
     <string name="icon_descr_cancel_file_preview">Annuler l’aperçu du fichier</string>
     <string name="icon_descr_sent_msg_status_send_failed">échec d’envoi</string>
@@ -275,7 +275,7 @@
     <string name="icon_descr_email">E-mail</string>
     <string name="connect_button">Se connecter</string>
     <string name="notifications_mode_off_desc">L\'application peut recevoir des notifications uniquement lorsqu\'elle est en cours d\'exécution, aucun service d\'arrière-plan ne sera lancé.</string>
-    <string name="notifications_mode_service_desc">Le service d\'arrière-plan fonctionne en permanence. Les notifications s\'affichent dès que les messages sont disponibles.</string>
+    <string name="notifications_mode_service_desc">Le service est toujours en cours d’exécution en arrière-plan, les notifications s’afficheront dès que les messages seront disponibles.</string>
     <string name="notification_preview_mode_message_desc">Afficher le contact et le message</string>
     <string name="notification_display_mode_hidden_desc">Masquer le contact et le message</string>
     <string name="auth_log_in_using_credential">Connectez-vous en utilisant votre identifiant</string>
@@ -453,7 +453,7 @@
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. L\'app vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consomme davantage de batterie </b> L\'app fonctionne toujours en arrière-plan - les notifications s\'affichent instantanément.]]></string>
     <string name="integrity_msg_skipped">%1$d message(s) manqué(s)</string>
-    <string name="integrity_msg_bad_id">ID de message incorrecte</string>
+    <string name="integrity_msg_bad_id">ID du message incorrect</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Cela peut arriver quand :
 \n1. Les messages ont expiré dans le client expéditeur après 2 jours ou sur le serveur après 30 jours.
@@ -595,12 +595,12 @@
     <string name="icon_descr_call_missed">Appel manqué</string>
     <string name="icon_descr_call_connecting">Appel en connexion</string>
     <string name="answer_call">Répondre à l\'appel</string>
-    <string name="integrity_msg_bad_hash">hash de message incorrect</string>
+    <string name="integrity_msg_bad_hash">mauvais hachage du message</string>
     <string name="integrity_msg_duplicate">message dupliqué</string>
     <string name="alert_title_skipped_messages">Messages manqués</string>
     <string name="privacy_and_security">Vie privée et sécurité</string>
     <string name="protect_app_screen">Protéger l\'écran de l\'app</string>
-    <string name="auto_accept_images">Images auto-acceptées</string>
+    <string name="auto_accept_images">Acceptation automatique des images</string>
     <string name="full_backup">Sauvegarde des données de l\'app</string>
     <string name="settings_section_title_you">VOUS</string>
     <string name="settings_section_title_help">AIDE</string>
@@ -872,7 +872,7 @@
     <string name="v4_4_disappearing_messages_desc">Les messages envoyés seront supprimés après une durée déterminée.</string>
     <string name="v4_4_live_messages">Messages dynamiques</string>
     <string name="accept_feature">Accepter</string>
-    <string name="v4_2_auto_accept_contact_requests">Demandes de contact auto-acceptées</string>
+    <string name="v4_2_auto_accept_contact_requests">Acceptation automatique des demandes de contact</string>
     <string name="whats_new">Quoi de neuf \?</string>
     <string name="v4_2_group_links_desc">Les admins peuvent créer les liens qui permettent de rejoindre les groupes.</string>
     <string name="accept_feature_set_1_day">Définir 1 jour</string>
@@ -1035,7 +1035,7 @@
     <string name="lock_not_enabled">SimpleX Lock n\'est pas activé !</string>
     <string name="la_lock_mode_system">Authentification du système</string>
     <string name="la_authenticate">Authentification</string>
-    <string name="la_auth_failed">Echec de l\'authentification</string>
+    <string name="la_auth_failed">Échec de l’authentification</string>
     <string name="la_change_app_passcode">Modifier le code d\'accès</string>
     <string name="la_current_app_passcode">Code d\'accès actuel</string>
     <string name="la_minutes">%d minutes</string>
@@ -1055,18 +1055,17 @@
     <string name="passcode_set">Code d\'accès défini !</string>
     <string name="la_mode_system">Système</string>
     <string name="authentication_cancelled">Authentification annulée</string>
-    <string name="alert_title_msg_bad_id">Mauvais ID de message</string>
+    <string name="alert_title_msg_bad_id">ID du message incorrect</string>
     <string name="alert_text_msg_bad_hash">Le hash du message précédent est différent.</string>
     <string name="alert_text_msg_bad_id">L\'ID du message suivant est incorrect (inférieur ou égal au précédent).
 \nCela peut se produire en raison d\'un bug ou lorsque la connexion est compromise.</string>
     <string name="decryption_error">Erreur de déchiffrement</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Cela peut se produire lorsque vous ou votre contact avez utilisé une ancienne sauvegarde de base de données.</string>
-    <string name="alert_title_msg_bad_hash">Mauvais hash de message</string>
+    <string name="alert_title_msg_bad_hash">Mauvais hachage du message</string>
     <string name="allow_calls_only_if">Autoriser les appels que si votre contact les autorise.</string>
     <string name="allow_your_contacts_to_call">Autorise vos contacts à vous appeler.</string>
     <string name="audio_video_calls">Appels audio/vidéo</string>
-    <string name="available_in_v51">"
-\nDisponible dans la v5.1"</string>
+    <string name="available_in_v51">\nDisponible dans la v5.1</string>
     <string name="prohibit_calls">Interdire les appels audio/vidéo.</string>
     <string name="revoke_file__message">Le fichier sera supprimé des serveurs.</string>
     <string name="revoke_file__confirm">Révoquer</string>
@@ -1119,7 +1118,7 @@
     <string name="share_address">Partager l\'adresse</string>
     <string name="you_can_share_this_address_with_your_contacts">Vous pouvez partager cette adresse avec vos contacts pour leur permettre de se connecter avec %s.</string>
     <string name="group_welcome_preview">Aperçu</string>
-    <string name="color_background">Fond</string>
+    <string name="color_background">Arrière-plan</string>
     <string name="dark_theme">Thème sombre</string>
     <string name="export_theme">Exporter le thème</string>
     <string name="import_theme">Importer un thème</string>
@@ -1133,7 +1132,7 @@
     <string name="add_address_to_your_profile">Ajoutez une adresse à votre profil, afin que vos contacts puissent la partager avec d\'autres personnes. La mise à jour du profil sera envoyée à vos contacts.</string>
     <string name="color_secondary_variant">Secondaire supplémentaire</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Tous vos contacts resteront connectés. La mise à jour du profil sera envoyée à vos contacts.</string>
-    <string name="auto_accept_contact">Auto-accepter</string>
+    <string name="auto_accept_contact">Acceptation automatique</string>
     <string name="create_simplex_address">Créer une adresse SimpleX</string>
     <string name="customize_theme_title">Personnaliser le thème</string>
     <string name="continue_to_next_step">Continuer</string>
@@ -1480,7 +1479,7 @@
     <string name="disconnect_remote_host">Se déconnecter</string>
     <string name="group_member_role_author">auteur</string>
     <string name="connected_to_mobile">Connecté au portable</string>
-    <string name="bad_desktop_address">Mauvaise adresse de bureau</string>
+    <string name="bad_desktop_address">Adresse de bureau incorrecte</string>
     <string name="paste_desktop_address">Coller l\'adresse du bureau</string>
     <string name="verify_code_with_desktop">Vérifier le code avec le bureau</string>
     <string name="scan_qr_code_from_desktop">Scannez le code QR du bureau</string>
@@ -2113,4 +2112,27 @@
     <string name="v6_1_better_security_descr">Protocoles SimpleX audité par Trail of Bits.</string>
     <string name="v6_1_better_calls_descr">Passer de l\'audio à la vidéo pendant l\'appel.</string>
     <string name="v6_1_switch_chat_profile_descr">Changer de profil de chat pour les invitations à usage unique.</string>
+    <string name="report_item_archived">rapport archivé</string>
+    <string name="add_your_team_members_to_conversations">Ajoutez les membres de votre équipe aux conversations.</string>
+    <string name="onboarding_notifications_mode_service_desc_short">L\'application tourne toujours en arrière-plan</string>
+    <string name="report_item_archived_by">rapport archivé par %s</string>
+    <string name="report_reason_other">Autre raison</string>
+    <string name="archive_verb">Archive</string>
+    <string name="group_reports_active_one">1 rapport</string>
+    <string name="address_settings">Paramètres de l\'adresse</string>
+    <string name="appearance_app_toolbars">Barres d\'outils de l\'application</string>
+    <string name="display_name_accepted_invitation">invitation acceptée</string>
+    <string name="archive_report">Archiver le rapport</string>
+    <string name="privacy_chat_list_open_links_ask">Demander</string>
+    <string name="group_reports_archived_member_reports">Rapports du membre archivés</string>
+    <string name="add_to_list">Ajouter à la liste</string>
+    <string name="delete_chat_list_warning">Toutes les discussions seront supprimées de la liste %s, et la liste sera supprimée</string>
+    <string name="button_add_team_members">Ajouter des membres à l\'équipe</string>
+    <string name="operator_conditions_accepted">Conditions acceptées</string>
+    <string name="button_add_friends">Ajouter des amis</string>
+    <string name="accept_conditions">Accepter les conditions</string>
+    <string name="chat_list_add_list">Ajouter une liste</string>
+    <string name="chat_list_all">Tous</string>
+    <string name="onboarding_network_about_operators">À propos des opérateurs</string>
+    <string name="report_archive_alert_title">Archiver le rapport ?</string>
 </resources>
