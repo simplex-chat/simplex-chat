@@ -26,7 +26,7 @@ import SchemaDump
 import WebRTCTests
 #endif
 
-main :: IO ()ch
+main :: IO ()
 main = do
   setLogLevel LogError
   withGlobalLogging logCfg . hspec
