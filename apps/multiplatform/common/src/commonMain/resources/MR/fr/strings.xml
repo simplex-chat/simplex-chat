@@ -2183,4 +2183,5 @@
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Lien utilisable une seule fois <i>avec un seul contact</i> - partagez en personne ou via n'importe quelle messagerie.]]></string>
     <string name="address_or_1_time_link">Adresse ou lien unique ?</string>
     <string name="connection_security">Sécurité des connexions</string>
+    <string name="chat_list_businesses">Professionnels</string>
 </resources>
