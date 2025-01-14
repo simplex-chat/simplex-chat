@@ -61,11 +61,11 @@ Many people believe that when conversation is end-to-end encrypted, the problem 
 
 We [wrote before](./20240601-protecting-children-safety-requires-e2e-encryption.md) about how such measures not only would fail to solve the problem, but would also make it worse. If our private photos become available to service providers, they will eventually become available to criminals too, and will be used to abuse and exploit the users and their children.
 
-An absolute majority of CSAM is publicly available. Many large tech companies failed to act and to remove CSAM from their services before it became epidemic. We see as the most important objective to eliminate the possibility to distribute CSAM from publicly accessible groups, even if it hurts network growth.
+An absolute majority of CSAM distributed online is publicly accessible. Many large tech companies failed to act and to remove CSAM from their services before it became an epidemic. We see as the most important objective to eliminate the possibility to distribute CSAM from publicly accessible groups, even if it hurts network growth.
 
-In 2024 we received a small number of complaints, and in all cases we removed the files and groups from our servers. In no case it required compromising privacy and encryption. 
+When we receive a user complaint about CSAM shared in any group, we remove the files and in some cases groups from our servers. Our approach to moderation preserves user privacy and security of end-to-end encryption.
 
-How did it work? Let's go over the process step by step.
+How does it work? Let's go over the process step by step.
 
 1. A user discovered the link to join the group that distributes CSAM and sent a complaint to our support email address or via the app to [SimpleX Chat team](simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D) contact.
 
@@ -97,7 +97,7 @@ So these measures would be effective, even though they can be in theory circumve
 
 **Can't users use other servers?**
 
-Yes, they can, and it is ok. In the same way as web browser is not responsible for the content you can access, SimpleX app should not restrict your communication with other servers based on blocking from just one server. That would allow different server operators to have different content policies, depending on their jurisdiction and other factors.
+Yes, they can. But in the same way as web browser is not responsible for the content you can access, SimpleX app should not restrict your communications with other servers based on blocking action from just one server. That would allow different server operators to have different content policies, depending on their jurisdiction and other factors.
 
 **Wouldn't these measures be abused?**
 
