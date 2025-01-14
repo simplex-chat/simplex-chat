@@ -2,7 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX network: large groups and privacy preserving content moderation"
 date: 2025-01-14
-preview: "How can server operators moderate end-to-end encrypted conversations?\nFile servers can't look inside files – they are securely locked. But if file recipient gives us the keys to some file, we can unlock it and look inside. If it violates conditions of use, we can remove or block this file."
+preview: "This post explains how server operators can moderate end-to-end encrypted conversations without compromising user privacy or end-to-end encryption."
 image: images/20250114-locked-books.jpg
 permalink: "/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html"
 ---
@@ -73,7 +73,7 @@ How does it work? Let's go over the process step by step.
 
 3. Once the servers receive the file identifiers, they can now block the file.
 
-File servers cannot look inside end-to-end encrypted files, and they don't even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the keys to some file, we can unlock it and look inside. If it violates conditions of use, we can remove or block this file.
+File servers cannot look inside end-to-end encrypted files, and they don't even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the address and decryption key of the particular file (each file is encrypted by a different set of keys), we can receive this file. If it violates conditions of use, we can remove or block this file. It doesn't allow us to access any other user data or files.
 
 In this way, the moderation is possible without any content scanning, preserving privacy and security of end-to-end encryption.
 
