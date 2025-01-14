@@ -2358,7 +2358,12 @@ untagGroupChat db groupId tId =
     (groupId, tId)
 
 setGroupChatTTL :: DB.Connection -> GroupId -> Maybe Int64 -> IO ()
-setGroupChatTTL db gId ttl = error "not implemented"
+setGroupChatTTL db gId ttl = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET chat_item_ttl = ?, updated_at = ? WHERE group_id = ?"
+    (ttl, updatedAt, gId)
 
 getUserExpirableGroups :: DB.Connection -> VersionRangeChat -> User -> Maybe Int64 -> IO [GroupInfo]
 getUserExpirableGroups db vr user@User {userId} globalTTL = do

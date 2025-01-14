@@ -1084,7 +1084,9 @@ addDirectChatTags db ct = do
   pure (ct :: Contact) {chatTags}
 
 setDirectChatTTL :: DB.Connection -> ContactId -> Maybe Int64 -> IO ()
-setDirectChatTTL db cId ttl = error "not implemented"
+setDirectChatTTL db cId ttl = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?" (ttl, updatedAt, cId)
 
 getUserExpirableContacts :: DB.Connection -> VersionRangeChat -> User -> Maybe Int64 -> IO [Contact]
 getUserExpirableContacts db vr user@User {userId} globalTTL = do
