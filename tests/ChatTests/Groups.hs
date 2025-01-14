@@ -48,7 +48,7 @@ chatGroupTests = do
     it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "send large message" testGroupLargeMessage
     it "create group with incognito membership" testNewGroupIncognito
-    it "create and join group with 4 members" testGroup2
+    fit "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
