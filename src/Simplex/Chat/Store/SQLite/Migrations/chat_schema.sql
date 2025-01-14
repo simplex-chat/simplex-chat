@@ -78,7 +78,7 @@ CREATE TABLE contacts(
   custom_data BLOB,
   ui_themes TEXT,
   chat_deleted INTEGER NOT NULL DEFAULT 0,
-  chat_items_ttl INTEGER,
+  chat_item_ttl INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -133,7 +133,7 @@ CREATE TABLE groups(
   business_chat TEXT NULL,
   business_xcontact_id BLOB NULL,
   customer_member_id BLOB NULL,
-  chat_items_ttl INTEGER,
+  chat_item_ttl INTEGER,
   local_alias TEXT DEFAULT '', -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)

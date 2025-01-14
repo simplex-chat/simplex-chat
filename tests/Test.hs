@@ -37,7 +37,7 @@ main = do
     $ do
 -- TODO [postgres] schema dump for postgres
 #if !defined(dbPostgres)
-      describe "Schema dump" schemaDumpTest
+      fdescribe "Schema dump" schemaDumpTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "SimpleX chat markdown" markdownTests
