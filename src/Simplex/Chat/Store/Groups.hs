@@ -128,6 +128,7 @@ module Simplex.Chat.Store.Groups
     getGroupChatTags,
     setGroupChatTTL,
     getUserExpirableGroups,
+    updateGroupAlias,
   )
 where
 
@@ -2373,3 +2374,16 @@ getUserExpirableGroups db vr user@User {userId} globalTTL = do
     Just _ -> map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl IS NULL" (Only userId)
   let groupIds = gIdsLocalTTL ++ gIdsGlobalTTL
   rights <$> mapM (runExceptT . getGroupInfo db vr user) groupIds
+
+updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
+updateGroupAlias db userId g localAlias = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET local_alias = ?, updated_at = ?
+      WHERE user_id = ?
+    |]
+    (localAlias, updatedAt, userId)
+  pure $ (g :: GroupInfo) {localAlias = localAlias}

@@ -237,6 +237,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserProfileImage u p -> ttyUser u $ viewUserProfileImage p
   CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
+  CRGroupAliasUpdated u g -> ttyUser u $ viewGroupAliasUpdated g
   CRConnectionAliasUpdated u c -> ttyUser u $ viewConnectionAliasUpdated c
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CRGroupMemberUpdated {} -> []
@@ -1182,7 +1183,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
     groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s
+        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
       where
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
@@ -1197,6 +1198,9 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
               unmute = "you can " <> highlight ("/unmute #" <> viewGroupName g)
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
+        alias GroupInfo {localAlias}
+          | localAlias == "" = ""
+          | otherwise = " (alias: " <> plain localAlias <> ")"
 
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
@@ -1625,6 +1629,11 @@ viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated ct@Contact {profile = LocalProfile {localAlias}}
   | localAlias == "" = ["contact " <> ttyContact' ct <> " alias removed"]
   | otherwise = ["contact " <> ttyContact' ct <> " alias updated: " <> plain localAlias]
+
+viewGroupAliasUpdated :: GroupInfo -> [StyledString]
+viewGroupAliasUpdated g@GroupInfo {localAlias}
+  | localAlias == "" = ["group " <> ttyGroup' g <> " alias removed"]
+  | otherwise = ["group " <> ttyGroup' g <> " alias updated: " <> plain localAlias]
 
 viewConnectionAliasUpdated :: PendingContactConnection -> [StyledString]
 viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}

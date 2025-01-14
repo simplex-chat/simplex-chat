@@ -1258,6 +1258,11 @@ processChatCommand' vr = \case
       ct <- getContact db vr user contactId
       liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated user ct'
+  APISetGroupAlias gId localAlias -> withUser $ \user@User {userId} -> do
+    gInfo' <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db vr user gId
+      liftIO $ updateGroupAlias db userId gInfo localAlias
+    pure $ CRGroupAliasUpdated user gInfo'
   APISetConnectionAlias connId localAlias -> withUser $ \user@User {userId} -> do
     conn' <- withFastStore $ \db -> do
       conn <- getPendingContactConnection db userId connId
@@ -3700,6 +3705,7 @@ chatCommandP =
       "/_network_statuses" $> APIGetNetworkStatuses,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
+      "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
