@@ -133,7 +133,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
               [sql|
                 SELECT
                   -- GroupInfo
-                  g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+                  g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
                   g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
                   -- GroupInfo {membership}
