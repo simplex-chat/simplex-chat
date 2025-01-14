@@ -111,12 +111,16 @@ So operators have no reason to abuse users - if they do, users would simply stop
 
 We published other technical ideas that can be used to prevent distribution of illegal content in [this document](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2024-12-30-content-moderation.md). What is important, that none of these measures compromise users privacy or end-to-end encryption, and they can (and should) only be applied to publicly accessible content that other users complained about.
 
-We cannot, and we won't scan all content. We actively [campaign against any content-scanning proposals](./20240704-future-of-privacy-enforcing-privacy-standards.md), and we we are not planning any such measures.
+We technically cannot, and we won't scan all content. We actively [campaign against any content-scanning proposals](./20240704-future-of-privacy-enforcing-privacy-standards.md), not only because it violates our right to privacy, but also because it would result in huge increase of online crime.
 
-The belief that it is impossible to moderate conversations when they are e2e encrypted is incorrect. It is possible when users themselves share conversation contents with server operators, in which case they can identify and remove files, if necessary. It is also possible if users make these conversations publicly accessible.
+The belief that it is impossible to moderate conversations when they are e2e encrypted is incorrect. It is possible when users themselves share conversation contents with server operators, in which case the operators can identify and, if necessary, remove files. It is also possible to moderate conversations that users made publicly accessible.
 
 ## Privacy and security improvements we plan this year
 
-We plan to add in the near future:
+Not only we won't reduce privacy and security, we plan to increase it this year.
+
+We plan to add:
 - quantum-resistant e2e encryption in small groups.
 - receiving proxy for files, to protect users IP addresses and other transport metadata.
+
+We see privacy and security as necessary for online safety, and prevention of abuse. If you don't already use SimpleX network, try it now, and let us know how to make it better.
