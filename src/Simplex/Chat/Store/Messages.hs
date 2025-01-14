@@ -107,6 +107,7 @@ module Simplex.Chat.Store.Messages
     getTimedItems,
     getChatItemTTL,
     setChatItemTTL,
+    getChatTTLCount,
     getContactExpiredFileInfo,
     deleteContactExpiredCIs,
     getGroupExpiredFileInfo,
@@ -2904,6 +2905,9 @@ setChatItemTTL db User {userId} chatItemTTL = do
         db
         "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
         (userId, chatItemTTL, currentTs, currentTs)
+
+getChatTTLCount :: DB.Connection -> User -> IO Int64
+getChatTTLCount db User {userId} = error "not implemented"
 
 getContactExpiredFileInfo :: DB.Connection -> User -> Contact -> UTCTime -> IO [CIFileInfo]
 getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =

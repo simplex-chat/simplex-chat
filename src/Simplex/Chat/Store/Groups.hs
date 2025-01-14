@@ -126,6 +126,9 @@ module Simplex.Chat.Store.Groups
     setGroupUIThemes,
     updateGroupChatTags,
     getGroupChatTags,
+    setGroupChatTTL,
+    getGroupsWithGlobalExpire,
+    getGroupsWithTTL,
   )
 where
 
@@ -2354,3 +2357,13 @@ untagGroupChat db groupId tId =
       WHERE group_id = ? AND chat_tag_id = ?
     |]
     (groupId, tId)
+
+setGroupChatTTL :: DB.Connection -> GroupId -> Maybe Int64 -> IO ()
+setGroupChatTTL db gId ttl = error "not implemented"
+
+getGroupsWithGlobalExpire :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
+getGroupsWithGlobalExpire db vr user@User {userId} = error "not implemented"
+
+-- Exluces 0 ttl
+getGroupsWithTTL :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
+getGroupsWithTTL db = error "not implemented"
