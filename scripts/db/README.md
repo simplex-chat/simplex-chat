@@ -57,7 +57,7 @@
 
    \* Alternatively, it's possible to create schemas manually, and insert first migration rows also manually.
 
-2. Create SQLite dumps.
+2. Create SQLite dumps (substitute sqlite database names).
 
    ```sh
    sqlite3 simplex_v1_agent.db ".dump" | grep "^INSERT INTO" | grep -v "^INSERT INTO migrations" | grep -v "^INSERT INTO sqlite_sequence" > sqlite_agent_dump.sql
@@ -71,7 +71,7 @@
    sed -E "s/X'([0-9A-Fa-f]*)'/DECODE('\1','hex')/g; s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/g" sqlite_chat_dump.sql > postgres_chat_inserts.sql
    ```
 
-4. Disable constraints on all tables.
+4. Disable constraints on all tables (requires certain privileges - for example, connect to database with `postgres` user).
 
    ```sql
    DO $$
@@ -125,5 +125,31 @@
    Repeat for `chat_schema`.
 
 7. Update sequences for Postgres tables.
+
+   ```sql
+   DO $$
+   DECLARE
+      rec RECORD;
+   BEGIN
+      EXECUTE 'SET SEARCH_PATH TO agent_schema';
+
+      FOR rec IN
+         SELECT
+               table_name,
+               column_name,
+               pg_get_serial_sequence(table_name, column_name) AS seq_name
+         FROM
+               information_schema.columns
+         WHERE
+               table_schema = 'agent_schema'
+               AND identity_generation = 'ALWAYS'
+      LOOP
+         EXECUTE format(
+               'SELECT setval(%L, (SELECT MAX(%I) FROM %I))',
+               rec.seq_name, rec.column_name, rec.table_name
+         );
+      END LOOP;
+   END $$;
+   ```
 
 8. Compare number of rows between Postgres and SQLite tables.
