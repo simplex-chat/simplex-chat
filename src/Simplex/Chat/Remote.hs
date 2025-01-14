@@ -37,7 +37,6 @@ import Data.Word (Word16, Word32)
 import qualified Network.HTTP.Types as N
 import Network.HTTP2.Server (responseStreaming)
 import qualified Paths_simplex_chat as SC
-import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Messages (chatNameStr)
@@ -71,13 +70,16 @@ import UnliftIO
 import UnliftIO.Concurrent (forkIO)
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, doesDirectoryExist, removeDirectoryRecursive, renameFile)
 
+remoteFilesFolder :: String
+remoteFilesFolder = "simplex_v1_files"
+
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 2, 0, 7]
+minRemoteCtrlVersion = AppVersion [6, 3, 0, 1]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 2, 0, 7]
+minRemoteHostVersion = AppVersion [6, 3, 0, 1]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -342,7 +344,7 @@ storeRemoteFile rhId encrypted_ localPath = do
   filePath' <- liftRH rhId $ remoteStoreFile c filePath (takeFileName localPath)
   hf_ <- chatReadVar remoteHostsFolder
   forM_ hf_ $ \hf -> do
-    let rhf = hf </> storePath </> archiveFilesFolder
+    let rhf = hf </> storePath </> remoteFilesFolder
         hPath = rhf </> takeFileName filePath'
     createDirectoryIfMissing True rhf
     (if encrypt then renameFile else copyFile) filePath hPath
@@ -360,7 +362,7 @@ storeRemoteFile rhId encrypted_ localPath = do
 getRemoteFile :: RemoteHostId -> RemoteFile -> CM ()
 getRemoteFile rhId rf = do
   c@RemoteHostClient {storePath} <- getRemoteHostClient rhId
-  dir <- lift $ (</> storePath </> archiveFilesFolder) <$> (maybe getDefaultFilesFolder pure =<< chatReadVar' remoteHostsFolder)
+  dir <- lift $ (</> storePath </> remoteFilesFolder) <$> (maybe getDefaultFilesFolder pure =<< chatReadVar' remoteHostsFolder)
   createDirectoryIfMissing True dir
   liftRH rhId $ remoteGetFile c dir rf
 

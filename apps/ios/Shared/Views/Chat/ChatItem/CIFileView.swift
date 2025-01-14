@@ -118,16 +118,10 @@ struct CIFileView: View {
                 }
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File error"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
+                showFileErrorAlert(rcvFileError)
             case let .rcvWarning(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvWarning")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Temporary file error"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
+                showFileErrorAlert(rcvFileError, temporary: true)
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
@@ -140,16 +134,10 @@ struct CIFileView: View {
                 }
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File error"),
-                    message: Text(sndFileError.errorInfo)
-                ))
+                showFileErrorAlert(sndFileError)
             case let .sndWarning(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndWarning")
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Temporary file error"),
-                    message: Text(sndFileError.errorInfo)
-                ))
+                showFileErrorAlert(sndFileError, temporary: true)
             default: break
             }
         }
@@ -265,6 +253,26 @@ func saveCryptoFile(_ fileSource: CryptoFile) {
     } else {
         let url = getAppFilePath(fileSource.filePath)
         showShareSheet(items: [url])
+    }
+}
+
+func showFileErrorAlert(_ err: FileError, temporary: Bool = false) {
+    let title: String = if temporary {
+        NSLocalizedString("Temporary file error", comment: "file error alert title")
+    } else {
+        NSLocalizedString("File error", comment: "file error alert title")
+    }
+    if let btn = err.moreInfoButton {
+        showAlert(title, message: err.errorInfo) {
+            [
+                okAlertAction,
+                UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default, handler: { _ in
+                    UIApplication.shared.open(contentModerationPostLink)
+                })
+            ]
+        }
+    } else {
+        showAlert(title, message: err.errorInfo)
     }
 }
 

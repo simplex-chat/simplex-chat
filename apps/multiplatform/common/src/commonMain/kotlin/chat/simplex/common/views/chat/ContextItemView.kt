@@ -12,6 +12,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,7 @@ fun ContextItemView(
   contextIcon: Painter,
   showSender: Boolean = true,
   chatType: ChatType,
+  contextIconColor: Color = MaterialTheme.colors.secondary,
   cancelContextItem: () -> Unit,
 ) {
   val sentColor = MaterialTheme.appColors.sentMessage
@@ -85,7 +87,6 @@ fun ContextItemView(
 
   Row(
     Modifier
-      .padding(top = 8.dp)
       .background(if (sent) sentColor else receivedColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -103,8 +104,8 @@ fun ContextItemView(
           .height(20.dp)
           .width(20.dp),
         contentDescription = stringResource(MR.strings.icon_descr_context),
-        tint = MaterialTheme.colors.secondary,
-      )
+        tint = contextIconColor,
+        )
 
       if (contextItems.count() == 1) {
         val contextItem = contextItems[0]

@@ -53,7 +53,7 @@ struct OperatorView: View {
                         ServersErrorView(errStr: errStr)
                     } else {
                         switch (userServers[operatorIndex].operator_.conditionsAcceptance) {
-                        case let .accepted(acceptedAt):
+                        case let .accepted(acceptedAt, _):
                             if let acceptedAt = acceptedAt {
                                 Text("Conditions accepted on: \(conditionsTimestamp(acceptedAt)).")
                                     .foregroundColor(theme.colors.secondary)

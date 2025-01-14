@@ -1,18 +1,21 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.background
+import SectionItemView
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -92,25 +95,13 @@ fun CIFileView(
             FileProtocol.LOCAL -> {}
           }
         file.fileStatus is CIFileStatus.RcvError ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.file_error),
-            file.fileStatus.rcvFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.rcvFileError)
         file.fileStatus is CIFileStatus.RcvWarning ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.temporary_file_error),
-            file.fileStatus.rcvFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
         file.fileStatus is CIFileStatus.SndError ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.file_error),
-            file.fileStatus.sndFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.sndFileError)
         file.fileStatus is CIFileStatus.SndWarning ->
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.temporary_file_error),
-            file.fileStatus.sndFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -184,14 +175,26 @@ fun CIFileView(
     }
   }
 
+  val showOpenSaveMenu = rememberSaveable(file?.fileId) { mutableStateOf(false) }
+  val ext = file?.fileSource?.filePath?.substringAfterLast(".")?.takeIf { it.isNotBlank() }
+  val loadedFilePath = if (appPlatform.isAndroid && file?.fileSource != null) getLoadedFilePath(file) else null
+  if (loadedFilePath != null && file?.fileSource != null) {
+    val encrypted = file.fileSource.cryptoArgs != null
+    SaveOrOpenFileMenu(showOpenSaveMenu, encrypted, ext, File(loadedFilePath).toURI(), file.fileSource, saveFile = { fileAction() })
+  }
   Row(
     Modifier
       .combinedClickable(
-        onClick = { fileAction() },
+        onClick = {
+          if (appPlatform.isAndroid && loadedFilePath != null) {
+            showOpenSaveMenu.value = true
+          } else {
+            fileAction()
+          }
+        },
         onLongClick = { showMenu.value = true }
       )
       .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
-    //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
@@ -222,6 +225,47 @@ fun CIFileView(
 }
 
 fun fileSizeValid(file: CIFile): Boolean = file.fileSize <= getMaxFileSize(file.fileProtocol)
+
+fun showFileErrorAlert(err: FileError, temporary: Boolean = false) {
+  val title: String = generalGetString(if (temporary) MR.strings.temporary_file_error else MR.strings.file_error)
+  val btn = err.moreInfoButton
+  if (btn != null) {
+    showContentBlockedAlert(title, err.errorInfo)
+  } else {
+    AlertManager.shared.showAlertMsg(title, err.errorInfo)
+  }
+}
+
+val contentModerationPostLink = "https://simplex.chat/blog/20250114-simplex-network-privacy-preserving-content-moderation.html"
+
+fun showContentBlockedAlert(title: String, message: String) {
+  AlertManager.shared.showAlertDialogButtonsColumn(title, text = message, buttons = {
+    val uriHandler = LocalUriHandler.current
+    Column {
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        uriHandler.openUriCatching(contentModerationPostLink)
+      }) {
+        Text(generalGetString(MR.strings.how_it_works), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
+  })
+}
+
+@Composable
+expect fun SaveOrOpenFileMenu(
+  showMenu: MutableState<Boolean>,
+  encrypted: Boolean,
+  ext: String?,
+  encryptedUri: URI,
+  fileSource: CryptoFile,
+  saveFile: () -> Unit
+)
 
 @Composable
 fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =

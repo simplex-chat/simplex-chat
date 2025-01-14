@@ -51,6 +51,7 @@ public enum ChatCommand {
     case apiUpdateChatTag(tagId: Int64, tagData: ChatTagData)
     case apiReorderChatTags(tagIds: [Int64])
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
+    case apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
@@ -221,6 +222,8 @@ public enum ChatCommand {
             case let .apiCreateChatItems(noteFolderId, composedMessages):
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
+            case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
+                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
@@ -390,6 +393,7 @@ public enum ChatCommand {
             case .apiUpdateChatTag: return "apiUpdateChatTag"
             case .apiReorderChatTags: return "apiReorderChatTags"
             case .apiCreateChatItems: return "apiCreateChatItems"
+            case .apiReportMessage: return "apiReportMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
@@ -646,6 +650,7 @@ public enum ChatResponse: Decodable, Error {
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
     case newChatItems(user: UserRef, chatItems: [AChatItem])
+    case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
     case forwardPlan(user: UserRef, chatItemIds: [Int64], forwardConfirmation: ForwardConfirmation?)
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
@@ -825,6 +830,7 @@ public enum ChatResponse: Decodable, Error {
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
             case .newChatItems: return "newChatItems"
+            case .groupChatItemsDeleted: return "groupChatItemsDeleted"
             case .forwardPlan: return "forwardPlan"
             case .chatItemsStatusesUpdated: return "chatItemsStatusesUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
@@ -1004,6 +1010,8 @@ public enum ChatResponse: Decodable, Error {
             case let .newChatItems(u, chatItems):
                 let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
                 return withUser(u, itemsString)
+            case let .groupChatItemsDeleted(u, gInfo, chatItemIDs, byUser, member_):
+                return withUser(u, "chatItemIDs: \(String(describing: chatItemIDs))\ngroupInfo: \(String(describing: gInfo))\nbyUser: \(byUser)\nmember_: \(String(describing: member_))")
             case let .forwardPlan(u, chatItemIds, forwardConfirmation): return withUser(u, "items: \(chatItemIds) forwardConfirmation: \(String(describing: forwardConfirmation))")
             case let .chatItemsStatusesUpdated(u, chatItems):
                 let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
@@ -1186,12 +1194,14 @@ public enum ChatPagination {
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
     case before(chatItemId: Int64, count: Int)
+    case around(chatItemId: Int64, count: Int)
 
     var cmdString: String {
         switch self {
         case let .last(count): return "count=\(count)"
         case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
         case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
+        case let .around(chatItemId, count): return "around=\(chatItemId) count=\(count)"
         }
     }
 }
@@ -1324,7 +1334,7 @@ public struct ServerOperatorConditions: Decodable {
 }
 
 public enum ConditionsAcceptance: Equatable, Codable, Hashable {
-    case accepted(acceptedAt: Date?)
+    case accepted(acceptedAt: Date?, autoAccepted: Bool)
     // If deadline is present, it means there's a grace period to review and accept conditions during which user can continue to use the operator.
     // No deadline indicates it's required to accept conditions for the operator to start using it.
     case required(deadline: Date?)
@@ -1398,7 +1408,7 @@ public struct ServerOperator: Identifiable, Equatable, Codable {
         tradeName: "SimpleX Chat",
         legalName: "SimpleX Chat Ltd",
         serverDomains: ["simplex.im"],
-        conditionsAcceptance: .accepted(acceptedAt: nil),
+        conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
         enabled: true,
         smpRoles: ServerRoles(storage: true, proxy: true),
         xftpRoles: ServerRoles(storage: true, proxy: true)
@@ -1431,7 +1441,7 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
                 tradeName: "",
                 legalName: "",
                 serverDomains: [],
-                conditionsAcceptance: .accepted(acceptedAt: nil),
+                conditionsAcceptance: .accepted(acceptedAt: nil, autoAccepted: false),
                 enabled: false,
                 smpRoles: ServerRoles(storage: true, proxy: true),
                 xftpRoles: ServerRoles(storage: true, proxy: true)
@@ -2207,6 +2217,22 @@ public enum NotificationPreviewMode: String, SelectableItem, Codable {
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
 }
 
+public enum PrivacyChatListOpenLinksMode: String, CaseIterable, Codable, RawRepresentable, Identifiable {
+    case yes
+    case no
+    case ask
+
+    public var id: Self { self }
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .yes: return "Yes"
+        case .no: return "No"
+        case .ask: return "Ask"
+        }
+    }
+}
+
 public struct RemoteCtrlInfo: Decodable {
     public var remoteCtrlId: Int64
     public var ctrlDeviceName: String
@@ -2471,6 +2497,7 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case CMD(cmdErr: ProtocolCommandError)
     indirect case PROXY(proxyErr: ProxyError)
     case AUTH
+    case BLOCKED(blockInfo: BlockingInfo)
     case CRYPTO
     case QUOTA
     case STORE(storeErr: String)
@@ -2487,11 +2514,28 @@ public enum ProxyError: Decodable, Hashable {
     case NO_SESSION
 }
 
+public struct BlockingInfo: Decodable, Equatable, Hashable {
+    public var reason: BlockingReason
+}
+
+public enum BlockingReason: String, Decodable {
+    case spam
+    case content
+
+    public var text: String {
+        switch self {
+        case .spam: NSLocalizedString("Spam", comment: "blocking reason")
+        case .content: NSLocalizedString("Content violates conditions of use", comment: "blocking reason")
+        }
+    }
+}
+
 public enum XFTPErrorType: Decodable, Hashable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
     case AUTH
+    case BLOCKED(blockInfo: BlockingInfo)
     case SIZE
     case QUOTA
     case DIGEST
@@ -2630,6 +2674,7 @@ public struct AppSettings: Codable, Equatable {
     public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
     public var privacyLinkPreviews: Bool? = nil
+    public var privacyChatListOpenLinks: PrivacyChatListOpenLinksMode? = nil
     public var privacyShowChatPreviews: Bool? = nil
     public var privacySaveLastDraft: Bool? = nil
     public var privacyProtectScreen: Bool? = nil
@@ -2665,6 +2710,7 @@ public struct AppSettings: Codable, Equatable {
         if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
+        if privacyChatListOpenLinks != def.privacyChatListOpenLinks { empty.privacyChatListOpenLinks = privacyChatListOpenLinks }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
@@ -2701,6 +2747,7 @@ public struct AppSettings: Codable, Equatable {
             privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
+            privacyChatListOpenLinks: .ask,
             privacyShowChatPreviews: true,
             privacySaveLastDraft: true,
             privacyProtectScreen: false,

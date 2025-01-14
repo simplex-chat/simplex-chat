@@ -8,6 +8,7 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -64,6 +66,9 @@ fun GroupMemberInfoView(
         withChats {
           updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
         }
+        withReportsChatsIfOpen {
+          updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+        }
         close.invoke()
       }
     }
@@ -82,7 +87,7 @@ fun GroupMemberInfoView(
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
         withBGApi {
-          apiLoadMessages(rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT), chatModel.chatState)
+          apiLoadMessages(rhId, ChatType.Direct, it, null, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
           if (chatModel.getContactChat(it) != null) {
             closeAll()
           }
@@ -97,8 +102,8 @@ fun GroupMemberInfoView(
               val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
               withChats {
                 addChat(memberChat)
-                openLoadedChat(memberChat)
               }
+              openLoadedChat(memberChat)
               closeAll()
               chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
             }
@@ -141,6 +146,9 @@ fun GroupMemberInfoView(
               withChats {
                 upsertGroupMember(rhId, groupInfo, mem)
               }
+              withReportsChatsIfOpen {
+                upsertGroupMember(rhId, groupInfo, mem)
+              }
             }.onFailure {
               newRole.value = prevValue
             }
@@ -156,6 +164,9 @@ fun GroupMemberInfoView(
               withChats {
                 updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
+              withReportsChatsIfOpen {
+                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              }
               close.invoke()
             }
           }
@@ -168,6 +179,9 @@ fun GroupMemberInfoView(
             if (r != null) {
               connStats.value = r.second
               withChats {
+                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              }
+              withReportsChatsIfOpen {
                 updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
               close.invoke()
@@ -187,6 +201,9 @@ fun GroupMemberInfoView(
               withChats {
                 updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               }
+              withReportsChatsIfOpen {
+                updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
+              }
               close.invoke()
             }
           }
@@ -202,16 +219,16 @@ fun GroupMemberInfoView(
               verify = { code ->
                 chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
                   val (verified, existingCode) = r
-                  withChats {
-                    upsertGroupMember(
-                      rhId,
-                      groupInfo,
-                      mem.copy(
-                        activeConn = mem.activeConn?.copy(
-                          connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
-                        )
-                      )
+                  val copy = mem.copy(
+                    activeConn = mem.activeConn?.copy(
+                      connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
                     )
+                  )
+                  withChats {
+                    upsertGroupMember(rhId, groupInfo, copy)
+                  }
+                  withReportsChatsIfOpen {
+                    upsertGroupMember(rhId, groupInfo, copy)
                   }
                   r
                 }
@@ -243,6 +260,9 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
         val removedMember = chatModel.controller.apiRemoveMember(rhId, member.groupId, member.groupMemberId)
         if (removedMember != null) {
           withChats {
+            upsertGroupMember(rhId, groupInfo, removedMember)
+          }
+          withReportsChatsIfOpen {
             upsertGroupMember(rhId, groupInfo, removedMember)
           }
         }
@@ -537,13 +557,19 @@ fun GroupMemberInfoHeader(member: GroupMember) {
         Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
       }
     )
+    val clipboard = LocalClipboardManager.current
+    val copyNameToClipboard = {
+      clipboard.setText(AnnotatedString(member.displayName))
+      showToast(generalGetString(MR.strings.copied))
+    }
     Text(
       text,
       inlineContent = inlineContent,
       style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       textAlign = TextAlign.Center,
       maxLines = 3,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
     )
     if (member.fullName != "" && member.fullName != member.displayName) {
       Text(
@@ -551,7 +577,8 @@ fun GroupMemberInfoHeader(member: GroupMember) {
         color = MaterialTheme.colors.onBackground,
         textAlign = TextAlign.Center,
         maxLines = 4,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
       )
     }
   }
@@ -745,6 +772,9 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
       withChats {
         upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
       }
+      withReportsChatsIfOpen {
+        upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
+      }
     }
   }
 }
@@ -776,6 +806,9 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocke
   withBGApi {
     val updatedMember = ChatController.apiBlockMemberForAll(rhId, gInfo.groupId, member.groupMemberId, blocked)
     withChats {
+      upsertGroupMember(rhId, gInfo, updatedMember)
+    }
+    withReportsChatsIfOpen {
       upsertGroupMember(rhId, gInfo, updatedMember)
     }
   }

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -20,7 +21,6 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Data.Bifunctor (bimap, second)
-import Data.ByteArray (ScrubbedBytes)
 import Data.List (partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -32,6 +32,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
@@ -41,14 +42,18 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), ServerRoles (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew))
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+#endif
 
 operatorSimpleXChat :: NewServerOperator
 operatorSimpleXChat =
@@ -182,11 +187,20 @@ fluxXFTPServers =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-createChatDatabase :: FilePath -> ScrubbedBytes -> Bool -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
-createChatDatabase filePrefix key keepKey confirmMigrations = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore (chatStoreFile filePrefix) key keepKey confirmMigrations
-  agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key keepKey confirmMigrations
+createChatDatabase :: ChatDbOpts -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
+createChatDatabase dbOpts confirmMigrations = runExceptT $ do
+#if defined(dbPostgres)
+  let ChatDbOpts {dbName, dbUser, dbSchemaPrefix} = dbOpts
+      connectInfo = defaultConnectInfo {connectUser = dbUser, connectDatabase = dbName}
+  chatStore <- ExceptT $ createChatStore connectInfo (chatSchema dbSchemaPrefix) confirmMigrations
+  agentStore <- ExceptT $ createAgentStore connectInfo (agentSchema dbSchemaPrefix) confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
+#else
+  let ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration} = dbOpts
+  chatStore <- ExceptT $ createChatStore (chatStoreFile dbFilePrefix) dbKey False confirmMigrations vacuumOnMigration
+  agentStore <- ExceptT $ createAgentStore (agentStoreFile dbFilePrefix) dbKey False confirmMigrations vacuumOnMigration
+  pure ChatDatabase {chatStore, agentStore}
+#endif
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
 newChatController

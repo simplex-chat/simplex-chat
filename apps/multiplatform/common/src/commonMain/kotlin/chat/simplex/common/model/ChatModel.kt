@@ -8,11 +8,12 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.common.model.ChatModel.chatItemsChangesListener
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.contentModerationPostLink
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrationToDeviceState
 import chat.simplex.common.views.migration.MigrationToState
@@ -22,7 +23,6 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlin.collections.removeAll as remAll
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
@@ -58,28 +58,26 @@ object ChatModel {
   val ctrlInitInProgress = mutableStateOf(false)
   val dbMigrationInProgress = mutableStateOf(false)
   val incompleteInitializedDbRemoved = mutableStateOf(false)
-  private val _chats = mutableStateOf(SnapshotStateList<Chat>())
-  val chats: State<List<Chat>> = _chats
-  private val chatsContext = ChatsContext()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
-  /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
-   * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
-   * If you use api call to get the items, use just [add] instead of [addAndNotify].
-   * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
-  val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
-  // set listener here that will be notified on every add/delete of a chat item
-  var chatItemsChangesListener: ChatItemsChangesListener? = null
-  val chatState = ActiveChatState()
+  val chatsContext = ChatsContext(null)
+  val reportsChatsContext = ChatsContext(MsgContentTag.Report)
+  // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions
+  val chats: State<List<Chat>> = chatsContext.chats
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
-  val chatItemStatuses = mutableMapOf<Long, CIStatus>()
-  val groupMembers = mutableStateListOf<GroupMember>()
-  val groupMembersIndexes = mutableStateMapOf<Long, Int>()
+  val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
+  val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
+
+  // Chat Tags
+  val userTags = mutableStateOf(emptyList<ChatTag>())
+  val activeChatTagFilter = mutableStateOf<ActiveFilter?>(null)
+  val presetTags = mutableStateMapOf<PresetTagKind, Int>()
+  val unreadTags = mutableStateMapOf<Long, Int>()
 
   // false: default placement, true: floating window.
   // Used for deciding to add terminal items on main thread or not. Floating means appPrefs.terminalAlwaysVisible
@@ -150,7 +148,6 @@ object ChatModel {
   val updatingProgress = mutableStateOf(null as Float?)
   var updatingRequest: Closeable? = null
 
-  private val updatingChatsMutex: Mutex = Mutex()
   val changingActiveUserMutex: Mutex = Mutex()
 
   val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
@@ -169,6 +166,36 @@ object ChatModel {
 
   // return true if you handled the click
   var centerPanelBackgroundClickHandler: (() -> Boolean)? = null
+
+  fun chatsForContent(contentTag: MsgContentTag?): State<SnapshotStateList<Chat>> = when(contentTag) {
+    null -> chatsContext.chats
+    MsgContentTag.Report -> reportsChatsContext.chats
+    else -> TODO()
+  }
+
+  fun chatItemsForContent(contentTag: MsgContentTag?): State<SnapshotStateList<ChatItem>> = when(contentTag) {
+    null -> chatsContext.chatItems
+    MsgContentTag.Report -> reportsChatsContext.chatItems
+    else -> TODO()
+  }
+
+  fun chatStateForContent(contentTag: MsgContentTag?): ActiveChatState = when(contentTag) {
+    null -> chatsContext.chatState
+    MsgContentTag.Report -> reportsChatsContext.chatState
+    else -> TODO()
+  }
+
+  fun chatItemsChangesListenerForContent(contentTag: MsgContentTag?): ChatItemsChangesListener? = when(contentTag) {
+    null -> chatsContext.chatItemsChangesListener
+    MsgContentTag.Report -> reportsChatsContext.chatItemsChangesListener
+    else -> TODO()
+  }
+
+  fun setChatItemsChangeListenerForContent(listener: ChatItemsChangesListener?, contentTag: MsgContentTag?) = when(contentTag) {
+    null -> chatsContext.chatItemsChangesListener = listener
+    MsgContentTag.Report -> reportsChatsContext.chatItemsChangesListener = listener
+    else -> TODO()
+  }
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
@@ -196,35 +223,138 @@ object ChatModel {
     }
   }
 
-  // toList() here is to prevent ConcurrentModificationException that is rarely happens but happens
-  fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
+  fun updateChatTags(rhId: Long?) {
+    val newPresetTags = mutableMapOf<PresetTagKind, Int>()
+    val newUnreadTags = mutableMapOf<Long, Int>()
+
+    for (chat in chats.value.filter { it.remoteHostId == rhId }) {
+      for (tag in PresetTagKind.entries) {
+        if (presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats)) {
+          newPresetTags[tag] = (newPresetTags[tag] ?: 0) + 1
+        }
+      }
+      if (chat.unreadTag) {
+        val chatTags: List<Long> = when (val cInfo = chat.chatInfo) {
+          is ChatInfo.Direct -> cInfo.contact.chatTags
+          is ChatInfo.Group -> cInfo.groupInfo.chatTags
+          else -> emptyList()
+        }
+        chatTags.forEach { tag ->
+          newUnreadTags[tag] = (newUnreadTags[tag] ?: 0) + 1
+        }
+      }
+    }
+
+    if (activeChatTagFilter.value is ActiveFilter.PresetTag &&
+      (newPresetTags[(activeChatTagFilter.value as ActiveFilter.PresetTag).tag] ?: 0) == 0) {
+      activeChatTagFilter.value = null
+    }
+
+    presetTags.clear()
+    presetTags.putAll(newPresetTags)
+    unreadTags.clear()
+    unreadTags.putAll(newUnreadTags)
+  }
+
+  fun updateChatFavorite(favorite: Boolean, wasFavorite: Boolean) {
+    val count = presetTags[PresetTagKind.FAVORITES]
+
+    if (favorite && !wasFavorite) {
+      presetTags[PresetTagKind.FAVORITES] = (count ?: 0) + 1
+    } else if (!favorite && wasFavorite && count != null) {
+      presetTags[PresetTagKind.FAVORITES] = maxOf(0, count - 1)
+      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.FAVORITES) && (presetTags[PresetTagKind.FAVORITES] ?: 0) == 0) {
+        activeChatTagFilter.value = null
+      }
+    }
+  }
+
+  private fun addPresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
+    for (tag in PresetTagKind.entries) {
+      if (presetTagMatchesChat(tag, chatInfo, chatStats)) {
+        presetTags[tag] = (presetTags[tag] ?: 0) + 1
+      }
+    }
+  }
+
+  fun removePresetChatTags(chatInfo: ChatInfo, chatStats: Chat.ChatStats) {
+    for (tag in PresetTagKind.entries) {
+      if (presetTagMatchesChat(tag, chatInfo, chatStats)) {
+        val count = presetTags[tag]
+        if (count != null) {
+          presetTags[tag] = maxOf(0, count - 1)
+        }
+      }
+    }
+  }
+
+  fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
+    if (chat.unreadTag) {
+      oldTags?.forEach { t ->
+        val oldCount = unreadTags[t]
+        if (oldCount != null) {
+          unreadTags[t] = maxOf(0, oldCount - 1)
+        }
+      }
+
+      newTags.forEach { t ->
+        unreadTags[t] = (unreadTags[t] ?: 0) + 1
+      }
+    }
+  }
   // TODO pass rhId?
   fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
   fun getGroupChat(groupId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
 
   fun populateGroupMembersIndexes() {
-    groupMembersIndexes.clear()
-    groupMembers.forEachIndexed { i, member ->
-      groupMembersIndexes[member.groupMemberId] = i
+    groupMembersIndexes.value = emptyMap()
+    val gmIndexes = groupMembersIndexes.value.toMutableMap()
+    groupMembers.value.forEachIndexed { i, member ->
+      gmIndexes[member.groupMemberId] = i
     }
+    groupMembersIndexes.value = gmIndexes
   }
 
   fun getGroupMember(groupMemberId: Long): GroupMember? {
-    val memberIndex = groupMembersIndexes[groupMemberId]
+    val memberIndex = groupMembersIndexes.value[groupMemberId]
     return if (memberIndex != null) {
-      groupMembers[memberIndex]
+      groupMembers.value[memberIndex]
     } else {
       null
     }
   }
 
-  suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = updatingChatsMutex.withLock {
-    chatsContext.action()
+  // running everything inside the block on main thread. Make sure any heavy computation is moved to a background thread
+  suspend fun <T> withChats(contentTag: MsgContentTag? = null, action: suspend ChatsContext.() -> T): T = withContext(Dispatchers.Main) {
+    when {
+      contentTag == null -> chatsContext.action()
+      contentTag == MsgContentTag.Report -> reportsChatsContext.action()
+      else -> TODO()
+    }
   }
 
-  class ChatsContext {
-    val chats = _chats
+  suspend fun <T> withReportsChatsIfOpen(action: suspend ChatsContext.() -> T) = withContext(Dispatchers.Main) {
+    if (ModalManager.end.hasModalOpen(ModalViewId.GROUP_REPORTS)) {
+      reportsChatsContext.action()
+    }
+  }
+
+  class ChatsContext(private val contentTag: MsgContentTag?) {
+    val chats = mutableStateOf(SnapshotStateList<Chat>())
+    /** if you modify the items by adding/removing them, use helpers methods like [addAndNotify], [removeLastAndNotify], [removeAllAndNotify], [clearAndNotify] and so on.
+     * If some helper is missing, create it. Notify is needed to track state of items that we added manually (not via api call). See [apiLoadMessages].
+     * If you use api call to get the items, use just [add] instead of [addAndNotify].
+     * Never modify underlying list directly because it produces unexpected results in ChatView's LazyColumn (setting by index is ok) */
+    val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
+    val chatItemStatuses = mutableMapOf<Long, CIStatus>()
+    // set listener here that will be notified on every add/delete of a chat item
+    var chatItemsChangesListener: ChatItemsChangesListener? = null
+    val chatState = ActiveChatState()
+
+    fun hasChat(rhId: Long?, id: String): Boolean = chats.value.firstOrNull { it.id == id && it.remoteHostId == rhId } != null
+    fun getChat(id: String): Chat? = chats.value.firstOrNull { it.id == id }
+    private fun getChatIndex(rhId: Long?, id: String): Int = chats.value.indexOfFirst { it.id == id && it.remoteHostId == rhId }
 
     suspend fun addChat(chat: Chat) {
       chats.add(index = 0, chat)
@@ -263,6 +393,13 @@ object ChatModel {
       }
     }
 
+    fun updateChatStats(rhId: Long?, chatId: ChatId, chatStats: Chat.ChatStats) {
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        chats[i] = chats[i].copy(chatStats = chatStats)
+      }
+    }
+
     suspend fun updateContactConnection(rhId: Long?, contactConnection: PendingContactConnection) = updateChat(rhId, ChatInfo.ContactConnection(contactConnection))
 
     suspend fun updateContact(rhId: Long?, contact: Contact) = updateChat(rhId, ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
@@ -280,6 +417,7 @@ object ChatModel {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf()))
+        addPresetChatTags(cInfo, Chat.ChatStats())
       }
     }
 
@@ -329,6 +467,7 @@ object ChatModel {
           }
           else -> cItem
         }
+        val wasUnread = chat.unreadTag
         chats[i] = chat.copy(
           chatItems = arrayListOf(newPreviewItem),
           chatStats =
@@ -339,6 +478,8 @@ object ChatModel {
           else
             chat.chatStats
         )
+        updateChatTagReadNoContentTag(chats[i], wasUnread)
+
         if (appPlatform.isDesktop && cItem.chatDir.sent) {
           reorderChat(chats[i], 0)
         } else {
@@ -353,9 +494,9 @@ object ChatModel {
           // Prevent situation when chat item already in the list received from backend
           if (chatItems.value.none { it.id == cItem.id }) {
             if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
+              chatItems.addAndNotify(kotlin.math.max(0, chatItems.value.lastIndex), cItem, contentTag)
             } else {
-              chatItems.addAndNotify(cItem)
+              chatItems.addAndNotify(cItem, contentTag)
             }
           }
         }
@@ -374,7 +515,7 @@ object ChatModel {
           chats[i] = chat.copy(chatItems = arrayListOf(cItem))
           if (pItem.isRcvNew && !cItem.isRcvNew) {
             // status changed from New to Read, update counter
-            decreaseCounterInChat(rhId, cInfo.id)
+            decreaseCounterInChatNoContentTag(rhId, cInfo.id)
           }
         }
         res = false
@@ -400,7 +541,7 @@ object ChatModel {
             } else {
               cItem
             }
-            chatItems.addAndNotify(ci)
+            chatItems.addAndNotify(ci, contentTag)
             true
           }
         } else {
@@ -425,7 +566,7 @@ object ChatModel {
 
     fun removeChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
       if (cItem.isRcvNew) {
-        decreaseCounterInChat(rhId, cInfo.id)
+        decreaseCounterInChatNoContentTag(rhId, cInfo.id)
       }
       // update previews
       val i = getChatIndex(rhId, cInfo.id)
@@ -455,6 +596,7 @@ object ChatModel {
       if (i >= 0) {
         decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount)
         chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
+        markChatTagRead(chats[i])
       }
       // clear current chat
       if (chatId.value == cInfo.id) {
@@ -463,9 +605,9 @@ object ChatModel {
       }
     }
 
-    val popChatCollector = PopChatCollector()
+    val popChatCollector = PopChatCollector(contentTag)
 
-    class PopChatCollector {
+    class PopChatCollector(contentTag: MsgContentTag?) {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
@@ -475,7 +617,7 @@ object ChatModel {
           subject
             .throttleLatest(2000)
             .collect {
-              withChats {
+              withChats(contentTag) {
                 chats.replaceAll(popCollectedChats())
               }
             }
@@ -513,40 +655,83 @@ object ChatModel {
       }
     }
 
-    fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, itemIds: List<Long>? = null) {
-      val cInfo = chatInfo
-      val markedRead = markItemsReadInCurrentChat(chatInfo, itemIds)
+    fun markChatItemsRead(remoteHostId: Long?, id: ChatId, itemIds: List<Long>? = null) {
+      val markedRead = markItemsReadInCurrentChat(id, itemIds)
       // update preview
-      val chatIdx = getChatIndex(remoteHostId, cInfo.id)
+      val chatIdx = getChatIndex(remoteHostId, id)
       if (chatIdx >= 0) {
         val chat = chats[chatIdx]
         val lastId = chat.chatItems.lastOrNull()?.id
         if (lastId != null) {
+          val wasUnread = chat.unreadTag
           val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
           decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(unreadCount = unreadCount)
           )
+          updateChatTagReadNoContentTag(chats[chatIdx], wasUnread)
         }
       }
     }
 
-    private fun decreaseCounterInChat(rhId: Long?, chatId: ChatId) {
+    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): Int {
+      var markedRead = 0
+      if (chatId.value == id) {
+        val items = chatItems.value
+        var i = items.lastIndex
+        val itemIdsFromRange = itemIds?.toMutableSet() ?: mutableSetOf()
+        val markedReadIds = mutableSetOf<Long>()
+        while (i >= 0) {
+          val item = items[i]
+          if (item.meta.itemStatus is CIStatus.RcvNew && (itemIds == null || itemIdsFromRange.contains(item.id))) {
+            val newItem = item.withStatus(CIStatus.RcvRead())
+            items[i] = newItem
+            if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
+              items[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
+                deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
+              )
+            }
+            markedReadIds.add(item.id)
+            markedRead++
+            if (itemIds != null) {
+              itemIdsFromRange.remove(item.id)
+              // already set all needed items as read, can finish the loop
+              if (itemIdsFromRange.isEmpty()) break
+            }
+          }
+          i--
+        }
+        chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
+      }
+      return markedRead
+    }
+
+    private fun decreaseCounterInChatNoContentTag(rhId: Long?, chatId: ChatId) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
       val chatIndex = getChatIndex(rhId, chatId)
       if (chatIndex == -1) return
 
       val chat = chats[chatIndex]
       val unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0)
+      val wasUnread = chat.unreadTag
       decreaseUnreadCounter(rhId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
       chats[chatIndex] = chat.copy(
         chatStats = chat.chatStats.copy(
           unreadCount = unreadCount,
         )
       )
+      updateChatTagReadNoContentTag(chats[chatIndex], wasUnread)
     }
 
     fun removeChat(rhId: Long?, id: String) {
-      chats.removeAll { it.id == id && it.remoteHostId == rhId }
+      val i = getChatIndex(rhId, id)
+      if (i != -1) {
+        val chat = chats.removeAt(i)
+        removePresetChatTags(chat.chatInfo, chat.chatStats)
+        removeWallpaperFilesFromChat(chat)
+      }
     }
 
     suspend fun upsertGroupMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember): Boolean {
@@ -557,7 +742,7 @@ object ChatModel {
       }
       // update current chat
       return if (chatId.value == groupInfo.id) {
-        val memberIndex = groupMembersIndexes[member.groupMemberId]
+        val memberIndex = groupMembersIndexes.value[member.groupMemberId]
         val updated = chatItems.value.map {
           // Take into account only specific changes, not all. Other member updates are not important and can be skipped
           if (it.chatDir is CIDirection.GroupRcv && it.chatDir.groupMember.groupMemberId == member.groupMemberId &&
@@ -573,12 +758,17 @@ object ChatModel {
         if (updated != chatItems.value) {
           chatItems.replaceAll(updated)
         }
+        val gMembers = groupMembers.value.toMutableList()
         if (memberIndex != null) {
-          groupMembers[memberIndex] = member
+          gMembers[memberIndex] = member
+          groupMembers.value = gMembers
           false
         } else {
-          groupMembers.add(member)
-          groupMembersIndexes[member.groupMemberId] = groupMembers.size - 1
+          gMembers.add(member)
+          groupMembers.value = gMembers
+          val gmIndexes = groupMembersIndexes.value.toMutableMap()
+          gmIndexes[member.groupMemberId] = groupMembers.size - 1
+          groupMembersIndexes.value = gmIndexes
           true
         }
       } else {
@@ -594,9 +784,92 @@ object ChatModel {
         upsertGroupMember(rhId, groupInfo, updatedMember)
       }
     }
-  }
 
-  private fun getChatIndex(rhId: Long?, id: String): Int = chats.value.indexOfFirst { it.id == id && it.remoteHostId == rhId }
+    fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
+      changeUnreadCounterNoContentTag(rhId, user, 1)
+    }
+
+    fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
+      changeUnreadCounterNoContentTag(rhId, user, -by)
+    }
+
+    private fun changeUnreadCounterNoContentTag(rhId: Long?, user: UserLike, by: Int) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
+      val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
+      if (i != -1) {
+        users[i] = users[i].copy(unreadCount = users[i].unreadCount + by)
+      }
+    }
+
+    fun updateChatTagReadNoContentTag(chat: Chat, wasUnread: Boolean) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
+      val tags = chat.chatInfo.chatTags ?: return
+      val nowUnread = chat.unreadTag
+
+      if (nowUnread && !wasUnread) {
+        tags.forEach { tag ->
+          unreadTags[tag] = (unreadTags[tag] ?: 0) + 1
+        }
+      } else if (!nowUnread && wasUnread) {
+        markChatTagReadNoContentTag_(chat, tags)
+      }
+    }
+
+    fun markChatTagRead(chat: Chat) {
+      if (chat.unreadTag) {
+        chat.chatInfo.chatTags?.let { tags ->
+          markChatTagReadNoContentTag_(chat, tags)
+        }
+      }
+    }
+
+    private fun markChatTagReadNoContentTag_(chat: Chat, tags: List<Long>) {
+      // updates anything only in main ChatView, not GroupReportsView or anything else from the future
+      if (contentTag != null) return
+
+      for (tag in tags) {
+        val count = unreadTags[tag]
+        if (count != null) {
+          unreadTags[tag] = maxOf(0, count - 1)
+        }
+      }
+    }
+
+    fun increaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
+      changeGroupReportsCounter(rhId, chatId, 1)
+    }
+
+    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
+      changeGroupReportsCounter(rhId, chatId, -1)
+    }
+
+    private fun changeGroupReportsCounter(rhId: Long?, chatId: ChatId, by: Int = 0) {
+      if (by == 0) return
+
+      val i = getChatIndex(rhId, chatId)
+      if (i >= 0) {
+        val chat = chats.value[i]
+        chats[i] = chat.copy(
+          chatStats = chat.chatStats.copy(
+            reportsCount = (chat.chatStats.reportsCount + by).coerceAtLeast(0),
+          )
+        )
+        val wasReportsCount = chat.chatStats.reportsCount
+        val nowReportsCount = chats[i].chatStats.reportsCount
+        val by = if (wasReportsCount == 0 && nowReportsCount > 0) 1 else if (wasReportsCount > 0 && nowReportsCount == 0) -1 else 0
+        changeGroupReportsTagNoContentTag(by)
+      }
+    }
+
+    private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
+      if (by == 0 || contentTag != null) return
+      presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
+    }
+  }
 
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
     val current = currentUser.value ?: return
@@ -625,79 +898,33 @@ object ChatModel {
 
   suspend fun addLiveDummy(chatInfo: ChatInfo): ChatItem {
     val cItem = ChatItem.liveDummy(chatInfo is ChatInfo.Direct)
-    withContext(Dispatchers.Main) {
-      chatItems.addAndNotify(cItem)
+    withChats {
+      chatItems.addAndNotify(cItem, contentTag = null)
     }
     return cItem
   }
 
   fun removeLiveDummy() {
-    if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-      chatItems.removeLastAndNotify()
-    }
-  }
-
-  private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, itemIds: List<Long>? = null): Int {
-    val cInfo = chatInfo
-    var markedRead = 0
-    if (chatId.value == cInfo.id) {
-      val items = chatItems.value
-      var i = items.lastIndex
-      val itemIdsFromRange = itemIds?.toMutableSet() ?: mutableSetOf()
-      val markedReadIds = mutableSetOf<Long>()
-      while (i >= 0) {
-        val item = items[i]
-        if (item.meta.itemStatus is CIStatus.RcvNew && (itemIds == null || itemIdsFromRange.contains(item.id))) {
-          val newItem = item.withStatus(CIStatus.RcvRead())
-          items[i] = newItem
-          if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
-            items[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
-              deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
-            )
-          }
-          markedReadIds.add(item.id)
-          markedRead++
-          if (itemIds != null) {
-            itemIdsFromRange.remove(item.id)
-            // already set all needed items as read, can finish the loop
-            if (itemIdsFromRange.isEmpty()) break
-          }
+    if (chatItemsForContent(null).value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+      withApi {
+        withChats {
+          chatItems.removeLastAndNotify(contentTag = null)
         }
-        i--
       }
-      chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
-    }
-    return markedRead
-  }
-
-  fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
-    changeUnreadCounter(rhId, user, 1)
-  }
-
-  fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
-    changeUnreadCounter(rhId, user, -by)
-  }
-
-  private fun changeUnreadCounter(rhId: Long?, user: UserLike, by: Int) {
-    val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
-    if (i != -1) {
-      users[i] = users[i].copy(unreadCount = users[i].unreadCount + by)
     }
   }
 
-  fun getChatItemIndexOrNull(cItem: ChatItem): Int? {
-    val reversedChatItems = chatItems.asReversed()
+  fun getChatItemIndexOrNull(cItem: ChatItem, reversedChatItems: List<ChatItem>): Int? {
     val index = reversedChatItems.indexOfFirst { it.id == cItem.id }
     return if (index != -1) index else null
   }
 
   // this function analyses "connected" events and assumes that each member will be there only once
-  fun getConnectedMemberNames(cItem: ChatItem): Pair<Int, List<String>> {
+  fun getConnectedMemberNames(cItem: ChatItem, reversedChatItems: List<ChatItem>): Pair<Int, List<String>> {
     var count = 0
     val ns = mutableListOf<String>()
-    var idx = getChatItemIndexOrNull(cItem)
+    var idx = getChatItemIndexOrNull(cItem, reversedChatItems)
     if (cItem.mergeCategory != null && idx != null) {
-      val reversedChatItems = chatItems.asReversed()
       while (idx < reversedChatItems.size) {
         val ci = reversedChatItems[idx]
         if (ci.mergeCategory != cItem.mergeCategory) break
@@ -714,9 +941,8 @@ object ChatModel {
 
   // returns the index of the first item in the same merged group (the first hidden item)
   // and the previous visible item with another merge category
-  fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?): Pair<Int?, ChatItem?> {
+  fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?, reversedChatItems: List<ChatItem>): Pair<Int?, ChatItem?> {
     var i = ciIndex ?: return null to null
-    val reversedChatItems = chatItems.asReversed()
     val fst = reversedChatItems.lastIndex
     while (i < fst) {
       i++
@@ -729,8 +955,7 @@ object ChatModel {
   }
 
   // returns the previous member in the same merge group and the count of members in this group
-  fun getPrevHiddenMember(member: GroupMember, range: IntRange): Pair<GroupMember?, Int> {
-    val reversedChatItems = chatItems.asReversed()
+  fun getPrevHiddenMember(member: GroupMember, range: IntRange, reversedChatItems: List<ChatItem>): Pair<GroupMember?, Int> {
     var prevMember: GroupMember? = null
     val names: MutableSet<Long> = mutableSetOf()
     for (i in range) {
@@ -754,19 +979,25 @@ object ChatModel {
 
   fun replaceConnReqView(id: String, withId: String) {
     if (id == showingInvitation.value?.connId) {
-      showingInvitation.value = null
-      chatModel.chatItems.clearAndNotify()
-      chatModel.chatId.value = withId
+      withApi {
+        withChats {
+          showingInvitation.value = null
+          chatItems.clearAndNotify()
+          chatModel.chatId.value = withId
+        }
+      }
       ModalManager.start.closeModals()
       ModalManager.end.closeModals()
     }
   }
 
-  fun dismissConnReqView(id: String) {
+  fun dismissConnReqView(id: String) = withApi {
     if (id == showingInvitation.value?.connId) {
-      showingInvitation.value = null
-      chatModel.chatItems.clearAndNotify()
-      chatModel.chatId.value = null
+      withChats {
+        showingInvitation.value = null
+        chatItems.clearAndNotify()
+        chatModel.chatId.value = null
+      }
       // Close NewChatView
       ModalManager.start.closeModals()
       ModalManager.center.closeModals()
@@ -977,6 +1208,8 @@ data class Chat(
     else -> false
   }
 
+  val unreadTag: Boolean get() = chatInfo.ntfsEnabled && (chatStats.unreadCount > 0 || chatStats.unreadChat)
+
   val id: String get() = chatInfo.id
 
   fun groupFeatureEnabled(feature: GroupFeature): Boolean =
@@ -998,7 +1231,13 @@ data class Chat(
     }
 
   @Serializable
-  data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0, val unreadChat: Boolean = false)
+  data class ChatStats(
+    val unreadCount: Int = 0,
+    // actual only via getChats() and getChat(.initial), otherwise, zero
+    val reportsCount: Int = 0,
+    val minUnreadItemId: Long = 0,
+    val unreadChat: Boolean = false
+  )
 
   companion object {
     val sampleData = Chat(
@@ -1189,7 +1428,19 @@ sealed class ChatInfo: SomeChat, NamedChat {
       else -> false
     }
 
-}
+  val chatTags: List<Long>?
+    get() = when (this) {
+      is Direct -> contact.chatTags
+      is Group -> groupInfo.chatTags
+      else -> null
+    }
+
+  val contactCard: Boolean
+    get() = when (this) {
+      is Direct -> contact.activeConn == null && contact.profile.contactLink != null && contact.active
+      else -> false
+    }
+  }
 
 @Serializable
 sealed class NetworkStatus {
@@ -1232,6 +1483,7 @@ data class Contact(
   val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
+  val chatTags: List<Long>,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
@@ -1315,6 +1567,7 @@ data class Contact(
       contactGrpInvSent = false,
       chatDeleted = false,
       uiThemes = null,
+      chatTags = emptyList()
     )
   }
 }
@@ -1383,11 +1636,7 @@ data class Connection(
 }
 
 @Serializable
-data class VersionRange(val minVersion: Int, val maxVersion: Int) {
-
-  fun isCompatibleRange(vRange: VersionRange): Boolean =
-    this.minVersion <= vRange.maxVersion && vRange.minVersion <= this.maxVersion
-}
+data class VersionRange(val minVersion: Int, val maxVersion: Int)
 
 @Serializable
 data class SecurityCode(val securityCode: String, val verifiedAt: Instant)
@@ -1476,6 +1725,7 @@ data class GroupInfo (
   override val updatedAt: Instant,
   val chatTs: Instant?,
   val uiThemes: ThemeModeOverrides? = null,
+  val chatTags: List<Long>
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -1507,6 +1757,9 @@ data class GroupInfo (
   val canAddMembers: Boolean
     get() = membership.memberRole >= GroupMemberRole.Admin && membership.memberActive
 
+  val canModerate: Boolean
+    get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
+
   companion object {
     val sampleData = GroupInfo(
       groupId = 1,
@@ -1520,6 +1773,7 @@ data class GroupInfo (
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
       uiThemes = null,
+      chatTags = emptyList()
     )
   }
 }
@@ -1649,7 +1903,7 @@ data class GroupMember (
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (!canBeRemoved(groupInfo)) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.values().filter { it <= userRole && it != GroupMemberRole.Author }
+      GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
@@ -1700,13 +1954,19 @@ enum class GroupMemberRole(val memberRole: String) {
   @SerialName("observer") Observer("observer"), // order matters in comparisons
   @SerialName("author") Author("author"),
   @SerialName("member") Member("member"),
+  @SerialName("moderator") Moderator("moderator"),
   @SerialName("admin") Admin("admin"),
   @SerialName("owner") Owner("owner");
+
+  companion object {
+    val selectableRoles: List<GroupMemberRole> = listOf(Observer, Member, Admin, Owner)
+  }
 
   val text: String get() = when (this) {
     Observer -> generalGetString(MR.strings.group_member_role_observer)
     Author -> generalGetString(MR.strings.group_member_role_author)
     Member -> generalGetString(MR.strings.group_member_role_member)
+    Moderator -> generalGetString(MR.strings.group_member_role_moderator)
     Admin -> generalGetString(MR.strings.group_member_role_admin)
     Owner -> generalGetString(MR.strings.group_member_role_owner)
   }
@@ -2127,6 +2387,14 @@ data class ChatItem (
       else -> true
     }
 
+  val isReport: Boolean get() = when (content) {
+    is CIContent.SndMsgContent, is CIContent.RcvMsgContent ->
+      content.msgContent is MsgContent.MCReport
+    else -> false
+  }
+
+  val isActiveReport: Boolean get() = isReport && !isDeletedContent && meta.itemDeleted == null
+
   val canBeDeletedForSelf: Boolean
     get() = (content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete
 
@@ -2343,8 +2611,8 @@ fun MutableState<SnapshotStateList<Chat>>.add(index: Int, elem: Chat) {
   value = SnapshotStateList<Chat>().apply { addAll(value); add(index, elem) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, index) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(index: Int, elem: ChatItem, contentTag: MsgContentTag?) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, elem); chatModel.chatItemsChangesListenerForContent(contentTag)?.added(elem.id to elem.isRcvNew, index) }
 }
 
 fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
@@ -2355,8 +2623,8 @@ fun MutableState<SnapshotStateList<Chat>>.add(elem: Chat) {
 fun <T> MutableList<T>.removeAll(predicate: (T) -> Boolean): Boolean = if (isEmpty()) false else remAll(predicate)
 
 // Adds item to chatItems and notifies a listener about newly added item
-fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatItemsChangesListener?.added(elem.id to elem.isRcvNew, lastIndex) }
+fun MutableState<SnapshotStateList<ChatItem>>.addAndNotify(elem: ChatItem, contentTag: MsgContentTag?) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(elem); chatModel.chatItemsChangesListenerForContent(contentTag)?.added(elem.id to elem.isRcvNew, lastIndex) }
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
@@ -2385,7 +2653,8 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeAllAndNotify(block: (ChatIte
     }
   }
   if (toRemove.isNotEmpty()) {
-    chatItemsChangesListener?.removed(toRemove, value)
+    chatModel.chatsContext.chatItemsChangesListener?.removed(toRemove, value)
+    chatModel.reportsChatsContext.chatItemsChangesListener?.removed(toRemove, value)
   }
 }
 
@@ -2397,7 +2666,7 @@ fun MutableState<SnapshotStateList<Chat>>.removeAt(index: Int): Chat {
   return res
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
+fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify(contentTag: MsgContentTag?) {
   val removed: Triple<Long, Int, Boolean>
   value = SnapshotStateList<ChatItem>().apply {
     addAll(value)
@@ -2405,7 +2674,7 @@ fun MutableState<SnapshotStateList<ChatItem>>.removeLastAndNotify() {
     val rem = removeLast()
     removed = Triple(rem.id, remIndex, rem.isRcvNew)
   }
-  chatItemsChangesListener?.removed(listOf(removed), value)
+  chatModel.chatItemsChangesListenerForContent(contentTag)?.removed(listOf(removed), value)
 }
 
 fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
@@ -2419,7 +2688,8 @@ fun MutableState<SnapshotStateList<Chat>>.clear() {
 // Removes all chatItems and notifies a listener about it
 fun MutableState<SnapshotStateList<ChatItem>>.clearAndNotify() {
   value = SnapshotStateList()
-  chatItemsChangesListener?.cleared()
+  chatModel.chatsContext.chatItemsChangesListener?.cleared()
+  chatModel.reportsChatsContext.chatItemsChangesListener?.cleared()
 }
 
 fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()
@@ -2547,7 +2817,7 @@ fun getTimestampDateText(t: Instant): String {
   val time = t.toLocalDateTime(tz).toJavaLocalDateTime()
   val weekday = time.format(DateTimeFormatter.ofPattern("EEE"))
   val dayMonthYear = time.format(DateTimeFormatter.ofPattern(
-    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM YYYY")
+    if (Clock.System.now().toLocalDateTime(tz).year == time.year) "d MMM" else "d MMM yyyy")
   )
 
   return "$weekday, $dayMonthYear"
@@ -2779,6 +3049,7 @@ sealed class CIForwardedFrom {
 @Serializable
 enum class CIDeleteMode(val deleteMode: String) {
   @SerialName("internal") cidmInternal("internal"),
+  @SerialName("internalMark") cidmInternalMark("internalMark"),
   @SerialName("broadcast") cidmBroadcast("broadcast");
 }
 
@@ -2980,6 +3251,14 @@ sealed class MsgReaction {
 
   companion object {
     val values: List<MsgReaction> get() = MREmojiChar.values().map(::Emoji)
+    val old: List<MsgReaction> get() = listOf(
+      MREmojiChar.ThumbsUp,
+      MREmojiChar.ThumbsDown,
+      MREmojiChar.Smile,
+      MREmojiChar.Sad,
+      MREmojiChar.Heart,
+      MREmojiChar.Launch
+    ).map(::Emoji)
   }
 }
 
@@ -3026,9 +3305,11 @@ enum class MREmojiChar(val value: String) {
   @SerialName("👍") ThumbsUp("👍"),
   @SerialName("👎") ThumbsDown("👎"),
   @SerialName("😀") Smile("😀"),
+  @SerialName("😂") Laugh("😂"),
   @SerialName("😢") Sad("😢"),
   @SerialName("❤") Heart("❤"),
-  @SerialName("🚀") Launch("🚀");
+  @SerialName("🚀") Launch("🚀"),
+  @SerialName("✅") Check("✅");
 }
 
 @Serializable
@@ -3304,15 +3585,22 @@ sealed class CIFileStatus {
 @Serializable
 sealed class FileError {
   @Serializable @SerialName("auth") class Auth: FileError()
+  @Serializable @SerialName("blocked") class Blocked(val server: String, val blockInfo: BlockingInfo): FileError()
   @Serializable @SerialName("noFile") class NoFile: FileError()
   @Serializable @SerialName("relay") class Relay(val srvError: SrvError): FileError()
   @Serializable @SerialName("other") class Other(val fileError: String): FileError()
 
   val errorInfo: String get() = when (this) {
-    is FileError.Auth -> generalGetString(MR.strings.file_error_auth)
-    is FileError.NoFile -> generalGetString(MR.strings.file_error_no_file)
-    is FileError.Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
-    is FileError.Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)
+    is Auth -> generalGetString(MR.strings.file_error_auth)
+    is Blocked -> generalGetString(MR.strings.file_error_blocked).format(blockInfo.reason.text)
+    is NoFile -> generalGetString(MR.strings.file_error_no_file)
+    is Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
+    is Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)
+  }
+
+  val moreInfoButton: Pair<String, String>? get() = when(this) {
+    is Blocked -> generalGetString(MR.strings.how_it_works) to contentModerationPostLink
+    else -> null
   }
 }
 
@@ -3327,6 +3615,7 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCVideo(override val text: String, val image: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCVoice(override val text: String, val duration: Int): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCReport(override val text: String, val reason: ReportReason): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val isVoice: Boolean get() =
@@ -3403,6 +3692,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     element("MCFile", buildClassSerialDescriptor("MCFile") {
       element<String>("text")
     })
+    element("MCReport", buildClassSerialDescriptor("MCReport") {
+      element<String>("text")
+      element<ReportReason>("reason")
+    })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
 
@@ -3433,6 +3726,10 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             MsgContent.MCVoice(text, duration)
           }
           "file" -> MsgContent.MCFile(text)
+          "report" -> {
+            val reason = Json.decodeFromString<ReportReason>(json["reason"].toString())
+            MsgContent.MCReport(text, reason)
+          }
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {
@@ -3481,10 +3778,27 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "file")
           put("text", value.text)
         }
+      is MsgContent.MCReport ->
+        buildJsonObject {
+          put("type", "report")
+          put("text", value.text)
+          put("reason", json.encodeToJsonElement(value.reason))
+        }
       is MsgContent.MCUnknown -> value.json
     }
     encoder.encodeJsonElement(json)
   }
+}
+
+@Serializable
+enum class MsgContentTag {
+  @SerialName("text") Text,
+  @SerialName("link") Link,
+  @SerialName("image") Image,
+  @SerialName("video") Video,
+  @SerialName("voice") Voice,
+  @SerialName("file") File,
+  @SerialName("report") Report,
 }
 
 @Serializable
@@ -3572,6 +3886,58 @@ enum class FormatColor(val color: String) {
     magenta -> Color.Magenta
     black -> MaterialTheme.colors.onBackground
     white -> MaterialTheme.colors.onBackground
+  }
+}
+
+
+@Serializable(with = ReportReasonSerializer::class)
+sealed class ReportReason {
+  @Serializable @SerialName("spam") object Spam: ReportReason()
+  @Serializable @SerialName("illegal") object Illegal: ReportReason()
+  @Serializable @SerialName("community") object Community: ReportReason()
+  @Serializable @SerialName("profile") object Profile: ReportReason()
+  @Serializable @SerialName("other") object Other: ReportReason()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
+
+  companion object {
+    val supportedReasons: List<ReportReason> = listOf(Spam, Illegal, Community, Profile, Other)
+  }
+
+  val text: String get() = when (this) {
+    Spam -> generalGetString(MR.strings.report_reason_spam)
+    Illegal -> generalGetString(MR.strings.report_reason_illegal)
+    Community -> generalGetString(MR.strings.report_reason_community)
+    Profile -> generalGetString(MR.strings.report_reason_profile)
+    Other -> generalGetString(MR.strings.report_reason_other)
+    is Unknown -> type
+  }
+}
+
+object ReportReasonSerializer : KSerializer<ReportReason> {
+  override val descriptor: SerialDescriptor =
+    PrimitiveSerialDescriptor("ReportReason", PrimitiveKind.STRING)
+
+  override fun deserialize(decoder: Decoder): ReportReason {
+    return when (val value = decoder.decodeString()) {
+      "spam" -> ReportReason.Spam
+      "illegal" -> ReportReason.Illegal
+      "community" -> ReportReason.Community
+      "profile" -> ReportReason.Profile
+      "other" -> ReportReason.Other
+      else -> ReportReason.Unknown(value)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: ReportReason) {
+    val stringValue = when (value) {
+      is ReportReason.Spam -> "spam"
+      is ReportReason.Illegal -> "illegal"
+      is ReportReason.Community -> "community"
+      is ReportReason.Profile -> "profile"
+      is ReportReason.Other -> "other"
+      is ReportReason.Unknown -> value.type
+    }
+    encoder.encodeString(stringValue)
   }
 }
 
@@ -3849,6 +4215,13 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
       }
   }
 }
+
+@Serializable
+data class ChatTag(
+  val chatTagId: Long,
+  val chatTagText: String,
+  val chatTagEmoji: String?
+)
 
 @Serializable
 class ChatItemInfo(

@@ -87,6 +87,9 @@ kotlin {
         implementation("io.coil-kt:coil-compose:2.6.0")
         implementation("io.coil-kt:coil-gif:2.6.0")
 
+        // Emojis
+        implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
+
         implementation("com.jakewharton:process-phoenix:3.0.0")
 
         val cameraXVersion = "1.3.4"

@@ -3,18 +3,29 @@ package chat.simplex.common.platform
 import android.Manifest
 import android.content.*
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
+import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.res.MR
 import java.io.BufferedOutputStream
 import java.io.File
-import chat.simplex.res.MR
+import java.net.URI
 import kotlin.math.min
+
+data class OpenDefaultApp(
+  val name: String,
+  val icon: ImageBitmap,
+  val isSystemChooser: Boolean
+)
 
 actual fun ClipboardManager.shareText(text: String) {
   var text = text
@@ -37,7 +48,7 @@ actual fun ClipboardManager.shareText(text: String) {
   }
 }
 
-fun openOrShareFile(text: String, fileSource: CryptoFile, justOpen: Boolean) {
+fun openOrShareFile(text: String, fileSource: CryptoFile, justOpen: Boolean, useChooser: Boolean = true) {
   val uri = if (fileSource.cryptoArgs != null) {
     val tmpFile = File(tmpDir, fileSource.filePath)
     tmpFile.deleteOnExit()
@@ -67,9 +78,35 @@ fun openOrShareFile(text: String, fileSource: CryptoFile, justOpen: Boolean) {
       type = mimeType
     }
   }
-  val shareIntent = Intent.createChooser(sendIntent, null)
-  shareIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
-  androidAppContext.startActivity(shareIntent)
+  if (useChooser) {
+    val shareIntent = Intent.createChooser(sendIntent, null)
+    shareIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+    androidAppContext.startActivity(shareIntent)
+  } else {
+    sendIntent.addFlags(FLAG_ACTIVITY_NEW_TASK)
+    androidAppContext.startActivity(sendIntent)
+  }
+}
+
+fun queryDefaultAppForExtension(ext: String, encryptedFileUri: URI): OpenDefaultApp? {
+  val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: return null
+  val openIntent = Intent(Intent.ACTION_VIEW)
+  openIntent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+  openIntent.setDataAndType(encryptedFileUri.toUri(), mimeType)
+  val pm = androidAppContext.packageManager
+//// This method returns the list of apps but no priority, nor default flag
+//  val resInfoList: List<ResolveInfo> = if (Build.VERSION.SDK_INT >= 33) {
+//    pm.queryIntentActivities(openIntent, PackageManager.ResolveInfoFlags.of((PackageManager.MATCH_DEFAULT_ONLY).toLong()))
+//  } else {
+//    pm.queryIntentActivities(openIntent, PackageManager.MATCH_DEFAULT_ONLY)
+//  }.sortedBy { it.priority }
+//  val first = resInfoList.firstOrNull { it.isDefault } ?: resInfoList.firstOrNull() ?: return null
+  val act = pm.resolveActivity(openIntent, PackageManager.MATCH_DEFAULT_ONLY) ?: return null
+//  Log.d(TAG, "Default launch action ${act} ${act.loadLabel(pm)} ${act.activityInfo?.name}")
+  val label = act.loadLabel(pm).toString()
+  val icon = act.loadIcon(pm).toBitmap().asImageBitmap()
+  val chooser = act.activityInfo?.name?.endsWith("ResolverActivity") == true
+  return OpenDefaultApp(label, icon, chooser)
 }
 
 actual fun shareFile(text: String, fileSource: CryptoFile) {
