@@ -439,8 +439,6 @@ struct ChatView: View {
                                 : voiceNoFrame
                                     ? (g.size.width - 32)
                                     : (g.size.width - 32) * 0.84
-                print("[mergedItems] \(ci.content.msgContent?.text ?? "")")
-
                 return ChatItemWithMenu(
                     chat: $chat,
                     chatItem: ci,
