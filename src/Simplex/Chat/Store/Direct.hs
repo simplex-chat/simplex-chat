@@ -83,8 +83,7 @@ module Simplex.Chat.Store.Direct
     getDirectChatTags,
     updateDirectChatTags,
     setDirectChatTTL,
-    getDirectChatsWithGlobalExpire,
-    getDirectChatsWithTTL
+    getUserExpirableContacts
   )
 where
 
@@ -1087,9 +1086,5 @@ addDirectChatTags db ct = do
 setDirectChatTTL :: DB.Connection -> ContactId -> Maybe Int64 -> IO ()
 setDirectChatTTL db cId ttl = error "not implemented"
 
-getDirectChatsWithGlobalExpire :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
-getDirectChatsWithGlobalExpire db vr user@User {userId} = error "not implemented"
-
--- Exluces 0 ttl
-getDirectChatsWithTTL :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
-getDirectChatsWithTTL db = error "not implemented"
+getUserExpirableContacts :: DB.Connection -> VersionRangeChat -> User -> Maybe Int64 -> IO [Contact]
+getUserExpirableContacts db vr user@User {userId} gTTL = error "not implemented"
