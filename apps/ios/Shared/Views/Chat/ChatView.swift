@@ -32,7 +32,7 @@ struct ChatView: View {
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
-    @State private var loadingItems = false
+    @State private var loadingMoreItems = false
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -78,7 +78,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
+                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat, loadingMoreItems: $loadingMoreItems)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -177,6 +177,7 @@ struct ChatView: View {
             showChatInfoSheet = false
             selectedChatItems = nil
             revealedItems = Set()
+            // LALAL
             scrollModel.scrollToBottom()
             stopAudioPlayer()
             if let cId {
@@ -444,7 +445,7 @@ struct ChatView: View {
         return GeometryReader { g in
             let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
             // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
-            ReverseList(items: im.reversedChatItems, mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
+            ReverseList(items: im.reversedChatItems, mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
                 let ci = switch mergedItem {
                 case let .single(item, _): item.item
                 case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item
@@ -477,12 +478,16 @@ struct ChatView: View {
                 )
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in ReverseList
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
-            } loadItems: { pagination, visibleItemIndexesNonReversed in
-                await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
+            } loadItems: { unchecked, pagination, visibleItemIndexesNonReversed in
+                if unchecked {
+                    await loadChatItemsUnchecked(cInfo, pagination, visibleItemIndexesNonReversed)
+                } else {
+                    await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
+                }
             }
             .onAppear {
                 mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
-                loadLastItems($loadingItems, chat.chatInfo)
+                loadLastItems($loadingMoreItems, chat.chatInfo)
                 allowLoadMoreItems = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     allowLoadMoreItems = true
@@ -498,7 +503,7 @@ struct ChatView: View {
                 mergedItems = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
             }
             .onChange(of: chat.id) { _ in
-                loadLastItems($loadingItems, chat.chatInfo)
+                loadLastItems($loadingMoreItems, chat.chatInfo)
                 allowLoadMoreItems = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     allowLoadMoreItems = true
@@ -541,22 +546,29 @@ struct ChatView: View {
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
+        var mergedItems: MergedItems = MergedItems.init(items: [], splits: [], indexInParentItems: [:])
         var totalUnread: Int = 0
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
-        func updateOnListChange(_ listState: ListState) {
+        func updateOnListChange(_ mergedItems: MergedItems, _ listState: ListState) {
             let im = ItemsModel.shared
-            let unreadBelow =
-                if let id = listState.bottomItemId,
-                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
-                {
-                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-                     if chatItem.isRcvNew { unread += 1 }
-                 }
-                } else {
-                    0
-                }
+//            let unreadBelow =
+//                if let id = listState.bottomItemId,
+//                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
+//                {
+//                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
+//                     if chatItem.isRcvNew { unread += 1 }
+//                 }
+//                } else {
+//                    0
+//                }
+            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(mergedItems, listState)
+            let unreadBelow = if let lastVisibleItem {
+                    max(0, totalUnread - lastVisibleItem.unreadBefore)
+            } else {
+             -1
+            }
             let date: Date? =
                 if let topItemDate = listState.topItemDate {
                     Calendar.current.startOfDay(for: topItemDate)
@@ -571,6 +583,7 @@ struct ChatView: View {
                 it.unreadBelow = unreadBelow
                 it.date = date
                 it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
+                it.mergedItems = mergedItems
             }
             
             // set floating button indication mode
@@ -617,6 +630,7 @@ struct ChatView: View {
         let theme: AppTheme
         let scrollModel: ReverseListScrollModel
         let chat: Chat
+        @Binding var loadingMoreItems: Bool
         @ObservedObject var model = FloatingButtonModel.shared
 
         var body: some View {
@@ -638,7 +652,12 @@ struct ChatView: View {
                                 .foregroundColor(theme.colors.primary)
                         }
                         .onTapGesture {
-                            scrollModel.scrollToNextPage()
+                            if let index = model.mergedItems.items.lastIndex(where: { $0.hasUnread() }) {
+                                // scroll to the top unread item
+                                loadingMoreItems = true
+                                scrollModel.scrollToRow(row: index)
+                                loadingMoreItems = false
+                            }
                         }
                         .contextMenu {
                             Button {
@@ -904,8 +923,8 @@ struct ChatView: View {
     }
 
     private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
-        if loadingItems { return false }
-        loadingItems = true
+        if loadingMoreItems { return false }
+        loadingMoreItems = true
         var chatItemsAvailable = true
         var itemsCountChanged = false
         // Load additional items until the page is +50 large after merging
@@ -923,9 +942,31 @@ struct ChatView: View {
         chatItemsAvailable = itemsCountChanged
         //}
         logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
+
         await MainActor.run {
-            loadingItems = false
+            loadingMoreItems = false
         }
+        return true
+    }
+
+    private func loadChatItemsUnchecked(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
+        var chatItemsAvailable = true
+        var itemsCountChanged = false
+        // Load additional items until the page is +50 large after merging
+        //while chatItemsAvailable && filtered(im.reversedChatItems).count < loadItemsPerPage {
+        let oldCount = im.reversedChatItems.count
+        await apiLoadMessages(
+            cInfo.chatType,
+            cInfo.apiId,
+            pagination,
+            im.chatState,
+            searchText,
+            visibleItemIndexesNonReversed
+        )
+        itemsCountChanged = im.reversedChatItems.count != oldCount
+        chatItemsAvailable = itemsCountChanged
+        //}
+        logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
         return true
     }
 

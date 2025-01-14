@@ -18,6 +18,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     @Binding var unreadCount: Int
 
     @Binding var scrollState: ReverseListScrollModel.State
+    @Binding var loadingMoreItems: Bool
     @Binding var allowLoadMoreItems: Bool
     @Binding var ignoreLoadingRequests: [Int64]
 
@@ -25,8 +26,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     /// Index, merged item
     let content: (Int, MergedItem) -> Content
 
-    // pagination, visibleItemIndexesNonReversed
-    let loadItems: (ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
+    // unchecked, pagination, visibleItemIndexesNonReversed
+    let loadItems: (Bool, ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
 
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
@@ -40,7 +41,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             case .nextPage:
                 controller.scrollToNextPage()
             case let .item(id):
-                controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
+                let row = items.firstIndex(where: { $0.id == id })
+                if let row {
+                    controller.scroll(to: row, position: .bottom)
+                } else {
+                    controller.scrollToItem(id)
+                }
+            case let .row(row):
+                controller.scroll(to: row, position: .bottom)
             case .bottom:
                 controller.scroll(to: 0, position: .top)
             }
@@ -111,30 +119,35 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 //if indexPath.item > self.itemCount - 8 {
-                    logger.debug("LALAL ITEM \(indexPath.item)")
-                    Task {
-                        // do not put it outside Task because it will be stackoverflow error
-                        let state = await MainActor.run {
-                            self.getListState()
+                logger.debug("LALAL ITEM \(indexPath.item)")
+                Task {
+                    // do not put it outside Task because it will be stackoverflow error
+                    let state = await MainActor.run {
+                        self.getListState()
+                    }
+                    if let state, prevFirstVisible != state.firstVisibleItemIndex {
+                        logger.debug("LALAL LOADING before")
+                        if representer.scrollState != .atDestination {
+                            // do not try to load anything in order to not interupt scrolling
+                            return
                         }
-                        if let state, prevFirstVisible != state.firstVisibleItemIndex {
-                            prevFirstVisible = state.firstVisibleItemIndex
-                            logger.debug("LALAL LOADING before")
-                            await preloadItems(self.representer.mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
-                                logger.debug("LALAL LOADING INSIDE")
-                                let triedToLoad = await self.representer.loadItems(pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
-                                if triedToLoad {
-                                    let t = self.tableView.panGestureRecognizer.translation(in: self.tableView.superview!)
-                                    if t.y != 0 {
-                                        self.translationToApply = t
-                                    }
-                                    // stop scrolling
-                                    self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
+                        prevFirstVisible = state.firstVisibleItemIndex
+                        await preloadItems(self.representer.mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
+                            logger.debug("LALAL LOADING INSIDE")
+                            let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
+                            let superview = self.tableView.superview
+                            if triedToLoad, let superview {
+                                let t = self.tableView.panGestureRecognizer.translation(in: superview)
+                                if t.y != 0 {
+                                    self.translationToApply = t
                                 }
-                                return triedToLoad
+                                // stop scrolling
+                                self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
                             }
+                            return triedToLoad
                         }
                     }
+                }
                 //}
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
@@ -167,7 +180,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
                 .sink {
                     if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
-                        ChatView.FloatingButtonModel.shared.updateOnListChange(listState)
+                        ChatView.FloatingButtonModel.shared.updateOnListChange(representer.mergedItems, listState)
                     }
                 }
                 .store(in: &bag)
@@ -328,10 +341,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
             } else if wasCount != snapshot.numberOfItems {
                 logger.debug("LALAL drag \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
-//                tableView.panGestureRecognizer.isEnabled = false
-//                logger.debug("LALAL drag2 \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
+                //                tableView.panGestureRecognizer.isEnabled = false
+                //                logger.debug("LALAL drag2 \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
                 if tableView.isDecelerating {
-//                    CATransaction.begin()
+                    //                    CATransaction.begin()
                     itemsInPrevSnapshot = itemsInCurrentSnapshot
                     tableView.beginUpdates()
                     dataSource.apply(
@@ -339,7 +352,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         animatingDifferences: false
                     )
                     tableView.endUpdates()
-//                    CATransaction.commit()
+                    //                    CATransaction.commit()
                     tableView.panGestureRecognizer.isEnabled = true
                 } else {
                     itemsInPrevSnapshot = itemsInCurrentSnapshot
@@ -348,30 +361,30 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         animatingDifferences: false
                     )
                     //if snapshot.itemIdentifiers[0] == prevSnapshot.itemIdentifiers[0] {
-                        // added new items to top
+                    // added new items to top
 
                     //} else {
-                        // added new items to bottom
-//                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
-                        self.tableView.scrollToRow(
-                            at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + wasFirstVisibleRow)), section: 0),
-                            at: .top,
-                            animated: false
-                        )
-                        self.tableView.setContentOffset(
-                            CGPoint(x: 0, y: self.tableView.contentOffset.y - wasFirstVisibleOffset),
-                            animated: false
-                        )
-                        let state = getListState()!
-                        logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
+                    // added new items to bottom
+                    //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
+                    self.tableView.scrollToRow(
+                        at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + wasFirstVisibleRow)), section: 0),
+                        at: .top,
+                        animated: false
+                    )
+                    self.tableView.setContentOffset(
+                        CGPoint(x: 0, y: self.tableView.contentOffset.y - wasFirstVisibleOffset),
+                        animated: false
+                    )
+                    let state = getListState()!
+                    logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
 
                     if let t = translationToApply {
-//                        self.tableView.panGestureRecognizer.setTranslation(CGPointMake(t.x, t.y), in: self.tableView.superview!)
+                        //                        self.tableView.panGestureRecognizer.setTranslation(CGPointMake(t.x, t.y), in: self.tableView.superview!)
                         let o = self.tableView.contentOffset
-//                        UIView.animate(withDuration: 0.5) {
-//                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: false)
-//                            self.tableView.layoutIfNeeded()
-//                        }
+                        //                        UIView.animate(withDuration: 0.5) {
+                        //                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: false)
+                        //                            self.tableView.layoutIfNeeded()
+                        //                        }
                         self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
                         translationToApply = nil
                     }
@@ -392,22 +405,23 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                visibleRows.last?.row ?? 0 < representer.mergedItems.items.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
                 let topItemDate: Date? =
-                    if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
-                        representer.mergedItems.items[lastVisible.item].oldest().item.meta.itemTs
-                    } else {
-                        nil
-                    }
+                if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
+                    representer.mergedItems.items[lastVisible.item].oldest().item.meta.itemTs
+                } else {
+                    nil
+                }
                 let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) })
                 let firstVisibleOffset: CGFloat? = if let row = firstVisible?.row {
                     offsetForRow(row)
                 } else { nil }
                 let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) })
+                logger.debug("LALAL LAST \(lastVisible?.item ?? -2)")
                 let bottomItemId: ChatItem.ID? =
-                    if let firstVisible {
-                        representer.mergedItems.items[firstVisible.row].newest().item.id
-                    } else {
-                        nil
-                    }
+                if let firstVisible {
+                    representer.mergedItems.items[firstVisible.row].newest().item.id
+                } else {
+                    nil
+                }
                 return ListState(scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId, firstVisibleItemIndex: firstVisible?.row ?? 0, lastVisibleItemIndex: lastVisible?.row ?? 0, firstVisibleItemOffset: firstVisibleOffset ?? 0)
             }
             return nil
@@ -434,6 +448,46 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 relativeFrame.maxY > InvertedTableView.inset &&
                 relativeFrame.minY < tableView.frame.height - InvertedTableView.inset
             } else { false }
+        }
+
+        func scrollToItem(_ itemId: Int64) {
+            Task {
+                logger.debug("LALAL SCROLL TO ITEM \(itemId)  \(ItemsModel.shared.reversedChatItems.count)")
+                do {
+                    var index = representer.mergedItems.indexInParentItems[itemId]
+                    // setting it to 'loading' even if the item is loaded because in rare cases when the resulting item is near the top, scrolling to
+                    // it will trigger loading more items and will scroll to incorrect position (because of trimming)
+                    await MainActor.run {
+                        representer.loadingMoreItems = true
+                    }
+                    logger.debug("LALAL SCROLL TO ITEM \(index ?? -2)")
+                    if index == nil {
+                        let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
+                        let oldSize = ItemsModel.shared.reversedChatItems.count
+                        _ = await self.representer.loadItems(true, pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems))})
+                        var repeatsLeft = 50
+                        while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
+                            try await Task.sleep(nanoseconds: 20_000000)
+                            repeatsLeft -= 1
+                            logger.debug("LALAL SCROLL REPEATS \(repeatsLeft)")
+                        }
+                        index = representer.mergedItems.indexInParentItems[itemId]
+                    }
+                    logger.debug("LALAL SCROLL TO ITEM2 \(index ?? -3) \(ItemsModel.shared.reversedChatItems.count)")
+                    if let index {
+                        scroll(to: min(ItemsModel.shared.reversedChatItems.count - 1, index), position: .bottom)
+                    } else {
+                        await MainActor.run {
+                            representer.scrollState = .atDestination
+                        }
+                    }
+                } catch {
+                    logger.error("Error scrolling to item: \(error)")
+                }
+                await MainActor.run {
+                    representer.loadingMoreItems = false
+                }
+            }
         }
     }
 
@@ -502,6 +556,7 @@ class ReverseListScrollModel: ObservableObject {
         enum Destination: Equatable {
             case nextPage
             case item(ChatItem.ID)
+            case row(Int)
             case bottom
         }
 
@@ -521,6 +576,10 @@ class ReverseListScrollModel: ObservableObject {
 
     func scrollToItem(id: ChatItem.ID) {
         state = .scrollingTo(.item(id))
+    }
+
+    func scrollToRow(row: Int) {
+        state = .scrollingTo(.row(row))
     }
 }
 

@@ -85,6 +85,22 @@ func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ list
     }
 }
 
+func oldestPartiallyVisibleListItemInListStateOrNull(_ mergedItems: MergedItems, _ listState: ListState) -> ListItem? {
+    if listState.lastVisibleItemIndex < mergedItems.items.count {
+        return mergedItems.items[listState.lastVisibleItemIndex].oldest()
+    } else {
+        return mergedItems.items.last?.oldest()
+    }
+}
+
+private func lastFullyVisibleIemInListState(_ mergedItems: MergedItems, _ listState: ListState) -> ChatItem? {
+    if listState.lastVisibleItemIndex < mergedItems.items.count {
+        return mergedItems.items[listState.lastVisibleItemIndex].newest().item
+    } else {
+        return mergedItems.items.last?.newest().item
+    }
+}
+
 private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVisibleIndex: Int, _ remaining: Int, _ splits: [SplitRange]) -> Int? {
     for split in splits {
         // before any split
@@ -105,3 +121,16 @@ private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVis
     return nil
 }
 
+func tryBlockAndSetLoadingMore(_ loadingMoreItems: Binding<Bool>, _ block: @escaping () async throws -> Void) async {
+    do {
+        await MainActor.run {
+            loadingMoreItems.wrappedValue = true
+        }
+        try await block()
+    } catch {
+        logger.error("Error loading more items: \(error)")
+    }
+    await MainActor.run {
+        loadingMoreItems.wrappedValue = false
+    }
+}

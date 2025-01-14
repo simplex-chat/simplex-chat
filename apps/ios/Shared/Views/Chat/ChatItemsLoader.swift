@@ -105,7 +105,7 @@ func apiLoadMessages(
         }
     case .around:
         newItems.append(contentsOf: oldItems)
-        let newSplits = removeDuplicatesAndUpperSplits(&newItems, chat, chatState.splits, visibleItemIndexesNonReversed)
+        let newSplits = await removeDuplicatesAndUpperSplits(&newItems, chat, chatState.splits, visibleItemIndexesNonReversed)
         // currently, items will always be added on top, which is index 0
         newItems.insert(contentsOf: chat.chatItems, at: 0)
         let newReversed: [ChatItem] = newItems.reversed()
@@ -270,15 +270,15 @@ private func removeDuplicatesAndUpperSplits(
     _ newItems: inout [ChatItem],
     _ chat: Chat,
     _ splits: [Int64],
-    _ visibleItemIndexesNonReversed: () -> ClosedRange<Int>
-) -> [Int64] {
+    _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int>
+) async -> [Int64] {
     if splits.isEmpty {
         removeDuplicates(&newItems, chat)
         return splits
     }
 
     var newSplits = splits
-    let visibleItemIndexes = visibleItemIndexesNonReversed()
+    let visibleItemIndexes = await MainActor.run { visibleItemIndexesNonReversed() }
     let (newIds, _) = mapItemsToIds(chat.chatItems)
     var idsToTrim: [BoxedValue<Set<Int64>>] = []
     idsToTrim.append(BoxedValue(Set()))
