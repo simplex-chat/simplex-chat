@@ -410,14 +410,19 @@ struct ChatView: View {
     private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
         reversedChatItems
             .enumerated()
-            .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > 0 {
-                    mergeCategory != reversedChatItems[index - 1].mergeCategory
-                } else {
-                    true
+            .reduce(into: [ChatItem]()) { result, current in
+                let (index, chatItem) = current
+                if let mergeCategory = chatItem.mergeCategory,
+                   index > 0,
+                   mergeCategory == reversedChatItems[index - 1].mergeCategory {
+                    if var lastItem = result.last {
+                        lastItem.mergeCount += 1
+                        result[result.count - 1] = lastItem 
+                    }
+                    return
                 }
+                result.append(chatItem)
             }
-            .map { $0.element }
     }
 
 
@@ -434,6 +439,8 @@ struct ChatView: View {
                                 : voiceNoFrame
                                     ? (g.size.width - 32)
                                     : (g.size.width - 32) * 0.84
+                print("[mergedItems] \(ci.content.msgContent?.text ?? "")")
+
                 return ChatItemWithMenu(
                     chat: $chat,
                     chatItem: ci,
