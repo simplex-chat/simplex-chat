@@ -59,7 +59,7 @@
 &lt;p&gt;Once the servers receive the file identifiers, they can now block the file.&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;File servers cannot look inside end-to-end encrypted files, and they don&#39;t even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the keys to some file, we can unlock it and look inside. If it violates conditions of use, we can remove or block this file.&lt;/p&gt;
+&lt;p&gt;File servers cannot look inside end-to-end encrypted files, and they don&#39;t even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the address and decryption key of the particular file (each file is encrypted by a different set of keys), we can receive this file. If it violates conditions of use, we can remove or block this file. It doesn&#39;t allow us to access any other user data or files.&lt;/p&gt;
 &lt;p&gt;In this way, the moderation is possible without any content scanning, preserving privacy and security of end-to-end encryption.&lt;/p&gt;
 &lt;h2 id=&quot;privacy-preserving-content-moderation&quot; tabindex=&quot;-1&quot;&gt;Privacy preserving content moderation&lt;/h2&gt;
 &lt;p&gt;Right now, when we act on user complaints, we delete uploaded files or the links to join the groups from our servers, and to the users it looks as if something stopped working.&lt;/p&gt;

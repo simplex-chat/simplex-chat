@@ -434,7 +434,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>Once the servers receive the file identifiers, they can now block the file.</p>
 </li>
 </ol>
-<p>File servers cannot look inside end-to-end encrypted files, and they don't even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the keys to some file, we can unlock it and look inside. If it violates conditions of use, we can remove or block this file.</p>
+<p>File servers cannot look inside end-to-end encrypted files, and they don't even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the address and decryption key of the particular file (each file is encrypted by a different set of keys), we can receive this file. If it violates conditions of use, we can remove or block this file. It doesn't allow us to access any other user data or files.</p>
 <p>In this way, the moderation is possible without any content scanning, preserving privacy and security of end-to-end encryption.</p>
 <h2 id="privacy-preserving-content-moderation" tabindex="-1">Privacy preserving content moderation</h2>
 <p>Right now, when we act on user complaints, we delete uploaded files or the links to join the groups from our servers, and to the users it looks as if something stopped working.</p>
