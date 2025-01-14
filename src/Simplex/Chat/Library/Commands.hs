@@ -3267,7 +3267,7 @@ startExpireCIThread user@User {userId} = do
           expireFlags <- asks expireCIFlags
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           lift waitChatStartedAndActivated
-          expireItemsWithoutTTL
+          expireItemsWithGlobalExpire
           expireItemsWithTTL
         liftIO $ threadDelay' interval
     expireItemsWithTTL = do
@@ -3280,7 +3280,7 @@ startExpireCIThread user@User {userId} = do
       forM_ ttlGroups $ \g@GroupInfo {chatItemTTL} -> case chatItemTTL of
         Just ciTTL -> expireChatItems user [] [g] ciTTL False
         Nothing -> pure ()
-    expireItemsWithoutTTL = do
+    expireItemsWithGlobalExpire = do
       ttl <- withStore' (`getChatItemTTL` user)
       vr <- chatVersionRange
       contacts <- withStore' $ \db -> getDirectChatsWithGlobalExpire db vr user
