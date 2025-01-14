@@ -26,7 +26,7 @@ import SchemaDump
 import WebRTCTests
 #endif
 
-main :: IO ()
+main :: IO ()ch
 main = do
   setLogLevel LogError
   withGlobalLogging logCfg . hspec
@@ -37,7 +37,7 @@ main = do
     $ do
 -- TODO [postgres] schema dump for postgres
 #if !defined(dbPostgres)
-      fdescribe "Schema dump" schemaDumpTest
+      describe "Schema dump" schemaDumpTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "SimpleX chat markdown" markdownTests
