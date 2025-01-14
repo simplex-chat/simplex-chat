@@ -2178,7 +2178,6 @@
     <string name="delete_chat_for_all_members_cannot_undo_warning">La discussion sera supprimé pour tous les membres - cela ne peut pas être annulé !</string>
     <string name="delete_chat_for_self_cannot_undo_warning">Le discussion sera supprimé pour vous - il n\'est pas possible de revenir en arrière !</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Les conditions seront acceptées pour les opérateurs activés après 30 jours.</string>
-    <string name="change_list"></string>
     <string name="sync_connection_desc">La connexion nécessite une renégociation du chiffrement.</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Lien utilisable une seule fois <i>avec un seul contact</i> - partagez en personne ou via n'importe quelle messagerie.]]></string>
     <string name="address_or_1_time_link">Adresse ou lien unique ?</string>
