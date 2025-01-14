@@ -38,14 +38,14 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SimpleX blog: SimpleX network: privacy preserving content moderation</title>
+    <title>SimpleX blog: SimpleX network: large groups and privacy preserving content moderation</title>
     <meta name="Content-Type" content="text/html;charset=utf-8" />
-    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20250114-simplex-network-privacy-preserving-content-moderation.html" />
-    <meta property="og:url" content="https://simplex.chat/blog/20250114-simplex-network-privacy-preserving-content-moderation.html" />
+    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html" />
+    <meta property="og:url" content="https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html" />
     <meta property="og:type" content="article" />
-    <meta property="og:title" content="SimpleX network: privacy preserving content moderation" />
+    <meta property="og:title" content="SimpleX network: large groups and privacy preserving content moderation" />
     
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20250114-locked-books.jpg" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -384,15 +384,85 @@ window.addEventListener('scroll',changeHeaderBg);
     </div>
 
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
-      <div class="py-6 md:p-[60px]"><h1 id="simplex-network-privacy-preserving-content-moderation" tabindex="-1">SimpleX network: privacy preserving content moderation</h1>
-<p><strong>Will be published:</strong> Jan 14, 2025</p>
-<p>This blog post will cover our approach to removing CSAM that has:</p>
+      <div class="py-6 md:p-[60px]"><h1 id="simplex-network-large-groups-and-privacy-preserving-content-moderation" tabindex="-1">SimpleX network: large groups and privacy preserving content moderation</h1>
+<p><strong>Published:</strong> Jan 14, 2025</p>
+<img src="./images/20250114-locked-books.jpg" width="345" class="float-to-right">
+<p>Many people believe that it is impossible to moderate and prevent abuse in end-to-end encrypted conversations. This belief is incorrect – there is a way to prevent abuse and distribution of illegal content without any compromises to users privacy and security of end-to-end encryption.</p>
+<p>Anti-privacy lobbyists use this incorrect belief to advocate for scanning of private communications, which not only would fail to prevent abuse, but would make it worse - because our private data will become available to criminals.</p>
+<p>So it's very important to understand how privacy preserving content moderation works, and educate the politicians who you voted for and who is currently in the office that we do not need to compromise privacy and security in any way to substantially reduce online crime and abuse.</p>
+<p>This post answers these questions:</p>
 <ul>
-<li>NO user identification, thus preserving privacy of the users.</li>
-<li>NO client- or server-side content scanning, thus preserving privacy and security of e2e encryption.</li>
+<li>Why <a href="#large-groups-on-simplex-network">large groups on SimpleX network</a> don't work well?</li>
+<li>How do we plan to <a href="#can-large-groups-scale">make them scale</a>?</li>
+<li>How do <a href="#preventing-abuse-with-anonymous-participation">group owners prevent abuse</a> when people participate anonymously?</li>
+<li>How do server operators <a href="#preventing-server-abuse-without-compromising-e2e-encryption">prevent abuse of their servers</a> and <a href="#privacy-preserving-content-moderation">how these measures will evolve</a> without any compromises to privacy and end-to-end encryption?</li>
+<li>Which <a href="#privacy-and-security-improvements-we-plan-this-year">privacy and security improvements</a> we plan this year?</li>
 </ul>
-<p>The current and future content restriction will only be applied based on the users' complaints, and only to the content that can be accessed by server operators via public channels.</p>
-<p>Please read this document: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2024-12-30-content-moderation.md">https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2024-12-30-content-moderation.md</a></p>
+<h2 id="large-groups-on-simplex-network" tabindex="-1">Large groups on SimpleX network</h2>
+<p>When we designed groups, we expected them to be used primarily for small groups where people know each other, with not more than 100 or so members.</p>
+<p>But we learnt that people want to participate in public discussions remaining anonymous - it protects their freedom of speech. As an experiment, we are curating a small <a href="/docs/directory.html">directory of the groups</a> that currently has almost 400 public groups, with the largest ones having thousands of members. You can connect to this experimental directory via <a href="https://simplex.chat/contact#/?v=2-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion">SimpleX chat address</a>.</p>
+<h2 id="can-large-groups-scale" tabindex="-1">Can large groups scale?</h2>
+<p>Currently the groups are fully decentralized, and every time you send the message to some group your client has to send it to each group member, which is very costly for traffic and battery in large groups.</p>
+<p>We are currently working on the new group architecture when dedicated group members that run their clients on the server or on desktop with good internet connection will re-broadcast messages to all members – these members are &quot;super-peers&quot;. We will be offering pre-configured super-peers via the app, and you will be able to use your own super-peers, in case you are hosting a large private group, and to have better control and ownership of the group - e.g., if we decide to remove our super peer from the group it will continue functioning because your super peer continues re-broadcasting messages.</p>
+<h2 id="preventing-abuse-with-anonymous-participation" tabindex="-1">Preventing abuse with anonymous participation</h2>
+<p>All public discussions are abused by spammers and trolls, whether they are anonymous or not. We have been evolving ability of group owners to moderate conversations by allowing to remove inappropriate and off-topic messages, to block members who send spam, and to make all new members who join their group unable to send messages until approved.</p>
+<p>As support for large groups improves, we expect the attempts to abuse may increase too, unless we add better moderation capabilities in advance.</p>
+<p>v6.3 will add ability of the group members to send reports to the group owners and administrators - the beta version we just released adds ability to manage these reports, so group admins won't miss reports when members start sending them.</p>
+<p>Other features that we plan to add this year to improve moderation:</p>
+<ul>
+<li>message comments - some groups may choose to allow only comments, when ability to send messages is restricted to group owners or admins.</li>
+<li>ability to limit the maximum number of messages the members can send per day.</li>
+<li>ability to pre-moderate messages before they can be seen by all members.</li>
+<li>&quot;knocking&quot; - having a conversation with the new members before they are added to the group.</li>
+<li>sub-groups - smaller conversations with the same members.</li>
+</ul>
+<h2 id="preventing-server-abuse-without-compromising-e2e-encryption" tabindex="-1">Preventing server abuse without compromising e2e encryption</h2>
+<p>Some categories of content may be prohibited by servers operators. An extreme case would be child sexual abuse materials (CSAM).</p>
+<p>Many people believe that when conversation is end-to-end encrypted, the problem is unsolvable. This incorrect belief is used by unscrupulous lobbyists and politicians who attempt to mandate various types of content scanning under the guise of preventing CSAM distribution.</p>
+<p>We <a href="/blog/20240601-protecting-children-safety-requires-e2e-encryption.html">wrote before</a> about how such measures not only would fail to solve the problem, but would also make it worse. If our private photos become available to service providers, they will eventually become available to criminals too, and will be used to abuse and exploit the users and their children.</p>
+<p>An absolute majority of CSAM distributed online is publicly accessible. Many large tech companies failed to act and to remove CSAM from their services before it became an epidemic. We see as the most important objective to eliminate the possibility to distribute CSAM from publicly accessible groups, even if it hurts network growth.</p>
+<p>When we receive a user complaint about CSAM shared in any group, we remove the files and in some cases groups from our servers. Our approach to moderation preserves user privacy and security of end-to-end encryption.</p>
+<p>How does it work? Let's go over the process step by step.</p>
+<ol>
+<li>
+<p>A user discovered the link to join the group that distributes CSAM and sent a complaint to our support email address or via the app to <a href="simplex:/contact#/?v=1&amp;smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D">SimpleX Chat team</a> contact.</p>
+</li>
+<li>
+<p>Once we received the link to join the group, we instruct our automated bot to join it. If the complaint is confirmed as valid, the bot sends the information about the files sent in this group to the servers that store this file.</p>
+</li>
+<li>
+<p>Once the servers receive the file identifiers, they can now block the file.</p>
+</li>
+</ol>
+<p>File servers cannot look inside end-to-end encrypted files, and they don't even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the keys to some file, we can unlock it and look inside. If it violates conditions of use, we can remove or block this file.</p>
+<p>In this way, the moderation is possible without any content scanning, preserving privacy and security of end-to-end encryption.</p>
+<h2 id="privacy-preserving-content-moderation" tabindex="-1">Privacy preserving content moderation</h2>
+<p>Right now, when we act on user complaints, we delete uploaded files or the links to join the groups from our servers, and to the users it looks as if something stopped working.</p>
+<p>We are currently rolling out the change to the servers that would mark these files and group links as blocked, so that users who try to download them or to join blocked groups can see that they were blocked for violating server operator conditions of use.</p>
+<p>Later this year we plan to do more than that: when the client discovers that the uploaded file was blocked, it may, optionally, depending on the information in the blocking record, disable further uploads from the app to the servers of the operator that blocked the file. Also, when the client that tried to receive the file sees that the file is blocked, it may also refuse to receive further files from the same group member via the same servers.</p>
+<p>In this way, servers preserve privacy and security of the users and content, but they are still able to restrict the future actions of the users who violate the conditions of use.</p>
+<p>We discussed this plan with the users, and we really appreciate their feedback. The current plan is quite different from our initial ideas, the users had a real impact on these decisions. Users asked the questions below.</p>
+<p><strong>Can't users modify their clients code to circumvent these restrictions?</strong></p>
+<p>Yes, they can, but for this to work both sender and recipient would have to modify their clients, and it's both technically complex, so most users won't do it, and it is also hard to coordinate between users who don't know and don't trust each other.</p>
+<p>So these measures would be effective, even though they can be in theory circumvented, as any restrictions can be.</p>
+<p><strong>Can't users use other servers?</strong></p>
+<p>Yes, they can. But in the same way as web browser is not responsible for the content you can access, SimpleX app should not restrict your communications with other servers based on blocking action from just one server. That approach allows different server operators to have different content policies, depending on their jurisdiction and other factors.</p>
+<p><strong>Wouldn't these measures be abused?</strong></p>
+<p>While server operators can indeed abuse such restrictions, they also have other ways to disrupt communications, as described in the <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#simplex-messaging-protocol-server">threat model</a>. Any communication system, with or without servers, can be disrupted by its participants and providers.</p>
+<p>But server operators offer their servers because they want them to be used, whether because they expect that it will be profitable in the future or because they want to support decentralized communication for charitable reasons.</p>
+<p>So operators have no reason to abuse users - if they do, users would simply stop using their servers. At the same time, server operators need to have technical means to protect their servers from abuse too, and the planned client-side restrictions would allow it.</p>
+<p><strong>What additional measures are considered?</strong></p>
+<p>We published other technical ideas that can be used to prevent distribution of illegal content in <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2024-12-30-content-moderation.md">this document</a>. What is important, that none of these measures compromise users' privacy or end-to-end encryption, and they can (and should) only be applied to publicly accessible content that other users complained about.</p>
+<p>We technically cannot, and we won't scan all content. We actively <a href="/blog/20240704-future-of-privacy-enforcing-privacy-standards.html">campaign against any content-scanning proposals</a>, not only because it violates our right to privacy, but also because it would result in huge increase of online crime.</p>
+<p>The belief that it is impossible to moderate conversations when they are e2e encrypted is incorrect. It is possible when users themselves share conversation contents with server operators, in which case the operators can identify and, if necessary, remove files. It is also possible to moderate conversations that users made publicly accessible.</p>
+<h2 id="privacy-and-security-improvements-we-plan-this-year" tabindex="-1">Privacy and security improvements we plan this year</h2>
+<p>Not only we won't reduce privacy and security, we plan to increase it this year.</p>
+<p>We plan to add:</p>
+<ul>
+<li>quantum-resistant e2e encryption in small groups.</li>
+<li>receiving proxy for files, to protect users IP addresses and other transport metadata.</li>
+</ul>
+<p>We see privacy and security as necessary for online safety, and prevention of abuse. If you don't already use SimpleX network, try it now, and let us know how to make it better.</p>
 </div>
     </section>
 
