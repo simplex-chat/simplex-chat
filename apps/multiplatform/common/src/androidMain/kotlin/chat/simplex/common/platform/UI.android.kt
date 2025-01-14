@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import chat.simplex.common.AppScreen
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.clear
 import chat.simplex.common.model.clearAndNotify
 import chat.simplex.common.views.helpers.*
@@ -74,9 +75,16 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
     if (ModalManager.start.hasModalsOpen()) {
       ModalManager.start.closeModal()
     } else if (chatModel.chatId.value != null) {
-      // Since no modals are open, the problem is probably in ChatView
-      chatModel.chatId.value = null
-      chatModel.chatItems.clearAndNotify()
+      withApi {
+        withChats {
+          // Since no modals are open, the problem is probably in ChatView
+          chatModel.chatId.value = null
+          chatItems.clearAndNotify()
+        }
+        withChats {
+          chatItems.clearAndNotify()
+        }
+      }
     } else {
       // ChatList, nothing to do. Maybe to show other view except ChatList
     }

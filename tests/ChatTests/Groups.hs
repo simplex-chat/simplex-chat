@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -16,22 +17,26 @@ import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
-import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
+import Test.Hspec hiding (it)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import Test.Hspec hiding (it)
+#endif
 
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
@@ -104,10 +109,13 @@ chatGroupTests = do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
     it "group link without contact - connecting (slow handshake)" testPlanGroupLinkNoContactConnectingSlow
+#if !defined(dbPostgres)
+  -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
     it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
+#endif
   describe "group message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
   describe "group delivery receipts" $ do
@@ -175,6 +183,8 @@ chatGroupTests = do
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
+  describe "group member reports" $ do
+    it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -3547,6 +3557,7 @@ testPlanGroupLinkNoContactConnectingSlow tmp = do
     bob ##> ("/c " <> gLink)
     bob <## "group link: connecting to group #team"
 
+#if !defined(dbPostgres)
 testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
 testGroupMsgDecryptError tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -3690,6 +3701,7 @@ testGroupSyncRatchetCodeReset tmp =
         connVerified
           | verified = "connection verified"
           | otherwise = "connection not verified, use /code command to see security code"
+#endif
 
 testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
 testSetGroupMessageReactions =
@@ -6540,3 +6552,80 @@ testGroupMemberInactive tmp = do
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testGroupMemberReports :: HasCallStack => FilePath -> IO ()
+testGroupMemberReports =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "jokes" alice bob cath
+      alice ##> "/mr jokes bob moderator"
+      concurrentlyN_
+        [ alice <## "#jokes: you changed the role of bob from admin to moderator",
+          bob <## "#jokes: alice changed your role from admin to moderator",
+          cath <## "#jokes: alice changed the role of bob from admin to moderator"
+        ]
+      alice ##> "/mr jokes cath member"
+      concurrentlyN_
+        [ alice <## "#jokes: you changed the role of cath from admin to member",
+          bob <## "#jokes: alice changed the role of cath from admin to member",
+          cath <## "#jokes: alice changed your role from admin to member"
+        ]
+      alice ##> "/create link #jokes"
+      gLink <- getGroupLink alice "jokes" GRMember True
+      dan ##> ("/c " <> gLink)
+      dan <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "dan (Daniel): accepting request to join group #jokes..."
+            alice <## "#jokes: dan joined the group",
+          do
+            dan <## "#jokes: joining the group..."
+            dan <## "#jokes: you joined the group"
+            dan <###
+              [ "#jokes: member bob (Bob) is connected",
+                "#jokes: member cath (Catherine) is connected"
+              ],
+          do
+            bob <## "#jokes: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#jokes: new member dan is connected",
+          do
+            cath <## "#jokes: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#jokes: new member dan is connected"
+        ]
+      cath #> "#jokes inappropriate joke"
+      concurrentlyN_
+        [ alice <# "#jokes cath> inappropriate joke",
+          bob <# "#jokes cath> inappropriate joke",
+          dan <# "#jokes cath> inappropriate joke"
+        ]
+      dan ##> "/report #jokes content inappropriate joke"
+      dan <# "#jokes > cath inappropriate joke"
+      dan <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#jokes dan> > cath inappropriate joke"
+            alice <## "      report content",
+          do
+            bob <# "#jokes dan> > cath inappropriate joke"
+            bob <## "      report content",
+          (cath </)
+        ]
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
+      alice ##> "\\\\ #jokes cath inappropriate joke"
+      concurrentlyN_
+        [ do
+            alice <## "#jokes: 1 messages deleted by member alice"
+            alice <## "message marked deleted by you",
+          do
+            bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
+            bob <## "#jokes: 1 messages deleted by member alice",
+          cath <# "#jokes cath> [marked deleted by alice] inappropriate joke",
+          do
+            dan <# "#jokes cath> [marked deleted by alice] inappropriate joke"
+            dan <## "#jokes: 1 messages deleted by member alice"
+        ]
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])

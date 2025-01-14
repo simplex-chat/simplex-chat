@@ -347,6 +347,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
   try {
     when {
       user.activeUser -> {
+        removeWallpaperFilesFromAllChats(user)
         val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
         if (newActive != null) {
           m.controller.changeActiveUser_(user.remoteHostId, newActive.userId, null)
@@ -366,6 +367,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
         m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
       }
     }
+    removeWallpaperFilesFromTheme(user.uiThemes)
     m.removeUser(user)
     ntfManager.cancelNotificationsForUser(user.userId)
   } catch (e: Exception) {

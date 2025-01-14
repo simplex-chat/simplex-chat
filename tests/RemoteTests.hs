@@ -12,10 +12,10 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Map.Strict as M
-import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (versionNumber)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
+import Simplex.Chat.Remote (remoteFilesFolder)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -214,7 +214,7 @@ remoteStoreFileTest =
 
       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
       desktopHostStore <- case M.lookup (RHId 1) rhs of
-        Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+        Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> remoteFilesFolder
         _ -> fail "Host session 1 should be started"
       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
       desktop <## "file test.pdf stored on remote host 1"
@@ -338,7 +338,7 @@ remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
 
   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
   desktopHostStore <- case M.lookup (RHId 1) rhs of
-    Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+    Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> remoteFilesFolder
     _ -> fail "Host session 1 should be started"
 
   mobileName <- userName mobile

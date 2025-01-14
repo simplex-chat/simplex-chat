@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
@@ -51,6 +52,7 @@ sealed class ComposeContextItem {
   @Serializable class QuotedItem(val chatItem: ChatItem): ComposeContextItem()
   @Serializable class EditingItem(val chatItem: ChatItem): ComposeContextItem()
   @Serializable class ForwardingItems(val chatItems: List<ChatItem>, val fromChatInfo: ChatInfo): ComposeContextItem()
+  @Serializable class ReportedItem(val chatItem: ChatItem, val reason: ReportReason): ComposeContextItem()
 }
 
 @Serializable
@@ -89,13 +91,28 @@ data class ComposeState(
       is ComposeContextItem.ForwardingItems -> true
       else -> false
     }
+  val reporting: Boolean
+    get() = when (contextItem) {
+      is ComposeContextItem.ReportedItem -> true
+      else -> false
+    }
+  val submittingValidReport: Boolean
+    get() = when (contextItem) {
+      is ComposeContextItem.ReportedItem -> {
+        when (contextItem.reason) {
+          is ReportReason.Other -> message.isNotEmpty()
+          else -> true
+        }
+      }
+      else -> false
+    }
   val sendEnabled: () -> Boolean
     get() = {
       val hasContent = when (preview) {
         is ComposePreview.MediaPreview -> true
         is ComposePreview.VoicePreview -> true
         is ComposePreview.FilePreview -> true
-        else -> message.isNotEmpty() || forwarding || liveMessage != null
+        else -> message.isNotEmpty() || forwarding || liveMessage != null || submittingValidReport
       }
       hasContent && !inProgress
     }
@@ -119,7 +136,7 @@ data class ComposeState(
 
   val attachmentDisabled: Boolean
     get() {
-      if (editing || forwarding || liveMessage != null || inProgress) return true
+      if (editing || forwarding || liveMessage != null || inProgress || reporting) return true
       return when (preview) {
         ComposePreview.NoPreview -> false
         is ComposePreview.CLinkPreview -> false
@@ -134,6 +151,12 @@ data class ComposeState(
       is ComposePreview.MediaPreview -> preview.content.isNotEmpty()
       is ComposePreview.VoicePreview -> false
       is ComposePreview.FilePreview -> true
+    }
+
+  val placeholder: String
+    get() = when (contextItem) {
+      is ComposeContextItem.ReportedItem -> contextItem.reason.text
+      else -> generalGetString(MR.strings.compose_message_placeholder)
     }
 
   val empty: Boolean
@@ -170,6 +193,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
     is MsgContent.MCVideo -> ComposePreview.MediaPreview(images = listOf(mc.image), listOf(UploadContent.SimpleImage(getAppFileUri(fileName))))
     is MsgContent.MCVoice -> ComposePreview.VoicePreview(voice = fileName, mc.duration / 1000, true)
     is MsgContent.MCFile -> ComposePreview.FilePreview(fileName, getAppFileUri(fileName))
+    is MsgContent.MCReport -> ComposePreview.NoPreview
     is MsgContent.MCUnknown, null -> ComposePreview.NoPreview
   }
 }
@@ -483,8 +507,22 @@ fun ComposeView(
         is MsgContent.MCVideo -> MsgContent.MCVideo(msgText, image = msgContent.image, duration = msgContent.duration)
         is MsgContent.MCVoice -> MsgContent.MCVoice(msgText, duration = msgContent.duration)
         is MsgContent.MCFile -> MsgContent.MCFile(msgText)
+        is MsgContent.MCReport -> MsgContent.MCReport(msgText, reason = msgContent.reason)
         is MsgContent.MCUnknown -> MsgContent.MCUnknown(type = msgContent.type, text = msgText, json = msgContent.json)
       }
+    }
+
+    suspend fun sendReport(reportReason: ReportReason, chatItemId: Long): List<ChatItem>? {
+      val cItems = chatModel.controller.apiReportMessage(chat.remoteHostId, chat.chatInfo.apiId, chatItemId, reportReason, msgText)
+      if (cItems != null) {
+        withChats {
+          cItems.forEach { chatItem ->
+            addChatItem(chat.remoteHostId, chat.chatInfo, chatItem.chatItem)
+          }
+        }
+      }
+
+      return cItems?.map { it.chatItem }
     }
 
     suspend fun sendMemberContactInvitation() {
@@ -552,6 +590,8 @@ fun ComposeView(
     } else if (liveMessage != null && liveMessage.sent) {
       val updatedMessage = updateMessage(liveMessage.chatItem, chat, live)
       sent = if (updatedMessage != null) listOf(updatedMessage) else null
+    } else if (cs.contextItem is ComposeContextItem.ReportedItem) {
+      sent = sendReport(cs.contextItem.reason, cs.contextItem.chatItem.id)
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
@@ -796,7 +836,7 @@ fun ComposeView(
 
   fun editPrevMessage() {
     if (composeState.value.contextItem != ComposeContextItem.NoContextItem || composeState.value.preview != ComposePreview.NoPreview) return
-    val lastEditable = chatModel.chatItems.value.findLast { it.meta.editable }
+    val lastEditable = chatModel.chatItemsForContent(null).value.findLast { it.meta.editable }
     if (lastEditable != null) {
       composeState.value = ComposeState(editingItem = lastEditable, useLinkPreviews = useLinkPreviews)
     }
@@ -833,11 +873,30 @@ fun ComposeView(
 
   @Composable
   fun MsgNotAllowedView(reason: String, icon: Painter) {
-    val color = MaterialTheme.appColors.receivedMessage
-    Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
+    val color = MaterialTheme.appColors.receivedQuote
+    Row(Modifier.fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, null, tint = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Text(reason, fontStyle = FontStyle.Italic)
+    }
+  }
+
+  @Composable
+  fun ReportReasonView(reason: ReportReason) {
+    val reportText = when (reason) {
+      is ReportReason.Spam -> generalGetString(MR.strings.report_compose_reason_header_spam)
+      is ReportReason.Illegal -> generalGetString(MR.strings.report_compose_reason_header_illegal)
+      is ReportReason.Profile -> generalGetString(MR.strings.report_compose_reason_header_profile)
+      is ReportReason.Community -> generalGetString(MR.strings.report_compose_reason_header_community)
+      is ReportReason.Other -> generalGetString(MR.strings.report_compose_reason_header_other)
+      is ReportReason.Unknown -> null // should never happen
+    }
+
+    if (reportText != null) {
+      val color = MaterialTheme.appColors.receivedQuote
+      Row(Modifier.fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
+        Text(reportText, fontStyle = FontStyle.Italic, fontSize = 12.sp)
+      }
     }
   }
 
@@ -852,6 +911,9 @@ fun ComposeView(
         clearState()
       }
       is ComposeContextItem.ForwardingItems -> ContextItemView(contextItem.chatItems, painterResource(MR.images.ic_forward), showSender = false,  chatType = chat.chatInfo.chatType) {
+        composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
+      }
+      is ComposeContextItem.ReportedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_flag), chatType = chat.chatInfo.chatType, contextIconColor = Color.Red) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
     }
@@ -891,6 +953,10 @@ fun ComposeView(
     if (nextSendGrpInv.value) {
       ComposeContextInvitingContactMemberView()
     }
+    val ctx = composeState.value.contextItem
+    if (ctx is ComposeContextItem.ReportedItem) {
+      ReportReasonView(ctx.reason)
+    }
     val simplexLinkProhibited = hasSimplexLink.value && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
     val fileProhibited = composeState.value.attachmentPreview && !chat.groupFeatureEnabled(GroupFeature.Files)
     val voiceProhibited = composeState.value.preview is ComposePreview.VoicePreview && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
@@ -918,154 +984,153 @@ fun ComposeView(
         }
       }
     }
-    Box(Modifier.background(MaterialTheme.colors.background)) {
-    Divider()
-    Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-      val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
-      val attachmentClicked = if (isGroupAndProhibitedFiles) {
-        {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.files_and_media_prohibited),
-            text = generalGetString(MR.strings.only_owners_can_enable_files_and_media)
+    Surface(color = MaterialTheme.colors.background, contentColor = MaterialTheme.colors.onBackground) {
+      Divider()
+      Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
+        val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
+        val attachmentClicked = if (isGroupAndProhibitedFiles) {
+          {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.files_and_media_prohibited),
+              text = generalGetString(MR.strings.only_owners_can_enable_files_and_media)
+            )
+          }
+        } else {
+          showChooseAttachment
+        }
+        val attachmentEnabled =
+          !composeState.value.attachmentDisabled
+              && sendMsgEnabled.value
+              && userCanSend.value
+              && !isGroupAndProhibitedFiles
+              && !nextSendGrpInv.value
+        IconButton(
+          attachmentClicked,
+          Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
+          enabled = attachmentEnabled
+        ) {
+          Icon(
+            painterResource(MR.images.ic_attach_file_filled_500),
+            contentDescription = stringResource(MR.strings.attach),
+            tint = if (attachmentEnabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+            modifier = Modifier
+              .size(28.dp)
+              .clip(CircleShape)
           )
         }
-      } else {
-        showChooseAttachment
-      }
-      val attachmentEnabled =
-        !composeState.value.attachmentDisabled
-            && sendMsgEnabled.value
-            && userCanSend.value
-            && !isGroupAndProhibitedFiles
-            && !nextSendGrpInv.value
-      IconButton(
-        attachmentClicked,
-        Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
-        enabled = attachmentEnabled
-      ) {
-        Icon(
-          painterResource(MR.images.ic_attach_file_filled_500),
-          contentDescription = stringResource(MR.strings.attach),
-          tint = if (attachmentEnabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          modifier = Modifier
-            .size(28.dp)
-            .clip(CircleShape)
+        val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Voice) }
+        LaunchedEffect(allowedVoiceByPrefs) {
+          if (!allowedVoiceByPrefs && composeState.value.preview is ComposePreview.VoicePreview) {
+            // Voice was disabled right when this user records it, just cancel it
+            cancelVoice()
+          }
+        }
+        val needToAllowVoiceToContact = remember(chat.chatInfo) {
+          chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
+            ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+                contactPreference.allow == FeatureAllowed.YES
+          }
+        }
+        LaunchedEffect(Unit) {
+          snapshotFlow { recState.value }
+            .distinctUntilChanged()
+            .collect {
+              when (it) {
+                is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
+                is RecordingState.Finished -> if (it.durationMs > 300) {
+                  onAudioAdded(it.filePath, it.durationMs, true)
+                } else {
+                  cancelVoice()
+                }
+                is RecordingState.NotStarted -> {}
+              }
+            }
+        }
+
+        LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
+          if (!chat.chatInfo.userCanSend) {
+            clearCurrentDraft()
+            clearState()
+          }
+        }
+
+        KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
+          val cs = composeState.value
+          if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
+            sendMessage(null)
+            resetLinkPreview()
+            clearPrevDraft(prevChatId)
+            deleteUnusedFiles()
+          } else if (cs.inProgress) {
+            clearPrevDraft(prevChatId)
+          } else if (!cs.empty) {
+            if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
+              composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
+            }
+            if (saveLastDraft) {
+              chatModel.draft.value = composeState.value
+              chatModel.draftChatId.value = prevChatId
+            }
+            composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
+          } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
+            composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
+          } else {
+            clearPrevDraft(prevChatId)
+            deleteUnusedFiles()
+          }
+          chatModel.removeLiveDummy()
+          CIFile.cachedRemoteFileRequests.clear()
+        }
+        if (appPlatform.isDesktop) {
+          // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
+          DisposableEffect(Unit) {
+            onDispose {
+              if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
+                chatModel.draft.value = composeState.value
+                chatModel.draftChatId.value = chat.id
+              }
+            }
+          }
+        }
+        val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
+        val sendButtonColor =
+          if (chat.chatInfo.incognito)
+            if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+          else MaterialTheme.colors.primary
+        SendMsgView(
+          composeState,
+          showVoiceRecordIcon = true,
+          recState,
+          chat.chatInfo is ChatInfo.Direct,
+          liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
+          sendMsgEnabled = sendMsgEnabled.value,
+          sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
+          nextSendGrpInv = nextSendGrpInv.value,
+          needToAllowVoiceToContact,
+          allowedVoiceByPrefs,
+          allowVoiceToContact = ::allowVoiceToContact,
+          userIsObserver = userIsObserver.value,
+          userCanSend = userCanSend.value,
+          sendButtonColor = sendButtonColor,
+          timedMessageAllowed = timedMessageAllowed,
+          customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
+          placeholder = composeState.value.placeholder,
+          sendMessage = { ttl ->
+            sendMessage(ttl)
+            resetLinkPreview()
+          },
+          sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
+          updateLiveMessage = ::updateLiveMessage,
+          cancelLiveMessage = {
+            composeState.value = composeState.value.copy(liveMessage = null)
+            chatModel.removeLiveDummy()
+          },
+          editPrevMessage = ::editPrevMessage,
+          onFilesPasted = { composeState.onFilesAttached(it) },
+          onMessageChange = ::onMessageChange,
+          textStyle = textStyle
         )
       }
-      val allowedVoiceByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Voice) }
-      LaunchedEffect(allowedVoiceByPrefs) {
-        if (!allowedVoiceByPrefs && composeState.value.preview is ComposePreview.VoicePreview) {
-          // Voice was disabled right when this user records it, just cancel it
-          cancelVoice()
-        }
-      }
-      val needToAllowVoiceToContact = remember(chat.chatInfo) {
-        chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.voice) {
-          ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
-              contactPreference.allow == FeatureAllowed.YES
-        }
-      }
-      LaunchedEffect(Unit) {
-        snapshotFlow { recState.value }
-          .distinctUntilChanged()
-          .collect {
-            when (it) {
-              is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
-              is RecordingState.Finished -> if (it.durationMs > 300) {
-                onAudioAdded(it.filePath, it.durationMs, true)
-              } else {
-                cancelVoice()
-              }
-              is RecordingState.NotStarted -> {}
-            }
-          }
-      }
-
-      LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
-        if (!chat.chatInfo.userCanSend) {
-          clearCurrentDraft()
-          clearState()
-        }
-      }
-
-      KeyChangeEffect(chatModel.chatId.value) { prevChatId ->
-        val cs = composeState.value
-        if (cs.liveMessage != null && (cs.message.isNotEmpty() || cs.liveMessage.sent)) {
-          sendMessage(null)
-          resetLinkPreview()
-          clearPrevDraft(prevChatId)
-          deleteUnusedFiles()
-        } else if (cs.inProgress) {
-          clearPrevDraft(prevChatId)
-        } else if (!cs.empty) {
-          if (cs.preview is ComposePreview.VoicePreview && !cs.preview.finished) {
-            composeState.value = cs.copy(preview = cs.preview.copy(finished = true))
-          }
-          if (saveLastDraft) {
-            chatModel.draft.value = composeState.value
-            chatModel.draftChatId.value = prevChatId
-          }
-          composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
-        } else if (chatModel.draftChatId.value == chatModel.chatId.value && chatModel.draft.value != null) {
-          composeState.value = chatModel.draft.value ?: ComposeState(useLinkPreviews = useLinkPreviews)
-        } else {
-          clearPrevDraft(prevChatId)
-          deleteUnusedFiles()
-        }
-        chatModel.removeLiveDummy()
-        CIFile.cachedRemoteFileRequests.clear()
-      }
-      if (appPlatform.isDesktop) {
-        // Don't enable this on Android, it breaks it, This method only works on desktop. For Android there is a `KeyChangeEffect(chatModel.chatId.value)`
-        DisposableEffect(Unit) {
-          onDispose {
-            if (chatModel.sharedContent.value is SharedContent.Forward && saveLastDraft && !composeState.value.empty) {
-              chatModel.draft.value = composeState.value
-              chatModel.draftChatId.value = chat.id
-            }
-          }
-        }
-      }
-
-      val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
-      val sendButtonColor =
-        if (chat.chatInfo.incognito)
-          if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
-        else MaterialTheme.colors.primary
-      SendMsgView(
-        composeState,
-        showVoiceRecordIcon = true,
-        recState,
-        chat.chatInfo is ChatInfo.Direct,
-        liveMessageAlertShown = chatModel.controller.appPrefs.liveMessageAlertShown,
-        sendMsgEnabled = sendMsgEnabled.value,
-        sendButtonEnabled = sendMsgEnabled.value && !(simplexLinkProhibited || fileProhibited || voiceProhibited),
-        nextSendGrpInv = nextSendGrpInv.value,
-        needToAllowVoiceToContact,
-        allowedVoiceByPrefs,
-        allowVoiceToContact = ::allowVoiceToContact,
-        userIsObserver = userIsObserver.value,
-        userCanSend = userCanSend.value,
-        sendButtonColor = sendButtonColor,
-        timedMessageAllowed = timedMessageAllowed,
-        customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
-        placeholder = stringResource(MR.strings.compose_message_placeholder),
-        sendMessage = { ttl ->
-          sendMessage(ttl)
-          resetLinkPreview()
-        },
-        sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
-        updateLiveMessage = ::updateLiveMessage,
-        cancelLiveMessage = {
-          composeState.value = composeState.value.copy(liveMessage = null)
-          chatModel.removeLiveDummy()
-        },
-        editPrevMessage = ::editPrevMessage,
-        onFilesPasted = { composeState.onFilesAttached(it) },
-        onMessageChange = ::onMessageChange,
-        textStyle = textStyle
-      )
     }
-  }
   }
 }

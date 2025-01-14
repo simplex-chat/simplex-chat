@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -25,8 +26,6 @@ import Control.Monad.IO.Class
 import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
-import Database.SQLite.Simple (Only (..), (:.) (..))
-import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
@@ -35,9 +34,17 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ConnId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
+import Database.SQLite.Simple (Only (..), (:.) (..))
+import Database.SQLite.Simple.QQ (sql)
+#endif
 
 getChatLockEntity :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ChatLockEntity
 getChatLockEntity db agentConnId = do
@@ -110,40 +117,42 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           |]
           (userId, contactId)
     toContact' :: Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
-    toContact' contactId conn chatTags ((profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)) =
+    toContact' contactId conn chatTags ((profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, BI contactGrpInvSent, uiThemes, BI chatDeleted, customData)) =
       let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-          chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
+          chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
        in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, uiThemes, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = do
-      gm <- ExceptT $ firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
-        DB.query
-          db
-          [sql|
-            SELECT
-              -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-              g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-              g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
-              -- GroupInfo {membership}
-              mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-              mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-              -- GroupInfo {membership = GroupMember {memberProfile}}
-              pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-              -- from GroupMember
-              m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-              m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
-            FROM group_members m
-            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-            JOIN groups g ON g.group_id = m.group_id
-            JOIN group_profiles gp USING (group_profile_id)
-            JOIN group_members mu ON g.group_id = mu.group_id
-            JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-            WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
-          |]
-          (groupMemberId, userId, userContactId)
+      gm <-
+        ExceptT $
+          firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
+            DB.query
+              db
+              [sql|
+                SELECT
+                  -- GroupInfo
+                  g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+                  g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+                  g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+                  -- GroupInfo {membership}
+                  mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+                  mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+                  -- GroupInfo {membership = GroupMember {memberProfile}}
+                  pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
+                  -- from GroupMember
+                  m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+                  m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
+                FROM group_members m
+                JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+                JOIN groups g ON g.group_id = m.group_id
+                JOIN group_profiles gp USING (group_profile_id)
+                JOIN group_members mu ON g.group_id = mu.group_id
+                JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+                WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
+              |]
+              (groupMemberId, userId, userContactId)
       liftIO $ bitraverse (addGroupChatTags db) pure gm
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember c (groupInfoRow :. memberRow) =
@@ -212,7 +221,7 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
             WHERE user_id = ? AND via_contact_uri_hash IN (?,?) AND conn_status != ?
             ORDER BY conn_ord DESC, created_at DESC
             LIMIT 1
-          )
+          ) c
         |]
         (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_

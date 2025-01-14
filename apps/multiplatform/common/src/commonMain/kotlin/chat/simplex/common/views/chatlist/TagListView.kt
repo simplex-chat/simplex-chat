@@ -5,8 +5,7 @@ import SectionDivider
 import SectionItemView
 import TextIconSpaced
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -33,6 +32,7 @@ import chat.simplex.common.model.ChatController.apiDeleteChatTag
 import chat.simplex.common.model.ChatController.apiSetChatTags
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -44,12 +44,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: MutableState<Boolean> = remember { mutableStateOf(false) }) {
-  if (remember { editMode }.value) {
-    BackHandler {
-      editMode.value = false
-    }
-  }
+fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, reorderMode: Boolean) {
   val userTags = remember { chatModel.userTags }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val listState = LocalAppBarHandler.current?.listState ?: rememberLazyListState()
@@ -77,12 +72,12 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
   val topPaddingToContent = topPaddingToContent(false)
 
   LazyColumnWithScrollBar(
-    modifier = if (editMode.value) Modifier.dragContainer(dragDropState) else Modifier,
+    modifier = if (reorderMode) Modifier.dragContainer(dragDropState) else Modifier,
+    state = listState,
     contentPadding = PaddingValues(
       top = if (oneHandUI.value) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else topPaddingToContent,
       bottom = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
     ),
-    state = listState,
     verticalArrangement = if (oneHandUI.value) Arrangement.Bottom else Arrangement.Top,
   ) {
     @Composable fun CreateList() {
@@ -97,7 +92,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
       }
     }
 
-    if (oneHandUI.value && !editMode.value) {
+    if (oneHandUI.value && !reorderMode) {
       item {
         CreateList()
       }
@@ -111,15 +106,14 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
           backgroundColor = if (isDragging) colors.surface else Color.Unspecified
         ) {
           Column {
-            val showMenu = remember { mutableStateOf(false) }
             val selected = chatTagIds.value.contains(tag.chatTagId)
 
             Row(
               Modifier
                 .fillMaxWidth()
                 .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
-                .combinedClickable(
-                  enabled = !saving.value,
+                .clickable(
+                  enabled = !saving.value && !reorderMode,
                   onClick = {
                     if (chat == null) {
                       ModalManager.start.showModalCloseable { close ->
@@ -139,13 +133,7 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
                       })
                     }
                   },
-                  onLongClick = if (editMode.value) null else {
-                    { showMenu.value = true }
-                  },
-                  interactionSource = remember { MutableInteractionSource() },
-                  indication = LocalIndication.current
                 )
-                .onRightClick { showMenu.value = true }
                 .padding(PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_MIN_SECTION_ITEM_PADDING_VERTICAL)),
               verticalAlignment = Alignment.CenterVertically
             ) {
@@ -163,21 +151,17 @@ fun TagListView(rhId: Long?, chat: Chat? = null, close: () -> Unit, editMode: Mu
               if (selected) {
                 Spacer(Modifier.weight(1f))
                 Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
-              } else if (editMode.value) {
+              } else if (reorderMode) {
                 Spacer(Modifier.weight(1f))
                 Icon(painterResource(MR.images.ic_drag_handle), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
               }
-              DefaultDropdownMenu(showMenu, dropdownMenuItems = {
-                EditTagAction(rhId, tag, showMenu)
-                DeleteTagAction(rhId, tag, showMenu, saving)
-              })
             }
             SectionDivider()
           }
         }
       }
     }
-    if (!oneHandUI.value && !editMode.value) {
+    if (!oneHandUI.value && !reorderMode) {
       item {
         CreateList()
       }
@@ -279,7 +263,7 @@ fun ModalData.TagListEditor(
 
     SectionItemView(click = { if (tagId == null) createTag() else updateTag() }, disabled = disabled) {
       Text(
-        generalGetString(if (chat != null) MR.strings.add_to_list else if (tagId == null) MR.strings.create_list else MR.strings.save_list),
+        generalGetString(if (chat != null) MR.strings.add_to_list else MR.strings.save_list),
         color = if (disabled) colors.secondary else colors.primary
       )
     }
@@ -310,6 +294,15 @@ fun ModalData.TagListEditor(
 }
 
 @Composable
+fun TagsDropdownMenu(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
+  DefaultDropdownMenu(showMenu, dropdownMenuItems = {
+    EditTagAction(rhId, tag, showMenu)
+    DeleteTagAction(rhId, tag, showMenu, saving)
+    ChangeOrderTagAction(rhId, showMenu)
+  })
+}
+
+@Composable
 private fun DeleteTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Boolean>, saving: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.delete_chat_list_menu_action),
@@ -337,6 +330,21 @@ private fun EditTagAction(rhId: Long?, tag: ChatTag, showMenu: MutableState<Bool
           emoji = tag.chatTagEmoji,
           name = tag.chatTagText
         )
+      }
+    },
+    color = MenuTextColor
+  )
+}
+
+@Composable
+private fun ChangeOrderTagAction(rhId: Long?, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.change_order_chat_list_menu_action),
+    painterResource(MR.images.ic_drag_handle),
+    onClick = {
+      showMenu.value = false
+      ModalManager.start.showModalCloseable { close ->
+        TagListView(rhId = rhId, close = close, reorderMode = true)
       }
     },
     color = MenuTextColor
