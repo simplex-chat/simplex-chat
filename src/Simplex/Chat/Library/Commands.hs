@@ -195,8 +195,8 @@ startChatController mainApp enableSndFiles = do
     startExpireCIs users =
       forM_ users $ \user -> do
         ttl <- fromRight Nothing <$> runExceptT (withStore' (`getChatItemTTL` user))
-        forM_ ttl $ \_ -> do
-          -- TODO [ttl] check if any of the chats for this user has TTL enabled
+        ttlCount <- fromRight 0 <$> runExceptT (withStore' (`getChatTTLCount` user))
+        when (isJust ttl || ttlCount > 0) $ do
           startExpireCIThread user
           setExpireCIFlag user True
 
@@ -3539,13 +3539,13 @@ cleanupManager = do
       withStore' (`deleteOldProbes` cutoffTs)
 
 expireChatItems :: User -> Maybe Int64 -> Bool -> CM ()
-expireChatItems user@User {userId} ttl sync = do
+expireChatItems user@User {userId} globalTTL sync = do
   vr <- chatVersionRange
   lift waitChatStartedAndActivated
-  contacts <- withStore' $ \db -> getUserExpirableContacts db vr user ttl
+  contacts <- withStore' $ \db -> getUserExpirableContacts db vr user globalTTL
   loop contacts processContact
   lift waitChatStartedAndActivated
-  groups <- withStore' $ \db -> getUserExpirableGroups db vr user ttl
+  groups <- withStore' $ \db -> getUserExpirableGroups db vr user globalTTL
   loop groups $ processGroup vr
   where
     loop :: [a] -> (a -> CM ()) -> CM ()
@@ -3564,7 +3564,7 @@ expireChatItems user@User {userId} ttl sync = do
     processContact :: Contact -> CM ()
     processContact ct@Contact { chatItemTTL } = do
       currentTs <- liftIO getCurrentTime
-      let chosenTTL = fromIntegral $ fromMaybe (fromMaybe 0 ttl) chatItemTTL
+      let chosenTTL = fromIntegral $ fromMaybe (fromMaybe 0 globalTTL) chatItemTTL
           expirationDate = addUTCTime (-1 * chosenTTL) currentTs
       lift waitChatStartedAndActivated
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
@@ -3574,7 +3574,7 @@ expireChatItems user@User {userId} ttl sync = do
     processGroup :: VersionRangeChat -> GroupInfo -> CM ()
     processGroup vr gInfo@GroupInfo { chatItemTTL } = do
       currentTs <- liftIO getCurrentTime
-      let chosenTTL = fromIntegral $ fromMaybe (fromMaybe 0 ttl) chatItemTTL
+      let chosenTTL = fromIntegral $ fromMaybe (fromMaybe 0 globalTTL) chatItemTTL
           expirationDate = addUTCTime (-1 * chosenTTL) currentTs
       -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
           createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs

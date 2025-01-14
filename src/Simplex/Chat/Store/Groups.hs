@@ -2361,4 +2361,10 @@ setGroupChatTTL :: DB.Connection -> GroupId -> Maybe Int64 -> IO ()
 setGroupChatTTL db gId ttl = error "not implemented"
 
 getUserExpirableGroups :: DB.Connection -> VersionRangeChat -> User -> Maybe Int64 -> IO [GroupInfo]
-getUserExpirableGroups db vr user@User {userId} gTTL = error "not implemented"
+getUserExpirableGroups db vr user@User {userId} globalTTL = do
+  gIdsLocalTTL <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" (Only userId)
+  gIdsGlobalTTL <- case globalTTL of
+    Nothing -> pure []
+    Just _ -> map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl IS NULL" (Only userId)
+  let groupIds = gIdsLocalTTL ++ gIdsGlobalTTL
+  rights <$> mapM (runExceptT . getGroupInfo db vr user) groupIds
