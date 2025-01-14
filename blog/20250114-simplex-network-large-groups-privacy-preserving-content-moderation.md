@@ -1,17 +1,17 @@
 ---
 layout: layouts/article.html
-title: "SimpleX network: privacy preserving content moderation"
+title: "SimpleX network: large groups and privacy preserving content moderation"
 date: 2025-01-14
-preview: How network operators prevent distribution of CSAM without compromising users privacy and security.
-# image: images/20241218-pub.jpg
-# imageWide: true
-draft: true
+preview: "How can server operators moderate end-to-end encrypted conversations?\nFile servers can't look inside files – they are securely locked. But if file recipient gives us the keys to some file, we can unlock it and look inside. If it violates conditions of use, we can remove or block this file."
+image: images/20250114-locked-books.jpg
 permalink: "/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html"
 ---
 
 # SimpleX network: large groups and privacy preserving content moderation
 
-**Will be published:** Jan 14, 2025
+**Published:** Jan 14, 2025
+
+<img src="./images/20250114-locked-books.jpg" width="345" class="float-to-right">
 
 Many people believe that it is impossible to moderate and prevent abuse in end-to-end encrypted conversations. This belief is incorrect – there is a way to prevent abuse and distribution of illegal content without any compromises to users privacy and security of end-to-end encryption.
 
@@ -53,7 +53,7 @@ Other features that we plan to add this year to improve moderation:
 - "knocking" - having a conversation with the new members before they are added to the group.
 - sub-groups - smaller conversations with the same members.
 
-## Preventing server abuse without compromising e2e encryption.
+## Preventing server abuse without compromising e2e encryption
 
 Some categories of content may be prohibited by servers operators. An extreme case would be child sexual abuse materials (CSAM).
 
@@ -73,9 +73,9 @@ How does it work? Let's go over the process step by step.
 
 3. Once the servers receive the file identifiers, they can now block the file.
 
-So while file servers cannot look inside the files, and don't even know who and how many files are sent, they can delete the files if the bot whose information they trust shares this information. In this way, moderation becomes possible without any scanning or compromises to privacy or end-to-end encryption.
+File servers cannot look inside end-to-end encrypted files, and they don't even know file sizes – they are securely locked, and sent in chunks, across multiple servers. But if file recipient gives us the keys to some file, we can unlock it and look inside. If it violates conditions of use, we can remove or block this file.
 
-Can't users simply create another group? Yes, they can, and it happens in large systems without any privacy as well. That's why we are planning additional measures in advance of supporting large groups, to prevent this problem from getting bigger.
+In this way, the moderation is possible without any content scanning, preserving privacy and security of end-to-end encryption.
 
 ## Privacy preserving content moderation
 
@@ -97,11 +97,11 @@ So these measures would be effective, even though they can be in theory circumve
 
 **Can't users use other servers?**
 
-Yes, they can. But in the same way as web browser is not responsible for the content you can access, SimpleX app should not restrict your communications with other servers based on blocking action from just one server. That would allow different server operators to have different content policies, depending on their jurisdiction and other factors.
+Yes, they can. But in the same way as web browser is not responsible for the content you can access, SimpleX app should not restrict your communications with other servers based on blocking action from just one server. That approach allows different server operators to have different content policies, depending on their jurisdiction and other factors.
 
 **Wouldn't these measures be abused?**
 
-While server operators can indeed abuse such restrictions, they have other ways to disrupt communications, as described in the [threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#simplex-messaging-protocol-server). Any communication system, with or without servers, can be disrupted by its participants and providers.
+While server operators can indeed abuse such restrictions, they also have other ways to disrupt communications, as described in the [threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#simplex-messaging-protocol-server). Any communication system, with or without servers, can be disrupted by its participants and providers.
 
 But server operators offer their servers because they want them to be used, whether because they expect that it will be profitable in the future or because they want to support decentralized communication for charitable reasons.
 
@@ -109,7 +109,7 @@ So operators have no reason to abuse users - if they do, users would simply stop
 
 **What additional measures are considered?**
 
-We published other technical ideas that can be used to prevent distribution of illegal content in [this document](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2024-12-30-content-moderation.md). What is important, that none of these measures compromise users privacy or end-to-end encryption, and they can (and should) only be applied to publicly accessible content that other users complained about.
+We published other technical ideas that can be used to prevent distribution of illegal content in [this document](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/rfcs/2024-12-30-content-moderation.md). What is important, that none of these measures compromise users' privacy or end-to-end encryption, and they can (and should) only be applied to publicly accessible content that other users complained about.
 
 We technically cannot, and we won't scan all content. We actively [campaign against any content-scanning proposals](./20240704-future-of-privacy-enforcing-privacy-standards.md), not only because it violates our right to privacy, but also because it would result in huge increase of online crime.
 
