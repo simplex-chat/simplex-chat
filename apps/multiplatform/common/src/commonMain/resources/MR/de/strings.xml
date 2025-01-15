@@ -544,7 +544,7 @@
 \n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
-    <string name="your_privacy">Ihre Privatsphäre</string>
+    <string name="your_privacy">Privatsphäre</string>
     <string name="protect_app_screen">App-Bildschirm schützen</string>
     <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
     <string name="send_link_previews">Link-Vorschau senden</string>
@@ -2389,10 +2389,10 @@
     <string name="connection_error_blocked">Verbindung blockiert</string>
     <string name="file_error_blocked">Die Datei wird vom Serverbetreiber blockiert:\n%1$s.</string>
     <string name="connection_error_blocked_desc">Die Verbindung wird vom Serverbetreiber blockiert:\n%1$s.</string>
-    <string name="privacy_chat_list_open_links_ask">Frage</string>
+    <string name="privacy_chat_list_open_links_ask">Fragen</string>
     <string name="privacy_chat_list_open_links_no">Nein</string>
-    <string name="privacy_chat_list_open_web_link">Link öffnen</string>
-    <string name="privacy_chat_list_open_links">Links aus der Chat-Liste öffnen</string>
+    <string name="privacy_chat_list_open_web_link">Web-Link öffnen</string>
+    <string name="privacy_chat_list_open_links">Web-Links aus der Chat-Liste öffnen</string>
     <string name="privacy_chat_list_open_web_link_question">Web-Link öffnen?</string>
     <string name="privacy_chat_list_open_links_yes">Ja</string>
 </resources>
