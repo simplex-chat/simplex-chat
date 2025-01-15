@@ -126,6 +126,9 @@ module Simplex.Chat.Store.Groups
     setGroupUIThemes,
     updateGroupChatTags,
     getGroupChatTags,
+    setGroupChatTTL,
+    getUserExpirableGroups,
+    updateGroupAlias,
   )
 where
 
@@ -268,9 +271,9 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -650,9 +653,9 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
         db
         [sql|
           SELECT
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
           FROM groups g
@@ -1392,9 +1395,9 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2354,3 +2357,33 @@ untagGroupChat db groupId tId =
       WHERE group_id = ? AND chat_tag_id = ?
     |]
     (groupId, tId)
+
+setGroupChatTTL :: DB.Connection -> GroupId -> Maybe Int64 -> IO ()
+setGroupChatTTL db gId ttl = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET chat_item_ttl = ?, updated_at = ? WHERE group_id = ?"
+    (ttl, updatedAt, gId)
+
+getUserExpirableGroups :: DB.Connection -> VersionRangeChat -> User -> Maybe Int64 -> IO [GroupInfo]
+getUserExpirableGroups db vr user@User {userId} globalTTL = do
+  gIdsLocalTTL <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" (Only userId)
+  gIdsGlobalTTL <- case globalTTL of
+    Nothing -> pure []
+    Just _ -> map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl IS NULL" (Only userId)
+  let groupIds = gIdsLocalTTL ++ gIdsGlobalTTL
+  rights <$> mapM (runExceptT . getGroupInfo db vr user) groupIds
+
+updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
+updateGroupAlias db userId g localAlias = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET local_alias = ?, updated_at = ?
+      WHERE user_id = ?
+    |]
+    (localAlias, updatedAt, userId)
+  pure $ (g :: GroupInfo) {localAlias = localAlias}
