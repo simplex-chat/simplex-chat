@@ -1215,9 +1215,9 @@
         <target>Für bessere Privatsphäre verpixeln.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blur media" xml:space="preserve">
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
         <source>Blur media</source>
-        <target>Medium unscharf machen</target>
+        <target state="translated">Medium verpixeln</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -8466,9 +8466,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Ihre Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your privacy" xml:space="preserve">
+      <trans-unit id="Your privacy" xml:space="preserve" approved="no">
         <source>Your privacy</source>
-        <target>Ihre Privatsphäre</target>
+        <target state="translated">Privatsphäre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile" xml:space="preserve">
