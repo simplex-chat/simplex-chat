@@ -302,7 +302,7 @@
     <string name="invalid_contact_link">Lien invalide !</string>
     <string name="this_link_is_not_a_valid_connection_link">Ce lien n\'est pas un lien de connexion valide !</string>
     <string name="connection_request_sent">Demande de connexion envoyée !</string>
-    <string name="file_will_be_received_when_contact_is_online">Le fichier sera reçu quand votre contact sera en ligne, merci d\'attendre ou de revenir plus tard !</string>
+    <string name="file_will_be_received_when_contact_is_online">Le fichier sera reçu lorsque votre contact sera en ligne, veuillez patienter ou vérifier plus tard !</string>
     <string name="voice_message_send_text">Message vocal…</string>
     <string name="maximum_supported_file_size">La taille maximale supportés des fichiers actuellement est de %1$s.</string>
     <string name="voice_message_with_duration">Message vocal (%1$s)</string>
@@ -638,7 +638,7 @@
     <string name="change_database_passphrase_question">Changer la phrase secrète de la base de données \?</string>
     <string name="database_will_be_encrypted">La base de données sera chiffrée.</string>
     <string name="keychain_error">Erreur de la keychain</string>
-    <string name="file_with_path">Fichier : %s</string>
+    <string name="file_with_path">Fichier : %s</string>
     <string name="database_passphrase_is_required">La phrase secrète de la base de données est nécessaire pour ouvrir le chat.</string>
     <string name="save_passphrase_and_open_chat">Enregistrer la phrase secrète et ouvrir le chat</string>
     <string name="open_chat">Ouvrir le chat</string>
@@ -919,8 +919,8 @@
     <string name="v4_5_transport_isolation_descr">Par profil de discussion (par défaut) ou par connexion (BETA).</string>
     <string name="v4_5_italian_interface">Interface en italien</string>
     <string name="v4_5_message_draft">Brouillon de message</string>
-    <string name="v4_5_reduced_battery_usage_descr">Plus d\'améliorations à venir !</string>
-    <string name="v4_5_multiple_chat_profiles">Différents profils de chat</string>
+    <string name="v4_5_reduced_battery_usage_descr">D\'autres améliorations sont à venir !</string>
+    <string name="v4_5_multiple_chat_profiles">Profils de discussion multiples</string>
     <string name="v4_5_message_draft_descr">Conserver le brouillon du dernier message, avec les pièces jointes.</string>
     <string name="v4_5_reduced_battery_usage">Réduction de la consommation de batterie</string>
     <string name="v4_5_private_filenames">Noms de fichiers privés</string>
@@ -947,7 +947,7 @@
     <string name="button_add_welcome_message">Ajouter un message d\'accueil</string>
     <string name="v4_6_group_moderation">Modération de groupe</string>
     <string name="user_hide">Cacher</string>
-    <string name="muted_when_inactive">Mute en cas d\'inactivité !</string>
+    <string name="muted_when_inactive">Mise en sourdine en cas d\'inactivité !</string>
     <string name="confirm_password">Confirmer le mot de passe</string>
     <string name="v4_6_reduced_battery_usage">Réduction accrue de l\'utilisation de la batterie</string>
     <string name="v4_6_chinese_spanish_interface">Interface en chinois et en espagnol</string>
@@ -1250,7 +1250,7 @@
     <string name="files_and_media_prohibited">Fichiers et médias interdits !</string>
     <string name="allow_to_send_files">Permet l\'envoi de fichiers et de médias.</string>
     <string name="group_members_can_send_files">Les membres du groupe peuvent envoyer des fichiers et des médias.</string>
-    <string name="files_are_prohibited_in_group">Les fichiers et les médias sont interdits dans ce groupe.</string>
+    <string name="files_are_prohibited_in_group">Les fichiers et les médias sont interdits.</string>
     <string name="fix_connection_not_supported_by_group_member">Correction non prise en charge par un membre du groupe</string>
     <string name="settings_section_title_delivery_receipts">ENVOYER DES ACCUSÉS DE RÉCEPTION AUX</string>
     <string name="sync_connection_force_desc">Le chiffrement fonctionne et le nouvel accord de chiffrement n\'est pas nécessaire. Cela peut provoquer des erreurs de connexion !</string>
@@ -1272,7 +1272,7 @@
     <string name="receipts_contacts_enable_for_all">Activer pour tous</string>
     <string name="receipts_contacts_enable_keep_overrides">Activer (conserver les remplacements)</string>
     <string name="snd_conn_event_ratchet_sync_agreed">chiffrement accepté pour %s</string>
-    <string name="v5_2_favourites_filter_descr">Filtrer les messages non lus et favoris.</string>
+    <string name="v5_2_favourites_filter_descr">Filtrer les favoris et les messages non lus.</string>
     <string name="v5_2_favourites_filter">Recherche de message plus rapide</string>
     <string name="in_reply_to">En réponse à</string>
     <string name="v5_2_more_things_descr">- une diffusion plus stable des messages.
@@ -1679,7 +1679,7 @@
     <string name="migrate_from_device_bytes_uploaded">%s envoyé</string>
     <string name="migrate_from_device_uploading_archive">Envoi de l\'archive</string>
     <string name="migrate_from_device_finalize_migration">Finaliser le transfert</string>
-    <string name="migrate_from_device_migration_complete">Transfert terminé</string>
+    <string name="migrate_from_device_migration_complete">Migration terminée</string>
     <string name="migrate_from_device_start_chat">Démarrer le chat</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Vous <b>ne devez pas</b> utiliser la même base de données sur deux appareils.]]></string>
     <string name="migrate_from_device_verify_database_passphrase">Vérifier la phrase secrète de la base de données</string>
@@ -1690,7 +1690,7 @@
     <string name="migrate_to_device_import_failed">Échec de l\'importation</string>
     <string name="invalid_file_link">Lien invalide</string>
     <string name="migrate_to_device_title">Transférer ici</string>
-    <string name="migrate_to_device_migrating">Transfert</string>
+    <string name="migrate_to_device_migrating">Migration</string>
     <string name="or_paste_archive_link">Ou coller le lien de l\'archive</string>
     <string name="migrate_from_device_or_share_this_file_link">Ou partagez en toute sécurité le lien de ce fichier</string>
     <string name="paste_archive_link">Coller le lien de l\'archive</string>
@@ -1847,7 +1847,7 @@
     <string name="file_error">Erreur de fichier</string>
     <string name="temporary_file_error">Erreur de fichier temporaire</string>
     <string name="info_row_file_status">Statut du fichier</string>
-    <string name="share_text_file_status">Statut du fichier: %s</string>
+    <string name="share_text_file_status">Statut du fichier : %s</string>
     <string name="info_row_message_status">Statut du message</string>
     <string name="share_text_message_status">Statut du message: %s</string>
     <string name="copy_error">Erreur de copie</string>
@@ -2183,4 +2183,9 @@
     <string name="address_or_1_time_link">Adresse ou lien unique ?</string>
     <string name="connection_security">Sécurité des connexions</string>
     <string name="chat_list_businesses">Professionnels</string>
+    <string name="file_error_blocked">Le fichier est bloqué par l\'opérateur du serveur :\n%1$s.</string>
+    <string name="chat_list_favorites">Favoris</string>
+    <string name="group_reports_active">%d rapports</string>
+    <string name="group_member_role_moderator">modérateur, trice</string>
+    <string name="v6_2_network_decentralization">Décentralisation du réseau</string>
 </resources>
