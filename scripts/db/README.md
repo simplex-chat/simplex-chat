@@ -61,14 +61,16 @@
 
    ```sh
    sqlite3 simplex_v1_agent.db ".dump" | grep "^INSERT INTO" | grep -v "^INSERT INTO migrations" | grep -v "^INSERT INTO sqlite_sequence" > sqlite_agent_dump.sql
+
    sqlite3 simplex_v1_chat.db ".dump" | grep "^INSERT INTO" | grep -v "^INSERT INTO migrations" | grep -v "^INSERT INTO sqlite_sequence" > sqlite_chat_dump.sql
    ```
 
 3. Transform for Postgres.
 
    ```sh
-   sed -E "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/X'([0-9A-Fa-f]*)'/DECODE('\1','hex')/g" sqlite_agent_dump.sql > postgres_agent_inserts.sql
-   sed -E "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/X'([0-9A-Fa-f]*)'/DECODE('\1','hex')/g" sqlite_chat_dump.sql > postgres_chat_inserts.sql
+   perl -pe "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/(?<=\(|,)X'([0-9A-Fa-f]*)'(?=(\)|,))/DECODE('\1','hex')/g" sqlite_agent_dump.sql | python3 -c "import sys; text = sys.stdin.read(); result = text.replace(',\'\\\\r\',char(13))', ',E\'\\\\r\',E\'\\\\r\')').replace(',\'\\\\n\',char(10))', ',E\'\\\\n\',E\'\\\\n\')').replace(',\'\\\\012\',char(10))', ',E\'\\\\n\',E\'\\\\n\')'); sys.stdout.write(result)" > postgres_agent_inserts.sql
+
+   perl -pe "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/(?<=\(|,)X'([0-9A-Fa-f]*)'(?=(\)|,))/DECODE('\1','hex')/g" sqlite_chat_dump.sql | python3 -c "import sys; text = sys.stdin.read(); result = text.replace(',\'\\\\r\',char(13))', ',E\'\\\\r\',E\'\\\\r\')').replace(',\'\\\\n\',char(10))', ',E\'\\\\n\',E\'\\\\n\')').replace(',\'\\\\012\',char(10))', ',E\'\\\\n\',E\'\\\\n\')'); sys.stdout.write(result)" > postgres_chat_inserts.sql
    ```
 
 4. Disable constraints on all tables (requires certain privileges - for example, connect to database with `postgres` user).
@@ -98,6 +100,7 @@
 
    ```sh
    psql "user=postgres dbname=simplex_v1 options=--search_path=agent_schema" --set ON_ERROR_STOP=on -q -f postgres_agent_inserts.sql
+
    psql "user=postgres dbname=simplex_v1 options=--search_path=chat_schema" --set ON_ERROR_STOP=on -q -f postgres_chat_inserts.sql
    ```
 
