@@ -1992,4 +1992,5 @@
     <string name="onboarding_notifications_mode_off_desc_short">バックグラウンドサービスを使用しない</string>
     <string name="accept_conditions">利用条件の承諾</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s):既にオペレータ <b>%s</b> の利用条件に承諾しています。]]></string>
+    <string name="address_creation_instruction">後で作成する場合はメニューから「SimpleXのアドレスを作成」を選択してください。</string>
 </resources>
