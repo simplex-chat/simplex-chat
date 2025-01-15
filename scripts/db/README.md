@@ -67,8 +67,8 @@
 3. Transform for Postgres.
 
    ```sh
-   sed -E "s/X'([0-9A-Fa-f]*)'/DECODE('\1','hex')/g; s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/g" sqlite_agent_dump.sql > postgres_agent_inserts.sql
-   sed -E "s/X'([0-9A-Fa-f]*)'/DECODE('\1','hex')/g; s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/g" sqlite_chat_dump.sql > postgres_chat_inserts.sql
+   sed -E "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/X'([0-9A-Fa-f]*)'/DECODE('\1','hex')/g" sqlite_agent_dump.sql > postgres_agent_inserts.sql
+   sed -E "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/X'([0-9A-Fa-f]*)'/DECODE('\1','hex')/g" sqlite_chat_dump.sql > postgres_chat_inserts.sql
    ```
 
 4. Disable constraints on all tables (requires certain privileges - for example, connect to database with `postgres` user).
