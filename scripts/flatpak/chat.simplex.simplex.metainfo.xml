@@ -41,7 +41,7 @@
     <release version="6.2.4" date="2025-01-14">
       <url type="details">https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html</url>
       <description>
-        <p>New in v6.2.1-3:</p>
+        <p>New in v6.2.1-4:</p>
         <ul>
           <li>important fixes</li>
           <li>offer to "fix" encryption when calling or making direct connection with member.</li>
