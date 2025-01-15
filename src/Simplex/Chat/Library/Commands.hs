@@ -3537,13 +3537,13 @@ expireChatItems :: User -> Maybe Int64 -> Bool -> CM ()
 expireChatItems user@User {userId} globalTTL sync = do
   currentTs <- liftIO getCurrentTime
   vr <- chatVersionRange
+  -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
+  let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   lift waitChatStartedAndActivated
   contactIds <- withStore' $ \db -> getUserContactsToExpire db user globalTTL
   loop contactIds $ processContact vr currentTs
   lift waitChatStartedAndActivated
   groupIds <- withStore' $ \db -> getUserGroupsToExpire db user globalTTL
-  -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
-  let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   loop groupIds $ processGroup vr currentTs createdAtCutoff
   where
     loop :: [Int64] -> (Int64 -> CM ()) -> CM ()

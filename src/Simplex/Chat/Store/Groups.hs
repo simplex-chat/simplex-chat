@@ -2373,14 +2373,7 @@ getUserGroupsToExpire db User {userId} globalTTL =
     cond = if isJust globalTTL then " OR chat_item_ttl IS NULL" else ""
 
 updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
-updateGroupAlias db userId g localAlias = do
+updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   updatedAt <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE groups
-      SET local_alias = ?, updated_at = ?
-      WHERE user_id = ?
-    |]
-    (localAlias, updatedAt, userId)
-  pure $ (g :: GroupInfo) {localAlias = localAlias}
+  DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND groupId = ?" (localAlias, updatedAt, userId, groupId)
+  pure (g :: GroupInfo) {localAlias = localAlias}
