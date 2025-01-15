@@ -654,9 +654,7 @@ struct ChatView: View {
                         .onTapGesture {
                             if let index = model.mergedItems.items.lastIndex(where: { $0.hasUnread() }) {
                                 // scroll to the top unread item
-                                loadingMoreItems = true
                                 scrollModel.scrollToRow(row: index)
-                                loadingMoreItems = false
                             }
                         }
                         .contextMenu {
@@ -687,6 +685,7 @@ struct ChatView: View {
                         .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
+                .if(loadingMoreItems) { $0.hidden() }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
