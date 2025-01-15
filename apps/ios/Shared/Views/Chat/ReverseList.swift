@@ -60,14 +60,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         } else {
             // when tableView is dragging and new items are added, scroll position cannot be set correctly
             // so it's better to just wait until dragging ends
-            if controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
-                controller.runBlockOnEndDecelerating = {
+            //if controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
+              //  controller.runBlockOnEndDecelerating = {
                     controller.update(items: items)
-                }
-            } else {
+                //}
+            //} else {
                 controller.runBlockOnEndDecelerating = nil
                 controller.update(items: items)
-            }
+            //}
         }
     }
 
@@ -329,10 +329,17 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     )
                 }
             } else if wasCount != snapshot.numberOfItems {
+                // stop scrolling
+                if let superview = self.tableView.superview {
+                    let t = self.tableView.panGestureRecognizer.translation(in: superview)
+                    if t.y != 0 {
+                        self.translationToApply = t
+                    }
+                }
                 logger.debug("LALAL drag \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
                 //                tableView.panGestureRecognizer.isEnabled = false
                 //                logger.debug("LALAL drag2 \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
-                if tableView.isDecelerating {
+                if false && tableView.isDecelerating {
                     //                    CATransaction.begin()
                     itemsInPrevSnapshot = itemsInCurrentSnapshot
                     tableView.beginUpdates()
@@ -352,8 +359,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     logger.debug("LALAL WAS LISTSTATE \(listState!.firstVisibleItemIndex)  now \(self.getListState()!.firstVisibleItemIndex)")
                     if listState?.firstVisibleItemIndex == getListState()?.firstVisibleItemIndex {
                     // added new items to top
-
+                        translationToApply = nil
                     } else {
+                        self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
                     // added new items to bottom
                     //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
                     logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstVisibleRow)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)")
@@ -507,12 +515,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
                         let superview = self.tableView.superview
                         if triedToLoad, let superview {
-                            let t = self.tableView.panGestureRecognizer.translation(in: superview)
-                            if t.y != 0 {
-                                self.translationToApply = t
-                            }
-                            // stop scrolling
-                            self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
+//                            let t = self.tableView.panGestureRecognizer.translation(in: superview)
+//                            if t.y != 0 {
+//                                self.translationToApply = t
+//                            }
                         }
                         return triedToLoad
                     }
