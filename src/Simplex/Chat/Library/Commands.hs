@@ -3545,13 +3545,16 @@ cleanupManager = do
 
 expireChatItems :: User -> Maybe Int64 -> Bool -> CM ()
 expireChatItems user@User {userId} globalTTL sync = do
+  currentTs <- liftIO getCurrentTime
   vr <- chatVersionRange
   lift waitChatStartedAndActivated
   contacts <- withStore' $ \db -> getUserExpirableContacts db vr user globalTTL
-  loop contacts processContact
+  loop contacts $ processContactExpiration currentTs
   lift waitChatStartedAndActivated
   groups <- withStore' $ \db -> getUserExpirableGroups db vr user globalTTL
-  loop groups $ processGroup vr
+  -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
+  let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+  loop groups $ processGroupExpiration vr currentTs createdAtCutoff
   where
     loop :: [a] -> (a -> CM ()) -> CM ()
     loop [] _ = pure ()
@@ -3566,23 +3569,23 @@ expireChatItems user@User {userId} globalTTL sync = do
           expireFlags <- asks expireCIFlags
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
-    processContact :: Contact -> CM ()
-    processContact ct@Contact { chatItemTTL } = do
-      currentTs <- liftIO getCurrentTime
-      let chosenTTL = fromIntegral $ fromMaybe (fromMaybe 0 globalTTL) chatItemTTL
-          expirationDate = addUTCTime (-1 * chosenTTL) currentTs
+    processContactExpiration :: UTCTime -> Contact -> CM ()
+    processContactExpiration currentTs ct@Contact {chatItemTTL} = 
+      forM_ (chatItemTTL <|> globalTTL) $ \t ->
+        processContact (addUTCTime (-1 * fromIntegral t) currentTs) ct
+    processContact :: UTCTime -> Contact -> CM ()
+    processContact expirationDate ct = do    
       lift waitChatStartedAndActivated
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-    processGroup :: VersionRangeChat -> GroupInfo -> CM ()
-    processGroup vr gInfo@GroupInfo { chatItemTTL } = do
-      currentTs <- liftIO getCurrentTime
-      let chosenTTL = fromIntegral $ fromMaybe (fromMaybe 0 globalTTL) chatItemTTL
-          expirationDate = addUTCTime (-1 * chosenTTL) currentTs
-      -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
-          createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+    processGroupExpiration :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
+    processGroupExpiration vr currentTs createdAtCutoff g@GroupInfo {chatItemTTL} = do
+      forM_ (chatItemTTL <|> globalTTL) $ \t ->
+        processGroup vr (addUTCTime (-1 * fromIntegral t) currentTs) createdAtCutoff g
+    processGroup :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
+    processGroup vr expirationDate createdAtCutoff gInfo  = do
       lift waitChatStartedAndActivated
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
       cancelFilesInProgress user filesInfo
