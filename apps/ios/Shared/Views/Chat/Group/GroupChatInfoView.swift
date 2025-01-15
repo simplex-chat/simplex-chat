@@ -18,7 +18,7 @@ struct GroupChatInfoView: View {
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
     var onSearch: () -> Void
-    @State var localAlias: String = "" // TODO [alias]
+    @State var localAlias: String
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
@@ -221,7 +221,7 @@ struct GroupChatInfoView: View {
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
-            Text(cInfo.displayName)
+            Text(cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName)
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
                 .lineLimit(4)
@@ -243,14 +243,28 @@ struct GroupChatInfoView: View {
             .submitLabel(.done)
             .onChange(of: aliasTextFieldFocused) { focused in
                 if !focused {
-//                    setGroupAlias()
+                    setGroupAlias()
                 }
             }
             .onSubmit {
-//                setGroupAlias()
+                setGroupAlias()
             }
             .multilineTextAlignment(.center)
             .foregroundColor(theme.colors.secondary)
+    }
+    
+    private func setGroupAlias() {
+        Task {
+            do {
+                if let gInfo = try await apiSetGroupAlias(groupId: chat.chatInfo.apiId, localAlias: localAlias) {
+                    await MainActor.run {
+                        chatModel.updateGroup(gInfo)
+                    }
+                }
+            } catch {
+                logger.error("setGroupAlias error: \(responseError(error))")
+            }
+        }
     }
     
     func infoActionButtons() -> some View {
@@ -777,7 +791,8 @@ struct GroupChatInfoView_Previews: PreviewProvider {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            onSearch: {}
+            onSearch: {},
+            localAlias: ""
         )
     }
 }

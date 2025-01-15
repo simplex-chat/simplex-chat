@@ -1930,11 +1930,11 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var sendMsgEnabled: Bool { get { membership.memberActive } }
-    public var displayName: String { get { groupProfile.displayName } }
+    public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
-    public var localAlias: String { "" }
     public var chatTags: [Int64]
+    public var localAlias: String
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -1958,7 +1958,8 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
-        chatTags: []
+        chatTags: [],
+        localAlias: ""
     )
 }
 

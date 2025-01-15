@@ -1044,6 +1044,12 @@ func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Co
     throw r
 }
 
+func apiSetGroupAlias(groupId: Int64, localAlias: String) async throws -> GroupInfo? {
+    let r = await chatSendCmd(.apiSetGroupAlias(groupId: groupId, localAlias: localAlias))
+    if case let .groupAliasUpdated(_, toGroup) = r { return toGroup }
+    throw r
+}
+
 func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> PendingContactConnection? {
     let r = await chatSendCmd(.apiSetConnectionAlias(connId: connId, localAlias: localAlias))
     if case let .connectionAliasUpdated(_, toConnection) = r { return toConnection }
