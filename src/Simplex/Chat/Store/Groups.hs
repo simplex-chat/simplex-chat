@@ -127,7 +127,7 @@ module Simplex.Chat.Store.Groups
     updateGroupChatTags,
     getGroupChatTags,
     setGroupChatTTL,
-    getUserExpirableGroups,
+    getUserGroupsToExpire,
     updateGroupAlias,
   )
 where
@@ -2366,14 +2366,11 @@ setGroupChatTTL db gId ttl = do
     "UPDATE groups SET chat_item_ttl = ?, updated_at = ? WHERE group_id = ?"
     (ttl, updatedAt, gId)
 
-getUserExpirableGroups :: DB.Connection -> VersionRangeChat -> User -> Maybe Int64 -> IO [GroupInfo]
-getUserExpirableGroups db vr user@User {userId} globalTTL = do
-  gIdsLocalTTL <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" (Only userId)
-  gIdsGlobalTTL <- case globalTTL of
-    Nothing -> pure []
-    Just _ -> map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl IS NULL" (Only userId)
-  let groupIds = gIdsLocalTTL ++ gIdsGlobalTTL
-  rights <$> mapM (runExceptT . getGroupInfo db vr user) groupIds
+getUserGroupsToExpire :: DB.Connection -> User -> Maybe Int64 -> IO [GroupId]
+getUserGroupsToExpire db User {userId} globalTTL =
+  map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
+  where
+    cond = if isJust globalTTL then " OR chat_item_ttl IS NULL" else ""
 
 updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
 updateGroupAlias db userId g localAlias = do

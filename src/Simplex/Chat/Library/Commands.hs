@@ -3538,15 +3538,15 @@ expireChatItems user@User {userId} globalTTL sync = do
   currentTs <- liftIO getCurrentTime
   vr <- chatVersionRange
   lift waitChatStartedAndActivated
-  contacts <- withStore' $ \db -> getUserExpirableContacts db vr user globalTTL
-  loop contacts $ processContact currentTs
+  contactIds <- withStore' $ \db -> getUserContactsToExpire db user globalTTL
+  loop contactIds $ processContact vr currentTs
   lift waitChatStartedAndActivated
-  groups <- withStore' $ \db -> getUserExpirableGroups db vr user globalTTL
+  groupIds <- withStore' $ \db -> getUserGroupsToExpire db user globalTTL
   -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
   let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
-  loop groups $ processGroup vr currentTs createdAtCutoff
+  loop groupIds $ processGroup vr currentTs createdAtCutoff
   where
-    loop :: [a] -> (a -> CM ()) -> CM ()
+    loop :: [Int64] -> (Int64 -> CM ()) -> CM ()
     loop [] _ = pure ()
     loop (a : as) process = continue $ do
       process a `catchChatError` (toView . CRChatError (Just user))
@@ -3559,24 +3559,32 @@ expireChatItems user@User {userId} globalTTL sync = do
           expireFlags <- asks expireCIFlags
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
-    processContact :: UTCTime -> Contact -> CM ()
-    processContact currentTs ct@Contact {chatItemTTL} =
-      withExpirationDate currentTs chatItemTTL $ \expirationDate -> do
-        lift waitChatStartedAndActivated
-        filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-        cancelFilesInProgress user filesInfo
-        deleteFilesLocally filesInfo
-        withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-    processGroup :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
-    processGroup vr currentTs createdAtCutoff gInfo@GroupInfo {chatItemTTL} =
-      withExpirationDate currentTs chatItemTTL $ \expirationDate -> do
-        lift waitChatStartedAndActivated
-        filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-        cancelFilesInProgress user filesInfo
-        deleteFilesLocally filesInfo
-        withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-        membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
-        forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+    processContact :: VersionRangeChat -> UTCTime -> ContactId -> CM ()
+    processContact vr currentTs ctId =
+      -- reading contacts and groups inside the loop,
+      -- to allow ttl changing while processing and to reduce memory usage
+      tryChatError (withStore $ \db -> getContact db vr user ctId) >>= mapM_ process
+      where
+        process ct@Contact {chatItemTTL} =
+          withExpirationDate currentTs chatItemTTL $ \expirationDate -> do
+            lift waitChatStartedAndActivated
+            filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+            cancelFilesInProgress user filesInfo
+            deleteFilesLocally filesInfo
+            withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+    processGroup :: VersionRangeChat -> UTCTime -> UTCTime -> GroupId -> CM ()
+    processGroup vr currentTs createdAtCutoff groupId =
+      tryChatError (withStore $ \db -> getGroupInfo db vr user groupId) >>= mapM_ process
+      where
+        process gInfo@GroupInfo {chatItemTTL} =
+          withExpirationDate currentTs chatItemTTL $ \expirationDate -> do
+            lift waitChatStartedAndActivated
+            filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+            cancelFilesInProgress user filesInfo
+            deleteFilesLocally filesInfo
+            withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+            membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
+            forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
     withExpirationDate currentTs chatItemTTL action = do
       forM_ (chatItemTTL <|> globalTTL) $ \ttl ->
         when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs

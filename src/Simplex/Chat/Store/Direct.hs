@@ -83,7 +83,7 @@ module Simplex.Chat.Store.Direct
     getDirectChatTags,
     updateDirectChatTags,
     setDirectChatTTL,
-    getUserExpirableContacts
+    getUserContactsToExpire
   )
 where
 
@@ -1088,11 +1088,8 @@ setDirectChatTTL db cId ttl = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?" (ttl, updatedAt, cId)
 
-getUserExpirableContacts :: DB.Connection -> VersionRangeChat -> User -> Maybe Int64 -> IO [Contact]
-getUserExpirableContacts db vr user@User {userId} globalTTL = do
-  cIdsLocalTTL <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0" (Only userId)
-  cIdsGlobalTTL <- case globalTTL of
-    Nothing -> pure []
-    Just _ -> map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl IS NULL" (Only userId)
-  let contactIds = cIdsLocalTTL ++ cIdsGlobalTTL
-  rights <$> mapM (runExceptT . getContact db vr user) contactIds
+getUserContactsToExpire :: DB.Connection -> User -> Maybe Int64 -> IO [ContactId]
+getUserContactsToExpire db User {userId} globalTTL =
+  map fromOnly <$> DB.query db ("SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
+  where
+    cond = if isJust globalTTL then " OR chat_item_ttl IS NULL" else ""
