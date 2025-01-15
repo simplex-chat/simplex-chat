@@ -83,6 +83,7 @@ module Simplex.Chat.Store.Direct
     getDirectChatTags,
     updateDirectChatTags,
     setDirectChatTTL,
+    getDirectChatTTL,
     getUserContactsToExpire
   )
 where
@@ -1087,6 +1088,11 @@ setDirectChatTTL :: DB.Connection -> ContactId -> Maybe Int64 -> IO ()
 setDirectChatTTL db cId ttl = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?" (ttl, updatedAt, cId)
+
+getDirectChatTTL :: DB.Connection -> ContactId -> IO (Maybe Int64)
+getDirectChatTTL db cId =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT chat_item_ttl FROM contacts WHERE AND contact_id = ? LIMIT 1" (Only cId)
 
 getUserContactsToExpire :: DB.Connection -> User -> Int64 -> IO [ContactId]
 getUserContactsToExpire db User {userId} globalTTL =

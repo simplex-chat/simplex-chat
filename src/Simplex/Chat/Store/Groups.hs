@@ -127,6 +127,7 @@ module Simplex.Chat.Store.Groups
     updateGroupChatTags,
     getGroupChatTags,
     setGroupChatTTL,
+    getGroupChatTTL,
     getUserGroupsToExpire,
     updateGroupAlias,
   )
@@ -163,13 +164,9 @@ import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
-import Database.PostgreSQL.Simple.SqlQQ (sql)
-#else
+
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
-#endif
 
 type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences))
 
@@ -2365,6 +2362,11 @@ setGroupChatTTL db gId ttl = do
     db
     "UPDATE groups SET chat_item_ttl = ?, updated_at = ? WHERE group_id = ?"
     (ttl, updatedAt, gId)
+
+getGroupChatTTL :: DB.Connection -> GroupId -> IO (Maybe Int64)
+getGroupChatTTL db gId =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT chat_item_ttl FROM groups WHERE AND group_id = ? LIMIT 1" (Only gId)
 
 getUserGroupsToExpire :: DB.Connection -> User -> Int64 -> IO [GroupId]
 getUserGroupsToExpire db User {userId} globalTTL =

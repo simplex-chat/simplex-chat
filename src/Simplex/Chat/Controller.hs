@@ -380,7 +380,7 @@ data ChatCommand
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
   | APIAcceptConditions Int64 (NonEmpty Int64)
-  | APISetChatItemTTL UserId (Maybe Int64)
+  | APISetChatItemTTL UserId Int64
   | SetChatItemTTL Int64
   | APIGetChatItemTTL UserId
   | GetChatItemTTL

@@ -2891,7 +2891,7 @@ getChatItemTTL db User {userId} =
   fmap (fromMaybe 0 . join) . maybeFirstRow fromOnly $
     DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
 
-setChatItemTTL :: DB.Connection -> User -> Maybe Int64 -> IO ()
+setChatItemTTL :: DB.Connection -> User -> Int64 -> IO ()
 setChatItemTTL db User {userId} chatItemTTL = do
   currentTs <- getCurrentTime
   r :: (Maybe Int64) <- maybeFirstRow fromOnly $ DB.query db "SELECT 1 FROM settings WHERE user_id = ? LIMIT 1" (Only userId)

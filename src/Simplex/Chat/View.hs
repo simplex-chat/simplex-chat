@@ -1363,8 +1363,9 @@ viewUsageConditions current accepted_ =
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
-  Nothing -> ["old messages are not being deleted"]
+  Nothing -> ["old messages are set to delete according to default user config"]
   Just ttl
+    | ttl == 0 -> ["old messages are not being deleted"]
     | ttl == 86400 -> deletedAfter "one day"
     | ttl == 7 * 86400 -> deletedAfter "one week"
     | ttl == 30 * 86400 -> deletedAfter "one month"
