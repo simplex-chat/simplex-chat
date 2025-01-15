@@ -194,9 +194,8 @@ startChatController mainApp enableSndFiles = do
         _ -> pure ()
     startExpireCIs users =
       forM_ users $ \user -> do
-        ttl <- fromRight Nothing <$> runExceptT (withStore' (`getChatItemTTL` user))
-        ttlCount <- fromRight 0 <$> runExceptT (withStore' (`getChatTTLCount` user))
-        when (isJust ttl || ttlCount > 0) $ do
+        (ttl, ttlCount) <- withStore' $ \db -> (,) <$> getChatItemTTL db user <*> getChatTTLCount db user
+        when (ttl > 0 || ttlCount > 0) $ do
           startExpireCIThread user
           setExpireCIFlag user True
 
@@ -3284,7 +3283,7 @@ startExpireCIThread user@User {userId} = do
             Just t  -> expireChatItems user (Just t) False
             Nothing -> do
               ttlCount <- withStore' (`getChatTTLCount` user)
-              when (ttlCount > 0) $ expireChatItems user Nothing True
+              when (ttlCount > 0) $ expireChatItems user 0 True
         liftIO $ threadDelay' interval
 
 setExpireCIFlag :: User -> Bool -> CM' ()
@@ -3533,7 +3532,7 @@ cleanupManager = do
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
 
-expireChatItems :: User -> Maybe Int64 -> Bool -> CM ()
+expireChatItems :: User -> Int64 -> Bool -> CM ()
 expireChatItems user@User {userId} globalTTL sync = do
   currentTs <- liftIO getCurrentTime
   vr <- chatVersionRange
@@ -3586,8 +3585,8 @@ expireChatItems user@User {userId} globalTTL sync = do
             membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
             forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
     withExpirationDate currentTs chatItemTTL action = do
-      forM_ (chatItemTTL <|> globalTTL) $ \ttl ->
-        when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
+      let ttl = fromMaybe globalTTL chatItemTTL
+      when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -3739,11 +3738,13 @@ chatCommandP =
       "/_conditions" $> APIGetUsageConditions,
       "/_conditions_notified " *> (APISetConditionsNotified <$> A.decimal),
       "/_accept_conditions " *> (APIAcceptConditions <$> A.decimal <*> _strP),
+      "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> A.decimal),
       "/_ttl " *> (APISetChatTTL <$> A.decimal <* A.space <*> chatRefP <* A.space <*> ciTTLDecimal),
-      "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
-      "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
+      "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/ttl" $> GetChatItemTTL,
+      "/ttl " *> (SetChatTTL <$> chatNameP <* A.space <*> (("default" $> Nothing) <|> (Just <$> ciTTL))),
+      "/ttl " *> (GetChatTTL <$> chatNameP),
       "/_network info " *> (APISetNetworkInfo <$> jsonP),
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (SetNetworkConfig <$> netCfgP),
@@ -4041,14 +4042,13 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
-    ciTTLDecimal = ("none" $> Nothing) <|> (Just <$> A.decimal)
+    ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
-      ("day" $> Just 86400)
-        <|> ("week" $> Just (7 * 86400))
-        <|> ("month" $> Just (30 * 86400))
-        <|> ("year" $> Just (365 * 86400))
-        <|> ("never" $> Just 0)
-        <|> ("none" $> Nothing)
+      ("day" $> 86400)
+        <|> ("week" $> (7 * 86400))
+        <|> ("month" $> (30 * 86400))
+        <|> ("year" $> (365 * 86400))
+        <|> ("none" $> 0)
     timedTTLP =
       ("30s" $> 30)
         <|> ("5min" $> 300)

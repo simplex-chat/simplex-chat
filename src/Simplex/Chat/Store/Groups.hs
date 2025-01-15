@@ -2366,11 +2366,11 @@ setGroupChatTTL db gId ttl = do
     "UPDATE groups SET chat_item_ttl = ?, updated_at = ? WHERE group_id = ?"
     (ttl, updatedAt, gId)
 
-getUserGroupsToExpire :: DB.Connection -> User -> Maybe Int64 -> IO [GroupId]
+getUserGroupsToExpire :: DB.Connection -> User -> Int64 -> IO [GroupId]
 getUserGroupsToExpire db User {userId} globalTTL =
   map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
   where
-    cond = if isJust globalTTL then " OR chat_item_ttl IS NULL" else ""
+    cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
 
 updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
 updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do

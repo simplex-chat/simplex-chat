@@ -1088,8 +1088,8 @@ setDirectChatTTL db cId ttl = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?" (ttl, updatedAt, cId)
 
-getUserContactsToExpire :: DB.Connection -> User -> Maybe Int64 -> IO [ContactId]
+getUserContactsToExpire :: DB.Connection -> User -> Int64 -> IO [ContactId]
 getUserContactsToExpire db User {userId} globalTTL =
   map fromOnly <$> DB.query db ("SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
   where
-    cond = if isJust globalTTL then " OR chat_item_ttl IS NULL" else ""
+    cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"

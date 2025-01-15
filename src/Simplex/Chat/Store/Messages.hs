@@ -2886,9 +2886,10 @@ getTimedItems db User {userId} startTimedThreadCutoff =
       (itemId, Nothing, Just groupId, deleteAt) -> Just ((ChatRef CTGroup groupId, itemId), deleteAt)
       _ -> Nothing
 
-getChatItemTTL :: DB.Connection -> User -> IO (Maybe Int64)
+getChatItemTTL :: DB.Connection -> User -> IO Int64
 getChatItemTTL db User {userId} =
-  fmap join . maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
+  fmap (fromMaybe 0 . join) . maybeFirstRow fromOnly $
+    DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
 
 setChatItemTTL :: DB.Connection -> User -> Maybe Int64 -> IO ()
 setChatItemTTL db User {userId} chatItemTTL = do
@@ -2908,27 +2909,11 @@ setChatItemTTL db User {userId} chatItemTTL = do
 
 getChatTTLCount :: DB.Connection -> User -> IO Int64
 getChatTTLCount db User {userId} = do
-  contactCount <-
-    fromOnly . head
-      <$> DB.query
-        db
-        [sql|
-          SELECT COUNT(1)
-          FROM contacts
-          WHERE user_id = ? AND chat_item_ttl IS NOT NULL
-        |]
-        (Only userId)
-  groupCount <-
-    fromOnly . head
-      <$> DB.query
-        db
-        [sql|
-          SELECT COUNT(1)
-          FROM groups
-          WHERE user_id = ? AND chat_item_ttl IS NOT NULL
-        |]
-        (Only userId)
+  contactCount <- getCount "SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0"
+  groupCount <- getCount "SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0"
   pure $ contactCount + groupCount
+  where
+    getCount q = fromOnly . head <$> DB.query db q (Only userId)
 
 getContactExpiredFileInfo :: DB.Connection -> User -> Contact -> UTCTime -> IO [CIFileInfo]
 getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =
