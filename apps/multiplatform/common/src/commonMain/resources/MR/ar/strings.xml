@@ -2298,4 +2298,15 @@
     <string name="report_archive_alert_title">أرشفة البلاغ؟</string>
     <string name="report_reason_alert_title">سبب الإبلاغ؟</string>
     <string name="report_archive_alert_desc">سيتم أرشفة البلاغ لك.</string>
+    <string name="blocking_reason_spam">إزعاج (spam)</string>
+    <string name="privacy_chat_list_open_links_yes">نعم</string>
+    <string name="privacy_chat_list_open_links_ask">اسأل</string>
+    <string name="privacy_chat_list_open_links_no">لا</string>
+    <string name="privacy_chat_list_open_web_link">افتح الرابط</string>
+    <string name="privacy_chat_list_open_web_link_question">فتح رابط الويب؟</string>
+    <string name="connection_error_blocked">حُظر الاتصال</string>
+    <string name="privacy_chat_list_open_links">افتح الروابط من قائمة الدردشة</string>
+    <string name="blocking_reason_content">المحتوى ينتهك شروط الاستخدام</string>
+    <string name="connection_error_blocked_desc">حُظر الاتصال بواسطة مُشغل الخادم:\n%1$s.</string>
+    <string name="file_error_blocked">حُظر الملف بواسطة مُشغل الخادم:\n%1$s.</string>
 </resources>
