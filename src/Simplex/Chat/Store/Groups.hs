@@ -2375,5 +2375,5 @@ getUserGroupsToExpire db User {userId} globalTTL =
 updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
 updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND groupId = ?" (localAlias, updatedAt, userId, groupId)
+  DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
