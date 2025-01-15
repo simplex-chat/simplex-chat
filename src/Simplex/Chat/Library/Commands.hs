@@ -1422,26 +1422,16 @@ processChatCommand' vr = \case
             when (ttlCount == 0 && isNothing userTTL) $
               lift $ setExpireCIFlag user False
           Just newTTL -> do
-            _ <- case cType of
-              CTDirect -> do
-                ct <- withFastStore $ \db -> getContact db vr user chatId
-                let Contact {chatItemTTL} = ct
-                _ <- expireItems chatItemTTL
-                withFastStore' $ \db -> setDirectChatTTL db chatId (Just newTTL)
-              CTGroup -> do
-                g <- withFastStore $ \db -> getGroupInfo db vr user chatId
-                let GroupInfo {chatItemTTL} = g
-                _ <- expireItems chatItemTTL
-                withFastStore' $ \db -> setGroupChatTTL db chatId (Just newTTL)
+            case cType of
+              CTDirect -> withFastStore' $ \db -> setDirectChatTTL db chatId (Just newTTL)
+              CTGroup -> withFastStore' $ \db -> setGroupChatTTL db chatId (Just newTTL)
               _ -> pure ()
+
+            globalTTL <- withFastStore' (`getChatItemTTL` user)
+            lift $ setExpireCIFlag user False
+            expireChatItems user globalTTL True
             lift $ startExpireCIThread user
             lift . whenM chatStarted $ setExpireCIFlag user True
-            where
-              expireItems :: Maybe Int64 -> CM ()
-              expireItems chatItemTTL = do
-                when (maybe True (newTTL <) chatItemTTL) $ do
-                  lift $ setExpireCIFlag user False
-                  expireChatItems user (Just newTTL) True
         ok user
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
@@ -4054,6 +4044,7 @@ chatCommandP =
         <|> ("week" $> Just (7 * 86400))
         <|> ("month" $> Just (30 * 86400))
         <|> ("year" $> Just (365 * 86400))
+        <|> ("never" $> Just 0)
         <|> ("none" $> Nothing)
     timedTTLP =
       ("30s" $> 30)
