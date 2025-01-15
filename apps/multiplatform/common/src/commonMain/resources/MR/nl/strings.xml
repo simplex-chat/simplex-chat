@@ -2308,4 +2308,12 @@
     <string name="group_reports_archived_member_reports">Gearchiveerde ledenrapporten</string>
     <string name="group_reports_active">%d rapporten</string>
     <string name="group_reports_member_reports">Ledenrapporten</string>
+    <string name="blocking_reason_content">Inhoud schendt de gebruiksvoorwaarden</string>
+    <string name="connection_error_blocked">Verbinding geblokkeerd</string>
+    <string name="connection_error_blocked_desc">Verbinding is geblokkeerd door serveroperator:\n%1$s.</string>
+    <string name="file_error_blocked">Bestand is geblokkeerd door server operator:\n%1$s.</string>
+    <string name="privacy_chat_list_open_links_no">Nee</string>
+    <string name="privacy_chat_list_open_web_link">Link openen</string>
+    <string name="privacy_chat_list_open_links">Open links van chatlijst</string>
+    <string name="privacy_chat_list_open_links_ask">Vragen</string>
 </resources>
