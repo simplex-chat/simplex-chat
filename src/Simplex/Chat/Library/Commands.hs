@@ -3549,12 +3549,12 @@ expireChatItems user@User {userId} globalTTL sync = do
   vr <- chatVersionRange
   lift waitChatStartedAndActivated
   contacts <- withStore' $ \db -> getUserExpirableContacts db vr user globalTTL
-  loop contacts $ processContactExpiration currentTs
+  loop contacts $ processContactExpiration
   lift waitChatStartedAndActivated
   groups <- withStore' $ \db -> getUserExpirableGroups db vr user globalTTL
   -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
   let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
-  loop groups $ processGroupExpiration vr currentTs createdAtCutoff
+  loop groups $ processGroupExpiration vr createdAtCutoff
   where
     loop :: [a] -> (a -> CM ()) -> CM ()
     loop [] _ = pure ()
@@ -3569,8 +3569,9 @@ expireChatItems user@User {userId} globalTTL sync = do
           expireFlags <- asks expireCIFlags
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
-    processContactExpiration :: UTCTime -> Contact -> CM ()
-    processContactExpiration currentTs ct@Contact {chatItemTTL} = 
+    processContactExpiration :: Contact -> CM ()
+    processContactExpiration ct@Contact {chatItemTTL} = do
+      currentTs <- liftIO getCurrentTime
       forM_ (chatItemTTL <|> globalTTL) $ \t ->
         processContact (addUTCTime (-1 * fromIntegral t) currentTs) ct
     processContact :: UTCTime -> Contact -> CM ()
@@ -3580,8 +3581,9 @@ expireChatItems user@User {userId} globalTTL sync = do
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
       withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-    processGroupExpiration :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
-    processGroupExpiration vr currentTs createdAtCutoff g@GroupInfo {chatItemTTL} = do
+    processGroupExpiration :: VersionRangeChat -> UTCTime -> GroupInfo -> CM ()
+    processGroupExpiration vr createdAtCutoff g@GroupInfo {chatItemTTL} = do
+      currentTs <- liftIO getCurrentTime
       forM_ (chatItemTTL <|> globalTTL) $ \t ->
         processGroup vr (addUTCTime (-1 * fromIntegral t) currentTs) createdAtCutoff g
     processGroup :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
