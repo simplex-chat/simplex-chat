@@ -109,7 +109,7 @@ struct ChatInfoView: View {
     @State private var showConnectContactViaAddressDialog = false
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
-    @State private var chatItemTTL = ChatItemTTL.none // TODO [ttl]
+    @State private var chatItemTTL = ChatItemTTL.none
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
     enum ChatInfoViewAlert: Identifiable {

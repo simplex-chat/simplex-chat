@@ -89,8 +89,9 @@ public enum ChatCommand {
     case apiGetUsageConditions
     case apiSetConditionsNotified(conditionsId: Int64)
     case apiAcceptConditions(conditionsId: Int64, operatorIds: [Int64])
-    case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
+    case apiSetChatItemTTL(userId: Int64, seconds: Int64)
     case apiGetChatItemTTL(userId: Int64)
+    case apiSetChatTTL(userId: Int64, type: ChatType, id: Int64, seconds: Int64?)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
     case apiSetNetworkInfo(networkInfo: UserNetworkInfo)
@@ -266,6 +267,7 @@ public enum ChatCommand {
             case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(joinedIds(operatorIds))"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
+            case let .apiSetChatTTL(userId, type, id, seconds): return "/_ttl \(userId) \(ref(type, id)) \(chatItemTTLStr(seconds: seconds))"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
             case let .apiSetNetworkInfo(networkInfo): return "/_network info \(encodeJSON(networkInfo))"
@@ -436,6 +438,7 @@ public enum ChatCommand {
             case .apiAcceptConditions: return "apiAcceptConditions"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
+            case .apiSetChatTTL: return "apiSetChatTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
             case .apiSetNetworkInfo: return "apiSetNetworkInfo"
@@ -526,7 +529,7 @@ public enum ChatCommand {
         if let seconds = seconds {
             return String(seconds)
         } else {
-            return "none"
+            return "default"
         }
     }
 

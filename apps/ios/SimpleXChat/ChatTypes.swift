@@ -4335,6 +4335,7 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
     case day
     case week
     case month
+    case year
     case seconds(_ seconds: Int64)
     case none
 
@@ -4347,6 +4348,7 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
         case 86400: self = .day
         case 7 * 86400: self = .week
         case 30 * 86400: self = .month
+        case 365 * 86400: self = .year
         case let .some(n): self = .seconds(n)
         case .none: self = .none
         }
@@ -4357,23 +4359,29 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
         case .day: return "1 day"
         case .week: return "1 week"
         case .month: return "1 month"
+        case .year: return "1 year"
         case let .seconds(seconds): return "\(seconds) second(s)"
         case .none: return "never"
         }
     }
 
-    public var seconds: Int64? {
+    public var seconds: Int64 {
         switch self {
         case .day: return 86400
         case .week: return 7 * 86400
         case .month: return 30 * 86400
+        case .year: return 365 * 86400
         case let .seconds(seconds): return seconds
-        case .none: return nil
+        case .none: return 0
         }
     }
 
     private var comparisonValue: Int64 {
-        self.seconds ?? Int64.max
+        if self.seconds == 0 {
+            return Int64.max
+        } else {
+            return self.seconds
+        }
     }
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
