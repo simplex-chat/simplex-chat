@@ -391,7 +391,7 @@
     <string name="image_saved">Imagem salva na Galeria</string>
     <string name="description_via_group_link_incognito">anônimo via link do grupo</string>
     <string name="incoming_video_call">Chamada de vídeo recebida</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Para usá-lo, por favor <b>permite que o SimpleX funcione em segundo plano</b> na próxima caixa de diálogo. Caso contrário, as notificações serão desabilitadas.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[<b>Permita</b> na próxima caixa de diálogo para receber notificações instantaneamente]]></string>
     <string name="share_one_time_link">Gerar um link de convite de uso único</string>
     <string name="file_not_found">Arquivo não encontrado</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Se você optar por rejeitar o remetente NÃO será notificado.</string>
@@ -2107,4 +2107,23 @@
     <string name="button_add_team_members">Adicionar membros da equipe</string>
     <string name="onboarding_network_about_operators">Sobre operadores</string>
     <string name="accept_conditions">Aceite as condições</string>
+    <string name="report_item_archived_by">denúncia arquivada por %s</string>
+    <string name="report_reason_other">Outra razão</string>
+    <string name="chat_list_add_list">Adicionar lista</string>
+    <string name="delete_chat_list_warning">Todas as conversas serão removidas da lista %s, e a lista será apagada</string>
+    <string name="v6_1_better_security">Melhor segurança ✅</string>
+    <string name="report_archive_alert_title">Arquivar denúncia?</string>
+    <string name="archive_report">Arquivar denúncia</string>
+    <string name="chat_list_all">Todos</string>
+    <string name="add_to_list">Adicionar à lista</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Em dispositivos Xiaomi</b>: por favor, ative a opção Autostart nas configurações do sistema para que as notificações funcionem.]]></string>
+    <string name="v6_1_message_dates_descr">Datas de mensagens melhores.</string>
+    <string name="v6_1_better_user_experience">Melhor experiência do usuário</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Você já está conectado com <b>%1$s</b>.]]></string>
+    <string name="archive_verb">Arquivar</string>
+    <string name="privacy_chat_list_open_links_ask">Pergunte</string>
+    <string name="appearance_bars_blur_radius">Desfoque</string>
+    <string name="group_reports_archived_member_reports">Denúncias arquivadas de membros</string>
+    <string name="business_address">Endereço comercial</string>
+    <string name="report_item_archived">denúncia arquivada</string>
 </resources>
