@@ -613,13 +613,11 @@ fun ComposeView(
                 if (remoteHost == null) saveFileFromUri(
                   it.uri,
                   getDestFileName = { filename ->
-                    var ext = when {
+                    val ext = when {
                       // remove everything but extension
                       filename.contains(".") -> filename.replaceBeforeLast('.', "").replace(".", "")
                       else -> "mp4"
                     }
-                    // Just in case the image has a strange extension
-                    if (ext.length < 3 || ext.length > 4) ext = "mp4"
                     generateNewFileName("video", ext, File(getAppFilePath("")))
                   }
                 )
