@@ -12,8 +12,7 @@ import SimpleXChat
 
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
-    let items: Array<ChatItem>
-    @Binding var mergedItems: MergedItems
+    var mergedItems: MergedItems
     @Binding var revealedItems: Set<Int64>
     @Binding var unreadCount: Int
 
@@ -37,11 +36,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
     func updateUIViewController(_ controller: Controller, context: Context) {
         controller.representer = self
-        if case let .scrollingTo(destination) = scrollState, !items.isEmpty, !controller.scrollToItemInProgress {
+        if case let .scrollingTo(destination) = scrollState, !mergedItems.items.isEmpty, !controller.scrollToItemInProgress {
             controller.view.layer.removeAllAnimations()
             switch destination {
             case let .item(id):
-                let row = items.firstIndex(where: { $0.id == id })
+                let row = mergedItems.indexInParentItems[id]
                 if let row {
                     logger.debug("LALAL SCROLLING TO \(row)")
                     controller.scroll(to: row, position: .bottom)
@@ -64,11 +63,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             // so it's better to just wait until dragging ends
             if waitOnEndedScrolling && controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
                 controller.runBlockOnEndDecelerating = {
-                    controller.update(items: items)
+                    controller.update()
                 }
             } else {
                 controller.runBlockOnEndDecelerating = nil
-                controller.update(items: items)
+                controller.update()
             }
         }
     }
@@ -77,17 +76,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     public class Controller: UITableViewController {
         private enum Section { case main }
         var representer: ReverseList
-        // Here Int means hash of the ChatItem that is inside MergedItem.newest().item.hashValue.
-        // Putting MergedItem here directly prevents UITableViewDiffableDataSource to make partial updates
-        // which looks like UITableView scrolls to bottom on insert values to bottom instead of
-        // remains in the same scroll position
-        private var dataSource: UITableViewDiffableDataSource<Section, Int>!
-        var itemCount: Int {
-            get {
-                representer.mergedItems.items.count
-            }
-        }
-        private var itemsInPrevSnapshot: Dictionary<Int, MergedItem> = [:]
+        private var dataSource: UITableViewDiffableDataSource<Section, MergedItem>!
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
@@ -128,17 +117,17 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
 
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, Int>(
+            self.dataSource = UITableViewDiffableDataSource<Section, MergedItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
-                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(indexPath.item, self.itemsInPrevSnapshot[item]!) }
+                    cell.contentConfiguration = UIHostingConfiguration { self.representer.content(indexPath.item, item) }
                         .margins(.all, 0)
                         .minSize(height: 1) // Passing zero will result in system default of 44 points being used
                 } else {
                     if let cell = cell as? HostingCell<Content> {
-                        cell.set(content: self.representer.content(indexPath.item, self.itemsInPrevSnapshot[item]!), parent: self)
+                        cell.set(content: self.representer.content(indexPath.item, item), parent: self)
                     } else {
                         fatalError("Unexpected Cell Type for: \(item)")
                     }
@@ -269,46 +258,26 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
         }
 
-        func update(items: [ChatItem]) {
-            var prevSnapshot = dataSource.snapshot()
+        func update() {
+            let prevSnapshot = dataSource.snapshot()
             let wasCount = prevSnapshot.numberOfItems
-            let willBeCount = representer.mergedItems.items.count
+            let items = representer.mergedItems.items
+            let willBeCount = items.count
             let c = 1
             let insertedSeveralNewestItems = wasCount != 0 && willBeCount - wasCount == c && prevSnapshot.itemIdentifiers.first!.hashValue == self.representer.mergedItems.items[c].hashValue
             logger.debug("LALAL WAS \(wasCount) will be \(self.representer.mergedItems.items.count)")
-            //self.representer.mergedItems = MergedItems.create(items, representer.unreadCount, representer.revealedItems, ItemsModel.shared.chatState)
-            let snapshot: NSDiffableDataSourceSnapshot<Section, Int>
-            let itemsInCurrentSnapshot: Dictionary<Int, MergedItem>
-            if insertedSeveralNewestItems {
-                var new = itemsInPrevSnapshot
-                for i in 0 ..< c {
-                    prevSnapshot.insertItems([representer.mergedItems.items[c - i].hashValue], beforeItem: prevSnapshot.itemIdentifiers.first!)
-                    new[representer.mergedItems.items[c - i].hashValue] = representer.mergedItems.items[c - i]
-                }
-                itemsInCurrentSnapshot = new
-                snapshot = prevSnapshot
-            } else {
-                logger.debug("LALAL BEFORE snap")
-                var new: Dictionary<Int, MergedItem> = [:]
-                let identifiers = representer.mergedItems.items.map({ merged in
-                    new[merged.hashValue] = merged
-                    return merged.hashValue
-                })
-                logger.debug("LALAL AFTER snap")
-
-                if identifiers == prevSnapshot.itemIdentifiers {
+            if items == prevSnapshot.itemIdentifiers {
                     logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
                     // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
                     updateFloatingButtons.send()
                     return
                 }
-                var snap = NSDiffableDataSourceSnapshot<Section, Int>()
-                snap.appendSections([.main])
-                snap.appendItems(identifiers)
-                itemsInCurrentSnapshot = new
-                snapshot = snap
-            }
+            var snapshot = NSDiffableDataSourceSnapshot<Section, MergedItem>()
+            snapshot.appendSections([.main])
+            snapshot.appendItems(items)
+
             dataSource.defaultRowAnimation = .none
+
             let wasContentHeight = tableView.contentSize.height
             let wasOffset = tableView.contentOffset.y
             let listState = getListState()
@@ -317,12 +286,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             let countDiff = max(0, snapshot.numberOfItems - prevSnapshot.numberOfItems)
             // Sets content offset on initial load
             if wasCount == 0 {
-                itemsInPrevSnapshot = itemsInCurrentSnapshot
                 dataSource.apply(
                     snapshot,
                     animatingDifferences: insertedSeveralNewestItems
                 )
-                if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { hash in itemsInPrevSnapshot[hash]!.hasUnread() }) {
+                if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { $0.hasUnread() }) {
                     scrollToRowWhenKnowSize(firstUnreadItem)
                 } else {
                     tableView.setContentOffset(
@@ -332,18 +300,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
             } else if wasCount != snapshot.numberOfItems {
                 logger.debug("LALAL drag \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
-                //                tableView.panGestureRecognizer.isEnabled = false
-                //                logger.debug("LALAL drag2 \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
                 if useSmoothScrolling && tableView.isDecelerating {
-                    //                    CATransaction.begin()
-                    itemsInPrevSnapshot = itemsInCurrentSnapshot
+                    tableView.panGestureRecognizer.isEnabled = false
                     tableView.beginUpdates()
                     dataSource.apply(
                         snapshot,
                         animatingDifferences: false
                     )
                     tableView.endUpdates()
-                    //                    CATransaction.commit()
                     tableView.panGestureRecognizer.isEnabled = true
                 } else {
                     // remember current translation
@@ -354,7 +318,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                             translationToApply = t
                         }
                     }
-                    itemsInPrevSnapshot = itemsInCurrentSnapshot
                     dataSource.apply(
                         snapshot,
                         animatingDifferences: false
@@ -516,13 +479,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     await preloadItems(self.representer.mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
                         logger.debug("LALAL LOADING INSIDE")
                         let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
-                        let superview = self.tableView.superview
-                        if triedToLoad, let superview {
-//                            let t = self.tableView.panGestureRecognizer.translation(in: superview)
-//                            if t.y != 0 {
-//                                self.translationToApply = t
-//                            }
-                        }
                         return triedToLoad
                     }
                 }

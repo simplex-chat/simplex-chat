@@ -114,15 +114,11 @@ struct MergedItems {
 }
 
 
-enum MergedItem: /*Identifiable, */Hashable {
-//    var id: Int64 {
-//        get {
-//            switch self {
-//            case let .single(item, _): item.item.id
-//            case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item.id
-//            }
-//        }
-//    }
+enum MergedItem: Hashable, Equatable {
+    // equatable and hashable implementations allows to NSDiffableDataSourceSnapshot to see the difference and correcrly scroll items we want. Without any of it, the scroll position will be random in ReverseList
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.hashValue == rhs.hashValue
+    }
 
     var hashValue: Int { self.newest().item.hashValue }
 
@@ -275,26 +271,7 @@ class ActiveChatState {
     }
 }
 
-struct BoxedValue2<T: Hashable>: /*Identifiable, */Hashable {
-//    var id: Int64 { (boxedValue as! MergedItem).id }
-
-    static func == (lhs: BoxedValue2<T>, rhs: BoxedValue2<T>) -> Bool {
-        lhs.boxedValue == rhs.boxedValue
-    }
-
-    var hashValue: Int { (boxedValue as! MergedItem).newest().hashValue }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine("\((boxedValue as! MergedItem).newest())")
-    }
-
-    var boxedValue : T
-    init(_ value: T) {
-        self.boxedValue = value
-    }
-}
-
-class BoxedValue<T: Hashable>: Hashable {
+class BoxedValue<T: Hashable>: Equatable, Hashable {
     static func == (lhs: BoxedValue<T>, rhs: BoxedValue<T>) -> Bool {
         lhs.boxedValue == rhs.boxedValue
     }
@@ -313,7 +290,7 @@ extension ReverseList.Controller {
     @MainActor
     func visibleItemIndexesNonReversed(_ mergedItems: Binding<MergedItems>) -> ClosedRange<Int> {
         let zero = 0 ... 0
-        if itemCount == 0 {
+        if mergedItems.wrappedValue.items.count == 0 {
             return zero
         }
         let listState = getListState() ?? ListState()

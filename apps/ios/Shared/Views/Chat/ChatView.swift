@@ -445,7 +445,7 @@ struct ChatView: View {
         return GeometryReader { g in
             let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
             // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
-            ReverseList(items: im.reversedChatItems, mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
+            ReverseList(mergedItems: mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
                 let ci = switch mergedItem {
                 case let .single(item, _): item.item
                 case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item
