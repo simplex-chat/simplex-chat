@@ -293,7 +293,7 @@ extension ReverseList.Controller {
         if mergedItems.wrappedValue.items.count == 0 {
             return zero
         }
-        let listState = getListState() ?? ListState()
+        let listState = getListState(mergedItems.wrappedValue.items) ?? ListState()
         let items = mergedItems.wrappedValue.items
         let newest = items.count > listState.firstVisibleItemIndex ? items[listState.firstVisibleItemIndex].startIndexInReversedItems : nil
         let oldest = items.count > listState.firstVisibleItemIndex ? items[listState.lastVisibleItemIndex].lastIndexInReversed() : nil

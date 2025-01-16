@@ -12,7 +12,7 @@ import SimpleXChat
 
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
-    var mergedItems: MergedItems
+    @Binding var mergedItems: MergedItems
     @Binding var revealedItems: Set<Int64>
     @Binding var unreadCount: Int
 
@@ -63,11 +63,11 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             // so it's better to just wait until dragging ends
             if waitOnEndedScrolling && controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
                 controller.runBlockOnEndDecelerating = {
-                    controller.update()
+                    controller.update(mergedItems.items)
                 }
             } else {
                 controller.runBlockOnEndDecelerating = nil
-                controller.update()
+                controller.update(mergedItems.items)
             }
         }
     }
@@ -150,8 +150,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             updateFloatingButtons
                 .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
                 .sink {
-                    let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) ?? ListState()
-                    ChatView.FloatingButtonModel.shared.updateOnListChange(representer.mergedItems, listState)
+                    let items = representer.mergedItems.items
+                    let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState(items) }) ?? ListState()
+                    ChatView.FloatingButtonModel.shared.updateOnListChange(items, listState)
                     //self.preloadIfNeeded(listState)
                 }
                 .store(in: &bag)
@@ -258,14 +259,13 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
         }
 
-        func update() {
+        func update(_ items: [MergedItem]) {
             let prevSnapshot = dataSource.snapshot()
             let wasCount = prevSnapshot.numberOfItems
-            let items = representer.mergedItems.items
             let willBeCount = items.count
             let c = 1
-            let insertedSeveralNewestItems = wasCount != 0 && willBeCount - wasCount == c && prevSnapshot.itemIdentifiers.first!.hashValue == self.representer.mergedItems.items[c].hashValue
-            logger.debug("LALAL WAS \(wasCount) will be \(self.representer.mergedItems.items.count)")
+            let insertedSeveralNewestItems = wasCount != 0 && willBeCount - wasCount == c && prevSnapshot.itemIdentifiers.first!.hashValue == items[c].hashValue
+            logger.debug("LALAL WAS \(wasCount) will be \(items.count)")
             if items == prevSnapshot.itemIdentifiers {
                     logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
                     // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
@@ -280,7 +280,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
             let wasContentHeight = tableView.contentSize.height
             let wasOffset = tableView.contentOffset.y
-            let listState = getListState()
+            let listState = getListState(items)
             let wasFirstVisibleRow = listState?.firstVisibleItemIndex ?? 0//tableView.indexPathsForVisibleRows?.first?.row ?? 0
             let wasFirstVisibleOffset = listState?.firstVisibleItemOffset ?? 0
             let countDiff = max(0, snapshot.numberOfItems - prevSnapshot.numberOfItems)
@@ -322,15 +322,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         snapshot,
                         animatingDifferences: false
                     )
-                    logger.debug("LALAL WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState()?.firstVisibleItemIndex ?? -4)")
-                    if listState?.firstVisibleItemIndex == getListState()?.firstVisibleItemIndex {
+                    logger.debug("LALAL WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState(items)?.firstVisibleItemIndex ?? -4)")
+                    if listState?.firstVisibleItemIndex == getListState(items)?.firstVisibleItemIndex {
                     // added new items to top
                     } else {
                         self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
                     // added new items to bottom
                     //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
                     logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstVisibleRow)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)")
-                    getListState()
+                    getListState(items)
                     self.tableView.scrollToRow(
                         at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + wasFirstVisibleRow)), section: 0),
                         at: .top,
@@ -341,7 +341,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         animated: false
                     )
                     logger.debug("LALAL AFTER SCROLLTOROW")
-                    let state = getListState()!
+                    let state = getListState(items)!
                     logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
 
                     if let t = translationToApply {
@@ -362,7 +362,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
             updateFloatingButtons.send()
 
-            if let listState = self.getListState() {
+            if let listState = self.getListState(representer.mergedItems.items) {
                 self.preloadIfNeeded(listState)
             }
         }
@@ -375,14 +375,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
         }
 
-        func getListState() -> ListState? {
+        func getListState(_ items: [MergedItem]) -> ListState? {
             logger.debug("LALAL VISIBLE ROWS \((self.tableView.indexPathsForVisibleRows ?? []).map({ $0.row }))")
             if let visibleRows = tableView.indexPathsForVisibleRows,
-               visibleRows.last?.row ?? 0 < representer.mergedItems.items.count {
+               visibleRows.last?.row ?? 0 < items.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
                 let topItemDate: Date? =
                 if let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) {
-                    representer.mergedItems.items[lastVisible.item].oldest().item.meta.itemTs
+                    items[lastVisible.item].oldest().item.meta.itemTs
                 } else {
                     nil
                 }
@@ -394,7 +394,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 logger.debug("LALAL LAST \(lastVisible?.item ?? -2)")
                 let bottomItemId: ChatItem.ID? =
                 if let firstVisible {
-                    representer.mergedItems.items[firstVisible.row].newest().item.id
+                    items[firstVisible.row].newest().item.id
                 } else {
                     nil
                 }

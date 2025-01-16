@@ -445,7 +445,7 @@ struct ChatView: View {
         return GeometryReader { g in
             let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
             // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
-            ReverseList(mergedItems: mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
+            ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
                 let ci = switch mergedItem {
                 case let .single(item, _): item.item
                 case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item
@@ -546,12 +546,12 @@ struct ChatView: View {
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
-        var mergedItems: MergedItems = MergedItems.init(items: [], splits: [], indexInParentItems: [:])
+        var items: [MergedItem] = []
         var totalUnread: Int = 0
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
-        func updateOnListChange(_ mergedItems: MergedItems, _ listState: ListState) {
+        func updateOnListChange(_ items: [MergedItem], _ listState: ListState) {
             let im = ItemsModel.shared
 //            let unreadBelow =
 //                if let id = listState.bottomItemId,
@@ -563,7 +563,7 @@ struct ChatView: View {
 //                } else {
 //                    0
 //                }
-            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(mergedItems, listState)
+            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(items, listState)
             let unreadBelow = if let lastVisibleItem {
                     max(0, totalUnread - lastVisibleItem.unreadBefore)
             } else {
@@ -583,7 +583,7 @@ struct ChatView: View {
                 it.unreadBelow = unreadBelow
                 it.date = date
                 it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
-                it.mergedItems = mergedItems
+                it.items = items
             }
             
             // set floating button indication mode
@@ -652,7 +652,7 @@ struct ChatView: View {
                                 .foregroundColor(theme.colors.primary)
                         }
                         .onTapGesture {
-                            if let index = model.mergedItems.items.lastIndex(where: { $0.hasUnread() }) {
+                            if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
                                 // scroll to the top unread item
                                 scrollModel.scrollToRow(row: index)
                             }

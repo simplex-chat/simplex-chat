@@ -85,11 +85,11 @@ func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ list
     }
 }
 
-func oldestPartiallyVisibleListItemInListStateOrNull(_ mergedItems: MergedItems, _ listState: ListState) -> ListItem? {
-    if listState.lastVisibleItemIndex < mergedItems.items.count {
-        return mergedItems.items[listState.lastVisibleItemIndex].oldest()
+func oldestPartiallyVisibleListItemInListStateOrNull(_ items: [MergedItem], _ listState: ListState) -> ListItem? {
+    if listState.lastVisibleItemIndex < items.count {
+        return items[listState.lastVisibleItemIndex].oldest()
     } else {
-        return mergedItems.items.last?.oldest()
+        return items.last?.oldest()
     }
 }
 
