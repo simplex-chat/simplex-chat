@@ -449,6 +449,9 @@ testInviteToOwnersGroup tmp =
       bob <## "#owners: member alice (Alice) is connected"
       superUser <## "#owners: SimpleX-Directory added bob (Bob) to the group (connecting...)"
       superUser <## "#owners: new member bob is connected"
+      -- second group
+      registerGroupId superUser bob "security" "Security" 3 2
+      superUser <## "Owner is already a member of owners' group"
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =

@@ -18,7 +18,8 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.List (find)
+import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
@@ -689,11 +690,19 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
               sendGroupInfo ct gr dbGroupId $ Just ownerStr
         inviteToOwnersGroup :: KnownGroup -> GroupReg -> (Either Text () -> IO a) -> IO a
         inviteToOwnersGroup KnownGroup {groupId = ogId} GroupReg {dbContactId = ctId} cont =
-          sendChatCmd cc (APIAddMember ogId ctId GRMember) >>= \case
-            CRSentGroupInvitation {} -> do
-              printLog cc CLLInfo $ "invited contact ID " <> show ctId <> " to owners' group"
-              cont $ Right ()
-            r -> do
+          sendChatCmd cc (APIListMembers ogId) >>= \case
+            CRGroupMembers _ (Group _ ms)
+              | alreadyMember ms -> cont $ Left "Owner is already a member of owners' group"
+              | otherwise -> do
+                  sendChatCmd cc (APIAddMember ogId ctId GRMember) >>= \case
+                    CRSentGroupInvitation {} -> do
+                      printLog cc CLLInfo $ "invited contact ID " <> show ctId <> " to owners' group"
+                      cont $ Right ()
+                    r -> contErr r
+            r -> contErr r
+          where
+            alreadyMember = isJust . find ((Just ctId == ) . memberContactId)
+            contErr r = do
               let err = "error inviting contact ID " <> tshow ctId <> " to owners' group: " <> tshow r
               putStrLn $ T.unpack err
               cont $ Left err
