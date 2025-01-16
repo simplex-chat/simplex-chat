@@ -9238,9 +9238,9 @@ Verbindingsverzoek herhalen?</target>
         <target>heeft je verwijderd</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested to connect" xml:space="preserve">
+      <trans-unit id="requested to connect" xml:space="preserve" approved="no">
         <source>requested to connect</source>
-        <target>gevraagd om verbinding te maken</target>
+        <target state="translated">verzocht om verbinding te maken</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
