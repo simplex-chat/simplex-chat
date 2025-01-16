@@ -87,7 +87,7 @@ class ItemsModel: ObservableObject {
             } catch {}
         }
         let type = ChatType(rawValue: String(chatId.prefix(1)))!
-        let id = Int64(chatId.suffix(chatId.count - 1))!
+        let id = Int64(chatId.suffix(from: chatId.index(chatId.startIndex, offsetBy: 1)))!
         Task {
             await MainActor.run { self.isLoading = true }
             //                try? await Task.sleep(nanoseconds: 5000_000000)

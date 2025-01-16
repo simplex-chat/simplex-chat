@@ -161,10 +161,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             updateFloatingButtons
                 .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
                 .sink {
-                    if let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) {
-                        ChatView.FloatingButtonModel.shared.updateOnListChange(representer.mergedItems, listState)
-                        //self.preloadIfNeeded(listState)
-                    }
+                    let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) ?? ListState()
+                    ChatView.FloatingButtonModel.shared.updateOnListChange(representer.mergedItems, listState)
+                    //self.preloadIfNeeded(listState)
                 }
                 .store(in: &bag)
         }
@@ -299,6 +298,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
                 if identifiers == prevSnapshot.itemIdentifiers {
                     logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
+                    // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
+                    updateFloatingButtons.send()
                     return
                 }
                 var snap = NSDiffableDataSourceSnapshot<Section, Int>()
@@ -358,7 +359,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         snapshot,
                         animatingDifferences: false
                     )
-                    logger.debug("LALAL WAS LISTSTATE \(listState!.firstVisibleItemIndex)  now \(self.getListState()!.firstVisibleItemIndex)")
+                    logger.debug("LALAL WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState()?.firstVisibleItemIndex ?? -4)")
                     if listState?.firstVisibleItemIndex == getListState()?.firstVisibleItemIndex {
                     // added new items to top
                     } else {

@@ -567,7 +567,7 @@ struct ChatView: View {
             let unreadBelow = if let lastVisibleItem {
                     max(0, totalUnread - lastVisibleItem.unreadBefore)
             } else {
-             -1
+             0
             }
             let date: Date? =
                 if let topItemDate = listState.topItemDate {
