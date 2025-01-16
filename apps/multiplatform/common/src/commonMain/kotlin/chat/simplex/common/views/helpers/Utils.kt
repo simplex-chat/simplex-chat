@@ -247,13 +247,17 @@ fun saveAnimImage(uri: URI): CryptoFile? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile? {
+fun saveFileFromUri(
+  uri: URI,
+  withAlertOnException: Boolean = true,
+  getDestFileName: (String) -> String = { n -> uniqueCombine(n, File(getAppFilePath(""))) }
+): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
     return if (inputStream != null && fileToSave != null) {
-      val destFileName = uniqueCombine(fileToSave, File(getAppFilePath("")))
+      val destFileName = getDestFileName(fileToSave)
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
