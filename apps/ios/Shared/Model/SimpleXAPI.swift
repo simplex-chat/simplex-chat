@@ -644,7 +644,13 @@ func getChatItemTTLAsync() async throws -> ChatItemTTL {
 }
 
 private func chatItemTTLResponse(_ r: ChatResponse) throws -> ChatItemTTL {
-    if case let .chatItemTTL(_, chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    if case let .chatItemTTL(_, chatItemTTL) = r {
+        if let ttl = chatItemTTL {
+            return ChatItemTTL(ttl)
+        } else {
+            throw RuntimeError("chatItemTTLResponse: invalid ttl")
+        }
+    }
     throw r
 }
 
@@ -653,9 +659,9 @@ func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
     try await sendCommandOkResp(.apiSetChatItemTTL(userId: userId, seconds: chatItemTTL.seconds))
 }
 
-func setChatTTL(chatType: ChatType, id: Int64, _ chatItemTTL: ChatItemTTL?) async throws {
+func setChatTTL(chatType: ChatType, id: Int64, _ chatItemTTL: ChatTTL) async throws {
     let userId = try currentUserId("setChatItemTTL")
-    try await sendCommandOkResp(.apiSetChatTTL(userId: userId, type: chatType, id: id, seconds: chatItemTTL?.seconds))
+    try await sendCommandOkResp(.apiSetChatTTL(userId: userId, type: chatType, id: id, seconds: chatItemTTL.value))
 }
 
 func getNetworkConfig() async throws -> NetCfg? {

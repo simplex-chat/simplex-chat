@@ -19,6 +19,7 @@ struct GroupChatInfoView: View {
     @Binding var groupInfo: GroupInfo
     var onSearch: () -> Void
     @State var localAlias: String
+    @State var chatItemTTL: ChatTTL
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
@@ -29,7 +30,7 @@ struct GroupChatInfoView: View {
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
-    @State private var chatItemTTL = ChatItemTTL.none // TODO [ttl]
+    @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -101,18 +102,7 @@ struct GroupChatInfoView: View {
                         sendReceiptsOptionDisabled()
                     }
 
-                    // TODO [ttl]
-                    Picker(selection: $chatItemTTL) {
-                        ForEach(ChatItemTTL.values) { ttl in
-                            Text(ttl.deleteAfterText).tag(ttl)
-                        }
-                        if case .seconds = chatItemTTL {
-                            Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
-                        }
-                    } label: {
-                        Label("Delete messages after", systemImage: "trash")
-                    }
-                    .frame(height: 36)
+                    chatTTLOption()
                     
                     NavigationLink {
                         ChatWallpaperEditorSheet(chat: chat)
@@ -205,6 +195,7 @@ struct GroupChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsSmallGroups
             }
             sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
+            currentChatItemTTL = chatItemTTL
             do {
                 if let link = try apiGetGroupLink(groupInfo.groupId) {
                     (groupLink, groupLinkMemberRole) = link
@@ -657,6 +648,33 @@ struct GroupChatInfoView: View {
         chatSettings.sendRcpts = sendReceipts.bool()
         updateChatSettings(chat, chatSettings: chatSettings)
     }
+    
+    private func chatTTLOption() -> some View {
+        Picker(selection: $chatItemTTL) {
+            ForEach(ChatItemTTL.values) { ttl in
+                Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
+            }
+            let defaultTTL = ChatTTL.userDefault(chatModel.chatItemTTL)
+            Text(defaultTTL.text).tag(defaultTTL)
+            
+            if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
+                Text(ttl.deleteAfterText).tag(chatItemTTL)
+            }
+        } label: {
+            Label("Delete messages after", systemImage: "trash")
+        }
+        .frame(height: 36)
+        .onChange(of: chatItemTTL) { ttl in
+            if ttl != currentChatItemTTL {
+                setChatTTL(
+                    ttl,
+                    chat,
+                    onSuccess: { currentChatItemTTL = ttl },
+                    onRevert: { chatItemTTL = currentChatItemTTL }
+                )
+            }
+        }
+    }
 
     private func sendReceiptsOptionDisabled() -> some View {
         HStack {
@@ -792,7 +810,8 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
             onSearch: {},
-            localAlias: ""
+            localAlias: "",
+            chatItemTTL: ChatTTL.userDefault(.seconds(0))
         )
     }
 }

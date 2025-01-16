@@ -98,6 +98,7 @@ struct ChatInfoView: View {
     @State var localAlias: String
     @State var featuresAllowed: ContactFeaturesAllowed
     @State var currentFeaturesAllowed: ContactFeaturesAllowed
+    @State var chatItemTTL: ChatTTL
     var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
@@ -109,7 +110,7 @@ struct ChatInfoView: View {
     @State private var showConnectContactViaAddressDialog = false
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
-    @State private var chatItemTTL = ChatItemTTL.none
+    @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
     enum ChatInfoViewAlert: Identifiable {
@@ -191,18 +192,7 @@ struct ChatInfoView: View {
                         //     synchronizeConnectionButtonForce()
                         // }
 
-                        // TODO [ttl]
-                        Picker(selection: $chatItemTTL) {
-                            ForEach(ChatItemTTL.values) { ttl in
-                                Text(ttl.deleteAfterText).tag(ttl)
-                            }
-                            if case .seconds = chatItemTTL {
-                                Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
-                            }
-                        } label: {
-                            Label("Delete messages after", systemImage: "trash")
-                        }
-                        .frame(height: 36)
+                        chatTTLOption()
                     }
                     .disabled(!contact.ready || !contact.active)
                     NavigationLink {
@@ -301,7 +291,7 @@ struct ChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsContacts
             }
             sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
-            
+            currentChatItemTTL = chatItemTTL
             
             Task {
                 do {
@@ -509,6 +499,33 @@ struct ChatInfoView: View {
         var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
         chatSettings.sendRcpts = sendReceipts.bool()
         updateChatSettings(chat, chatSettings: chatSettings)
+    }
+    
+    private func chatTTLOption() -> some View {
+        Picker(selection: $chatItemTTL) {
+            ForEach(ChatItemTTL.values) { ttl in
+                Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
+            }
+            let defaultTTL = ChatTTL.userDefault(chatModel.chatItemTTL)
+            Text(defaultTTL.text).tag(defaultTTL)
+            
+            if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
+                Text(ttl.deleteAfterText).tag(chatItemTTL)
+            }
+        } label: {
+            Label("Delete messages after", systemImage: "trash")
+        }
+        .frame(height: 36)
+        .onChange(of: chatItemTTL) { ttl in
+            if ttl != currentChatItemTTL {
+                setChatTTL(
+                    ttl,
+                    chat,
+                    onSuccess: { currentChatItemTTL = ttl },
+                    onRevert: { chatItemTTL = currentChatItemTTL }
+                )
+            }
+        }
     }
     
     private func synchronizeConnectionButton() -> some View {
@@ -1066,6 +1083,34 @@ func deleteContactDialog(
     }
 }
 
+func setChatTTL(_ ttl: ChatTTL, _ chat: Chat, onSuccess: @escaping () -> Void, onRevert: @escaping () -> Void) {
+    showAlert(
+        NSLocalizedString("Enable automatic message deletion?", comment: "alert title"),
+        message: NSLocalizedString("This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.", comment: "alert message")
+    ) {
+        [
+            UIAlertAction(
+                title: NSLocalizedString("Delete messages", comment: "alert button"),
+                style: .destructive,
+                handler: { _ in
+                    Task {
+                        do {
+                            try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
+                            await loadChat(chat: chat)
+                            onSuccess()
+                        }
+                        catch let error {
+                            logger.error("setChatTTL error \(responseError(error))")
+                            onRevert()
+                       }
+                    }
+                }
+            ),
+            UIAlertAction(title: NSLocalizedString("Cancel", comment: "alert button"), style: .cancel, handler: { _ in onRevert() })
+        ]
+    }
+}
+
 private func deleteContactOrConversationDialog(
     _ chat: Chat,
     _ contact: Contact,
@@ -1266,6 +1311,7 @@ struct ChatInfoView_Previews: PreviewProvider {
             localAlias: "",
             featuresAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
             currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
+            chatItemTTL: ChatTTL.userDefault(.seconds(0)),
             onSearch: {}
         )
     }
