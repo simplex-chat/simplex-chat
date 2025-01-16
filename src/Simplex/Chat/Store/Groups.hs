@@ -2366,7 +2366,7 @@ setGroupChatTTL db gId ttl = do
 getGroupChatTTL :: DB.Connection -> GroupId -> IO (Maybe Int64)
 getGroupChatTTL db gId =
   fmap join . maybeFirstRow fromOnly $
-    DB.query db "SELECT chat_item_ttl FROM groups WHERE AND group_id = ? LIMIT 1" (Only gId)
+    DB.query db "SELECT chat_item_ttl FROM groups WHERE group_id = ? LIMIT 1" (Only gId)
 
 getUserGroupsToExpire :: DB.Connection -> User -> Int64 -> IO [GroupId]
 getUserGroupsToExpire db User {userId} globalTTL =

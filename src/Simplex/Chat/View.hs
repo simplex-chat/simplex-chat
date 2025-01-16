@@ -1369,6 +1369,7 @@ viewChatItemTTL = \case
     | ttl == 86400 -> deletedAfter "one day"
     | ttl == 7 * 86400 -> deletedAfter "one week"
     | ttl == 30 * 86400 -> deletedAfter "one month"
+    | ttl == 365 * 86400 -> deletedAfter "one year"
     | otherwise -> deletedAfter $ sShow ttl <> " second(s)"
   where
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]

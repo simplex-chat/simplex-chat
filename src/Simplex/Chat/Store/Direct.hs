@@ -1092,7 +1092,7 @@ setDirectChatTTL db cId ttl = do
 getDirectChatTTL :: DB.Connection -> ContactId -> IO (Maybe Int64)
 getDirectChatTTL db cId =
   fmap join . maybeFirstRow fromOnly $
-    DB.query db "SELECT chat_item_ttl FROM contacts WHERE AND contact_id = ? LIMIT 1" (Only cId)
+    DB.query db "SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1" (Only cId)
 
 getUserContactsToExpire :: DB.Connection -> User -> Int64 -> IO [ContactId]
 getUserContactsToExpire db User {userId} globalTTL =
