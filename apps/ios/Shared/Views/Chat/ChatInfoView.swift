@@ -1102,7 +1102,7 @@ func setChatTTL(_ ttl: ChatTTL, _ chat: Chat, hasPreviousTTL: Bool, onSuccess: @
     showAlert(title, message: message) {
         [
             UIAlertAction(
-                title: NSLocalizedString("Delete messages", comment: "alert button"),
+                title: ttl.neverExpires ?  NSLocalizedString("Disable delete messages", comment: "alert button") : NSLocalizedString("Delete messages", comment: "alert button"),
                 style: .destructive,
                 handler: { _ in
                     Task {
