@@ -4423,11 +4423,25 @@ public enum ChatTTL: Identifiable, Hashable {
             ttl.deleteAfterText)
         }
     }
+    
+    public var neverExpires: Bool {
+        switch self {
+        case let .chat(ttl): return ttl.seconds == 0
+        case let .userDefault(ttl): return ttl.seconds == 0
+        }
+    }
         
     public var value: Int64? {
         switch self {
         case let .chat(ttl): return ttl.seconds
         case .userDefault: return nil
+        }
+    }
+    
+    public var usingDefault: Bool {
+        switch self {
+        case .userDefault: return true
+        case .chat: return false
         }
     }
 }

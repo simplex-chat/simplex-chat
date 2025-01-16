@@ -669,6 +669,7 @@ struct GroupChatInfoView: View {
                 setChatTTL(
                     ttl,
                     chat,
+                    hasPreviousTTL: !currentChatItemTTL.neverExpires,
                     onSuccess: { currentChatItemTTL = ttl },
                     onRevert: { chatItemTTL = currentChatItemTTL }
                 )

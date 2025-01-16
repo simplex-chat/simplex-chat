@@ -521,6 +521,7 @@ struct ChatInfoView: View {
                 setChatTTL(
                     ttl,
                     chat,
+                    hasPreviousTTL: !currentChatItemTTL.neverExpires,
                     onSuccess: { currentChatItemTTL = ttl },
                     onRevert: { chatItemTTL = currentChatItemTTL }
                 )
@@ -1083,11 +1084,22 @@ func deleteContactDialog(
     }
 }
 
-func setChatTTL(_ ttl: ChatTTL, _ chat: Chat, onSuccess: @escaping () -> Void, onRevert: @escaping () -> Void) {
-    showAlert(
-        NSLocalizedString("Enable automatic message deletion?", comment: "alert title"),
-        message: NSLocalizedString("This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.", comment: "alert message")
-    ) {
+func setChatTTL(_ ttl: ChatTTL, _ chat: Chat, hasPreviousTTL: Bool, onSuccess: @escaping () -> Void, onRevert: @escaping () -> Void) {
+    let title = if ttl.neverExpires {
+        NSLocalizedString("Disable automatic message deletion?", comment: "alert title")
+    } else if ttl.usingDefault || hasPreviousTTL {
+        NSLocalizedString("Change automatic message deletion?", comment: "alert title")
+    } else {
+        NSLocalizedString("Enable automatic message deletion?", comment: "alert title")
+    }
+    
+    let message = if ttl.neverExpires {
+        NSLocalizedString("Messages on this chat will never be deleted.", comment: "alert message")
+    } else {
+        NSLocalizedString("This action cannot be undone - the messages sent and received on this chat earlier than selected will be deleted. It may take several minutes.", comment: "alert message")
+    }
+    
+    showAlert(title, message: message) {
         [
             UIAlertAction(
                 title: NSLocalizedString("Delete messages", comment: "alert button"),
@@ -1102,7 +1114,7 @@ func setChatTTL(_ ttl: ChatTTL, _ chat: Chat, onSuccess: @escaping () -> Void, o
                         catch let error {
                             logger.error("setChatTTL error \(responseError(error))")
                             onRevert()
-                       }
+                        }
                     }
                 }
             ),
