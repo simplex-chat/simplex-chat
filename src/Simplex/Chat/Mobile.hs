@@ -204,7 +204,7 @@ mobileChatOpts dbFilePrefix =
             logServerHosts = True,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 1024,
+            tbqSize = 4096,
             highlyAvailable = False,
             yesToUpMigrations = False
           },

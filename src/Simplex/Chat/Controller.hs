@@ -353,7 +353,7 @@ data ChatCommand
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | ApiGetConnNtfMessages {connIds :: NonEmpty AgentConnId}
   | APIAddMember GroupId ContactId GroupMemberRole
-  | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter} 
+  | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
   | APIBlockMemberForAll GroupId GroupMemberId Bool
   | APIRemoveMember GroupId GroupMemberId

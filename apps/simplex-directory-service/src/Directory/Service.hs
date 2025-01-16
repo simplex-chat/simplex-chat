@@ -103,7 +103,7 @@ directoryService st opts@DirectoryOpts {testing} user cc = do
     directoryServiceEvent st opts env user cc resp
 
 directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
-directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, searchResults} ServiceState {searchRequests} user@User {userId} cc event =
+directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests} user@User {userId} cc event =
   forM_ (crDirectoryEvent event) $ \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
@@ -114,7 +114,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
     DEContactRemovedFromGroup ctId g -> deContactRemovedFromGroup ctId g
     DEContactLeftGroup ctId g -> deContactLeftGroup ctId g
     DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
-    DEGroupDeleted _g -> pure ()
+    DEGroupDeleted g -> deGroupDeleted g
     DEUnsupportedMessage _ct _ciId -> pure ()
     DEItemEditIgnored _ct -> pure ()
     DEItemDeleteIgnored _ct -> pure ()
@@ -438,6 +438,14 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
         notifyOwner gr $ serviceName <> " is removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
 
+    deGroupDeleted :: GroupInfo -> IO ()
+    deGroupDeleted g = do
+      logInfo $ "group removed " <> viewGroupName g
+      withGroupReg g "group removed" $ \gr -> do
+        setGroupStatus st gr GRSRemoved
+        notifyOwner gr $ "The group " <> userGroupReference gr g <> " is deleted.\n\nThe group is no longer listed in the directory."
+        notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
+
     deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
     deUserCommand ct ciId = \case
       DCHelp ->
@@ -582,8 +590,15 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
                               setGroupStatus st gr GRSActive
                               let approved = "The group " <> userGroupReference' gr n <> " is approved"
                               notifyOwner gr $ approved <> " and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
-                              sendReply "Group approved!"
-                              notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct)
+                              invited <-
+                                forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
+                                  inviteToOwnersGroup og gr $ \case
+                                    Right () -> do
+                                      owner <- groupOwnerInfo groupRef $ dbContactId gr
+                                      pure $ "Invited " <> owner <> " to owners' group " <> viewName ogName
+                                    Left err -> pure err
+                              sendReply $ "Group approved!" <> maybe "" ("\n" <>) invited
+                              notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct) <> fromMaybe "" invited
                             Just GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
                             Just GRSContactNotOwner -> replyNotApproved "user is not an owner."
                             Just GRSBadRoles -> replyNotApproved $ "user is not an owner, " <> serviceNotAdmin
@@ -641,10 +656,20 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
             let groupRef = groupReference' groupId gName
             withGroupAndReg sendReply groupId gName $ \_ gr@GroupReg {dbContactId} -> do
               notifyOwner gr msg
-              owner_ <- getContact cc dbContactId
-              let ownerInfo = "the owner of the group " <> groupRef
-                  ownerName ct' = "@" <> viewName (localDisplayName' ct') <> ", "
-              sendReply $ "Forwarded to " <> maybe "" ownerName owner_ <> ownerInfo
+              owner <- groupOwnerInfo groupRef dbContactId
+              sendReply $ "Forwarded to " <> owner
+          DCInviteOwnerToGroup groupId gName -> case ownersGroup of
+            Just og@KnownGroup {localDisplayName = ogName} ->
+              withGroupAndReg sendReply groupId gName $ \_ gr@GroupReg {dbContactId = ctId} -> do
+                inviteToOwnersGroup og gr $ \case
+                  Right () -> do
+                    let groupRef = groupReference' groupId gName
+                    owner <- groupOwnerInfo groupRef ctId
+                    let invited =  " invited " <> owner <> " to owners' group " <> viewName ogName
+                    notifyOtherSuperUsers $ viewName (localDisplayName' ct) <> invited
+                    sendReply $ "you" <> invited
+                  Left err -> sendReply err
+            Nothing -> sendReply "owners' group is not specified"
           DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       | otherwise = sendReply "You are not allowed to use this command"
       where
@@ -662,6 +687,21 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, sea
               ct_ <- getContact cc dbContactId
               let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
               sendGroupInfo ct gr dbGroupId $ Just ownerStr
+        inviteToOwnersGroup :: KnownGroup -> GroupReg -> (Either Text () -> IO a) -> IO a
+        inviteToOwnersGroup KnownGroup {groupId = ogId} GroupReg {dbContactId = ctId} cont =
+          sendChatCmd cc (APIAddMember ogId ctId GRMember) >>= \case
+            CRSentGroupInvitation {} -> do
+              printLog cc CLLInfo $ "invited contact ID " <> show ctId <> " to owners' group"
+              cont $ Right ()
+            r -> do
+              let err = "error inviting contact ID " <> tshow ctId <> " to owners' group: " <> tshow r
+              putStrLn $ T.unpack err
+              cont $ Left err
+        groupOwnerInfo groupRef dbContactId = do
+          owner_ <- getContact cc dbContactId
+          let ownerInfo = "the owner of the group " <> groupRef
+              ownerName ct' = "@" <> viewName (localDisplayName' ct') <> ", "
+          pure $ maybe "" ownerName owner_ <> ownerInfo
 
     deSuperUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRSuperUser -> IO ()
     deSuperUserCommand ct ciId cmd
