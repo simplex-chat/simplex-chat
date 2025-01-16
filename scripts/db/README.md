@@ -1,133 +1,37 @@
 # Transfer data from SQLite to Postgres database
 
-1. Prepare postgres database.
-
-   - Build `simplex-chat` executable with `client_postgres` flag and run it for the first time.
-
-      This should create `simplex_v1` database with `agent_schema` and `chat_schema` schemas, and `migrations` tables populated. Some tables would have initialization data.
-
-   - Delete data from all tables other than service and `migrations` tables.
-
-      For example, run via DBeaver:
-
-      ```sql
-      DO $$
-      DECLARE
-         table_name text;
-      BEGIN
-         EXECUTE 'SET SEARCH_PATH TO agent_schema';
-
-         FOR table_name IN
-            SELECT tablename
-            FROM pg_catalog.pg_tables
-            WHERE schemaname = 'agent_schema'
-               AND tablename NOT LIKE 'pg_*'
-               AND tablename != 'migrations'
-         LOOP
-            EXECUTE format('DELETE FROM %I;', table_name);
-         END LOOP;
-      END $$;
-      ```
-
-      Repeat for `chat_schema`.
-
-      Now you should have `simplex_v1` database with `agent_schema` and `chat_schema` schemas, and `migrations` tables populated, without any data in other tables.
-
-      To check number of rows for all tables in schema run:
-
-      ```sql
-      WITH    tbl AS (
-      SELECT Table_Schema, Table_Name
-      FROM   information_schema.Tables
-      WHERE  Table_Name NOT LIKE 'pg_%'
-            AND Table_Schema IN ('agent_schema')
-      )
-      SELECT  Table_Schema AS Schema_Name
-      ,       Table_Name
-      ,       (xpath('/row/c/text()', query_to_xml(format(
-               'SELECT count(*) AS c FROM %I.%I', Table_Schema, Table_Name
-            ), FALSE, TRUE, '')))[1]::text::int AS Records_Count
-      FROM    tbl
-      ORDER   BY Records_Count DESC;
-      ```
-
-      Repeat for `chat_schema`.
-
-      All tables except `migrations` tables should have 0 rows.
-
-   \* Alternatively, it's possible to create schemas manually, and insert first migration rows also manually.
-
-2. Create SQLite dumps (substitute sqlite database names).
+1. \* Decrypt SQLite database if it is encrypted.
 
    ```sh
-   sqlite3 simplex_v1_agent.db ".dump" | grep "^INSERT INTO" | grep -v "^INSERT INTO migrations" | grep -v "^INSERT INTO sqlite_sequence" > sqlite_agent_dump.sql
-
-   sqlite3 simplex_v1_chat.db ".dump" | grep "^INSERT INTO" | grep -v "^INSERT INTO migrations" | grep -v "^INSERT INTO sqlite_sequence" > sqlite_chat_dump.sql
+   sqlcipher encrypted_simplex_v1_agent.db
    ```
-
-3. Transform for Postgres.
-
-   ```sh
-   perl -pe "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/(?<=\(|,)X'([0-9A-Fa-f]*)'(?=(\)|,))/DECODE('\1','hex')/g" sqlite_agent_dump.sql | python3 -c "import sys; text = sys.stdin.read(); result = text.replace(',\'\\\\r\',char(13))', ',E\'\\\\r\',E\'\\\\r\')').replace(',\'\\\\n\',char(10))', ',E\'\\\\n\',E\'\\\\n\')').replace(',\'\\\\012\',char(10))', ',E\'\\\\n\',E\'\\\\n\')'); sys.stdout.write(result)" > postgres_agent_inserts.sql
-
-   perl -pe "s/(INSERT INTO \"?[a-zA-Z0-9_]+\"?) VALUES/\\1 OVERRIDING SYSTEM VALUE VALUES/; s/(?<=\(|,)X'([0-9A-Fa-f]*)'(?=(\)|,))/DECODE('\1','hex')/g" sqlite_chat_dump.sql | python3 -c "import sys; text = sys.stdin.read(); result = text.replace(',\'\\\\r\',char(13))', ',E\'\\\\r\',E\'\\\\r\')').replace(',\'\\\\n\',char(10))', ',E\'\\\\n\',E\'\\\\n\')').replace(',\'\\\\012\',char(10))', ',E\'\\\\n\',E\'\\\\n\')'); sys.stdout.write(result)" > postgres_chat_inserts.sql
-   ```
-
-4. Disable constraints on all tables (requires certain privileges - for example, connect to database with `postgres` user).
 
    ```sql
-   DO $$
-   DECLARE
-      table_name text;
-   BEGIN
-      EXECUTE 'SET SEARCH_PATH TO agent_schema';
-
-      FOR table_name IN
-         SELECT tablename
-         FROM pg_catalog.pg_tables
-         WHERE schemaname = 'agent_schema'
-            AND tablename NOT LIKE 'pg_*'
-            AND tablename != 'migrations'
-      LOOP
-         EXECUTE format('ALTER TABLE %I DISABLE TRIGGER ALL;', table_name);
-      END LOOP;
-   END $$;
+   PRAGMA key = 'password';
+   ATTACH DATABASE 'simplex_v1_agent.db' AS plaintext KEY '';
+   SELECT sqlcipher_export('plaintext');
+   DETACH DATABASE plaintext;
    ```
 
-   Repeat for `chat_schema`.
+   Repeat for `simplex_v1_chat.db`.
 
-5. Insert data into Postgres.
+2. Prepare Postgres database.
+
+   Build `simplex-chat` executable with `client_postgres` flag and run it to initialize new Postgres chat database.
+
+   This should create `simplex_v1` database with `agent_schema` and `chat_schema` schemas, and `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
+
+3. Load data from decrypted SQLite databases to Postgres database via pgloader.
+
+   Install pgloader and add it to PATH.
 
    ```sh
-   psql "user=postgres dbname=simplex_v1 options=--search_path=agent_schema" --set ON_ERROR_STOP=on -q -f postgres_agent_inserts.sql
+   SQLITE_DBPATH='simplex_v1_agent.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='agent_schema' pgloader --on-error-stop sqlite.load
 
-   psql "user=postgres dbname=simplex_v1 options=--search_path=chat_schema" --set ON_ERROR_STOP=on -q -f postgres_chat_inserts.sql
+   SQLITE_DBPATH='simplex_v1_chat.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='chat_schema' pgloader --on-error-stop sqlite.load
    ```
 
-6. Enable constraints on all tables.
-
-   ```sql
-   DO $$
-   DECLARE
-      table_name text;
-   BEGIN
-      EXECUTE 'SET SEARCH_PATH TO agent_schema';
-
-      FOR table_name IN
-         SELECT tablename
-         FROM pg_catalog.pg_tables
-         WHERE schemaname = 'agent_schema'
-            AND tablename NOT LIKE 'pg_*'
-            AND tablename != 'migrations'
-      LOOP
-         EXECUTE format('ALTER TABLE %I ENABLE TRIGGER ALL;', table_name);
-      END LOOP;
-   END $$;
-   ```
-
-   Repeat for `chat_schema`.
-
-7. Update sequences for Postgres tables.
+4. Update sequences for Postgres tables.
 
    ```sql
    DO $$
@@ -138,21 +42,42 @@
 
       FOR rec IN
          SELECT
-               table_name,
-               column_name,
-               pg_get_serial_sequence(table_name, column_name) AS seq_name
+            table_name,
+            column_name,
+            pg_get_serial_sequence(table_name, column_name) AS seq_name
          FROM
-               information_schema.columns
+            information_schema.columns
          WHERE
-               table_schema = 'agent_schema'
-               AND identity_generation = 'ALWAYS'
+            table_schema = 'agent_schema'
+            AND identity_generation = 'ALWAYS'
       LOOP
          EXECUTE format(
-               'SELECT setval(%L, (SELECT MAX(%I) FROM %I))',
-               rec.seq_name, rec.column_name, rec.table_name
+            'SELECT setval(%L, (SELECT MAX(%I) FROM %I))',
+            rec.seq_name, rec.column_name, rec.table_name
          );
       END LOOP;
    END $$;
    ```
 
-8. Compare number of rows between Postgres and SQLite tables.
+5. Compare number of rows between Postgres and SQLite tables.
+
+   To check number of rows for all tables in Postgres database schema run:
+
+   ```sql
+   WITH tbl AS (
+      SELECT table_schema, table_name
+      FROM information_schema.Tables
+      WHERE table_name NOT LIKE 'pg_%'
+        AND table_schema IN ('agent_schema')
+   )
+   SELECT
+      table_schema AS schema_name,
+      table_name,
+      (xpath('/row/c/text()', query_to_xml(
+         format('SELECT count(*) AS c FROM %I.%I', table_schema, table_name), false, true, ''
+      )))[1]::text::int AS records_count
+   FROM tbl
+   ORDER BY records_count DESC;
+   ```
+
+   Repeat for `chat_schema`.
