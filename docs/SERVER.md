@@ -589,7 +589,7 @@ Connection to the smp server occurs via a TLS connection. During the TLS handsha
 - [Tails](https://tails.net/) live usb drive with [persistent and encrypted storage](https://tails.net/doc/persistent_storage/create/index.en.html).
 - Offline Linux laptop.
 - Bitwarden.
-- Any other safe storage that satisfy your security requirements.
+- Any other safe storage that satisfies your security requirements.
 
 Follow the steps to secure your CA keys:
 
