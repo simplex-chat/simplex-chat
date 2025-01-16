@@ -616,7 +616,7 @@ fun ComposeView(
                     val ext = when {
                       // remove everything but extension
                       filename.contains(".") -> filename.replaceBeforeLast('.', "").replace(".", "")
-                      else -> "mp4"
+                      else -> null
                     }
                     generateNewFileName("video", ext, File(getAppFilePath("")))
                   }

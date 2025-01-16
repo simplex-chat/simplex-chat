@@ -357,11 +357,12 @@ fun <T> createTmpFileAndDelete(dir: File = tmpDir, onCreated: (File) -> T): T {
   }
 }
 
-fun generateNewFileName(prefix: String, ext: String, dir: File): String {
+fun generateNewFileName(prefix: String, ext: String?, dir: File): String {
   val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
   sdf.timeZone = TimeZone.getTimeZone("GMT")
   val timestamp = sdf.format(Date())
-  return uniqueCombine("${prefix}_$timestamp.$ext", dir)
+  val extension = if (ext != null) ".$ext" else ""
+  return uniqueCombine("${prefix}_$timestamp$extension", dir)
 }
 
 fun uniqueCombine(fileName: String, dir: File): String {
