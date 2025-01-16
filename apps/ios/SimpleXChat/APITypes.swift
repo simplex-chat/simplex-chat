@@ -1191,9 +1191,9 @@ struct NewUser: Encodable {
 }
 
 public enum ChatPagination {
-    public static let INITIAL_COUNT = 50
-    public static let PRELOAD_COUNT = 50
-    public static let UNTIL_PRELOAD_COUNT = 20
+    public static let INITIAL_COUNT = 75
+    public static let PRELOAD_COUNT = 100
+    public static let UNTIL_PRELOAD_COUNT = 50
 
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
