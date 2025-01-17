@@ -133,6 +133,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 cell.transform = .verticalFlip
                 cell.selectionStyle = .none
                 cell.backgroundColor = .clear
+                _ = logger.debug("LALAL ASK FOR CELL \(indexPath.row)")
                 return cell
             }
 
@@ -255,11 +256,14 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func update(_ items: [MergedItem]) {
+            logger.debug("LALAL STEP 0   \(items.count)")
             let prevSnapshot = dataSource.snapshot()
+            logger.debug("LALAL STEP 1")
             let wasCount = prevSnapshot.numberOfItems
             let willBeCount = items.count
             let c = 1
             let insertedSeveralNewestItems = wasCount != 0 && willBeCount - wasCount == c && prevSnapshot.itemIdentifiers.first!.hashValue == items[c].hashValue
+            logger.debug("LALAL STEP 2")
             logger.debug("LALAL WAS \(wasCount) will be \(items.count)")
             if items == prevSnapshot.itemIdentifiers {
                     logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
@@ -270,7 +274,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             var snapshot = NSDiffableDataSourceSnapshot<Section, MergedItem>()
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
-
+            logger.debug("LALAL STEP 3")
             dataSource.defaultRowAnimation = .none
 
             let wasContentHeight = tableView.contentSize.height
@@ -279,6 +283,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             let wasFirstVisibleRow = listState?.firstVisibleItemIndex ?? 0//tableView.indexPathsForVisibleRows?.first?.row ?? 0
             let wasFirstVisibleOffset = listState?.firstVisibleItemOffset ?? 0
             // Sets content offset on initial load
+            logger.debug("LALAL STEP 4")
             if wasCount == 0 {
                 dataSource.apply(
                     snapshot,
@@ -292,6 +297,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         animated: false
                     )
                 }
+                logger.debug("LALAL STEP 5 0")
             } else if wasCount != snapshot.numberOfItems {
                 logger.debug("LALAL drag \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
                 if useSmoothScrolling && tableView.isDecelerating {
@@ -303,6 +309,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     )
                     tableView.endUpdates()
                     tableView.panGestureRecognizer.isEnabled = true
+                    logger.debug("LALAL STEP 5 1")
                 } else {
                     // remember current translation
                     var translationToApply: CGPoint? = nil
@@ -354,9 +361,17 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
                     }
                     }
+                    logger.debug("LALAL STEP 5 2")
                 }
+            } else {
+                dataSource.apply(
+                    snapshot,
+                    animatingDifferences: false
+                )
+                logger.debug("LALAL STEP 5 3")
             }
             updateFloatingButtons.send()
+            logger.debug("LALAL STEP 6")
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -479,7 +494,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     if index == nil {
                         let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
                         let oldSize = ItemsModel.shared.reversedChatItems.count
-                        _ = await self.representer.loadItems(true, pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems))})
+                        _ = await self.representer.loadItems(true, pagination, { self.visibleItemIndexesNonReversed(self.representer.mergedItems.items)})
                         var repeatsLeft = 50
                         while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
                             try await Task.sleep(nanoseconds: 20_000000)
@@ -511,9 +526,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 logger.debug("LALAL LOADING before \(String(describing: self.representer.scrollState))")
                 prevFirstVisible = state.firstVisibleItemIndex
                 Task {
-                    await preloadItems(self.representer.mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
+                    let mergedItems = self.representer.mergedItems
+                    await preloadItems(mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
                         logger.debug("LALAL LOADING INSIDE")
-                        let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(Binding.constant(self.representer.mergedItems)) })
+                        let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(mergedItems.items) })
                         return triedToLoad
                     }
                 }

@@ -49,7 +49,7 @@ struct MergedItems {
             }
 
             let revealed = item.mergeCategory == nil || revealedItems.contains(item.id)
-            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, unreadIds, _) = recent, mergeCategory == category, let first = items.boxedValue.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
+            if recent != nil, case let .grouped(items, _, _, _, mergeCategory, unreadIds, _, _) = recent, mergeCategory == category, let first = items.boxedValue.first, !revealedItems.contains(first.item.id) && !itemIsSplit {
                 let listItem = ListItem(item: item, prevItem: prev, nextItem: next, unreadBefore: unreadBefore)
                 items.boxedValue.append(listItem)
 
@@ -79,13 +79,15 @@ struct MergedItems {
                         rangeInReversed: lastRangeInReversedForMergedItems!,
                         mergeCategory: item.mergeCategory,
                         unreadIds: BoxedValue(item.isRcvNew ? Set(arrayLiteral: item.id) : Set()),
-                        startIndexInReversedItems: index
+                        startIndexInReversedItems: index,
+                        hash: listItem.genHash()
                     )
                 } else {
                     lastRangeInReversedForMergedItems = nil
                     recent = MergedItem.single(
                         item: listItem,
-                        startIndexInReversedItems: index
+                        startIndexInReversedItems: index,
+                        hash: listItem.genHash()
                     )
                 }
                 mergedItems.append(recent!)
@@ -117,19 +119,25 @@ struct MergedItems {
 enum MergedItem: Hashable, Equatable {
     // equatable and hashable implementations allows to NSDiffableDataSourceSnapshot to see the difference and correcrly scroll items we want. Without any of it, the scroll position will be random in ReverseList
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.hashValue == rhs.hashValue
+        lhs.hash == rhs.hash
     }
 
-    var hashValue: Int { self.newest().item.hashValue }
-
     func hash(into hasher: inout Hasher) {
-        hasher.combine("\(self.newest().item)")
+        hasher.combine(hash)
+    }
+
+    var hash: String {
+        switch self {
+        case .single(_, _, let hash): hash
+        case .grouped(_, _, _, _, _, _, _, let hash): hash
+        }
     }
 
     // the item that is always single, cannot be grouped and always revealed
     case single(
         item: ListItem,
-        startIndexInReversedItems: Int
+        startIndexInReversedItems: Int,
+        hash: String
     )
 
     /** The item that can contain multiple items or just one depending on revealed state. When the whole group of merged items is revealed,
@@ -146,11 +154,12 @@ enum MergedItem: Hashable, Equatable {
         rangeInReversed: BoxedValue<ClosedRange<Int>>,
         mergeCategory: CIMergeCategory?,
         unreadIds: BoxedValue<Set<Int64>>,
-        startIndexInReversedItems: Int
+        startIndexInReversedItems: Int,
+        hash: String
     )
 
     func reveal(_ reveal: Bool, _ revealedItems: Binding<Set<Int64>>) {
-        if case .grouped(let items, _, let revealedIdsWithinGroup, _, _, _, _) = self {
+        if case .grouped(let items, _, let revealedIdsWithinGroup, _, _, _, _, _) = self {
             var newRevealed = revealedItems.wrappedValue
             var i = 0
             if reveal {
@@ -172,37 +181,37 @@ enum MergedItem: Hashable, Equatable {
     var startIndexInReversedItems: Int {
         get {
             switch self {
-            case let .single(_, startIndexInReversedItems): startIndexInReversedItems
-            case let .grouped(_, _, _, _, _, _, startIndexInReversedItems): startIndexInReversedItems
+            case let .single(_, startIndexInReversedItems, _): startIndexInReversedItems
+            case let .grouped(_, _, _, _, _, _, startIndexInReversedItems, _): startIndexInReversedItems
             }
         }
     }
 
     func hasUnread() -> Bool {
         switch self {
-        case let .single(item, _): item.item.isRcvNew
-        case let .grouped(_, _, _, _, _, unreadIds, _): !unreadIds.boxedValue.isEmpty
+        case let .single(item, _, _): item.item.isRcvNew
+        case let .grouped(_, _, _, _, _, unreadIds, _, _): !unreadIds.boxedValue.isEmpty
         }
     }
 
     func newest() -> ListItem {
         switch self {
-        case let .single(item, _): item
-        case let .grouped(items, _, _, _, _, _, _): items.boxedValue[0]
+        case let .single(item, _, _): item
+        case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue[0]
         }
     }
 
     func oldest() -> ListItem {
         switch self {
-        case let .single(item, _): item
-        case let .grouped(items, _, _, _, _, _, _): items.boxedValue[items.boxedValue.count - 1]
+        case let .single(item, _, _): item
+        case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue[items.boxedValue.count - 1]
         }
     }
 
     func lastIndexInReversed() -> Int {
         switch self {
         case .single: startIndexInReversedItems
-        case let .grouped(items, _, _, _, _, _, _): startIndexInReversedItems + items.boxedValue.count - 1
+        case let .grouped(items, _, _, _, _, _, _, _): startIndexInReversedItems + items.boxedValue.count - 1
         }
     }
 }
@@ -223,6 +232,10 @@ struct ListItem: Hashable {
     let nextItem: ChatItem?
     // how many unread items before (older than) this one (excluding this one)
     let unreadBefore: Int
+
+    func genHash() -> String {
+        "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.reactions.count) \(item.meta.isRcvNew) \(unreadBefore)"
+    }
 }
 
 class ActiveChatState {
@@ -288,13 +301,12 @@ class BoxedValue<T: Hashable>: Equatable, Hashable {
 
 extension ReverseList.Controller {
     @MainActor
-    func visibleItemIndexesNonReversed(_ mergedItems: Binding<MergedItems>) -> ClosedRange<Int> {
+    func visibleItemIndexesNonReversed(_ items: [MergedItem]) -> ClosedRange<Int> {
         let zero = 0 ... 0
-        if mergedItems.wrappedValue.items.count == 0 {
+        if items.isEmpty {
             return zero
         }
-        let listState = getListState(mergedItems.wrappedValue.items) ?? ListState()
-        let items = mergedItems.wrappedValue.items
+        let listState = getListState(items) ?? ListState()
         let newest = items.count > listState.firstVisibleItemIndex ? items[listState.firstVisibleItemIndex].startIndexInReversedItems : nil
         let oldest = items.count > listState.firstVisibleItemIndex ? items[listState.lastVisibleItemIndex].lastIndexInReversed() : nil
         guard let newest, let oldest else {

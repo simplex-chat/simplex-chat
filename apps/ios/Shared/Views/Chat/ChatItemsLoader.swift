@@ -62,23 +62,29 @@ func apiLoadMessages(
             chatState.unreadAfterNewestLoaded = navInfo.afterUnread
         }
     case let .before(paginationChatItemId, _):
+        logger.debug("LALALA 0")
         newItems.append(contentsOf: oldItems)
         let indexInCurrentItems = oldItems.firstIndex(where: { $0.id == paginationChatItemId })
         guard let indexInCurrentItems else { return }
         let (newIds, _) = mapItemsToIds(chat.chatItems)
+        logger.debug("LALALA 1")
         let wasSize = newItems.count
         let visibleItemIndexes = await MainActor.run { visibleItemIndexesNonReversed() }
+        logger.debug("LALALA 2")
         let modifiedSplits = removeDuplicatesAndModifySplitsOnBeforePagination(
             unreadAfterItemId, &newItems, newIds, chatState.splits, visibleItemIndexes
         )
+        logger.debug("LALALA 3")
         let insertAt = max((indexInCurrentItems - (wasSize - newItems.count) + modifiedSplits.trimmedIds.count), 0)
         newItems.insert(contentsOf: chat.chatItems, at: insertAt)
+        logger.debug("LALALA 4")
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
             ItemsModel.shared.reversedChatItems = newReversed
             chatState.splits = modifiedSplits.newSplits
             chatState.moveUnreadAfterItem(modifiedSplits.oldUnreadSplitIndex, modifiedSplits.newUnreadSplitIndex, oldItems)
         }
+        logger.debug("LALALA 5")
     case let .after(paginationChatItemId, _):
         newItems.append(contentsOf: oldItems)
         let indexInCurrentItems = oldItems.firstIndex(where: { $0.id == paginationChatItemId })

@@ -447,8 +447,8 @@ struct ChatView: View {
             // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
             ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
                 let ci = switch mergedItem {
-                case let .single(item, _): item.item
-                case let .grouped(items, _, _, _, _, _, _): items.boxedValue.last!.item
+                case let .single(item, _, _): item.item
+                case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
                 }
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
@@ -675,7 +675,7 @@ struct ChatView: View {
                         .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
-                .if(loadingMoreItems) { $0.hidden() }
+                .disabled(loadingMoreItems)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -1044,7 +1044,7 @@ struct ChatView: View {
             let last = isLastItem ? im.reversedChatItems.last : nil
             let listItem = merged.newest()
             let item = listItem.item
-            let range: ClosedRange<Int>? = if case let .grouped(_, _, _, rangeInReversed, _, _, _) = merged {
+            let range: ClosedRange<Int>? = if case let .grouped(_, _, _, rangeInReversed, _, _, _, _) = merged {
                 rangeInReversed.boxedValue
             } else {
                 nil
