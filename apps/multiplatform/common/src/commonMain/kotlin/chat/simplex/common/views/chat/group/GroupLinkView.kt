@@ -1,9 +1,8 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -199,9 +198,9 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
 }
 
 @Composable
-fun ProgressIndicator() {
+fun ProgressIndicator(disableInteractions: Boolean = false) {
   Box(
-    Modifier.fillMaxSize(),
+    Modifier.fillMaxSize().then(if (disableInteractions) Modifier.clickable(enabled = false, onClick = {}) else Modifier),
     contentAlignment = Alignment.Center
   ) {
     CircularProgressIndicator(

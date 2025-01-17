@@ -59,7 +59,6 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
     val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
     val chatItemTTL = remember(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
     val progressIndicator = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
-    // TODO [ttl] disable all interactions while ttl is changing
     val scope = rememberCoroutineScope()
 
     GroupChatInfoLayout(
@@ -143,7 +142,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
     )
 
     if (progressIndicator.value) {
-      ProgressIndicator()
+      ProgressIndicator(true)
     }
   }
 }

@@ -191,7 +191,7 @@ fun ChatInfoView(
     )
 
     if (progressIndicator.value) {
-      ProgressIndicator()
+      ProgressIndicator(true)
     }
   }
 }
