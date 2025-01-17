@@ -3282,11 +3282,7 @@ startExpireCIThread user@User {userId} = do
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           lift waitChatStartedAndActivated
           ttl <- withStore' (`getChatItemTTL` user)
-          if ttl > 0
-            then expireChatItems user ttl False
-            else do
-              ttlCount <- withStore' (`getChatTTLCount` user)
-              when (ttlCount > 0) $ expireChatItems user 0 True
+          expireChatItems user ttl False
         liftIO $ threadDelay' interval
 
 setExpireCIFlag :: User -> Bool -> CM' ()
