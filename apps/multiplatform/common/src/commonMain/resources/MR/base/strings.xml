@@ -562,6 +562,7 @@
   <string name="contact_deleted">Contact deleted!</string>
   <string name="you_can_still_view_conversation_with_contact">You can still view conversation with %1$s in the list of chats.</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
+  <string name="text_field_set_chat_placeholder">Set chat name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
