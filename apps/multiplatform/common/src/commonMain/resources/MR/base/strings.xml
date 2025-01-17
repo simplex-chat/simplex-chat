@@ -540,6 +540,11 @@
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
   <string name="notifications">Notifications</string>
+  <string name="disable_automatic_deletion_question">Disable automatic message deletion?</string>
+  <string name="change_automatic_deletion_question">Change automatic message deletion?</string>
+  <string name="disable_automatic_deletion_message">Messages on this chat will never be deleted.</string>
+  <string name="change_automatic_chat_deletion_message">This action cannot be undone - the messages sent and received on this chat earlier than selected will be deleted. It may take several minutes.</string>
+  <string name="disable_automatic_deletion">Disable delete messages</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="info_view_connect_button">connect</string>
@@ -1396,7 +1401,9 @@
   <string name="chat_item_ttl_day">1 day</string>
   <string name="chat_item_ttl_week">1 week</string>
   <string name="chat_item_ttl_month">1 month</string>
+  <string name="chat_item_ttl_year">1 year</string>
   <string name="chat_item_ttl_seconds">%s second(s)</string>
+  <string name="chat_item_ttl_default">default (%s)</string>
   <string name="messages_section_title">Messages</string>
   <string name="messages_section_description">This setting applies to messages in your current chat profile</string>
   <string name="delete_messages_after">Delete messages after</string>

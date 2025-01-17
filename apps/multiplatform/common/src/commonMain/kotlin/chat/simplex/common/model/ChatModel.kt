@@ -1484,6 +1484,7 @@ data class Contact(
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
   val chatTags: List<Long>,
+  val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
@@ -1567,7 +1568,8 @@ data class Contact(
       contactGrpInvSent = false,
       chatDeleted = false,
       uiThemes = null,
-      chatTags = emptyList()
+      chatTags = emptyList(),
+      chatItemTTL = null,
     )
   }
 }
@@ -1726,6 +1728,7 @@ data class GroupInfo (
   val chatTs: Instant?,
   val uiThemes: ThemeModeOverrides? = null,
   val chatTags: List<Long>,
+  val chatItemTTL: Long?,
   override val localAlias: String,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
@@ -1774,7 +1777,8 @@ data class GroupInfo (
       chatTs = Clock.System.now(),
       uiThemes = null,
       chatTags = emptyList(),
-      localAlias = ""
+      localAlias = "",
+      chatItemTTL = null
     )
   }
 }
@@ -4186,32 +4190,49 @@ enum class SwitchPhase {
   @SerialName("completed") Completed
 }
 
-sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
+sealed class ChatItemTTL: Comparable<ChatItemTTL> {
   object Day: ChatItemTTL()
   object Week: ChatItemTTL()
   object Month: ChatItemTTL()
+  object Year: ChatItemTTL()
   data class Seconds(val secs: Long): ChatItemTTL()
   object None: ChatItemTTL()
 
-  override fun compareTo(other: ChatItemTTL?): Int = (seconds ?: Long.MAX_VALUE).compareTo(other?.seconds ?: Long.MAX_VALUE)
+  override fun compareTo(other: ChatItemTTL): Int =
+    (seconds.takeIf { it != 0L } ?: Long.MAX_VALUE)
+      .compareTo(other.seconds.takeIf { it != 0L } ?: Long.MAX_VALUE)
 
-  val seconds: Long?
+  val seconds: Long
     get() =
       when (this) {
-        is None -> null
+        is None -> 0
         is Day -> 86400L
         is Week -> 7 * 86400L
         is Month -> 30 * 86400L
+        is Year -> 365 * 86400L
         is Seconds -> secs
       }
 
+  val text: String
+    get() = when(this) {
+      is None -> generalGetString(MR.strings.chat_item_ttl_none)
+      is Day -> generalGetString(MR.strings.chat_item_ttl_day)
+      is Week -> generalGetString(MR.strings.chat_item_ttl_week)
+      is Month -> generalGetString(MR.strings.chat_item_ttl_month)
+      is Year -> generalGetString(MR.strings.chat_item_ttl_year)
+      is Seconds -> String.format(generalGetString(MR.strings.chat_item_ttl_seconds), secs)
+    }
+
+  val doesNotExpire: Boolean get() = this is None
+
   companion object {
-    fun fromSeconds(seconds: Long?): ChatItemTTL =
+    fun fromSeconds(seconds: Long): ChatItemTTL =
       when (seconds) {
-        null -> None
+        0L -> None
         86400L -> Day
         7 * 86400L -> Week
         30 * 86400L -> Month
+        365 * 86400L -> Year
         else -> Seconds(seconds)
       }
   }

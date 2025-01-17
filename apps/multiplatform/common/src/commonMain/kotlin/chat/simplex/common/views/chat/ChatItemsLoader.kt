@@ -28,7 +28,8 @@ suspend fun apiLoadMessages(
   contentTag: MsgContentTag?,
   pagination: ChatPagination,
   search: String = "",
-  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
+  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 },
+  replaceChat: Boolean = false
 ) = coroutineScope {
   val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
@@ -47,6 +48,8 @@ suspend fun apiLoadMessages(
         withChats {
           if (getChat(chat.id) == null) {
             addChat(chat)
+          } else if (replaceChat) {
+            replaceChat(chat.remoteHostId, chat.id, chat)
           } else {
             updateChatInfo(chat.remoteHostId, chat.chatInfo)
             updateChatStats(chat.remoteHostId, chat.id, chat.chatStats)

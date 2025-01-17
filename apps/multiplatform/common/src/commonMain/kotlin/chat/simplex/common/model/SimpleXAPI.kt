@@ -1182,7 +1182,13 @@ object ChatController {
   suspend fun getChatItemTTL(rh: Long?): ChatItemTTL {
     val userId = currentUserId("getChatItemTTL")
     val r = sendCmd(rh, CC.APIGetChatItemTTL(userId))
-    if (r is CR.ChatItemTTL) return ChatItemTTL.fromSeconds(r.chatItemTTL)
+    if (r is CR.ChatItemTTL) {
+      if (r.chatItemTTL != null) {
+        return ChatItemTTL.fromSeconds(r.chatItemTTL)
+      } else {
+        throw Exception("chatItemTTLResponse: invalid ttl")
+      }
+    }
     throw Exception("failed to get chat item TTL: ${r.responseType} ${r.details}")
   }
 
@@ -1191,6 +1197,13 @@ object ChatController {
     val r = sendCmd(rh, CC.APISetChatItemTTL(userId, chatItemTTL.seconds))
     if (r is CR.CmdOk) return
     throw Exception("failed to set chat item TTL: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun setChatTTL(rh: Long?, chatType: ChatType, id: Long, chatItemTTL: ChatItemTTL?) {
+    val userId = currentUserId("setChatTTL")
+    val r = sendCmd(rh, CC.APISetChatTTL(userId, chatType, id, chatItemTTL?.seconds))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to set chat TTL: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetNetworkConfig(cfg: NetCfg, showAlertOnError: Boolean = true, ctrl: ChatCtrl? = null): Boolean {
@@ -3383,8 +3396,9 @@ sealed class CC {
   class ApiGetUsageConditions(): CC()
   class ApiSetConditionsNotified(val conditionsId: Long): CC()
   class ApiAcceptConditions(val conditionsId: Long, val operatorIds: List<Long>): CC()
-  class APISetChatItemTTL(val userId: Long, val seconds: Long?): CC()
+  class APISetChatItemTTL(val userId: Long, val seconds: Long): CC()
   class APIGetChatItemTTL(val userId: Long): CC()
+  class APISetChatTTL(val userId: Long, val chatType: ChatType, val id: Long, val seconds: Long?): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
   class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
@@ -3567,6 +3581,7 @@ sealed class CC {
     is ApiAcceptConditions -> "/_accept_conditions ${conditionsId} ${operatorIds.joinToString(",")}"
     is APISetChatItemTTL -> "/_ttl $userId ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/_ttl $userId"
+    is APISetChatTTL -> "/_ttl $userId ${chatRef(chatType, id)} ${chatItemTTLStr(seconds)}"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
@@ -3727,6 +3742,7 @@ sealed class CC {
     is ApiAcceptConditions -> "apiAcceptConditions"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
+    is APISetChatTTL -> "apiSetChatTTL"
     is APISetNetworkConfig -> "apiSetNetworkConfig"
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
     is APISetNetworkInfo -> "apiSetNetworkInfo"
@@ -3812,7 +3828,7 @@ sealed class CC {
   data class ItemRange(val from: Long, val to: Long)
 
   fun chatItemTTLStr(seconds: Long?): String {
-    if (seconds == null) return "none"
+    if (seconds == null) return "default"
     return seconds.toString()
   }
 

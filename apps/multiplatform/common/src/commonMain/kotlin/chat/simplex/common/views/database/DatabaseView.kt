@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
@@ -108,6 +109,9 @@ fun DatabaseView() {
         }
       },
       onChatItemTTLSelected = {
+        if (it == null) {
+          return@DatabaseLayout
+        }
         val oldValue = chatItemTTL.value
         chatItemTTL.value = it
         if (it < oldValue) {
@@ -158,7 +162,7 @@ fun DatabaseLayout(
   exportArchive: () -> Unit,
   deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
-  onChatItemTTLSelected: (ChatItemTTL) -> Unit,
+  onChatItemTTLSelected: (ChatItemTTL?) -> Unit,
   disconnectAllHosts: () -> Unit,
 ) {
   val operationsDisabled = progressIndicator && !chatModel.desktopNoUserNoRemote
@@ -300,27 +304,34 @@ private fun setChatItemTTLAlert(
 }
 
 @Composable
-private fun TtlOptions(current: State<ChatItemTTL>, enabled: State<Boolean>, onSelected: (ChatItemTTL) -> Unit) {
+fun TtlOptions(
+  current: State<ChatItemTTL?>,
+  enabled: State<Boolean>,
+  onSelected: (ChatItemTTL?) -> Unit,
+  default: State<ChatItemTTL>? = null,
+  icon: Painter? = null
+) {
   val values = remember {
-    val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Month, ChatItemTTL.Week, ChatItemTTL.Day)
-    if (current.value is ChatItemTTL.Seconds) {
-      all.add(current.value)
+    val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Year, ChatItemTTL.Month, ChatItemTTL.Week, ChatItemTTL.Day)
+    val currentValue = current.value
+    if (currentValue is ChatItemTTL.Seconds) {
+      all.add(currentValue)
     }
-    all.map {
-      when (it) {
-        is ChatItemTTL.None -> it to generalGetString(MR.strings.chat_item_ttl_none)
-        is ChatItemTTL.Day -> it to generalGetString(MR.strings.chat_item_ttl_day)
-        is ChatItemTTL.Week -> it to generalGetString(MR.strings.chat_item_ttl_week)
-        is ChatItemTTL.Month -> it to generalGetString(MR.strings.chat_item_ttl_month)
-        is ChatItemTTL.Seconds -> it to String.format(generalGetString(MR.strings.chat_item_ttl_seconds), it.secs)
-      }
+    val options = mutableListOf<Pair<ChatItemTTL?, String>>().apply {
+      all.mapTo(this) { it to it.text }
     }
+
+    if (default != null) {
+      options.add(null to String.format(generalGetString(MR.strings.chat_item_ttl_default), default.value.text))
+    }
+
+    options
   }
   ExposedDropDownSettingRow(
     generalGetString(MR.strings.delete_messages_after),
     values,
     current,
-    icon = null,
+    icon = icon,
     enabled = enabled,
     onSelected = onSelected
   )
