@@ -4045,7 +4045,7 @@ chatCommandP =
     char_ = optional . A.char
 
 displayNameP :: Parser Text
-displayNameP = safeDecodeUtf8 <$> (quoted '\'' <|> takeNameTill isSpace)
+displayNameP = safeDecodeUtf8 <$> (quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ','))
   where
     takeNameTill p =
       A.peekChar' >>= \c ->
