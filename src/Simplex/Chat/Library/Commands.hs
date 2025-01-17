@@ -86,8 +86,8 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, m
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
-import Simplex.Messaging.Agent.Store (execSQL)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Agent.Store.Migrations as Migrations
 import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (SMAlways), textToHostMode)

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -51,9 +50,6 @@ import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), 
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
-#endif
 
 operatorSimpleXChat :: NewServerOperator
 operatorSimpleXChat =
@@ -189,18 +185,10 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 createChatDatabase :: ChatDbOpts -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
 createChatDatabase dbOpts confirmMigrations = runExceptT $ do
-#if defined(dbPostgres)
-  let ChatDbOpts {dbName, dbUser, dbSchemaPrefix} = dbOpts
-      connectInfo = defaultConnectInfo {connectUser = dbUser, connectDatabase = dbName}
-  chatStore <- ExceptT $ createChatStore connectInfo (chatSchema dbSchemaPrefix) confirmMigrations
-  agentStore <- ExceptT $ createAgentStore connectInfo (agentSchema dbSchemaPrefix) confirmMigrations
+  let (agentDbOpts, chatDbOpts) = toDBCreateOpts dbOpts False
+  chatStore <- ExceptT $ createChatStore chatDbOpts confirmMigrations
+  agentStore <- ExceptT $ createAgentStore agentDbOpts confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
-#else
-  let ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration} = dbOpts
-  chatStore <- ExceptT $ createChatStore (chatStoreFile dbFilePrefix) dbKey False confirmMigrations vacuumOnMigration
-  agentStore <- ExceptT $ createAgentStore (agentStoreFile dbFilePrefix) dbKey False confirmMigrations vacuumOnMigration
-  pure ChatDatabase {chatStore, agentStore}
-#endif
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
 newChatController

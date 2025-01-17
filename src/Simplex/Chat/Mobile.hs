@@ -49,7 +49,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store (closeStore, reopenStore)
+import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -262,13 +262,13 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
 
 chatCloseStore :: ChatController -> IO String
 chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
-  closeStore chatStore
-  closeStore $ agentClientStore smpAgent
+  closeDBStore chatStore
+  closeDBStore $ agentClientStore smpAgent
 
 chatReopenStore :: ChatController -> IO String
 chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do
-  reopenStore chatStore
-  reopenStore (agentClientStore smpAgent)
+  reopenDBStore chatStore
+  reopenDBStore (agentClientStore smpAgent)
 
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
