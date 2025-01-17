@@ -385,7 +385,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         func nearSplit(_ listState: ListState, _ mergedItems: MergedItems) -> Bool {
             if mergedItems.splits.isEmpty { return false }
 
-            let remaining = 5
+            let remaining = 10
             let firstVisibleIndex = listState.firstVisibleItemIndex
             let lastVisibleIndex = listState.lastVisibleItemIndex
             for split in mergedItems.splits {
