@@ -63,11 +63,31 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             // so it's better to just wait until dragging ends
             if !mergedItems.splits.isEmpty && controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
                 controller.runBlockOnEndDecelerating = {
-                    controller.update(mergedItems.items, mergedItems.snapshot)
+                    Task {
+                        let prevSnapshot = controller.dataSource.snapshot()
+                        if mergedItems.items == prevSnapshot.itemIdentifiers {
+                            logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
+                            // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
+                            controller.updateFloatingButtons.send()
+                            return
+                        }
+                        await MainActor.run {
+                            controller.update(mergedItems.items, mergedItems.snapshot, prevSnapshot)
+                        }
+                    }
                 }
             } else {
                 controller.runBlockOnEndDecelerating = nil
-                controller.update(mergedItems.items, mergedItems.snapshot)
+                Task {
+                    let prevSnapshot = controller.dataSource.snapshot()
+                    if mergedItems.items == prevSnapshot.itemIdentifiers {
+                        logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
+                        // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
+                        controller.updateFloatingButtons.send()
+                        return
+                    }
+                    controller.update(mergedItems.items, mergedItems.snapshot, prevSnapshot)
+                }
             }
         }
     }
@@ -75,8 +95,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     /// Controller, which hosts SwiftUI cells
     public class Controller: UITableViewController {
         var representer: ReverseList
-        private var dataSource: UITableViewDiffableDataSource<ReverseListSection, MergedItem>!
-        private let updateFloatingButtons = PassthroughSubject<Void, Never>()
+        var dataSource: UITableViewDiffableDataSource<ReverseListSection, MergedItem>!
+        let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
         var runBlockOnEndDecelerating: (() -> Void)? = nil
@@ -256,22 +276,18 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
         }
 
-        func update(_ items: [MergedItem], _ snapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>) {
-            logger.debug("LALAL STEP 0   \(items.count)")
-            let prevSnapshot = dataSource.snapshot()
-            logger.debug("LALAL STEP 1")
+        func update(
+            _ items: [MergedItem],
+            _ snapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>,
+            _ prevSnapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>
+        ) {
+            logger.debug("LALAL STEP 1  \(items.count)")
             let wasCount = prevSnapshot.numberOfItems
             let willBeCount = items.count
             let c = 1
             let insertedSeveralNewestItems = wasCount != 0 && willBeCount - wasCount == c && prevSnapshot.itemIdentifiers.first!.hashValue == items[c].hashValue
             logger.debug("LALAL STEP 2")
             logger.debug("LALAL WAS \(wasCount) will be \(items.count)")
-            if items == prevSnapshot.itemIdentifiers {
-                    logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
-                    // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
-                    updateFloatingButtons.send()
-                    return
-                }
 //            var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
 //            snapshot.appendSections([.main])
 //            snapshot.appendItems(items)
