@@ -208,7 +208,7 @@
     <string name="button_delete_group">Eliminar grupo</string>
     <string name="button_edit_group_profile">Editar perfil de grupo</string>
     <string name="info_row_connection">Conexión</string>
-    <string name="users_delete_profile_for">Eliminar el perfil de chat para</string>
+    <string name="users_delete_profile_for">Eliminar el perfil</string>
     <string name="theme_dark">Oscuro</string>
     <string name="ttl_d">%dd</string>
     <string name="ttl_days">%d días</string>
@@ -216,7 +216,7 @@
     <string name="group_member_status_connected">conectado</string>
     <string name="conn_level_desc_direct">directa</string>
     <string name="chat_preferences_contact_allows">El contacto permite</string>
-    <string name="chat_preferences_default">predeterminado (%s)</string>
+    <string name="chat_preferences_default">predefinido (%s)</string>
     <string name="full_deletion">Eliminar para todos</string>
     <string name="feature_enabled">activado</string>
     <string name="contacts_can_mark_messages_for_deletion">Tus contactos sólo pueden marcar los mensajes para eliminar. Tu podrás verlos.</string>
@@ -1811,7 +1811,7 @@
     <string name="reset_single_color">Restablecer color</string>
     <string name="wallpaper_scale">Escala</string>
     <string name="color_sent_quote">Respuesta enviada</string>
-    <string name="chat_theme_set_default_theme">Establecer tema predeterminado</string>
+    <string name="chat_theme_set_default_theme">Establecer tema predefinido</string>
     <string name="color_mode_system">Sistema</string>
     <string name="color_wallpaper_background">Color de fondo</string>
     <string name="wallpaper_scale_fit">Encaje</string>
