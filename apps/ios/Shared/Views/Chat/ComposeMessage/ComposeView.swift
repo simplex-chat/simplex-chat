@@ -577,6 +577,12 @@ struct ComposeView: View {
             }
         }
         .onAppear {
+            // LALAL
+//            for i in 301 ... 600 {
+//                Task {
+//                    await sendMessageAsync("\(i)", live: false, ttl: nil)
+//                }
+//            }
             if case let .voicePreview(_, duration) = composeState.preview {
                 voiceMessageRecordingTime = TimeInterval(duration)
             }

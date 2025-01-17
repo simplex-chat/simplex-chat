@@ -962,6 +962,7 @@ final class ChatModel: ObservableObject {
                     memberIds.insert(m.groupMemberId)
                 }
             } else {
+                // LALAL getPrevHiddenMember: index >= count of reversed items: 176 vs 50
                 logger.error("getPrevHiddenMember: index >= count of reversed items: \(i) vs \(items.count)")
             }
         }

@@ -246,15 +246,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     // in case of listener will not be called
                     await MainActor.run {
                         representer.scrollState = .atDestination
-                        logger.debug("LALAL SET DESTINATION0")
                     }
                 } catch {}
             }
             runBlockOnEndScrolling = {
                 task.cancel()
-                logger.debug("LALAL ENDED SCROLLING")
                 self.representer.scrollState = .atDestination
-                logger.debug("LALAL SET DESTINATION1")
                 self.runBlockOnEndScrolling = nil
             }
         }
@@ -283,7 +280,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             let listState = getListState(items)
             let wasFirstVisibleRow = listState?.firstVisibleItemIndex ?? 0//tableView.indexPathsForVisibleRows?.first?.row ?? 0
             let wasFirstVisibleOffset = listState?.firstVisibleItemOffset ?? 0
-            let countDiff = max(0, snapshot.numberOfItems - prevSnapshot.numberOfItems)
             // Sets content offset on initial load
             if wasCount == 0 {
                 dataSource.apply(
@@ -323,12 +319,18 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         animatingDifferences: false
                     )
                     logger.debug("LALAL WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState(items)?.firstVisibleItemIndex ?? -4)")
-                    if listState?.firstVisibleItemIndex == getListState(items)?.firstVisibleItemIndex {
+                    let newListState = getListState(items)
+                    if listState?.firstVisibleItemIndex == newListState?.firstVisibleItemIndex {
                     // added new items to top
                     } else {
                         self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
                     // added new items to bottom
                     //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
+                        let countDiff = if let listState, let newListState {
+                            newListState.firstVisibleItemIndex - listState.firstVisibleItemIndex
+                        } else {
+                            max(0, snapshot.numberOfItems - prevSnapshot.numberOfItems)
+                        }
                     logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstVisibleRow)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)")
                     getListState(items)
                     self.tableView.scrollToRow(

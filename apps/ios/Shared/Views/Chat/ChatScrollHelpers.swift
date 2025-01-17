@@ -44,7 +44,7 @@ func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ list
         var lastIndexToLoadFrom: Int? = findLastIndexToLoadFromInSplits(firstVisibleIndex, lastVisibleIndex, remaining, splits)
         logger.debug("LALAL LASTINDEX TO LOAD FROM \(lastIndexToLoadFrom ?? -1)")
         let items: [ChatItem] = ItemsModel.shared.reversedChatItems.reversed()
-        if splits.isEmpty && !items.isEmpty && lastVisibleIndex > mergedItems.items.count - remaining && items.count >= ChatPagination.INITIAL_COUNT {
+        if splits.isEmpty && !items.isEmpty && lastVisibleIndex > mergedItems.items.count - remaining {
             lastIndexToLoadFrom = items.count - 1
         }
         logger.debug("LALAL LASTINDEX TO LOAD FROM after \(lastIndexToLoadFrom ?? -1), count \(items.count)")
@@ -102,6 +102,7 @@ private func lastFullyVisibleIemInListState(_ mergedItems: MergedItems, _ listSt
 }
 
 private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVisibleIndex: Int, _ remaining: Int, _ splits: [SplitRange]) -> Int? {
+//    logger.debug("LALAL SPLITS \(String(describing: splits))     \(firstVisibleIndex) / \(remaining)   \(lastVisibleIndex)")
     for split in splits {
         // before any split
         if split.indexRangeInParentItems.lowerBound > firstVisibleIndex {

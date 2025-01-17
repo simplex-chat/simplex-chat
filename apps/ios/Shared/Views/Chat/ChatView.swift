@@ -553,16 +553,6 @@ struct ChatView: View {
 
         func updateOnListChange(_ items: [MergedItem], _ listState: ListState) {
             let im = ItemsModel.shared
-//            let unreadBelow =
-//                if let id = listState.bottomItemId,
-//                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
-//                {
-//                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-//                     if chatItem.isRcvNew { unread += 1 }
-//                 }
-//                } else {
-//                    0
-//                }
             let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(items, listState)
             let unreadBelow = if let lastVisibleItem {
                     max(0, totalUnread - lastVisibleItem.unreadBefore)
