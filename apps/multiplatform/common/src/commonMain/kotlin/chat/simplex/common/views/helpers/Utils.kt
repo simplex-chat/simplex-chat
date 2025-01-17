@@ -262,7 +262,7 @@ fun saveFileFromUri(
       } else {
         val ext = when {
           // remove everything but extension
-          fileToSave.contains(".") -> fileToSave.replaceBeforeLast('.', "").replace(".", "")
+          fileToSave.contains(".") -> fileToSave.substringAfterLast(".")
           else -> null
         }
         generateNewFileName(hiddenFileNamePrefix, ext, File(getAppFilePath("")))
