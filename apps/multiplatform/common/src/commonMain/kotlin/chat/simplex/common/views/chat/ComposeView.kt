@@ -612,14 +612,7 @@ fun ComposeView(
               is UploadContent.Video ->
                 if (remoteHost == null) saveFileFromUri(
                   it.uri,
-                  getDestFileName = { filename ->
-                    val ext = when {
-                      // remove everything but extension
-                      filename.contains(".") -> filename.replaceBeforeLast('.', "").replace(".", "")
-                      else -> null
-                    }
-                    generateNewFileName("video", ext, File(getAppFilePath("")))
-                  }
+                  hiddenFileNamePrefix = "video",
                 )
                 else CryptoFile.desktopPlain(it.uri)
             }

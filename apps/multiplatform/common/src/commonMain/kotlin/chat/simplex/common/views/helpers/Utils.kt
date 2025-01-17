@@ -250,14 +250,23 @@ expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
 fun saveFileFromUri(
   uri: URI,
   withAlertOnException: Boolean = true,
-  getDestFileName: (String) -> String = { n -> uniqueCombine(n, File(getAppFilePath(""))) }
+  hiddenFileNamePrefix: String? = null
 ): CryptoFile? {
   return try {
     val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
     return if (inputStream != null && fileToSave != null) {
-      val destFileName = getDestFileName(fileToSave)
+      val destFileName = if (hiddenFileNamePrefix == null) {
+        uniqueCombine(fileToSave, File(getAppFilePath("")))
+      } else {
+        val ext = when {
+          // remove everything but extension
+          fileToSave.contains(".") -> fileToSave.replaceBeforeLast('.', "").replace(".", "")
+          else -> null
+        }
+        generateNewFileName(hiddenFileNamePrefix, ext, File(getAppFilePath("")))
+      }
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
