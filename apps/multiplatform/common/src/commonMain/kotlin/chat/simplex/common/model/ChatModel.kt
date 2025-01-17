@@ -1725,7 +1725,8 @@ data class GroupInfo (
   override val updatedAt: Instant,
   val chatTs: Instant?,
   val uiThemes: ThemeModeOverrides? = null,
-  val chatTags: List<Long>
+  val chatTags: List<Long>,
+  override val localAlias: String,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -1743,10 +1744,9 @@ data class GroupInfo (
     ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
-  override val displayName get() = groupProfile.displayName
+  override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
-  override val localAlias get() = ""
 
   val isOwner: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
@@ -1773,7 +1773,8 @@ data class GroupInfo (
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
       uiThemes = null,
-      chatTags = emptyList()
+      chatTags = emptyList(),
+      localAlias = ""
     )
   }
 }

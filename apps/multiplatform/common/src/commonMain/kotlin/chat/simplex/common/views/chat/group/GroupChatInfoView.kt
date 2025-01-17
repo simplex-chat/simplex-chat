@@ -70,6 +70,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedByDescending { it.memberRole },
       developerTools,
+      onLocalAliasChanged = { setGroupAlias(chat, it, chatModel) },
       groupLink,
       scrollToItemId,
       addMembers = {
@@ -286,6 +287,7 @@ fun ModalData.GroupChatInfoLayout(
   setSendReceipts: (SendReceipts) -> Unit,
   members: List<GroupMember>,
   developerTools: Boolean,
+  onLocalAliasChanged: (String) -> Unit,
   groupLink: String?,
   scrollToItemId: MutableState<Long?>,
   addMembers: () -> Unit,
@@ -327,8 +329,11 @@ fun ModalData.GroupChatInfoLayout(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
       ) {
-        GroupChatInfoHeader(chat.chatInfo)
+        GroupChatInfoHeader(chat.chatInfo, groupInfo)
       }
+
+      LocalAliasEditor(chat.id, groupInfo.localAlias, updateValue = onLocalAliasChanged)
+
       SectionSpacer()
 
       Box(
@@ -459,7 +464,7 @@ fun ModalData.GroupChatInfoLayout(
 }
 
 @Composable
-private fun GroupChatInfoHeader(cInfo: ChatInfo) {
+private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
   Column(
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
@@ -467,18 +472,18 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val clipboard = LocalClipboardManager.current
     val copyNameToClipboard = {
-      clipboard.setText(AnnotatedString(cInfo.displayName))
+      clipboard.setText(AnnotatedString(groupInfo.groupProfile.displayName))
       showToast(generalGetString(MR.strings.copied))
     }
     Text(
-      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      groupInfo.groupProfile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
       textAlign = TextAlign.Center,
       maxLines = 4,
       overflow = TextOverflow.Ellipsis,
       modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
     )
-    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != groupInfo.groupProfile.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
@@ -742,6 +747,15 @@ private fun SearchRowView(
   }
 }
 
+private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {
+  val chatRh = chat.remoteHostId
+  chatModel.controller.apiSetGroupAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let {
+    withChats {
+      updateGroup(chatRh, it)
+    }
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupChatInfoLayout() {
@@ -758,6 +772,7 @@ fun PreviewGroupChatInfoLayout() {
       setSendReceipts = {},
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
+      onLocalAliasChanged = {},
       groupLink = null,
       scrollToItemId = remember { mutableStateOf(null) },
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {},
