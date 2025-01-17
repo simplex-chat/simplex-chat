@@ -9,7 +9,7 @@
 import SimpleXChat
 import SwiftUI
 
-let TRIM_KEEP_COUNT = 200
+let TRIM_KEEP_COUNT = 20000
 
 func apiLoadMessages(
     _ chatType: ChatType,
