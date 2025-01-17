@@ -59,6 +59,8 @@
    END $$;
    ```
 
+   Repeat for `chat_schema`.
+
 5. Compare number of rows between Postgres and SQLite tables.
 
    To check number of rows for all tables in Postgres database schema run:
