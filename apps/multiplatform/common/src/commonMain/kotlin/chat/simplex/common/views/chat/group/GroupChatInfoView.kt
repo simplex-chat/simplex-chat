@@ -332,7 +332,7 @@ fun ModalData.GroupChatInfoLayout(
         GroupChatInfoHeader(chat.chatInfo, groupInfo)
       }
 
-      LocalAliasEditor(chat.id, groupInfo.localAlias, updateValue = onLocalAliasChanged)
+      LocalAliasEditor(chat.id, groupInfo.localAlias, isContact = false, updateValue = onLocalAliasChanged)
 
       SectionSpacer()
 
