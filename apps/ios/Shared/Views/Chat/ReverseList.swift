@@ -10,6 +10,8 @@ import SwiftUI
 import Combine
 import SimpleXChat
 
+enum ReverseListSection { case main }
+
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Content: View>: UIViewControllerRepresentable {
     @Binding var mergedItems: MergedItems
@@ -61,20 +63,19 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             // so it's better to just wait until dragging ends
             if !mergedItems.splits.isEmpty && controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
                 controller.runBlockOnEndDecelerating = {
-                    controller.update(mergedItems.items)
+                    controller.update(mergedItems.items, mergedItems.snapshot)
                 }
             } else {
                 controller.runBlockOnEndDecelerating = nil
-                controller.update(mergedItems.items)
+                controller.update(mergedItems.items, mergedItems.snapshot)
             }
         }
     }
 
     /// Controller, which hosts SwiftUI cells
     public class Controller: UITableViewController {
-        private enum Section { case main }
         var representer: ReverseList
-        private var dataSource: UITableViewDiffableDataSource<Section, MergedItem>!
+        private var dataSource: UITableViewDiffableDataSource<ReverseListSection, MergedItem>!
         private let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
@@ -115,7 +116,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
 
             // 3. Configure data source
-            self.dataSource = UITableViewDiffableDataSource<Section, MergedItem>(
+            self.dataSource = UITableViewDiffableDataSource<ReverseListSection, MergedItem>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
@@ -255,7 +256,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
         }
 
-        func update(_ items: [MergedItem]) {
+        func update(_ items: [MergedItem], _ snapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>) {
             logger.debug("LALAL STEP 0   \(items.count)")
             let prevSnapshot = dataSource.snapshot()
             logger.debug("LALAL STEP 1")
@@ -271,9 +272,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     updateFloatingButtons.send()
                     return
                 }
-            var snapshot = NSDiffableDataSourceSnapshot<Section, MergedItem>()
-            snapshot.appendSections([.main])
-            snapshot.appendItems(items)
+//            var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
+//            snapshot.appendSections([.main])
+//            snapshot.appendItems(items)
             logger.debug("LALAL STEP 3")
             dataSource.defaultRowAnimation = .none
 

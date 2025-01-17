@@ -14,10 +14,11 @@ struct MergedItems {
     let splits: [SplitRange]
     // chat item id, index in list
     let indexInParentItems: Dictionary<Int64, Int>
+    let snapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>
 
     static func create(_ items: [ChatItem], _ unreadCount: Int, _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
         if items.isEmpty {
-            return MergedItems(items: [], splits: [], indexInParentItems: [:])
+            return MergedItems(items: [], splits: [], indexInParentItems: [:], snapshot: NSDiffableDataSourceSnapshot())
         }
 
         let unreadAfterItemId = chatState.unreadAfterItemId
@@ -107,10 +108,14 @@ struct MergedItems {
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
         }
+        var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
+        snapshot.appendSections([ReverseListSection.main])
+        snapshot.appendItems(mergedItems)
         return MergedItems(
             items: mergedItems,
             splits: splitRanges,
-            indexInParentItems: indexInParentItems
+            indexInParentItems: indexInParentItems,
+            snapshot: snapshot
         )
     }
 }
