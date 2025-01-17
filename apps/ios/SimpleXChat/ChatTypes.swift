@@ -4359,7 +4359,7 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
     case seconds(_ seconds: Int64)
     case none
 
-    public static var values: [ChatItemTTL] { [.none, .month, .week, .day] }
+    public static var values: [ChatItemTTL] { [.none, .year, .month, .week, .day] }
 
     public var id: Self { self }
 

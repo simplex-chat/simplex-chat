@@ -340,7 +340,7 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true, replaceChat: Bool = false) async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
@@ -353,6 +353,9 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
             m.updateChatInfo(chat.chatInfo)
+            if (replaceChat) {
+                m.replaceChat(chat.chatInfo.id, chat)
+            }
         }
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")

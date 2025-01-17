@@ -536,13 +536,15 @@ struct ChatInfoView: View {
                     Task {
                         do {
                             try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
-                            await loadChat(chat: chat)
+                            await loadChat(chat: chat, clearItems: true, replaceChat: true)
                             await MainActor.run {
                                 progressIndicator = false
+                                currentChatItemTTL = chatItemTTL
                             }
                         }
                         catch let error {
                             logger.error("setChatTTL error \(responseError(error))")
+                            await loadChat(chat: chat, clearItems: true, replaceChat: true)
                             await MainActor.run {
                                 chatItemTTL = currentChatItemTTL
                                 progressIndicator = false
