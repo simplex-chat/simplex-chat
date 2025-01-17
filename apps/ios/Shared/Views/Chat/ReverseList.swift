@@ -78,15 +78,19 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 }
             } else {
                 controller.runBlockOnEndDecelerating = nil
-                Task {
-                    let prevSnapshot = controller.dataSource.snapshot()
-                    if mergedItems.items == prevSnapshot.itemIdentifiers {
-                        logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
-                        // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
-                        controller.updateFloatingButtons.send()
-                        return
-                    }
+                let prevSnapshot = controller.dataSource.snapshot()
+                if prevSnapshot.numberOfItems == 0 {
                     controller.update(mergedItems.items, mergedItems.snapshot, prevSnapshot)
+                } else {
+                    Task {
+                        if mergedItems.items == prevSnapshot.itemIdentifiers {
+                            logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
+                            // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
+                            controller.updateFloatingButtons.send()
+                            return
+                        }
+                        controller.update(mergedItems.items, mergedItems.snapshot, prevSnapshot)
+                    }
                 }
             }
         }
