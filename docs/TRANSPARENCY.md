@@ -1,18 +1,20 @@
 ---
 title: Transparency Reports
 permalink: /transparency/index.html
-revision: 16.07.2024
+revision: 15.01.2025
 ---
 
 # Transparency Reports
 
-**Updated**: Oct 14, 2024
+**Updated**: Jan 15, 2025
 
 SimpleX Chat Ltd. is a company registered in the UK – it develops communication software enabling users to operate and communicate via SimpleX network, without user profile identifiers of any kind, and without having their data hosted by any network infrastructure operators.
 
 This page will include any and all reports on requests for user data.
 
 *To date, we received none*.
+
+In 2024 we received enquiries from several law enforcement agencies seeking information on our procedures for handling data requests. We responded by noting that we operate under the UK law and will consider such requests pursuant to UK law.
 
 Our objective is to consistently ensure that no user data and absolute minimum of the metadata required for the network to function is available for disclosure by any infrastructure operators, under any circumstances.
 

@@ -15,7 +15,7 @@ public let CREATE_MEMBER_CONTACT_VERSION = 2
 // version to receive reports (MCReport)
 public let REPORTS_VERSION = 12
 
-public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-privacy-preserving-content-moderation.html")!
+public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64

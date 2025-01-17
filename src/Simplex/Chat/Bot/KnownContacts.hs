@@ -1,5 +1,7 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Bot.KnownContacts where
 
@@ -18,8 +20,13 @@ data KnownContact = KnownContact
   }
   deriving (Eq)
 
+data KnownGroup = KnownGroup
+  { groupId :: Int64,
+    localDisplayName :: Text
+  }
+
 knownContactNames :: [KnownContact] -> Text
-knownContactNames = T.intercalate ", " . map (("@" <>) . localDisplayName)
+knownContactNames = T.intercalate ", " . map (("@" <>) . (\KnownContact {localDisplayName = n} -> n))
 
 parseKnownContacts :: ReadM [KnownContact]
 parseKnownContacts = eitherReader $ parseAll knownContactsP . encodeUtf8 . T.pack
@@ -31,3 +38,12 @@ knownContactsP = contactP `A.sepBy1` A.char ','
       contactId <- A.decimal <* A.char ':'
       localDisplayName <- safeDecodeUtf8 <$> A.takeTill (A.inClass ", ")
       pure KnownContact {contactId, localDisplayName}
+
+parseKnownGroup :: ReadM KnownGroup
+parseKnownGroup = eitherReader $ parseAll knownGroupP . encodeUtf8 . T.pack
+
+knownGroupP :: A.Parser KnownGroup
+knownGroupP = do
+  groupId <- A.decimal <* A.char ':'
+  localDisplayName <- safeDecodeUtf8 <$> A.takeTill (A.inClass ", ")
+  pure KnownGroup {groupId, localDisplayName}
