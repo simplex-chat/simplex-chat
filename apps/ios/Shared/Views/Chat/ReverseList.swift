@@ -21,8 +21,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     @Binding var allowLoadMoreItems: Bool
     @Binding var ignoreLoadingRequests: [Int64]
 
-    let waitOnEndedScrolling = false
-
     /// Closure, that returns user interface for a given item
     /// Index, merged item
     let content: (Int, MergedItem) -> Content
@@ -61,7 +59,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         } else {
             // when tableView is dragging and new items are added, scroll position cannot be set correctly
             // so it's better to just wait until dragging ends
-            if waitOnEndedScrolling && controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
+            if !mergedItems.splits.isEmpty && controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
                 controller.runBlockOnEndDecelerating = {
                     controller.update(mergedItems.items)
                 }
@@ -323,7 +321,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     if listState?.firstVisibleItemIndex == newListState?.firstVisibleItemIndex {
                     // added new items to top
                     } else {
-                        self.tableView.setContentOffset(self.tableView.contentOffset, animated: false)
+                        stopScrolling()
                     // added new items to bottom
                     //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
                         let countDiff = if let listState, let newListState {
@@ -365,7 +363,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             updateFloatingButtons.send()
 
             if let listState = self.getListState(representer.mergedItems.items) {
-                self.preloadIfNeeded(listState)
+                if runBlockOnEndDecelerating != nil && nearSplit(listState, representer.mergedItems) {
+                    stopScrolling()
+                }
+                preloadIfNeeded(listState)
             }
         }
 
@@ -375,6 +376,38 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     onEnd()
                 }
             }
+        }
+
+        func stopScrolling() {
+            tableView.setContentOffset(self.tableView.contentOffset, animated: false)
+        }
+
+        func nearSplit(_ listState: ListState, _ mergedItems: MergedItems) -> Bool {
+            if mergedItems.splits.isEmpty { return false }
+
+            let remaining = 5
+            let firstVisibleIndex = listState.firstVisibleItemIndex
+            let lastVisibleIndex = listState.lastVisibleItemIndex
+            for split in mergedItems.splits {
+                // before any split
+                if split.indexRangeInParentItems.lowerBound > firstVisibleIndex {
+                    if lastVisibleIndex > (split.indexRangeInParentItems.lowerBound - remaining) {
+                        return true
+                    }
+                    break
+                }
+                let containsInRange = split.indexRangeInParentItems.contains(firstVisibleIndex)
+                if containsInRange {
+                    if lastVisibleIndex > (split.indexRangeInParentItems.upperBound - remaining) {
+                        return true
+                    }
+                    if firstVisibleIndex < (split.indexRangeInParentItems.lowerBound + remaining) {
+                        return true
+                    }
+                    break
+                }
+            }
+            return false
         }
 
         func getListState(_ items: [MergedItem]) -> ListState? {
