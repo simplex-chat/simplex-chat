@@ -239,7 +239,7 @@ struct ListItem: Hashable {
     let unreadBefore: Int
 
     func genHash() -> String {
-        "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.reactions.count) \(item.meta.isRcvNew) \(item.text.hash) \(unreadBefore)"
+        "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.reactions.count) \(item.meta.isRcvNew) \(item.text.hash) \(unreadBefore) \(prevItem?.id ?? -1) \(nextItem?.id ?? -2)"
     }
 }
 
