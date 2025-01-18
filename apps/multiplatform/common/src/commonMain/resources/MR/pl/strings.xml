@@ -1129,7 +1129,7 @@
     <string name="group_welcome_preview">Podgląd</string>
     <string name="opening_database">Otwieranie bazy danych…</string>
     <string name="error_setting_address">Błąd ustawiania adresu</string>
-    <string name="auth_open_chat_profiles">Otwórz profile czatu</string>
+    <string name="auth_open_chat_profiles">Zmień profile czatu</string>
     <string name="learn_more_about_address">O adresie SimpleX</string>
     <string name="one_time_link_short">link jednorazowy</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Przeczytaj więcej w <font color="#0088ff">Podręczniku Użytkownika</font>.]]></string>
@@ -2154,4 +2154,35 @@
     <string name="display_name_accepted_invitation">zaproszenie zaakceptowane</string>
     <string name="report_item_archived">zarchiwizowany raport</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Urządzenia Xiaomi</b>: Włącz Autostart w ustawieniach systemowych, aby powiadomienia działały.]]></string>
+    <string name="delete_report">Usuń raport</string>
+    <string name="chat_list_contacts">Kontakty</string>
+    <string name="onboarding_notifications_mode_periodic_desc_short">Sprawdzaj wiadomości co 10 minut</string>
+    <string name="button_delete_chat">Usuń czat</string>
+    <string name="report_reason_community">Naruszenie wytycznych społeczności</string>
+    <string name="operator_conditions_accepted_on">Warunki zaakceptowane na: %s.</string>
+    <string name="operator_conditions_accepted_for_enabled_operators_on">Warunki zostaną automatycznie zaakceptowane dla włączonych operatorów na: %s.</string>
+    <string name="operators_conditions_will_also_apply"><![CDATA[Warunki te będą również miały zastosowanie do: <b>%s</b>.]]></string>
+    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Aby korzystać z serwerów <b>%s</b>, Zaakceptuj warunki użytkowania.]]></string>
+    <string name="operator_conditions_of_use">Warunki użytkowania</string>
+    <string name="blocking_reason_content">Treść narusza warunki użytkowania</string>
+    <string name="connection_error_blocked">Połączenie zablokowane</string>
+    <string name="connection_error_blocked_desc">Połączenie jest zablokowane przez operatora serwera:\n%1$s.</string>
+    <string name="change_list">Lista zmian</string>
+    <string name="create_list">Utwórz listę</string>
+    <string name="delete_chat_list_menu_action">Usuń</string>
+    <string name="operator_conditions_failed_to_load">Nie można załadować tekstu aktualnych warunków, możesz przejrzeć warunki za pomocą tego linku:</string>
+    <string name="onboarding_network_operators_continue">Kontynuuj</string>
+    <string name="info_row_chat">Czat</string>
+    <string name="connect_plan_chat_already_exists">Czat już istnieje!</string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[Jesteś już połączony z <b>%1$s</b>.]]></string>
+    <string name="delete_chat_list_question">Usunąć listę?</string>
+    <string name="connection_not_ready">Połączenie nie jest gotowe.</string>
+    <string name="delete_chat_question">Usunąć czat?</string>
+    <string name="delete_chat_for_self_cannot_undo_warning">Czat zostanie dla Ciebie usunięty - nie można tego cofnąć!</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">Czat zostanie usunięty dla wszystkich członków - nie można tego cofnąć!</string>
+    <string name="operator_conditions_will_be_accepted_on">Warunki będą akceptowane w dniu: %s.</string>
+    <string name="connection_security">Bezpieczeństwo połączenia</string>
+    <string name="onboarding_network_operators_conditions_will_be_accepted">Warunki będą akceptowane dla operatorów włączonych po 30 dniach.</string>
+    <string name="change_order_chat_list_menu_action">Zmień kolejność</string>
+    <string name="sync_connection_desc">Połączenie wymaga renegocjacji szyfrowania.</string>
 </resources>
