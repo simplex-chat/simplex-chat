@@ -8621,9 +8621,9 @@ Verbindingsverzoek herhalen?</target>
         <target>geblokkeerd</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
-      <trans-unit id="blocked %@" xml:space="preserve">
+      <trans-unit id="blocked %@" xml:space="preserve" approved="no">
         <source>blocked %@</source>
-        <target>geblokkeerd %@</target>
+        <target state="translated">blokkeerde %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="blocked by admin" xml:space="preserve">
