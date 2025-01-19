@@ -11,8 +11,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
+import Simplex.Chat.Library.Commands (displayNameP)
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Util (safeDecodeUtf8)
 
 data KnownContact = KnownContact
   { contactId :: Int64,
@@ -36,7 +36,7 @@ knownContactsP = contactP `A.sepBy1` A.char ','
   where
     contactP = do
       contactId <- A.decimal <* A.char ':'
-      localDisplayName <- safeDecodeUtf8 <$> A.takeTill (A.inClass ", ")
+      localDisplayName <- displayNameP
       pure KnownContact {contactId, localDisplayName}
 
 parseKnownGroup :: ReadM KnownGroup
@@ -45,5 +45,5 @@ parseKnownGroup = eitherReader $ parseAll knownGroupP . encodeUtf8 . T.pack
 knownGroupP :: A.Parser KnownGroup
 knownGroupP = do
   groupId <- A.decimal <* A.char ':'
-  localDisplayName <- safeDecodeUtf8 <$> A.takeTill (A.inClass ", ")
+  localDisplayName <- displayNameP
   pure KnownGroup {groupId, localDisplayName}
