@@ -110,7 +110,7 @@ struct ChatInfoView: View {
     @State private var showConnectContactViaAddressDialog = false
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
-    @State private var progressIndicator = true
+    @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
     enum ChatInfoViewAlert: Identifiable {
@@ -203,8 +203,10 @@ struct ChatInfoView: View {
                     }
                     .disabled(!contact.ready || !contact.active)
                     
-                    Section("Chat messages on device") {
+                    Section {
                         ChatTTLOption(chat: chat, chatItemTTL: $chatItemTTL, progressIndicator: $progressIndicator)
+                    } footer: {
+                        Text("Delete chat messages from your device.")
                     }
                     
                     if let conn = contact.activeConn {
@@ -659,7 +661,7 @@ struct ChatTTLOption: View {
     @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
 
     var body: some View {
-        Picker(selection: $chatItemTTL) {
+        Picker("Delete messages after", selection: $chatItemTTL) {
             ForEach(ChatItemTTL.values) { ttl in
                 Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
             }
@@ -669,9 +671,8 @@ struct ChatTTLOption: View {
             if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
                 Text(ttl.deleteAfterText).tag(chatItemTTL)
             }
-        } label: {
-            Label("Delete after", systemImage: "trash")
         }
+        .disabled(progressIndicator)
         .frame(height: 36)
         .onChange(of: chatItemTTL) { ttl in
             setChatTTL(
@@ -1127,9 +1128,9 @@ func setChatTTL(_ ttl: ChatTTL, hasPreviousTTL: Bool, onCancel: @escaping () -> 
     }
     
     let message = if ttl.neverExpires {
-        NSLocalizedString("Messages on this chat will never be deleted.", comment: "alert message")
+        NSLocalizedString("Messages in this chat will never be deleted.", comment: "alert message")
     } else {
-        NSLocalizedString("This action cannot be undone - the messages sent and received on this chat earlier than selected will be deleted. It may take several minutes.", comment: "alert message")
+        NSLocalizedString("This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.", comment: "alert message")
     }
     
     showAlert(title, message: message) {

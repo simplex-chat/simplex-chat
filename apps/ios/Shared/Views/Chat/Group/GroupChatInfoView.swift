@@ -120,8 +120,10 @@ struct GroupChatInfoView: View {
                             .foregroundColor(theme.colors.secondary)
                     }
                     
-                    Section("Group messages on device") {
+                    Section {
                         ChatTTLOption(chat: chat, chatItemTTL: $chatItemTTL, progressIndicator: $progressIndicator)
+                    } footer: {
+                        Text("Delete chat messages from your device.")
                     }
                     
                     Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
