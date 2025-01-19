@@ -1085,14 +1085,14 @@ addDirectChatTags db ct = do
   pure (ct :: Contact) {chatTags}
 
 setDirectChatTTL :: DB.Connection -> ContactId -> Maybe Int64 -> IO ()
-setDirectChatTTL db cId ttl = do
+setDirectChatTTL db ctId ttl = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?" (ttl, updatedAt, cId)
+  DB.execute db "UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?" (ttl, updatedAt, ctId)
 
 getDirectChatTTL :: DB.Connection -> ContactId -> IO (Maybe Int64)
-getDirectChatTTL db cId =
+getDirectChatTTL db ctId =
   fmap join . maybeFirstRow fromOnly $
-    DB.query db "SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1" (Only cId)
+    DB.query db "SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1" (Only ctId)
 
 getUserContactsToExpire :: DB.Connection -> User -> Int64 -> IO [ContactId]
 getUserContactsToExpire db User {userId} globalTTL =
