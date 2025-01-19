@@ -110,7 +110,6 @@ struct ChatInfoView: View {
     @State private var showConnectContactViaAddressDialog = false
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
-    @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
     @State private var progressIndicator = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     
@@ -182,21 +181,17 @@ struct ChatInfoView: View {
                     }
                     
                     Section {
-                        Group {
-                            if let code = connectionCode { verifyCodeButton(code) }
-                            contactPreferencesButton()
-                            sendReceiptsOption()
-                            if let connStats = connectionStats,
-                               connStats.ratchetSyncAllowed {
-                                synchronizeConnectionButton()
-                            }
-                            // } else if developerTools {
-                            //     synchronizeConnectionButtonForce()
-                            // }
-                            
-                            chatTTLOption()
+                        if let code = connectionCode { verifyCodeButton(code) }
+                        contactPreferencesButton()
+                        sendReceiptsOption()
+                        if let connStats = connectionStats,
+                           connStats.ratchetSyncAllowed {
+                            synchronizeConnectionButton()
                         }
-                        .disabled(!contact.ready || !contact.active)
+                        // } else if developerTools {
+                        //     synchronizeConnectionButtonForce()
+                        // }
+
                         NavigationLink {
                             ChatWallpaperEditorSheet(chat: chat)
                         } label: {
@@ -207,6 +202,10 @@ struct ChatInfoView: View {
                         //                    }
                     }
                     .disabled(!contact.ready || !contact.active)
+                    
+                    Section("Chat messages on device") {
+                        ChatTTLOption(chat: chat, chatItemTTL: $chatItemTTL, progressIndicator: $progressIndicator)
+                    }
                     
                     if let conn = contact.activeConn {
                         Section {
@@ -300,7 +299,6 @@ struct ChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsContacts
             }
             sendReceipts = SendReceipts.fromBool(contact.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
-            currentChatItemTTL = chatItemTTL
             
             Task {
                 do {
@@ -509,53 +507,7 @@ struct ChatInfoView: View {
         chatSettings.sendRcpts = sendReceipts.bool()
         updateChatSettings(chat, chatSettings: chatSettings)
     }
-    
-    private func chatTTLOption() -> some View {
-        Picker(selection: $chatItemTTL) {
-            ForEach(ChatItemTTL.values) { ttl in
-                Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
-            }
-            let defaultTTL = ChatTTL.userDefault(chatModel.chatItemTTL)
-            Text(defaultTTL.text).tag(defaultTTL)
-            
-            if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
-                Text(ttl.deleteAfterText).tag(chatItemTTL)
-            }
-        } label: {
-            Label("Delete messages after", systemImage: "trash")
-        }
-        .frame(height: 36)
-        .onChange(of: chatItemTTL) { ttl in
-            if ttl != currentChatItemTTL {
-                setChatTTL(
-                    ttl,
-                    hasPreviousTTL: !currentChatItemTTL.neverExpires,
-                    onCancel: { chatItemTTL = currentChatItemTTL }
-                ) {
-                    progressIndicator = true
-                    Task {
-                        do {
-                            try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
-                            await loadChat(chat: chat, clearItems: true, replaceChat: true)
-                            await MainActor.run {
-                                progressIndicator = false
-                                currentChatItemTTL = chatItemTTL
-                            }
-                        }
-                        catch let error {
-                            logger.error("setChatTTL error \(responseError(error))")
-                            await loadChat(chat: chat, clearItems: true, replaceChat: true)
-                            await MainActor.run {
-                                chatItemTTL = currentChatItemTTL
-                                progressIndicator = false
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
+
     private func synchronizeConnectionButton() -> some View {
         Button {
             Task {
@@ -696,6 +648,60 @@ struct ChatInfoView: View {
             } catch {
                 logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
             }
+        }
+    }
+}
+
+struct ChatTTLOption: View {
+    @ObservedObject var chat: Chat
+    @Binding var chatItemTTL: ChatTTL
+    @Binding var progressIndicator: Bool
+    @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
+
+    var body: some View {
+        Picker(selection: $chatItemTTL) {
+            ForEach(ChatItemTTL.values) { ttl in
+                Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
+            }
+            let defaultTTL = ChatTTL.userDefault(ChatModel.shared.chatItemTTL)
+            Text(defaultTTL.text).tag(defaultTTL)
+            
+            if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
+                Text(ttl.deleteAfterText).tag(chatItemTTL)
+            }
+        } label: {
+            Label("Delete after", systemImage: "trash")
+        }
+        .frame(height: 36)
+        .onChange(of: chatItemTTL) { ttl in
+            setChatTTL(
+                ttl,
+                hasPreviousTTL: !currentChatItemTTL.neverExpires,
+                onCancel: { chatItemTTL = currentChatItemTTL }
+            ) {
+                progressIndicator = true
+                Task {
+                    do {
+                        try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
+                        await loadChat(chat: chat, clearItems: true, replaceChat: true)
+                        await MainActor.run {
+                            progressIndicator = false
+                            currentChatItemTTL = chatItemTTL
+                        }
+                    }
+                    catch let error {
+                        logger.error("setChatTTL error \(responseError(error))")
+                        await loadChat(chat: chat, clearItems: true, replaceChat: true)
+                        await MainActor.run {
+                            chatItemTTL = currentChatItemTTL
+                            progressIndicator = false
+                        }
+                    }
+                }
+            }
+        }
+        .onAppear {
+            currentChatItemTTL = chatItemTTL
         }
     }
 }

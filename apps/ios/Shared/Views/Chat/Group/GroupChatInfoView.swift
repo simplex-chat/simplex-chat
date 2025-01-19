@@ -30,7 +30,6 @@ struct GroupChatInfoView: View {
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
-    @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
@@ -103,9 +102,7 @@ struct GroupChatInfoView: View {
                         } else {
                             sendReceiptsOptionDisabled()
                         }
-                        
-                        chatTTLOption()
-                        
+                                                
                         NavigationLink {
                             ChatWallpaperEditorSheet(chat: chat)
                         } label: {
@@ -121,6 +118,10 @@ struct GroupChatInfoView: View {
                         )
                         Text(label)
                             .foregroundColor(theme.colors.secondary)
+                    }
+                    
+                    Section("Group messages on device") {
+                        ChatTTLOption(chat: chat, chatItemTTL: $chatItemTTL, progressIndicator: $progressIndicator)
                     }
                     
                     Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
@@ -204,7 +205,6 @@ struct GroupChatInfoView: View {
                 sendReceiptsUserDefault = currentUser.sendRcptsSmallGroups
             }
             sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
-            currentChatItemTTL = chatItemTTL
             do {
                 if let link = try apiGetGroupLink(groupInfo.groupId) {
                     (groupLink, groupLinkMemberRole) = link
@@ -656,52 +656,6 @@ struct GroupChatInfoView: View {
         var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
         chatSettings.sendRcpts = sendReceipts.bool()
         updateChatSettings(chat, chatSettings: chatSettings)
-    }
-    
-    private func chatTTLOption() -> some View {
-        Picker(selection: $chatItemTTL) {
-            ForEach(ChatItemTTL.values) { ttl in
-                Text(ttl.deleteAfterText).tag(ChatTTL.chat(ttl))
-            }
-            let defaultTTL = ChatTTL.userDefault(chatModel.chatItemTTL)
-            Text(defaultTTL.text).tag(defaultTTL)
-            
-            if case .chat(let ttl) = chatItemTTL, case .seconds = ttl {
-                Text(ttl.deleteAfterText).tag(chatItemTTL)
-            }
-        } label: {
-            Label("Delete messages after", systemImage: "trash")
-        }
-        .frame(height: 36)
-        .onChange(of: chatItemTTL) { ttl in
-            if ttl != currentChatItemTTL {
-                setChatTTL(
-                    ttl,
-                    hasPreviousTTL: !currentChatItemTTL.neverExpires,
-                    onCancel: { chatItemTTL = currentChatItemTTL }
-                ) {
-                    progressIndicator = true
-                    Task {
-                        do {
-                            try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
-                            await loadChat(chat: chat, clearItems: true, replaceChat: true)
-                            await MainActor.run {
-                                progressIndicator = false
-                                currentChatItemTTL = chatItemTTL
-                            }
-                        }
-                        catch let error {
-                            logger.error("setChatTTL error \(responseError(error))")
-                            await loadChat(chat: chat, clearItems: true, replaceChat: true)
-                            await MainActor.run {
-                                chatItemTTL = currentChatItemTTL
-                                progressIndicator = false
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     private func sendReceiptsOptionDisabled() -> some View {
