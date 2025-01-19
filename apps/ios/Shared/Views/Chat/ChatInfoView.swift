@@ -675,6 +675,7 @@ struct ChatTTLOption: View {
         .disabled(progressIndicator)
         .frame(height: 36)
         .onChange(of: chatItemTTL) { ttl in
+            if ttl == currentChatItemTTL { return }
             setChatTTL(
                 ttl,
                 hasPreviousTTL: !currentChatItemTTL.neverExpires,
