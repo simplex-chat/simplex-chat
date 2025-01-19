@@ -176,7 +176,7 @@ startChatController mainApp enableSndFiles = do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
           startCleanupManager
-          void $ forkIO $ startExpireCIs users
+          void $ forkIO $ mapM_ startExpireCIs users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -191,12 +191,15 @@ startChatController mainApp enableSndFiles = do
           a <- Just <$> async (void $ runExceptT cleanupManager)
           atomically $ writeTVar cleanupAsync a
         _ -> pure ()
-    startExpireCIs users =
-      forM_ users $ \user -> do
-        (ttl, ttlCount) <- fromRight (0, 0) <$> runExceptT (withStore' $ \db -> (,) <$> getChatItemTTL db user <*> getChatTTLCount db user)
-        when (ttl > 0 || ttlCount > 0) $ do
-          startExpireCIThread user
-          setExpireCIFlag user True
+    startExpireCIs user = whenM shouldExpireChats $ do
+      startExpireCIThread user
+      setExpireCIFlag user True
+      where
+        shouldExpireChats = 
+          fmap (fromRight False) $ runExceptT $ withStore' $ \db -> do
+            ttl <- getChatItemTTL db user
+            ttlCount <- getChatTTLCount db user
+            pure $ ttl > 0 || ttlCount > 0
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
@@ -1409,7 +1412,7 @@ processChatCommand' vr = \case
   APISetChatTTL userId (ChatRef cType chatId) newTTL_ ->
     withUserId userId $ \user -> checkStoreNotChanged $ withChatLock "setChatTTL" $ do
       (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db ->
-        (,,) <$> getSetChatTTL db user <*> getChatItemTTL db user <*> getChatTTLCount db user
+        (,,) <$> getSetChatTTL db <*> getChatItemTTL db user <*> getChatTTLCount db user
       let newTTL = fromMaybe globalTTL newTTL_
           oldTTL = fromMaybe globalTTL oldTTL_
       when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
@@ -1418,13 +1421,12 @@ processChatCommand' vr = \case
       lift $ setChatItemsExpiration user globalTTL ttlCount
       ok user
     where
-      getSetChatTTL db user = case cType of
+      getSetChatTTL db = case cType of
         CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
         CTGroup -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
         _ -> pure Nothing
       expireChat user globalTTL = do
         currentTs <- liftIO getCurrentTime
-        vr <- chatVersionRange
         case cType of
           CTDirect -> expireContactChatItems user vr currentTs globalTTL chatId
           CTGroup ->
