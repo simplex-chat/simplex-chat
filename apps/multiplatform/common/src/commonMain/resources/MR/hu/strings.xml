@@ -1391,14 +1391,14 @@
     <string name="snd_group_event_changed_role_for_yourself">Ön megváltoztatta a saját szerepkörét a következőre: %s</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegési szolgáltatás elindítható a „Beállítások / Adatbázis” menüben vagy az alkalmazás újraindításával.</string>
     <string name="verify_code_on_mobile">Kód hitelesítése a hordozható eszközön</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Ön csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet a friss hírekről</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Nem kötelező üdvözlőüzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázishiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó-profiljait – koppintson (vagy számítógép-alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognitóra váltás kapcsolódáskor.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot – így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
-    <string name="you_joined_this_group">Csatlakozott ehhez a csoporthoz</string>
+    <string name="you_joined_this_group">Ön csatlakozott ehhez a csoporthoz</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez az Ön hivatkozása a(z) <b>%1$s</b> nevű csoporthoz!]]></string>
     <string name="voice_prohibited_in_this_chat">A hangüzenetek küldése le van tiltva ebben a csevegésben.</string>
     <string name="you_control_your_chat">Ön irányítja csevegését!</string>
