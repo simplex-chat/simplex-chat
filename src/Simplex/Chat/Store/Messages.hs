@@ -2907,7 +2907,7 @@ setChatItemTTL db User {userId} chatItemTTL = do
         "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
         (userId, chatItemTTL, currentTs, currentTs)
 
-getChatTTLCount :: DB.Connection -> User -> IO Int64
+getChatTTLCount :: DB.Connection -> User -> IO Int
 getChatTTLCount db User {userId} = do
   contactCount <- getCount "SELECT COUNT(1) FROM contacts WHERE user_id = ? AND chat_item_ttl > 0"
   groupCount <- getCount "SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0"

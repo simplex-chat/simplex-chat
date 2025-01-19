@@ -1408,26 +1408,29 @@ processChatCommand' vr = \case
     CRServerOperatorConditions <$> getServerOperators db
   APISetChatTTL userId (ChatRef cType chatId) newTTL_ ->
     withUserId userId $ \user -> checkStoreNotChanged $ withChatLock "setChatTTL" $ do
-      (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db -> do
-        oldTTL_ <- case cType of
-          CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
-          CTGroup -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
-          _ -> pure Nothing
-        liftIO $ (oldTTL_,,) <$> getChatItemTTL db user <*> getChatTTLCount db user
+      (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db ->
+        (,,) <$> getSetChatTTL db user <*> getChatItemTTL db user <*> getChatTTLCount db user
       let newTTL = fromMaybe globalTTL newTTL_
           oldTTL = fromMaybe globalTTL oldTTL_
-      currentTs <- liftIO getCurrentTime
-      vr <- chatVersionRange
-      when (newTTL < oldTTL || oldTTL == 0) $ case cType of
-        CTDirect -> expireContactChatItems user vr currentTs globalTTL chatId
-        CTGroup ->
-          let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
-           in expireGroupChatItems user vr currentTs globalTTL createdAtCutoff chatId
-        _ -> throwChatError $ CECommandError "not supported"
-      let expireChats = globalTTL > 0 || ttlCount > 0
-      when (expireChats) $ lift $ startExpireCIThread user
-      lift $ setExpireCIFlag user expireChats
+      when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
+        lift $ setExpireCIFlag user False
+        expireChat user globalTTL `catchChatError` (toView . CRChatError (Just user))
+      lift $ setChatItemsExpiration user globalTTL ttlCount
       ok user
+    where
+      getSetChatTTL db user = case cType of
+        CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
+        CTGroup -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
+        _ -> pure Nothing
+      expireChat user globalTTL = do
+        currentTs <- liftIO getCurrentTime
+        vr <- chatVersionRange
+        case cType of
+          CTDirect -> expireContactChatItems user vr currentTs globalTTL chatId
+          CTGroup ->
+            let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+              in expireGroupChatItems user vr currentTs globalTTL createdAtCutoff chatId
+          _ -> throwChatError $ CECommandError "not supported"
   SetChatTTL chatName newTTL -> withUser' $ \user@User {userId} -> do
     chatRef <- getChatRef user chatName
     processChatCommand $ APISetChatTTL userId chatRef newTTL
@@ -1441,17 +1444,12 @@ processChatCommand' vr = \case
   APISetChatItemTTL userId newTTL -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
-        oldTTL <- withFastStore' (`getChatItemTTL` user)
-        when (newTTL < oldTTL || oldTTL == 0) $ do
+        (oldTTL, ttlCount) <- withFastStore' $ \db ->
+          (,) <$> getChatItemTTL db user <* setChatItemTTL db user newTTL <*> getChatTTLCount db user
+        when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
           lift $ setExpireCIFlag user False
           expireChatItems user newTTL True
-        withFastStore' $ \db -> setChatItemTTL db user newTTL
-        ttlCount <- withStore' $ \db -> getChatTTLCount db user
-        if ttlCount > 0 || newTTL > 0
-          then do
-            lift $ startExpireCIThread user
-            lift . whenM chatStarted $ setExpireCIFlag user True
-          else lift $ setExpireCIFlag user False
+        lift $ setChatItemsExpiration user newTTL ttlCount
         ok user
   SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
     processChatCommand $ APISetChatItemTTL userId newTTL_
@@ -3284,6 +3282,13 @@ startExpireCIThread user@User {userId} = do
           ttl <- withStore' (`getChatItemTTL` user)
           expireChatItems user ttl False
         liftIO $ threadDelay' interval
+
+setChatItemsExpiration :: User -> Int64 -> Int -> CM' ()
+setChatItemsExpiration user newTTL ttlCount 
+  | newTTL > 0 || ttlCount > 0 = do
+      startExpireCIThread user
+      whenM chatStarted $ setExpireCIFlag user True
+  | otherwise = setExpireCIFlag user False
 
 setExpireCIFlag :: User -> Bool -> CM' ()
 setExpireCIFlag User {userId} b = do
