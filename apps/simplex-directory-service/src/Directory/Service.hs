@@ -18,7 +18,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
-import Data.List (find)
+import Data.List (find, intercalate)
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -75,11 +75,22 @@ newServiceState = do
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@DirectoryOpts {coreOptions, testing} <- getDirectoryOpts appDir "simplex_directory_service"
+  opts@DirectoryOpts {coreOptions, testing, superUsers, adminUsers, ownersGroup} <- getDirectoryOpts appDir "simplex_directory_service"
   unless testing $ do
     putStrLn $ "SimpleX Directory Service Bot v" ++ versionNumber
     printDbOpts coreOptions
+    putStrLn $ knownContacts "superuser" superUsers
+    putStrLn $ knownContacts "admin user" adminUsers
+    putStrLn $ case ownersGroup of
+      Nothing -> "No owner's group"
+      Just KnownGroup {groupId, localDisplayName = n} -> "Owners' group: " <> knownName groupId n
   pure opts
+  where
+    knownContacts userType = \case
+      [] -> "No " <> userType <> "s"
+      cts -> show (length cts) <> " " <> userType <> "(s): " <> intercalate ", " (map knownContact cts)
+    knownContact KnownContact {contactId, localDisplayName = n} = knownName contactId n
+    knownName i n = show i <> ":" <> T.unpack (viewName n)
 
 directoryServiceCLI :: DirectoryStore -> DirectoryOpts -> IO ()
 directoryServiceCLI st opts = do
