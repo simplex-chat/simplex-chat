@@ -49,7 +49,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store.SQLite (closeDBStore, reopenSQLiteStore)
+import Simplex.Messaging.Agent.Store (closeStore, reopenStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -204,7 +204,7 @@ mobileChatOpts dbFilePrefix =
             logServerHosts = True,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 1024,
+            tbqSize = 4096,
             highlyAvailable = False,
             yesToUpMigrations = False
           },
@@ -262,13 +262,13 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
 
 chatCloseStore :: ChatController -> IO String
 chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
-  closeDBStore chatStore
-  closeDBStore $ agentClientStore smpAgent
+  closeStore chatStore
+  closeStore $ agentClientStore smpAgent
 
 chatReopenStore :: ChatController -> IO String
 chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do
-  reopenSQLiteStore chatStore
-  reopenSQLiteStore (agentClientStore smpAgent)
+  reopenStore chatStore
+  reopenStore (agentClientStore smpAgent)
 
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
