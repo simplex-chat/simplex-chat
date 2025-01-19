@@ -8281,14 +8281,14 @@ Kapcsolatkérés megismétlése?</target>
         <target>Meghívta egy ismerősét</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You joined this group" xml:space="preserve">
+      <trans-unit id="You joined this group" xml:space="preserve" approved="no">
         <source>You joined this group</source>
-        <target>Csatlakozott ehhez a csoporthoz</target>
+        <target state="translated">Ön csatlakozott ehhez a csoporthoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
+      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve" approved="no">
         <source>You joined this group. Connecting to inviting group member.</source>
-        <target>Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</target>
+        <target state="translated">Ön csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You may migrate the exported database." xml:space="preserve">
