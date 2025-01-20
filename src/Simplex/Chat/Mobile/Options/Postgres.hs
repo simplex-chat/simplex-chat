@@ -7,9 +7,9 @@ import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Store.Interface (DBCreateOpts (..))
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts
-mobileDbOpts param1 param2 = do
-  dbSchemaPrefix <- peekCString param1
-  dbConnstr <- peekCString param2
+mobileDbOpts schemaPrefix connstr = do
+  dbSchemaPrefix <- peekCString schemaPrefix
+  dbConnstr <- peekCString connstr
   pure $
     ChatDbOpts
       { dbConnstr,

@@ -115,18 +115,20 @@ foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatContr
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
+-- For postgres first param is schema prefix, second param is database connection string.
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInit param1 param2 conf = cChatMigrateInitKey param1 param2 0 conf 0
+cChatMigrateInit fp key conf = cChatMigrateInitKey fp key 0 conf 0
 
+-- For postgres first param is schema prefix, second param is database connection string.
 cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInitKey param1 param2 keepKey conf background ctrl = do
+cChatMigrateInitKey fp key keepKey conf background ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
 
-  chatDbOpts <- mobileDbOpts param1 param2
+  chatDbOpts <- mobileDbOpts fp key
   confirm <- peekCAString conf
   r <-
     chatMigrateInitKey chatDbOpts (keepKey /= 0) confirm (background /= 0) >>= \case

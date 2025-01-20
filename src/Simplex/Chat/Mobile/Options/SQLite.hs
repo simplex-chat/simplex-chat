@@ -6,16 +6,14 @@ module Simplex.Chat.Mobile.Options.SQLite where
 
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
-import Database.SQLite.Simple (SQLError (..))
-import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
 import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Store.Interface (DBCreateOpts (..))
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts
-mobileDbOpts param1 param2 = do
-  dbFilePrefix <- peekCString param1
-  dbKey <- BA.convert <$> B.packCString param2
+mobileDbOpts fp key = do
+  dbFilePrefix <- peekCString fp
+  dbKey <- BA.convert <$> B.packCString key
   pure $
     ChatDbOpts
       { dbFilePrefix,
