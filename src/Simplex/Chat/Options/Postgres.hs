@@ -5,9 +5,9 @@
 module Simplex.Chat.Options.Postgres where
 
 import qualified Data.ByteString.Char8 as B
+import Foreign.C.String
 import Options.Applicative
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
-import Simplex.Chat.Store
 
 data ChatDbOpts = ChatDbOpts
   { dbConnstr :: String,
@@ -44,3 +44,25 @@ toDBOpts ChatDbOpts {dbConnstr, dbSchemaPrefix} dbSuffix _keepKey =
     { connstr = B.pack dbConnstr,
       schema = if null dbSchemaPrefix then "simplex_v1" <> dbSuffix else dbSchemaPrefix <> dbSuffix
     }
+
+chatSuffix :: String
+chatSuffix = "_chat_schema"
+
+agentSuffix :: String
+agentSuffix = "_agent_schema"
+
+mobileDbOpts :: CString -> CString -> IO ChatDbOpts
+mobileDbOpts schemaPrefix connstr = do
+  dbSchemaPrefix <- peekCString schemaPrefix
+  dbConnstr <- peekCString connstr
+  pure $
+    ChatDbOpts
+      { dbConnstr,
+        dbSchemaPrefix
+      }
+
+mobileDbOpts' :: ChatDbOpts -> ChatDbOpts
+mobileDbOpts' = id
+
+errorDbStr :: DBOpts -> String
+errorDbStr DBOpts {schema} = schema

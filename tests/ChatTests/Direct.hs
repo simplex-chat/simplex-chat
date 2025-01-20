@@ -28,6 +28,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
@@ -44,7 +45,6 @@ import Test.Hspec hiding (it)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
-import Simplex.Chat.Store (agentSuffix, chatSuffix)
 import System.FilePath ((</>))
 #endif
 

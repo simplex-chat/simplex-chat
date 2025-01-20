@@ -52,7 +52,6 @@ library
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
       Simplex.Chat.Mobile.WebRTC
-      Simplex.Chat.Mobile.Options.DB
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
       Simplex.Chat.Options
@@ -93,14 +92,12 @@ library
       Simplex.Chat.View
   if flag(client_postgres)
       exposed-modules:
-          Simplex.Chat.Mobile.Options.Postgres
           Simplex.Chat.Options.Postgres
           Simplex.Chat.Store.Postgres.Migrations
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
   else
       exposed-modules:
           Simplex.Chat.Archive
-          Simplex.Chat.Mobile.Options.SQLite
           Simplex.Chat.Options.SQLite
           Simplex.Chat.Store.SQLite.Migrations
           Simplex.Chat.Store.SQLite.Migrations.M20220101_initial

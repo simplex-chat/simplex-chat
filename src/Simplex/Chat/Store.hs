@@ -9,8 +9,6 @@ module Simplex.Chat.Store
     AutoAccept (..),
     createChatStore,
     migrations, -- used in tests
-    chatSuffix,
-    agentSuffix,
     withTransaction,
   )
 where
@@ -28,17 +26,3 @@ import Simplex.Chat.Store.SQLite.Migrations
 
 createChatStore :: DBOpts -> MigrationConfirmation -> IO (Either MigrationError DBStore)
 createChatStore dbCreateOpts = createDBStore dbCreateOpts migrations
-
-chatSuffix :: String
-#if defined(dbPostgres)
-chatSuffix = "_chat_schema"
-#else
-chatSuffix = "_chat.db"
-#endif
-
-agentSuffix :: String
-#if defined(dbPostgres)
-agentSuffix = "_agent_schema"
-#else
-agentSuffix = "_agent.db"
-#endif
