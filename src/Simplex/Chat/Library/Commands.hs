@@ -1428,10 +1428,10 @@ processChatCommand' vr = \case
       expireChat user globalTTL = do
         currentTs <- liftIO getCurrentTime
         case cType of
-          CTDirect -> expireContactChatItems user vr currentTs globalTTL chatId
+          CTDirect -> expireContactChatItems user vr globalTTL chatId
           CTGroup ->
             let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
-              in expireGroupChatItems user vr currentTs globalTTL createdAtCutoff chatId
+              in expireGroupChatItems user vr globalTTL createdAtCutoff chatId
           _ -> throwChatError $ CECommandError "not supported"
   SetChatTTL chatName newTTL -> withUser' $ \user@User {userId} -> do
     chatRef <- getChatRef user chatName
@@ -3546,10 +3546,10 @@ expireChatItems user@User {userId} globalTTL sync = do
   let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   lift waitChatStartedAndActivated
   contactIds <- withStore' $ \db -> getUserContactsToExpire db user globalTTL
-  loop contactIds $ expireContactChatItems user vr currentTs globalTTL
+  loop contactIds $ expireContactChatItems user vr globalTTL
   lift waitChatStartedAndActivated
   groupIds <- withStore' $ \db -> getUserGroupsToExpire db user globalTTL
-  loop groupIds $ expireGroupChatItems user vr currentTs globalTTL createdAtCutoff
+  loop groupIds $ expireGroupChatItems user vr globalTTL createdAtCutoff
   where
     loop :: [Int64] -> (Int64 -> CM ()) -> CM ()
     loop [] _ = pure ()
@@ -3565,26 +3565,26 @@ expireChatItems user@User {userId} globalTTL sync = do
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
 
-expireContactChatItems :: User -> VersionRangeChat -> UTCTime -> Int64 -> ContactId -> CM ()
-expireContactChatItems user vr currentTs globalTTL ctId =
+expireContactChatItems :: User -> VersionRangeChat -> Int64 -> ContactId -> CM ()
+expireContactChatItems user vr globalTTL ctId =
   -- reading contacts and groups inside the loop,
   -- to allow ttl changing while processing and to reduce memory usage
   tryChatError (withStore $ \db -> getContact db vr user ctId) >>= mapM_ process
   where
     process ct@Contact {chatItemTTL} =
-      withExpirationDate currentTs globalTTL chatItemTTL $ \expirationDate -> do
+      withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
         lift waitChatStartedAndActivated
         filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
         cancelFilesInProgress user filesInfo
         deleteFilesLocally filesInfo
         withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
 
-expireGroupChatItems :: User -> VersionRangeChat -> UTCTime -> Int64 -> UTCTime -> GroupId -> CM ()
-expireGroupChatItems user vr currentTs globalTTL createdAtCutoff groupId =
+expireGroupChatItems :: User -> VersionRangeChat -> Int64 -> UTCTime -> GroupId -> CM ()
+expireGroupChatItems user vr globalTTL createdAtCutoff groupId =
   tryChatError (withStore $ \db -> getGroupInfo db vr user groupId) >>= mapM_ process
   where
     process gInfo@GroupInfo {chatItemTTL} =
-      withExpirationDate currentTs globalTTL chatItemTTL $ \expirationDate -> do
+      withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
         lift waitChatStartedAndActivated
         filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
         cancelFilesInProgress user filesInfo
@@ -3593,8 +3593,9 @@ expireGroupChatItems user vr currentTs globalTTL createdAtCutoff groupId =
         membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
         forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
-withExpirationDate :: UTCTime -> Int64 -> Maybe Int64 -> (UTCTime -> CM ()) -> CM ()
-withExpirationDate currentTs globalTTL chatItemTTL action = do
+withExpirationDate :: Int64 -> Maybe Int64 -> (UTCTime -> CM ()) -> CM ()
+withExpirationDate globalTTL chatItemTTL action = do
+  currentTs <- liftIO getCurrentTime
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 

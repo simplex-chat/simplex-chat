@@ -2104,7 +2104,7 @@ testUsersRestartCIExpiration tmp = do
 
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 4000000
+      threadDelay 3000000
 
       -- messages both before and after restart are deleted
       -- first user messages
@@ -2226,7 +2226,7 @@ testDisableCIExpirationOnlyForOneUser tmp = do
 
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 3000000
+      threadDelay 2000000
 
       -- second user messages are deleted
       alice #$> ("/_get chat @6 count=100", chat, [])
