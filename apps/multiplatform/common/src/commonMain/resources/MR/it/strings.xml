@@ -2323,4 +2323,5 @@
     <string name="privacy_chat_list_open_links_no">No</string>
     <string name="privacy_chat_list_open_web_link">Apri link</string>
     <string name="privacy_chat_list_open_links_ask">Chiedi</string>
+    <string name="text_field_set_chat_placeholder">Imposta il nome della chat…</string>
 </resources>
