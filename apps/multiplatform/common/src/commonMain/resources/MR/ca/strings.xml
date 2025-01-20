@@ -2285,4 +2285,5 @@
     <string name="report_item_visibility_moderators">Només ho veuen remitents i moderació</string>
     <string name="report_item_visibility_submitter">Només ho veieu vosaltres i moderació</string>
     <string name="error_creating_report">Error en crear informe</string>
+    <string name="text_field_set_chat_placeholder">Establir nom del xat…</string>
 </resources>
