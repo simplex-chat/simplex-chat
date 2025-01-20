@@ -48,6 +48,7 @@ struct ChatView: View {
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: [Int64] = []
+    @State private var updateMergedItemsTask: Task<Void, Never>? = nil
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -473,6 +474,7 @@ struct ChatView: View {
                     forwardedChatItems: $forwardedChatItems,
                     reveal: { reveal in
                         mergedItem.reveal(reveal, $revealedItems)
+                        updateMergedItemsTask?.cancel()
                         mergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
                     }
                 )
@@ -494,12 +496,23 @@ struct ChatView: View {
                 }
             }
             .onChange(of: im.reversedChatItems) { items in
-                mergedItems = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                updateMergedItemsTask?.cancel()
+                updateMergedItemsTask = Task {
+                    let items = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    if Task.isCancelled {
+                        return
+                    }
+                    await MainActor.run {
+                        mergedItems = items
+                    }
+                }
             }
             .onChange(of: revealedItems) { revealed in
+                updateMergedItemsTask?.cancel()
                 mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealed, ItemsModel.shared.chatState)
             }
             .onChange(of: chat.chatStats.unreadCount) { unreadCount in
+                updateMergedItemsTask?.cancel()
                 mergedItems = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
             }
             .onChange(of: chat.id) { _ in
@@ -913,7 +926,9 @@ struct ChatView: View {
 
     private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
         if loadingMoreItems { return false }
-        loadingMoreItems = true
+        await MainActor.run {
+            loadingMoreItems = true
+        }
         var chatItemsAvailable = true
         var itemsCountChanged = false
         // Load additional items until the page is +50 large after merging
@@ -1049,7 +1064,7 @@ struct ChatView: View {
             } else {
                 nil
             }
-            let showAvatar = if case .grouped = merged { shouldShowAvatar(item, listItem.nextItem) } else { true }
+            let showAvatar = shouldShowAvatar(item, listItem.nextItem)
             let itemSeparation: ItemSeparation
             let prevItemSeparationLargeGap: Bool
             let single = switch merged {
@@ -1084,7 +1099,8 @@ struct ChatView: View {
             }
             .onAppear {
                 // LALAL
-                //return ()
+                return ()
+                
                 if markedRead {
                     return
                 } else {

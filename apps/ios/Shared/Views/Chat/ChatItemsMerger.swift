@@ -21,6 +21,7 @@ struct MergedItems {
             return MergedItems(items: [], splits: [], indexInParentItems: [:], snapshot: NSDiffableDataSourceSnapshot())
         }
 
+        logger.debug("LALAL STEP 0")
         let unreadAfterItemId = chatState.unreadAfterItemId
         let itemSplits = chatState.splits
         var mergedItems: [MergedItem] = []
@@ -108,6 +109,7 @@ struct MergedItems {
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
         }
+        logger.debug("LALAL STEP 7")
         var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
         snapshot.appendSections([ReverseListSection.main])
         snapshot.appendItems(mergedItems)
@@ -238,8 +240,22 @@ struct ListItem: Hashable {
     // how many unread items before (older than) this one (excluding this one)
     let unreadBefore: Int
 
+    private func chatDirHash(_ chatDir: CIDirection?) -> Int {
+        guard let chatDir else { return 0 }
+        return switch chatDir {
+        case .directSnd: 0
+        case .directRcv: 1
+        case .groupSnd: 2
+        case let .groupRcv(mem): "\(mem.groupMemberId) \(mem.displayName) \(mem.memberStatus.rawValue) \(mem.memberRole.rawValue) \(mem.image?.hash ?? 0)".hash
+        case .localSnd: 4
+        case .localRcv: 5
+        }
+    }
+
+    // using meta.hashValue instead of parts of it gives 120ms vs 90ms for MergedItems list generation for 1800 items (+ snapshot time generation for UITableView in MergedItems).
+    // so better to use partial meta here
     func genHash() -> String {
-        "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.reactions.count) \(item.meta.isRcvNew) \(item.text.hash) \(unreadBefore) \(prevItem?.id ?? -1) \(nextItem?.id ?? -2)"
+        "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.meta.itemEdited) \(item.meta.itemDeleted?.hashValue ?? 0) \(item.meta.itemTimed?.hashValue ?? 0) \(item.meta.itemStatus.hashValue) \(item.meta.sentViaProxy ?? false) \(item.mergeCategory?.hashValue ?? 0) \(chatDirHash(item.chatDir)) \(item.reactions.hashValue) \(item.meta.isRcvNew) \(item.text.hash) \(item.file?.hashValue ?? 0) \(item.quotedItem?.itemId ?? 0) \(unreadBefore) \(prevItem?.id ?? 0) \(chatDirHash(prevItem?.chatDir)) \(prevItem?.mergeCategory?.hashValue ?? 0) \(nextItem?.id ?? 0) \(chatDirHash(nextItem?.chatDir)) \(nextItem?.mergeCategory?.hashValue ?? 0)"
     }
 }
 
