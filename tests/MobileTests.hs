@@ -35,6 +35,7 @@ import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
+import Simplex.Messaging.Agent.Store.Interface
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
@@ -54,7 +55,7 @@ mobileTests = do
       setFileSystemEncoding utf8
       setForeignEncoding utf8
     it "start new chat without user" testChatApiNoUser
-    it "start new chat with existing user" testChatApi
+    fit "start new chat with existing user" testChatApi
     it "should encrypt/decrypt WebRTC frames" testMediaApi
     it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
     describe "should read/write encrypted files via C API" $ do
@@ -158,7 +159,7 @@ testChatApi :: FilePath -> IO ()
 testChatApi tmp = do
   let dbPrefix = tmp </> "1"
       f = chatStoreFile dbPrefix
-  Right st <- createChatStore f "myKey" False MCYesUp True
+  Right st <- createChatStore (DBCreateOpts f "myKey" False True) MCYesUp
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"

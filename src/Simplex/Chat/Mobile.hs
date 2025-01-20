@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -16,7 +17,6 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
 import Data.ByteArray (ScrubbedBytes)
-import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -39,6 +39,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
 import Simplex.Chat.Mobile.File
+import Simplex.Chat.Mobile.Options.DB
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
@@ -113,21 +114,20 @@ foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString 
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInit fp key conf = cChatMigrateInitKey fp key 0 conf 0
+cChatMigrateInit param1 param2 conf = cChatMigrateInitKey param1 param2 0 conf 0
 
 cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInitKey fp key keepKey conf background ctrl = do
+cChatMigrateInitKey param1 param2 keepKey conf background ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
 
-  dbPath <- peekCString fp
-  dbKey <- BA.convert <$> B.packCString key
+  chatDbOpts <- mobileDbOpts param1 param2
   confirm <- peekCAString conf
   r <-
-    chatMigrateInitKey dbPath dbKey (keepKey /= 0) confirm (background /= 0) >>= \case
+    chatMigrateInitKey chatDbOpts (keepKey /= 0) confirm (background /= 0) >>= \case
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
@@ -185,17 +185,12 @@ cChatValidName cName = newCString . mkValidName =<< peekCString cName
 cChatJsonLength :: CString -> IO CInt
 cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
 
-mobileChatOpts :: String -> ChatOpts
-mobileChatOpts dbFilePrefix =
+mobileChatOpts :: ChatDbOpts -> ChatOpts
+mobileChatOpts chatDbOpts =
   ChatOpts
     { coreOptions =
         CoreChatOpts
-          { dbOptions =
-              ChatDbOpts
-                { dbFilePrefix,
-                  dbKey = "", -- for API database is already opened, and the key in options is not used
-                  vacuumOnMigration = True
-                },
+          { dbOptions = chatDbOpts,
             smpServers = [],
             xftpServers = [],
             simpleNetCfg = defaultSimpleNetCfg,
@@ -236,29 +231,36 @@ getActiveUser_ :: DBStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
-chatMigrateInit dbFilePrefix dbKey confirm = chatMigrateInitKey dbFilePrefix dbKey False confirm False
+chatMigrateInit dbFilePrefix dbKey confirm = do
+  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration = True}
+  chatMigrateInitKey chatDBOpts False confirm False
 
-chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
-chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExceptT $ do
+chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
+chatMigrateInitKey dbOpts keepKey confirm backgroundMode = runExceptT $ do
+  let (agentDbOpts, chatDbOpts) = toDBCreateOpts dbOpts keepKey
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
-  chatStore <- migrate createChatStore (chatStoreFile dbFilePrefix) confirmMigrations
-  agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
+  chatStore <- migrate createChatStore agentDbOpts confirmMigrations
+  agentStore <- migrate createAgentStore chatDbOpts confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
-    opts = mobileChatOpts dbFilePrefix
     initialize st db = do
       user_ <- getActiveUser_ st
+      let dbOpts' = mobileDbOpts' dbOpts
+          opts = mobileChatOpts dbOpts'
       newChatController db user_ defaultMobileConfig opts backgroundMode
-    migrate createStore dbFile confirmMigrations =
+    migrate createStore dbCreateOpts confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations (vacuumOnMigration $ dbOptions $ coreOptions opts))
+        (first (DBMErrorMigration errDbStr) <$> createStore dbCreateOpts confirmMigrations)
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where
+        errDbStr = errorDbStr dbCreateOpts
         checkDBError e = case sqlError e of
-          DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase dbFile
+#if !defined(dbPostgres)
+          DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase errDbStr
+#endif
           _ -> dbError e
-        dbError e = Left . DBMErrorSQL dbFile $ show e
+        dbError e = Left . DBMErrorSQL errDbStr $ show e
 
 chatCloseStore :: ChatController -> IO String
 chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
