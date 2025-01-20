@@ -2320,4 +2320,5 @@
     <string name="blocking_reason_spam">Spam</string>
     <string name="privacy_chat_list_open_web_link_question">Weblink openen?</string>
     <string name="privacy_chat_list_open_links_yes">Ja</string>
+    <string name="text_field_set_chat_placeholder">Stel chatnaam in</string>
 </resources>
