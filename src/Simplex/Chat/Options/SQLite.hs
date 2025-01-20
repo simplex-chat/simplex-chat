@@ -76,8 +76,8 @@ mobileDbOpts fp key = do
 
 -- used to create new chat controller,
 -- at that point database is already opened, and the key in options is not used
-mobileDbOpts' :: ChatDbOpts -> ChatDbOpts
-mobileDbOpts' ChatDbOpts {dbFilePrefix, vacuumOnMigration} =
+removeDbKey :: ChatDbOpts -> ChatDbOpts
+removeDbKey ChatDbOpts {dbFilePrefix, vacuumOnMigration} =
   ChatDbOpts
     { dbFilePrefix,
       dbKey = "",

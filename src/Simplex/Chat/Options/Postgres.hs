@@ -18,16 +18,16 @@ chatDbOptsP :: FilePath -> String -> Parser ChatDbOpts
 chatDbOptsP _appDir defaultDbName = do
   dbConnstr <-
     strOption
-      ( long "database-connstr"
+      ( long "database"
           <> short 'd'
-          <> metavar "DB_CONNSTR"
+          <> metavar "DB_CONN"
           <> help "Database connection string"
           <> value ("postgresql://simplex@/" <> defaultDbName)
           <> showDefault
       )
   dbSchemaPrefix <-
     strOption
-      ( long "database-schema-prefix"
+      ( long "schema-prefix"
           <> metavar "DB_SCHEMA_PREFIX"
           <> help "Database schema prefix"
           <> value "simplex_v1"
@@ -61,8 +61,8 @@ mobileDbOpts schemaPrefix connstr = do
         dbSchemaPrefix
       }
 
-mobileDbOpts' :: ChatDbOpts -> ChatDbOpts
-mobileDbOpts' = id
+removeDbKey :: ChatDbOpts -> ChatDbOpts
+removeDbKey = id
 
 errorDbStr :: DBOpts -> String
 errorDbStr DBOpts {schema} = schema

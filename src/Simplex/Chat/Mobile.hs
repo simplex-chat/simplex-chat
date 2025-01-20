@@ -248,20 +248,19 @@ chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey) confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
+    opts = mobileChatOpts $ removeDbKey chatDbOpts
     initialize st db = do
       user_ <- getActiveUser_ st
-      let chatDbOpts' = mobileDbOpts' chatDbOpts
-          opts = mobileChatOpts chatDbOpts'
       newChatController db user_ defaultMobileConfig opts backgroundMode
-    migrate createStore dbCreateOpts confirmMigrations =
+    migrate createStore dbOpts confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration errDbStr) <$> createStore dbCreateOpts confirmMigrations)
+        (first (DBMErrorMigration errDbStr) <$> createStore dbOpts confirmMigrations)
 #if !defined(dbPostgres)
           `catch` (pure . checkDBError)
 #endif
           `catchAll` (pure . dbError)
       where
-        errDbStr = errorDbStr dbCreateOpts
+        errDbStr = errorDbStr dbOpts
 #if !defined(dbPostgres)
         checkDBError e = case sqlError e of
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase errDbStr
