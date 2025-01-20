@@ -44,7 +44,7 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store (closeStore)
+import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
@@ -72,17 +72,14 @@ import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
-testDBName :: String
-testDBName = "test_chat_db"
-
-testDBUser :: String
-testDBUser = "test_chat_user"
+testDBConnstr :: String
+testDBConnstr = "postgresql://test_chat_user@/test_chat_db"
 
 testDBConnectInfo :: ConnectInfo
 testDBConnectInfo =
   defaultConnectInfo {
-    connectUser = testDBUser,
-    connectDatabase = testDBName
+    connectUser = "test_chat_user",
+    connectDatabase = "test_chat_db"
   }
 #endif
 
@@ -114,8 +111,7 @@ testCoreOpts =
     {
       dbOptions = ChatDbOpts
 #if defined(dbPostgres)
-        { dbName = testDBName,
-          dbUser = testDBUser,
+        { dbConnstr = testDBConnstr,
           -- dbSchemaPrefix is not used in tests (except bot tests where it's redefined),
           -- instead different schema prefix is passed per client so that single test database is used
           dbSchemaPrefix = ""
@@ -323,7 +319,7 @@ stopTestChat TestCC {chatController = cc@ChatController {smpAgent, chatStore}, c
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
   liftIO $ disposeAgentClient smpAgent
-  closeStore chatStore
+  closeDBStore chatStore
   threadDelay 200000
 
 withNewTestChat :: HasCallStack => FilePath -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a

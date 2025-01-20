@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -31,17 +30,11 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Records.Compat
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple.FromField (FromField (..))
-import Database.PostgreSQL.Simple.ToField (ToField (..))
-#else
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
-#endif
 
 data ChatFeature
   = CFTimedMessages
