@@ -2286,4 +2286,5 @@
     <string name="privacy_chat_list_open_links">Hivatkozás megnyitása a csevegési listából</string>
     <string name="privacy_chat_list_open_links_no">Nem</string>
     <string name="privacy_chat_list_open_web_link_question">Webhivatkozás megnyitása?</string>
+    <string name="text_field_set_chat_placeholder">Csevegési név beállítása…</string>
 </resources>
