@@ -2320,4 +2320,5 @@
     <string name="privacy_chat_list_open_links">Відкрити посилання зі списку чату</string>
     <string name="connection_error_blocked_desc">Підключення заблоковано оператором сервера:  \n%1$s.</string>
     <string name="privacy_chat_list_open_links_no">Ні</string>
+    <string name="text_field_set_chat_placeholder">Назвати чат…</string>
 </resources>
