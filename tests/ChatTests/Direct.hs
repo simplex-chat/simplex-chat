@@ -134,6 +134,7 @@ chatDirectTests = do
     it "disabling chat item expiration doesn't disable it for other users" testDisableCIExpirationOnlyForOneUser
     it "both users have configured timed messages with contacts, messages expire, restart" testUsersTimedMessages
     it "user profile privacy: hide profiles and notifications" testUserPrivacy
+    it "set direct chat expiration TTL" testSetDirectChatTTL
   describe "settings" $ do
     it "set chat item expiration TTL" testSetChatItemTTL
     it "save/get app settings" testAppSettings
@@ -2116,7 +2117,7 @@ testUsersRestartCIExpiration tmp = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 3000000
+      threadDelay 4000000
 
       alice #$> ("/_get chat @6 count=100", chat, [])
   where
@@ -2560,6 +2561,82 @@ testSetChatItemTTL =
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
       alice #$> ("/ttl", id, "old messages are not being deleted")
+
+testSetDirectChatTTL :: HasCallStack => FilePath -> IO ()
+testSetDirectChatTTL =
+  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+        connectUsers alice bob
+        connectUsers alice cath
+        alice #> "@bob 1"
+        bob <# "alice> 1"
+        bob #> "@alice 2"
+        alice <# "bob> 2"
+        -- above items should be deleted after we set ttl
+        alice #> "@cath 10"
+        cath <# "alice> 10"
+        cath #> "@alice 11"
+        alice <# "cath> 11"
+        alice #$> ("/ttl @cath none", id, "ok")
+        alice #$> ("/ttl @cath", id, "old messages are not being deleted")
+
+        threadDelay 3000000
+        alice #> "@bob 3"
+        bob <# "alice> 3"
+        bob #> "@alice 4"
+        alice <# "bob> 4"
+        alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, "3"), Nothing), ((0, "4"), Nothing)])
+        alice #$> ("/_ttl 1 2", id, "ok")
+         -- when expiration is turned on, first cycle is synchronous
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")])
+
+        -- chat @3 doesn't expire since it was set to not expire
+        alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
+        bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4")])
+        
+        -- remove global ttl
+        alice #$> ("/ttl none", id, "ok")
+        alice #> "@bob 5"
+        bob <# "alice> 5"
+        bob #> "@alice 6"
+        alice <# "bob> 6"
+        alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+
+        -- set ttl for chat @3, only chat @3 is affected since global ttl is disabled
+        alice #$> ("/_ttl 1 @3 1", id, "ok")
+        alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: 1 second(s)")
+        threadDelay 3000000
+        alice #$> ("/_get chat @3 count=100", chat, [])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4"), (0, "5"), (1, "6")])
+
+        -- set ttl to never expire again
+        alice #$> ("/ttl @cath none", id, "ok")
+        alice #> "@cath 12"
+        cath <# "alice> 12"
+        cath #> "@alice 13"
+        alice <# "cath> 13"
+        threadDelay 3000000
+        alice #$> ("/_get chat @3 count=100", chat, [(1, "12"), (0, "13")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4"), (0, "5"), (1, "6")])
+
+        -- set ttl back to default
+        alice #$> ("/ttl @cath default", id, "ok")
+        alice #$> ("/ttl @cath", id, "old messages are set to delete according to default user config")
+        alice #$> ("/_ttl 1 2", id, "ok")
+        alice #$> ("/_get chat @3 count=100", chat, [])
+        alice #$> ("/_get chat @2 count=100", chat, [])
+
+        alice #$> ("/ttl @cath day", id, "ok")
+        alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: one day")
+        alice #$> ("/ttl @cath week", id, "ok")
+        alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: one week")
+        alice #$> ("/ttl @cath month", id, "ok")
+        alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: one month")
+        alice #$> ("/ttl @cath year", id, "ok")
+        alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: one year")
 
 testAppSettings :: HasCallStack => FilePath -> IO ()
 testAppSettings tmp =

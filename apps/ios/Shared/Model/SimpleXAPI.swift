@@ -340,7 +340,7 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true, replaceChat: Bool = false) async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
@@ -353,6 +353,9 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
             m.updateChatInfo(chat.chatInfo)
+            if (replaceChat) {
+                m.replaceChat(chat.chatInfo.id, chat)
+            }
         }
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
@@ -644,13 +647,24 @@ func getChatItemTTLAsync() async throws -> ChatItemTTL {
 }
 
 private func chatItemTTLResponse(_ r: ChatResponse) throws -> ChatItemTTL {
-    if case let .chatItemTTL(_, chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    if case let .chatItemTTL(_, chatItemTTL) = r {
+        if let ttl = chatItemTTL {
+            return ChatItemTTL(ttl)
+        } else {
+            throw RuntimeError("chatItemTTLResponse: invalid ttl")
+        }
+    }
     throw r
 }
 
 func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
     let userId = try currentUserId("setChatItemTTL")
     try await sendCommandOkResp(.apiSetChatItemTTL(userId: userId, seconds: chatItemTTL.seconds))
+}
+
+func setChatTTL(chatType: ChatType, id: Int64, _ chatItemTTL: ChatTTL) async throws {
+    let userId = try currentUserId("setChatItemTTL")
+    try await sendCommandOkResp(.apiSetChatTTL(userId: userId, type: chatType, id: id, seconds: chatItemTTL.value))
 }
 
 func getNetworkConfig() async throws -> NetCfg? {
@@ -1041,6 +1055,12 @@ func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws
 func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactAlias(contactId: contactId, localAlias: localAlias))
     if case let .contactAliasUpdated(_, toContact) = r { return toContact }
+    throw r
+}
+
+func apiSetGroupAlias(groupId: Int64, localAlias: String) async throws -> GroupInfo? {
+    let r = await chatSendCmd(.apiSetGroupAlias(groupId: groupId, localAlias: localAlias))
+    if case let .groupAliasUpdated(_, toGroup) = r { return toGroup }
     throw r
 }
 

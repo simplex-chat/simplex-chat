@@ -82,6 +82,7 @@ CREATE TABLE contacts(
   custom_data BYTEA,
   ui_themes TEXT,
   chat_deleted SMALLINT NOT NULL DEFAULT 0,
+  chat_item_ttl BIGINT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -140,6 +141,8 @@ CREATE TABLE groups(
   business_chat TEXT NULL,
   business_xcontact_id BYTEA NULL,
   customer_member_id BYTEA NULL,
+  chat_item_ttl BIGINT,
+  local_alias TEXT DEFAULT '',
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

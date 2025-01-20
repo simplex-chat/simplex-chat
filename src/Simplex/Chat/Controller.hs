@@ -342,6 +342,7 @@ data ChatCommand
   | APIUpdateProfile UserId Profile
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
+  | APISetGroupAlias GroupId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
@@ -379,10 +380,13 @@ data ChatCommand
   | APIGetUsageConditions
   | APISetConditionsNotified Int64
   | APIAcceptConditions Int64 (NonEmpty Int64)
-  | APISetChatItemTTL UserId (Maybe Int64)
-  | SetChatItemTTL (Maybe Int64)
+  | APISetChatItemTTL UserId Int64
+  | SetChatItemTTL Int64
   | APIGetChatItemTTL UserId
   | GetChatItemTTL
+  | APISetChatTTL UserId ChatRef (Maybe Int64)
+  | SetChatTTL ChatName (Maybe Int64)
+  | GetChatTTL ChatName
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
   | SetNetworkConfig SimpleNetCfg
@@ -720,6 +724,7 @@ data ChatResponse
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
+  | CRGroupAliasUpdated {user :: User, toGroup :: GroupInfo}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRContactConnecting {user :: User, contact :: Contact}

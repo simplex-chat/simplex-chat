@@ -176,7 +176,7 @@ startChatController mainApp enableSndFiles = do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
           startCleanupManager
-          void $ forkIO $ startExpireCIs users
+          void $ forkIO $ mapM_ startExpireCIs users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -191,12 +191,15 @@ startChatController mainApp enableSndFiles = do
           a <- Just <$> async (void $ runExceptT cleanupManager)
           atomically $ writeTVar cleanupAsync a
         _ -> pure ()
-    startExpireCIs users =
-      forM_ users $ \user -> do
-        ttl <- fromRight Nothing <$> runExceptT (withStore' (`getChatItemTTL` user))
-        forM_ ttl $ \_ -> do
-          startExpireCIThread user
-          setExpireCIFlag user True
+    startExpireCIs user = whenM shouldExpireChats $ do
+      startExpireCIThread user
+      setExpireCIFlag user True
+      where
+        shouldExpireChats = 
+          fmap (fromRight False) $ runExceptT $ withStore' $ \db -> do
+            ttl <- getChatItemTTL db user
+            ttlCount <- getChatTTLCount db user
+            pure $ ttl > 0 || ttlCount > 0
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
@@ -1256,6 +1259,11 @@ processChatCommand' vr = \case
       ct <- getContact db vr user contactId
       liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated user ct'
+  APISetGroupAlias gId localAlias -> withUser $ \user@User {userId} -> do
+    gInfo' <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db vr user gId
+      liftIO $ updateGroupAlias db userId gInfo localAlias
+    pure $ CRGroupAliasUpdated user gInfo'
   APISetConnectionAlias connId localAlias -> withUser $ \user@User {userId} -> do
     conn' <- withFastStore $ \db -> do
       conn <- getPendingContactConnection db userId connId
@@ -1401,27 +1409,55 @@ processChatCommand' vr = \case
     currentTs <- liftIO getCurrentTime
     acceptConditions db condId opIds currentTs
     CRServerOperatorConditions <$> getServerOperators db
-  APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
+  APISetChatTTL userId (ChatRef cType chatId) newTTL_ ->
+    withUserId userId $ \user -> checkStoreNotChanged $ withChatLock "setChatTTL" $ do
+      (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db ->
+        (,,) <$> getSetChatTTL db <*> getChatItemTTL db user <*> getChatTTLCount db user
+      let newTTL = fromMaybe globalTTL newTTL_
+          oldTTL = fromMaybe globalTTL oldTTL_
+      when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
+        lift $ setExpireCIFlag user False
+        expireChat user globalTTL `catchChatError` (toView . CRChatError (Just user))
+      lift $ setChatItemsExpiration user globalTTL ttlCount
+      ok user
+    where
+      getSetChatTTL db = case cType of
+        CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
+        CTGroup -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
+        _ -> pure Nothing
+      expireChat user globalTTL = do
+        currentTs <- liftIO getCurrentTime
+        case cType of
+          CTDirect -> expireContactChatItems user vr globalTTL chatId
+          CTGroup ->
+            let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+              in expireGroupChatItems user vr globalTTL createdAtCutoff chatId
+          _ -> throwChatError $ CECommandError "not supported"
+  SetChatTTL chatName newTTL -> withUser' $ \user@User {userId} -> do
+    chatRef <- getChatRef user chatName
+    processChatCommand $ APISetChatTTL userId chatRef newTTL
+  GetChatTTL chatName -> withUser' $ \user -> do
+    ChatRef cType chatId <- getChatRef user chatName
+    ttl <- case cType of
+      CTDirect -> withFastStore' (`getDirectChatTTL` chatId)
+      CTGroup -> withFastStore' (`getGroupChatTTL` chatId)
+      _ -> throwChatError $ CECommandError "not supported"
+    pure $ CRChatItemTTL user ttl
+  APISetChatItemTTL userId newTTL -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
-        case newTTL_ of
-          Nothing -> do
-            withFastStore' $ \db -> setChatItemTTL db user newTTL_
-            lift $ setExpireCIFlag user False
-          Just newTTL -> do
-            oldTTL <- withFastStore' (`getChatItemTTL` user)
-            when (maybe True (newTTL <) oldTTL) $ do
-              lift $ setExpireCIFlag user False
-              expireChatItems user newTTL True
-            withFastStore' $ \db -> setChatItemTTL db user newTTL_
-            lift $ startExpireCIThread user
-            lift . whenM chatStarted $ setExpireCIFlag user True
+        (oldTTL, ttlCount) <- withFastStore' $ \db ->
+          (,) <$> getChatItemTTL db user <* setChatItemTTL db user newTTL <*> getChatTTLCount db user
+        when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
+          lift $ setExpireCIFlag user False
+          expireChatItems user newTTL True
+        lift $ setChatItemsExpiration user newTTL ttlCount
         ok user
   SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
     processChatCommand $ APISetChatItemTTL userId newTTL_
   APIGetChatItemTTL userId -> withUserId' userId $ \user -> do
     ttl <- withFastStore' (`getChatItemTTL` user)
-    pure $ CRChatItemTTL user ttl
+    pure $ CRChatItemTTL user (Just ttl)
   GetChatItemTTL -> withUser' $ \User {userId} -> do
     processChatCommand $ APIGetChatItemTTL userId
   APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
@@ -3246,8 +3282,15 @@ startExpireCIThread user@User {userId} = do
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           lift waitChatStartedAndActivated
           ttl <- withStore' (`getChatItemTTL` user)
-          forM_ ttl $ \t -> expireChatItems user t False
+          expireChatItems user ttl False
         liftIO $ threadDelay' interval
+
+setChatItemsExpiration :: User -> Int64 -> Int -> CM' ()
+setChatItemsExpiration user newTTL ttlCount 
+  | newTTL > 0 || ttlCount > 0 = do
+      startExpireCIThread user
+      whenM chatStarted $ setExpireCIFlag user True
+  | otherwise = setExpireCIFlag user False
 
 setExpireCIFlag :: User -> Bool -> CM' ()
 setExpireCIFlag User {userId} b = do
@@ -3496,20 +3539,19 @@ cleanupManager = do
       withStore' (`deleteOldProbes` cutoffTs)
 
 expireChatItems :: User -> Int64 -> Bool -> CM ()
-expireChatItems user@User {userId} ttl sync = do
+expireChatItems user@User {userId} globalTTL sync = do
   currentTs <- liftIO getCurrentTime
   vr <- chatVersionRange
-  let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
-      -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
-      createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+  -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
+  let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   lift waitChatStartedAndActivated
-  contacts <- withStore' $ \db -> getUserContacts db vr user
-  loop contacts $ processContact expirationDate
+  contactIds <- withStore' $ \db -> getUserContactsToExpire db user globalTTL
+  loop contactIds $ expireContactChatItems user vr globalTTL
   lift waitChatStartedAndActivated
-  groups <- withStore' $ \db -> getUserGroupDetails db vr user Nothing Nothing
-  loop groups $ processGroup vr expirationDate createdAtCutoff
+  groupIds <- withStore' $ \db -> getUserGroupsToExpire db user globalTTL
+  loop groupIds $ expireGroupChatItems user vr globalTTL createdAtCutoff
   where
-    loop :: [a] -> (a -> CM ()) -> CM ()
+    loop :: [Int64] -> (Int64 -> CM ()) -> CM ()
     loop [] _ = pure ()
     loop (a : as) process = continue $ do
       process a `catchChatError` (toView . CRChatError (Just user))
@@ -3522,22 +3564,40 @@ expireChatItems user@User {userId} ttl sync = do
           expireFlags <- asks expireCIFlags
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
-    processContact :: UTCTime -> Contact -> CM ()
-    processContact expirationDate ct = do
-      lift waitChatStartedAndActivated
-      filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-      cancelFilesInProgress user filesInfo
-      deleteFilesLocally filesInfo
-      withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-    processGroup :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
-    processGroup vr expirationDate createdAtCutoff gInfo = do
-      lift waitChatStartedAndActivated
-      filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-      cancelFilesInProgress user filesInfo
-      deleteFilesLocally filesInfo
-      withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-      membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
-      forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+
+expireContactChatItems :: User -> VersionRangeChat -> Int64 -> ContactId -> CM ()
+expireContactChatItems user vr globalTTL ctId =
+  -- reading contacts and groups inside the loop,
+  -- to allow ttl changing while processing and to reduce memory usage
+  tryChatError (withStore $ \db -> getContact db vr user ctId) >>= mapM_ process
+  where
+    process ct@Contact {chatItemTTL} =
+      withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
+        lift waitChatStartedAndActivated
+        filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+        cancelFilesInProgress user filesInfo
+        deleteFilesLocally filesInfo
+        withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+
+expireGroupChatItems :: User -> VersionRangeChat -> Int64 -> UTCTime -> GroupId -> CM ()
+expireGroupChatItems user vr globalTTL createdAtCutoff groupId =
+  tryChatError (withStore $ \db -> getGroupInfo db vr user groupId) >>= mapM_ process
+  where
+    process gInfo@GroupInfo {chatItemTTL} =
+      withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
+        lift waitChatStartedAndActivated
+        filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+        cancelFilesInProgress user filesInfo
+        deleteFilesLocally filesInfo
+        withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+        membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
+        forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+
+withExpirationDate :: Int64 -> Maybe Int64 -> (UTCTime -> CM ()) -> CM ()
+withExpirationDate globalTTL chatItemTTL action = do
+  currentTs <- liftIO getCurrentTime
+  let ttl = fromMaybe globalTTL chatItemTTL
+  when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -3653,6 +3713,7 @@ chatCommandP =
       "/_network_statuses" $> APIGetNetworkStatuses,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
+      "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
@@ -3688,10 +3749,13 @@ chatCommandP =
       "/_conditions" $> APIGetUsageConditions,
       "/_conditions_notified " *> (APISetConditionsNotified <$> A.decimal),
       "/_accept_conditions " *> (APIAcceptConditions <$> A.decimal <*> _strP),
-      "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
-      "/ttl " *> (SetChatItemTTL <$> ciTTL),
+      "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> A.decimal),
+      "/_ttl " *> (APISetChatTTL <$> A.decimal <* A.space <*> chatRefP <* A.space <*> ciTTLDecimal),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
+      "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/ttl" $> GetChatItemTTL,
+      "/ttl " *> (SetChatTTL <$> chatNameP <* A.space <*> (("default" $> Nothing) <|> (Just <$> ciTTL))),
+      "/ttl " *> (GetChatTTL <$> chatNameP),
       "/_network info " *> (APISetNetworkInfo <$> jsonP),
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (SetNetworkConfig <$> netCfgP),
@@ -3982,12 +4046,13 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
-    ciTTLDecimal = ("none" $> Nothing) <|> (Just <$> A.decimal)
+    ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
-      ("day" $> Just 86400)
-        <|> ("week" $> Just (7 * 86400))
-        <|> ("month" $> Just (30 * 86400))
-        <|> ("none" $> Nothing)
+      ("day" $> 86400)
+        <|> ("week" $> (7 * 86400))
+        <|> ("month" $> (30 * 86400))
+        <|> ("year" $> (365 * 86400))
+        <|> ("none" $> 0)
     timedTTLP =
       ("30s" $> 30)
         <|> ("5min" $> 300)

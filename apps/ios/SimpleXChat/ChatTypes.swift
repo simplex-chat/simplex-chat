@@ -1500,6 +1500,24 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         case .invalidJSON: return .now
         }
     }
+    
+    public func ttl(_ globalTTL: ChatItemTTL) -> ChatTTL {
+        switch self {
+        case let .direct(contact):
+            return if let ciTTL = contact.chatItemTTL {
+                ChatTTL.chat(ChatItemTTL(ciTTL))
+            } else {
+                ChatTTL.userDefault(globalTTL)
+            }
+        case let .group(groupInfo):
+            return if let ciTTL = groupInfo.chatItemTTL {
+                ChatTTL.chat(ChatItemTTL(ciTTL))
+            } else {
+                ChatTTL.userDefault(globalTTL)
+            }
+        default: return ChatTTL.userDefault(globalTTL)
+        }
+    }
 
     public struct SampleData: Hashable {
         public var direct: ChatInfo
@@ -1572,6 +1590,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var chatTags: [Int64]
+    public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
     public var chatDeleted: Bool
     
@@ -1930,11 +1949,12 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var sendMsgEnabled: Bool { get { membership.memberActive } }
-    public var displayName: String { get { groupProfile.displayName } }
+    public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
-    public var localAlias: String { "" }
     public var chatTags: [Int64]
+    public var chatItemTTL: Int64?
+    public var localAlias: String
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -1958,7 +1978,8 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
-        chatTags: []
+        chatTags: [],
+        localAlias: ""
     )
 }
 
@@ -4334,49 +4355,94 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
     case day
     case week
     case month
+    case year
     case seconds(_ seconds: Int64)
     case none
 
-    public static var values: [ChatItemTTL] { [.none, .month, .week, .day] }
+    public static var values: [ChatItemTTL] { [.none, .year, .month, .week, .day] }
 
     public var id: Self { self }
 
-    public init(_ seconds: Int64?) {
+    public init(_ seconds: Int64) {
         switch seconds {
+        case 0: self = .none
         case 86400: self = .day
         case 7 * 86400: self = .week
         case 30 * 86400: self = .month
-        case let .some(n): self = .seconds(n)
-        case .none: self = .none
+        case 365 * 86400: self = .year
+        default: self = .seconds(seconds)
         }
     }
 
-    public var deleteAfterText: LocalizedStringKey {
+    public var deleteAfterText: String {
         switch self {
-        case .day: return "1 day"
-        case .week: return "1 week"
-        case .month: return "1 month"
-        case let .seconds(seconds): return "\(seconds) second(s)"
-        case .none: return "never"
+        case .day: return NSLocalizedString("1 day", comment: "delete after time")
+        case .week: return NSLocalizedString("1 week", comment: "delete after time")
+        case .month: return NSLocalizedString("1 month", comment: "delete after time")
+        case .year: return NSLocalizedString("1 year", comment: "delete after time")
+        case let .seconds(seconds): return String.localizedStringWithFormat(NSLocalizedString("%d seconds(s)", comment: "delete after time"), seconds)
+        case .none: return NSLocalizedString("never", comment: "delete after time")
         }
     }
 
-    public var seconds: Int64? {
+    public var seconds: Int64 {
         switch self {
         case .day: return 86400
         case .week: return 7 * 86400
         case .month: return 30 * 86400
+        case .year: return 365 * 86400
         case let .seconds(seconds): return seconds
-        case .none: return nil
+        case .none: return 0
         }
     }
 
     private var comparisonValue: Int64 {
-        self.seconds ?? Int64.max
+        if self.seconds == 0 {
+            return Int64.max
+        } else {
+            return self.seconds
+        }
     }
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
         return lhs.comparisonValue < rhs.comparisonValue
+    }
+}
+
+public enum ChatTTL: Identifiable, Hashable {
+    case userDefault(ChatItemTTL)
+    case chat(ChatItemTTL)
+    
+    public var id: Self { self }
+    
+    public var text: String {
+        switch self {
+        case let .chat(ttl): return ttl.deleteAfterText
+        case let .userDefault(ttl): return String.localizedStringWithFormat(
+            NSLocalizedString("default (%@)", comment: "delete after time"),
+            ttl.deleteAfterText)
+        }
+    }
+    
+    public var neverExpires: Bool {
+        switch self {
+        case let .chat(ttl): return ttl.seconds == 0
+        case let .userDefault(ttl): return ttl.seconds == 0
+        }
+    }
+        
+    public var value: Int64? {
+        switch self {
+        case let .chat(ttl): return ttl.seconds
+        case .userDefault: return nil
+        }
+    }
+    
+    public var usingDefault: Bool {
+        switch self {
+        case .userDefault: return true
+        case .chat: return false
+        }
     }
 }
 
