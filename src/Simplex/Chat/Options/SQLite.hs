@@ -8,7 +8,7 @@ module Simplex.Chat.Options.SQLite where
 import Data.ByteArray (ScrubbedBytes)
 import Options.Applicative
 import Simplex.Chat.Store
-import Simplex.Messaging.Agent.Store.Interface (DBCreateOpts (..))
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 import System.FilePath (combine)
 
 data ChatDbOpts = ChatDbOpts
@@ -46,20 +46,11 @@ chatDbOptsP appDir defaultDbName = do
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbFilePrefix} = dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
 
-toDBCreateOpts :: ChatDbOpts -> Bool -> (DBCreateOpts, DBCreateOpts)
-toDBCreateOpts ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration} keepKey = do
-  let agentDbOpts =
-        DBCreateOpts
-          { dbFilePath = agentStoreFile dbFilePrefix,
-            dbKey,
-            keepKey,
-            vacuum = vacuumOnMigration
-          }
-  let chatDbOpts =
-        DBCreateOpts
-          { dbFilePath = chatStoreFile dbFilePrefix,
-            dbKey,
-            keepKey,
-            vacuum = vacuumOnMigration
-          }
-  (agentDbOpts, chatDbOpts)
+toDBOpts :: ChatDbOpts -> String -> Bool -> DBOpts
+toDBOpts ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration} dbSuffix keepKey = do
+  DBOpts
+    { dbFilePath = dbFilePrefix <> dbSuffix,
+      dbKey,
+      keepKey,
+      vacuum = vacuumOnMigration
+    }

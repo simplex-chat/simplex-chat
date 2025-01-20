@@ -53,7 +53,7 @@ testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
-  void $ createChatStore (DBCreateOpts testDB "" False True) MCError
+  void $ createChatStore (DBOpts testDB "" False True) MCError
   getSchema testDB appSchema `shouldReturn` savedSchema
   removeFile testDB
 
@@ -61,14 +61,14 @@ testVerifyLintFKeyIndexes :: IO ()
 testVerifyLintFKeyIndexes = withTmpFiles $ do
   savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
   savedLint `deepseq` pure ()
-  void $ createChatStore (DBCreateOpts testDB "" False True) MCError
+  void $ createChatStore (DBOpts testDB "" False True) MCError
   getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
 testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createDBStore (DBCreateOpts testDB "" False True) noDownMigrations MCError
+  Right st <- createDBStore (DBOpts testDB "" False True) noDownMigrations MCError
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
   closeDBStore st
   removeFile testDB

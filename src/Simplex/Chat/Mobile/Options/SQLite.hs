@@ -8,7 +8,7 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Simplex.Chat.Options.DB
-import Simplex.Messaging.Agent.Store.Interface (DBCreateOpts (..))
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts
 mobileDbOpts fp key = do
@@ -31,5 +31,5 @@ mobileDbOpts' ChatDbOpts {dbFilePrefix, vacuumOnMigration} =
       vacuumOnMigration
     }
 
-errorDbStr :: DBCreateOpts -> String
-errorDbStr DBCreateOpts {dbFilePath} = dbFilePath
+errorDbStr :: DBOpts -> String
+errorDbStr DBOpts {dbFilePath} = dbFilePath

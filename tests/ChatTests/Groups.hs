@@ -33,7 +33,7 @@ import Test.Hspec hiding (it)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
-import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
+import Simplex.Chat.Store (agentSuffix, chatSuffix)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 #endif
@@ -3606,8 +3606,8 @@ setupDesynchronizedRatchet tmp alice = do
     bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages)"
   where
     copyDb from to = do
-      copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
-      copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+      copyFile (tmp </> (from <> chatSuffix)) (tmp </> (to <> chatSuffix))
+      copyFile (tmp </> (from <> agentSuffix)) (tmp </> (to <> agentSuffix))
 
 testGroupSyncRatchet :: HasCallStack => FilePath -> IO ()
 testGroupSyncRatchet tmp =

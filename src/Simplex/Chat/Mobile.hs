@@ -243,17 +243,16 @@ chatMigrateInit dbFilePrefix dbKey confirm = do
 #endif
 
 chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
-chatMigrateInitKey dbOpts keepKey confirm backgroundMode = runExceptT $ do
-  let (agentDbOpts, chatDbOpts) = toDBCreateOpts dbOpts keepKey
+chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
-  chatStore <- migrate createChatStore chatDbOpts confirmMigrations
-  agentStore <- migrate createAgentStore agentDbOpts confirmMigrations
+  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey) confirmMigrations
+  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey) confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
     initialize st db = do
       user_ <- getActiveUser_ st
-      let dbOpts' = mobileDbOpts' dbOpts
-          opts = mobileChatOpts dbOpts'
+      let chatDbOpts' = mobileDbOpts' chatDbOpts
+          opts = mobileChatOpts chatDbOpts'
       newChatController db user_ defaultMobileConfig opts backgroundMode
     migrate createStore dbCreateOpts confirmMigrations =
       ExceptT $

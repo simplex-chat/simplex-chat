@@ -184,10 +184,9 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 createChatDatabase :: ChatDbOpts -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
-createChatDatabase dbOpts confirmMigrations = runExceptT $ do
-  let (agentDbOpts, chatDbOpts) = toDBCreateOpts dbOpts False
-  chatStore <- ExceptT $ createChatStore chatDbOpts confirmMigrations
-  agentStore <- ExceptT $ createAgentStore agentDbOpts confirmMigrations
+createChatDatabase chatDbOpts confirmMigrations = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False) confirmMigrations
+  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False) confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController

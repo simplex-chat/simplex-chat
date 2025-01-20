@@ -44,7 +44,7 @@ import Test.Hspec hiding (it)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
-import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
+import Simplex.Chat.Store (agentSuffix, chatSuffix)
 import System.FilePath ((</>))
 #endif
 
@@ -2793,8 +2793,8 @@ setupDesynchronizedRatchet tmp alice = do
     (alice </)
   where
     copyDb from to = do
-      copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
-      copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+      copyFile (tmp </> (from <> chatSuffix)) (tmp </> (to <> chatSuffix))
+      copyFile (tmp </> (from <> agentSuffix)) (tmp </> (to <> agentSuffix))
 
 testSyncRatchet :: HasCallStack => FilePath -> IO ()
 testSyncRatchet tmp =

@@ -4,7 +4,7 @@ module Simplex.Chat.Mobile.Options.Postgres where
 
 import Foreign.C.String
 import Simplex.Chat.Options.DB
-import Simplex.Messaging.Agent.Store.Interface (DBCreateOpts (..))
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts
 mobileDbOpts schemaPrefix connstr = do
@@ -19,5 +19,5 @@ mobileDbOpts schemaPrefix connstr = do
 mobileDbOpts' :: ChatDbOpts -> ChatDbOpts
 mobileDbOpts' = id
 
-errorDbStr :: DBCreateOpts -> String
-errorDbStr DBCreateOpts {schema} = schema
+errorDbStr :: DBOpts -> String
+errorDbStr DBOpts {schema} = schema
