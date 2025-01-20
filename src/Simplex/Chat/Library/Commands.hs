@@ -3347,8 +3347,9 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     getGroupMemberConns :: CM ([Group], [ConnId], Map ConnId GroupMember)
     getGroupMemberConns = do
       gs <- withStore_ (`getUserGroups` vr)
-      let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) (filter (not . memberRemoved) ms)) gs
-      pure (gs, map fst mPairs, M.fromList mPairs)
+      let gs' = filter (\Group {groupInfo} -> not . memberRemoved . membership $ groupInfo) gs
+          mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) (filter (not . memberRemoved) ms)) gs'
+      pure (gs', map fst mPairs, M.fromList mPairs)
     getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
       sfts <- withStore_ getLiveSndFileTransfers
