@@ -55,7 +55,7 @@ mobileTests = do
       setFileSystemEncoding utf8
       setForeignEncoding utf8
     it "start new chat without user" testChatApiNoUser
-    fit "start new chat with existing user" testChatApi
+    it "start new chat with existing user" testChatApi
     it "should encrypt/decrypt WebRTC frames" testMediaApi
     it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
     describe "should read/write encrypted files via C API" $ do

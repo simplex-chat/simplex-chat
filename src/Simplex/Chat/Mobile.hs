@@ -239,8 +239,8 @@ chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigra
 chatMigrateInitKey dbOpts keepKey confirm backgroundMode = runExceptT $ do
   let (agentDbOpts, chatDbOpts) = toDBCreateOpts dbOpts keepKey
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
-  chatStore <- migrate createChatStore agentDbOpts confirmMigrations
-  agentStore <- migrate createAgentStore chatDbOpts confirmMigrations
+  chatStore <- migrate createChatStore chatDbOpts confirmMigrations
+  agentStore <- migrate createAgentStore agentDbOpts confirmMigrations
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
     initialize st db = do
