@@ -36,11 +36,11 @@ createChatStore dbCreateOpts = createDBStore dbCreateOpts migrations
 
 #if defined(dbPostgres)
 chatSchema :: String -> String
-chatSchema "" = "chat_schema"
+chatSchema "" = "simplex_v1_chat_schema"
 chatSchema prefix = prefix <> "_chat_schema"
 
 agentSchema :: String -> String
-agentSchema "" = "agent_schema"
+agentSchema "" = "simplex_v1_agent_schema"
 agentSchema prefix = prefix <> "_agent_schema"
 #else
 chatStoreFile :: FilePath -> FilePath

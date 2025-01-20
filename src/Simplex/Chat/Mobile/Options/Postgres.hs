@@ -2,7 +2,6 @@
 
 module Simplex.Chat.Mobile.Options.Postgres where
 
-import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Store.Interface (DBCreateOpts (..))
@@ -18,7 +17,7 @@ mobileDbOpts param1 param2 = do
       }
 
 mobileDbOpts' :: ChatDbOpts -> ChatDbOpts
-mobileDbOpts' = pure
+mobileDbOpts' = id
 
 errorDbStr :: DBCreateOpts -> String
 errorDbStr DBCreateOpts {schema} = schema

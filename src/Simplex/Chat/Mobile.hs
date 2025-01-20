@@ -26,8 +26,6 @@ import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8)
-import Database.SQLite.Simple (SQLError (..))
-import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
 import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
@@ -59,6 +57,10 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..)
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
+#if !defined(dbPostgres)
+import Database.SQLite.Simple (SQLError (..))
+import qualified Database.SQLite.Simple as DB
+#endif
 
 data DBMigrationResult
   = DBMOk
@@ -186,11 +188,11 @@ cChatJsonLength :: CString -> IO CInt
 cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
 
 mobileChatOpts :: ChatDbOpts -> ChatOpts
-mobileChatOpts chatDbOpts =
+mobileChatOpts dbOptions =
   ChatOpts
     { coreOptions =
         CoreChatOpts
-          { dbOptions = chatDbOpts,
+          { dbOptions,
             smpServers = [],
             xftpServers = [],
             simpleNetCfg = defaultSimpleNetCfg,
@@ -230,10 +232,12 @@ defaultMobileConfig =
 getActiveUser_ :: DBStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
+#if !defined(dbPostgres)
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = do
   let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration = True}
   chatMigrateInitKey chatDBOpts False confirm False
+#endif
 
 chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
 chatMigrateInitKey dbOpts keepKey confirm backgroundMode = runExceptT $ do
@@ -251,15 +255,17 @@ chatMigrateInitKey dbOpts keepKey confirm backgroundMode = runExceptT $ do
     migrate createStore dbCreateOpts confirmMigrations =
       ExceptT $
         (first (DBMErrorMigration errDbStr) <$> createStore dbCreateOpts confirmMigrations)
+#if !defined(dbPostgres)
           `catch` (pure . checkDBError)
+#endif
           `catchAll` (pure . dbError)
       where
         errDbStr = errorDbStr dbCreateOpts
-        checkDBError e = case sqlError e of
 #if !defined(dbPostgres)
+        checkDBError e = case sqlError e of
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase errDbStr
-#endif
           _ -> dbError e
+#endif
         dbError e = Left . DBMErrorSQL errDbStr $ show e
 
 chatCloseStore :: ChatController -> IO String
