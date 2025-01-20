@@ -842,7 +842,7 @@
     <string name="chat_preferences">Chat-Präferenzen</string>
     <string name="contact_preferences">Kontakt-Präferenzen</string>
     <string name="group_preferences">Gruppen-Präferenzen</string>
-    <string name="set_group_preferences">Gruppen-Präferenzen einstellen</string>
+    <string name="set_group_preferences">Gruppen-Präferenzen festlegen</string>
     <string name="your_preferences">Ihre Präferenzen</string>
     <string name="direct_messages">Direkte Nachrichten</string>
     <string name="full_deletion">Für jeden löschen</string>
@@ -1247,7 +1247,7 @@
     <string name="enable_self_destruct">Selbstzerstörung aktivieren</string>
     <string name="if_you_enter_passcode_data_removed">Wenn Sie diesen Zugangscode während des Öffnens der App eingeben, werden alle App-Daten unwiederbringlich gelöscht!</string>
     <string name="self_destruct_passcode">Selbstzerstörungs-Zugangscode</string>
-    <string name="set_passcode">Zugangscode einstellen</string>
+    <string name="set_passcode">Zugangscode festlegen</string>
     <string name="message_reactions_are_prohibited">Reaktionen auf Nachrichten sind nicht erlaubt.</string>
     <string name="error_loading_details">Fehler beim Laden von Details</string>
     <string name="received_message">Empfangene Nachricht</string>
@@ -1880,7 +1880,7 @@
     <string name="theme_remove_image">Bild entfernen</string>
     <string name="wallpaper_scale_repeat">Wiederholen</string>
     <string name="wallpaper_scale">Skalieren</string>
-    <string name="chat_theme_set_default_theme">Default-Design einstellen</string>
+    <string name="chat_theme_set_default_theme">Default-Design festlegen</string>
     <string name="color_wallpaper_tint">Wallpaper-Akzent</string>
     <string name="color_wallpaper_background">Wallpaper-Hintergrund</string>
     <string name="chat_theme_apply_to_mode">Anwenden auf</string>
@@ -2395,4 +2395,5 @@
     <string name="privacy_chat_list_open_links">Web-Links aus der Chat-Liste öffnen</string>
     <string name="privacy_chat_list_open_web_link_question">Web-Link öffnen?</string>
     <string name="privacy_chat_list_open_links_yes">Ja</string>
+    <string name="text_field_set_chat_placeholder">Chat-Name festlegen…</string>
 </resources>
