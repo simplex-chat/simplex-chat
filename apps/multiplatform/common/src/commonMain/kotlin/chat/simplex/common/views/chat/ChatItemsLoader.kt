@@ -29,7 +29,8 @@ suspend fun apiLoadMessages(
   pagination: ChatPagination,
   search: String = "",
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 },
-  replaceChat: Boolean = false
+  replaceChat: Boolean = false,
+  redirectDisabled: Boolean = false
 ) = coroutineScope {
   val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
@@ -57,6 +58,10 @@ suspend fun apiLoadMessages(
         }
       }
       withChats(contentTag) {
+        if (redirectDisabled && chatModel.chatId.value != chat.id) {
+          // redirect is disabled, but the chat is not the current one, so don't update it
+          return@withChats
+        }
         chatItemStatuses.clear()
         chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.chatInfo.id

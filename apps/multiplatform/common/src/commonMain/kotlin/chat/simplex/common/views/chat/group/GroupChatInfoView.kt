@@ -141,7 +141,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
       },
       onSearchClicked = onSearchClicked,
-      enabled = remember { derivedStateOf { !progressIndicator.value } }
+      disabled = progressIndicator
     )
 
     if (progressIndicator.value) {
@@ -323,7 +323,7 @@ fun ModalData.GroupChatInfoLayout(
   manageGroupLink: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit,
-  enabled: State<Boolean>
+  disabled: State<Boolean>
 ) {
   val listState = remember { appBarHandler.listState }
   val scope = rememberCoroutineScope()
@@ -337,7 +337,7 @@ fun ModalData.GroupChatInfoLayout(
       if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
     }
   }
-  Box(Modifier.alpha(if (enabled.value) 1f else 0.6f)) {
+  Box(Modifier.alpha(if (disabled.value) 0.6f else 1f)) {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
   LazyColumnWithScrollBar(
     state = listState,
@@ -811,7 +811,7 @@ fun PreviewGroupChatInfoLayout() {
       onLocalAliasChanged = {},
       groupLink = null,
       scrollToItemId = remember { mutableStateOf(null) },
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, enabled = remember { mutableStateOf(true) }
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, disabled = remember { mutableStateOf(true) }
     )
   }
 }

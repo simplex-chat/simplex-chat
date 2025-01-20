@@ -190,7 +190,7 @@ fun ChatInfoView(
       },
       close = close,
       onSearchClicked = onSearchClicked,
-      enabled = remember { derivedStateOf { !progressIndicator.value } }
+      disabled = progressIndicator
     )
 
     if (progressIndicator.value) {
@@ -544,7 +544,7 @@ fun ChatInfoLayout(
   verifyClicked: () -> Unit,
   close: () -> Unit,
   onSearchClicked: () -> Unit,
-  enabled: State<Boolean>
+  disabled: State<Boolean>
 ) {
   val cStats = connStats.value
   val scrollState = rememberScrollState()
@@ -552,7 +552,7 @@ fun ChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { scrollState.scrollTo(0) }
   }
-  ColumnWithScrollBar(Modifier.alpha(if (enabled.value) 1f else 0.6f)) {
+  ColumnWithScrollBar(Modifier.alpha(if (disabled.value) 0.6f else 1f)) {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
@@ -1394,7 +1394,16 @@ private fun afterSetChatTTL(m: ChatModel, chatInfo: ChatInfo, progressIndicator:
   withApi {
     try {
       // this is using current remote host on purpose - if it changes during update, it will load correct chats
-      apiLoadMessages(m.remoteHostId(), chatInfo.chatType, chatInfo.apiId, contentTag = null, pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT), replaceChat = true)
+      // redirectDisabled is set to true to prevent redirecting the current chat/chat items in case the chat changes while messages were updating
+      apiLoadMessages(
+        m.remoteHostId(),
+        chatInfo.chatType,
+        chatInfo.apiId,
+        contentTag = null,
+        pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT),
+        replaceChat = true,
+        redirectDisabled = true
+      )
     } catch (e: Exception) {
       Log.e(TAG, "apiGetChat error: ${e.message}")
     } finally {
@@ -1436,7 +1445,7 @@ fun PreviewChatInfoLayout() {
       verifyClicked = {},
       close = {},
       onSearchClicked = {},
-      enabled = remember { mutableStateOf(true) }
+      disabled = remember { mutableStateOf(true) }
     )
   }
 }
