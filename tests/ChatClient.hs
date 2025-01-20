@@ -72,17 +72,14 @@ import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
-testDBName :: String
-testDBName = "test_chat_db"
-
-testDBUser :: String
-testDBUser = "test_chat_user"
+testDBConnstr :: String
+testDBConnstr = "postgresql://test_chat_user@/test_chat_db"
 
 testDBConnectInfo :: ConnectInfo
 testDBConnectInfo =
   defaultConnectInfo {
-    connectUser = testDBUser,
-    connectDatabase = testDBName
+    connectUser = "test_chat_user",
+    connectDatabase = "test_chat_db"
   }
 #endif
 
@@ -114,8 +111,7 @@ testCoreOpts =
     {
       dbOptions = ChatDbOpts
 #if defined(dbPostgres)
-        { dbName = testDBName,
-          dbUser = testDBUser,
+        { dbConnstr = testDBConnstr,
           -- dbSchemaPrefix is not used in tests (except bot tests where it's redefined),
           -- instead different schema prefix is passed per client so that single test database is used
           dbSchemaPrefix = ""

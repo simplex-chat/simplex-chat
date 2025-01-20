@@ -233,6 +233,7 @@ getActiveUser_ :: DBStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
 #if !defined(dbPostgres)
+-- only used in tests
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = do
   let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration = True}
