@@ -4380,7 +4380,7 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
         case .week: return NSLocalizedString("1 week", comment: "delete after time")
         case .month: return NSLocalizedString("1 month", comment: "delete after time")
         case .year: return NSLocalizedString("1 year", comment: "delete after time")
-        case let .seconds(seconds): return String.localizedStringWithFormat(NSLocalizedString("%@ seconds(s)", comment: "delete after time"), seconds)
+        case let .seconds(seconds): return String.localizedStringWithFormat(NSLocalizedString("%d seconds(s)", comment: "delete after time"), seconds)
         case .none: return NSLocalizedString("never", comment: "delete after time")
         }
     }

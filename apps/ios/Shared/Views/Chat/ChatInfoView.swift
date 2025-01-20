@@ -657,7 +657,7 @@ struct ChatTTLOption: View {
     @ObservedObject var chat: Chat
     @Binding var progressIndicator: Bool
     @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
-    @State private var chatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
+    @State private var chatItemTTL: ChatTTL = ChatTTL.chat(.seconds(0))
 
     var body: some View {
         Picker("Delete messages after", selection: $chatItemTTL) {
@@ -703,8 +703,9 @@ struct ChatTTLOption: View {
         }
         .onAppear {
             let sm = ChatModel.shared
-            chatItemTTL = chat.chatInfo.ttl(sm.chatItemTTL)
-            currentChatItemTTL = chatItemTTL
+            let ttl = chat.chatInfo.ttl(sm.chatItemTTL)
+            chatItemTTL = ttl
+            currentChatItemTTL = ttl
         }
     }
 }
