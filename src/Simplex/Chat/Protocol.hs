@@ -589,8 +589,19 @@ msgContentTag = \case
   MCReport {} -> MCReport_
   MCUnknown {tag} -> MCUnknown_ tag
 
-data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
+data ExtMsgContent = ExtMsgContent
+  { content :: MsgContent,
+    mentions :: [MemberMention],
+    file :: Maybe FileInvitation,
+    ttl :: Maybe Int,
+    live :: Maybe Bool
+  }
   deriving (Eq, Show)
+
+data MemberMention = MemberMention {memberId :: MemberId}
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''MemberMention)
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
@@ -657,10 +668,16 @@ parseMsgContainer v =
     <|> (MCForward <$> ((v .: "forward" :: JT.Parser J.Object) *> mc))
     <|> MCSimple <$> mc
   where
-    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
+    mc = do
+      content <- v .: "content"
+      file <- v .:? "file"
+      ttl <- v .:? "ttl"
+      live <- v .:? "live"
+      -- TODO [mentions] should allow absent mentions property and parse it as empty array
+      pure ExtMsgContent {content, mentions = [], file, ttl, live}
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc file Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc [] file Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -709,7 +726,9 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent (ExtMsgContent c file ttl live) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
+    -- TODO [mentions] should encode empty array as absent property
+    msgContent ExtMsgContent {content, file, ttl, live} =
+      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= content]
 
 instance ToJSON MsgContent where
   toJSON = \case

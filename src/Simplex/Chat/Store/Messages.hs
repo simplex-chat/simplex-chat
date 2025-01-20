@@ -136,6 +136,7 @@ import Data.Int (Int64)
 import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
+import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
@@ -875,7 +876,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTLocal d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTLocal
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = Nothing, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem = Nothing, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTLocal d
     ciMeta content status =
@@ -1017,6 +1018,7 @@ safeToDirectItem currentTs itemId = \case
               { chatDir = CIDirectSnd,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
+                mentions = [],
                 formattedText = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
@@ -1259,7 +1261,7 @@ safeGetGroupItem db user g currentTs itemId =
 
 safeToGroupItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
 safeToGroupItem currentTs itemId = \case
-  Right ci -> ci
+  Right ci -> ci -- TODO [mentions] replace mentions with names or local references
   Left e@(SEBadChatItem _ (Just itemTs)) -> badGroupItem itemTs e
   Left e -> badGroupItem currentTs e
   where
@@ -1272,6 +1274,7 @@ safeToGroupItem currentTs itemId = \case
               { chatDir = CIGroupSnd,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
+                mentions = [],
                 formattedText = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
@@ -1484,7 +1487,7 @@ safeGetLocalItem db user NoteFolder {noteFolderId} currentTs itemId =
 
 safeToLocalItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTLocal) -> CChatItem 'CTLocal
 safeToLocalItem currentTs itemId = \case
-  Right ci -> ci
+  Right ci -> ci -- TODO [mentions] replace mentions with displaynames? or references to local members?
   Left e@(SEBadChatItem _ (Just itemTs)) -> badLocalItem itemTs e
   Left e -> badLocalItem currentTs e
   where
@@ -1497,6 +1500,7 @@ safeToLocalItem currentTs itemId = \case
               { chatDir = CILocalSnd,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
+                mentions = [],
                 formattedText = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
@@ -1854,7 +1858,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
@@ -1914,7 +1918,8 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
+      -- TODO [mentions] probably, mentions should be passed as array here
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
     ciMeta content status =

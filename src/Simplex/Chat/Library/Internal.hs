@@ -181,10 +181,11 @@ toggleNtf user m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
 
+-- TODO [mentions]
 prepareGroupMsg :: User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> CM (MsgContainer, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
-  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
   (Just quotedItemId, Nothing) -> do
     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
       withStore $ \db -> getGroupChatItem db user groupId quotedItemId
@@ -192,7 +193,7 @@ prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ itemForwar
     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
         qmc = quoteContent mc origQmc file
         quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
+    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
   (Just _, Just _) -> throwChatError CEInvalidQuote
   where
     quoteData :: ChatItem c d -> GroupMember -> CM (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
@@ -1598,12 +1599,13 @@ saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerT
     pure r
   pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live brokerTs forwardedByMember createdAt
 
+-- TODO [mentions]
 mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
 mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live itemTs forwardedByMember currentTs =
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
       meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
-   in ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
+   in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 createAgentConnectionAsync :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> CM (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do

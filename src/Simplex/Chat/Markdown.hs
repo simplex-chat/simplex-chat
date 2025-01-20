@@ -50,6 +50,7 @@ data Format
   | Colored {color :: FormatColor}
   | Uri
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
+  | Mention {memberId :: MemberId}
   | Email
   | Phone
   deriving (Eq, Show)

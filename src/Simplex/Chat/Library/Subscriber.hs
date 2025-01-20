@@ -1537,7 +1537,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct@Contact {contactUsed} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
+      let ExtMsgContent content _ fInv_ _ _ = mcExtMsgContent mc
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
       --   MCText "hello 111" ->
@@ -1548,7 +1548,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         then do
           void $ newChatItem (CIRcvChatFeatureRejected CFVoice) Nothing Nothing False
         else do
-          let ExtMsgContent _ _ itemTTL live_ = mcExtMsgContent mc
+          let ExtMsgContent _ _ _ itemTTL live_ = mcExtMsgContent mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
@@ -1738,7 +1738,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         rejected f = void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
         live' = fromMaybe False live_
-        ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
+        -- TODO [mentions]
+        ExtMsgContent content _ fInv_ itemTTL live_ = mcExtMsgContent mc
         createBlockedByAdmin
           | groupFeatureAllowed SGFFullDelete gInfo = do
               ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvBlocked Nothing timed' False

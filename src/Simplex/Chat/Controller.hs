@@ -39,6 +39,7 @@ import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -1078,7 +1079,8 @@ data UserProfileUpdateSummary = UserProfileUpdateSummary
 data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
-    msgContent :: MsgContent
+    msgContent :: MsgContent,
+    mentions :: [MemberId]
   }
   deriving (Show)
 
@@ -1091,7 +1093,8 @@ instance FromJSON ComposedMessage where
         f -> pure f
     quotedItemId <- v .:? "quotedItemId"
     msgContent <- v .: "msgContent"
-    pure ComposedMessage {fileSource, quotedItemId, msgContent}
+    mentions <- fromMaybe [] <$> v .:? "mentions"
+    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 

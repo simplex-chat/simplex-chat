@@ -46,6 +46,7 @@ import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptStatus (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -150,6 +151,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta c d,
     content :: CIContent d,
+    mentions :: [MentionedMember], -- to prevent loading all members from UI
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
     reactions :: [CIReactionCount],
@@ -157,6 +159,13 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   }
   deriving (Show)
 
+data MentionedMember = MentionedMember
+  { memberViewName :: Text, -- display name or alias
+    memberRole :: GroupMemberRole
+  }
+  deriving (Show)
+
+-- TODO [mentions]
 isMention :: ChatItem c d -> Bool
 isMention ChatItem {chatDir, quotedItem} = case chatDir of
   CIDirectRcv -> userItem quotedItem
@@ -1386,6 +1395,8 @@ instance ChatTypeI c => FromJSON (CIQuote c) where
 $(JQ.deriveToJSON defaultJSON ''CIQuote)
 
 $(JQ.deriveJSON defaultJSON ''CIReactionCount)
+
+$(JQ.deriveJSON defaultJSON ''MentionedMember)
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (ChatItem c d) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ChatItem)
