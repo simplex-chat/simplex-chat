@@ -98,7 +98,6 @@ struct ChatInfoView: View {
     @State var localAlias: String
     @State var featuresAllowed: ContactFeaturesAllowed
     @State var currentFeaturesAllowed: ContactFeaturesAllowed
-    @State var chatItemTTL: ChatTTL
     var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
@@ -204,7 +203,7 @@ struct ChatInfoView: View {
                     .disabled(!contact.ready || !contact.active)
                     
                     Section {
-                        ChatTTLOption(chat: chat, chatItemTTL: $chatItemTTL, progressIndicator: $progressIndicator)
+                        ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
                     } footer: {
                         Text("Delete chat messages from your device.")
                     }
@@ -656,9 +655,9 @@ struct ChatInfoView: View {
 
 struct ChatTTLOption: View {
     @ObservedObject var chat: Chat
-    @Binding var chatItemTTL: ChatTTL
     @Binding var progressIndicator: Bool
     @State private var currentChatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
+    @State private var chatItemTTL: ChatTTL = ChatTTL.userDefault(.seconds(0))
 
     var body: some View {
         Picker("Delete messages after", selection: $chatItemTTL) {
@@ -703,6 +702,8 @@ struct ChatTTLOption: View {
             }
         }
         .onAppear {
+            let sm = ChatModel.shared
+            chatItemTTL = chat.chatInfo.ttl(sm.chatItemTTL)
             currentChatItemTTL = chatItemTTL
         }
     }
@@ -1346,8 +1347,7 @@ struct ChatInfoView_Previews: PreviewProvider {
             localAlias: "",
             featuresAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
             currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(Contact.sampleData.mergedPreferences),
-            chatItemTTL: ChatTTL.userDefault(.seconds(0)),
-            onSearch: {}
+             onSearch: {}
         )
     }
 }

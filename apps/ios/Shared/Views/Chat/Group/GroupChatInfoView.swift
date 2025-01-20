@@ -19,7 +19,6 @@ struct GroupChatInfoView: View {
     @Binding var groupInfo: GroupInfo
     var onSearch: () -> Void
     @State var localAlias: String
-    @State var chatItemTTL: ChatTTL
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
@@ -121,7 +120,7 @@ struct GroupChatInfoView: View {
                     }
                     
                     Section {
-                        ChatTTLOption(chat: chat, chatItemTTL: $chatItemTTL, progressIndicator: $progressIndicator)
+                        ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
                     } footer: {
                         Text("Delete chat messages from your device.")
                     }
@@ -794,8 +793,7 @@ struct GroupChatInfoView_Previews: PreviewProvider {
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
             onSearch: {},
-            localAlias: "",
-            chatItemTTL: ChatTTL.userDefault(.seconds(0))
+            localAlias: ""
         )
     }
 }
