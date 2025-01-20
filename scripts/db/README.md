@@ -19,16 +19,16 @@
 
    Build `simplex-chat` executable with `client_postgres` flag and run it to initialize new Postgres chat database.
 
-   This should create `simplex_v1` database with `agent_schema` and `chat_schema` schemas, and `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
+   This should create `simplex_v1` database with `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas, and `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
 
 3. Load data from decrypted SQLite databases to Postgres database via pgloader.
 
    Install pgloader and add it to PATH.
 
    ```sh
-   SQLITE_DBPATH='simplex_v1_agent.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='agent_schema' pgloader --on-error-stop sqlite.load
+   SQLITE_DBPATH='simplex_v1_agent.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='simplex_v1_agent_schema' pgloader --on-error-stop sqlite.load
 
-   SQLITE_DBPATH='simplex_v1_chat.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='chat_schema' pgloader --on-error-stop sqlite.load
+   SQLITE_DBPATH='simplex_v1_chat.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='simplex_v1_chat_schema' pgloader --on-error-stop sqlite.load
    ```
 
 4. Update sequences for Postgres tables.
@@ -38,7 +38,7 @@
    DECLARE
       rec RECORD;
    BEGIN
-      EXECUTE 'SET SEARCH_PATH TO agent_schema';
+      EXECUTE 'SET SEARCH_PATH TO simplex_v1_agent_schema';
 
       FOR rec IN
          SELECT
@@ -48,7 +48,7 @@
          FROM
             information_schema.columns
          WHERE
-            table_schema = 'agent_schema'
+            table_schema = 'simplex_v1_agent_schema'
             AND identity_generation = 'ALWAYS'
       LOOP
          EXECUTE format(
@@ -59,7 +59,7 @@
    END $$;
    ```
 
-   Repeat for `chat_schema`.
+   Repeat for `simplex_v1_chat_schema`.
 
 5. Compare number of rows between Postgres and SQLite tables.
 
@@ -70,7 +70,7 @@
       SELECT table_schema, table_name
       FROM information_schema.Tables
       WHERE table_name NOT LIKE 'pg_%'
-        AND table_schema IN ('agent_schema')
+        AND table_schema IN ('simplex_v1_agent_schema')
    )
    SELECT
       table_schema AS schema_name,
@@ -82,4 +82,4 @@
    ORDER BY records_count DESC;
    ```
 
-   Repeat for `chat_schema`.
+   Repeat for `simplex_v1_chat_schema`.
