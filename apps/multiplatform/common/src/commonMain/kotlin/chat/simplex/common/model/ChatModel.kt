@@ -4223,7 +4223,7 @@ sealed class ChatItemTTL: Comparable<ChatItemTTL> {
       is Seconds -> String.format(generalGetString(MR.strings.chat_item_ttl_seconds), secs)
     }
 
-  val doesNotExpire: Boolean get() = this is None
+  val neverExpires: Boolean get() = this is None
 
   companion object {
     fun fromSeconds(seconds: Long): ChatItemTTL =

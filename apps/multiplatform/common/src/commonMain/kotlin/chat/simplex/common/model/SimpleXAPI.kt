@@ -1183,10 +1183,10 @@ object ChatController {
     val userId = currentUserId("getChatItemTTL")
     val r = sendCmd(rh, CC.APIGetChatItemTTL(userId))
     if (r is CR.ChatItemTTL) {
-      if (r.chatItemTTL != null) {
-        return ChatItemTTL.fromSeconds(r.chatItemTTL)
+      return if (r.chatItemTTL != null) {
+        ChatItemTTL.fromSeconds(r.chatItemTTL)
       } else {
-        throw Exception("chatItemTTLResponse: invalid ttl")
+        ChatItemTTL.None
       }
     }
     throw Exception("failed to get chat item TTL: ${r.responseType} ${r.details}")

@@ -1351,17 +1351,19 @@ fun setChatTTLAlert(
   previousChatTTL: ChatItemTTL?,
   progressIndicator: MutableState<Boolean>
 ) {
-  val disablingExpiration = selectedChatTTL.value?.doesNotExpire == true || (selectedChatTTL.value == null && chatModel.chatItemTTL.value.doesNotExpire)
-  val changingExpiration = selectedChatTTL.value == null || (previousChatTTL?.doesNotExpire == false)
+  val defaultTTL = chatModel.chatItemTTL.value
+  val previouslyUsedTTL = previousChatTTL ?: defaultTTL
+  val newTTLToUse = selectedChatTTL.value ?: defaultTTL
+
   AlertManager.shared.showAlertDialog(
     title = generalGetString(
-      if (disablingExpiration) {
+      if (newTTLToUse.neverExpires) {
         MR.strings.disable_automatic_deletion_question
-      } else if (changingExpiration) {
+      } else if (!previouslyUsedTTL.neverExpires || selectedChatTTL.value == null) {
         MR.strings.change_automatic_deletion_question
       } else MR.strings.enable_automatic_deletion_question),
-    text = generalGetString(if (disablingExpiration) MR.strings.disable_automatic_deletion_message else MR.strings.change_automatic_chat_deletion_message),
-    confirmText = generalGetString(if (disablingExpiration) MR.strings.disable_automatic_deletion else MR.strings.delete_messages),
+    text = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion_message else MR.strings.change_automatic_chat_deletion_message),
+    confirmText = generalGetString(if (newTTLToUse.neverExpires) MR.strings.disable_automatic_deletion else MR.strings.delete_messages),
     onConfirm = { setChatTTL(m, rhId, chatInfo, selectedChatTTL, progressIndicator, previousChatTTL) },
     onDismiss = { selectedChatTTL.value = previousChatTTL },
     onDismissRequest = { selectedChatTTL.value = previousChatTTL },
