@@ -542,9 +542,10 @@
   <string name="notifications">Notifications</string>
   <string name="disable_automatic_deletion_question">Disable automatic message deletion?</string>
   <string name="change_automatic_deletion_question">Change automatic message deletion?</string>
-  <string name="disable_automatic_deletion_message">Messages on this chat will never be deleted.</string>
-  <string name="change_automatic_chat_deletion_message">This action cannot be undone - the messages sent and received on this chat earlier than selected will be deleted. It may take several minutes.</string>
+  <string name="disable_automatic_deletion_message">Messages in this chat will never be deleted.</string>
+  <string name="change_automatic_chat_deletion_message">This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</string>
   <string name="disable_automatic_deletion">Disable delete messages</string>
+  <string name="chat_ttl_options_footer">Delete chat messages from your device.</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="info_view_connect_button">connect</string>

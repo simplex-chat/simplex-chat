@@ -92,6 +92,9 @@ fun ChatInfoView(
       },
       chatItemTTL = chatItemTTL,
       setChatItemTTL = {
+        if (it == chatItemTTL.value) {
+          return@ChatInfoLayout
+        }
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
@@ -604,13 +607,6 @@ fun ChatInfoLayout(
         // } else if (developerTools) {
         //   SynchronizeConnectionButtonForce(syncContactConnectionForce)
         // }
-        TtlOptions(
-          chatItemTTL,
-          enabled = remember { mutableStateOf(true) },
-          onSelected = setChatItemTTL,
-          default = chatModel.chatItemTTL,
-          icon = painterResource(MR.images.ic_delete),
-        )
       }
 
       WallpaperButton {
@@ -624,6 +620,17 @@ fun ChatInfoLayout(
       }
     }
     SectionDividerSpaced(maxBottomPadding = false)
+
+    SectionView {
+      TtlOptions(
+        chatItemTTL,
+        enabled = remember { mutableStateOf(true) },
+        onSelected = setChatItemTTL,
+        default = chatModel.chatItemTTL
+      )
+    }
+    SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
     val conn = contact.activeConn
     if (conn != null) {

@@ -308,8 +308,7 @@ fun TtlOptions(
   current: State<ChatItemTTL?>,
   enabled: State<Boolean>,
   onSelected: (ChatItemTTL?) -> Unit,
-  default: State<ChatItemTTL>? = null,
-  icon: Painter? = null
+  default: State<ChatItemTTL>? = null
 ) {
   val values = remember {
     val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Year, ChatItemTTL.Month, ChatItemTTL.Week, ChatItemTTL.Day)
@@ -331,7 +330,7 @@ fun TtlOptions(
     generalGetString(MR.strings.delete_messages_after),
     values,
     current,
-    icon = icon,
+    icon = null,
     enabled = enabled,
     onSelected = onSelected
   )

@@ -73,6 +73,9 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
       },
       chatItemTTL = chatItemTTL,
       setChatItemTTL = {
+        if (it == chatItemTTL.value) {
+          return@GroupChatInfoLayout
+        }
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
@@ -402,14 +405,6 @@ fun ModalData.GroupChatInfoLayout(
           SendReceiptsOptionDisabled()
         }
 
-        TtlOptions(
-          chatItemTTL,
-          enabled = remember { mutableStateOf(true) },
-          onSelected = setChatItemTTL,
-          default = chatModel.chatItemTTL,
-          icon = painterResource(MR.images.ic_delete),
-        )
-
         WallpaperButton {
           ModalManager.end.showModal {
             val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
@@ -422,7 +417,18 @@ fun ModalData.GroupChatInfoLayout(
       }
       val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
       SectionTextFooter(stringResource(footerId))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+
+      SectionView {
+        TtlOptions(
+          chatItemTTL,
+          enabled = remember { mutableStateOf(true) },
+          onSelected = setChatItemTTL,
+          default = chatModel.chatItemTTL
+        )
+      }
+      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
         if (groupInfo.canAddMembers) {
