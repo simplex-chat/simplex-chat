@@ -28,15 +28,22 @@ suspend fun apiLoadMessages(
   contentTag: MsgContentTag?,
   pagination: ChatPagination,
   search: String = "",
-  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 },
-  replaceChat: Boolean = false,
-  redirectDisabled: Boolean = false
+  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
   val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
     || !isActive) return@coroutineScope
+  processLoadedChat(chat, navInfo, contentTag, pagination, visibleItemIndexesNonReversed)
+}
 
+suspend fun processLoadedChat(
+  chat: Chat,
+  navInfo: NavigationInfo,
+  contentTag: MsgContentTag?,
+  pagination: ChatPagination,
+  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
+) = coroutineScope {
   val chatState = chatModel.chatStateForContent(contentTag)
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
   val oldItems = chatModel.chatItemsForContent(contentTag).value
@@ -49,8 +56,6 @@ suspend fun apiLoadMessages(
         withChats {
           if (getChat(chat.id) == null) {
             addChat(chat)
-          } else if (replaceChat) {
-            replaceChat(chat.remoteHostId, chat.id, chat)
           } else {
             updateChatInfo(chat.remoteHostId, chat.chatInfo)
             updateChatStats(chat.remoteHostId, chat.id, chat.chatStats)
@@ -58,10 +63,6 @@ suspend fun apiLoadMessages(
         }
       }
       withChats(contentTag) {
-        if (redirectDisabled && chatModel.chatId.value != chat.id) {
-          // redirect is disabled, but the chat is not the current one, so don't update it
-          return@withChats
-        }
         chatItemStatuses.clear()
         chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.chatInfo.id

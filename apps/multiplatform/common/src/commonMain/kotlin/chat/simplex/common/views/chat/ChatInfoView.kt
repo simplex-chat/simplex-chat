@@ -1381,34 +1381,39 @@ private fun setChatTTL(
   withBGApi {
     try {
       chatModel.controller.setChatTTL(rhId, chatInfo.chatType, chatInfo.apiId, chatTTL.value)
-      afterSetChatTTL(chatInfo, progressIndicator)
+      afterSetChatTTL(rhId, chatInfo, progressIndicator)
     } catch (e: Exception) {
       chatTTL.value = previousChatTTL
-      afterSetChatTTL(chatInfo, progressIndicator)
+      afterSetChatTTL(rhId, chatInfo, progressIndicator)
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_changing_message_deletion), e.stackTraceToString())
     }
   }
 }
 
-private fun afterSetChatTTL(chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
-  withApi {
-    try {
-      // this is using current remote host on purpose - if it changes during update, it will load correct chats
-      // redirectDisabled is set to true to prevent redirecting the current chat/chat items in case the chat changes while messages were updating
-      apiLoadMessages(
-        chatModel.remoteHostId(),
-        chatInfo.chatType,
-        chatInfo.apiId,
-        contentTag = null,
-        pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT),
-        replaceChat = true,
-        redirectDisabled = true
-      )
-    } catch (e: Exception) {
-      Log.e(TAG, "apiGetChat error: ${e.message}")
-    } finally {
-      progressIndicator.value = false
+private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressIndicator: MutableState<Boolean>) {
+  try {
+    val pagination = ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
+    val (chat, navInfo) = controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId, null, pagination) ?: return
+    if (chat.chatItems.isEmpty()) {
+      // replacing old chat with the same old chat but without items. Less intrusive way of clearing a preview
+      withChats {
+        val oldChat = getChat(chat.id)
+        if (oldChat != null) {
+          replaceChat(rhId, chatInfo.id, oldChat.copy(chatItems = emptyList()))
+        }
+      }
     }
+    if (chat.remoteHostId != chatModel.remoteHostId() || chat.id != chatModel.chatId.value) return
+    processLoadedChat(
+      chat,
+      navInfo,
+      contentTag = null,
+      pagination = pagination
+    )
+  } catch (e: Exception) {
+    Log.e(TAG, "apiGetChat error: ${e.message}")
+  } finally {
+    progressIndicator.value = false
   }
 }
 
