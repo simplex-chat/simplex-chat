@@ -24,12 +24,29 @@ testDB = "tests/tmp/test_chat.db"
 appSchema :: FilePath
 appSchema = "src/Simplex/Chat/Migrations/chat_schema.sql"
 
+-- Some indexes found by `.lint fkey-indexes` are not added to schema, explanation:
+--
+-- - CREATE INDEX 'chat_items_group_id' ON 'chat_items'('group_id'); --> groups(group_id)
+--
+--   Covering index is used instead. See for example:
+--   EXPLAIN QUERY PLAN DELETE FROM groups;
+--   (uses idx_chat_items_groups_item_status)
+--
+-- - CREATE INDEX 'connections_group_member_id' ON 'connections'('group_member_id'); --> group_members(group_member_id)
+--
+--   Covering index is used instead. See for example:
+--   EXPLAIN QUERY PLAN DELETE FROM group_members;
+--   (uses idx_connections_group_member)
+appLint :: FilePath
+appLint = "src/Simplex/Chat/Migrations/chat_lint.sql"
+
 testSchema :: FilePath
 testSchema = "tests/tmp/test_agent_schema.sql"
 
 schemaDumpTest :: Spec
 schemaDumpTest = do
   it "verify and overwrite schema dump" testVerifySchemaDump
+  it "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
   it "verify schema down migrations" testSchemaMigrations
 
 testVerifySchemaDump :: IO ()
@@ -38,6 +55,14 @@ testVerifySchemaDump = withTmpFiles $ do
   savedSchema `deepseq` pure ()
   void $ createChatStore testDB "" False MCError
   getSchema testDB appSchema `shouldReturn` savedSchema
+  removeFile testDB
+
+testVerifyLintFKeyIndexes :: IO ()
+testVerifyLintFKeyIndexes = withTmpFiles $ do
+  savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
+  savedLint `deepseq` pure ()
+  void $ createChatStore testDB "" False MCError
+  getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
 testSchemaMigrations :: IO ()
@@ -77,11 +102,21 @@ skipComparisonForDownMigrations =
     -- table and indexes move down to the end of the file
     "20231215_recreate_msg_deliveries",
     -- on down migration idx_msg_deliveries_agent_ack_cmd_id index moves down to the end of the file
-    "20240313_drop_agent_ack_cmd_id"
+    "20240313_drop_agent_ack_cmd_id",
+    -- sequence table moves down to the end of the file
+    "20241023_chat_item_autoincrement_id",
+    -- indexes move down to the end of the file
+    "20241125_indexes"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
-getSchema dpPath schemaPath = do
-  void $ readCreateProcess (shell $ "sqlite3 " <> dpPath <> " '.schema --indent' > " <> schemaPath) ""
+getSchema dbPath schemaPath = do
+  void $ readCreateProcess (shell $ "sqlite3 " <> dbPath <> " '.schema --indent' > " <> schemaPath) ""
   sch <- readFile schemaPath
   sch `deepseq` pure sch
+
+getLintFKeyIndexes :: FilePath -> FilePath -> IO String
+getLintFKeyIndexes dbPath lintPath = do
+  void $ readCreateProcess (shell $ "sqlite3 " <> dbPath <> " '.lint fkey-indexes' > " <> lintPath) ""
+  lint <- readFile lintPath
+  lint `deepseq` pure lint

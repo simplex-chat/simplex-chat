@@ -21,6 +21,7 @@ struct AddGroupMembersView: View {
 
 struct AddGroupMembersViewCommon: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     var chat: Chat
     @State var groupInfo: GroupInfo
     var creatingGroup: Bool = false
@@ -34,7 +35,7 @@ struct AddGroupMembersViewCommon: View {
 
     private enum AddGroupMembersAlert: Identifiable {
         case prohibitedToInviteIncognito
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -46,14 +47,13 @@ struct AddGroupMembersViewCommon: View {
 
     var body: some View {
         if creatingGroup {
-            NavigationView {
-                addGroupMembersView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button ("Skip") { addedMembersCb(selectedContacts) }
-                        }
+            addGroupMembersView()
+                .navigationBarBackButtonHidden()
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button ("Skip") { addedMembersCb(selectedContacts) }
                     }
-            }
+                }
         } else {
             addGroupMembersView()
         }
@@ -70,7 +70,7 @@ struct AddGroupMembersViewCommon: View {
 
                 if (membersToAdd.isEmpty) {
                     Text("No contacts to add")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .center)
                         .listRowBackground(Color.clear)
@@ -78,7 +78,12 @@ struct AddGroupMembersViewCommon: View {
                     let count = selectedContacts.count
                     Section {
                         if creatingGroup {
-                            groupPreferencesButton($groupInfo, true)
+                            GroupPreferencesButton(
+                                groupInfo: $groupInfo,
+                                preferences: groupInfo.fullGroupPreferences,
+                                currentPreferences: groupInfo.fullGroupPreferences,
+                                creatingGroup: true
+                            )
                         }
                         rolePicker()
                         inviteMembersButton()
@@ -90,21 +95,25 @@ struct AddGroupMembersViewCommon: View {
                                     Button { selectedContacts.removeAll() } label: { Text("Clear").font(.caption) }
                                     Spacer()
                                     Text("\(count) contact(s) selected")
+                                        .foregroundColor(theme.colors.secondary)
                                 }
                             } else {
                                 Text("No contacts selected")
                                     .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .foregroundColor(theme.colors.secondary)
                             }
                         }
                     }
 
                     Section {
-                        searchFieldView(text: $searchText, focussed: $searchFocussed)
+                        searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.primary, theme.colors.secondary)
                             .padding(.leading, 2)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
                         let members = s == "" ? membersToAdd : membersToAdd.filter { $0.chatViewName.localizedLowercase.contains(s) }
-                        ForEach(members) { contact in
-                            contactCheckView(contact)
+                        ForEach(members + [dummyContact]) { contact in
+                            if contact.contactId != dummyContact.contactId {
+                                contactCheckView(contact)
+                            }
                         }
                     }
                 }
@@ -119,20 +128,30 @@ struct AddGroupMembersViewCommon: View {
                     message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+                return mkAlert(title: title, message: error)
             }
         }
         .onChange(of: selectedContacts) { _ in
             searchFocussed = false
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 
-    private func inviteMembersButton() -> some View {
+    // Resolves keyboard losing focus bug in iOS16 and iOS17,
+    // when there are no items inside `ForEach(memebers)` loop
+    private let dummyContact: Contact = {
+        var dummy = Contact.sampleData
+        dummy.contactId = -1
+        return dummy
+    }()
+
+    @ViewBuilder private func inviteMembersButton() -> some View {
+        let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Invite to group" : "Invite to chat"
         Button {
             inviteMembers()
         } label: {
             HStack {
-                Text("Invite to group")
+                Text(label)
                 Image(systemName: "checkmark")
             }
         }
@@ -156,10 +175,8 @@ struct AddGroupMembersViewCommon: View {
 
     private func rolePicker() -> some View {
         Picker("New member role", selection: $selectedRole) {
-            ForEach(GroupMemberRole.allCases) { role in
-                if role <= groupInfo.membership.memberRole && role != .author {
-                    Text(role.text)
-                }
+            ForEach(GroupMemberRole.supportedRoles.filter({ $0 <= groupInfo.membership.memberRole })) { role in
+                Text(role.text)
             }
         }
         .frame(height: 36)
@@ -172,14 +189,14 @@ struct AddGroupMembersViewCommon: View {
         var iconColor: Color
         if prohibitedToInviteIncognito {
             icon = "theatermasks.circle.fill"
-            iconColor = Color(uiColor: .tertiaryLabel)
+            iconColor = Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
         } else {
             if checked {
                 icon = "checkmark.circle.fill"
-                iconColor = .accentColor
+                iconColor = theme.colors.primary
             } else {
                 icon = "circle"
-                iconColor = Color(uiColor: .tertiaryLabel)
+                iconColor = Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
             }
         }
         return Button {
@@ -197,7 +214,7 @@ struct AddGroupMembersViewCommon: View {
                 ProfileImage(imageStr: contact.image, size: 30)
                     .padding(.trailing, 2)
                 Text(ChatInfo.direct(contact: contact).chatViewName)
-                    .foregroundColor(prohibitedToInviteIncognito ? .secondary : .primary)
+                    .foregroundColor(prohibitedToInviteIncognito ? theme.colors.secondary : theme.colors.onBackground)
                     .lineLimit(1)
                 Spacer()
                 Image(systemName: icon)
@@ -207,7 +224,7 @@ struct AddGroupMembersViewCommon: View {
     }
 }
 
-func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding) -> some View {
+func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding, _ onBackgroundColor: Color, _ secondaryColor: Color) -> some View {
     HStack {
         Image(systemName: "magnifyingglass")
             .resizable()
@@ -216,8 +233,9 @@ func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding) 
             .padding(.trailing, 10)
         TextField("Search", text: text)
             .focused(focussed)
-            .foregroundColor(.primary)
+            .foregroundColor(onBackgroundColor)
             .frame(maxWidth: .infinity)
+            .autocorrectionDisabled(true)
         Image(systemName: "xmark.circle.fill")
             .resizable()
             .scaledToFit()
@@ -228,7 +246,7 @@ func searchFieldView(text: Binding<String>, focussed: FocusState<Bool>.Binding) 
                 focussed.wrappedValue = false
             }
     }
-    .foregroundColor(.secondary)
+    .foregroundColor(secondaryColor)
     .frame(height: 36)
 }
 

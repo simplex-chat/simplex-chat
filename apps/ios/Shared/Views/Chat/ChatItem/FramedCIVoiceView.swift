@@ -12,21 +12,24 @@ import SwiftUI
 import SimpleXChat
 
 struct FramedCIVoiceView: View {
+    @EnvironmentObject var theme: AppTheme
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    
+
+    @State var audioPlayer: AudioPlayer? = nil
+    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State var playbackTime: TimeInterval? = nil
+
     @Binding var allowMenu: Bool
-    
-    @Binding var audioPlayer: AudioPlayer?
-    @Binding var playbackState: VoiceMessagePlaybackState
-    @Binding var playbackTime: TimeInterval?
-    
+
     @State private var seek: (TimeInterval) -> Void = { _ in }
     
     var body: some View {
         HStack {
             VoiceMessagePlayer(
+                chat: chat,
                 chatItem: chatItem,
                 recordingFile: recordingFile,
                 recordingTime: TimeInterval(duration),
@@ -35,14 +38,15 @@ struct FramedCIVoiceView: View {
                 audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
                 playbackTime: $playbackTime,
-                allowMenu: $allowMenu
+                allowMenu: $allowMenu,
+                sizeMultiplier: 1
             )
             VoiceMessagePlayerTime(
                 recordingTime: TimeInterval(duration),
                 playbackState: $playbackState,
                 playbackTime: $playbackTime
             )
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .frame(width: 50, alignment: .leading)
             if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
                 playbackSlider()
@@ -88,12 +92,13 @@ struct FramedCIVoiceView_Previews: PreviewProvider {
             file: CIFile.getSample(fileStatus: .sndComplete)
         )
         Group {
-            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."), revealed: Binding.constant(false))
-            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWithQuote, revealed: Binding.constant(false))
+            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage)
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there"))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Hello there", fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."))
+            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWithQuote)
         }
+        .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))
     }
 }

@@ -1,8 +1,10 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -16,6 +18,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.res.MR
 

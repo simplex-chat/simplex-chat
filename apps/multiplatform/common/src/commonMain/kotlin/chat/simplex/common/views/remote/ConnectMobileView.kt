@@ -35,6 +35,7 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.validPort
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -89,18 +90,15 @@ fun ConnectMobileLayout(
   connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
     SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
-      PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
+      PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
         controller.appPrefs.offerRemoteMulticast.set(it)
       }
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
     }
     SectionView(stringResource(MR.strings.devices).uppercase()) {
       if (chatModel.localUserCreated.value == true) {
@@ -179,10 +177,15 @@ private fun ConnectMobileViewLayout(
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
+  @Composable
+  fun ScrollableLayout(content: @Composable ColumnScope.() -> Unit) {
+    if (LocalAppBarHandler.current != null) {
+      ColumnWithScrollBar(content = content)
+    } else {
+      ColumnWithScrollBarNoAppBar(content = content)
+    }
+  }
+  ScrollableLayout {
     if (title != null) {
       AppBarTitle(title)
     }

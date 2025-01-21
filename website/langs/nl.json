@@ -245,8 +245,7 @@
     "docs-dropdown-8": "SimpleX Directory Service",
     "comparison-section-list-point-4a": "SimpleX relais kunnen de e2e-versleuteling niet in gevaar brengen. Controleer de beveiligingscode om aanvallen op out-of-band kanalen te beperken",
     "hero-overlay-3-title": "Beveiligings beoordeling",
-    "hero-overlay-card-3-p-2": "Trail of Bits heeft in november 2022 de cryptografie en netwerkcomponenten van het SimpleX-platform beoordeeld.",
-    "hero-overlay-card-3-p-3": "Lees meer in <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">de aankondiging</a>.",
+    "hero-overlay-card-3-p-2": "Trail of Bits heeft in november 2022 de cryptografie en netwerkcomponenten van het SimpleX-platform beoordeeld. Lees meer in <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">de aankondiging</a>.",
     "jobs": "Sluit je aan bij het team",
     "hero-overlay-3-textlink": "Beveiligings beoordeling",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> is een toonaangevend beveiligings- en technologieadviesbureau met klanten onder meer grote technologiebedrijven, overheidsinstanties en grote blockchain-projecten.",
@@ -255,5 +254,6 @@
     "please-use-link-in-mobile-app": "Gebruik de link in de mobiele app",
     "docs-dropdown-10": "Transparantie",
     "docs-dropdown-11": "FAQ",
-    "docs-dropdown-12": "Beveiliging"
+    "docs-dropdown-12": "Beveiliging",
+    "hero-overlay-card-3-p-3": "Trail of Bits heeft in juli 2024 het cryptografische ontwerp van SimpleX-netwerkprotocollen beoordeeld. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Lees meer</a>."
 }

@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct IncomingCallView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var cc = CallController.shared
 
     var body: some View {
@@ -37,13 +38,14 @@ struct IncomingCallView: View {
             }
             HStack {
                 ProfilePreview(profileOf: invitation.contact, color: .white)
+                    .padding(.vertical, 6)
                 Spacer()
 
                 callButton("Reject", "phone.down.fill", .red) {
                     cc.endCall(invitation: invitation)
                 }
 
-                callButton("Ignore", "multiply", .accentColor) {
+                callButton("Ignore", "multiply", .primary) {
                     cc.activeCallInvitation = nil
                 }
 
@@ -63,7 +65,7 @@ struct IncomingCallView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .modifier(ThemedBackground())
         .onAppear { dismissAllSheets() }
     }
 
@@ -76,7 +78,7 @@ struct IncomingCallView: View {
                     .frame(width: 24, height: 24)
                 Text(text)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
             .frame(minWidth: 44)
         })

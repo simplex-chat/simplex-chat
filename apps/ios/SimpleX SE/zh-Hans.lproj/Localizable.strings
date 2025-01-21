@@ -1,0 +1,111 @@
+/* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"App is locked!" = "应用程序已锁定！";
+
+/* No comment provided by engineer. */
+"Cancel" = "取消";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "无法访问钥匙串以保存数据库密码";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "无法转发消息";
+
+/* No comment provided by engineer. */
+"Comment" = "评论";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "当前支持的最大文件大小为 %@。";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "需要数据库降级";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "数据库已加密！";
+
+/* No comment provided by engineer. */
+"Database error" = "数据库错误";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "数据库密码与保存在钥匙串中的密码不同。";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "需要数据库密码才能打开聊天。";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "需要升级数据库";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "准备文件时出错";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "准备消息时出错";
+
+/* No comment provided by engineer. */
+"Error: %@" = "错误：%@";
+
+/* No comment provided by engineer. */
+"File error" = "文件错误";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "不兼容的数据库版本";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "无效的迁移确认";
+
+/* No comment provided by engineer. */
+"Keychain error" = "钥匙串错误";
+
+/* No comment provided by engineer. */
+"Large file!" = "大文件！";
+
+/* No comment provided by engineer. */
+"No active profile" = "无活动配置文件";
+
+/* No comment provided by engineer. */
+"Ok" = "好的";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "打开应用程序以降级数据库。";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "打开应用程序以升级数据库。";
+
+/* No comment provided by engineer. */
+"Passphrase" = "密码";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "请在 SimpleX 应用程序中创建配置文件";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "选定的聊天首选项禁止此消息。";
+
+/* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "发送消息所需的时间比预期的要长。";
+
+/* No comment provided by engineer. */
+"Sending message…" = "正在发送消息…";
+
+/* No comment provided by engineer. */
+"Share" = "共享";
+
+/* No comment provided by engineer. */
+"Slow network?" = "网络速度慢？";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "未知数据库错误： %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "不支持的格式";
+
+/* No comment provided by engineer. */
+"Wait" = "等待";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "数据库密码错误";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "您可以在 \"隐私与安全\"/\"SimpleX Lock \"设置中允许共享。";
+

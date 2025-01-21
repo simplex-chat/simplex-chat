@@ -11,7 +11,7 @@ import SimpleXChat
 
 let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
-private let noTyping = Text("   ")
+private let noTyping = Text(verbatim: "   ")
 
 private let typingIndicators: [Text] = [
     (typing(.black) + typing() + typing()),
@@ -26,12 +26,15 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
+    @Environment(\.showTimestamp) var showTimestamp: Bool
+    @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
     var meta: CIMeta? = nil
     var rightToLeft = false
     var showSecrets: Bool
+    var prefix: Text? = nil
     @State private var typingIdx = 0
     @State private var timer: Timer?
 
@@ -65,7 +68,7 @@ struct MsgContentView: View {
     }
 
     private func msgContentView() -> Text {
-        var v = messageText(text, formattedText, sender, showSecrets: showSecrets)
+        var v = messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
         if let mt = meta {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
@@ -79,17 +82,18 @@ struct MsgContentView: View {
         return (recent ? typingIndicators[typingIdx] : noTyping)
             .font(.body.monospaced())
             .kerning(-2)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
-        (rightToLeft ? Text("\n") : Text("   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
+        (rightToLeft ? Text("\n") : Text(verbatim: "   ")) + ciMetaText(mt, chatTTL: chat.chatInfo.timedMessagesTTL, encrypted: nil, colorMode: .transparent, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool, secondaryColor: Color, prefix: Text? = nil) -> Text {
     let s = text
     var res: Text
+    
     if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
         res = formatText(ft[0], preview, showSecret: showSecrets)
         var i = 1
@@ -102,7 +106,11 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 
     if let i = icon {
-        res = Text(Image(systemName: i)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ") + res
+        res = Text(Image(systemName: i)).foregroundColor(secondaryColor) + textSpace + res
+    }
+    
+    if let p = prefix {
+        res = p + res
     }
 
     if let s = sender {

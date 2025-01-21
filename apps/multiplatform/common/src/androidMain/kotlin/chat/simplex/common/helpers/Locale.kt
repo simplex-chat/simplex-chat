@@ -31,8 +31,7 @@ private fun Activity.applyLocale(locale: Locale) {
   Locale.setDefault(locale)
   val appConf = Configuration(androidAppContext.resources.configuration).apply { setLocale(locale) }
   val activityConf = Configuration(resources.configuration).apply { setLocale(locale) }
-  @Suppress("DEPRECATION")
-  androidAppContext.resources.updateConfiguration(appConf, resources.displayMetrics)
+  androidAppContext = androidAppContext.createConfigurationContext(appConf)
   @Suppress("DEPRECATION")
   resources.updateConfiguration(activityConf, resources.displayMetrics)
 }

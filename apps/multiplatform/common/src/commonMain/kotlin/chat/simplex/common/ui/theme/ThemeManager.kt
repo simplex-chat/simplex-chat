@@ -48,7 +48,9 @@ object ThemeManager {
       return perUserTheme
     }
     val defaultTheme = defaultActiveTheme(appSettingsTheme)
-    return ThemeModeOverride(colors = defaultTheme?.colors ?: ThemeColors(), wallpaper = defaultTheme?.wallpaper)
+    return ThemeModeOverride(colors = defaultTheme?.colors ?: ThemeColors(), wallpaper = defaultTheme?.wallpaper
+      // Situation when user didn't change global theme at all (it is not saved yet). Using defaults
+      ?: ThemeWallpaper.from(PresetWallpaper.SCHOOL.toType(CurrentColors.value.base), null, null))
   }
 
   fun currentColors(themeOverridesForType: WallpaperType?, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ActiveTheme {
@@ -103,6 +105,8 @@ object ThemeManager {
     appPrefs.currentTheme.set(theme)
     CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     platform.androidSetNightModeIfSupported()
+    val c = CurrentColors.value.colors
+    platform.androidSetStatusAndNavigationBarAppearance(c.isLight, c.isLight)
   }
 
   fun changeDarkTheme(theme: String) {

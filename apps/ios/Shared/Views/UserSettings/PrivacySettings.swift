@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct PrivacySettings: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
@@ -21,6 +22,7 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
+    @AppStorage(DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) private var privacyMediaBlurRadius: Int = 0
     @State private var contactReceipts = false
     @State private var contactReceiptsReset = false
     @State private var contactReceiptsOverrides = 0
@@ -44,34 +46,38 @@ struct PrivacySettings: View {
     var body: some View {
         VStack {
             List {
-                Section("Device") {
+                Section(header: Text("Device").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         SimplexLockView(prefPerformLA: $prefPerformLA, currentLAMode: $currentLAMode)
                             .navigationTitle("SimpleX Lock")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         if prefPerformLA {
                             settingsRow("lock.fill", color: .green) {
                                 simplexLockRow(currentLAMode.text)
                             }
                         } else {
-                            settingsRow("lock") {
+                            settingsRow("lock", color: theme.colors.secondary) {
                                 simplexLockRow("Off")
                             }
                         }
                     }
-                    settingsRow("eye.slash") {
+                    settingsRow("eye.slash", color: theme.colors.secondary) {
                         Toggle("Protect app screen", isOn: $protectScreen)
                     }
                 }
 
                 Section {
-                    settingsRow("network") {
+                    settingsRow("network", color: theme.colors.secondary) {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
+                            .onChange(of: useLinkPreviews) { linkPreviews in
+                                privacyLinkPreviewsGroupDefault.set(linkPreviews)
+                            }
                     }
-                    settingsRow("message") {
+                    settingsRow("message", color: theme.colors.secondary) {
                         Toggle("Show last messages", isOn: $showChatPreviews)
                     }
-                    settingsRow("rectangle.and.pencil.and.ellipsis") {
+                    settingsRow("rectangle.and.pencil.and.ellipsis", color: theme.colors.secondary) {
                         Toggle("Message draft", isOn: $saveLastDraft)
                     }
                     .onChange(of: saveLastDraft) { saveDraft in
@@ -80,7 +86,7 @@ struct PrivacySettings: View {
                             m.draftChatId = nil
                         }
                     }
-                    settingsRow("link") {
+                    settingsRow("link", color: theme.colors.secondary) {
                         Picker("SimpleX links", selection: $simplexLinkMode) {
                             ForEach(
                                 SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
@@ -95,48 +101,70 @@ struct PrivacySettings: View {
                     }
                 } header: {
                     Text("Chats")
+                        .foregroundColor(theme.colors.secondary)
                 }
 
                 Section {
-                    settingsRow("lock.doc") {
+                    settingsRow("lock.doc", color: theme.colors.secondary) {
                         Toggle("Encrypt local files", isOn: $encryptLocalFiles)
                             .onChange(of: encryptLocalFiles) {
                                 setEncryptLocalFiles($0)
                             }
                     }
-                    settingsRow("photo") {
+                    settingsRow("photo", color: theme.colors.secondary) {
                         Toggle("Auto-accept images", isOn: $autoAcceptImages)
                             .onChange(of: autoAcceptImages) {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
-                    settingsRow("network.badge.shield.half.filled") {
+                    settingsRow("circle.filled.pattern.diagonalline.rectangle", color: theme.colors.secondary) {
+                        Picker("Blur media", selection: $privacyMediaBlurRadius) {
+                            let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
+                            ForEach(values, id: \.self) { radius in
+                                let text: String = switch radius {
+                                case 0: NSLocalizedString("Off", comment: "blur media")
+                                case 12: NSLocalizedString("Soft", comment: "blur media")
+                                case 24: NSLocalizedString("Medium", comment: "blur media")
+                                case 48: NSLocalizedString("Strong", comment: "blur media")
+                                default: "\(radius)"
+                                }
+                                Text(text)
+                            }
+                        }
+                    }
+                    .frame(height: 36)
+                    settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
                         Toggle("Protect IP address", isOn: $askToApproveRelays)
                     }
                 } header: {
                     Text("Files")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     if askToApproveRelays {
                         Text("The app will ask to confirm downloads from unknown file servers (except .onion).")
+                            .foregroundColor(theme.colors.secondary)
                     } else {
                         Text("Without Tor or VPN, your IP address will be visible to file servers.")
+                            .foregroundColor(theme.colors.secondary)
                     }
                 }
 
                 Section {
-                    settingsRow("person") {
+                    settingsRow("person", color: theme.colors.secondary) {
                         Toggle("Contacts", isOn: $contactReceipts)
                     }
-                    settingsRow("person.2") {
+                    settingsRow("person.2", color: theme.colors.secondary) {
                         Toggle("Small groups (max 20)", isOn: $groupReceipts)
                     }
                 } header: {
                     Text("Send delivery receipts to")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     VStack(alignment: .leading) {
                         Text("These settings are for your current profile **\(m.currentUser?.displayName ?? "")**.")
                         Text("They can be overridden in contact and group settings.")
                     }
+                    .foregroundColor(theme.colors.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .confirmationDialog(contactReceiptsDialogTitle, isPresented: $contactReceiptsDialogue, titleVisibility: .visible) {
@@ -332,6 +360,7 @@ struct SimplexLockView: View {
     @Binding var prefPerformLA: Bool
     @Binding var currentLAMode: LAMode
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @State private var laMode: LAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_LA_LOCK_DELAY) private var laLockDelay = 30
@@ -339,6 +368,7 @@ struct SimplexLockView: View {
     @State private var selfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
     @State private var currentSelfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
     @AppStorage(DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME) private var selfDestructDisplayName = ""
+    @AppStorage(GROUP_DEFAULT_ALLOW_SHARE_EXTENSION, store: groupDefaults) private var allowShareExtension = false
     @State private var performLAToggleReset = false
     @State private var performLAModeReset = false
     @State private var performLASelfDestructReset = false
@@ -410,13 +440,19 @@ struct SimplexLockView: View {
                     }
                 }
 
+                if performLA {
+                    Section("Share to SimpleX") {
+                        Toggle("Allow sharing", isOn: $allowShareExtension)
+                    }
+                }
+                
                 if performLA && laMode == .passcode {
-                    Section("Self-destruct passcode") {
+                    Section(header: Text("Self-destruct passcode").foregroundColor(theme.colors.secondary)) {
                         Toggle(isOn: $selfDestruct) {
                             HStack(spacing: 6) {
                                 Text("Enable self-destruct")
                                 Image(systemName: "info.circle")
-                                    .foregroundColor(.accentColor)
+                                    .foregroundColor(theme.colors.primary)
                                     .font(.system(size: 14))
                             }
                             .onTapGesture {
@@ -434,6 +470,7 @@ struct SimplexLockView: View {
             }
         }
         .onChange(of: performLA) { performLAToggle in
+            appLocalAuthEnabledGroupDefault.set(performLAToggle)
             prefLANoticeShown = true
             if performLAToggleReset {
                 performLAToggleReset = false

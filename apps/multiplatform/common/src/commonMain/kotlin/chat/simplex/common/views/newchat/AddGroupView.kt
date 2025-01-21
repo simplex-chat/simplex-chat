@@ -18,6 +18,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.AddGroupMembersView
 import chat.simplex.common.views.chatlist.setGroupMembers
@@ -32,19 +33,24 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
+fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
+  val view = LocalMultiplatformView()
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
+      hideKeyboard(view)
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
-          chatModel.updateGroup(rhId = rhId, groupInfo)
-          chatModel.chatItems.clear()
-          chatModel.chatItemStatuses.clear()
-          chatModel.chatId.value = groupInfo.id
+          withChats {
+            updateGroup(rhId = rhId, groupInfo)
+            chatModel.chatItems.clearAndNotify()
+            chatModel.chatItemStatuses.clear()
+            chatModel.chatId.value = groupInfo.id
+          }
           setGroupMembers(rhId, groupInfo, chatModel)
-          close.invoke()
+          closeAll.invoke()
+
           if (!groupInfo.incognito) {
             ModalManager.end.showModalCloseable(true) { close ->
               AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)
@@ -78,10 +84,9 @@ fun AddGroupLayout(
   val focusRequester = remember { FocusRequester() }
   val incognito = remember { mutableStateOf(incognitoPref.get()) }
 
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
-      modifier = Modifier.navigationBarsWithImePadding(),
+      modifier = Modifier.imePadding(),
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
@@ -94,11 +99,7 @@ fun AddGroupLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = close) {
-        ColumnWithScrollBar(
-          Modifier
-            .fillMaxSize()
-            .padding(horizontal = DEFAULT_PADDING)
-        ) {
+        ColumnWithScrollBar {
           AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
           Box(
             Modifier
@@ -116,7 +117,7 @@ fun AddGroupLayout(
               }
             }
           }
-          Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+          Row(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
               stringResource(MR.strings.group_display_name_field),
               fontSize = 16.sp
@@ -128,7 +129,9 @@ fun AddGroupLayout(
               }
             }
           }
-          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+          Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+            ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
+          }
           Spacer(Modifier.height(8.dp))
 
           SettingsActionItem(
@@ -164,7 +167,6 @@ fun AddGroupLayout(
         }
       }
     }
-  }
 }
 
 fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmpty() && isValidDisplayName(displayName.trim())

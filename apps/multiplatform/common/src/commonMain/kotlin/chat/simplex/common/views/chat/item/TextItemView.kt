@@ -70,7 +70,9 @@ fun MarkdownText (
   linkMode: SimplexLinkMode,
   inlineContent: Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>>? = null,
   onLinkLongClick: (link: String) -> Unit = {},
-  showViaProxy: Boolean = false
+  showViaProxy: Boolean = false,
+  showTimestamp: Boolean = true,
+  prefix: AnnotatedString? = null
 ) {
   val textLayoutDirection = remember (text) {
     if (isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
@@ -78,7 +80,7 @@ fun MarkdownText (
   val reserve = if (textLayoutDirection != LocalLayoutDirection.current && meta != null) {
     "\n"
   } else if (meta != null) {
-    reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy)
+    reserveSpaceForMeta(meta, chatTTL, null, secondaryColor = MaterialTheme.colors.secondary, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
   } else {
     "    "
   }
@@ -122,6 +124,7 @@ fun MarkdownText (
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
+        if (prefix != null) append(prefix)
         if (text is String) append(text)
         else if (text is AnnotatedString) append(text)
         if (meta?.isLive == true) {
@@ -135,6 +138,7 @@ fun MarkdownText (
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
+        if (prefix != null) append(prefix)
         for ((i, ft) in formattedText.withIndex()) {
           if (ft.format == null) append(ft.text)
           else if (toggleSecrets && ft.format is Format.Secret) {

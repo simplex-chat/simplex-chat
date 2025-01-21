@@ -8,6 +8,7 @@
 
 import Foundation
 import OSLog
+import UIKit
 
 let logger = Logger()
 
@@ -40,7 +41,7 @@ public func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
 
-func getGroupContainerDirectory() -> URL {
+public func getGroupContainerDirectory() -> URL {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }
 
@@ -85,6 +86,8 @@ public func deleteAppDatabaseAndFiles() {
     try? fm.removeItem(at: getTempFilesDirectory())
     try? fm.removeItem(at: getMigrationTempFilesDirectory())
     try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    try? fm.removeItem(at: getWallpaperDirectory())
+    try? fm.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
     deleteAppFiles()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
@@ -194,6 +197,14 @@ public func getAppFilesDirectory() -> URL {
 
 public func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
+}
+
+public func getWallpaperDirectory() -> URL {
+    getAppDirectory().appendingPathComponent("assets", isDirectory: true).appendingPathComponent("wallpapers", isDirectory: true)
+}
+
+public func getWallpaperFilePath(_ filename: String) -> URL {
+    getWallpaperDirectory().appendingPathComponent(filename)
 }
 
 public func saveFile(_ data: Data, _ fileName: String, encrypted: Bool) -> CryptoFile? {

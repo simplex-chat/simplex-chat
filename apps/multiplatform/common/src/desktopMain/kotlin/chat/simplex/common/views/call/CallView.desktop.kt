@@ -34,14 +34,14 @@ actual fun ActiveCallView() {
       val callRh = call.remoteHostId
       when (val r = apiMsg.resp) {
         is WCallResponse.Capabilities -> withBGApi {
-          val callType = CallType(call.localMedia, r.capabilities)
+          val callType = CallType(call.initialCallType, r.capabilities)
           chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
           chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
           CallSoundsPlayer.startConnectingCallSound(scope)
           activeCallWaitDeliveryReceipt(scope)
         }
         is WCallResponse.Offer -> withBGApi {
-          chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
+          chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.initialCallType, r.capabilities)
           chatModel.activeCall.value = call.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities)
         }
         is WCallResponse.Answer -> withBGApi {
@@ -65,6 +65,15 @@ actual fun ActiveCallView() {
         is WCallResponse.Connected -> {
           chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
         }
+        is WCallResponse.PeerMedia -> {
+          val sources = call.peerMediaSources
+          chatModel.activeCall.value = when (r.source) {
+            CallMediaSource.Mic -> call.copy(peerMediaSources = sources.copy(mic = r.enabled))
+            CallMediaSource.Camera -> call.copy(peerMediaSources = sources.copy(camera = r.enabled))
+            CallMediaSource.ScreenAudio -> call.copy(peerMediaSources = sources.copy(screenAudio = r.enabled))
+            CallMediaSource.ScreenVideo -> call.copy(peerMediaSources = sources.copy(screenVideo = r.enabled))
+          }
+        }
         is WCallResponse.End -> {
           withBGApi { chatModel.callManager.endCall(call) }
         }
@@ -77,15 +86,18 @@ actual fun ActiveCallView() {
           is WCallCommand.Answer ->
             chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
           is WCallCommand.Media -> {
-            when (cmd.media) {
-              CallMediaType.Video -> chatModel.activeCall.value = call.copy(videoEnabled = cmd.enable)
-              CallMediaType.Audio -> chatModel.activeCall.value = call.copy(audioEnabled = cmd.enable)
+            val sources = call.localMediaSources
+            when (cmd.source) {
+              CallMediaSource.Mic -> chatModel.activeCall.value = call.copy(localMediaSources = sources.copy(mic = cmd.enable))
+              CallMediaSource.Camera -> chatModel.activeCall.value = call.copy(localMediaSources = sources.copy(camera = cmd.enable))
+              CallMediaSource.ScreenAudio -> chatModel.activeCall.value = call.copy(localMediaSources = sources.copy(screenAudio = cmd.enable))
+              CallMediaSource.ScreenVideo -> chatModel.activeCall.value = call.copy(localMediaSources = sources.copy(screenVideo = cmd.enable))
             }
           }
           is WCallCommand.Camera -> {
             chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
-            if (!call.audioEnabled) {
-              chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = false))
+            if (!call.localMediaSources.mic) {
+              chatModel.callCommand.add(WCallCommand.Media(CallMediaSource.Mic, enable = false))
             }
           }
           is WCallCommand.End ->
@@ -93,6 +105,14 @@ actual fun ActiveCallView() {
           else -> {}
         }
         is WCallResponse.Error -> {
+          when (apiMsg.command) {
+            is WCallCommand.Capabilities -> chatModel.callCommand.add(WCallCommand.Permission(
+              title = generalGetString(MR.strings.call_desktop_permission_denied_title),
+              chrome = generalGetString(MR.strings.call_desktop_permission_denied_chrome),
+              safari = generalGetString(MR.strings.call_desktop_permission_denied_safari)
+            ))
+            else -> {}
+          }
           Log.e(TAG, "ActiveCallView: command error ${r.message}")
         }
       }
@@ -204,7 +224,7 @@ fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
       return when {
         session.headers["upgrade"] == "websocket" -> super.handle(session)
         session.uri.contains("/simplex/call/") -> resourcesToResponse("/desktop/call.html")
-        else -> resourcesToResponse(URI.create(session.uri).path)
+        else -> resourcesToResponse(uriCreateOrNull(session.uri)?.path ?: return newFixedLengthResponse("Error parsing URL"))
       }
     }
   }

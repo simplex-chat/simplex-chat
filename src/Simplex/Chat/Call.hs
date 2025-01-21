@@ -29,6 +29,7 @@ import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 data Call = Call
   { contactId :: ContactId,
     callId :: CallId,
+    callUUID :: Text,
     chatItemId :: Int64,
     callState :: CallState,
     callTs :: UTCTime
@@ -111,6 +112,7 @@ data RcvCallInvitation = RcvCallInvitation
     contact :: Contact,
     callType :: CallType,
     sharedKey :: Maybe C.Key,
+    callUUID :: Text,
     callTs :: UTCTime
   }
   deriving (Show)

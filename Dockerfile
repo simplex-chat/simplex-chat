@@ -29,7 +29,7 @@ RUN cp ./scripts/cabal.project.local.linux ./cabal.project.local
 
 # Compile simplex-chat
 RUN cabal update
-RUN cabal build exe:simplex-chat
+RUN cabal build exe:simplex-chat --constraint 'simplexmq +client_library'
 
 # Strip the binary from debug symbols to reduce size
 RUN bin=$(find /project/dist-newstyle -name "simplex-chat" -type f -executable) && \

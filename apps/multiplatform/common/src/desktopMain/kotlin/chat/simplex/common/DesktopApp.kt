@@ -56,7 +56,7 @@ fun showApp() {
             } else {
               // The last possible cause that can be closed
               chatModel.chatId.value = null
-              chatModel.chatItems.clear()
+              chatModel.chatItems.clearAndNotify()
             }
             chatModel.activeCall.value?.let {
               withBGApi {
@@ -170,7 +170,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       var windowFocused by remember { simplexWindowState.windowFocused }
       LaunchedEffect(windowFocused) {
         val delay = ChatController.appPrefs.laLockDelay.get()
-        if (!windowFocused && ChatModel.performLA.value && delay > 0) {
+        if (!windowFocused && ChatModel.showAuthScreen.value && delay > 0) {
           delay(delay * 1000L)
           // Trigger auth state check when delay ends (and if it ends)
           AppLock.recheckAuthState()
@@ -195,10 +195,22 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   if (remember { ChatController.appPrefs.developerTools.state }.value && remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     var hiddenUntilRestart by remember { mutableStateOf(false) }
     if (!hiddenUntilRestart) {
-      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)
+      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, height =
+      768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
+        val data = remember { ModalData() }
         SimpleXTheme {
-          TerminalView(ChatModel) { hiddenUntilRestart = true }
+          CompositionLocalProvider(LocalAppBarHandler provides data.appBarHandler) {
+            ModalView({ hiddenUntilRestart = true }) {
+              TerminalView(true)
+            }
+            ModalManager.floatingTerminal.showInView()
+            DisposableEffect(Unit) {
+              onDispose {
+                ModalManager.floatingTerminal.closeModals()
+              }
+            }
+          }
         }
       }
     }

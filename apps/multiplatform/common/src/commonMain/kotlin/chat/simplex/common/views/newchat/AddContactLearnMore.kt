@@ -15,9 +15,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun AddContactLearnMore(close: () -> Unit) {
-  ColumnWithScrollBar(
-    Modifier.padding(horizontal = DEFAULT_PADDING),
-  ) {
+  ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.one_time_link), withPadding = false)
     ReadableText(MR.strings.scan_qr_to_connect_to_contact)
     ReadableText(MR.strings.if_you_cant_meet_in_person)

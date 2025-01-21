@@ -105,7 +105,13 @@ struct TerminalView: View {
             }
         }
         .navigationViewStyle(.stack)
-        .navigationTitle("Chat console")
+        .toolbar {
+            // Redaction broken for `.navigationTitle` - using a toolbar item instead.
+            ToolbarItem(placement: .principal) {
+                Text("Chat console").font(.headline)
+            }
+        }
+        .modifier(ThemedBackground())
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
@@ -121,6 +127,7 @@ struct TerminalView: View {
         return ScrollView {
             Text(s.prefix(maxItemSize))
                 .padding()
+                .frame(maxWidth: .infinity)
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -130,6 +137,7 @@ struct TerminalView: View {
             }
         }
         .onDisappear { terminalItem = nil }
+        .modifier(ThemedBackground())
     }
     
     func consoleSendMessage() {
@@ -157,7 +165,7 @@ struct TerminalView_Previews: PreviewProvider {
         let chatModel = ChatModel()
         chatModel.terminalItems = [
             .resp(.now, ChatResponse.response(type: "contactSubscribed", json: "{}")),
-            .resp(.now, ChatResponse.response(type: "newChatItem", json: "{}"))
+            .resp(.now, ChatResponse.response(type: "newChatItems", json: "{}"))
         ]
         return NavigationView {
             TerminalView()

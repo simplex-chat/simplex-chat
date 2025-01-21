@@ -91,16 +91,21 @@ private enum MigrateToDeviceViewAlert: Identifiable {
 
 struct MigrateToDevice: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var alert: MigrateToDeviceViewAlert?
+    @State private var databaseAlert: DatabaseAlert? = nil
     private let tempDatabaseUrl = urlForTemporaryDatabase()
     @State private var chatReceiver: MigrationChatReceiver? = nil
     // Prevent from hiding the view until migration is finished or app deleted
     @State private var backDisabled: Bool = false
     @State private var showQRCodeScanner: Bool = true
+    @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
+
+    @State private var importingArchiveFromFileProgressIndicator = false
+    @State private var showFileImporter = false
 
     var body: some View {
         VStack {
@@ -174,13 +179,27 @@ struct MigrateToDevice: View {
                 return Alert(title: Text(title), message: Text(error))
             }
         }
+        .alert(item: $databaseAlert) { item in
+            switch item {
+            case .archiveImported:
+                let (title, message) = archiveImportedAlertText()
+                return Alert(title: Text(title), message: Text(message))
+            case let .archiveImportedWithErrors(errs):
+                let (title, message) = archiveImportedWithErrorsAlertText(errs: errs)
+                return Alert(title: Text(title), message: Text(message))
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text(error))
+            default: // not expected this branch to be called because this alert is used only for importArchive purpose
+                return Alert(title: Text("Error"))
+            }
+        }
         .interactiveDismissDisabled(backDisabled)
     }
 
     private func pasteOrScanLinkView() -> some View {
         ZStack {
             List {
-                Section("Scan QR code") {
+                Section(header: Text("Scan QR code").foregroundColor(theme.colors.secondary)) {
                     ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
                         switch resp {
                         case let .success(r):
@@ -196,11 +215,15 @@ struct MigrateToDevice: View {
                         }
                     }
                 }
-                if developerTools {
-                    Section("Or paste archive link") {
-                        pasteLinkView()
-                    }
+                Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
+                    pasteLinkView()
                 }
+                Section(header: Text("Or import archive file").foregroundColor(theme.colors.secondary)) {
+                    archiveImportFromFileView()
+                }
+            }
+            if importingArchiveFromFileProgressIndicator {
+                progressView()
             }
         }
     }
@@ -217,15 +240,44 @@ struct MigrateToDevice: View {
         } label: {
             Text("Tap to paste link")
         }
-        .disabled(!ChatModel.shared.pasteboardHasStrings)
+        .disabled(!pasteboardHasStrings)
         .frame(maxWidth: .infinity, alignment: .center)
     }
+
+    private func archiveImportFromFileView() -> some View {
+        Button {
+            showFileImporter = true
+        } label: {
+            Label("Import database", systemImage: "square.and.arrow.down")
+        }
+        .disabled(importingArchiveFromFileProgressIndicator)
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.zip],
+            allowsMultipleSelection: false
+        ) { result in
+            if case let .success(files) = result, let fileURL = files.first {
+                Task {
+                    let success = await DatabaseView.importArchive(fileURL, $importingArchiveFromFileProgressIndicator, $databaseAlert, true)
+                    if success {
+                        DatabaseView.startChat(
+                            Binding.constant(false),
+                            $importingArchiveFromFileProgressIndicator
+                        )
+                        hideView()
+                    }
+                }
+            }
+        }
+    }
+
 
     private func linkDownloadingView(_ link: String) -> some View {
         ZStack {
             List {
                 Section {} header: {
                     Text("Downloading link details")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -240,10 +292,11 @@ struct MigrateToDevice: View {
             List {
                 Section {} header: {
                     Text("Downloading archive")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             let ratio = Float(downloadedBytes) / Float(max(totalBytes, 1))
-            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: downloadedBytes, countStyle: .binary)) downloaded")
+            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: downloadedBytes, countStyle: .binary)) downloaded", theme.colors.primary)
         }
     }
 
@@ -254,14 +307,16 @@ struct MigrateToDevice: View {
                     try? FileManager.default.removeItem(atPath: archivePath)
                     migrationState = .linkDownloading(link: link)
                 }) {
-                    settingsRow("tray.and.arrow.down") {
-                        Text("Repeat download").foregroundColor(.accentColor)
+                    settingsRow("tray.and.arrow.down", color: theme.colors.secondary) {
+                        Text("Repeat download").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
                 Text("Download failed")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("You can give another try.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -277,6 +332,7 @@ struct MigrateToDevice: View {
             List {
                 Section {} header: {
                     Text("Importing archive")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -292,14 +348,16 @@ struct MigrateToDevice: View {
                 Button(action: {
                     migrationState = .archiveImport(archivePath: archivePath)
                 }) {
-                    settingsRow("square.and.arrow.down") {
-                        Text("Repeat import").foregroundColor(.accentColor)
+                    settingsRow("square.and.arrow.down", color: theme.colors.secondary) {
+                        Text("Repeat import").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
                 Text("Import failed")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("You can give another try.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -323,7 +381,7 @@ struct MigrateToDevice: View {
                 case let .migrationError(mtrError):
                     ("Incompatible database version",
                      nil,
-                     "\(NSLocalizedString("Error: ", comment: "")) \(DatabaseErrorView.mtrErrorDescription(mtrError))",
+                     "\(NSLocalizedString("Error: ", comment: "")) \(mtrErrorDescription(mtrError))",
                      nil)
                 }
             default: ("Error", nil, "Unknown error", nil)
@@ -333,8 +391,8 @@ struct MigrateToDevice: View {
                     Button(action: {
                         migrationState = .migration(passphrase: passphrase, confirmation: confirmation, useKeychain: useKeychain)
                     }) {
-                        settingsRow("square.and.arrow.down") {
-                            Text(button).foregroundColor(.accentColor)
+                        settingsRow("square.and.arrow.down", color: theme.colors.secondary) {
+                            Text(button).foregroundColor(theme.colors.primary)
                         }
                     }
                 } else {
@@ -342,8 +400,10 @@ struct MigrateToDevice: View {
                 }
             } header: {
                 Text(header)
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text(footer)
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -354,6 +414,7 @@ struct MigrateToDevice: View {
             List {
                 Section {} header: {
                     Text("Migrating")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -364,6 +425,7 @@ struct MigrateToDevice: View {
     }
 
     struct OnionView: View {
+        @EnvironmentObject var theme: AppTheme
         @State var appSettings: AppSettings
         @State private var onionHosts: OnionHosts = .no
         var finishMigration: (AppSettings) -> Void
@@ -380,18 +442,20 @@ struct MigrateToDevice: View {
                         appSettings.networkConfig = updated
                         finishMigration(appSettings)
                     }) {
-                        settingsRow("checkmark") {
-                            Text("Apply").foregroundColor(.accentColor)
+                        settingsRow("checkmark", color: theme.colors.secondary) {
+                            Text("Apply").foregroundColor(theme.colors.primary)
                         }
                     }
                 } header: {
                     Text("Confirm network settings")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("Please confirm that network settings are correct for this device.")
+                        .foregroundColor(theme.colors.secondary)
                         .font(.callout)
                 }
 
-                Section("Network settings") {
+                Section(header: Text("Network settings").foregroundColor(theme.colors.secondary)) {
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }
@@ -473,8 +537,12 @@ struct MigrateToDevice: View {
             do {
                 if !hasChatCtrl() {
                     chatInitControllerRemovingDatabases()
+                } else if ChatModel.shared.chatRunning == true {
+                    // cannot delete storage if chat is running
+                    try await apiStopChat()
                 }
                 try await apiDeleteStorage()
+                try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 do {
                     let config = ArchiveConfig(archivePath: archivePath)
                     let archiveErrors = try await apiImportArchive(config: config)
@@ -541,11 +609,22 @@ struct MigrateToDevice: View {
         do {
             try? FileManager.default.removeItem(at: getMigrationTempFilesDirectory())
             MigrationToDeviceState.save(nil)
-            appSettings.importIntoApp()
-            try SimpleX.startChat(refreshInvitations: true)
-            AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+            try ObjC.catchException {
+                appSettings.importIntoApp()
+            }
+            do {
+                try SimpleX.startChat(refreshInvitations: true)
+                AlertManager.shared.showAlertMsg(title: "Chat migrated!", message: "Finalize migration on another device.")
+            } catch let error {
+                AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
+            }
         } catch let error {
-            AlertManager.shared.showAlert(Alert(title: Text("Error starting chat"), message: Text(responseError(error))))
+            logger.error("Error importing settings: \(error.localizedDescription)")
+            AlertManager.shared.showAlert(
+                Alert(
+                    title: Text("Error migrating settings"),
+                    message: Text ("Some app settings were not migrated.") + Text("\n") + Text(responseError(error)))
+            )
         }
         hideView()
     }
@@ -566,6 +645,7 @@ struct MigrateToDevice: View {
 }
 
 private struct PassphraseEnteringView: View {
+    @EnvironmentObject var theme: AppTheme
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = true
     @State var currentKey: String
@@ -577,7 +657,7 @@ private struct PassphraseEnteringView: View {
         ZStack {
             List {
                 Section {
-                    settingsRow("key", color: .secondary) {
+                    settingsRow("key", color: theme.colors.secondary) {
                         Toggle("Save passphrase in Keychain", isOn: $useKeychain)
                     }
 
@@ -606,13 +686,14 @@ private struct PassphraseEnteringView: View {
                             verifyingPassphrase = false
                         }
                     }) {
-                        settingsRow("key", color: .secondary) {
+                        settingsRow("key", color: theme.colors.secondary) {
                             Text("Open chat")
                         }
                     }
                     .disabled(verifyingPassphrase || currentKey.isEmpty)
                 } header: {
                     Text("Enter passphrase")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     VStack(alignment: .leading, spacing: 16) {
                         if useKeychain {
@@ -623,6 +704,7 @@ private struct PassphraseEnteringView: View {
                             Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
                         }
                     }
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
                     .padding(.top, 1)
                     .onTapGesture { keyboardVisible = false }

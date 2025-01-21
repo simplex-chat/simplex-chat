@@ -1,0 +1,15 @@
+/* notification body */
+"%d new events" = "%d neue Ereignisse";
+
+/* notification body */
+"From: %@" = "Von: %@";
+
+/* notification */
+"New events" = "Neue Ereignisse";
+
+/* notification */
+"New messages" = "Neue Nachrichten";
+
+/* notification body */
+"New messages in %d chats" = "Neue Nachrichten in %d Chats";
+

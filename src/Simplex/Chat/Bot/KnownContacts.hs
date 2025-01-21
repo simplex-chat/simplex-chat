@@ -18,8 +18,8 @@ data KnownContact = KnownContact
   }
   deriving (Eq)
 
-knownContactNames :: [KnownContact] -> String
-knownContactNames = T.unpack . T.intercalate ", " . map (("@" <>) . localDisplayName)
+knownContactNames :: [KnownContact] -> Text
+knownContactNames = T.intercalate ", " . map (("@" <>) . localDisplayName)
 
 parseKnownContacts :: ReadM [KnownContact]
 parseKnownContacts = eitherReader $ parseAll knownContactsP . encodeUtf8 . T.pack

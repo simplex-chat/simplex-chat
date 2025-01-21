@@ -43,13 +43,16 @@ class CallManager(val chatModel: ChatModel) {
 
   private fun justAcceptIncomingCall(invitation: RcvCallInvitation, userProfile: Profile) {
     with (chatModel) {
+      activeCall.value?.androidCallState?.close()
       activeCall.value = Call(
         remoteHostId = invitation.remoteHostId,
         userProfile = userProfile,
         contact = invitation.contact,
+        callUUID = invitation.callUUID,
         callState = CallState.InvitationAccepted,
-        localMedia = invitation.callType.media,
+        initialCallType = invitation.callType.media,
         sharedKey = invitation.sharedKey,
+        androidCallState = platform.androidCreateActiveCallState()
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
@@ -77,6 +80,7 @@ class CallManager(val chatModel: ChatModel) {
       // Don't destroy WebView if you plan to accept next call right after this one
       if (!switchingCall.value) {
         showCallView.value = false
+        activeCall.value?.androidCallState?.close()
         activeCall.value = null
         activeCallViewIsCollapsed.value = false
         platform.androidCallEnded()

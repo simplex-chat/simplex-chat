@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -17,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.startChat
 import chat.simplex.common.model.ChatController.startChatWithTemporaryDatabase
@@ -45,16 +45,20 @@ data class MigrationFileLinkData(
 ) {
   @Serializable
   data class NetworkConfig(
-    val socksProxy: String?,
+    // Legacy. Remove in 2025
+    @SerialName("socksProxy")
+    val legacySocksProxy: String?,
+    val networkProxy: NetworkProxy?,
     val hostMode: HostMode?,
     val requiredHostMode: Boolean?
   ) {
-    fun hasOnionConfigured(): Boolean = socksProxy != null || hostMode == HostMode.Onion
+    fun hasProxyConfigured(): Boolean = networkProxy != null || legacySocksProxy != null || hostMode == HostMode.Onion
 
     fun transformToPlatformSupported(): NetworkConfig {
       return if (hostMode != null && requiredHostMode != null) {
         NetworkConfig(
-          socksProxy = if (hostMode == HostMode.Onion) socksProxy ?: NetCfg.proxyDefaults.socksProxy else socksProxy,
+          legacySocksProxy = if (hostMode == HostMode.Onion) legacySocksProxy ?: NetCfg.proxyDefaults.socksProxy else legacySocksProxy,
+          networkProxy = if (hostMode == HostMode.Onion) networkProxy ?: NetworkProxy() else networkProxy,
           hostMode = if (hostMode == HostMode.Onion) HostMode.OnionViaSocks else hostMode,
           requiredHostMode = requiredHostMode
         )
@@ -145,19 +149,10 @@ private fun MigrateFromDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  val scrollState = rememberScrollState()
-  Column(
-    Modifier.fillMaxSize().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier).height(IntrinsicSize.Max),
-  ) {
+  ColumnWithScrollBar(maxIntrinsicSize = true) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()
-  }
-  if (appPlatform.isDesktop) {
-    Box(Modifier.fillMaxSize()) {
-      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
-    }
   }
   platform.androidLockPortraitOrientation()
 }
@@ -179,7 +174,7 @@ private fun SectionByState(
     is MigrationFromState.UploadProgress -> migrationState.UploadProgressView(s.uploadedBytes, s.totalBytes, s.ctrl, s.user, tempDatabaseFile, chatReceiver, s.archivePath)
     is MigrationFromState.UploadFailed -> migrationState.UploadFailedView(s.totalBytes, s.archivePath, chatReceiver.value)
     is MigrationFromState.LinkCreation -> LinkCreationView()
-    is MigrationFromState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl)
+    is MigrationFromState.LinkShown -> migrationState.LinkShownView(s.fileId, s.link, s.ctrl, chatReceiver.value)
     is MigrationFromState.Finished -> migrationState.FinishedView(s.chatDeletion)
   }
 }
@@ -340,7 +335,7 @@ private fun LinkCreationView() {
 }
 
 @Composable
-private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: String, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
   SectionView {
     SettingsActionItemWithContent(
       icon = painterResource(MR.images.ic_close),
@@ -355,7 +350,15 @@ private fun MutableState<MigrationFromState>.LinkShownView(fileId: Long, link: S
       text = stringResource(MR.strings.migrate_from_device_finalize_migration),
       textColor = MaterialTheme.colors.primary,
       click = {
-        finishMigration(fileId, ctrl)
+        AlertManager.shared.showAlertDialog(
+          title = generalGetString(MR.strings.migrate_from_device_remove_archive_question),
+          text = generalGetString(MR.strings.migrate_from_device_uploaded_archive_will_be_removed),
+          confirmText = generalGetString(MR.strings.continue_to_next_step),
+          destructive = true,
+          onConfirm = {
+            finishMigration(fileId, ctrl, chatReceiver)
+          }
+        )
       }
     ) {}
     SectionTextFooter(annotatedStringResource(MR.strings.migrate_from_device_archive_will_be_deleted))
@@ -426,7 +429,8 @@ fun LargeProgressView(value: Float, title: String, description: String) {
   Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
-      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth() - DEFAULT_PADDING * 2))
+      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier.size(windowWidth() - DEFAULT_PADDING *
+          2))
         .rotate(-90f),
       color = MaterialTheme.colors.primary,
       strokeWidth = 25.dp
@@ -446,6 +450,7 @@ private fun MutableState<MigrationFromState>.stopChat() {
       try {
         controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
         state = if (appPreferences.initialRandomDBPassphrase.get()) MigrationFromState.PassphraseNotSet else MigrationFromState.PassphraseConfirmation
+        platform.androidChatStopped()
       } catch (e: Exception) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.migrate_from_device_error_saving_settings),
@@ -477,12 +482,13 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
     try {
       getMigrationTempFilesDirectory().mkdir()
-      val archivePath = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
-      val totalBytes = File(archivePath).length()
-      if (totalBytes > 0L) {
-        state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+      val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""))
+      if (archiveErrors.isEmpty()) {
+        uploadArchive(archivePath)
       } else {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
+        showArchiveExportedWithErrorsAlert(generalGetString(MR.strings.chat_database_exported_migrate), archiveErrors) {
+          uploadArchive(archivePath)
+        }
         state = MigrationFromState.UploadConfirmation
       }
     } catch (e: Exception) {
@@ -495,14 +501,28 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   }
 }
 
+private fun MutableState<MigrationFromState>.uploadArchive(archivePath: String) {
+  val totalBytes = File(archivePath).length()
+  if (totalBytes > 0L) {
+    state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+  } else {
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
+    state = MigrationFromState.UploadConfirmation
+  }
+
+}
+
 suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<ChatCtrl, User>? {
   val (status, ctrl) = chatInitTemporaryDatabase(tempDatabaseFile.absolutePath)
   showErrorOnMigrationIfNeeded(status)
   try {
     if (ctrl != null) {
       val user = startChatWithTemporaryDatabase(ctrl, netCfg)
-      return if (user != null) ctrl to user else null
+      if (user != null) return ctrl to user
+      chatCloseStore(ctrl)
     }
+    File(tempDatabaseFile.absolutePath + "_chat.db").delete()
+    File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   } catch (e: Throwable) {
     Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
   }
@@ -552,7 +572,8 @@ private fun MutableState<MigrationFromState>.startUploading(
           val cfg = getNetCfg()
           val data = MigrationFileLinkData(
             networkConfig = MigrationFileLinkData.NetworkConfig(
-              socksProxy = cfg.socksProxy,
+              legacySocksProxy = null,
+              networkProxy = if (appPrefs.networkUseSocksProxy.get()) appPrefs.networkProxy.get() else null,
               hostMode = cfg.hostMode,
               requiredHostMode = cfg.requiredHostMode
             )
@@ -597,9 +618,11 @@ private fun cancelMigration(fileId: Long, ctrl: ChatCtrl) {
   }
 }
 
-private fun MutableState<MigrationFromState>.finishMigration(fileId: Long, ctrl: ChatCtrl) {
+private fun MutableState<MigrationFromState>.finishMigration(fileId: Long, ctrl: ChatCtrl, chatReceiver: MigrationFromChatReceiver?) {
   withBGApi {
     cancelUploadedArchive(fileId, ctrl)
+    chatReceiver?.stopAndCleanUp()
+    getMigrationTempFilesDirectory().deleteRecursively()
     state = MigrationFromState.Finished(false)
   }
 }
@@ -635,6 +658,7 @@ private suspend fun startChatAndDismiss(dismiss: Boolean = true) {
     } else if (user != null) {
       startChat(user)
     }
+    platform.androidChatStartedAfterBeingOff()
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.error_starting_chat),

@@ -7,27 +7,33 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
+import android.view.View
+import androidx.compose.animation.core.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.*
 import androidx.work.*
+import chat.simplex.app.MainActivity.Companion.OLD_ANDROID_UI_FLAGS
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
 import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.map
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -63,11 +69,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
     }
     context = this
-    initHaskell()
+    initHaskell(packageName)
     initMultiplatform()
     runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
+    deleteOldChatArchive()
 
     // Present screen for continue migration if it wasn't finished yet
     if (chatModel.migrationState.value != null) {
@@ -86,7 +93,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
-            updatingChatsMutex.withLock {
+            withChats {
               kotlin.runCatching {
                 val currentUserId = chatModel.currentUser.value?.userId
                 val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
@@ -99,7 +106,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
                     /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
                     if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
                   }
-                  chatModel.updateChats(chats)
+                  updateChats(chats)
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }
@@ -117,7 +124,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * */
           if (chatModel.chatRunning.value != false &&
             chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete &&
-            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
+            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
+            // New installation passes all checks above and tries to start the service which is not needed at all
+            // because preferred notification type is not yet chosen. So, check that the user has initialized db already
+            appPrefs.newDatabaseInitialized.get()
           ) {
             SimplexService.start()
           }
@@ -142,6 +152,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
   * */
   fun schedulePeriodicServiceRestartWorker() = CoroutineScope(Dispatchers.Default).launch {
     if (!allowToStartServiceAfterAppExit()) {
+      getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       return@launch
     }
     val workerVersion = chatController.appPrefs.autoRestartWorkerVersion.get()
@@ -158,11 +169,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
       .addTag(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       .build()
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
-    WorkManager.getInstance(context)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
+    getWorkManagerInstance().enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
   fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {
     if (!allowToStartPeriodically()) {
+      MessagesFetcherWorker.cancelAll(withLog = false)
       return@launch
     }
     MessagesFetcherWorker.scheduleWork()
@@ -218,7 +230,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
             SimplexService.safeStopService()
           }
         }
-
+        if (mode != NotificationsMode.SERVICE) {
+          getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
+        }
         if (mode != NotificationsMode.PERIODIC) {
           MessagesFetcherWorker.cancelAll()
         }
@@ -235,6 +249,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidChatStopped() {
+        getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
         SimplexService.safeStopService()
         MessagesFetcherWorker.cancelAll()
       }
@@ -254,7 +269,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
-
         val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
@@ -267,6 +281,35 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
+      }
+
+      override fun androidSetStatusAndNavigationBarAppearance(isLightStatusBar: Boolean, isLightNavBar: Boolean, blackNavBar: Boolean, themeBackgroundColor: Color) {
+        val window = mainActivity.get()?.window ?: return
+        @Suppress("DEPRECATION")
+        val statusLight = isLightStatusBar && chatModel.activeCall.value == null
+        val navBarLight = isLightNavBar || windowOrientation() == WindowOrientation.LANDSCAPE
+        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
+        if (windowInsetController?.isAppearanceLightStatusBars != statusLight) {
+          windowInsetController?.isAppearanceLightStatusBars = statusLight
+        }
+        window.navigationBarColor = Color.Transparent.toArgb()
+        if (windowInsetController?.isAppearanceLightNavigationBars != navBarLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = navBarLight
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+          window.decorView.systemUiVisibility = if (statusLight && navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (statusLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or OLD_ANDROID_UI_FLAGS
+          } else if (navBarLight) {
+            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR or OLD_ANDROID_UI_FLAGS
+          } else {
+            OLD_ANDROID_UI_FLAGS
+          }
+          window.navigationBarColor = if (blackNavBar) Color.Black.toArgb() else themeBackgroundColor.toArgb()
+        } else {
+          window.navigationBarColor = Color.Transparent.toArgb()
+        }
       }
 
       override fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long?, chatId: ChatId?) {
@@ -295,6 +338,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
         NetworkObserver.shared.restartNetworkObserver()
       }
 
+      override fun androidIsXiaomiDevice(): Boolean = setOf("xiaomi", "redmi", "poco").contains(Build.BRAND.lowercase())
+
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable
       override fun androidLockPortraitOrientation() {
@@ -320,6 +365,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         return true
       }
+
+      override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
+
+      override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
   }
 }

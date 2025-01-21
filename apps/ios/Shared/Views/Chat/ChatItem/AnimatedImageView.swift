@@ -9,6 +9,7 @@ import SwiftUI
 class AnimatedImageView: UIView {
     var image: UIImage? = nil
     var imageView: UIImageView? = nil
+    var cMode: UIView.ContentMode = .scaleAspectFit
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -18,11 +19,12 @@ class AnimatedImageView: UIView {
         fatalError("Not implemented")
     }
 
-    convenience init(image: UIImage) {
+    convenience init(image: UIImage, contentMode: UIView.ContentMode) {
         self.init()
         self.image = image
+        self.cMode = contentMode
         imageView = UIImageView(gifImage: image)
-        imageView!.contentMode = .scaleAspectFit
+        imageView!.contentMode = contentMode
         self.addSubview(imageView!)
     }
 
@@ -35,7 +37,7 @@ class AnimatedImageView: UIView {
         if let subview = self.subviews.first as? UIImageView {
             if image.imageData != subview.gifImage?.imageData {
                 imageView = UIImageView(gifImage: image)
-                imageView!.contentMode = .scaleAspectFit
+                imageView!.contentMode = contentMode
                 self.addSubview(imageView!)
                 subview.removeFromSuperview()
             }
@@ -47,13 +49,15 @@ class AnimatedImageView: UIView {
 
 struct SwiftyGif: UIViewRepresentable {
     private let image: UIImage
+    private let contentMode: UIView.ContentMode
 
-    init(image: UIImage) {
+    init(image: UIImage, contentMode: UIView.ContentMode = .scaleAspectFit) {
         self.image = image
+        self.contentMode = contentMode
     }
 
     func makeUIView(context: Context) -> AnimatedImageView {
-        AnimatedImageView(image: image)
+        AnimatedImageView(image: image, contentMode: contentMode)
     }
 
     func updateUIView(_ imageView: AnimatedImageView, context: Context) {

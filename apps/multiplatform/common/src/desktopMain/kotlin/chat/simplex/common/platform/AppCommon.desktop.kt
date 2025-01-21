@@ -1,14 +1,19 @@
 package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
+import chat.simplex.common.simplexWindowState
 import chat.simplex.common.views.call.RcvCallInvitation
+import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
 import java.util.*
 import chat.simplex.res.MR
+import java.io.File
 
 actual val appPlatform = AppPlatform.DESKTOP
 
 actual val deviceName = generalGetString(MR.strings.desktop_device)
+
+actual fun isAppVisibleAndFocused() = simplexWindowState.windowFocused.value
 
 @Suppress("ConstantLocale")
 val defaultLocale: Locale = Locale.getDefault()
@@ -26,6 +31,7 @@ fun initApp() {
     override fun showMessage(title: String, text: String) = chat.simplex.common.model.NtfManager.showMessage(title, text)
   }
   applyAppLocale()
+  deleteOldChatArchive()
   if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
     initChatControllerOnStart()
   }

@@ -10,5 +10,5 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 expect fun QRCodeScanner(
   showQRCodeScanner: MutableState<Boolean> = remember { mutableStateOf(true) },
   padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
-  onBarcode: (String) -> Unit
+  onBarcode: suspend (String) -> Boolean
 )

@@ -10,22 +10,21 @@ import SwiftUI
 import SimpleXChat
 
 struct DeletedItemView: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
             Text(chatItem.content.text)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .italic()
-            CIMetaView(chat: chat, chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
         .padding(.leading, 12)
         .padding(.vertical, 6)
-        .background(chatItemFrameColor(chatItem, colorScheme))
-        .cornerRadius(18)
+        .background(chatItemFrameColor(chatItem, theme))
         .textSelection(.disabled)
     }
 }

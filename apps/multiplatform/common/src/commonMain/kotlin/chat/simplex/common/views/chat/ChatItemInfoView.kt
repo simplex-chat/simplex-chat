@@ -23,11 +23,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.group.MemberProfileImage
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -74,7 +75,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(itemColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(itemColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -121,7 +122,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
     Column {
       Box(
-        Modifier.clip(RoundedCornerShape(18.dp)).background(quoteColor).padding(bottom = 3.dp)
+        Modifier.clipChatItem().background(quoteColor).padding(bottom = 3.dp)
           .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
           .onRightClick { showMenu.value = true }
       ) {
@@ -201,7 +202,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionItemView(
         click = {
           withBGApi {
-            openChat(chatRh, forwardedFromItem.chatInfo, chatModel)
+            openChat(chatRh, forwardedFromItem.chatInfo)
             ModalManager.end.closeModals()
           }
         },
@@ -223,7 +224,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     Row(
       Modifier
         .fillMaxWidth()
-        .sizeIn(minHeight = 46.dp)
+        .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
         .padding(PaddingValues(horizontal = DEFAULT_PADDING))
         .clickable { expanded.value = !expanded.value },
       horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -276,47 +277,46 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun HistoryTab() {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val versions = ciInfo.itemVersions
       if (versions.isNotEmpty()) {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.edit_history), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           versions.forEachIndexed { i, ciVersion ->
             ItemVersionView(ciVersion, current = i == 0)
           }
         }
       } else {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_history), color = MaterialTheme.colors.secondary)
           }
         }
       }
       SectionBottomSpacer()
+      SectionBottomSpacer()
     }
   }
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
-      SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
       }
+      SectionBottomSpacer()
       SectionBottomSpacer()
     }
   }
 
   @Composable
   fun ForwardedFromTab(forwardedFromItem: AChatItem) {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       SectionView {
@@ -326,15 +326,16 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         ForwardedFromView(forwardedFromItem)
       }
       SectionBottomSpacer()
+      SectionBottomSpacer()
     }
   }
 
   @Composable
-  fun MemberDeliveryStatusView(member: GroupMember, status: CIStatus, sentViaProxy: Boolean?) {
+  fun MemberDeliveryStatusView(member: GroupMember, status: GroupSndStatus, sentViaProxy: Boolean?) {
     SectionItemView(
       padding = PaddingValues(horizontal = 0.dp)
     ) {
-      ProfileImage(size = 36.dp, member.image)
+      MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
       Text(
         member.chatViewName,
@@ -355,7 +356,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           )
         }
       }
-      val statusIcon = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
+      val (icon, statusColor) = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
       var modifier = Modifier.size(36.dp).clip(RoundedCornerShape(20.dp))
       val info = status.statusInto
       if (info != null) {
@@ -367,45 +368,36 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         }
       }
       Box(modifier, contentAlignment = Alignment.Center) {
-        if (statusIcon != null) {
-          val (icon, statusColor) = statusIcon
-          Icon(
-            painterResource(icon),
-            contentDescription = null,
-            tint = statusColor
-          )
-        } else {
-          Icon(
-            painterResource(MR.images.ic_more_horiz),
-            contentDescription = null,
-            tint = CurrentColors.value.colors.secondary
-          )
-        }
+        Icon(
+          painterResource(icon),
+          contentDescription = null,
+          tint = statusColor
+        )
       }
     }
   }
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    // LALAL SCROLLBAR DOESN'T WORK
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
       val mss = membersStatuses(chatModel, memberDeliveryStatuses)
       if (mss.isNotEmpty()) {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.delivery), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
           mss.forEach { (member, status, sentViaProxy) ->
             MemberDeliveryStatusView(member, status, sentViaProxy)
           }
         }
       } else {
-        SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(stringResource(MR.strings.no_info_on_delivery), color = MaterialTheme.colors.secondary)
           }
         }
       }
+      SectionBottomSpacer()
       SectionBottomSpacer()
     }
   }
@@ -445,12 +437,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   Column {
     if (numTabs() > 1) {
-      Column(
+      Box(
         Modifier
-          .fillMaxHeight(),
-        verticalArrangement = Arrangement.SpaceBetween
+          .fillMaxHeight()
       ) {
-        Column(Modifier.weight(1f)) {
+        Column {
           when (val sel = selection.value) {
             is CIInfoTab.Delivery -> {
               DeliveryTab(sel.memberDeliveryStatuses)
@@ -490,28 +481,33 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
             selection.value = CIInfoTab.Delivery(ciInfo.memberDeliveryStatuses)
           }
         }
-        TabRow(
-          selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
-          backgroundColor = Color.Transparent,
-          contentColor = MaterialTheme.colors.primary,
-        ) {
-          availableTabs.forEach { ciInfoTab ->
-            Tab(
-              selected = selection.value::class == ciInfoTab::class,
-              onClick = {
-                selection.value = ciInfoTab
-              },
-              text = { Text(tabTitle(ciInfoTab), fontSize = 13.sp) },
-              icon = {
-                Icon(
-                  painterResource(tabIcon(ciInfoTab)),
-                  tabTitle(ciInfoTab)
-                )
-              },
-              selectedContentColor = MaterialTheme.colors.primary,
-              unselectedContentColor = MaterialTheme.colors.secondary,
-            )
+        val oneHandUI = remember { appPrefs.oneHandUI.state }
+        Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().offset(x = 0.dp, y = if (oneHandUI.value) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)) {
+          TabRow(
+            selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
+            Modifier.height(AppBarHeight * fontSizeSqrtMultiplier),
+            backgroundColor = MaterialTheme.colors.background,
+            contentColor = MaterialTheme.colors.primary,
+          ) {
+            availableTabs.forEach { ciInfoTab ->
+              LeadingIconTab(
+                selected = selection.value::class == ciInfoTab::class,
+                onClick = {
+                  selection.value = ciInfoTab
+                },
+                text = { Text(tabTitle(ciInfoTab), fontSize = 13.sp) },
+                icon = {
+                  Icon(
+                    painterResource(tabIcon(ciInfoTab)),
+                    tabTitle(ciInfoTab)
+                  )
+                },
+                selectedContentColor = MaterialTheme.colors.primary,
+                unselectedContentColor = MaterialTheme.colors.secondary,
+              )
+            }
           }
+          Divider()
         }
       }
     } else {
@@ -520,7 +516,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 }
 
-private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, CIStatus, Boolean?>> {
+private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, GroupSndStatus, Boolean?>> {
   return memberDeliveryStatuses.mapNotNull { mds ->
     chatModel.getGroupMember(mds.groupMemberId)?.let { mem ->
       Triple(mem, mds.memberDeliveryStatus, mds.sentViaProxy)

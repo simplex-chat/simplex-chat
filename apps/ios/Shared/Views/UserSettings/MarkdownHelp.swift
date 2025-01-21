@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct MarkdownHelp: View {
+    @EnvironmentObject var theme: AppTheme
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("You can use markdown to format messages:")
@@ -21,7 +23,7 @@ struct MarkdownHelp: View {
             (
                 mdFormat("#secret#", Text("secret")
                     .foregroundColor(.clear)
-                    .underline(color: .primary) + Text(" (can be copied)"))
+                    .underline(color: theme.colors.onBackground) + Text(" (can be copied)"))
             )
             .textSelection(.enabled)
         }

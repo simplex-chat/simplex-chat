@@ -2,7 +2,7 @@
 //  MPVolumeView.swift
 //  SimpleX (iOS)
 //
-//  Created by Stanislav on 24.04.2024.
+//  Created by Avently on 24.04.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 

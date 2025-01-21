@@ -17,7 +17,9 @@ struct NavStackCompat <C: View, D: View>: View {
         if #available(iOS 16, *) {
             NavigationStack(path: Binding(
                 get: { isActive.wrappedValue ? [true] : [] },
-                set: { _ in }
+                set: { path in
+                    if path.isEmpty { isActive.wrappedValue = false }
+                }
             )) {
                 ZStack {
                     NavigationLink(value: true) { EmptyView() }

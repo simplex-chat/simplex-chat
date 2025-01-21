@@ -12,6 +12,8 @@ public typealias AppSubscriber = SharedFileSubscriber<ProcessMessage<AppProcessM
 
 public typealias NSESubscriber = SharedFileSubscriber<ProcessMessage<NSEProcessMessage>>
 
+public typealias SESubscriber = SharedFileSubscriber<ProcessMessage<SEProcessMessage>>
+
 public class SharedFileSubscriber<Message: Codable>: NSObject, NSFilePresenter {
     var fileURL: URL
     public var presentedItemURL: URL?
@@ -57,6 +59,8 @@ let appMessagesSharedFile = getGroupContainerDirectory().appendingPathComponent(
 
 let nseMessagesSharedFile = getGroupContainerDirectory().appendingPathComponent("chat.simplex.app.SimpleX-NSE.messages", isDirectory: false)
 
+let seMessagesSharedFile = getGroupContainerDirectory().appendingPathComponent("chat.simplex.app.SimpleX-SE.messages", isDirectory: false)
+
 public struct ProcessMessage<Message: Codable>: Codable {
     var createdAt: Date = Date.now
     var message: Message
@@ -70,12 +74,20 @@ public enum NSEProcessMessage: Codable {
     case state(state: NSEState)
 }
 
+public enum SEProcessMessage: Codable {
+    case state(state: SEState)
+}
+
 public func sendAppProcessMessage(_ message: AppProcessMessage) {
     SharedFileSubscriber.notify(url: appMessagesSharedFile, message: ProcessMessage(message: message))
 }
 
 public func sendNSEProcessMessage(_ message: NSEProcessMessage) {
     SharedFileSubscriber.notify(url: nseMessagesSharedFile, message: ProcessMessage(message: message))
+}
+
+public func sendSEProcessMessage(_ message: SEProcessMessage) {
+    SharedFileSubscriber.notify(url: seMessagesSharedFile, message: ProcessMessage(message: message))
 }
 
 public func appMessageSubscriber(onMessage: @escaping (AppProcessMessage) -> Void) -> AppSubscriber {
@@ -90,10 +102,20 @@ public func nseMessageSubscriber(onMessage: @escaping (NSEProcessMessage) -> Voi
     }
 }
 
+public func seMessageSubscriber(onMessage: @escaping (SEProcessMessage) -> Void) -> SESubscriber {
+    SharedFileSubscriber(fileURL: seMessagesSharedFile) { (msg: ProcessMessage<SEProcessMessage>) in
+        onMessage(msg.message)
+    }
+}
+
 public func sendAppState(_ state: AppState) {
     sendAppProcessMessage(.state(state: state))
 }
 
 public func sendNSEState(_ state: NSEState) {
     sendNSEProcessMessage(.state(state: state))
+}
+
+public func sendSEState(_ state: SEState) {
+    sendSEProcessMessage(.state(state: state))
 }

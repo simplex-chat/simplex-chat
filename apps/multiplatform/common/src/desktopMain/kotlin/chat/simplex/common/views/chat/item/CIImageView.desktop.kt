@@ -13,6 +13,7 @@ actual fun SimpleAndAnimatedImageView(
   imageBitmap: ImageBitmap,
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
+  smallView: Boolean,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 ) {
   // LALAL make it animated too

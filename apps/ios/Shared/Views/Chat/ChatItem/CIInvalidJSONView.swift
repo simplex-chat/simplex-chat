@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct CIInvalidJSONView: View {
+    @EnvironmentObject var theme: AppTheme
     var json: String
     @State private var showJSON = false
     
@@ -21,7 +22,6 @@ struct CIInvalidJSONView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
-        .cornerRadius(18)
         .textSelection(.disabled)
         .onTapGesture { showJSON = true }
         .appSheet(isPresented: $showJSON) {
@@ -44,6 +44,7 @@ func invalidJSONView(_ json: String) -> some View {
     }
     .frame(maxHeight: .infinity)
     .padding()
+    .modifier(ThemedBackground())
 }
 
 struct CIInvalidJSONView_Previews: PreviewProvider {

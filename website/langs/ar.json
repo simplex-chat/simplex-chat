@@ -244,16 +244,17 @@
     "f-droid-page-simplex-chat-repo-section-text": "لإضافته إلى عميل F-Droid، <span class='hide-on-mobile'>امسح رمز QR أو</span> استخدم عنوان URL هذا:",
     "f-droid-page-f-droid-org-repo-section-text": "مستودعات SimpleX Chat و F-Droid.org مبنية على مفاتيح مختلفة. للتبديل، يُرجى <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>تصدير</a> قاعدة بيانات الدردشة وإعادة تثبيت التطبيق.",
     "comparison-section-list-point-4a": "مُرحلات SimpleX لا يمكنها أن تتنازل عن تعمية بين الطرفين. تحقق من رمز الأمان للتخفيف من الهجوم على القناة خارج النطاق",
-    "hero-overlay-3-title": "التقييم الأمني",
-    "hero-overlay-card-3-p-2": "قامت Trail of Bits بمراجعة مكونات التشفير والشبكات الخاصة بمنصة SimpleX في نوفمبر 2022.",
-    "hero-overlay-card-3-p-3": "اقرأ المزيد في <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">الإعلان</a>.",
+    "hero-overlay-3-title": "التقييمات الأمنية",
+    "hero-overlay-card-3-p-2": "قامت Trail of Bits بمراجعة مكونات التشفير والشبكات الخاصة بمنصة SimpleX في نوفمبر 2022. <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">اقرأ المزيد في الإعلان</a>.",
     "jobs": "انضم للفريق",
-    "hero-overlay-3-textlink": "التقييم الأمني",
+    "hero-overlay-3-textlink": "التقييمات الأمنية",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> هي شركة رائدة في مجال الاستشارات الأمنية والتكنولوجية، ومن بين عملائها شركات التكنولوجيا الكبرى والوكالات الحكومية ومشاريع blockchain الكبرى.",
     "docs-dropdown-9": "التنزيلات",
     "please-enable-javascript": "الرجاء تفعيل جافا سكريبت (JavaScript) لرؤية رمز QR.",
     "please-use-link-in-mobile-app": "يُرجى استخدام الرابط في تطبيق الجوال",
     "docs-dropdown-10": "الشفافية",
     "docs-dropdown-11": "الأسئلة الأكثر شيوعًا",
-    "docs-dropdown-12": "الأمان"
+    "docs-dropdown-12": "الأمان",
+    "hero-overlay-card-3-p-3": "قامت Trail of Bits بمراجعة التصميم التعموي لبروتوكولات شبكة SimpleX في يوليو 2024. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">اقرأ المزيد</a>.",
+    "docs-dropdown-14": "SimpleX للأعمال التجارية"
 }

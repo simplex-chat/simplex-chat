@@ -11,12 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.unit.*
+import chat.simplex.common.model.BusinessChatType
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
@@ -27,10 +28,15 @@ import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
   val icon =
     when (chatInfo) {
-      is ChatInfo.Group -> MR.images.ic_supervised_user_circle_filled
+      is ChatInfo.Group ->
+        when (chatInfo.groupInfo.businessChat?.chatType) {
+          BusinessChatType.Business -> MR.images.ic_work_filled_padded
+          BusinessChatType.Customer -> MR.images.ic_account_circle_filled
+          null -> MR.images.ic_supervised_user_circle_filled
+        }
       is ChatInfo.Local -> MR.images.ic_folder_filled
       else -> MR.images.ic_account_circle_filled
     }
@@ -54,7 +60,8 @@ fun ProfileImage(
   image: String? = null,
   icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null
+  backgroundColor: Color? = null,
+  blurred: Boolean = false
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
@@ -87,7 +94,7 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = ProfileIconModifier(size)
+        modifier = ProfileIconModifier(size, blurred = blurred)
       )
     }
   }
@@ -108,12 +115,12 @@ private const val squareToCircleRatio = 0.935f
 private const val radiusFactor = (1 - squareToCircleRatio) / 50
 
 @Composable
-fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
+fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = false): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
   val r = max(0f, percent.value)
   val pad = if (padding) size / 12 else 0.dp
   val m = Modifier.size(size)
-  return when {
+  val m1 = when {
     r >= 50 ->
       m.padding(pad).clip(CircleShape)
     r <= 0 -> {
@@ -125,6 +132,7 @@ fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
       m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
     }
   }
+  return if (blurred) m1.blur(size / 4) else m1
 }
 
 /** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
@@ -135,9 +143,10 @@ fun ProfileImageForActiveCall(
   size: Dp,
   image: String? = null,
   color: Color = MaterialTheme.colors.secondaryVariant,
-) {
+  backgroundColor: Color? = null,
+  ) {
   if (image == null) {
-    Box(Modifier.requiredSize(size).clip(CircleShape)) {
+    Box(Modifier.requiredSize(size).clip(CircleShape).then(if (backgroundColor != null) Modifier.background(backgroundColor) else Modifier)) {
       Icon(
         AccountCircleFilled,
         contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),

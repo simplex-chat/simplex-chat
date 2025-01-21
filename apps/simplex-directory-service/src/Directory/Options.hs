@@ -11,6 +11,7 @@ module Directory.Options
   )
 where
 
+import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
@@ -18,9 +19,10 @@ import Simplex.Chat.Options (ChatOpts (..), ChatCmdLog (..), CoreChatOpts, coreC
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
+    adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     directoryLog :: Maybe FilePath,
-    serviceName :: String,
+    serviceName :: T.Text,
     searchResults :: Int,
     testing :: Bool
   }
@@ -28,6 +30,13 @@ data DirectoryOpts = DirectoryOpts
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
 directoryOpts appDir defaultDbFileName = do
   coreOptions <- coreChatOptsP appDir defaultDbFileName
+  adminUsers <-
+    option
+      parseKnownContacts
+      ( long "admin-users"
+          <> metavar "ADMIN_USERS"
+          <> help "Comma-separated list of admin-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
+      )
   superUsers <-
     option
       parseKnownContacts
@@ -52,9 +61,10 @@ directoryOpts appDir defaultDbFileName = do
   pure
     DirectoryOpts
       { coreOptions,
+        adminUsers,
         superUsers,
         directoryLog,
-        serviceName,
+        serviceName = T.pack serviceName,
         searchResults = 10,
         testing = False
       }

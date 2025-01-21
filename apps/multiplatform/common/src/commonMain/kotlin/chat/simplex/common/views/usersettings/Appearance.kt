@@ -4,11 +4,14 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
@@ -19,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -33,9 +37,11 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeManager.colorFromReadableHex
 import chat.simplex.common.ui.theme.ThemeManager.toReadableHex
 import chat.simplex.common.views.chat.item.PreviewChatItemView
+import chat.simplex.common.views.chat.item.msgTailWidthDp
 import chat.simplex.res.MR
 import com.godaddy.android.colorpicker.ClassicColorPicker
 import com.godaddy.android.colorpicker.HsvColor
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -52,7 +58,7 @@ expect fun AppearanceView(m: ChatModel)
 object AppearanceScope {
   @Composable
   fun ProfileImageSection() {
-    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    SectionView(stringResource(MR.strings.settings_section_title_profile_images).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
       val image = remember { chatModel.currentUser }.value?.image
       Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         val size = 60
@@ -83,6 +89,178 @@ object AppearanceScope {
   }
 
   @Composable
+  fun AppToolbarsSection() {
+    BoxWithConstraints {
+      SectionView(stringResource(MR.strings.appearance_app_toolbars).uppercase()) {
+        SectionItemViewWithoutMinPadding {
+          Box(Modifier.weight(1f)) {
+            Text(
+              stringResource(MR.strings.appearance_in_app_bars_alpha),
+              Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                appPrefs.inAppBarsAlpha.set(appPrefs.inAppBarsDefaultAlpha)
+              },
+              maxLines = 1
+            )
+          }
+          Spacer(Modifier.padding(end = 10.dp))
+          Slider(
+            (1 - remember { appPrefs.inAppBarsAlpha.state }.value).coerceIn(0f, 0.5f),
+            onValueChange = {
+              val diff = it % 0.025f
+              appPrefs.inAppBarsAlpha.set(1f - (String.format(Locale.US, "%.3f", it + (if (diff >= 0.0125f) -diff + 0.025f else -diff)).toFloatOrNull() ?: 1f))
+            },
+            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+            valueRange = 0f..0.5f,
+            steps = 21,
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        }
+        // In Android in OneHandUI there is a problem with setting initial value of blur if it was 0 before entering the screen.
+        // So doing in two steps works ok
+        fun saveBlur(value: Int) {
+          val oneHandUI = appPrefs.oneHandUI.get()
+          val pref = appPrefs.appearanceBarsBlurRadius
+          if (appPlatform.isAndroid && oneHandUI && pref.get() == 0) {
+            pref.set(if (value > 2) value - 1 else value + 1)
+            withApi {
+              delay(50)
+              pref.set(value)
+            }
+          } else {
+            pref.set(value)
+          }
+        }
+        val blur = remember { appPrefs.appearanceBarsBlurRadius.state }
+        if (appPrefs.deviceSupportsBlur || blur.value > 0) {
+          SectionItemViewWithoutMinPadding {
+            Box(Modifier.weight(1f)) {
+              Text(
+                stringResource(MR.strings.appearance_bars_blur_radius),
+                Modifier.clickable(
+                  interactionSource = remember { MutableInteractionSource() },
+                  indication = null
+                ) {
+                  saveBlur(50)
+                },
+                maxLines = 1
+              )
+            }
+            Spacer(Modifier.padding(end = 10.dp))
+            Slider(
+              blur.value.toFloat() / 100f,
+              onValueChange = {
+                val diff = it % 0.05f
+                saveBlur(((String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f) * 100).toInt())
+              },
+              Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+              valueRange = 0f..1f,
+              steps = 21,
+              colors = SliderDefaults.colors(
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent,
+              )
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun MessageShapeSection() {
+    BoxWithConstraints {
+      SectionView(stringResource(MR.strings.settings_section_title_message_shape).uppercase()) {
+        SectionItemViewWithoutMinPadding {
+          Text(stringResource(MR.strings.settings_message_shape_corner), Modifier.weight(1f))
+          Spacer(Modifier.width(10.dp))
+          Slider(
+            remember { appPreferences.chatItemRoundness.state }.value,
+            onValueChange = {
+              val diff = it % 0.05f
+              appPreferences.chatItemRoundness.set(it + (if (diff >= 0.025f) -diff + 0.05f else -diff))
+              saveThemeToDatabase(null)
+            },
+            Modifier.widthIn(max = (this@BoxWithConstraints.maxWidth - DEFAULT_PADDING * 2) * 0.618f),
+            valueRange = 0f..1f,
+            steps = 20,
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        }
+        SettingsPreferenceItem(icon = null, stringResource(MR.strings.settings_message_shape_tail), appPreferences.chatItemTail)
+      }
+    }
+  }
+
+  @Composable
+  fun FontScaleSection() {
+    val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
+    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(50.dp)
+          .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+          .clip(RoundedCornerShape(percent = 22))
+          .clickable {
+            localFontScale.value = 1f
+            appPrefs.fontScale.set(localFontScale.value)
+          },
+          contentAlignment = Alignment.Center) {
+          CompositionLocalProvider(
+            LocalDensity provides Density(LocalDensity.current.density, localFontScale.value)
+          ) {
+            Text("Aa", color = if (localFontScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground)
+          }
+        }
+        Spacer(Modifier.width(15.dp))
+        //      Text("${(localFontScale.value * 100).roundToInt()}%", Modifier.width(70.dp), textAlign = TextAlign.Center, fontSize = 12.sp)
+        if (appPlatform.isAndroid) {
+          Slider(
+            localFontScale.value,
+            valueRange = 0.75f..1.25f,
+            steps = 11,
+            onValueChange = {
+              val diff = it % 0.05f
+              localFontScale.value = String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f
+            },
+            onValueChangeFinished = {
+              appPrefs.fontScale.set(localFontScale.value)
+            },
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        } else {
+          Slider(
+            localFontScale.value,
+            valueRange = 0.7f..1.5f,
+            steps = 9,
+            onValueChange = {
+              val diff = it % 0.1f
+              localFontScale.value = String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f
+            },
+            onValueChangeFinished = {
+              appPrefs.fontScale.set(localFontScale.value)
+            },
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        }
+      }
+    }
+  }
+
+  @Composable
   fun ChatThemePreview(
     theme: DefaultTheme,
     wallpaperImage: ImageBitmap?,
@@ -97,7 +275,7 @@ object AppearanceScope {
     Column(Modifier
       .drawWithCache {
         if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null) {
-          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor)
+          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, null, null)
         } else {
           onDrawBehind {
             drawRect(themeBackgroundColor)
@@ -107,13 +285,17 @@ object AppearanceScope {
       .padding(DEFAULT_PADDING_HALF)
     ) {
       if (withMessages) {
-        val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
-        PreviewChatItemView(alice)
-        PreviewChatItemView(
-          ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
-          quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
-        )
-        )
+        val chatItemTail = remember { appPreferences.chatItemTail.state }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = if (chatItemTail.value) Modifier else Modifier.padding(horizontal = msgTailWidthDp)) {
+          val alice = remember { ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), generalGetString(MR.strings.wallpaper_preview_hello_bob)) }
+          PreviewChatItemView(alice)
+          PreviewChatItemView(
+            ChatItem.getSampleData(2, CIDirection.DirectSnd(), Clock.System.now(), stringResource(MR.strings.wallpaper_preview_hello_alice),
+              quotedItem = CIQuote(alice.chatDir, alice.id, sentAt = alice.meta.itemTs, formattedText = alice.formattedText, content = MsgContent.MCText(alice.content.text))
+            )
+          )
+        }
       } else {
         Box(Modifier.fillMaxSize())
       }
@@ -225,8 +407,8 @@ object AppearanceScope {
     }
 
     if (appPlatform.isDesktop) {
-      val itemWidth = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
-      val itemHeight = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2) / 4
+      val itemWidth = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
+      val itemHeight = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - DEFAULT_PADDING * 2) / 4
       val rows = ceil((PresetWallpaper.entries.size + 2) / 4f).roundToInt()
       LazyVerticalGrid(
         columns = GridCells.Fixed(4),
@@ -422,9 +604,7 @@ object AppearanceScope {
 
   @Composable
   fun CustomizeThemeView(onChooseType: (WallpaperType?) -> Unit) {
-    ColumnWithScrollBar(
-      Modifier.fillMaxWidth(),
-    ) {
+    ColumnWithScrollBar {
       val currentTheme by CurrentColors.collectAsState()
 
       AppBarTitle(stringResource(MR.strings.customize_theme_title))
@@ -488,13 +668,13 @@ object AppearanceScope {
           },
         )
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
       CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
       }
 
-      SectionSpacer()
+      SectionDividerSpaced(maxBottomPadding = false)
 
       val currentOverrides = remember(currentTheme) { ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get()) }
       val canResetColors = currentTheme.base.hasChangedAnyColor(currentOverrides)
@@ -542,6 +722,39 @@ object AppearanceScope {
         }
       }
       SectionBottomSpacer()
+    }
+  }
+
+  @Composable
+  fun ColorModeSwitcher() {
+    val currentTheme by CurrentColors.collectAsState()
+    val themeMode = if (remember { appPrefs.currentTheme.state }.value == DefaultTheme.SYSTEM_THEME_NAME) {
+      if (systemInDarkThemeCurrently) DefaultThemeMode.DARK else DefaultThemeMode.LIGHT
+    } else {
+      currentTheme.base.mode
+    }
+
+    val onLongClick = {
+      ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+      showToast(generalGetString(MR.strings.system_mode_toast))
+
+      saveThemeToDatabase(null)
+    }
+    Box(
+      modifier = Modifier
+        .clip(CircleShape)
+        .combinedClickable(
+          onClick = {
+            ThemeManager.applyTheme(if (themeMode == DefaultThemeMode.LIGHT) appPrefs.systemDarkTheme.get()!! else DefaultTheme.LIGHT.themeName)
+            saveThemeToDatabase(null)
+          },
+          onLongClick = onLongClick
+        )
+        .onRightClick(onLongClick)
+        .size(44.dp),
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(painterResource(if (themeMode == DefaultThemeMode.LIGHT) MR.images.ic_light_mode else MR.images.ic_bedtime_moon), stringResource(MR.strings.color_mode_light), tint = MaterialTheme.colors.secondary)
     }
   }
 
@@ -784,10 +997,7 @@ object AppearanceScope {
     currentColors: () -> ThemeManager.ActiveTheme,
     onColorChange: (Color?) -> Unit,
   ) {
-    ColumnWithScrollBar(
-      Modifier
-        .fillMaxWidth()
-    ) {
+    ColumnWithScrollBar(Modifier.imePadding()) {
       AppBarTitle(name.text)
 
       val supportedLiveChange = name in listOf(ThemeColor.SECONDARY, ThemeColor.BACKGROUND, ThemeColor.SURFACE, ThemeColor.RECEIVED_MESSAGE, ThemeColor.SENT_MESSAGE, ThemeColor.SENT_QUOTE, ThemeColor.WALLPAPER_BACKGROUND, ThemeColor.WALLPAPER_TINT)
@@ -828,7 +1038,7 @@ object AppearanceScope {
       val hexTrimmed = currentColor.toReadableHex().replaceFirst("#ff", "#")
       val savedColor by remember(wallpaperType) { mutableStateOf(initialColor) }
 
-      Row(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).height(46.dp)) {
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).height(DEFAULT_MIN_SECTION_ITEM_HEIGHT)) {
         Box(Modifier.weight(1f).fillMaxHeight().background(savedColor).clickable {
           currentColor = savedColor
           onColorChange(currentColor)

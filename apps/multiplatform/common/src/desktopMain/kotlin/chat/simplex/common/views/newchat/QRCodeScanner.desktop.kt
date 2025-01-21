@@ -7,7 +7,7 @@ import androidx.compose.runtime.*
 actual fun QRCodeScanner(
   showQRCodeScanner: MutableState<Boolean>,
   padding: PaddingValues,
-  onBarcode: (String) -> Unit
+  onBarcode: suspend (String) -> Boolean
 ) {
   //LALAL
 }

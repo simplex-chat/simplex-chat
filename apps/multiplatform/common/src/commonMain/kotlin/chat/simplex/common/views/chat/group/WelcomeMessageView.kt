@@ -7,9 +7,7 @@ import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,10 +26,10 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatJsonLength
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
@@ -52,7 +50,9 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
       val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated)
       if (res != null) {
         gInfo = res
-        m.updateGroup(rhId, res)
+        withChats {
+          updateGroup(rhId, res)
+        }
         welcomeText.value = welcome ?: ""
       }
       afterSave()
@@ -92,13 +92,11 @@ private fun GroupWelcomeLayout(
   linkMode: SimplexLinkMode,
   save: () -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     val editMode = remember { mutableStateOf(true) }
     AppBarTitle(stringResource(MR.strings.group_welcome_title))
     val wt = rememberSaveable { welcomeText }
-    if (groupInfo.canEdit) {
+    if (groupInfo.isOwner && groupInfo.businessChat?.chatType == null) {
       if (editMode.value) {
         val focusRequester = remember { FocusRequester() }
         TextEditor(
@@ -130,13 +128,7 @@ private fun GroupWelcomeLayout(
       val clipboard = LocalClipboardManager.current
       CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
 
-      Divider(
-        Modifier.padding(
-          start = DEFAULT_PADDING_HALF,
-          top = 8.dp,
-          end = DEFAULT_PADDING_HALF,
-          bottom = 8.dp)
-      )
+      SectionDividerSpaced(maxBottomPadding = false)
 
       SaveButton(
         save = save,

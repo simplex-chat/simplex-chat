@@ -8,25 +8,23 @@ layout: layouts/jobs.html
 
 SimpleX Chat Ltd is a seed stage startup with a lot of user growth in 2022-2023, and a lot of exciting technical and product problems to solve to grow faster.
 
-We currently have 4 full-time people in the team - all engineers, including the founder.
+We currently have 6 full-time people in the team.
 
-We want to add up to 3 people to the team. 
-
+We want to add 2 people to the team.
 
 ## Who we are looking for
 
-### Product/UI designer
+### Web designer & developer for a website contract
 
-You will be designing the user experience and the interface of both the app and the website in collaboration with the team.
+You will work with the founder and a product marketing expert to convert the stories we want to tell our current and prospective users into interactive experiences.
 
-The current focus of the app is privacy and security, but we hope to have the design that would support the feeling of psychological safety, enabling people to achieve the results in the smallest amount of time.
+You are an expert in creating interactive web experiences:
+- 15+ years of web development and design experience.
+- Passionate about communications, privacy and data ownership.
+- Competent using PhotoShop, 3D modelling, etc.
+- Competent in Web tech, including JavaScript, animations, etc.
 
-You are an experienced and innovative product designer with:
-- 8+ years of user experience and visual design.
-- Expertise in typography and high sensitivity to colors.
-- Exceptional precision and attention to details.
-- Strong opinions (weakly held).
-- A strong empathy.
+We will NOT consider agencies or groups – it must be one person working on the project.
 
 ### Application Haskell engineer
 
@@ -34,13 +32,12 @@ You will work with the Haskell core of the client applications and with the netw
 
 You are an expert in language models, databases and Haskell:
 - expert knowledge of SQL.
-- Haskell exception handling, concurrency, STM, type systems.
-- 8y+ of software engineering experience in complex projects, 
+- Haskell strictness, exceptions, [concurrency](https://simonmar.github.io/pages/pcph.html), STM, [type systems](https://thinkingwithtypes.com).
+- 15y+ of software engineering experience in complex projects.
 - deep understanding of the common programming principles:
   - data structures, bits and bytes, text encoding.
-  - software design and algorithms.
-  - concurrency.
-  - networking.
+  - [functional software design](https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/index.html) and algorithms.
+  - protocols and networking.
 
 ## About you
 
@@ -48,6 +45,7 @@ You are an expert in language models, databases and Haskell:
   - already use SimpleX Chat to communicate with friends/family or participate in public SimpleX Chat groups.
   - passionate about privacy, security and communications.
   - interested to make contributions to SimpleX Chat open-source project in your free time before we hire you, as an extended test.
+  - you founded (and probably failed) at least one startup, or spent more time working for yourself than being employed.
 
 - **Exceptionally pragmatic, very fast and customer-focussed**:
   - care about the customers (aka users) and about the product we build much more than about the code quality, technology stack, etc.

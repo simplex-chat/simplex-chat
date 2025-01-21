@@ -18,5 +18,6 @@ val NotificationsMode.requiresIgnoringBattery
 lateinit var APPLICATION_ID: String
 
 fun Uri.toURI(): URI = URI(toString().replace("\n", ""))
+fun Uri.toURIOrNull(): URI? = try { toURI() } catch (e: Exception) { null }
 
 fun URI.toUri(): Uri = Uri.parse(toString())

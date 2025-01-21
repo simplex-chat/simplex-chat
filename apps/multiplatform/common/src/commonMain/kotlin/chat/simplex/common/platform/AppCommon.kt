@@ -3,7 +3,8 @@ package chat.simplex.common.platform
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
-import java.io.File
+import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.res.MR
 import java.util.*
 
 enum class AppPlatform {
@@ -19,6 +20,8 @@ enum class AppPlatform {
 expect val appPlatform: AppPlatform
 
 expect val deviceName: String
+
+expect fun isAppVisibleAndFocused(): Boolean
 
 val appVersionInfo: Pair<String, Int?> = if (appPlatform == AppPlatform.ANDROID)
   BuildConfigCommon.ANDROID_VERSION_NAME to BuildConfigCommon.ANDROID_VERSION_CODE
@@ -54,4 +57,17 @@ fun runMigrations() {
       }
     }
   }
+}
+
+enum class AppUpdatesChannel {
+  DISABLED,
+  STABLE,
+  BETA;
+
+  val text: String
+    get() = when (this) {
+      DISABLED -> generalGetString(MR.strings.app_check_for_updates_disabled)
+      STABLE -> generalGetString(MR.strings.app_check_for_updates_stable)
+      BETA -> generalGetString(MR.strings.app_check_for_updates_beta)
+    }
 }

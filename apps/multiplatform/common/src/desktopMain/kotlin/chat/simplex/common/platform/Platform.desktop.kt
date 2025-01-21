@@ -8,12 +8,12 @@ private val unixConfigPath = (System.getenv("XDG_CONFIG_HOME") ?: "$home/.config
 private val unixDataPath = (System.getenv("XDG_DATA_HOME") ?: "$home/.local/share") + "/simplex"
 val desktopPlatform = detectDesktopPlatform()
 
-enum class DesktopPlatform(val libExtension: String, val configPath: String, val dataPath: String) {
-  LINUX_X86_64("so", unixConfigPath, unixDataPath),
-  LINUX_AARCH64("so", unixConfigPath, unixDataPath),
-  WINDOWS_X86_64("dll", System.getenv("AppData") + File.separator + "SimpleX", System.getenv("AppData") + File.separator + "SimpleX"),
-  MAC_X86_64("dylib", unixConfigPath, unixDataPath),
-  MAC_AARCH64("dylib", unixConfigPath, unixDataPath);
+enum class DesktopPlatform(val libExtension: String, val configPath: String, val dataPath: String, val githubAssetName: String) {
+  LINUX_X86_64("so", unixConfigPath, unixDataPath, "simplex-desktop-x86_64.AppImage"),
+  LINUX_AARCH64("so", unixConfigPath, unixDataPath, " simplex-desktop-aarch64.AppImage"),
+  WINDOWS_X86_64("dll", System.getenv("AppData") + File.separator + "SimpleX", System.getenv("AppData") + File.separator + "SimpleX", "simplex-desktop-windows-x86_64.msi"),
+  MAC_X86_64("dylib", unixConfigPath, unixDataPath, "simplex-desktop-macos-x86_64.dmg"),
+  MAC_AARCH64("dylib", unixConfigPath, unixDataPath, "simplex-desktop-macos-aarch64.dmg");
 
   fun isLinux() = this == LINUX_X86_64 || this == LINUX_AARCH64
   fun isWindows() = this == WINDOWS_X86_64

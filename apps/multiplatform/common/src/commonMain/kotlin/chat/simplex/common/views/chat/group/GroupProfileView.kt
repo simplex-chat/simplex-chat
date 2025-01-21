@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
@@ -38,7 +39,9 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
       withBGApi {
         val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
         if (gInfo != null) {
-          chatModel.updateGroup(rhId, gInfo)
+          withChats {
+            updateGroup(rhId, gInfo)
+          }
           close.invoke()
         }
       }
@@ -79,10 +82,9 @@ fun GroupProfileLayout(
       }, close)
     }
   }
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
-      modifier = Modifier.navigationBarsWithImePadding(),
+      modifier = Modifier.imePadding(),
       sheetContent = {
         GetImageBottomSheet(
           chosenImage,
@@ -95,9 +97,7 @@ fun GroupProfileLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close = closeWithAlert) {
-        ColumnWithScrollBar(
-          Modifier
-        ) {
+        ColumnWithScrollBar {
           Column(
             Modifier.fillMaxWidth()
               .padding(horizontal = DEFAULT_PADDING)
@@ -174,7 +174,6 @@ fun GroupProfileLayout(
         }
       }
     }
-  }
 }
 
 private fun canUpdateProfile(displayName: String, groupProfile: GroupProfile): Boolean =

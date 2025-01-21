@@ -1,0 +1,9 @@
+/* Bundle display name */
+"CFBundleDisplayName" = "SimpleX SE";
+
+/* Bundle name */
+"CFBundleName" = "SimpleX SE";
+
+/* Copyright (human-readable) */
+"NSHumanReadableCopyright" = "Copyright © 2024 SimpleX Chat. All rights reserved.";
+

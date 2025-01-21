@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
@@ -31,6 +33,7 @@ import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.StringResource
 
 @Composable
 fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
@@ -58,7 +61,9 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            chatModel.upsertGroupMember(rhId, groupInfo, member)
+            withChats {
+              upsertGroupMember(rhId, groupInfo, member)
+            }
           } else {
             break
           }
@@ -81,12 +86,13 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
   val memberContactIds = chatModel.groupMembers
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
-  return chatModel.chats
+  return chatModel.chats.value
     .asSequence()
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { c -> c.sendMsgEnabled && !c.nextSendGrpInv && c.contactId !in memberContactIds && c.chatViewName.lowercase().contains(s) }
+    .filter { c -> c.sendMsgEnabled && !c.nextSendGrpInv && c.contactId !in memberContactIds && c.anyNameContains(s)
+    }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
@@ -121,14 +127,12 @@ fun AddGroupMembersLayout(
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
-      Text(generalGetString(MR.strings.group_main_profile_sent), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2)
+      val textId = if (groupInfo.businessChat == null) MR.strings.group_main_profile_sent else MR.strings.chat_main_profile_sent
+      Text(generalGetString(textId), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2)
     }
   }
 
-  ColumnWithScrollBar(
-    Modifier
-      .fillMaxWidth(),
-  ) {
+  ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.button_add_members))
     profileText()
     Spacer(Modifier.size(DEFAULT_PADDING))
@@ -166,14 +170,15 @@ fun AddGroupMembersLayout(
         if (creatingGroup && selectedContacts.isEmpty()) {
           SkipInvitingButton(close)
         } else {
-          InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
+          val titleId = if (groupInfo.businessChat == null) MR.strings.invite_to_group_button else MR.strings.invite_to_chat_button
+          InviteMembersButton(titleId, inviteMembers, disabled = selectedContacts.isEmpty() || !allowModifyMembers)
         }
       }
       SectionCustomFooter {
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
       SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.select_contacts)) {
+      SectionView(stringResource(MR.strings.select_contacts).uppercase()) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }
@@ -204,8 +209,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = GroupMemberRole.values()
-      .filter { it <= groupInfo.membership.memberRole && it != GroupMemberRole.Author }
+    val values = GroupMemberRole.selectableRoles
+      .filter { it <= groupInfo.membership.memberRole }
       .map { it to it.text }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.new_member_role),
@@ -218,10 +223,10 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
 }
 
 @Composable
-fun InviteMembersButton(onClick: () -> Unit, disabled: Boolean) {
+fun InviteMembersButton(titleId: StringResource, onClick: () -> Unit, disabled: Boolean) {
   SettingsActionItem(
     painterResource(MR.images.ic_check),
-    stringResource(MR.strings.invite_to_group_button),
+    stringResource(titleId),
     click = onClick,
     textColor = MaterialTheme.colors.primary,
     iconColor = MaterialTheme.colors.primary,
@@ -251,7 +256,8 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
       Text(
         String.format(generalGetString(MR.strings.num_contacts_selected), selectedContactsCount),
         color = MaterialTheme.colors.secondary,
-        fontSize = 12.sp
+        lineHeight = 18.sp,
+        fontSize = 14.sp
       )
       Box(
         Modifier.clickable { if (enabled) clearSelection() }
@@ -259,14 +265,16 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
         Text(
           stringResource(MR.strings.clear_contacts_selection_button),
           color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          fontSize = 12.sp
+          lineHeight = 18.sp,
+          fontSize = 14.sp,
         )
       }
     } else {
       Text(
         stringResource(MR.strings.no_contacts_selected),
         color = MaterialTheme.colors.secondary,
-        fontSize = 12.sp
+        lineHeight = 18.sp,
+        fontSize = 14.sp,
       )
     }
   }
@@ -314,7 +322,7 @@ fun ContactCheckRow(
     icon = painterResource(MR.images.ic_circle)
     iconColor = MaterialTheme.colors.secondary
   }
-  SectionItemView(
+  SectionItemViewWithoutMinPadding(
     click = if (enabled) {
       {
         if (prohibitedToInviteIncognito) {

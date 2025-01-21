@@ -1,0 +1,15 @@
+/* notification body */
+"%d new events" = "%d új esemény";
+
+/* notification body */
+"From: %@" = "Tőle: %@";
+
+/* notification */
+"New events" = "Új események";
+
+/* notification */
+"New messages" = "Új üzenetek";
+
+/* notification body */
+"New messages in %d chats" = "Új üzenetek %d csevegésben";
+

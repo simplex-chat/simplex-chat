@@ -169,14 +169,14 @@ fun DecryptionErrorItemFixButton(
           Text(
             buildAnnotatedString {
               append(generalGetString(MR.strings.fix_connection))
-              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor)) }
+              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor, showTimestamp = true)) }
               withStyle(reserveTimestampStyle) { append("    ") } // for icon
             },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
         }
       }
-      CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false)
+      CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true)
     }
   }
 }
@@ -201,11 +201,11 @@ fun DecryptionErrorItem(
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor)) }
+          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor, showTimestamp = true)) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
       )
-      CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false)
+      CIMetaView(ci, timedMessagesTTL = null, showViaProxy = false, showTimestamp = true)
     }
   }
 }

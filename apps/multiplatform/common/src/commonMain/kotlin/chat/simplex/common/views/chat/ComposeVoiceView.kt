@@ -53,7 +53,7 @@ fun ComposeVoiceView(
         IconButton(
           onClick = {
             if (!audioPlaying.value) {
-              AudioPlayer.play(CryptoFile.plain(filePath), audioPlaying, progress, duration, false)
+              AudioPlayer.play(CryptoFile.plain(filePath), audioPlaying, progress, duration, resetOnEnd = false, smallView = false)
             } else {
               AudioPlayer.pause(audioPlaying, progress)
             }

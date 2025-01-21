@@ -13,6 +13,7 @@ module Simplex.Chat.Options
     coreChatOptsP,
     getChatOpts,
     protocolServersP,
+    defaultHostMode,
   )
 where
 
@@ -20,6 +21,7 @@ import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -27,10 +29,11 @@ import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
+import Simplex.Messaging.Client (HostMode (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
-import Simplex.Messaging.Transport.Client (defaultSocksProxy)
+import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
@@ -122,7 +125,7 @@ coreChatOptsP appDir defaultDbFileName = do
           <> value []
       )
   socksProxy <-
-    flag' (Just defaultSocksProxy) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
+    flag' (Just defaultSocksProxyWithAuth) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
       <|> option
         strParse
         ( long "socks-proxy"
@@ -130,22 +133,48 @@ coreChatOptsP appDir defaultDbFileName = do
             <> help "Use SOCKS5 proxy at `ipv4:port` or `:port`"
             <> value Nothing
         )
+  socksMode <-
+    option
+      strParse
+      ( long "socks-mode"
+          <> metavar "SOCKS_MODE"
+          <> help "Use SOCKS5 proxy: always (default), onion (with onion-only relays)"
+          <> value SMAlways
+      )
+  hostMode_ <-
+    optional $
+      option
+        parseHostMode
+        ( long "host-mode"
+            <> metavar "HOST_MODE"
+            <> help "Preferred server host type: onion (when SOCKS proxy with isolate-by-auth is used), public"
+        )
+  requiredHostMode <-
+    switch
+      ( long "required-host-mode"
+          <> help "Refuse connection if preferred server host type is not available"
+      )
   smpProxyMode_ <-
     optional $
       option
         strParse
         ( long "smp-proxy"
             <> metavar "SMP_PROXY_MODE"
-            <> help "Use private message routing: always, unknown, unprotected, never (default)"
-        ) 
+            <> help "Use private message routing: always, unknown (default), unprotected, never"
+        )
   smpProxyFallback_ <-
     optional $
       option
         strParse
         ( long "smp-proxy-fallback"
             <> metavar "SMP_PROXY_FALLBACK_MODE"
-            <> help "Allow downgrade and connect directly: no, [when IP address is] protected, yes (default)"
+            <> help "Allow downgrade and connect directly: no, [when IP address is] protected (default), yes"
         )
+  smpWebPort <-
+    switch
+      ( long "smp-web-port"
+          <> help "Use port 443 with SMP servers when not specified"
+      )
   t <-
     option
       auto
@@ -207,7 +236,7 @@ coreChatOptsP appDir defaultDbFileName = do
       )
   yesToUpMigrations <-
     switch
-      ( long "--yes-migrate"
+      ( long "yes-migrate"
           <> short 'y'
           <> help "Automatically confirm \"up\" database migrations"
       )
@@ -217,7 +246,18 @@ coreChatOptsP appDir defaultDbFileName = do
         dbKey,
         smpServers,
         xftpServers,
-        simpleNetCfg = SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_ = Just $ useTcpTimeout socksProxy t, logTLSErrors},
+        simpleNetCfg =
+          SimpleNetCfg
+            { socksProxy,
+              socksMode,
+              hostMode = fromMaybe (defaultHostMode socksProxy) hostMode_,
+              requiredHostMode,
+              smpProxyMode_,
+              smpProxyFallback_,
+              smpWebPort,
+              tcpTimeout_ = Just $ useTcpTimeout socksProxy t,
+              logTLSErrors
+            },
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
@@ -230,6 +270,11 @@ coreChatOptsP appDir defaultDbFileName = do
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
     defaultDbFilePath = combine appDir defaultDbFileName
+
+defaultHostMode :: Maybe SocksProxyWithAuth -> HostMode
+defaultHostMode = \case
+  Just (SocksProxyWithAuth SocksIsolateByAuth _) -> HMOnionViaSocks;
+  _ -> HMPublic
 
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
 chatOptsP appDir defaultDbFileName = do
@@ -350,6 +395,9 @@ parseProtocolServers = eitherReader $ parseAll protocolServersP . B.pack
 
 strParse :: StrEncoding a => ReadM a
 strParse = eitherReader $ parseAll strP . encodeUtf8 . T.pack
+
+parseHostMode :: ReadM HostMode
+parseHostMode = eitherReader $ textToHostMode . T.pack
 
 parseServerPort :: ReadM (Maybe String)
 parseServerPort = eitherReader $ parseAll serverPortP . B.pack

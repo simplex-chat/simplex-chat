@@ -2,12 +2,14 @@ package chat.simplex.common.views.chat.item
 
 import android.os.Build.VERSION.SDK_INT
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import chat.simplex.common.model.CIFile
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.helpers.ModalManager
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
@@ -21,6 +23,7 @@ actual fun SimpleAndAnimatedImageView(
   imageBitmap: ImageBitmap,
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
+  smallView: Boolean,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 ) {
   val context = LocalContext.current

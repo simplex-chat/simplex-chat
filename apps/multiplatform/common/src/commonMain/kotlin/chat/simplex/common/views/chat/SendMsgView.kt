@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -15,6 +14,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
@@ -49,6 +49,7 @@ fun SendMsgView(
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
   customDisappearingMessageTimePref: SharedPreference<Int>? = null,
+  placeholder: String,
   sendMessage: (Int?) -> Unit,
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
@@ -60,7 +61,8 @@ fun SendMsgView(
 ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
 
-  Box(Modifier.padding(vertical = 8.dp)) {
+  val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
+  Box(Modifier.padding(padding)) {
     val cs = composeState.value
     var progressByTimeout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(composeState.value.inProgress) {
@@ -72,19 +74,31 @@ fun SendMsgView(
       }
     }
     val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
-        !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
+        !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started) && (cs.contextItem !is ComposeContextItem.ReportedItem)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
       (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
         cs.endLiveDisabled ||
         !sendButtonEnabled
-    PlatformTextField(composeState, sendMsgEnabled, sendMsgButtonDisabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
+    val clicksOnTextFieldDisabled = !sendMsgEnabled || cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress
+    PlatformTextField(
+      composeState,
+      sendMsgEnabled,
+      sendMsgButtonDisabled,
+      textStyle,
+      showDeleteTextButton,
+      userIsObserver,
+      if (clicksOnTextFieldDisabled) "" else placeholder,
+      showVoiceButton,
+      onMessageChange,
+      editPrevMessage,
+      onFilesPasted
+    ) {
       if (!cs.inProgress) {
         sendMessage(null)
       }
     }
-    // Disable clicks on text field
-    if (!sendMsgEnabled || cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
+    if (clicksOnTextFieldDisabled) {
       Box(
         Modifier
           .matchParentSize()
@@ -99,7 +113,7 @@ fun SendMsgView(
     if (showDeleteTextButton.value) {
       DeleteTextButton(composeState)
     }
-    Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.dp)) {
+    Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.sp.toDp() * fontSizeSqrtMultiplier)) {
       val sendButtonSize = remember { Animatable(36f) }
       val sendButtonAlpha = remember { Animatable(1f) }
       val scope = rememberCoroutineScope()
@@ -111,6 +125,9 @@ fun SendMsgView(
       }
       when {
         progressByTimeout -> ProgressIndicator()
+        cs.contextItem is ComposeContextItem.ReportedItem -> {
+          SendMsgButton(painterResource(MR.images.ic_check_filled), sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
+        }
         showVoiceButton && sendMsgEnabled -> {
           Row(verticalAlignment = Alignment.CenterVertically) {
             val stopRecOnNextClick = remember { mutableStateOf(false) }
@@ -134,7 +151,7 @@ fun SendMsgView(
               && (cs.preview !is ComposePreview.VoicePreview || !stopRecOnNextClick.value)
               && cs.contextItem is ComposeContextItem.NoContextItem
             ) {
-              Spacer(Modifier.width(10.dp))
+              Spacer(Modifier.width(12.dp))
               StartLiveMessageButton(userCanSend) {
                 if (composeState.value.preview is ComposePreview.NoPreview) {
                   startLiveMessage(scope, sendLiveMessage, updateLiveMessage, sendButtonSize, sendButtonAlpha, composeState, liveMessageAlertShown)
@@ -410,6 +427,7 @@ private fun SendMsgButton(
   onLongClick: (() -> Unit)? = null
 ) {
   val interactionSource = remember { MutableInteractionSource() }
+  val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .combinedClickable(
@@ -418,7 +436,7 @@ private fun SendMsgButton(
         enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
-        indication = rememberRipple(bounded = false, radius = 24.dp)
+        indication = ripple
       )
       .onRightClick { onLongClick?.invoke() },
     contentAlignment = Alignment.Center
@@ -441,6 +459,7 @@ private fun SendMsgButton(
 @Composable
 private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
   val interactionSource = remember { MutableInteractionSource() }
+  val ripple = remember { ripple(bounded = false, radius = 24.dp) }
   Box(
     modifier = Modifier.requiredSize(36.dp)
       .clickable(
@@ -448,7 +467,7 @@ private fun StartLiveMessageButton(enabled: Boolean, onClick: () -> Unit) {
         enabled = enabled,
         role = Role.Button,
         interactionSource = interactionSource,
-        indication = rememberRipple(bounded = false, radius = 24.dp)
+        indication = ripple
       ),
     contentAlignment = Alignment.Center
   ) {
@@ -562,6 +581,7 @@ fun PreviewSendMsgView() {
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
+      placeholder = "",
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
@@ -597,6 +617,7 @@ fun PreviewSendMsgViewEditing() {
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
+      placeholder = "",
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
@@ -632,6 +653,7 @@ fun PreviewSendMsgViewInProgress() {
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
+      placeholder = "",
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },

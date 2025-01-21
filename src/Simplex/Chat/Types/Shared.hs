@@ -16,6 +16,7 @@ data GroupMemberRole
   = GRObserver -- connects to all group members and receives all messages, can't send messages
   | GRAuthor -- reserved, unused
   | GRMember -- + can send messages to all group members
+  | GRModerator -- + moderate messages and block members (excl. Admins and Owners)
   | GRAdmin -- + add/remove members, change member role (excl. Owners)
   | GROwner -- + delete and change group information, add/remove/change roles for Owners
   deriving (Eq, Show, Ord)
@@ -28,12 +29,14 @@ instance StrEncoding GroupMemberRole where
   strEncode = \case
     GROwner -> "owner"
     GRAdmin -> "admin"
+    GRModerator -> "moderator"
     GRMember -> "member"
     GRAuthor -> "author"
     GRObserver -> "observer"
   strDecode = \case
     "owner" -> Right GROwner
     "admin" -> Right GRAdmin
+    "moderator" -> Right GRModerator
     "member" -> Right GRMember
     "author" -> Right GRAuthor
     "observer" -> Right GRObserver

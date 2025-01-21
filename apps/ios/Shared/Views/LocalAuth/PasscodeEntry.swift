@@ -10,6 +10,7 @@ import SwiftUI
 
 struct PasscodeEntry: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     var width: CGFloat
     var height: CGFloat
     @Binding var password: String
@@ -140,11 +141,11 @@ struct PasscodeEntry: View {
             ZStack {
                 Circle()
                     .frame(width: h, height: h)
-                    .foregroundColor(Color(uiColor: .systemBackground))
+                    .foregroundColor(AppTheme.shared.colors.background)
                 label()
             }
         }
-        .foregroundColor(.secondary)
+        .foregroundColor(theme.colors.secondary)
         .frame(width: size, height: h)
     }
 }

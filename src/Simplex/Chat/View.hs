@@ -2,6 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -24,6 +25,7 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
+import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
@@ -41,6 +43,7 @@ import Simplex.Chat.Help
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion (AppVersion (..), pattern AppVersionRange)
 import Simplex.Chat.Remote.Types
@@ -52,17 +55,17 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
-import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
+import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..))
+import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtoServerWithAuth, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -92,10 +95,13 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatSuspended -> ["chat suspended"]
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
-  CRApiChat u chat -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
+  CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
   CRApiParsedMarkdown ft -> [viewJSON ft]
-  CRUserProtoServers u userServers -> ttyUser u $ viewUserServers userServers testView
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
+  CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
+  CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
+  CRUserServersValidation {} -> []
+  CRUsageConditions current _ accepted_ -> viewUsageConditions current accepted_
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
@@ -120,15 +126,35 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item
+  CRNewChatItems u chatItems
+    | length chatItems > 20 ->
+        if
+          | all (\aci -> aChatItemDir aci == MDRcv) chatItems -> ttyUser u [sShow (length chatItems) <> " new messages"]
+          | all (\aci -> aChatItemDir aci == MDSnd) chatItems -> ttyUser u [sShow (length chatItems) <> " messages sent"]
+          | otherwise -> ttyUser u [sShow (length chatItems) <> " new messages created"]
+    | otherwise ->
+        concatMap
+          (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item)
+          chatItems
   CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
-  CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
+  CRChatItemsStatusesUpdated u chatItems
+    | length chatItems <= 20 ->
+        concatMap
+          (\ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts)
+          chatItems
+    | testView && showReceipts ->
+        ttyUser u [sShow (length chatItems) <> " message statuses updated"]
+    | otherwise -> []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
-  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+  CRChatItemsDeleted u deletions byUser timed -> case deletions of
+    [ChatItemDeletion (AChatItem _ _ chat deletedItem) toItem] ->
+      ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+    deletions' -> ttyUser u [sShow (length deletions') <> " messages deleted"]
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
+  CRReactionMembers u memberReactions -> ttyUser u $ viewReactionMembers memberReactions
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
@@ -169,6 +195,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
+  CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -176,19 +203,23 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
-  CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
+  CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
+  CRAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
+  CRBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
   CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
+  CRBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
   CRUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
   CRUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
+  CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
   CRRcvFileDescrReady _ _ _ _ -> []
   CRRcvFileProgressXFTP {} -> []
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
@@ -231,6 +262,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
+  CRContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
@@ -302,7 +334,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode srv -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode) <> ", server: " <> sShow srv]
-  CRNtfMessages {} -> []
+  CRNtfConns {} -> []
+  CRConnNtfMessages {} -> []
   CRNtfMessage {} -> []
   CRCurrentRemoteHost rhi_ ->
     [ maybe
@@ -365,6 +398,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "chat entity locks: " <> viewJSON chatEntityLocks,
       "agent locks: " <> viewJSON agentLocks
     ]
+  CRAgentSubsTotal u subsTotal _ -> ttyUser u ["total subscriptions: " <> sShow subsTotal]
   CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
@@ -403,14 +437,15 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
+  CRArchiveExported archiveErrs -> if null archiveErrs then ["ok"] else ["archive export errors: " <> plain (show archiveErrs)]
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRTimedAction _ _ -> []
-  CRCustomChatResponse u r -> ttyUser' u $ [plain r]
+  CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
-    ttyUser user@User {showNtfs, activeUser} ss
-      | showNtfs || activeUser = ttyUserPrefix user ss
+    ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss
+      | (showNtfs && isNothing viewPwdHash) || activeUser = ttyUserPrefix user ss
       | otherwise = []
     ttyUserPrefix :: User -> [StyledString] -> [StyledString]
     ttyUserPrefix _ [] = []
@@ -816,6 +851,9 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
       plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
 
+viewReactionMembers :: [MemberReaction] -> [StyledString]
+viewReactionMembers memberReactions = [sShow (length memberReactions) <> " member(s) reacted"]
+
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
 directQuote _ CIQuote {content = qmc, chatDir = quoteDir} =
   quoteText qmc $ if toMsgDirection (msgDirection @d') == quoteMsgDirection quoteDir then ">>" else ">"
@@ -913,6 +951,20 @@ viewUserContactLinkDeleted =
     "To create a new chat address use " <> highlight' "/ad"
   ]
 
+viewForwardPlan :: Int -> [ChatItemId] -> Maybe ForwardConfirmation -> [StyledString]
+viewForwardPlan count itemIds = maybe [forwardCount] $ \fc -> [confirmation fc, forwardCount]
+  where
+    confirmation = \case
+      FCFilesNotAccepted fileIds -> plain $ "Files can be received: " <> intercalate ", " (map show fileIds)
+      FCFilesInProgress cnt -> plain $ "Still receiving " <> show cnt <> " file(s)"
+      FCFilesMissing cnt -> plain $ show cnt <> " file(s) are missing"
+      FCFilesFailed cnt -> plain $ "Receiving " <> show cnt <> " file(s) failed"
+    forwardCount
+      | count == len = "all messages can be forwarded"
+      | len == 0 = "nothing to forward"
+      | otherwise = plain $ show len <> " message(s) out of " <> show count <> " can be forwarded"
+    len = length itemIds
+
 connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
   [ intro,
@@ -930,9 +982,14 @@ simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simpl
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
-  Just AutoAccept {acceptIncognito, autoReply} ->
-    ("auto_accept on" <> if acceptIncognito then ", incognito" else "")
+  Just AutoAccept {businessAddress, acceptIncognito, autoReply} ->
+    ("auto_accept on" <> aaInfo)
       : maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+    where
+      aaInfo
+        | businessAddress = ", business"
+        | acceptIncognito = ", incognito"
+        | otherwise = ""
   _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> [StyledString]
@@ -962,6 +1019,14 @@ viewSentInvitation incognitoProfile testView =
       where
         message = ["connection request sent incognito!"]
     Nothing -> ["connection request sent!"]
+
+viewAcceptingContactRequest :: Contact -> [StyledString]
+viewAcceptingContactRequest ct
+  | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
+  | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
+
+viewAcceptingBusinessRequest :: GroupInfo -> [StyledString]
+viewAcceptingBusinessRequest g = [ttyFullGroup g <> ": accepting business address request..."]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
@@ -1164,27 +1229,43 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
-viewUserServers :: AUserProtoServers -> Bool -> [StyledString]
-viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, presetServers}) testView =
-  customServers
-    <> if testView
-      then []
-      else
-        [ "",
-          "use " <> highlight (srvCmd <> " test <srv>") <> " to test " <> pName <> " server connection",
-          "use " <> highlight (srvCmd <> " <srv1[,srv2,...]>") <> " to configure " <> pName <> " servers",
-          "use " <> highlight (srvCmd <> " default") <> " to remove configured " <> pName <> " servers and use presets"
-        ]
-          <> case p of
-            SPSMP -> ["(chat option " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") has precedence over saved SMP servers for chat session)"]
-            SPXFTP -> ["(chat option " <> highlight' "-xftp-servers" <> " has precedence over saved XFTP servers for chat session)"]
+viewUserServers :: UserOperatorServers -> [StyledString]
+viewUserServers (UserOperatorServers _ [] []) = []
+viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
+  [plain $ maybe "Your servers" shortViewOperator operator]
+    <> viewServers SPSMP smpServers
+    <> viewServers SPXFTP xftpServers
   where
-    srvCmd = "/" <> strEncode p
-    pName = protocolName p
-    customServers =
-      if null protoServers
-        then ("no " <> pName <> " servers saved, using presets: ") : viewServers id presetServers
-        else viewServers (\ServerCfg {server} -> server) protoServers
+    viewServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServer p] -> [StyledString]
+    viewServers _ [] = []
+    viewServers p srvs
+      | maybe True (\ServerOperator {enabled} -> enabled) operator =
+          ["  " <> protocolName p <> " servers" <> maybe "" ((" " <>) . viewRoles) operator]
+            <> map (plain . ("    " <>) . viewServer) srvs
+      | otherwise = []
+      where
+        viewServer UserServer {server, preset, tested, enabled} = safeDecodeUtf8 (strEncode server) <> serverInfo
+          where
+            serverInfo = if null serverInfo_ then "" else parens $ T.intercalate ", " serverInfo_
+            serverInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
+            testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
+        viewRoles op@ServerOperator {enabled}
+          | not enabled = "disabled"
+          | storage rs && proxy rs = "enabled"
+          | storage rs = "enabled storage"
+          | proxy rs = "enabled proxy"
+          | otherwise = "disabled (servers known)"
+          where
+            rs = operatorRoles p op
+
+serversUserHelp :: [StyledString]
+serversUserHelp =
+  [ "",
+    "use " <> highlight' "/smp test <srv>" <> " to test SMP server connection",
+    "use " <> highlight' "/smp <srv1[,srv2,...]>" <> " to configure SMP servers",
+    "or the same commands starting from /xftp for XFTP servers",
+    "chat options " <> highlight' "-s" <> " (" <> highlight' "--server" <> ") and " <> highlight' "--xftp-servers" <> " have precedence over preset servers for new user profiles"
+  ]
 
 protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
@@ -1205,6 +1286,68 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
   where
     pName = protocolName p
 
+viewServerOperators :: [ServerOperator] -> Maybe UsageConditionsAction -> [StyledString]
+viewServerOperators ops ca = map (plain . viewOperator) ops <> maybe [] viewConditionsAction ca
+
+viewOperator :: ServerOperator' s -> Text
+viewOperator op@ServerOperator {tradeName, legalName, serverDomains, conditionsAcceptance} =
+  viewOpIdTag op
+    <> tradeName
+    <> maybe "" parens legalName
+    <> (", domains: " <> T.intercalate ", " serverDomains)
+    <> (", servers: " <> viewOpEnabled op)
+    <> (", conditions: " <> viewOpConditions conditionsAcceptance)
+
+shortViewOperator :: ServerOperator -> Text
+shortViewOperator ServerOperator {operatorId = DBEntityId opId, tradeName, enabled} =
+  tshow opId <> ". " <> tradeName <> parens (if enabled then "enabled" else "disabled")
+
+viewOpIdTag :: ServerOperator' s -> Text
+viewOpIdTag ServerOperator {operatorId, operatorTag} = case operatorId of
+  DBEntityId i -> tshow i <> tag
+  DBNewEntity -> tag
+  where
+    tag = maybe "" (parens . textEncode) operatorTag <> ". "
+
+viewOpConditions :: ConditionsAcceptance -> Text
+viewOpConditions = \case
+  CAAccepted ts _ -> viewCond "accepted" ts
+  CARequired ts -> viewCond "required" ts
+  where
+    viewCond w ts = w <> maybe "" (parens . tshow) ts
+
+viewOpEnabled :: ServerOperator' s -> Text
+viewOpEnabled ServerOperator {enabled, smpRoles, xftpRoles}
+  | not enabled = "disabled"
+  | no smpRoles && no xftpRoles = "disabled (servers known)"
+  | both smpRoles && both xftpRoles = "enabled"
+  | otherwise = "SMP " <> viewRoles smpRoles <> ", XFTP " <> viewRoles xftpRoles
+  where
+    no rs = not $ storage rs || proxy rs
+    both rs = storage rs && proxy rs
+    viewRoles rs
+      | both rs = "enabled"
+      | storage rs = "enabled storage"
+      | proxy rs = "enabled proxy"
+      | otherwise = "disabled (servers known)"
+
+viewConditionsAction :: UsageConditionsAction -> [StyledString]
+viewConditionsAction = \case
+  UCAReview {operators, deadline, showNotice} | showNotice -> case deadline of
+    Just ts -> [plain $ "The new conditions will be accepted for " <> ops <> " at " <> tshow ts]
+    Nothing -> [plain $ "The new conditions have to be accepted for " <> ops]
+    where
+      ops = T.intercalate ", " $ map legalName_ operators
+      legalName_ ServerOperator {tradeName, legalName} = fromMaybe tradeName legalName
+  _ -> []
+
+viewUsageConditions :: UsageConditions -> Maybe UsageConditions -> [StyledString]
+viewUsageConditions current accepted_ =
+  [plain $ "Current conditions: " <> viewConds current <> maybe "" (\ac -> ", accepted conditions: " <> viewConds ac) accepted_]
+  where
+    viewConds UsageConditions {conditionsId, conditionsCommit, notifiedAt} =
+      tshow conditionsId <> maybe "" (const " (notified)") notifiedAt <> ". " <> conditionsCommit
+
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
   Nothing -> ["old messages are not being deleted"]
@@ -1217,11 +1360,11 @@ viewChatItemTTL = \case
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
-viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout, smpProxyMode, smpProxyFallback} =
-  [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
+viewNetworkConfig NetworkConfig {socksProxy, socksMode, tcpTimeout, smpProxyMode, smpProxyFallback} =
+  [ plain $ maybe "direct network connection" ((\sp -> "using SOCKS5 proxy " <> sp <> if socksMode == SMOnion then " for onion servers ONLY." else " for ALL servers.") . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
     plain $ smpProxyModeStr smpProxyMode smpProxyFallback,
-    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes]" <> " to change settings"
+    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ socks-mode=always/onion][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes][ timeout=<seconds>]" <> " to change settings"
   ]
 
 smpProxyModeStr :: SMPProxyMode -> SMPProxyFallback -> String
@@ -1280,9 +1423,6 @@ viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
-
-viewServers :: ProtocolTypeI p => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
-viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
 viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
@@ -1487,6 +1627,20 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
+viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
+viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId, connReqInv} User {localDisplayName = n'} PendingContactConnection {connReqInv = connReqInv'} =
+  case (connReqInv, connReqInv') of
+    (Just cReqInv, Just cReqInv')
+      | cReqInv /= cReqInv' -> [userChangedStr <> ", new link:"] <> newLink cReqInv'
+    _ -> [userChangedStr]
+  where
+    userChangedStr = "connection " <> sShow pccConnId <> " changed from user " <> plain n <> " to user " <> plain n'
+    newLink cReqInv =
+      [ "",
+        (plain . strEncode) (simplexChatInvitation cReqInv),
+        ""
+      ]
+
 viewConnectionPlan :: ConnectionPlan -> [StyledString]
 viewConnectionPlan = \case
   CPInvitationLink ilp -> case ilp of
@@ -1517,13 +1671,16 @@ viewConnectionPlan = \case
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
     GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
     GLPConnectingProhibit Nothing -> [grpLink "connecting"]
-    GLPConnectingProhibit (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPConnectingProhibit (Just g) -> [grpOrBiz g <> " link: connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
     GLPKnown g ->
-      [ grpLink ("known group " <> ttyGroup' g),
+      [ grpOrBiz g <> " link: known " <> grpOrBiz g <> " " <> ttyGroup' g,
         "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
       ]
     where
       grpLink = ("group link: " <>)
+      grpOrBiz GroupInfo {businessChat} = case businessChat of
+        Just _ -> "business"
+        Nothing -> "group"
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
@@ -1867,7 +2024,9 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
       then [versionString version, updateStr, "simplexmq: " <> simplexmqVersion <> parens simplexmqCommit]
       else [versionString version, updateStr]
   where
-    parens s = " (" <> s <> ")"
+
+parens :: (IsString a, Semigroup a) => a -> a
+parens s = " (" <> s <> ")"
 
 viewRemoteHosts :: [RemoteHostInfo] -> [StyledString]
 viewRemoteHosts = \case
@@ -1998,8 +2157,7 @@ viewChatError isCmd logLevel testView = \case
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
-    CEInvalidForward -> ["cannot forward this message"]
-    CEForwardNoFile -> ["cannot forward this message, file not found"]
+    CEInvalidForward -> ["cannot forward message(s)"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]
@@ -2014,6 +2172,7 @@ viewChatError isCmd logLevel testView = \case
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
+    CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]

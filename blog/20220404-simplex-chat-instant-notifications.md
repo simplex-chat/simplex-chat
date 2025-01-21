@@ -66,9 +66,9 @@ This service continues running when the app is switched off, and it is restarted
 
 So, for Android we can now deliver instant message notifications without compromising users' privacy in any way. The app version 1.5 that includes private instant notifications is now available on [Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app), in our [F-Droid repo](https://app.simplex.chat/) and via direct [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk) downloads!
 
-Please let us what needs to be improved - it's only the first version of instant notifications for Android!
+Please let us know what needs to be improved - it's only the first version of instant notifications for Android!
 
-## Our iOS approach has one trade-off
+## iOS notifications require a server
 
 iOS is much more protective of what apps are allowed to run on the devices, and the solution that worked on Android is not viable on iOS.
 

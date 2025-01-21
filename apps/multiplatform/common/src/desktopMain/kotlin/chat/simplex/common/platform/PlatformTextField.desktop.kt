@@ -1,24 +1,24 @@
 package chat.simplex.common.platform
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
+import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.*
@@ -49,6 +49,8 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
+  placeholder: String,
+  showVoiceButton: Boolean,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
@@ -58,7 +60,6 @@ actual fun PlatformTextField(
   val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
-  val padding = PaddingValues(12.dp, 12.dp, 45.dp, 0.dp)
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -73,7 +74,20 @@ actual fun PlatformTextField(
       keyboard?.hide()
     }
   }
-  val isRtl = remember(cs.message) { isRtl(cs.message.subSequence(0, min(50, cs.message.length))) }
+  val lastTimeWasRtlByCharacters = remember { mutableStateOf(isRtl(cs.message.subSequence(0, min(50, cs.message.length)))) }
+  val isRtlByCharacters = remember(cs.message) {
+    if (cs.message.isNotEmpty()) isRtl(cs.message.subSequence(0, min(50, cs.message.length))) else lastTimeWasRtlByCharacters.value
+  }
+  LaunchedEffect(isRtlByCharacters) {
+    lastTimeWasRtlByCharacters.value = isRtlByCharacters
+  }
+  val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
+  // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
+  // In this case padding from right side should be bigger
+  val startEndPadding = if (cs.message.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
+  val startPadding = if (isRtlByCharacters && isLtrGlobally) startEndPadding else 0.dp
+  val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
+  val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message)
   val clipboard = LocalClipboardManager.current
@@ -98,10 +112,12 @@ actual fun PlatformTextField(
     maxLines = 16,
     keyboardOptions = KeyboardOptions.Default.copy(
       capitalization = KeyboardCapitalization.Sentences,
-      autoCorrect = true
+      autoCorrectEnabled = true
     ),
     modifier = Modifier
-      .padding(vertical = 4.dp)
+      .padding(start = startPadding, end = endPadding)
+      .offset(y = (-5).dp)
+      .fillMaxWidth()
       .focusRequester(focusRequester)
       .onPreviewKeyEvent {
         if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
@@ -165,28 +181,24 @@ actual fun PlatformTextField(
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
-      Surface(
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colors.secondary),
-        contentColor = LocalContentColor.current
-      ) {
-        Row(
-          Modifier.background(MaterialTheme.colors.background),
-          verticalAlignment = Alignment.Bottom
+        CompositionLocalProvider(
+          LocalLayoutDirection provides if (isRtlByCharacters) LayoutDirection.Rtl else LocalLayoutDirection.current
         ) {
-          CompositionLocalProvider(
-            LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
-          ) {
-            Column(Modifier.weight(1f).padding(start = 12.dp, end = 32.dp)) {
-              Spacer(Modifier.height(8.dp))
-              innerTextField()
-              Spacer(Modifier.height(10.dp))
-            }
-          }
+          TextFieldDefaults.TextFieldDecorationBox(
+            value = textFieldValue.text,
+            innerTextField = innerTextField,
+            placeholder = { Text(placeholder, style = textStyle.value.copy(color = MaterialTheme.colors.secondary)) },
+            singleLine = false,
+            enabled = true,
+            isError = false,
+            trailingIcon = null,
+            interactionSource = remember { MutableInteractionSource() },
+            contentPadding = textFieldWithLabelPadding(start = 0.dp, end = 0.dp),
+            visualTransformation = VisualTransformation.None,
+            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Unspecified)
+          )
         }
-      }
-    },
-
+    }
   )
   showDeleteTextButton.value = cs.message.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {

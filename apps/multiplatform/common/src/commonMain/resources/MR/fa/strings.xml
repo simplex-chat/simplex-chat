@@ -539,7 +539,7 @@
     <string name="chat_with_the_founder">ایده‌ها و سوالات را ارسال کنید</string>
     <string name="send_us_an_email">به ما ایمیل بفرستید</string>
     <string name="chat_lock">قفل SimpleX</string>
-    <string name="smp_servers_add">افزودن سرور…</string>
+    <string name="smp_servers_add">افزودن سرور</string>
     <string name="smp_servers_test_servers">آزمایش سرورها</string>
     <string name="smp_servers_save">ذخیره سرورها</string>
     <string name="smp_servers_test_failed">عدم موفقیت آزمایش سرور!</string>
@@ -588,7 +588,6 @@
     <string name="network_use_onion_hosts_required_desc">میزبان‌های Onion برای اتصال الزامی خواهد بود.
 \nلطفا توجه داشته باشید: شما بدون نشانی‌ onion. قادر نخواهید بود به سرورها متصل شوید.</string>
     <string name="save_servers_button">ذخیره</string>
-    <string name="update_onion_hosts_settings_question">تنظیمات میزبان‌های onion. به روز شود؟</string>
     <string name="port_verb">پورت</string>
     <string name="network_enable_socks">از پروکسی SOCKS استفاده شود؟</string>
     <string name="network_disable_socks">از اتصال مستقیم اینترنت استفاده شود؟</string>
@@ -597,7 +596,6 @@
     <string name="host_verb">هاست</string>
     <string name="network_use_onion_hosts_required">الزامی</string>
     <string name="network_use_onion_hosts_prefer_desc">از میزبان‌های Onion وقتی موجود باشند استفاده خواهد شد.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">از میزبان‌های Onion وقتی موجود باشند استفاده خواهد شد.</string>
     <string name="appearance_settings">ظاهر</string>
     <string name="app_version_name">نسخه برنامه: v%s</string>
     <string name="show_developer_options">نمایش گزینه‌های توسعه‌دهنده</string>
@@ -608,7 +606,6 @@
     <string name="network_session_mode_user_description"><![CDATA[یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر نمایه گپی که در برنامه دارید</b> استفاده خواهد شد.]]></string>
     <string name="show_internal_errors">نمایش خطاهای داخلی</string>
     <string name="show_slow_api_calls">نمایش تماس‌های کند API</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">از میزبان‌های Onion استفاده نخواهد شد.</string>
     <string name="network_use_onion_hosts_no">خیر</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[<i>استفاده از میزبان‌های onion.</i> را روی «خیر» تنظیم کنید اگر پروکسی SOCKS از آنها پشتیبانی نمی‌کند.]]></string>
     <string name="customize_theme_title">سفارشی کردن تم</string>
@@ -630,7 +627,6 @@
     <string name="network_session_mode_entity">اتصال</string>
     <string name="app_version_code">ساختار برنامه: %s</string>
     <string name="network_settings_title">تنظیمات شبکه</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">میزبان‌های Onion برای اتصال الزامی خواهد بود.</string>
     <string name="show_dev_options">نمایش:</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>لطفا توجه داشته باشید</b>: واسطه‌های پیام و پرونده از طریق پروکسی SOCKS متصل می‌شوند. تماس‌ها و ارسال پیش‌نمایش‌های لینک از اتصال مستقیم استفاده می‌کنند.]]></string>
     <string name="developer_options_section">گزینه‌های توسعه‌دهنده</string>
@@ -640,8 +636,7 @@
     <string name="all_your_contacts_will_remain_connected_update_sent">تمام مخاطبانتان متصل باقی خواهند ماند. به‌روزرسانی نمایه به مخاطبانتان ارسال خواهد شد.</string>
     <string name="network_disable_socks_info">اگر تایید کنید، سرورهای پیام‌رسانی خواهند توانست نشانی‌ IP، و فراهم‌کننده شما را ببینند - و این که به چه سرورهایی متصل می‌شوید.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور WebRTC ICE صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
-    <string name="network_session_mode_entity_description">یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد.
-\n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد. \n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.]]></string>
     <string name="update_network_session_mode_question">حالت انزوای ترابری به روز شود؟</string>
     <string name="edit_image">ویرایش تصویر</string>
     <string name="create_simplex_address">ایجاد نشانی‌ SimpleX</string>
@@ -716,7 +711,7 @@
     <string name="delete_files_and_media_all">حذف تمام پرونده‌ها</string>
     <string name="correct_name_to">اصلاح نام به %s؟</string>
     <string name="onboarding_notifications_mode_subtitle">بعدا از طریق تنظیمات قابل تغییر است.</string>
-    <string name="icon_descr_call_rejected">تماس بی‌پاسخ</string>
+    <string name="icon_descr_call_rejected">تماس پذیرفته نشده</string>
     <string name="alert_title_msg_bad_hash">هش پیام ناصحیح</string>
     <string name="alert_text_msg_bad_hash">هش پیام قبلی متفاوت است.</string>
     <string name="alert_title_msg_bad_id">شناسه پیام ناصحیح</string>
@@ -737,8 +732,6 @@
     <string name="decentralized">نامتمرکز</string>
     <string name="create_your_profile">نمایه خود را ایجاد کنید</string>
     <string name="how_simplex_works">SimpleX چگونه کار می‌کند</string>
-    <string name="many_people_asked_how_can_it_deliver"><![CDATA[اشخاص زیادی پرسیده‌اند: <i>اگر SimpleX هیچ شناسه کاربری ندارد، چگونه می‌تواند پیام‌ها را تحویل دهد؟</i>]]></string>
-    <string name="read_more_in_github">مطالعه بیشتر در مخزن GitHub ما.</string>
     <string name="read_more_in_github_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">مخزن GitHub</font> ما.]]></string>
     <string name="use_chat">استفاده از گپ</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).]]></string>
@@ -753,7 +746,7 @@
     <string name="icon_descr_audio_off">صدا خاموش</string>
     <string name="icon_descr_speaker_off">بلندگو خاموش</string>
     <string name="icon_descr_speaker_on">بلندگو روشن</string>
-    <string name="icon_descr_call_connecting">در حال اتصال</string>
+    <string name="icon_descr_call_connecting">در حال اتصال تماس</string>
     <string name="enable_lock">فعال کردن قفل</string>
     <string name="passcode_set">کد عبور تعیین شد!</string>
     <string name="passcode_changed">کد عبور تغییر کرد!</string>
@@ -781,7 +774,6 @@
     <string name="audio_device_bluetooth">بلوتوث</string>
     <string name="import_database">وارد کردن پایگاه داده</string>
     <string name="people_can_connect_only_via_links_you_share">اشخاص فقط از طریق لینک‌هایی که به اشتراک می‌گذارید می‌توانند به شما متصل شوند.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[شما کنترل می‌کنید پیام‌ها از طریق چه سرورهایی <b>دریافت شوند</b> و از چه سرورهایی به مخاطبان خود پیام می‌فرستید.]]></string>
     <string name="call_already_ended">تماس از پیش پایان یافته!</string>
     <string name="integrity_msg_bad_hash">هش پیام ناصحیح</string>
     <string name="auto_accept_images">پذیرفتن خودکار تصاویر</string>
@@ -950,7 +942,6 @@
     <string name="delete_files_and_media_desc">این عمل قابل برگشت نیست - تمام پرونده‌ها و رسانه دریافتی حذف خواهند شد. عکس‌های با کیفیت پایین باقی خواهند ماند.</string>
     <string name="you_must_use_the_most_recent_version_of_database">شما باید از تازه‌ترین نسخه پایگاه داده گپ خود روی فقط یک دستگاه استفاده کنید، در غیر این صورت ممکن است از بعضی از مخاطب‌ها ‌دیگر پیامی دریافت نکنید.</string>
     <string name="messages_section_title">پیام‌ها</string>
-    <string name="stop_chat_to_enable_database_actions">به منظور فعال‌سازی اقدامات پایگاه داده، گپ را متوقف کنید.</string>
     <string name="enable_automatic_deletion_message">این عمل قابل برگشت نیست - پیام‌های ارسالی و دریافتی قدیمی‌تر از زمان انتخابی حذف خواهند شد. این کار ممکن است چندین دقیقه زمان ببرد.</string>
     <string name="error_changing_message_deletion">خطا در تغییر تنظیمات</string>
     <string name="save_passphrase_in_settings">ذخیره عبارت عبور در تنظیمات</string>
@@ -960,9 +951,6 @@
     <string name="enable_automatic_deletion_question">حذف خودکار پیام فعال شود؟</string>
     <string name="restore_database_alert_confirm">برگرداندن</string>
     <string name="upgrade_and_open_chat">ارتقا و گشودن گپ</string>
-    <string name="chat_archive_header">آرشیو گپ</string>
-    <string name="save_archive">ذخیره آرشیو</string>
-    <string name="delete_archive">حذف آرشیو</string>
     <string name="group_invitation_item_description">دعوت به گروه %1$s</string>
     <string name="join_group_question">به گروه می‌پیوندید؟</string>
     <string name="leave_group_button">ترک</string>
@@ -1096,9 +1084,6 @@
     <string name="mtr_error_no_down_migration">نسخه پایگاه داده از برنامه جدیدتر است، اما بدون جابه‌جایی تنزلی برای: %s</string>
     <string name="mtr_error_different">جابه‌جایی متفاوت در برنامه/پایگاه داده: %s / %s</string>
     <string name="database_migrations">جابه‌جایی‌ها: %s</string>
-    <string name="chat_archive_section">آرشیو گپ</string>
-    <string name="archive_created_on_ts">ایجاد شده در %1$s</string>
-    <string name="delete_chat_archive_question">آرشیو گپ حذف شود؟</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">شما به گروه دعوت شده‌اید. برای متصل شدن به اعضای گروه، به گروه بپیوندید.</string>
     <string name="join_group_incognito_button">پیوستن به صورت ناشناس</string>
     <string name="alert_message_no_group">این گروه دیگر وجود ندارد.</string>
@@ -1313,7 +1298,6 @@
     <string name="network_option_ping_interval">وقفه پینگ</string>
     <string name="network_option_ping_count">شمار پینگ</string>
     <string name="network_option_enable_tcp_keep_alive">فعال کردن زنده نگه‌داشتن TCP</string>
-    <string name="network_options_revert">برگشت</string>
     <string name="network_options_save">ذخیره</string>
     <string name="update_network_settings_question">تنظیمات شبکه به‌روزرسانی شود؟</string>
     <string name="users_add">افزودن نمایه</string>
@@ -1351,11 +1335,11 @@
     <string name="allow_to_send_files">اجازه ارسال پرونده‌ها و رسانه را می‌دهید.</string>
     <string name="group_members_can_delete">اعضای گروه می‌توانند پیام‌های ارسالی را به صورت غیرقابل برگشت حذف کنند. (۲۴ ساعت)</string>
     <string name="delete_after">حذف بعد از</string>
-    <string name="chat_preferences">تنظیمات گپ</string>
+    <string name="chat_preferences">تنظیمات گفت‌و‌گو</string>
     <string name="files_and_media">پرونده‌ها و رسانه</string>
     <string name="audio_video_calls">تماس‌های صوتی/تصویری</string>
     <string name="available_in_v51">"
-\nموجود در v5.1"</string>
+\nموجود در نسخه 5.1"</string>
     <string name="allow_your_contacts_to_send_voice_messages">به مخاطبان خود اجازه ارسال پیام‌های صوتی می‌دهید.</string>
     <string name="allow_irreversible_message_deletion_only_if">فقط زمانی اجازه حذف پیام‌ها به صورت غیرقابل برگشت را می‌دهید که مخاطب شما این اجازه را به شما بدهد. (۲۴ ساعت)</string>
     <string name="disappearing_messages_are_prohibited">پیام‌های ناپدید شونده در این گروه ممنوع هستند.</string>
@@ -1430,7 +1414,7 @@
     <string name="disable_sending_recent_history">عدم ارسال تاریخچه به اعضای جدید.</string>
     <string name="group_members_can_send_disappearing">اعضای گروه می‌توانند پیام‌های ناپدید شونده ارسال کنند.</string>
     <string name="group_members_can_send_dms">اعضای گروه می‌توانند پیام‌های مستقیم ارسال کنند.</string>
-    <string name="direct_messages_are_prohibited_in_chat">پیام‌های مستقیم بین اعضا در این گروه ممنوع هستند.</string>
+    <string name="direct_messages_are_prohibited_in_group">پیام‌های مستقیم بین اعضا در این گروه ممنوع هستند.</string>
     <string name="message_deletion_prohibited_in_chat">حذف غیرقابل برگشت در این گروه ممنوع است.</string>
     <string name="voice_messages_are_prohibited">پیام‌های صوتی در این گروه ممنوع هستند.</string>
     <string name="message_reactions_are_prohibited">واکنش‌های پیام در این گروه ممنوع هستند.</string>
@@ -1853,4 +1837,17 @@
     <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید.
 \nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
     <string name="v5_8_safe_files">دریافت امن پرونده‌ها</string>
+    <string name="file_error_no_file">پرونده یافت نشد - احتمالا حذف یا لغو شده.</string>
+    <string name="file_error_auth">کلید اشتباه یا نشانی پرونده ناشناخته - به احتمال زیاد پرونده حذف شده است.</string>
+    <string name="file_error">خطای پرونده</string>
+    <string name="temporary_file_error">خطای پرونده موقت</string>
+    <string name="info_row_file_status">وضعیت پرونده</string>
+    <string name="info_row_message_status">وضعیت پیام</string>
+    <string name="share_text_file_status">وضعیت پرونده: %s</string>
+    <string name="share_text_message_status">وضعیت پیام: %s</string>
+    <string name="copy_error">خطای کپی</string>
+    <string name="remote_ctrl_connection_stopped_desc">لطفا بررسی کنید که تلفن همراه و کامپیوتر به شبکه محلی یکسانی متصل هستند، و فایروال کامپیوتر شما اجازه اتصال را میدهد.
+\nلطفا هر مشکل دیگری را با توسعه‌دهندگان به اشتراک بگذارید.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">این لینک توسط موبایل دیگری استفاده شده است، لطفا لینک جدیدی در کامپیوتر بسازید.</string>
+    <string name="file_error_relay">خطای سرور پرونده:%1$s</string>
 </resources>

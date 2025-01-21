@@ -2,7 +2,7 @@
 "CFBundleName" = "SimpleX";
 
 /* Privacy - Camera Usage Description */
-"NSCameraUsageDescription" = "SimpleX benötigt Zugriff auf die Kamera, um QR Codes für die Verbindung mit anderen Nutzern zu scannen und Videoanrufe durchzuführen.";
+"NSCameraUsageDescription" = "SimpleX benötigt Zugriff auf die Kamera, um QR Codes für die Verbindung mit anderen Benutzern zu scannen und Videoanrufe durchzuführen.";
 
 /* Privacy - Face ID Usage Description */
 "NSFaceIDUsageDescription" = "Face ID wird von SimpleX für die lokale Authentifizierung genutzt";

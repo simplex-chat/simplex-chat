@@ -18,10 +18,12 @@ private let featureRoles: [(role: GroupMemberRole?, text: LocalizedStringKey)] =
 struct GroupPreferencesView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var groupInfo: GroupInfo
-    @State var preferences: FullGroupPreferences
-    @State var currentPreferences: FullGroupPreferences
+    @Binding var preferences: FullGroupPreferences
+    var currentPreferences: FullGroupPreferences
     let creatingGroup: Bool
+    let savePreferences: () -> Void
     @State private var showSaveDialogue = false
 
     var body: some View {
@@ -37,7 +39,7 @@ struct GroupPreferencesView: View {
                 featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
                 featureSection(.history, $preferences.history.enable)
 
-                if groupInfo.canEdit {
+                if groupInfo.isOwner {
                     Section {
                         Button("Reset") { preferences = currentPreferences }
                         Button(saveText) { savePreferences() }
@@ -67,16 +69,19 @@ struct GroupPreferencesView: View {
                 savePreferences()
                 dismiss()
             }
-            Button("Exit without saving") { dismiss() }
+            Button("Exit without saving") {
+                preferences = currentPreferences
+                dismiss()
+            }
         }
     }
 
     private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil) -> some View {
         Section {
-            let color: Color = enableFeature.wrappedValue == .on ? .green : .secondary
+            let color: Color = enableFeature.wrappedValue == .on ? .green : theme.colors.secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
             let timedOn = feature == .timedMessages && enableFeature.wrappedValue == .on
-            if groupInfo.canEdit {
+            if groupInfo.isOwner {
                 let enable = Binding(
                     get: { enableFeature.wrappedValue == .on },
                     set: { on, _ in enableFeature.wrappedValue = on ? .on : .off }
@@ -111,39 +116,23 @@ struct GroupPreferencesView: View {
                 }
                 if enableFeature.wrappedValue == .on, let enableForRole {
                     HStack {
-                        Text("Enabled for").foregroundColor(.secondary)
+                        Text("Enabled for").foregroundColor(theme.colors.secondary)
                         Spacer()
                         Text(
                             featureRoles.first(where: { fr in fr.role == enableForRole.wrappedValue })?.text
                             ?? "all members"
                         )
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                     }
                 }
             }
         } footer: {
-            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.canEdit))
+            Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.isOwner))
+                .foregroundColor(theme.colors.secondary)
         }
         .onChange(of: enableFeature.wrappedValue) { enabled in
             if case .off = enabled {
                 enableForRole?.wrappedValue = nil
-            }
-        }
-    }
-
-    private func savePreferences() {
-        Task {
-            do {
-                var gp = groupInfo.groupProfile
-                gp.groupPreferences = toGroupPreferences(preferences)
-                let gInfo = try await apiUpdateGroup(groupInfo.groupId, gp)
-                await MainActor.run {
-                    groupInfo = gInfo
-                    chatModel.updateGroup(gInfo)
-                    currentPreferences = preferences
-                }
-            } catch {
-                logger.error("GroupPreferencesView apiUpdateGroup error: \(responseError(error))")
             }
         }
     }
@@ -153,9 +142,10 @@ struct GroupPreferencesView_Previews: PreviewProvider {
     static var previews: some View {
         GroupPreferencesView(
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            preferences: FullGroupPreferences.sampleData,
+            preferences: Binding.constant(FullGroupPreferences.sampleData),
             currentPreferences: FullGroupPreferences.sampleData,
-            creatingGroup: false
+            creatingGroup: false,
+            savePreferences: {}
         )
     }
 }

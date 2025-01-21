@@ -10,25 +10,25 @@ import Foundation
 import SimpleXChat
 
 class CallManager {
-    func newOutgoingCall(_ contact: Contact, _ media: CallMediaType) -> UUID {
-        let uuid = UUID()
-        let call = Call(direction: .outgoing, contact: contact, callkitUUID: uuid, callState: .waitCapabilities, localMedia: media)
+    func newOutgoingCall(_ contact: Contact, _ media: CallMediaType) -> String {
+        let uuid = UUID().uuidString.lowercased()
+        let call = Call(direction: .outgoing, contact: contact, callUUID: uuid, callState: .waitCapabilities, initialCallType: media)
         call.speakerEnabled = media == .video
         ChatModel.shared.activeCall = call
         return uuid
     }
 
-    func startOutgoingCall(callUUID: UUID) -> Bool {
+    func startOutgoingCall(callUUID: String) -> Bool {
         let m = ChatModel.shared
-        if let call = m.activeCall, call.callkitUUID == callUUID {
+        if let call = m.activeCall, call.callUUID == callUUID {
             m.showCallView = true
-            Task { await m.callCommand.processCommand(.capabilities(media: call.localMedia)) }
+            Task { await m.callCommand.processCommand(.capabilities(media: call.initialCallType)) }
             return true
         }
         return false
     }
 
-    func answerIncomingCall(callUUID: UUID) -> Bool {
+    func answerIncomingCall(callUUID: String) -> Bool {
         if let invitation = getCallInvitation(callUUID) {
             answerIncomingCall(invitation: invitation)
             return true
@@ -42,9 +42,9 @@ class CallManager {
         let call = Call(
             direction: .incoming,
             contact: invitation.contact,
-            callkitUUID: invitation.callkitUUID,
+            callUUID: invitation.callUUID,
             callState: .invitationAccepted,
-            localMedia: invitation.callType.media,
+            initialCallType: invitation.callType.media,
             sharedKey: invitation.sharedKey
         )
         call.speakerEnabled = invitation.callType.media == .video
@@ -68,17 +68,17 @@ class CallManager {
         }
     }
 
-    func enableMedia(media: CallMediaType, enable: Bool, callUUID: UUID) -> Bool {
-        if let call = ChatModel.shared.activeCall, call.callkitUUID == callUUID {
+    func enableMedia(source: CallMediaSource, enable: Bool, callUUID: String) -> Bool {
+        if let call = ChatModel.shared.activeCall, call.callUUID == callUUID {
             let m = ChatModel.shared
-            Task { await m.callCommand.processCommand(.media(media: media, enable: enable)) }
+            Task { await m.callCommand.processCommand(.media(source: source, enable: enable)) }
             return true
         }
         return false
     }
 
-    func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {
-        if let call = ChatModel.shared.activeCall, call.callkitUUID == callUUID {
+    func endCall(callUUID: String, completed: @escaping (Bool) -> Void) {
+        if let call = ChatModel.shared.activeCall, call.callUUID == callUUID {
             endCall(call: call) { completed(true) }
         } else if let invitation = getCallInvitation(callUUID) {
             endCall(invitation: invitation) { completed(true) }
@@ -126,8 +126,8 @@ class CallManager {
         }
     }
 
-    private func getCallInvitation(_ callUUID: UUID) -> RcvCallInvitation? {
-        if let (_, invitation) = ChatModel.shared.callInvitations.first(where: { (_, inv) in inv.callkitUUID == callUUID }) {
+    private func getCallInvitation(_ callUUID: String) -> RcvCallInvitation? {
+        if let (_, invitation) = ChatModel.shared.callInvitations.first(where: { (_, inv) in inv.callUUID == callUUID }) {
             return invitation
         }
         return nil

@@ -21,9 +21,9 @@ cp scripts/cabal.project.local.mac cabal.project.local
 
 MacOS ma domyślnie zainstalowany LibreSSL, OpenSSL musi być zainstalowany, aby skompilować SimpleX z kodu źródłowego.
 
-OpenSSL można zainstalować za pomocą `brew install openssl@1.1`
+OpenSSL można zainstalować za pomocą `brew install openssl@3.0`
 
-Będziesz musiał dodać `/opt/homebrew/opt/openssl@1.1/bin` do swojego PATH, aby wszystko działało poprawnie
+Będziesz musiał dodać `/opt/homebrew/opt/openssl@3.0/bin` do swojego PATH, aby wszystko działało poprawnie
 
 
 ## Branche projektu

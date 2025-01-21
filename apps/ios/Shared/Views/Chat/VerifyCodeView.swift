@@ -10,6 +10,7 @@ import SwiftUI
 
 struct VerifyCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     var displayName: String
     @State var connectionCode: String?
     @State var connectionVerified: Bool
@@ -30,7 +31,7 @@ struct VerifyCodeView: View {
                     HStack {
                         if connectionVerified {
                             Image(systemName: "checkmark.shield")
-                                .foregroundColor(.secondary)
+                                .foregroundColor(theme.colors.secondary)
                             Text("\(displayName) is verified")
                         } else {
                             Text("\(displayName) is not verified")
@@ -66,6 +67,7 @@ struct VerifyCodeView: View {
                                 ScanCodeView(connectionVerified: $connectionVerified, verify: verify)
                                     .navigationBarTitleDisplayMode(.large)
                                     .navigationTitle("Scan code")
+                                    .modifier(ThemedBackground())
                             } label: {
                                 Label("Scan code", systemImage: "qrcode")
                             }
@@ -122,5 +124,6 @@ struct VerifyCodeView: View {
 struct VerifyCodeView_Previews: PreviewProvider {
     static var previews: some View {
         VerifyCodeView(displayName: "alice", connectionCode: "12345 67890 12345 67890", connectionVerified: false, verify: {_ in nil})
+            .environmentObject(CurrentColors.toAppTheme())
     }
 }

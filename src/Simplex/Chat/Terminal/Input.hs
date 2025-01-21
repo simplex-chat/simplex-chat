@@ -69,9 +69,9 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
         Nothing -> setActive ct ""
         Just rhId -> updateRemoteUser ct u rhId
       CRChatItems u chatName_ _ -> whenCurrUser cc u $ mapM_ (setActive ct . chatActiveTo) chatName_
-      CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRNewChatItems u ((AChatItem _ SMDSnd cInfo _) : _) -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
-      CRChatItemDeleted u (AChatItem _ _ cInfo _) _ _ _ -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRChatItemsDeleted u ((ChatItemDeletion (AChatItem _ _ cInfo _) _) : _) _ _ -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
       CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
       CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
@@ -93,7 +93,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       Right SendMessageBroadcast {} -> True
       _ -> False
     startLiveMessage :: Either a ChatCommand -> ChatResponse -> IO ()
-    startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItem _ (AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}})) = do
+    startLiveMessage (Right (SendLiveMessage chatName msg)) (CRNewChatItems {chatItems = [AChatItem cType SMDSnd _ ChatItem {meta = CIMeta {itemId}}]}) = do
       whenM (isNothing <$> readTVarIO liveMessageState) $ do
         let s = T.unpack msg
             int = case cType of SCTGroup -> 5000000; _ -> 3000000 :: Int

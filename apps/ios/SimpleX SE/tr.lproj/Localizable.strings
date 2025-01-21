@@ -1,0 +1,111 @@
+/* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"App is locked!" = "Uygulama kilitlendi!";
+
+/* No comment provided by engineer. */
+"Cancel" = "İptal et";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Veritabanı şifresini kaydetmek için Anahtar Zinciri'ne erişilemiyor";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Mesaj iletilemiyor";
+
+/* No comment provided by engineer. */
+"Comment" = "Yorum";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "Şu anki maksimum desteklenen dosya boyutu %@ kadardır.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Veritabanı sürüm düşürme gerekli";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "Veritabanı şifrelendi!";
+
+/* No comment provided by engineer. */
+"Database error" = "Veritabanı hatası";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Veritabanı parolası Anahtar Zinciri'nde kayıtlı olandan farklıdır.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Konuşmayı açmak için veri tabanı parolası gerekli.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Veritabanı yükseltmesi gerekli";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Dosya hazırlanırken hata oluştu";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Mesaj hazırlanırken hata oluştu";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Hata: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Dosya hatası";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Uyumsuz veritabanı sürümü";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Geçerli olmayan taşıma onayı";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Anahtarlık hatası";
+
+/* No comment provided by engineer. */
+"Large file!" = "Büyük dosya!";
+
+/* No comment provided by engineer. */
+"No active profile" = "Aktif profil yok";
+
+/* No comment provided by engineer. */
+"Ok" = "Tamam";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "Veritabanının sürümünü düşürmek için uygulamayı açın.";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "Veritabanını güncellemek için uygulamayı açın.";
+
+/* No comment provided by engineer. */
+"Passphrase" = "Parola";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "Lütfen SimpleX uygulamasında bir profil oluşturun";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Seçilen sohbet tercihleri bu mesajı yasakladı.";
+
+/* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "Mesaj göndermek beklenenden daha uzun sürüyor.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Mesaj gönderiliyor…";
+
+/* No comment provided by engineer. */
+"Share" = "Paylaş";
+
+/* No comment provided by engineer. */
+"Slow network?" = "Ağ yavaş mı?";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Bilinmeyen veritabanı hatası: %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "Desteklenmeyen format";
+
+/* No comment provided by engineer. */
+"Wait" = "Bekleyin";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Yanlış veritabanı parolası";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Gizlilik ve Güvenlik / SimpleX Lock ayarlarından paylaşıma izin verebilirsiniz.";
+

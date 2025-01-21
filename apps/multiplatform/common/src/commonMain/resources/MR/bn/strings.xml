@@ -28,7 +28,7 @@
     <string name="color_secondary_variant">আনুষঙ্গিক রং</string>
     <string name="v4_2_group_links_desc">অ্যাডমিনরা গ্রুপে যোগদানের সংযোগ-সূত্র তৈরি করতে পারবেন।</string>
     <string name="v4_3_improved_server_configuration_desc">QR কোড স্ক্যান করে সার্ভার যুক্ত করুন।</string>
-    <string name="smp_servers_add">সার্ভার যুক্ত করুন…</string>
+    <string name="smp_servers_add">সার্ভার যুক্ত করুন</string>
     <string name="address_section_title">ঠিকানা</string>
     <string name="abort_switch_receiving_address_desc">ঠিকানা পরিবর্তন বাতিল করা হবে। বার্তা গ্রহণের পুরনো ঠিকানা ব্যবহার করা হবে।</string>
     <string name="all_app_data_will_be_cleared">অ্যাপের সকল তথ্য মুছে ফেলা হয়েছে।</string>

@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
+import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, nominalDay)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -227,8 +227,8 @@ data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (Cha
 
 deriving instance Show (CChatItem c)
 
-cchatItemId :: CChatItem c -> ChatItemId
-cchatItemId (CChatItem _ ci) = chatItemId' ci
+cChatItemId :: CChatItem c -> ChatItemId
+cChatItemId (CChatItem _ ci) = chatItemId' ci
 
 chatItemId' :: ChatItem c d -> ChatItemId
 chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
@@ -238,6 +238,12 @@ chatItemTs (CChatItem _ ci) = chatItemTs' ci
 
 chatItemTs' :: ChatItem c d -> UTCTime
 chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
+
+ciCreatedAt :: CChatItem c -> UTCTime
+ciCreatedAt (CChatItem _ ci) = ciCreatedAt' ci
+
+ciCreatedAt' :: ChatItem c d -> UTCTime
+ciCreatedAt' ChatItem {meta = CIMeta {createdAt}} = createdAt
 
 chatItemTimed :: ChatItem c d -> Maybe CITimed
 chatItemTimed ChatItem {meta = CIMeta {itemTimed}} = itemTimed
@@ -318,6 +324,12 @@ data ChatStats = ChatStats
   }
   deriving (Show)
 
+data NavigationInfo = NavigationInfo
+  { afterUnread :: Int,
+    afterTotal :: Int
+  }
+  deriving (Show)
+
 -- | type to show a mix of messages from multiple chats
 data AChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
@@ -335,6 +347,9 @@ aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
 
 aChatItemTs :: AChatItem -> UTCTime
 aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
+
+aChatItemDir :: AChatItem -> MsgDirection
+aChatItemDir (AChatItem _ sMsgDir _ _) = toMsgDirection sMsgDir
 
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
@@ -364,14 +379,18 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let deletable = case itemContent of
-        CISndMsgContent _ ->
-          case chatTypeI @c of
-            SCTLocal -> isNothing itemDeleted
-            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
-        _ -> False
+  let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
    in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
+
+deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
+deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
+  case itemContent of
+    CISndMsgContent _ ->
+      case chatTypeI @c of
+        SCTLocal -> isNothing itemDeleted
+        _ -> diffUTCTime currentTs itemTs < allowedInterval && isNothing itemDeleted
+    _ -> False
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -454,6 +473,12 @@ data ACIReaction = forall c d. ChatTypeI c => ACIReaction (SChatType c) (SMsgDir
 deriving instance Show ACIReaction
 
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
+
+data MemberReaction = MemberReaction
+  { groupMember :: GroupMember,
+    reactionTs :: UTCTime
+  }
+  deriving (Show)
 
 type family ChatTypeQuotable (a :: ChatType) :: Constraint where
   ChatTypeQuotable 'CTDirect = ()
@@ -587,6 +612,27 @@ ciFileLoaded = \case
   CIFSRcvError {} -> False
   CIFSRcvWarning {} -> False
   CIFSInvalid {} -> False
+
+data ForwardFileError = FFENotAccepted FileTransferId | FFEInProgress | FFEFailed | FFEMissing
+  deriving (Eq, Ord)
+
+ciFileForwardError :: FileTransferId -> CIFileStatus d -> Maybe ForwardFileError
+ciFileForwardError fId = \case
+  CIFSSndStored -> Nothing
+  CIFSSndTransfer {} -> Nothing
+  CIFSSndComplete -> Nothing
+  CIFSSndCancelled -> Nothing
+  CIFSSndError {} -> Nothing
+  CIFSSndWarning {} -> Nothing
+  CIFSRcvInvitation -> Just $ FFENotAccepted fId
+  CIFSRcvAccepted -> Just FFEInProgress
+  CIFSRcvTransfer {} -> Just FFEInProgress
+  CIFSRcvAborted -> Just $ FFENotAccepted fId
+  CIFSRcvCancelled -> Just FFEFailed
+  CIFSRcvComplete -> Nothing
+  CIFSRcvError {} -> Just FFEFailed
+  CIFSRcvWarning {} -> Just FFEFailed
+  CIFSInvalid {} -> Just FFEFailed
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
@@ -873,7 +919,7 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
-membersGroupItemStatus :: [(CIStatus 'MDSnd, Int)] -> CIStatus 'MDSnd
+membersGroupItemStatus :: [(GroupSndStatus, Int)] -> CIStatus 'MDSnd
 membersGroupItemStatus memStatusCounts
   | rcvdOk == total = CISSndRcvd MROk SSPComplete
   | rcvdOk + rcvdBad == total = CISSndRcvd MRBadMsgHash SSPComplete
@@ -884,9 +930,9 @@ membersGroupItemStatus memStatusCounts
   | otherwise = CISSndNew
   where
     total = sum $ map snd memStatusCounts
-    rcvdOk = fromMaybe 0 $ lookup (CISSndRcvd MROk SSPComplete) memStatusCounts
-    rcvdBad = fromMaybe 0 $ lookup (CISSndRcvd MRBadMsgHash SSPComplete) memStatusCounts
-    sent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
+    rcvdOk = fromMaybe 0 $ lookup (GSSRcvd MROk) memStatusCounts
+    rcvdBad = fromMaybe 0 $ lookup (GSSRcvd MRBadMsgHash) memStatusCounts
+    sent = fromMaybe 0 $ lookup GSSSent memStatusCounts
 
 data SndCIStatusProgress
   = SSPPartial
@@ -902,6 +948,47 @@ instance StrEncoding SndCIStatusProgress where
       "partial" -> pure SSPPartial
       "complete" -> pure SSPComplete
       _ -> fail "bad SndCIStatusProgress"
+
+data GroupSndStatus
+  = GSSNew
+  | GSSForwarded
+  | GSSInactive
+  | GSSSent
+  | GSSRcvd {msgRcptStatus :: MsgReceiptStatus}
+  | GSSError {agentError :: SndError}
+  | GSSWarning {agentError :: SndError}
+  | GSSInvalid {text :: Text}
+
+deriving instance Eq GroupSndStatus
+
+deriving instance Show GroupSndStatus
+
+-- Preserve CIStatus encoding for backwards compatibility
+instance StrEncoding GroupSndStatus where
+  strEncode = \case
+    GSSNew -> "snd_new"
+    GSSForwarded -> "snd_forwarded"
+    GSSInactive -> "snd_inactive"
+    GSSSent -> "snd_sent complete"
+    GSSRcvd msgRcptStatus -> "snd_rcvd " <> strEncode msgRcptStatus <> " complete"
+    GSSError sndErr -> "snd_error " <> strEncode sndErr
+    GSSWarning sndErr -> "snd_warning " <> strEncode sndErr
+    GSSInvalid {} -> "invalid"
+  strP =
+    (statusP <* A.endOfInput) -- see ACIStatus decoding
+      <|> (GSSInvalid . safeDecodeUtf8 <$> A.takeByteString)
+    where
+      statusP =
+        A.takeTill (== ' ') >>= \case
+          "snd_new" -> pure GSSNew
+          "snd_forwarded" -> pure GSSForwarded
+          "snd_inactive" -> pure GSSInactive
+          "snd_sent" -> GSSSent <$ " complete"
+          "snd_rcvd" -> GSSRcvd <$> (_strP <* " complete")
+          "snd_error_auth" -> pure $ GSSError SndErrAuth
+          "snd_error" -> GSSError <$> (A.space *> strP)
+          "snd_warning" -> GSSWarning <$> (A.space *> strP)
+          _ -> fail "bad status"
 
 type ChatItemId = Int64
 
@@ -1176,7 +1263,7 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
-    memberDeliveryStatus :: CIStatus 'MDSnd,
+    memberDeliveryStatus :: GroupSndStatus,
     sentViaProxy :: Maybe Bool
   }
   deriving (Eq, Show)
@@ -1233,6 +1320,12 @@ instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decod
 instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GSS") ''GroupSndStatus)
+
+instance ToField GroupSndStatus where toField = toField . decodeLatin1 . strEncode
+
+instance FromField GroupSndStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 $(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 
@@ -1333,6 +1426,8 @@ $(JQ.deriveJSON defaultJSON ''ChatItemInfo)
 
 $(JQ.deriveJSON defaultJSON ''ChatStats)
 
+$(JQ.deriveJSON defaultJSON ''NavigationInfo)
+
 instance ChatTypeI c => ToJSON (Chat c) where
   toJSON = $(JQ.mkToJSON defaultJSON ''Chat)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''Chat)
@@ -1375,6 +1470,8 @@ instance FromJSON ACIReaction where
 instance ToJSON ACIReaction where
   toJSON (ACIReaction _ _ cInfo reaction) = J.toJSON $ JSONCIReaction cInfo reaction
   toEncoding (ACIReaction _ _ cInfo reaction) = J.toEncoding $ JSONCIReaction cInfo reaction
+
+$(JQ.deriveJSON defaultJSON ''MemberReaction)
 
 $(JQ.deriveJSON defaultJSON ''MsgMetaJSON)
 

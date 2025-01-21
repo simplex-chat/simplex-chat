@@ -20,6 +20,7 @@ fun CICallItemView(
   cItem: ChatItem,
   status: CICallStatus,
   duration: Int,
+  showTimestamp: Boolean,
   acceptCall: (Contact) -> Unit,
   timedMessagesTTL: Int?
 ) {
@@ -47,7 +48,7 @@ fun CICallItemView(
       CICallStatus.Error -> {}
     }
 
-    CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false)
+    CIMetaView(cItem, timedMessagesTTL, showStatus = false, showEdited = false, showViaProxy = false, showTimestamp = showTimestamp)
   }
 }
 

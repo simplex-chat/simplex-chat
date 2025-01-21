@@ -8,13 +8,16 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.ThemeModeOverrides
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
 import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -314,6 +317,30 @@ fun removeWallpaperFile(fileName: String? = null) {
   WallpaperType.cachedImages.remove(fileName)
 }
 
+fun removeWallpaperFilesFromTheme(theme: ThemeModeOverrides?) {
+  if (theme != null) {
+    removeWallpaperFile(theme.light?.wallpaper?.imageFile)
+    removeWallpaperFile(theme.dark?.wallpaper?.imageFile)
+  }
+}
+
+fun removeWallpaperFilesFromChat(chat: Chat) {
+  if (chat.chatInfo is ChatInfo.Direct) {
+    removeWallpaperFilesFromTheme(chat.chatInfo.contact.uiThemes)
+  } else if (chat.chatInfo is ChatInfo.Group) {
+    removeWallpaperFilesFromTheme(chat.chatInfo.groupInfo.uiThemes)
+  }
+}
+
+fun removeWallpaperFilesFromAllChats(user: User) {
+  // Currently, only removing everything from currently active user is supported. Inactive users are TODO
+  if (user.userId == chatModel.currentUser.value?.userId) {
+    chatModel.chats.value.forEach {
+      removeWallpaperFilesFromChat(it)
+    }
+  }
+}
+
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
   val tmpFile = File(tmpDir, UUID.randomUUID().toString())
   tmpFile.deleteOnExit()
@@ -478,11 +505,10 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
 )
 
 fun UriHandler.openVerifiedSimplexUri(uri: String) {
-  val URI = try { URI.create(uri) } catch (e: Exception) { null }
-  if (URI != null) {
-    connectIfOpenedViaUri(chatModel.remoteHostId(), URI, ChatModel)
-  }
+  connectIfOpenedViaUri(chatModel.remoteHostId(), uri, ChatModel)
 }
+
+fun uriCreateOrNull(uri: String) = try { URI.create(uri) } catch (e: Exception) { null }
 
 fun UriHandler.openUriCatching(uri: String) {
   try {
@@ -518,6 +544,28 @@ fun includeMoreFailedComposables() {
   }
   lastExecutedComposables.clear()
 }
+
+val fontSizeMultiplier: Float
+  @Composable get() = remember { appPrefs.fontScale.state }.value
+
+val fontSizeSqrtMultiplier: Float
+  @Composable get() = sqrt(remember { appPrefs.fontScale.state }.value)
+
+val desktopDensityScaleMultiplier: Float
+  @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.densityScale.state }.value else 1f
+
+@Composable
+fun TextUnit.toDp(): Dp {
+  check(type == TextUnitType.Sp) { "Only Sp can convert to Px" }
+  return Dp(value * LocalDensity.current.fontScale)
+}
+
+fun <T> Flow<T>.throttleLatest(delayMillis: Long): Flow<T> = this
+  .conflate()
+  .transform {
+    emit(it)
+    delay(delayMillis)
+  }
 
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
@@ -564,9 +612,11 @@ fun <T> KeyChangeEffect(
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1) {
     if (anyChange || key1 != prevKey) {
-      block(prevKey)
+      val prev = prevKey
       prevKey = key1
       anyChange = true
+      // Call it as the last statement because the coroutine can be cancelled earlier
+      block(prev)
     }
   }
 }
@@ -586,8 +636,8 @@ fun KeyChangeEffect(
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1, key2) {
     if (anyChange || key1 != initialKey || key2 != initialKey2) {
-      block()
       anyChange = true
+      block()
     }
   }
 }
@@ -609,8 +659,8 @@ fun KeyChangeEffect(
   var anyChange by remember { mutableStateOf(false) }
   LaunchedEffect(key1, key2, key3) {
     if (anyChange || key1 != initialKey || key2 != initialKey2 || key3 != initialKey3) {
-      block()
       anyChange = true
+      block()
     }
   }
 }

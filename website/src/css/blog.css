@@ -233,3 +233,65 @@ h6 {
 #article ol>li::marker {
   font-weight: 500;
 }
+
+#article blockquote {
+  padding-left: 1em;
+  border-left: 2px solid #c0c0c0;
+  font-style: italic;
+}
+
+#article table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-bottom: 16px;
+}
+
+#article th,
+#article td {
+  border: 1px solid #d0d7de;
+  padding: 8px 16px;
+}
+
+#article th {
+  font-weight: 600;
+}
+
+#article table {
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark #article th,
+.dark #article td {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark #article th {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#article tr:nth-child(even) {
+  background-color: #ffffff;
+}
+
+#article tr:nth-child(odd) {
+  background-color: #f6f8fa;
+}
+
+
+.dark #article tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark #article tr:nth-child(odd) {
+  background-color: transparent;
+}
+
+.dark #article td {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dark #article th {
+  color: rgba(255, 255, 255, 1);
+}
