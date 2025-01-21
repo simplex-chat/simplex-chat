@@ -3354,10 +3354,10 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     getGroupMemberConns :: CM ([ShortGroup], [ConnId], Map ConnId ShortGroupMember)
     getGroupMemberConns = do
       gs <- withStore_ getUserGroupsToSubscribe
-      let mPairs = concatMap (\(ShortGroup _ ms) -> map (\m -> (memToSubConnId m, m)) ms) gs
+      let mPairs = concatMap (\(ShortGroup _ ms) -> map (\m -> (shortMemConnId m, m)) ms) gs
       pure (gs, map fst mPairs, M.fromList mPairs)
       where
-        memToSubConnId ShortGroupMember{connId = AgentConnId acId} = acId
+        shortMemConnId ShortGroupMember{connId = AgentConnId acId} = acId
     getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
       sfts <- withStore_ getLiveSndFileTransfers
