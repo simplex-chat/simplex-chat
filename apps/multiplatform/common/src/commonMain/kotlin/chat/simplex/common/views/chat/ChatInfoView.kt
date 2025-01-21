@@ -1411,7 +1411,7 @@ private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressInd
       pagination = pagination
     )
   } catch (e: Exception) {
-    Log.e(TAG, "apiGetChat error: ${e.message}")
+    Log.e(TAG, "apiGetChat error: ${e.stackTraceToString()}")
   } finally {
     progressIndicator.value = false
   }
