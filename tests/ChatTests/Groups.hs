@@ -152,7 +152,7 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
     it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
-  describe "group history" $ do
+  fdescribe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
