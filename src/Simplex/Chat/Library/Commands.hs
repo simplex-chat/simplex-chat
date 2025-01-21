@@ -3304,12 +3304,12 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
   -- send connection events to view
   contactSubsToView rs cts ce
-  -- TODO possibly, we could either disable these events or replace with less noisy for API
-  contactLinkSubsToView rs ucs
-  groupSubsToView rs gs ms ce
-  sndFileSubsToView rs sfts
-  rcvFileSubsToView rs rfts
-  pendingConnSubsToView rs pcs
+  unlessM (asks $ coreApi . config) $ do
+    contactLinkSubsToView rs ucs
+    groupSubsToView rs gs ms ce
+    sndFileSubsToView rs sfts
+    rcvFileSubsToView rs rfts
+    pendingConnSubsToView rs pcs
   where
     addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
       RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
