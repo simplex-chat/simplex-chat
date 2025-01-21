@@ -3335,7 +3335,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
           updatedAt = createdAt
         }
     toMemberToSubscribe GroupMember {groupMemberId, groupId, localDisplayName} Connection {agentConnId} =
-      GroupMemberToSubscribe
+      ShortGroupMember
         { groupMemberId,
           groupId,
           memberName = localDisplayName,
@@ -3351,13 +3351,13 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
       (cs, ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
       let connIds = map aConnId cs
       pure (connIds, M.fromList $ zip connIds ucs)
-    getGroupMemberConns :: CM ([GroupToSubscribe], [ConnId], Map ConnId GroupMemberToSubscribe)
+    getGroupMemberConns :: CM ([ShortGroup], [ConnId], Map ConnId ShortGroupMember)
     getGroupMemberConns = do
       gs <- withStore_ getUserGroupsToSubscribe
-      let mPairs = concatMap (\(GroupToSubscribe _ _ _ ms) -> map (\m -> (memToSubConnId m, m)) ms) gs
+      let mPairs = concatMap (\(ShortGroup _ ms) -> map (\m -> (memToSubConnId m, m)) ms) gs
       pure (gs, map fst mPairs, M.fromList mPairs)
       where
-        memToSubConnId GroupMemberToSubscribe{connId = AgentConnId acId} = acId
+        memToSubConnId ShortGroupMember{connId = AgentConnId acId} = acId
     getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
       sfts <- withStore_ getLiveSndFileTransfers
@@ -3401,28 +3401,28 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     -- TODO possibly below could be replaced with less noisy events for API
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> CM ()
     contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
-    groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [GroupToSubscribe] -> Map ConnId GroupMemberToSubscribe -> Bool -> CM ()
+    groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [ShortGroup] -> Map ConnId ShortGroupMember -> Bool -> CM ()
     groupSubsToView rs gs ms ce = do
       mapM_ groupSub $
-        sortOn (\(GroupToSubscribe {groupName = g}) -> g) gs
+        sortOn (\(ShortGroup ShortGroupInfo {groupName = g} _) -> g) gs
       toView . CRMemberSubSummary user $ map (uncurry MemberSubStatus) mRs
       where
         mRs = resultsFor rs ms
-        groupSub :: GroupToSubscribe -> CM ()
-        groupSub (GroupToSubscribe {groupId = gId, groupName = g, membershipStatus, membersToSubscribe}) = do
-          when ce $ mapM_ (toView . uncurry (CRMemberSubError user gId g)) mErrors
+        groupSub :: ShortGroup -> CM ()
+        groupSub (ShortGroup g@ShortGroupInfo {groupId = gId, membershipStatus} members) = do
+          when ce $ mapM_ (toView . uncurry (CRMemberSubError user g)) mErrors
           toView groupEvent
           where
-            mErrors :: [(GroupMemberToSubscribe, ChatError)]
+            mErrors :: [(ShortGroupMember, ChatError)]
             mErrors =
-              sortOn (\(GroupMemberToSubscribe {memberName = n}, _) -> n)
+              sortOn (\(ShortGroupMember {memberName = n}, _) -> n)
                 . filterErrors
-                $ filter (\(GroupMemberToSubscribe {groupId}, _) -> groupId == gId) mRs
+                $ filter (\(ShortGroupMember {groupId}, _) -> groupId == gId) mRs
             groupEvent :: ChatResponse
             groupEvent
-              | membershipStatus == GSMemInvited = CRGroupInvitation user gId g
-              | null membersToSubscribe = CRGroupEmpty user gId g
-              | otherwise = CRGroupSubscribed user gId g
+              | membershipStatus == GSMemInvited = CRGroupInvitation user g
+              | null members = CRGroupEmpty user g
+              | otherwise = CRGroupSubscribed user g
     sndFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId SndFileTransfer -> CM ()
     sndFileSubsToView rs sfts = do
       let sftRs = resultsFor rs sfts

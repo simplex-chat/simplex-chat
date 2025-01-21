@@ -585,15 +585,15 @@ getGroup db vr user groupId = do
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
 
-getGroupToSubscribe :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupToSubscribe
+getGroupToSubscribe :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ShortGroup
 getGroupToSubscribe db User {userId, userContactId} groupId = do
-  (groupName, membershipStatus) <- getGroupInfoToSubscribe
-  membersToSubscribe <- liftIO getGroupMembersToSubscribe
-  pure $ GroupToSubscribe groupId groupName membershipStatus membersToSubscribe
+  shortInfo <- getGroupInfoToSubscribe
+  members <- liftIO getGroupMembersToSubscribe
+  pure $ ShortGroup shortInfo members
   where
-    getGroupInfoToSubscribe :: ExceptT StoreError IO (GroupName, GroupMemberStatus)
+    getGroupInfoToSubscribe :: ExceptT StoreError IO ShortGroupInfo
     getGroupInfoToSubscribe = ExceptT $ do
-      firstRow id (SEGroupNotFound groupId) $
+      firstRow toInfo (SEGroupNotFound groupId) $
         DB.query
           db
           [sql|
@@ -604,7 +604,11 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
                 AND mu.member_status NOT IN (?,?,?)
           |]
           (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-    getGroupMembersToSubscribe :: IO [GroupMemberToSubscribe]
+      where
+        toInfo :: (GroupName, GroupMemberStatus) -> ShortGroupInfo
+        toInfo (groupName, membershipStatus) =
+          ShortGroupInfo groupId groupName membershipStatus
+    getGroupMembersToSubscribe :: IO [ShortGroupMember]
     getGroupMembersToSubscribe = do
       map toMemberToSubscribe
         <$> DB.query
@@ -622,9 +626,9 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
           |]
           (userId, userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       where
-        toMemberToSubscribe :: (GroupMemberId, ContactName, AgentConnId) -> GroupMemberToSubscribe
+        toMemberToSubscribe :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
         toMemberToSubscribe (groupMemberId, localDisplayName, agentConnId) =
-          GroupMemberToSubscribe groupMemberId groupId localDisplayName agentConnId
+          ShortGroupMember groupMemberId groupId localDisplayName agentConnId
 
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
@@ -680,7 +684,7 @@ getUserGroups db vr user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db vr user) groupIds
 
-getUserGroupsToSubscribe :: DB.Connection -> User -> IO [GroupToSubscribe]
+getUserGroupsToSubscribe :: DB.Connection -> User -> IO [ShortGroup]
 getUserGroupsToSubscribe db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroupToSubscribe db user) groupIds

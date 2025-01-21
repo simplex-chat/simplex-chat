@@ -291,7 +291,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CRNetworkStatus status conns -> if testView then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
   CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
-  CRGroupInvitation u _ g -> ttyUser u [groupInvitationSub g]
+  CRGroupInvitation u g -> ttyUser u [groupInvitationSub g]
   CRReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -306,7 +306,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
-  CRGroupEmpty u _ g -> ttyUser u [ttyGroup g <> ": group is empty"]
+  CRGroupEmpty u ShortGroupInfo {groupName = g} -> ttyUser u [ttyGroup g <> ": group is empty"]
   CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
@@ -321,9 +321,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   CRContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
-  CRMemberSubError u _ g GroupMemberToSubscribe {memberName = n} e -> ttyUser u [ttyGroup g <> " member " <> ttyContact n <> " error: " <> sShow e]
+  CRMemberSubError u ShortGroupInfo {groupName = g} ShortGroupMember {memberName = n} e -> ttyUser u [ttyGroup g <> " member " <> ttyContact n <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
-  CRGroupSubscribed u _ g -> ttyUser u $ viewGroupSubscribed g
+  CRGroupSubscribed u ShortGroupInfo {groupName = g} -> ttyUser u $ viewGroupSubscribed g
   CRPendingSubSummary u _ -> ttyUser u []
   CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->
     ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
@@ -1211,8 +1211,8 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
       Just mp -> " to join as " <> incognitoProfile' (fromLocalProfile mp) <> ", "
       Nothing -> " to join, "
 
-groupInvitationSub :: GroupName -> StyledString
-groupInvitationSub ldn =
+groupInvitationSub :: ShortGroupInfo -> StyledString
+groupInvitationSub ShortGroupInfo {groupName = ldn} =
   highlight ("#" <> viewName ldn)
     <> " - you are invited ("
     <> highlight ("/j " <> viewName ldn)
