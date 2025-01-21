@@ -610,7 +610,7 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
           ShortGroupInfo groupId groupName membershipStatus
     getGroupMembersToSubscribe :: IO [ShortGroupMember]
     getGroupMembersToSubscribe = do
-      map toMemberToSubscribe
+      map toShortMember
         <$> DB.query
           db
           [sql|
@@ -626,8 +626,8 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
           |]
           (userId, userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       where
-        toMemberToSubscribe :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
-        toMemberToSubscribe (groupMemberId, localDisplayName, agentConnId) =
+        toShortMember :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
+        toShortMember (groupMemberId, localDisplayName, agentConnId) =
           ShortGroupMember groupMemberId groupId localDisplayName agentConnId
 
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()

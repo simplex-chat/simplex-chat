@@ -3314,7 +3314,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
       RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
       RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (toPCC c) pcs in (cts, ucs, ms, sfts, rfts, pcs')
-      RcvGroupMsgConnection c _g m -> let ms' = addConn c (toMemberToSubscribe m c) ms in (cts, ucs, ms', sfts, rfts, pcs)
+      RcvGroupMsgConnection c _g m -> let ms' = addConn c (toShortMember m c) ms in (cts, ucs, ms', sfts, rfts, pcs)
       SndFileConnection c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
       RcvFileConnection c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
       UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
@@ -3334,7 +3334,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
           createdAt,
           updatedAt = createdAt
         }
-    toMemberToSubscribe GroupMember {groupMemberId, groupId, localDisplayName} Connection {agentConnId} =
+    toShortMember GroupMember {groupMemberId, groupId, localDisplayName} Connection {agentConnId} =
       ShortGroupMember
         { groupMemberId,
           groupId,
