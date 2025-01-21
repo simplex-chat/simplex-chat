@@ -171,7 +171,7 @@ testAgentCfgSlow =
   testAgentCfg
     { smpClientVRange = mkVersionRange (Version 1) srvHostnamesSMPClientVersion, -- v2
       smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion, -- v5
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange batchCmdsSMPVersion sendingProxySMPVersion} -- v8
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion sendingProxySMPVersion} -- v8
     }
 
 testCfg :: ChatConfig
@@ -210,7 +210,7 @@ testAgentCfgV1 =
     { smpClientVRange = v1Range,
       smpAgentVRange = versionToRange duplexHandshakeSMPAgentVersion,
       e2eEncryptVRange = versionToRange CR.kdfX3DHE2EEncryptVersion,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange batchCmdsSMPVersion}
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange minClientSMPRelayVersion}
     }
 
 testCfgVPrev :: ChatConfig
