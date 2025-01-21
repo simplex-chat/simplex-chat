@@ -372,6 +372,21 @@ optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""
   | otherwise = " (" <> fullName <> ")"
 
+data GroupToSubscribe = GroupToSubscribe
+  { groupId :: GroupId,
+    groupName :: GroupName,
+    membershipStatus :: GroupMemberStatus,
+    membersToSubscribe :: [GroupMemberToSubscribe]
+  }
+
+data GroupMemberToSubscribe = GroupMemberToSubscribe
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
+    memberName :: ContactName,
+    connId :: AgentConnId
+  }
+  deriving (Show)
+
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
 
@@ -1809,3 +1824,5 @@ $(JQ.deriveJSON defaultJSON ''ContactRef)
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
+
+$(JQ.deriveJSON defaultJSON ''GroupMemberToSubscribe)
