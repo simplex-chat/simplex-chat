@@ -222,9 +222,9 @@
         <target>%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld contact(s) selected" xml:space="preserve">
+      <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
         <source>%lld contact(s) selected</source>
-        <target>%lld ismerős kiválasztva</target>
+        <target state="translated">%lld ismerős kijelölve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
@@ -4600,9 +4600,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Elküldött üzenetek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve">
+      <trans-unit id="Messages were deleted after you selected them." xml:space="preserve" approved="no">
         <source>Messages were deleted after you selected them.</source>
-        <target>Az üzeneteket törölték miután kiválasztotta őket.</target>
+        <target state="translated">Az üzeneteket törölték miután kijelölte őket.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." xml:space="preserve">
@@ -4860,9 +4860,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nincs alkalmazás jelszó</target>
         <note>Authentication unavailable</note>
       </trans-unit>
-      <trans-unit id="No contacts selected" xml:space="preserve">
+      <trans-unit id="No contacts selected" xml:space="preserve" approved="no">
         <source>No contacts selected</source>
-        <target>Nincs kiválasztva ismerős</target>
+        <target state="translated">Nincs kijelölve ismerős</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No contacts to add" xml:space="preserve">
@@ -4975,9 +4975,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nem kompatibilis!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing selected" xml:space="preserve">
+      <trans-unit id="Nothing selected" xml:space="preserve" approved="no">
         <source>Nothing selected</source>
-        <target>Nincs kiválasztva semmi</target>
+        <target state="translated">Nincs kijelölve semmi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing to forward!" xml:space="preserve">
@@ -6218,24 +6218,24 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Biztonsági kód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Select" xml:space="preserve">
+      <trans-unit id="Select" xml:space="preserve" approved="no">
         <source>Select</source>
-        <target>Kiválasztás</target>
+        <target state="translated">Kijelölés</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Select chat profile" xml:space="preserve">
+      <trans-unit id="Select chat profile" xml:space="preserve" approved="no">
         <source>Select chat profile</source>
-        <target>Csevegési profil kiválasztása</target>
+        <target state="translated">Csevegési profil kijelölése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected %lld" xml:space="preserve">
+      <trans-unit id="Selected %lld" xml:space="preserve" approved="no">
         <source>Selected %lld</source>
-        <target>%lld kiválasztva</target>
+        <target state="translated">%lld kijelölve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>A kiválasztott csevegési beállítások tiltják ezt az üzenetet.</target>
+        <target state="translated">A kijelölt csevegési beállítások tiltják ezt az üzenetet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Self-destruct" xml:space="preserve">
@@ -7280,7 +7280,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
-        <target state="translated">Ez a művelet nem vonható vissza – a kiválasztottnál korábban küldött és fogadott üzenetek törlésre kerülnek. Ez több percet is igénybe vehet.</target>
+        <target state="translated">Ez a művelet nem vonható vissza – a kijelöltnél korábban küldött és fogadott üzenetek törlésre kerülnek. Ez több percet is igénybe vehet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
@@ -7777,9 +7777,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Használja az alkalmazást egy kézzel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="User selection" xml:space="preserve">
+      <trans-unit id="User selection" xml:space="preserve" approved="no">
         <source>User selection</source>
-        <target>Felhasználó kiválasztása</target>
+        <target state="translated">Felhasználó kijelölése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Username" xml:space="preserve">
@@ -9762,9 +9762,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Hozzon létre egy profilt a SimpleX alkalmazásban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>A kiválasztott csevegési beállítások tiltják ezt az üzenetet.</target>
+        <target state="translated">A kijelölt csevegési beállítások tiltják ezt az üzenetet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
