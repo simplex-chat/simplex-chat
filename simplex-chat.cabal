@@ -48,8 +48,10 @@ library
       Simplex.Chat.Messages.Batch
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Messages.CIContent.Events
+      Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
+      Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
       Simplex.Chat.Options
@@ -96,8 +98,6 @@ library
   else
       exposed-modules:
           Simplex.Chat.Archive
-          Simplex.Chat.Mobile
-          Simplex.Chat.Mobile.WebRTC
           Simplex.Chat.Options.SQLite
           Simplex.Chat.Store.SQLite.Migrations
           Simplex.Chat.Store.SQLite.Migrations.M20220101_initial
@@ -219,6 +219,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20241223_chat_tags
           Simplex.Chat.Store.SQLite.Migrations.M20241230_reports
           Simplex.Chat.Store.SQLite.Migrations.M20250105_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20250115_chat_ttl
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

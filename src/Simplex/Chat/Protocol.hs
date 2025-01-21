@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -46,6 +45,7 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word32)
 import Simplex.Chat.Call
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -58,13 +58,6 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstTo
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple.FromField (FromField (..))
-import Database.PostgreSQL.Simple.ToField (ToField (..))
-#else
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
-#endif
 
 -- Chat version history:
 -- 1 - support chat versions in connections (9/1/2023)

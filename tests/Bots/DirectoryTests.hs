@@ -10,7 +10,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import qualified Data.Text as T
 import qualified Directory.Events as DE
 import Directory.Options
@@ -36,12 +36,14 @@ directoryServiceTests = do
   it "should join found group via link" testJoinGroup
   it "should support group names with spaces" testGroupNameWithSpaces
   it "should return more groups in search, all and recent groups" testSearchGroups
+  it "should invite to owners' group if specified" testInviteToOwnersGroup
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
     it "should NOT de-list if another member leaves the group" testNotDelistedMemberLeaves
     it "should NOT de-list if another member is removed from the group" testNotDelistedMemberRemoved
     it "should de-list if service is removed from the group" testDelistedServiceRemoved
+    it "should de-list if group is deleted" testDelistedGroupDeleted
     it "should de-list/re-list when service/owner roles change" testDelistedRoleChanges
     it "should NOT de-list if another member role changes" testNotDelistedMemberRoleChanged
     it "should NOT send to approval if roles are incorrect" testNotSentApprovalBadRoles
@@ -66,8 +68,8 @@ directoryServiceTests = do
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
 
-mkDirectoryOpts :: FilePath -> [KnownContact] -> DirectoryOpts
-mkDirectoryOpts tmp superUsers =
+mkDirectoryOpts :: FilePath -> [KnownContact] -> Maybe KnownGroup -> DirectoryOpts
+mkDirectoryOpts tmp superUsers ownersGroup =
   DirectoryOpts
     { coreOptions =
         testCoreOpts
@@ -82,6 +84,7 @@ mkDirectoryOpts tmp superUsers =
           },
       adminUsers = [],
       superUsers,
+      ownersGroup,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",
       runCLI = False,
@@ -432,6 +435,24 @@ testSearchGroups tmp =
       u <##. "Link to join the group "
       u <## (show count <> " members")
 
+testInviteToOwnersGroup :: HasCallStack => FilePath -> IO ()
+testInviteToOwnersGroup tmp =
+  withDirectoryServiceCfgOwnersGroup tmp testCfg True $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroupId superUser bob "privacy" "Privacy" 2 1
+      bob <## "#owners: SimpleX-Directory invites you to join the group as member"
+      bob <## "use /j owners to accept"
+      superUser <## "Invited @bob, the owner of the group ID 2 (privacy) to owners' group owners"
+      bob ##> "/j owners"
+      bob <## "#owners: you joined the group"
+      bob <## "#owners: member alice (Alice) is connected"
+      superUser <## "#owners: SimpleX-Directory added bob (Bob) to the group (connecting...)"
+      superUser <## "#owners: new member bob is connected"
+      -- second group
+      registerGroupId superUser bob "security" "Security" 3 2
+      superUser <## "Owner is already a member of owners' group"
+
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
   withDirectoryServiceCfg tmp testCfgCreateGroupDirect $ \superUser dsLink ->
@@ -503,6 +524,30 @@ testDelistedServiceRemoved tmp =
         bob <## ""
         bob <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (directory service is removed)."
+        groupNotFound cath "privacy"
+
+testDelistedGroupDeleted :: HasCallStack => FilePath -> IO ()
+testDelistedGroupDeleted tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob ->
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        connectUsers bob cath
+        fullAddMember "privacy" "Privacy" bob cath GROwner
+        joinGroup "privacy" cath bob
+        cath <## "#privacy: member SimpleX-Directory_1 is connected"
+        cath <## "contact and member are merged: SimpleX-Directory, #privacy SimpleX-Directory_1"
+        cath <## "use @SimpleX-Directory <message> to send messages"
+        bob ##> "/d #privacy"
+        bob <## "#privacy: you deleted the group"
+        bob <# "SimpleX-Directory> The group ID 1 (privacy) is deleted."
+        bob <## ""
+        bob <## "The group is no longer listed in the directory."
+        cath <## "#privacy: bob deleted the group"
+        cath <## "use /d #privacy to delete the local copy of the group"
+        superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (group is deleted)."
         groupNotFound cath "privacy"
 
 testDelistedRoleChanges :: HasCallStack => FilePath -> IO ()
@@ -980,14 +1025,28 @@ withDirectoryService :: HasCallStack => FilePath -> (TestCC -> String -> IO ()) 
 withDirectoryService tmp = withDirectoryServiceCfg tmp testCfg
 
 withDirectoryServiceCfg :: HasCallStack => FilePath -> ChatConfig -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceCfg tmp cfg test = do
+withDirectoryServiceCfg tmp cfg = withDirectoryServiceCfgOwnersGroup tmp cfg False
+
+withDirectoryServiceCfgOwnersGroup :: HasCallStack => FilePath -> ChatConfig -> Bool -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceCfgOwnersGroup tmp cfg createOwnersGroup test = do
   dsLink <-
     withNewTestChatCfg tmp cfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg tmp cfg "super_user" aliceProfile $ \superUser -> do
         connectUsers ds superUser
+        when createOwnersGroup $ do
+          superUser ##> "/g owners"
+          superUser <## "group #owners is created"
+          superUser <## "to add members use /a owners <name> or /create link #owners"
+          superUser ##> "/a owners SimpleX-Directory admin"
+          superUser <## "invitation to join the group #owners sent to SimpleX-Directory"
+          ds <## "#owners: alice invites you to join the group as admin"
+          ds <## "use /j owners to accept"
+          ds ##> "/j owners"
+          ds <## "#owners: you joined the group"
+          superUser <## "#owners: SimpleX-Directory joined the group"
         ds ##> "/ad"
         getContactLink ds True
-  withDirectory tmp cfg dsLink test
+  withDirectoryOwnersGroup tmp cfg dsLink createOwnersGroup test
 
 restoreDirectoryService :: HasCallStack => FilePath -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
 restoreDirectoryService tmp ctCount grCount test = do
@@ -1004,11 +1063,16 @@ restoreDirectoryService tmp ctCount grCount test = do
   withDirectory tmp testCfg dsLink test
 
 withDirectory :: HasCallStack => FilePath -> ChatConfig -> String -> (TestCC -> String -> IO ()) -> IO ()
-withDirectory tmp cfg dsLink test = do
-  let opts = mkDirectoryOpts tmp [KnownContact 2 "alice"]
+withDirectory tmp cfg dsLink = withDirectoryOwnersGroup tmp cfg dsLink False
+
+withDirectoryOwnersGroup :: HasCallStack => FilePath -> ChatConfig -> String -> Bool -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryOwnersGroup tmp cfg dsLink createOwnersGroup test = do
+  let opts = mkDirectoryOpts tmp [KnownContact 2 "alice"] $ if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing
   runDirectory cfg opts $
     withTestChatCfg tmp cfg "super_user" $ \superUser -> do
       superUser <## "1 contacts connected (use /cs for the list)"
+      when createOwnersGroup $
+        superUser <## "#owners: connected to server(s)"
       test superUser dsLink
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()

@@ -21,6 +21,7 @@ data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
+    ownersGroup :: Maybe KnownGroup,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
     runCLI :: Bool,
@@ -36,6 +37,7 @@ directoryOpts appDir defaultDbName = do
       parseKnownContacts
       ( long "admin-users"
           <> metavar "ADMIN_USERS"
+          <> value []
           <> help "Comma-separated list of admin-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
       )
   superUsers <-
@@ -45,6 +47,14 @@ directoryOpts appDir defaultDbName = do
           <> metavar "SUPER_USERS"
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
       )
+  ownersGroup <-
+    optional $
+      option
+        parseKnownGroup
+        ( long "owners-group"
+            <> metavar "OWNERS_GROUP"
+            <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
+        )
   directoryLog <-
     Just
       <$> strOption
@@ -69,6 +79,7 @@ directoryOpts appDir defaultDbName = do
       { coreOptions,
         adminUsers,
         superUsers,
+        ownersGroup,
         directoryLog,
         serviceName = T.pack serviceName,
         runCLI,

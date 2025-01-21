@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -25,6 +24,7 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Type.Equality
 import Data.Word (Word32)
 import Simplex.Chat.Messages.CIContent.Events
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -34,13 +34,6 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOff, pattern
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Util (encodeJSON, safeDecodeUtf8, tshow, (<$?>))
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple.FromField (FromField (..))
-import Database.PostgreSQL.Simple.ToField (ToField (..))
-#else
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
-#endif
 
 data MsgDirection = MDRcv | MDSnd
   deriving (Eq, Show)

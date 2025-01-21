@@ -46,6 +46,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMayb
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
+import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, getCurrentTime, nominalDay)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
@@ -85,8 +86,8 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, m
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
-import Simplex.Messaging.Agent.Store (execSQL)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Agent.Store.Migrations as Migrations
 import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (SMAlways), textToHostMode)
@@ -117,12 +118,10 @@ import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
 import Data.Bifunctor (bimap, second)
-import Data.Time (NominalDiffTime, addUTCTime)
 import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
 #else
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
-import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
@@ -177,7 +176,7 @@ startChatController mainApp enableSndFiles = do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
           startCleanupManager
-          void $ forkIO $ startExpireCIs users
+          void $ forkIO $ mapM_ startExpireCIs users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -192,12 +191,15 @@ startChatController mainApp enableSndFiles = do
           a <- Just <$> async (void $ runExceptT cleanupManager)
           atomically $ writeTVar cleanupAsync a
         _ -> pure ()
-    startExpireCIs users =
-      forM_ users $ \user -> do
-        ttl <- fromRight Nothing <$> runExceptT (withStore' (`getChatItemTTL` user))
-        forM_ ttl $ \_ -> do
-          startExpireCIThread user
-          setExpireCIFlag user True
+    startExpireCIs user = whenM shouldExpireChats $ do
+      startExpireCIThread user
+      setExpireCIFlag user True
+      where
+        shouldExpireChats = 
+          fmap (fromRight False) $ runExceptT $ withStore' $ \db -> do
+            ttl <- getChatItemTTL db user
+            ttlCount <- getChatTTLCount db user
+            pure $ ttl > 0 || ttlCount > 0
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
@@ -1257,6 +1259,11 @@ processChatCommand' vr = \case
       ct <- getContact db vr user contactId
       liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated user ct'
+  APISetGroupAlias gId localAlias -> withUser $ \user@User {userId} -> do
+    gInfo' <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db vr user gId
+      liftIO $ updateGroupAlias db userId gInfo localAlias
+    pure $ CRGroupAliasUpdated user gInfo'
   APISetConnectionAlias connId localAlias -> withUser $ \user@User {userId} -> do
     conn' <- withFastStore $ \db -> do
       conn <- getPendingContactConnection db userId connId
@@ -1402,27 +1409,55 @@ processChatCommand' vr = \case
     currentTs <- liftIO getCurrentTime
     acceptConditions db condId opIds currentTs
     CRServerOperatorConditions <$> getServerOperators db
-  APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
+  APISetChatTTL userId (ChatRef cType chatId) newTTL_ ->
+    withUserId userId $ \user -> checkStoreNotChanged $ withChatLock "setChatTTL" $ do
+      (oldTTL_, globalTTL, ttlCount) <- withStore' $ \db ->
+        (,,) <$> getSetChatTTL db <*> getChatItemTTL db user <*> getChatTTLCount db user
+      let newTTL = fromMaybe globalTTL newTTL_
+          oldTTL = fromMaybe globalTTL oldTTL_
+      when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
+        lift $ setExpireCIFlag user False
+        expireChat user globalTTL `catchChatError` (toView . CRChatError (Just user))
+      lift $ setChatItemsExpiration user globalTTL ttlCount
+      ok user
+    where
+      getSetChatTTL db = case cType of
+        CTDirect -> getDirectChatTTL db chatId <* setDirectChatTTL db chatId newTTL_
+        CTGroup -> getGroupChatTTL db chatId <* setGroupChatTTL db chatId newTTL_
+        _ -> pure Nothing
+      expireChat user globalTTL = do
+        currentTs <- liftIO getCurrentTime
+        case cType of
+          CTDirect -> expireContactChatItems user vr globalTTL chatId
+          CTGroup ->
+            let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+              in expireGroupChatItems user vr globalTTL createdAtCutoff chatId
+          _ -> throwChatError $ CECommandError "not supported"
+  SetChatTTL chatName newTTL -> withUser' $ \user@User {userId} -> do
+    chatRef <- getChatRef user chatName
+    processChatCommand $ APISetChatTTL userId chatRef newTTL
+  GetChatTTL chatName -> withUser' $ \user -> do
+    ChatRef cType chatId <- getChatRef user chatName
+    ttl <- case cType of
+      CTDirect -> withFastStore' (`getDirectChatTTL` chatId)
+      CTGroup -> withFastStore' (`getGroupChatTTL` chatId)
+      _ -> throwChatError $ CECommandError "not supported"
+    pure $ CRChatItemTTL user ttl
+  APISetChatItemTTL userId newTTL -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
-        case newTTL_ of
-          Nothing -> do
-            withFastStore' $ \db -> setChatItemTTL db user newTTL_
-            lift $ setExpireCIFlag user False
-          Just newTTL -> do
-            oldTTL <- withFastStore' (`getChatItemTTL` user)
-            when (maybe True (newTTL <) oldTTL) $ do
-              lift $ setExpireCIFlag user False
-              expireChatItems user newTTL True
-            withFastStore' $ \db -> setChatItemTTL db user newTTL_
-            lift $ startExpireCIThread user
-            lift . whenM chatStarted $ setExpireCIFlag user True
+        (oldTTL, ttlCount) <- withFastStore' $ \db ->
+          (,) <$> getChatItemTTL db user <* setChatItemTTL db user newTTL <*> getChatTTLCount db user
+        when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
+          lift $ setExpireCIFlag user False
+          expireChatItems user newTTL True
+        lift $ setChatItemsExpiration user newTTL ttlCount
         ok user
   SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
     processChatCommand $ APISetChatItemTTL userId newTTL_
   APIGetChatItemTTL userId -> withUserId' userId $ \user -> do
     ttl <- withFastStore' (`getChatItemTTL` user)
-    pure $ CRChatItemTTL user ttl
+    pure $ CRChatItemTTL user (Just ttl)
   GetChatItemTTL -> withUser' $ \User {userId} -> do
     processChatCommand $ APIGetChatItemTTL userId
   APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
@@ -3247,8 +3282,15 @@ startExpireCIThread user@User {userId} = do
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           lift waitChatStartedAndActivated
           ttl <- withStore' (`getChatItemTTL` user)
-          forM_ ttl $ \t -> expireChatItems user t False
+          expireChatItems user ttl False
         liftIO $ threadDelay' interval
+
+setChatItemsExpiration :: User -> Int64 -> Int -> CM' ()
+setChatItemsExpiration user newTTL ttlCount 
+  | newTTL > 0 || ttlCount > 0 = do
+      startExpireCIThread user
+      whenM chatStarted $ setExpireCIFlag user True
+  | otherwise = setExpireCIFlag user False
 
 setExpireCIFlag :: User -> Bool -> CM' ()
 setExpireCIFlag User {userId} b = do
@@ -3497,20 +3539,19 @@ cleanupManager = do
       withStore' (`deleteOldProbes` cutoffTs)
 
 expireChatItems :: User -> Int64 -> Bool -> CM ()
-expireChatItems user@User {userId} ttl sync = do
+expireChatItems user@User {userId} globalTTL sync = do
   currentTs <- liftIO getCurrentTime
   vr <- chatVersionRange
-  let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
-      -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
-      createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+  -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
+  let createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   lift waitChatStartedAndActivated
-  contacts <- withStore' $ \db -> getUserContacts db vr user
-  loop contacts $ processContact expirationDate
+  contactIds <- withStore' $ \db -> getUserContactsToExpire db user globalTTL
+  loop contactIds $ expireContactChatItems user vr globalTTL
   lift waitChatStartedAndActivated
-  groups <- withStore' $ \db -> getUserGroupDetails db vr user Nothing Nothing
-  loop groups $ processGroup vr expirationDate createdAtCutoff
+  groupIds <- withStore' $ \db -> getUserGroupsToExpire db user globalTTL
+  loop groupIds $ expireGroupChatItems user vr globalTTL createdAtCutoff
   where
-    loop :: [a] -> (a -> CM ()) -> CM ()
+    loop :: [Int64] -> (Int64 -> CM ()) -> CM ()
     loop [] _ = pure ()
     loop (a : as) process = continue $ do
       process a `catchChatError` (toView . CRChatError (Just user))
@@ -3523,22 +3564,40 @@ expireChatItems user@User {userId} ttl sync = do
           expireFlags <- asks expireCIFlags
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
-    processContact :: UTCTime -> Contact -> CM ()
-    processContact expirationDate ct = do
-      lift waitChatStartedAndActivated
-      filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-      cancelFilesInProgress user filesInfo
-      deleteFilesLocally filesInfo
-      withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-    processGroup :: VersionRangeChat -> UTCTime -> UTCTime -> GroupInfo -> CM ()
-    processGroup vr expirationDate createdAtCutoff gInfo = do
-      lift waitChatStartedAndActivated
-      filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-      cancelFilesInProgress user filesInfo
-      deleteFilesLocally filesInfo
-      withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-      membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
-      forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+
+expireContactChatItems :: User -> VersionRangeChat -> Int64 -> ContactId -> CM ()
+expireContactChatItems user vr globalTTL ctId =
+  -- reading contacts and groups inside the loop,
+  -- to allow ttl changing while processing and to reduce memory usage
+  tryChatError (withStore $ \db -> getContact db vr user ctId) >>= mapM_ process
+  where
+    process ct@Contact {chatItemTTL} =
+      withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
+        lift waitChatStartedAndActivated
+        filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+        cancelFilesInProgress user filesInfo
+        deleteFilesLocally filesInfo
+        withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+
+expireGroupChatItems :: User -> VersionRangeChat -> Int64 -> UTCTime -> GroupId -> CM ()
+expireGroupChatItems user vr globalTTL createdAtCutoff groupId =
+  tryChatError (withStore $ \db -> getGroupInfo db vr user groupId) >>= mapM_ process
+  where
+    process gInfo@GroupInfo {chatItemTTL} =
+      withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
+        lift waitChatStartedAndActivated
+        filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+        cancelFilesInProgress user filesInfo
+        deleteFilesLocally filesInfo
+        withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+        membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
+        forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+
+withExpirationDate :: Int64 -> Maybe Int64 -> (UTCTime -> CM ()) -> CM ()
+withExpirationDate globalTTL chatItemTTL action = do
+  currentTs <- liftIO getCurrentTime
+  let ttl = fromMaybe globalTTL chatItemTTL
+  when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -3547,13 +3606,13 @@ chatCommandP =
       "/unmute " *> ((`SetShowMessages` MFAll) <$> chatNameP),
       "/unmute mentions " *> ((`SetShowMessages` MFMentions) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
-      "/block #" *> (SetShowMemberMessages <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure False),
-      "/unblock #" *> (SetShowMemberMessages <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure True),
+      "/block #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
+      "/unblock #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
-      ("/user " <|> "/u ") *> (SetActiveUser <$> displayName <*> optional (A.space *> pwdP)),
+      ("/user " <|> "/u ") *> (SetActiveUser <$> displayNameP <*> optional (A.space *> pwdP)),
       "/set receipts all " *> (SetAllContactReceipts <$> onOffP),
       "/_set receipts contacts " *> (APISetUserContactReceipts <$> A.decimal <* A.space <*> receiptSettings),
       "/set receipts contacts " *> (SetUserContactReceipts <$> receiptSettings),
@@ -3568,7 +3627,7 @@ chatCommandP =
       "/mute user" $> MuteUser,
       "/unmute user" $> UnmuteUser,
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
-      "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
+      "/delete user " *> (DeleteUser <$> displayNameP <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start " *> do
         mainApp <- "main=" *> onOffP
@@ -3625,7 +3684,7 @@ chatCommandP =
       "/_reorder tags " *> (APIReorderChatTags <$> strP),
       "/_create *" *> (APICreateChatItems <$> A.decimal <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),
       "/_report #" *> (APIReportMessage <$> A.decimal <* A.space <*> A.decimal <*> (" reason=" *> strP) <*> (A.space *> textP <|> pure "")),
-      "/report #" *> (ReportMessage <$> displayName <*> optional (" @" *> displayName) <*> _strP <* A.space <*> msgTextP),
+      "/report #" *> (ReportMessage <$> displayNameP <*> optional (" @" *> displayNameP) <*> _strP <* A.space <*> msgTextP),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <*> _strP),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
@@ -3643,7 +3702,7 @@ chatCommandP =
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
-      "/call " *> char_ '@' *> (SendCallInvitation <$> displayName <*> pure defaultCallType),
+      "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
       "/_call offer @" *> (APISendCallOffer <$> A.decimal <* A.space <*> jsonP),
       "/_call answer @" *> (APISendCallAnswer <$> A.decimal <* A.space <*> jsonP),
@@ -3654,6 +3713,7 @@ chatCommandP =
       "/_network_statuses" $> APIGetNetworkStatuses,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
+      "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
@@ -3689,10 +3749,13 @@ chatCommandP =
       "/_conditions" $> APIGetUsageConditions,
       "/_conditions_notified " *> (APISetConditionsNotified <$> A.decimal),
       "/_accept_conditions " *> (APIAcceptConditions <$> A.decimal <*> _strP),
-      "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> ciTTLDecimal),
-      "/ttl " *> (SetChatItemTTL <$> ciTTL),
+      "/_ttl " *> (APISetChatItemTTL <$> A.decimal <* A.space <*> A.decimal),
+      "/_ttl " *> (APISetChatTTL <$> A.decimal <* A.space <*> chatRefP <* A.space <*> ciTTLDecimal),
       "/_ttl " *> (APIGetChatItemTTL <$> A.decimal),
+      "/ttl " *> (SetChatItemTTL <$> ciTTL),
       "/ttl" $> GetChatItemTTL,
+      "/ttl " *> (SetChatTTL <$> chatNameP <* A.space <*> (("default" $> Nothing) <|> (Just <$> ciTTL))),
+      "/ttl " *> (GetChatTTL <$> chatNameP),
       "/_network info " *> (APISetNetworkInfo <$> jsonP),
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (SetNetworkConfig <$> netCfgP),
@@ -3704,37 +3767,37 @@ chatCommandP =
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info #" *> (APIGroupInfo <$> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
-      ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
-      ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayName),
-      ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayName),
+      ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
+      ("/info #" <|> "/i #") *> (ShowGroupInfo <$> displayNameP),
+      ("/info " <|> "/i ") *> char_ '@' *> (ContactInfo <$> displayNameP),
       "/_queue info #" *> (APIGroupMemberQueueInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_queue info @" *> (APIContactQueueInfo <$> A.decimal),
-      ("/queue info #" <|> "/qi #") *> (GroupMemberQueueInfo <$> displayName <* A.space <* char_ '@' <*> displayName),
-      ("/queue info " <|> "/qi ") *> char_ '@' *> (ContactQueueInfo <$> displayName),
+      ("/queue info #" <|> "/qi #") *> (GroupMemberQueueInfo <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
+      ("/queue info " <|> "/qi ") *> char_ '@' *> (ContactQueueInfo <$> displayNameP),
       "/_switch #" *> (APISwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_switch @" *> (APISwitchContact <$> A.decimal),
       "/_abort switch #" *> (APIAbortSwitchGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/_abort switch @" *> (APIAbortSwitchContact <$> A.decimal),
       "/_sync #" *> (APISyncGroupMemberRatchet <$> A.decimal <* A.space <*> A.decimal <*> (" force=on" $> True <|> pure False)),
       "/_sync @" *> (APISyncContactRatchet <$> A.decimal <*> (" force=on" $> True <|> pure False)),
-      "/switch #" *> (SwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/switch " *> char_ '@' *> (SwitchContact <$> displayName),
-      "/abort switch #" *> (AbortSwitchGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/abort switch " *> char_ '@' *> (AbortSwitchContact <$> displayName),
-      "/sync #" *> (SyncGroupMemberRatchet <$> displayName <* A.space <* char_ '@' <*> displayName <*> (" force=on" $> True <|> pure False)),
-      "/sync " *> char_ '@' *> (SyncContactRatchet <$> displayName <*> (" force=on" $> True <|> pure False)),
+      "/switch #" *> (SwitchGroupMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
+      "/switch " *> char_ '@' *> (SwitchContact <$> displayNameP),
+      "/abort switch #" *> (AbortSwitchGroupMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
+      "/abort switch " *> char_ '@' *> (AbortSwitchContact <$> displayNameP),
+      "/sync #" *> (SyncGroupMemberRatchet <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (" force=on" $> True <|> pure False)),
+      "/sync " *> char_ '@' *> (SyncContactRatchet <$> displayNameP <*> (" force=on" $> True <|> pure False)),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
       "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> verifyCodeP)),
       "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> verifyCodeP)),
       "/_enable @" *> (APIEnableContact <$> A.decimal),
       "/_enable #" *> (APIEnableGroupMember <$> A.decimal <* A.space <*> A.decimal),
-      "/code " *> char_ '@' *> (GetContactCode <$> displayName),
-      "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> verifyCodeP)),
-      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> verifyCodeP)),
-      "/enable " *> char_ '@' *> (EnableContact <$> displayName),
-      "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
+      "/code " *> char_ '@' *> (GetContactCode <$> displayNameP),
+      "/code #" *> (GetGroupMemberCode <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
+      "/verify " *> char_ '@' *> (VerifyContact <$> displayNameP <*> optional (A.space *> verifyCodeP)),
+      "/verify #" *> (VerifyGroupMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> optional (A.space *> verifyCodeP)),
+      "/enable " *> char_ '@' *> (EnableContact <$> displayNameP),
+      "/enable #" *> (EnableGroupMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help contacts" <|> "/help contact" <|> "/hc") $> ChatHelp HSContacts,
@@ -3747,40 +3810,40 @@ chatCommandP =
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
-      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
-      ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName <*> (" mute" $> MFNone <|> pure MFAll)),
-      ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
-      "/block for all #" *> (BlockForAll <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure True),
-      "/unblock for all #" *> (BlockForAll <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure False),
-      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
-      ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
-      ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
-      ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName <*> chatDeleteMode),
+      ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
+      ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
+      ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
+      "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
+      "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
+      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
+      ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayNameP),
+      ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayNameP),
+      ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayNameP <*> chatDeleteMode),
       "/clear *" $> ClearNoteFolder,
-      "/clear #" *> (ClearGroup <$> displayName),
-      "/clear " *> char_ '@' *> (ClearContact <$> displayName),
-      ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),
+      "/clear #" *> (ClearGroup <$> displayNameP),
+      "/clear " *> char_ '@' *> (ClearContact <$> displayNameP),
+      ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayNameP),
       "/_groups" *> (APIListGroups <$> A.decimal <*> optional (" @" *> A.decimal) <*> optional (A.space *> stringP)),
-      ("/groups" <|> "/gs") *> (ListGroups <$> optional (" @" *> displayName) <*> optional (A.space *> stringP)),
+      ("/groups" <|> "/gs") *> (ListGroups <$> optional (" @" *> displayNameP) <*> optional (A.space *> stringP)),
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
-      ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayName <* A.space <*> groupProfile),
-      ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayName),
-      "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> optional (A.space *> msgTextP)),
-      "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayName <* A.space <*> (Just <$> msgTextP)),
-      "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayName <*> pure Nothing),
-      "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayName),
+      ("/group_profile " <|> "/gp ") *> char_ '#' *> (UpdateGroupNames <$> displayNameP <* A.space <*> groupProfile),
+      ("/group_profile " <|> "/gp ") *> char_ '#' *> (ShowGroupProfile <$> displayNameP),
+      "/group_descr " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> optional (A.space *> msgTextP)),
+      "/set welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <* A.space <*> (Just <$> msgTextP)),
+      "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> pure Nothing),
+      "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayNameP),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
-      "/create link #" *> (CreateGroupLink <$> displayName <*> (memberRole <|> pure GRMember)),
-      "/set link role #" *> (GroupLinkMemberRole <$> displayName <*> memberRole),
-      "/delete link #" *> (DeleteGroupLink <$> displayName),
-      "/show link #" *> (ShowGroupLink <$> displayName),
+      "/create link #" *> (CreateGroupLink <$> displayNameP <*> (memberRole <|> pure GRMember)),
+      "/set link role #" *> (GroupLinkMemberRole <$> displayNameP <*> memberRole),
+      "/delete link #" *> (DeleteGroupLink <$> displayNameP),
+      "/show link #" *> (ShowGroupLink <$> displayNameP),
       "/_create member contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
       "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
-      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
-      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
+      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
+      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <* char_ '@' <*> (Just <$> displayNameP) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
@@ -3790,18 +3853,18 @@ chatCommandP =
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
-      ForwardMessage <$> chatNameP <* " <- @" <*> displayName <* A.space <*> msgTextP,
-      ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayName <* A.space <* A.char '@' <*> (Just <$> displayName) <* A.space <*> msgTextP,
-      ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayName <*> pure Nothing <* A.space <*> msgTextP,
+      ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,
+      ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <* A.space <* A.char '@' <*> (Just <$> displayNameP) <* A.space <*> msgTextP,
+      ForwardGroupMessage <$> chatNameP <* " <- #" <*> displayNameP <*> pure Nothing <* A.space <*> msgTextP,
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
       "/* " *> (SendMessage (ChatName CTLocal "") <$> msgTextP),
-      "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
+      "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),
-      ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> textP),
+      ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
       ReactToMessage <$> (("+" $> True) <|> ("-" $> False)) <*> reactionP <* A.space <*> chatNameP' <* A.space <*> textP,
       "/feed " *> (SendMessageBroadcast <$> msgTextP),
@@ -3833,8 +3896,8 @@ chatCommandP =
       ("/profile_address " <|> "/pa ") *> (SetProfileAddress <$> onOffP),
       "/_auto_accept " *> (APIAddressAutoAccept <$> A.decimal <* A.space <*> autoAcceptP),
       "/auto_accept " *> (AddressAutoAccept <$> autoAcceptP),
-      ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayName),
-      ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayName),
+      ("/accept" <|> "/ac") *> (AcceptContact <$> incognitoP <* A.space <* char_ '@' <*> displayNameP),
+      ("/reject " <|> "/rc ") *> char_ '@' *> (RejectContact <$> displayNameP),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
       ("/welcome" <|> "/w") $> Welcome,
       "/set profile image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
@@ -3842,22 +3905,22 @@ chatCommandP =
       "/show profile image" $> ShowProfileImage,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNames),
       ("/profile" <|> "/p") $> ShowProfile,
-      "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayName <*> _strP <*> optional memberRole),
-      "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayName <*> optional (A.space *> strP)),
+      "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayNameP <*> _strP <*> optional memberRole),
+      "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayNameP <*> optional (A.space *> strP)),
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
-      "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayName <*> _strP <*> optional memberRole),
-      "/set history #" *> (SetGroupFeature (AGFNR SGFHistory) <$> displayName <*> (A.space *> strP)),
-      "/set reactions #" *> (SetGroupFeature (AGFNR SGFReactions) <$> displayName <*> (A.space *> strP)),
-      "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayName <*> optional (A.space *> strP)),
+      "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayNameP <*> _strP <*> optional memberRole),
+      "/set history #" *> (SetGroupFeature (AGFNR SGFHistory) <$> displayNameP <*> (A.space *> strP)),
+      "/set reactions #" *> (SetGroupFeature (AGFNR SGFReactions) <$> displayNameP <*> (A.space *> strP)),
+      "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayNameP <*> optional (A.space *> strP)),
       "/set calls " *> (SetUserFeature (ACF SCFCalls) <$> strP),
-      "/set delete #" *> (SetGroupFeature (AGFNR SGFFullDelete) <$> displayName <*> (A.space *> strP)),
-      "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayName <*> optional (A.space *> strP)),
+      "/set delete #" *> (SetGroupFeature (AGFNR SGFFullDelete) <$> displayNameP <*> (A.space *> strP)),
+      "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayNameP <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
-      "/set direct #" *> (SetGroupFeatureRole (AGFR SGFDirectMessages) <$> displayName <*> _strP <*> optional memberRole),
-      "/set disappear #" *> (SetGroupTimedMessages <$> displayName <*> (A.space *> timedTTLOnOffP)),
-      "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
+      "/set direct #" *> (SetGroupFeatureRole (AGFR SGFDirectMessages) <$> displayNameP <*> _strP <*> optional memberRole),
+      "/set disappear #" *> (SetGroupTimedMessages <$> displayNameP <*> (A.space *> timedTTLOnOffP)),
+      "/set disappear @" *> (SetContactTimedMessages <$> displayNameP <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
-      "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayName <*> _strP <*> optional memberRole),
+      "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       "/set device name " *> (SetLocalDeviceName <$> textP),
       "/list remote hosts" $> ListRemoteHosts,
@@ -3919,14 +3982,7 @@ chatCommandP =
         ]
       where
         notifyP = " notify=" *> onOffP <|> pure True
-    displayName = safeDecodeUtf8 <$> (quoted "'" <|> takeNameTill isSpace)
-      where
-        takeNameTill p =
-          A.peekChar' >>= \c ->
-            if refChar c then A.takeTill p else fail "invalid first character in display name"
-        quoted cs = A.choice [A.char c *> takeNameTill (== c) <* A.char c | c <- cs]
-        refChar c = c > ' ' && c /= '#' && c /= '@'
-    sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
+    sendMsgQuote msgDir = SendMessageQuote <$> displayNameP <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))
     toEmoji = \case
@@ -3948,7 +4004,7 @@ chatCommandP =
       clearOverrides <- (" clear_overrides=" *> onOffP) <|> pure False
       pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
-    profileNames = (,) <$> displayName <*> fullNameP
+    profileNames = (,) <$> displayNameP <*> fullNameP
     newUserP = do
       (cName, fullName) <- profileNames
       let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
@@ -3986,16 +4042,17 @@ chatCommandP =
     chatNameP =
       chatTypeP >>= \case
         CTLocal -> pure $ ChatName CTLocal ""
-        ct -> ChatName ct <$> displayName
-    chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
+        ct -> ChatName ct <$> displayNameP
+    chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
-    ciTTLDecimal = ("none" $> Nothing) <|> (Just <$> A.decimal)
+    ciTTLDecimal = ("default" $> Nothing) <|> (Just <$> A.decimal)
     ciTTL =
-      ("day" $> Just 86400)
-        <|> ("week" $> Just (7 * 86400))
-        <|> ("month" $> Just (30 * 86400))
-        <|> ("none" $> Nothing)
+      ("day" $> 86400)
+        <|> ("week" $> (7 * 86400))
+        <|> ("month" $> (30 * 86400))
+        <|> ("year" $> (365 * 86400))
+        <|> ("none" $> 0)
     timedTTLP =
       ("30s" $> 30)
         <|> ("5min" $> 300)
@@ -4051,6 +4108,15 @@ chatCommandP =
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
+
+displayNameP :: Parser Text
+displayNameP = safeDecodeUtf8 <$> (quoted '\'' <|> takeNameTill (\c -> isSpace c || c == ','))
+  where
+    takeNameTill p =
+      A.peekChar' >>= \c ->
+        if refChar c then A.takeTill p else fail "invalid first character in display name"
+    quoted c = A.char c *> takeNameTill (== c) <* A.char c
+    refChar c = c > ' ' && c /= '#' && c /= '@'
 
 mkValidName :: String -> String
 mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)

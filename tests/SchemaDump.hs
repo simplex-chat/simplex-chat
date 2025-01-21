@@ -10,8 +10,8 @@ import Data.List (dropWhileEnd)
 import Data.Maybe (fromJust, isJust)
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
+import Simplex.Messaging.Agent.Store.Interface
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
-import Simplex.Messaging.Agent.Store.SQLite (closeDBStore, createDBStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
 import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory (doesFileExist, removeFile)
@@ -53,7 +53,7 @@ testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
-  void $ createChatStore testDB "" False MCError True
+  void $ createChatStore (DBOpts testDB "" False True) MCError
   getSchema testDB appSchema `shouldReturn` savedSchema
   removeFile testDB
 
@@ -61,14 +61,14 @@ testVerifyLintFKeyIndexes :: IO ()
 testVerifyLintFKeyIndexes = withTmpFiles $ do
   savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
   savedLint `deepseq` pure ()
-  void $ createChatStore testDB "" False MCError True
+  void $ createChatStore (DBOpts testDB "" False True) MCError
   getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
 testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createDBStore testDB "" False noDownMigrations MCError True
+  Right st <- createDBStore (DBOpts testDB "" False True) noDownMigrations MCError
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
   closeDBStore st
   removeFile testDB

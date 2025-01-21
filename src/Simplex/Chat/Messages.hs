@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -43,6 +42,7 @@ import GHC.TypeLits (ErrorMessage (ShowType, type (:<>:)), TypeError)
 import qualified GHC.TypeLits as Type
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -54,13 +54,6 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
 import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple.FromField (FromField (..))
-import Database.PostgreSQL.Simple.ToField (ToField (..))
-#else
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
-#endif
 
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord)
