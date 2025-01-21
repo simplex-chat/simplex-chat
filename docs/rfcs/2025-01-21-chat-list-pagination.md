@@ -4,9 +4,9 @@
 
 As the number of chats grows, the current client-side filtering solution is inefficient, leading to performance issues and high memory consumption. Current loaded chats are capped to last 5K.
 
-## SoLution
+## Solution
 
-Paginated API for chats will address this problem, but there are several side effects to have in mind:
+Paginated API for chats will address this problem
 
 ## Side effects of this change
 
