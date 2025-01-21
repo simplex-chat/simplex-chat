@@ -89,7 +89,12 @@ jobs:
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
             desktop_asset_name: simplex-desktop-windows-x86_64.msi
+
     steps:
+      - name: Skip unreliable ghc 8.10.7 build on stable branch
+        if: matrix.ghc == '8.10.7' && github.ref == 'refs/heads/stable'
+        run: exit 0
+
       - name: Configure pagefile (Windows)
         if: matrix.os == 'windows-latest'
         uses: al-cheb/configure-pagefile-action@v1.3

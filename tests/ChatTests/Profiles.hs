@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
@@ -17,6 +18,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options
+import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -75,6 +77,8 @@ chatProfileTests = do
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
+  describe "group aliases" $ do
+    it "set group alias" testSetGroupAlias
   describe "pending connection users" $ do
     it "change user for pending connection" testChangePCCUser
     it "change from incognito profile connects as new user" testChangePCCUserFromIncognito
@@ -1120,16 +1124,20 @@ testPlanAddressContactViaAddress =
           bob ##> ("/c " <> cLink)
           connecting alice bob
 
-          bob ##> "/_delete @2 notify=off"
+          bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
-          alice ##> "/_delete @2 notify=off"
+          alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
           void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api
+#if defined(dbPostgres)
+          bob ##> "/_connect contact 1 4"
+#else
           bob ##> "/_connect contact 1 2"
+#endif
           connecting alice bob
   where
     connecting alice bob = do
@@ -1263,9 +1271,10 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
   \alice bob cath -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
+    -- GUI /_accept api
     bob ##> ("/c " <> cLink)
     alice <#? bob
-    alice ##> "/accept incognito bob"
+    alice ##> "/_accept incognito=on 1"
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     aliceIncognitoBob <- getTermLine alice
     concurrentlyN_
@@ -1290,10 +1299,10 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
-    -- /_accept api
+    -- terminal /accept api
     cath ##> ("/c " <> cLink)
     alice <#? cath
-    alice ##> "/_accept incognito=on 1"
+    alice ##> "/accept incognito cath"
     alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     aliceIncognitoCath <- getTermLine alice
     concurrentlyN_
@@ -1971,6 +1980,20 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/contacts"
     alice <## "bob (Bob) (alias: friend)"
 
+testSetGroupAlias :: HasCallStack => FilePath -> IO ()
+testSetGroupAlias = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    createGroup2 "team" alice bob
+    threadDelay 1500000
+    alice ##> "/_set alias #1 friends"
+    alice <## "group #team alias updated: friends"
+    alice ##> "/groups"
+    alice <## "#team (2 members) (alias: friends)"
+    alice ##> "/_set alias #1"
+    alice <## "group #team alias removed"
+    alice ##> "/groups"
+    alice <## "#team (2 members)"
+
 testSetContactPrefs :: HasCallStack => FilePath -> IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
   \alice bob -> withXFTPServer $ do
@@ -2565,7 +2588,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 11)"
+      a <## ("peer chat protocol version range: (Version 1, " <> show currentChatVersion <> ")")
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

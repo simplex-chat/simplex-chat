@@ -14,9 +14,10 @@ suspend fun apiLoadSingleMessage(
   rhId: Long?,
   chatType: ChatType,
   apiId: Long,
-  itemId: Long
+  itemId: Long,
+  contentTag: MsgContentTag?,
 ): ChatItem? = coroutineScope {
-  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
+  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
   chat.chatItems.firstOrNull()
 }
 
@@ -24,30 +25,37 @@ suspend fun apiLoadMessages(
   rhId: Long?,
   chatType: ChatType,
   apiId: Long,
+  contentTag: MsgContentTag?,
   pagination: ChatPagination,
-  chatState: ActiveChatState,
   search: String = "",
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, pagination, search) ?: return@coroutineScope
+  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
     || !isActive) return@coroutineScope
 
+  val chatState = chatModel.chatStateForContent(contentTag)
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
-  val oldItems = chatModel.chatItems.value
+  val oldItems = chatModel.chatItemsForContent(contentTag).value
   val newItems = SnapshotStateList<ChatItem>()
   when (pagination) {
     is ChatPagination.Initial -> {
       val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
-      withChats {
-        if (chatModel.getChat(chat.id) == null) {
-          addChat(chat)
+      if (contentTag == null) {
+        // update main chats, not content tagged
+        withChats {
+          if (getChat(chat.id) == null) {
+            addChat(chat)
+          } else {
+            updateChatInfo(chat.remoteHostId, chat.chatInfo)
+            updateChatStats(chat.remoteHostId, chat.id, chat.chatStats)
+          }
         }
       }
-      withContext(Dispatchers.Main) {
-        chatModel.chatItemStatuses.clear()
-        chatModel.chatItems.replaceAll(chat.chatItems)
+      withChats(contentTag) {
+        chatItemStatuses.clear()
+        chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.chatInfo.id
         splits.value = newSplits
         if (chat.chatItems.isNotEmpty()) {
@@ -70,8 +78,8 @@ suspend fun apiLoadMessages(
       )
       val insertAt = (indexInCurrentItems - (wasSize - newItems.size) + trimmedIds.size).coerceAtLeast(0)
       newItems.addAll(insertAt, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats(contentTag) {
+        chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(oldUnreadSplitIndex, newUnreadSplitIndex, oldItems)
       }
@@ -89,8 +97,8 @@ suspend fun apiLoadMessages(
       val indexToAdd = min(indexInCurrentItems + 1, newItems.size)
       val indexToAddIsLast = indexToAdd == newItems.size
       newItems.addAll(indexToAdd, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats(contentTag) {
+        chatItems.replaceAll(newItems)
         splits.value = newSplits
         chatState.moveUnreadAfterItem(splits.value.firstOrNull() ?: newItems.last().id, newItems)
         // loading clear bottom area, updating number of unread items after the newest loaded item
@@ -104,8 +112,8 @@ suspend fun apiLoadMessages(
       val newSplits = removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed)
       // currently, items will always be added on top, which is index 0
       newItems.addAll(0, chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats(contentTag) {
+        chatItems.replaceAll(newItems)
         splits.value = listOf(chat.chatItems.last().id) + newSplits
         unreadAfterItemId.value = chat.chatItems.last().id
         totalAfter.value = navInfo.afterTotal
@@ -119,8 +127,8 @@ suspend fun apiLoadMessages(
       newItems.addAll(oldItems)
       removeDuplicates(newItems, chat)
       newItems.addAll(chat.chatItems)
-      withContext(Dispatchers.Main) {
-        chatModel.chatItems.replaceAll(newItems)
+      withChats(contentTag) {
+        chatItems.replaceAll(newItems)
         unreadAfterNewestLoaded.value = 0
       }
     }

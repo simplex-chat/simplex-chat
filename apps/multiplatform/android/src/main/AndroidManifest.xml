@@ -27,6 +27,14 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
+  <!-- Allows to query app name and icon that can open specific file type -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:mimeType="*/*" />
+    </intent>
+  </queries>
+
   <application
       android:name="SimplexApp"
       android:allowBackup="false"

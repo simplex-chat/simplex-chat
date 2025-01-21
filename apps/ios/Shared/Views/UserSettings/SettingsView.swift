@@ -29,6 +29,7 @@ let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES instead
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved to app group
+let DEFAULT_PRIVACY_CHAT_LIST_OPEN_LINKS = "privacyChatListOpenLinks"
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
@@ -181,6 +182,8 @@ let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, fo
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 
 let privacySimplexLinkModeDefault = EnumDefault<SimpleXLinkMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_SIMPLEX_LINK_MODE, withDefault: .description)
+
+let privacyChatListOpenLinksDefault = EnumDefault<PrivacyChatListOpenLinksMode>(defaults: UserDefaults.standard, forKey: DEFAULT_PRIVACY_CHAT_LIST_OPEN_LINKS, withDefault: PrivacyChatListOpenLinksMode.ask)
 
 let privacyLocalAuthModeDefault = EnumDefault<LAMode>(defaults: UserDefaults.standard, forKey: DEFAULT_LA_MODE, withDefault: .system)
 

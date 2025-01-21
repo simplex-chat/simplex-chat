@@ -26,21 +26,22 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), SQLiteStore, withTransaction)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent, yesToUpMigrations}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbFilePrefix dbKey False confirm' >>= either exit run
+    initRun = createChatDatabase dbOptions confirm' >>= either exit run
     confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
     exit e = do
       putStrLn $ "Error opening database: " <> show e
@@ -66,7 +67,7 @@ sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack 
 sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
 
-getSelectActiveUser :: SQLiteStore -> IO (Maybe User)
+getSelectActiveUser :: DBStore -> IO (Maybe User)
 getSelectActiveUser st = do
   users <- withTransaction st getUsers
   case find activeUser users of

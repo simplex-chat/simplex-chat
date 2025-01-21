@@ -21,6 +21,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -528,9 +529,14 @@ fun deleteChatDatabaseFilesAndState() {
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
-  chatModel.chatItems.clearAndNotify()
   withLongRunningApi {
     withChats {
+      chatItems.clearAndNotify()
+      chats.clear()
+      popChatCollector.clear()
+    }
+    withReportsChatsIfOpen {
+      chatItems.clearAndNotify()
       chats.clear()
       popChatCollector.clear()
     }

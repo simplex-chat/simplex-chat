@@ -398,10 +398,7 @@ private fun VoiceMsgIndicator(
         sizeMultiplier,
         longClick,
         onClick = {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.file_error),
-            file.fileStatus.sndFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.sndFileError)
         }
       )
     file != null && file.fileStatus is CIFileStatus.SndWarning ->
@@ -411,10 +408,7 @@ private fun VoiceMsgIndicator(
         sizeMultiplier,
         longClick,
         onClick = {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.temporary_file_error),
-            file.fileStatus.sndFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
         }
       )
     file?.fileStatus is CIFileStatus.RcvInvitation ->
@@ -430,10 +424,7 @@ private fun VoiceMsgIndicator(
         sizeMultiplier,
         longClick,
         onClick = {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.file_error),
-            file.fileStatus.rcvFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.rcvFileError)
         }
       )
     file != null && file.fileStatus is CIFileStatus.RcvWarning ->
@@ -443,10 +434,7 @@ private fun VoiceMsgIndicator(
         sizeMultiplier,
         longClick,
         onClick = {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.temporary_file_error),
-            file.fileStatus.rcvFileError.errorInfo
-          )
+          showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
         }
       )
     file != null && file.loaded && progress != null && duration != null ->
