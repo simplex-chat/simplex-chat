@@ -316,9 +316,7 @@ fun TtlOptions(
     if (currentValue is ChatItemTTL.Seconds) {
       all.add(currentValue)
     }
-    val options = mutableListOf<Pair<ChatItemTTL?, String>>().apply {
-      all.mapTo(this) { it to it.text }
-    }
+    val options: MutableList<Pair<ChatItemTTL?, String>> = all.map { it to it.text }.toMutableList()
 
     if (default != null) {
       options.add(null to String.format(generalGetString(MR.strings.chat_item_ttl_default), default.value.text))

@@ -79,7 +79,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
-        setChatTTLAlert(chatModel, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, progressIndicator)
+        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, progressIndicator)
       },
       members = remember { chatModel.groupMembers }.value
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
@@ -428,7 +428,7 @@ fun ModalData.GroupChatInfoLayout(
         )
       }
       SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
-      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
         if (groupInfo.canAddMembers) {
