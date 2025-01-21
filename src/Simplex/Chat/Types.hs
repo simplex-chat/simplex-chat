@@ -372,6 +372,19 @@ optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""
   | otherwise = " (" <> fullName <> ")"
 
+data GroupToSubscribe = GroupToSubscribe
+  { groupId :: GroupId,
+    groupName :: GroupName,
+    membershipStatus :: GroupMemberStatus,
+    membersToSubscribe :: [GroupMemberToSubscribe]
+  }
+
+data GroupMemberToSubscribe = GroupMemberToSubscribe
+  { groupMemberId :: GroupMemberId,
+    memberName :: ContactName,
+    connId :: ConnId
+  }
+
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
 

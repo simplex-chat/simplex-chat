@@ -1198,6 +1198,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
 
+-- TODO remove fullName from view
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
   highlight ("#" <> viewName ldn)
