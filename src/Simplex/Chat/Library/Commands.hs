@@ -3414,8 +3414,8 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
               | memberStatus membership == GSMemInvited = CRGroupInvitation user g
               | all (\GroupMember {activeConn} -> isNothing activeConn) members =
                   if memberActive membership
-                    then CRGroupEmpty user g
-                    else CRGroupRemoved user g
+                    then CRGroupEmpty user g -- TODO check list of memberToSubscribe for this event
+                    else CRGroupRemoved user g -- TODO remove this event
               | otherwise = CRGroupSubscribed user g
     sndFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId SndFileTransfer -> CM ()
     sndFileSubsToView rs sfts = do
