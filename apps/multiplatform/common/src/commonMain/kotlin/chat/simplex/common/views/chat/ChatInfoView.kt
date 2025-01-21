@@ -1399,7 +1399,7 @@ private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressInd
       withChats {
         val oldChat = getChat(chat.id)
         if (oldChat != null) {
-          replaceChat(rhId, chatInfo.id, oldChat.copy(chatItems = emptyList()))
+          replaceChat(oldChat.remoteHostId, oldChat.id, oldChat.copy(chatItems = emptyList()))
         }
       }
     }
