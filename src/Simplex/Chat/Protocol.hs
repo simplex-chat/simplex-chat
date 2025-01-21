@@ -598,7 +598,10 @@ data ExtMsgContent = ExtMsgContent
   }
   deriving (Eq, Show)
 
-data MemberMention = MemberMention {memberId :: MemberId}
+-- memberName is a locally (per message) unique display name of member.
+-- Suffixes _1, _2 should be appended to make names locally unique.
+-- It should be done in the UI, as they will be shown as part of the text, and validated in the UI.
+data MemberMention = MemberMention {memberName :: ContactName, memberId :: MemberId}
   deriving (Eq, Show)
 
 $(JQ.deriveJSON defaultJSON ''MemberMention)

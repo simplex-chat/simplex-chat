@@ -160,8 +160,9 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   deriving (Show)
 
 data MentionedMember = MentionedMember
-  { memberViewName :: Text, -- display name or alias
-    memberRole :: GroupMemberRole
+  { mentionName :: ContactName, -- name used in the message text, used to look up this object
+    memberViewName :: Text, -- current member display name or alias, shown in the message
+    memberRole :: GroupMemberRole -- used for admins/owners in the message
   }
   deriving (Show)
 
@@ -373,6 +374,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
+    userMention :: Bool, -- True for messages that mention user or reply to user messages
     deletable :: Bool,
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
@@ -385,7 +387,8 @@ mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CISt
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
+      -- TODO [mentions]
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention = False, deletable, editable, forwardedByMember, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
@@ -410,6 +413,7 @@ dummyMeta itemId ts itemText =
       itemEdited = False,
       itemTimed = Nothing,
       itemLive = Nothing,
+      userMention = False,
       deletable = False,
       editable = False,
       forwardedByMember = Nothing,
