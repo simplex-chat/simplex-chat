@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Groups
     deleteGroupItemsAndMembers,
     deleteGroup,
     getUserGroups,
+    getUserGroupsToSubscribe,
     getUserGroupDetails,
     getUserGroupsWithSummary,
     getGroupSummary,
@@ -584,6 +585,12 @@ getGroup db vr user groupId = do
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
 
+getGroupToSubscribe :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
+getGroupToSubscribe db vr user groupId = do
+  gInfo <- getGroupInfoToSubscribe db vr user groupId
+  members <- liftIO $ getGroupMembersToSubscribe db vr user gInfo
+  pure $ Group gInfo members
+
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
@@ -637,6 +644,11 @@ getUserGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
 getUserGroups db vr user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db vr user) groupIds
+
+getUserGroupsToSubscribe :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
+getUserGroupsToSubscribe db vr user@User {userId} = do
+  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
+  rights <$> mapM (runExceptT . getGroupToSubscribe db vr user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
@@ -762,6 +774,20 @@ getGroupMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
       (userId, userId, groupId, userContactId)
+
+getGroupMembersToSubscribe :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
+getGroupMembersToSubscribe db vr user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember vr user)
+    <$> DB.query
+      db
+      ( groupMemberQuery
+          <> " "
+          <> [sql|
+                WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
+                  AND m.member_status NOT IN (?,?,?)
+             |]
+      )
+      (userId, userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
 getGroupModerators :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1524,6 +1550,20 @@ getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
       db
       (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
       (groupId, userId, userContactId)
+
+getGroupInfoToSubscribe :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
+getGroupInfoToSubscribe db vr User {userId, userContactId} groupId = ExceptT $ do
+  firstRow (toGroupInfo vr userContactId []) (SEGroupNotFound groupId) $
+    DB.query
+      db
+      ( groupInfoQuery
+          <> " "
+          <> [sql|
+                WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+                  AND mu.member_status NOT IN (?,?,?)
+             |]
+      )
+      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
