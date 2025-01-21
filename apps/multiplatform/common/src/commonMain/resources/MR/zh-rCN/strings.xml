@@ -2307,4 +2307,5 @@
     <string name="privacy_chat_list_open_web_link_question">打开 web 链接？</string>
     <string name="privacy_chat_list_open_web_link">打开链接</string>
     <string name="privacy_chat_list_open_links">打开来自聊天列表的链接</string>
+    <string name="text_field_set_chat_placeholder">设置聊天名称…</string>
 </resources>
