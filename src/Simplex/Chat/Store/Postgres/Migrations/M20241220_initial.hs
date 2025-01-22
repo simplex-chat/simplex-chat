@@ -1021,4 +1021,8 @@ CREATE INDEX idx_chat_items_groups_history ON chat_items(
   item_ts,
   chat_item_id
 );
+CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_snd_item_statuses(
+  chat_item_id,
+  group_member_id
+);
 |]
