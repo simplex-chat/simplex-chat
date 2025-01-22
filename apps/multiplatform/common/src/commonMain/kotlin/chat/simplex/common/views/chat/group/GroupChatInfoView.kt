@@ -487,20 +487,22 @@ fun ModalData.GroupChatInfoLayout(
 
 @Composable
 fun ChatTTLSection(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL?) -> Unit, deletingItems: State<Boolean>) {
-  SectionView {
-    Box(contentAlignment = Alignment.Center) {
+  Box {
+    SectionView {
       TtlOptions(
         chatItemTTL,
         enabled = remember { derivedStateOf { !deletingItems.value } },
         onSelected = setChatItemTTL,
         default = chatModel.chatItemTTL
       )
-      if (deletingItems.value) {
+      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    }
+    if (deletingItems.value) {
+      Box(Modifier.matchParentSize()) {
         ProgressIndicator()
       }
     }
   }
-  SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
 }
 
 @Composable
