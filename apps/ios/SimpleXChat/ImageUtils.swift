@@ -100,23 +100,31 @@ public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha
     return data
 }
 
-public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> String? {
-    var img = image
-    let hasAlpha = imageHasAlpha(image)
-    var str = compressImageStr(img, hasAlpha: hasAlpha)
-    var dataSize = str?.count ?? 0
-    while dataSize != 0 && dataSize > maxDataSize {
-        let ratio = sqrt(Double(dataSize) / Double(maxDataSize))
-        let clippedRatio = min(ratio, 2.0)
-        img = reduceSize(img, ratio: clippedRatio, hasAlpha: hasAlpha)
-        str = compressImageStr(img, hasAlpha: hasAlpha)
-        dataSize = str?.count ?? 0
+public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int) -> String? {
+    // XXX: only needed when the original encoding isn't available
+    let tmpFile = generateNewFileName(getTempFilesDirectory().path + "/" + "resize", "png", fullPath: true)
+    // encode as png and let the backend deal with alpha and formats
+    guard let d = image.pngData() else { return nil }
+    if let _ = saveFile(d, tmpFile, encrypted: false) {
+        defer { removeFile(tmpFile) }
+        let ptr = chat_resize_image_to_str_size(tmpFile, maxDataSize)
+        if let ptr = ptr {
+            let str = fromCString(ptr)
+            let dataSize = str.count
+            if dataSize <= 0 { return nil }
+            logger.debug("resizeImageToStrSize final \(dataSize)")
+            return str
+        } else {
+            logger.error("resizeImageToStrSize failed")
+            return nil
+        }
+    } else {
+        logger.error("saveFile failed")
+        return nil
     }
-    logger.debug("resizeImageToStrSize final \(dataSize)")
-    return str
 }
 
-public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) async -> String? {
+public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int) async -> String? {
     resizeImageToStrSizeSync(image, maxDataSize: maxDataSize)
 }
 
@@ -320,7 +328,7 @@ private func getTimestamp() -> String {
 }
 
 public func dropImagePrefix(_ s: String) -> String {
-    dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
+    dropPrefix(dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,"), "data:image/jpeg;base64,")
 }
 
 private func dropPrefix(_ s: String, _ prefix: String) -> String {
