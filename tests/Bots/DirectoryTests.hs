@@ -923,13 +923,13 @@ testRestoreDirectory tmp = do
       withTestChat tmp "cath" $ \cath -> do
         bob <## "2 contacts connected (use /cs for the list)"
         bob
-          <### [ "#privacy (Privacy): connected to server(s)",
-                 "#security (Security): connected to server(s)"
+          <### [ "#privacy: connected to server(s)",
+                 "#security: connected to server(s)"
                ]
         cath <## "2 contacts connected (use /cs for the list)"
         cath
-          <### [ "#privacy (Privacy): connected to server(s)",
-                 "#anonymity (Anonymity): connected to server(s)"
+          <### [ "#privacy: connected to server(s)",
+                 "#anonymity: connected to server(s)"
                ]
         listGroups superUser bob cath
         groupFoundN 3 bob "privacy"

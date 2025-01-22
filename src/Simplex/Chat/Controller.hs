@@ -741,7 +741,7 @@ data ChatResponse
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
-  | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}
+  | CRGroupInvitation {user :: User, shortGroupInfo :: ShortGroupInfo}
   | CRReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
@@ -757,8 +757,7 @@ data ChatResponse
   | CRUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
   | CRUnknownMemberBlocked {user :: User, groupInfo :: GroupInfo, blockedByMember :: GroupMember, member :: GroupMember}
   | CRUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
-  | CRGroupEmpty {user :: User, groupInfo :: GroupInfo}
-  | CRGroupRemoved {user :: User, groupInfo :: GroupInfo}
+  | CRGroupEmpty {user :: User, shortGroupInfo :: ShortGroupInfo}
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {user :: User, fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
@@ -773,9 +772,9 @@ data ChatResponse
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRContactAndMemberAssociated {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember, updatedContact :: Contact}
-  | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
+  | CRMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
   | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
-  | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}
+  | CRGroupSubscribed {user :: User, shortGroupInfo :: ShortGroupInfo}
   | CRPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
   | CRSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
@@ -1051,7 +1050,7 @@ data ContactSubStatus = ContactSubStatus
   deriving (Show)
 
 data MemberSubStatus = MemberSubStatus
-  { member :: GroupMember,
+  { member :: ShortGroupMember,
     memberError :: Maybe ChatError
   }
   deriving (Show)
