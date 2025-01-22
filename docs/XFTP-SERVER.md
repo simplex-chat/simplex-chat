@@ -19,12 +19,78 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
 
 0. First, install `xftp-server`:
 
-   - Manual deployment (see below)
-
    - Semi-automatic deployment:
-     - [Offical installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
-     - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
+
+     - Installation script:
+
+       **Please note** that currently only Ubuntu distribution is supported.
+
+       You can install and setup servers automatically using our script:
+       ```sh
+       curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &&\
+       if echo '53fcdb4ceab324316e2c4cda7e84dbbb344f32550a65975a7895425e5a1be757 simplex-server-install.sh' | sha256sum -c; then
+          chmod +x ./simplex-server-install.sh
+          ./simplex-server-install.sh
+          rm ./simplex-server-install.sh
+       else
+          echo "SHA-256 checksum is incorrect!"
+          rm ./simplex-server-install.sh
+       fi
+       ```
+
+     - Docker Compose:
+
+       You can deploy xftp-server using Docker Compose. This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
+
+       1. Create `xftp-server` directory and switch to it:
+
+          ```sh
+          mkdir xftp-server && cd xftp-server
+          ```
+
+       2. Create `docker-compose.yml` file with the following content:
+
+          ```yaml
+          name: SimpleX Chat - xftp-server
+
+          services:
+            xftp-server:
+              image: ${SIMPLEX_XFTP_IMAGE:-simplexchat/xftp-server:latest}
+              environment:
+                ADDR: ${ADDR?"Please specify the domain."}
+                QUOTA: ${QUOTA?"Please specify disk quota."}
+                PASS: ${PASS:-}
+              volumes:
+                - ./xftp_configs:/etc/opt/simplex-xftp
+                - ./xftp_state:/var/opt/simplex-xftp
+                - ./xftp_files:/srv/xftp
+              ports:
+                - 443:443
+              restart: unless-stopped
+          ```
+
+         3. In the same directory, create `.env` file with the following content:
+
+            Change variables according to your preferences.
+
+            ```env
+            # Mandatory
+            ADDR=your_ip_or_addr
+            QUOTA=120gb
+
+            # Optional
+            #PASS='123123'
+            ```
+
+         4. Start your containers:
+
+            ```sh
+            docker compose up
+            ```
+
      - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+
+   - Manual deployment (see below)
 
 Manual installation requires some preliminary actions:
 

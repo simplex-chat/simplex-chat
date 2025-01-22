@@ -248,12 +248,185 @@ _Please note_: when you change the servers in the app configuration, it only aff
 
 1. First, install `smp-server`:
 
-   - Manual deployment (see below)
-
    - Semi-automatic deployment:
-     - [Installation script](https://github.com/simplex-chat/simplexmq#using-installation-script)
-     - [Docker container](https://github.com/simplex-chat/simplexmq#using-docker)
+
+     - Installation script:
+
+       **Please note** that currently only Ubuntu distribution is supported.
+
+       You can install and setup servers automatically using our script:
+       ```sh
+       curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &&\
+       if echo '53fcdb4ceab324316e2c4cda7e84dbbb344f32550a65975a7895425e5a1be757 simplex-server-install.sh' | sha256sum -c; then
+          chmod +x ./simplex-server-install.sh
+          ./simplex-server-install.sh
+          rm ./simplex-server-install.sh
+       else
+          echo "SHA-256 checksum is incorrect!"
+          rm ./simplex-server-install.sh
+       fi
+       ```
+
+     - Docker Compose:
+
+       You can deploy smp-server using Docker Compose. This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
+
+       - **The recommened way**:
+
+         This configuration provides quick and easy way to setup your SMP server: Caddy will automatically manage Let's Encrypt certificates and redirect HTTP to HTTPS, while smp-server will serve both [server information page](#server-information-page) and SMP Protocol by 443 port. 5223 port is used as fallback.
+
+         **Please note** that you _must_ have `80` and `443` ports unallocated by other servers.
+
+         1. Create `smp-server` directory and switch to it:
+
+            ```sh
+            mkdir smp-server && cd smp-server
+            ```
+
+         2. Create `docker-compose.yml` file with the following content:
+
+            ```yaml
+            name: SimpleX Chat - smp-server
+
+            services:
+              oneshot:
+                image: ubuntu:latest
+                environment:
+                  CADDYCONF: |
+                    ${CADDY_OPTS:-}
+
+                    http://{$$ADDR} {
+                        redir https://{$$ADDR}{uri} permanent
+                    }
+
+                    {$$ADDR}:8443 {
+                        tls {
+                            key_type rsa4096
+                        }
+                    }
+                command: sh -c 'if [ ! -f /etc/caddy/Caddyfile ]; then printf "$${CADDYCONF}" > /etc/caddy/Caddyfile; fi'
+                volumes:
+                  - ./caddy_conf:/etc/caddy
+
+              caddy:
+                image: caddy:latest
+                depends_on:
+                  oneshot:
+                    condition: service_completed_successfully
+                cap_add:
+                  - NET_ADMIN
+                environment:
+                  ADDR: ${ADDR?"Please specify the domain."}
+                volumes:
+                  - ./caddy_conf:/etc/caddy
+                  - caddy_data:/data
+                  - caddy_config:/config
+                ports:
+                  - 80:80
+                restart: unless-stopped
+                healthcheck:
+                  test: "test -d /data/caddy/certificates/${CERT_PATH:-acme-v02.api.letsencrypt.org-directory}/${ADDR} || exit 1"
+                  interval: 1s
+                  retries: 60
+
+              smp-server:
+                image: ${SIMPLEX_IMAGE:-simplexchat/smp-server:latest}
+                depends_on:
+                  caddy:
+                    condition: service_healthy
+                environment:
+                  ADDR: ${ADDR?"Please specify the domain."}
+                  PASS: ${PASS:-}
+                volumes:
+                  - ./smp_configs:/etc/opt/simplex
+                  - ./smp_state:/var/opt/simplex
+                  - type: volume
+                    source: caddy_data
+                    target: /certificates
+                    volume:
+                      subpath: "caddy/certificates/${CERT_PATH:-acme-v02.api.letsencrypt.org-directory}/${ADDR}"
+                ports:
+                  - 443:443
+                  - 5223:5223
+                restart: unless-stopped
+
+            volumes:
+              caddy_data:
+              caddy_config:
+            ```
+
+         3. In the same directory, create `.env` file with the following content:
+
+            Change variables according to your preferences.
+
+            ```env
+            # Mandatory
+            ADDR=your_ip_or_addr
+
+            # Optional
+            #PASS='123123'
+            ```
+
+         4. Start your containers:
+
+            ```sh
+            docker compose up
+            ```
+
+       - **Manual**:
+
+         If you know what you are doing, this configuration provides bare SMP server setup without automatically managed Let's Encrypt certificates by Caddy to serve [server information page](#server-information-page) with 5223 port set as primary.
+
+         This configuration allows you to retain the ability to manage 80 and 443 ports yourself. As a downside, SMP server **can not* be served to 443 port.
+
+         1. Create `smp-server` directory and switch to it:
+
+            ```sh
+            mkdir smp-server && cd smp-server
+            ```
+
+         2. Create `docker-compose.yml` file with the following content:
+
+            ```yaml
+            name: SimpleX Chat - smp-server
+
+            services:
+              smp-server:
+                image: ${SIMPLEX_IMAGE:-simplexchat/smp-server:latest}
+                environment:
+                  WEB_MANUAL: ${WEB_MANUAL:-1}
+                  ADDR: ${ADDR?"Please specify the domain."}
+                  PASS: ${PASS:-}
+                volumes:
+                  - ./smp_configs:/etc/opt/simplex
+                  - ./smp_state:/var/opt/simplex
+                ports:
+                  - 5223:5223
+                restart: unless-stopped
+            ```
+
+         3. In the same directory, create `.env` file with the following content:
+
+            Change variables according to your preferences.
+
+            ```env
+            # Mandatory
+            ADDR=your_ip_or_addr
+
+            # Optional
+            #PASS='123123'
+            WEB_MANUAL=1
+            ```
+
+         4. Start your containers:
+
+            ```sh
+            docker compose up
+            ```
+
      - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+   
+   - Manual deployment (see below)
 
 Manual installation requires some preliminary actions:
 
