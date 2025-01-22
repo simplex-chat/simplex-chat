@@ -36,6 +36,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -697,13 +698,19 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
         Icon(painterResource(MR.images.ic_verified_user), null, tint = MaterialTheme.colors.secondary)
       }
     )
+    val clipboard = LocalClipboardManager.current
+    val copyNameToClipboard = {
+      clipboard.setText(AnnotatedString(contact.profile.displayName))
+      showToast(generalGetString(MR.strings.copied))
+    }
     Text(
       text,
       inlineContent = inlineContent,
       style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       textAlign = TextAlign.Center,
       maxLines = 3,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
     )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
@@ -711,7 +718,8 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
         color = MaterialTheme.colors.onBackground,
         textAlign = TextAlign.Center,
         maxLines = 4,
-        overflow = TextOverflow.Ellipsis
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
       )
     }
   }
@@ -724,6 +732,7 @@ fun LocalAliasEditor(
   center: Boolean = true,
   leadingIcon: Boolean = false,
   focus: Boolean = false,
+  isContact: Boolean = true,
   updateValue: (String) -> Unit
 ) {
   val state = remember(chatId) {
@@ -740,7 +749,7 @@ fun LocalAliasEditor(
       state,
       {
         Text(
-          generalGetString(MR.strings.text_field_set_contact_placeholder),
+          generalGetString(if (isContact) MR.strings.text_field_set_contact_placeholder else MR.strings.text_field_set_chat_placeholder),
           textAlign = if (center) TextAlign.Center else TextAlign.Start,
           color = MaterialTheme.colors.secondary
         )

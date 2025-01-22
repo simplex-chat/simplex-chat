@@ -41,7 +41,7 @@ public func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
 
-func getGroupContainerDirectory() -> URL {
+public func getGroupContainerDirectory() -> URL {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }
 

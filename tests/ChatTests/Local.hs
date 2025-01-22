@@ -33,7 +33,7 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/contacts"
   -- not a contact
 
-  alice /* "keep in mind"
+  alice >* "keep in mind"
   alice ##> "/tail"
   alice <# "* keep in mind"
   alice ##> "/chats"
@@ -50,7 +50,7 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/tail"
   alice ##> "/chats"
 
-  alice /* "ahoy!"
+  alice >* "ahoy!"
   alice ##> "/_update item *1 2 text Greetings."
   alice ##> "/tail *"
   alice <# "* Greetings."
@@ -59,7 +59,7 @@ testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
 
-  alice /* "keep in mind"
+  alice >* "keep in mind"
   alice ##> "/tail"
   alice <# "* keep in mind"
 
@@ -78,9 +78,9 @@ testPreviewsPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -
   createCCNoteFolder alice
 
   tsS <- iso8601Show <$> getCurrentTime
-  alice /* "first"
+  alice >* "first"
   tsM <- iso8601Show <$> getCurrentTime
-  alice /* "last"
+  alice >* "last"
   tsE <- iso8601Show <$> getCurrentTime
 
   -- there's only one folder that got updated after tsM and before tsE
@@ -95,10 +95,10 @@ testChatPagination :: FilePath -> IO ()
 testChatPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
 
-  alice /* "hello world"
-  alice /* "memento mori"
-  alice /* "knock-knock"
-  alice /* "who's there?"
+  alice >* "hello world"
+  alice >* "memento mori"
+  alice >* "knock-knock"
+  alice >* "who's there?"
 
   alice #$> ("/_get chat *1 count=100", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock"), (1, "who's there?")])
   alice #$> ("/_get chat *1 count=1", chat, [(1, "who's there?")])
@@ -184,7 +184,7 @@ testOtherFiles =
            ]
     bob <## "completed receiving file 1 (test.jpg) from alice"
 
-    bob /* "test"
+    bob >* "test"
     bob ##> "/tail *"
     bob <# "* test"
     bob ##> "/clear *"

@@ -4,8 +4,7 @@ import SectionDivider
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Divider
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier

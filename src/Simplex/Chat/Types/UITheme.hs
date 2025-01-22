@@ -13,8 +13,7 @@ import qualified Data.Aeson.TH as JQ
 import Data.Char (toLower)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)

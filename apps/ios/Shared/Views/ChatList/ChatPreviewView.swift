@@ -248,16 +248,20 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary, prefix: prefix())
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
         func markedDeletedText() -> String {
-            switch cItem.meta.itemDeleted {
-            case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
-            case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
-            case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
-            case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+            if cItem.meta.itemDeleted != nil, cItem.isReport {
+                "archived report"
+            } else {
+                switch cItem.meta.itemDeleted {
+                case let .moderated(_, byGroupMember): String.localizedStringWithFormat(NSLocalizedString("moderated by %@", comment: "marked deleted chat item preview text"), byGroupMember.displayName)
+                case .blocked: NSLocalizedString("blocked", comment: "marked deleted chat item preview text")
+                case .blockedByAdmin: NSLocalizedString("blocked by admin", comment: "marked deleted chat item preview text")
+                case .deleted, nil: NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
+                }
             }
         }
 
@@ -268,6 +272,13 @@ struct ChatPreviewView: View {
             case .video: return "video"
             case .voice: return "play.fill"
             default: return nil
+            }
+        }
+        
+        func prefix() -> Text {
+            switch cItem.content.msgContent {
+            case let .report(_, reason): return Text(!itemText.isEmpty ? "\(reason.text): " : reason.text).italic().foregroundColor(Color.red)
+            default: return Text("")
             }
         }
     }
@@ -302,6 +313,7 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder func chatItemContentPreview(_ chat: Chat, _ ci: ChatItem) -> some View {
+        let linkClicksEnabled = privacyChatListOpenLinksDefault.get() != PrivacyChatListOpenLinksMode.no
         let mc = ci.content.msgContent
         switch mc {
         case let .link(_, preview):
@@ -323,7 +335,17 @@ struct ChatPreviewView: View {
                     .cornerRadius(8)
                 }
                 .onTapGesture {
-                    UIApplication.shared.open(preview.uri)
+                    switch privacyChatListOpenLinksDefault.get() {
+                    case .yes:  UIApplication.shared.open(preview.uri)
+                    case .no: ItemsModel.shared.loadOpenChat(chat.id)
+                    case .ask: AlertManager.shared.showAlert(
+                        Alert(title: Text("Open web link?"),
+                              message: Text(preview.uri.absoluteString),
+                              primaryButton: .default(Text("Open chat"), action: { ItemsModel.shared.loadOpenChat(chat.id) }),
+                              secondaryButton: .default(Text("Open link"), action: { UIApplication.shared.open(preview.uri) })
+                             )
+                    )
+                    }
                 }
             }
         case let .image(_, image):
@@ -388,6 +410,8 @@ struct ChatPreviewView: View {
         case .group:
             if progressByTimeout {
                 ProgressView()
+            } else if chat.chatStats.reportsCount > 0 {
+                groupReportsIcon(size: size * 0.8)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -431,6 +455,14 @@ struct ChatPreviewView: View {
     } else {
         EmptyView()
     }
+}
+
+@ViewBuilder func groupReportsIcon(size: CGFloat) -> some View {
+    Image(systemName: "flag")
+        .resizable()
+        .scaledToFit()
+        .frame(width: size, height: size)
+        .foregroundColor(.red)
 }
 
 func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {

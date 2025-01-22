@@ -26,15 +26,18 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
+import JSONFixtures
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Mobile
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
+import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Interface
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -79,12 +82,6 @@ noActiveUser =
   noActiveUserTagged
 #endif
 
-noActiveUserSwift :: LB.ByteString
-noActiveUserSwift = "{\"resp\":{\"_owsf\":true,\"chatCmdError\":{\"chatError\":{\"_owsf\":true,\"error\":{\"errorType\":{\"_owsf\":true,\"noActiveUser\":{}}}}}}}"
-
-noActiveUserTagged :: LB.ByteString
-noActiveUserTagged = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"noActiveUser\"}}}}"
-
 activeUserExists :: LB.ByteString
 activeUserExists =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -92,12 +89,6 @@ activeUserExists =
 #else
   activeUserExistsTagged
 #endif
-
-activeUserExistsSwift :: LB.ByteString
-activeUserExistsSwift = "{\"resp\":{\"_owsf\":true,\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"activeOrder\":1,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"_owsf\":true,\"error\":{\"errorType\":{\"_owsf\":true,\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
-
-activeUserExistsTagged :: LB.ByteString
-activeUserExistsTagged = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"activeOrder\":1,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
 
 activeUser :: LB.ByteString
 activeUser =
@@ -107,12 +98,6 @@ activeUser =
   activeUserTagged
 #endif
 
-activeUserSwift :: LB.ByteString
-activeUserSwift = "{\"resp\":{\"_owsf\":true,\"activeUser\":{\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"activeOrder\":1,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}}"
-
-activeUserTagged :: LB.ByteString
-activeUserTagged = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"activeOrder\":1,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}"
-
 chatStarted :: LB.ByteString
 chatStarted =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -120,12 +105,6 @@ chatStarted =
 #else
   chatStartedTagged
 #endif
-
-chatStartedSwift :: LB.ByteString
-chatStartedSwift = "{\"resp\":{\"_owsf\":true,\"chatStarted\":{}}}"
-
-chatStartedTagged :: LB.ByteString
-chatStartedTagged = "{\"resp\":{\"type\":\"chatStarted\"}}"
 
 networkStatuses :: LB.ByteString
 networkStatuses =
@@ -135,12 +114,6 @@ networkStatuses =
   networkStatusesTagged
 #endif
 
-networkStatusesSwift :: LB.ByteString
-networkStatusesSwift = "{\"resp\":{\"_owsf\":true,\"networkStatuses\":{\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}}"
-
-networkStatusesTagged :: LB.ByteString
-networkStatusesTagged = "{\"resp\":{\"type\":\"networkStatuses\",\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}"
-
 memberSubSummary :: LB.ByteString
 memberSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -148,12 +121,6 @@ memberSubSummary =
 #else
   memberSubSummaryTagged
 #endif
-
-memberSubSummarySwift :: LB.ByteString
-memberSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"memberSubSummary\":{\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
-
-memberSubSummaryTagged :: LB.ByteString
-memberSubSummaryTagged = "{\"resp\":{\"type\":\"memberSubSummary\",\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}"
 
 userContactSubSummary :: LB.ByteString
 userContactSubSummary =
@@ -163,12 +130,6 @@ userContactSubSummary =
   userContactSubSummaryTagged
 #endif
 
-userContactSubSummarySwift :: LB.ByteString
-userContactSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"userContactSubSummary\":{\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
-
-userContactSubSummaryTagged :: LB.ByteString
-userContactSubSummaryTagged = "{\"resp\":{\"type\":\"userContactSubSummary\",\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}"
-
 pendingSubSummary :: LB.ByteString
 pendingSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -177,15 +138,6 @@ pendingSubSummary =
   pendingSubSummaryTagged
 #endif
 
-pendingSubSummarySwift :: LB.ByteString
-pendingSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"pendingSubSummary\":{\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
-
-pendingSubSummaryTagged :: LB.ByteString
-pendingSubSummaryTagged = "{\"resp\":{\"type\":\"pendingSubSummary\",\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}"
-
-userJSON :: LB.ByteString
-userJSON = "{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"activeOrder\":1,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}"
-
 parsedMarkdown :: LB.ByteString
 parsedMarkdown =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -193,12 +145,6 @@ parsedMarkdown =
 #else
   parsedMarkdownTagged
 #endif
-
-parsedMarkdownSwift :: LB.ByteString
-parsedMarkdownSwift = "{\"formattedText\":[{\"format\":{\"_owsf\":true,\"bold\":{}},\"text\":\"hello\"}]}"
-
-parsedMarkdownTagged :: LB.ByteString
-parsedMarkdownTagged = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
 
 testChatApiNoUser :: FilePath -> IO ()
 testChatApiNoUser tmp = do
@@ -213,8 +159,8 @@ testChatApiNoUser tmp = do
 testChatApi :: FilePath -> IO ()
 testChatApi tmp = do
   let dbPrefix = tmp </> "1"
-      f = chatStoreFile dbPrefix
-  Right st <- createChatStore f "myKey" False MCYesUp
+      f = dbPrefix <> chatSuffix
+  Right st <- createChatStore (DBOpts f "myKey" False True) MCYesUp
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
@@ -223,7 +169,6 @@ testChatApi tmp = do
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` networkStatuses
-  chatRecvMsg cc `shouldReturn` userContactSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown

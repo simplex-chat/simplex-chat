@@ -21,6 +21,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -60,8 +61,7 @@ fun DatabaseView() {
     if (to != null) {
       importArchiveAlert {
         stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
-          importArchive(to, appFilesCountAndSize, progressIndicator)
-          true
+          importArchive(to, appFilesCountAndSize, progressIndicator, false)
         }
       }
     }
@@ -529,9 +529,14 @@ fun deleteChatDatabaseFilesAndState() {
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
-  chatModel.chatItems.clearAndNotify()
   withLongRunningApi {
     withChats {
+      chatItems.clearAndNotify()
+      chats.clear()
+      popChatCollector.clear()
+    }
+    withReportsChatsIfOpen {
+      chatItems.clearAndNotify()
       chats.clear()
       popChatCollector.clear()
     }
@@ -645,6 +650,7 @@ suspend fun importArchive(
   importedArchiveURI: URI,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   progressIndicator: MutableState<Boolean>,
+  migration: Boolean
 ): Boolean {
   val m = chatModel
   progressIndicator.value = true
@@ -666,12 +672,13 @@ suspend fun importArchive(
           if (chatModel.localUserCreated.value == false) {
             chatModel.chatRunning.value = false
           }
+          return true
         } else {
           operationEnded(m, progressIndicator) {
             showArchiveImportedWithErrorsAlert(archiveErrors)
           }
+          return migration
         }
-        return true
       } catch (e: Error) {
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())

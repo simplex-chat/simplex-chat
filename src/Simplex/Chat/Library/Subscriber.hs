@@ -43,12 +43,12 @@ import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
-import Simplex.Chat.Library.Internal
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct
@@ -70,7 +70,7 @@ import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProxyClientError (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -284,6 +284,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
 agentFileError :: AgentErrorType -> FileError
 agentFileError = \case
   XFTP _ XFTP.AUTH -> FileErrAuth
+  XFTP srv (XFTP.BLOCKED info) -> FileErrBlocked srv info
   FILE NO_FILE -> FileErrNoFile
   BROKER _ e -> brokerError FileErrRelay e
   e -> FileErrOther $ tshow e
@@ -1749,7 +1750,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ci' <- withStore' $ \db -> markGroupCIBlockedByAdmin db user gInfo ci
               groupMsgToView gInfo ci'
         applyModeration CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, moderatedAt}
-          | moderatorRole < GRAdmin || moderatorRole < memberRole =
+          | moderatorRole < GRModerator || moderatorRole < memberRole =
               createContentItem
           | groupFeatureAllowed SGFFullDelete gInfo = do
               ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvModerated Nothing timed' False
@@ -1834,23 +1835,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           CIGroupSnd -> moderate membership cci
         Left e
           | msgMemberId == memberId -> messageError $ "x.msg.del: message not found, " <> tshow e
-          | senderRole < GRAdmin -> messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
+          | senderRole < GRModerator -> messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
           | otherwise -> withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
       where
         moderate :: GroupMember -> CChatItem 'CTGroup -> CM ()
         moderate mem cci = case sndMemberId_ of
           Just sndMemberId
-            | sameMemberId sndMemberId mem -> checkRole mem $ delete cci (Just m) >>= toView
+            | sameMemberId sndMemberId mem -> checkRole mem $ do
+                delete cci (Just m) >>= toView
+                archiveMessageReports cci m
             | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId"
           _ -> messageError "x.msg.del: message of another member without memberId"
         checkRole GroupMember {memberRole} a
-          | senderRole < GRAdmin || senderRole < memberRole =
+          | senderRole < GRModerator || senderRole < memberRole =
               messageError "x.msg.del: message of another member with insufficient member permissions"
           | otherwise = a
         delete :: CChatItem 'CTGroup -> Maybe GroupMember -> CM ChatResponse
         delete cci byGroupMember
           | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCIs user gInfo [cci] False False byGroupMember brokerTs
           | otherwise = markGroupCIsDeleted user gInfo [cci] False byGroupMember brokerTs
+        archiveMessageReports :: CChatItem 'CTGroup -> GroupMember -> CM ()
+        archiveMessageReports (CChatItem _ ci) byMember = do
+          ciIds <- withStore' $ \db -> markMessageReportsDeleted db user gInfo ci byMember brokerTs
+          unless (null ciIds) $ toView $ CRGroupChatItemsDeleted user gInfo ciIds False (Just byMember)
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> CM ()
@@ -2580,7 +2587,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         | otherwise =
             withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
               Right bm@GroupMember {groupMemberId = bmId, memberRole, memberProfile = bmp}
-                | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
+                | senderRole < GRModerator || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
                 | otherwise -> do
                     bm' <- setMemberBlocked bmId
                     toggleNtf user bm' (not blocked)

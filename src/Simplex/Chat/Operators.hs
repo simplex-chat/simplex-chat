@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -43,10 +44,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
@@ -119,7 +119,14 @@ instance TextEncoding OperatorTag where
 
 -- this and other types only define instances of serialization for known DB IDs only,
 -- entities without IDs cannot be serialized to JSON
-instance FromField DBEntityId where fromField f = DBEntityId <$> fromField f
+instance FromField DBEntityId
+#if defined(dbPostgres)
+  where
+    fromField f dat = DBEntityId <$> fromField f dat
+#else
+  where
+    fromField f = DBEntityId <$> fromField f
+#endif
 
 instance ToField DBEntityId where toField (DBEntityId i) = toField i
 
@@ -167,7 +174,7 @@ conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
     conditionsDeadline = addUTCTime (31 * nominalDay)
 
 data ConditionsAcceptance
-  = CAAccepted {acceptedAt :: Maybe UTCTime}
+  = CAAccepted {acceptedAt :: Maybe UTCTime, autoAccepted :: Bool}
   | CARequired {deadline :: Maybe UTCTime}
   deriving (Show)
 
@@ -300,22 +307,22 @@ newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
--- it evaluates to (conditions to mark as accepted to SimpleX operator, current conditions, and conditions to add)
-usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+-- it evaluates to (current conditions, and conditions to add)
+usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (UsageConditions, [UsageConditions])
 usageConditionsToAdd = usageConditionsToAdd' previousConditionsCommit usageConditionsCommit
 
 -- This function is used in unit tests
-usageConditionsToAdd' :: Text -> Text -> Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+usageConditionsToAdd' :: Text -> Text -> Bool -> UTCTime -> [UsageConditions] -> (UsageConditions, [UsageConditions])
 usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
   []
-    | newUser -> (Just sourceCond, sourceCond, [sourceCond])
-    | otherwise -> (Just prevCond, sourceCond, [prevCond, sourceCond])
+    | newUser -> (sourceCond, [sourceCond])
+    | otherwise -> (sourceCond, [prevCond, sourceCond])
     where
       prevCond = conditions 1 prevCommit
       sourceCond = conditions 2 sourceCommit
   conds
-    | hasSourceCond -> (Nothing, last conds, [])
-    | otherwise -> (Nothing, sourceCond, [sourceCond])
+    | hasSourceCond -> (last conds, [])
+    | otherwise -> (sourceCond, [sourceCond])
     where
       hasSourceCond = any ((sourceCommit ==) . conditionsCommit) conds
       sourceCond = conditions cId sourceCommit
@@ -338,7 +345,7 @@ updatedServerOperators presetOps storedOps =
     <> map (\op -> (Nothing, Just $ ASO SDBStored op)) (filter (isNothing . operatorTag) storedOps)
   where
     -- TODO remove domains of preset operators from custom
-    addPreset op = ((Just op, storedOp' <$> pOperator op) :)      
+    addPreset op = ((Just op, storedOp' <$> pOperator op) :)
       where
         storedOp' presetOp = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
           Just ServerOperator {operatorId, conditionsAcceptance, enabled, smpRoles, xftpRoles} ->
@@ -427,7 +434,7 @@ groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
   where
     mkUS op = UserOperatorServers op [] []
     addServer :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
-    addServer ss custom add srv = 
+    addServer ss custom add srv =
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
        in atomicModifyIORef'_ v (add srv <$>)
     addSMP srv s@UserOperatorServers {smpServers} = (s :: UserOperatorServers) {smpServers = srv : smpServers}
@@ -445,7 +452,7 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
   where
     currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr
     otherUserErrs (user, uss) = noServersErrs SPSMP (Just user) uss <> noServersErrs SPXFTP (Just user) uss
-    noServersErrs  :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
+    noServersErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
       | noServers opEnabled = [USENoServers p' user]
       | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]

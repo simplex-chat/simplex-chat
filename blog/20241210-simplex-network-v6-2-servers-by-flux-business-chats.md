@@ -72,7 +72,7 @@ This is a small but important change - you can now see who reacted to your messa
 
 ### Improving notifications in iOS app
 
-iOS notifications in a decentralized network is a complex problems. We [support iOS notifications](./20220404-simplex-chat-instant-notifications.md#ios-notifications-require-a-server) from early versions of the app, focussing on preserving privacy as much as possible. But the reliability of notifications was not good enough.
+iOS notifications in a decentralized network is a complex problem. We [support iOS notifications](./20220404-simplex-chat-instant-notifications.md#ios-notifications-require-a-server) from early versions of the app, focussing on preserving privacy as much as possible. But the reliability of notifications was not good enough.
 
 We solved several problems of notification delivery in this release:
 - messaging servers no longer lose notifications while notification servers are restarted.

@@ -15,12 +15,6 @@ import SimpleXChat
 
 private var chatController: chat_ctrl?
 
-// currentChatVersion in core
-public let CURRENT_CHAT_VERSION: Int = 2
-
-// version range that supports establishing direct connection with a group member (xGrpDirectInvVRange in core)
-public let CREATE_MEMBER_CONTACT_VRANGE = VersionRange(minVersion: 2, maxVersion: CURRENT_CHAT_VERSION)
-
 private let networkStatusesLock = DispatchQueue(label: "chat.simplex.app.network-statuses.lock")
 
 enum TerminalItem: Identifiable {
@@ -346,7 +340,7 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true, replaceChat: Bool = false) async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
@@ -359,6 +353,9 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
             m.updateChatInfo(chat.chatInfo)
+            if (replaceChat) {
+                m.replaceChat(chat.chatInfo.id, chat)
+            }
         }
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
@@ -457,6 +454,18 @@ func apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage]
     let r = await chatSendCmd(.apiCreateChatItems(noteFolderId: noteFolderId, composedMessages: composedMessages))
     if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
     createChatItemsErrorAlert(r)
+    return nil
+}
+
+func apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String) async -> [ChatItem]? {
+    let r = await chatSendCmd(.apiReportMessage(groupId: groupId, chatItemId: chatItemId, reportReason: reportReason, reportText: reportText))
+    if case let .newChatItems(_, aChatItems) = r { return aChatItems.map { $0.chatItem } }
+
+    logger.error("apiReportMessage error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating report",
+        message: "Error: \(responseError(r))"
+    )
     return nil
 }
 
@@ -638,13 +647,24 @@ func getChatItemTTLAsync() async throws -> ChatItemTTL {
 }
 
 private func chatItemTTLResponse(_ r: ChatResponse) throws -> ChatItemTTL {
-    if case let .chatItemTTL(_, chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    if case let .chatItemTTL(_, chatItemTTL) = r {
+        if let ttl = chatItemTTL {
+            return ChatItemTTL(ttl)
+        } else {
+            throw RuntimeError("chatItemTTLResponse: invalid ttl")
+        }
+    }
     throw r
 }
 
 func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
     let userId = try currentUserId("setChatItemTTL")
     try await sendCommandOkResp(.apiSetChatItemTTL(userId: userId, seconds: chatItemTTL.seconds))
+}
+
+func setChatTTL(chatType: ChatType, id: Int64, _ chatItemTTL: ChatTTL) async throws {
+    let userId = try currentUserId("setChatItemTTL")
+    try await sendCommandOkResp(.apiSetChatTTL(userId: userId, type: chatType, id: id, seconds: chatItemTTL.value))
 }
 
 func getNetworkConfig() async throws -> NetCfg? {
@@ -846,6 +866,18 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
         )
         return (nil, alert)
+    case let .chatCmdError(_, .errorAgent(.SMP(_, .BLOCKED(info)))):
+        let alert = Alert(
+            title: Text("Connection blocked"),
+            message: Text("Connection is blocked by server operator:\n\(info.reason.text)"),
+            primaryButton: .default(Text("Ok")),
+            secondaryButton: .default(Text("How it works")) {
+                DispatchQueue.main.async {
+                    UIApplication.shared.open(contentModerationPostLink)
+                }
+            }
+        )
+        return (nil, alert)
     case .chatCmdError(_, .errorAgent(.SMP(_, .QUOTA))):
         let alert = mkAlert(
             title: "Undelivered messages",
@@ -1023,6 +1055,12 @@ func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws
 func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactAlias(contactId: contactId, localAlias: localAlias))
     if case let .contactAliasUpdated(_, toContact) = r { return toContact }
+    throw r
+}
+
+func apiSetGroupAlias(groupId: Int64, localAlias: String) async throws -> GroupInfo? {
+    let r = await chatSendCmd(.apiSetGroupAlias(groupId: groupId, localAlias: localAlias))
+    if case let .groupAliasUpdated(_, toGroup) = r { return toGroup }
     throw r
 }
 
@@ -1986,6 +2024,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             await MainActor.run {
                 if active(user) {
                     m.addChatItem(cInfo, cItem)
+                    if cItem.isActiveReport {
+                        m.increaseGroupReportsCounter(cInfo.id)
+                    }
                 } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                     m.increaseUnreadCounter(user: user)
                 }
@@ -2047,6 +2088,40 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
                 }
+            }
+        }
+    case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
+        if !active(user) {
+            do {
+                let users = try listUsers()
+                await MainActor.run {
+                    m.users = users
+                }
+            } catch {
+                logger.error("Error loading users: \(error)")
+            }
+            return
+        }
+        let im = ItemsModel.shared
+        let cInfo = ChatInfo.group(groupInfo: groupInfo)
+        await MainActor.run {
+            m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
+        }
+        var notFound = chatItemIDs.count
+        for ci in im.reversedChatItems {
+            if chatItemIDs.contains(ci.id) {
+                let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
+                    CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
+                } else {
+                    CIDeleted.deleted(deletedTs: Date.now)
+                }
+                await MainActor.run {
+                    var newItem = ci
+                    newItem.meta.itemDeleted = deleted
+                    _ = m.upsertChatItem(cInfo, newItem)
+                }
+                notFound -= 1
+                if notFound == 0 { break }
             }
         }
     case let .receivedGroupInvitation(user, groupInfo, _, _):

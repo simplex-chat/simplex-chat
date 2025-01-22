@@ -51,7 +51,7 @@ fun authenticateWithPasscode(
       close()
       completed(LAResult.Error(generalGetString(MR.strings.authentication_cancelled)))
     }
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
       LocalAuthView(ChatModel, LocalAuthRequest(promptTitle, promptSubtitle, password, selfDestruct && ChatController.appPrefs.selfDestruct.get()) {
         close()
         completed(it)
