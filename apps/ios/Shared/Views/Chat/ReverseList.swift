@@ -21,7 +21,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     @Binding var scrollState: ReverseListScrollModel.State
     @Binding var loadingMoreItems: Bool
     @Binding var allowLoadMoreItems: Bool
-    @Binding var ignoreLoadingRequests: [Int64]
+    @Binding var ignoreLoadingRequests: Int64?
 
     /// Closure, that returns user interface for a given item
     /// Index, merged item
@@ -51,47 +51,47 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             case let .row(row):
                 controller.scroll(to: row, position: .bottom)
             case .bottom:
-                logger.debug("LALAL WANT TO SCROLL BOTTOM \(self.loadingMoreItems)")
-                //DispatchQueue.main.async {
-                    controller.scroll(to: 0, position: .top)
-                    logger.debug("LALAL FINISHED SCROLL BOTTOM0")
-                //}
-                //logger.debug("LALAL FINISHED SCROLL BOTTOM1")
+                controller.scroll(to: 0, position: .top)
             }
         } else {
             // when tableView is dragging and new items are added, scroll position cannot be set correctly
             // so it's better to just wait until dragging ends
-            if !controller.useSmoothScrolling && !mergedItems.splits.isEmpty && controller.tableView.isDragging/* && !controller.tableView.isDecelerating*/ {
+            if !controller.useSmoothScrolling && !mergedItems.splits.isEmpty && (controller.tableView.isDragging || controller.updatingInProgress)/* && !controller.tableView.isDecelerating*/ {
                 controller.runBlockOnEndDecelerating = {
+                    controller.runBlockOnEndDecelerating = nil
                     Task {
-                        let prevSnapshot = controller.dataSource.snapshot()
+                        let mergedItems = $mergedItems.wrappedValue
+                        let prevSnapshot = controller.prevSnapshot
                         if mergedItems.items == prevSnapshot.itemIdentifiers {
                             logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
                             // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
                             controller.updateFloatingButtons.send()
                             return
                         }
-                        //await MainActor.run {
-                            controller.update(mergedItems.items, mergedItems.snapshot, prevSnapshot)
-                        //}
+                        logger.debug("LALAL SNAPSHOT SIZE0 \(prevSnapshot.numberOfItems)")
+                        await MainActor.run {
+                            controller.update(mergedItems)
+                        }
                     }
                 }
             } else {
                 controller.runBlockOnEndDecelerating = nil
-                let prevSnapshot = controller.dataSource.snapshot()
-                if prevSnapshot.numberOfItems == 0 {
-                    controller.update(mergedItems.items, mergedItems.snapshot, prevSnapshot)
+                if controller.prevSnapshot.numberOfItems == 0 {
+                    controller.update(mergedItems)
                 } else {
                     Task {
-                        if mergedItems.items == prevSnapshot.itemIdentifiers {
+                        let mergedItems = $mergedItems.wrappedValue
+                        if mergedItems.items == controller.prevSnapshot.itemIdentifiers {
                             logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
                             // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
                             controller.updateFloatingButtons.send()
                             return
                         }
-                        //await MainActor.run {
-                            controller.update(mergedItems.items, mergedItems.snapshot, prevSnapshot)
-                        //}
+                        await MainActor.run {
+                            let prevSnapshot = controller.prevSnapshot
+                            logger.debug("LALAL SNAPSHOT SIZE1 \(prevSnapshot.numberOfItems), new \(mergedItems.snapshot.numberOfItems)")
+                            controller.update(mergedItems)
+                        }
                     }
                 }
             }
@@ -102,6 +102,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     public class Controller: UITableViewController {
         var representer: ReverseList
         var dataSource: UITableViewDiffableDataSource<ReverseListSection, MergedItem>!
+
+        //
+        var prevSnapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem> = NSDiffableDataSourceSnapshot()
+        var prevMergedItems: MergedItems = MergedItems(items: [], splits: [], indexInParentItems: [:], snapshot: NSDiffableDataSourceSnapshot())
         let updateFloatingButtons = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
 
@@ -118,6 +122,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         let useSmoothScrolling = false
         var preloading = false
+
+        var updatingInProgress = false
 
         init(representer: ReverseList) {
             self.representer = representer
@@ -178,9 +184,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
                 .sink {
                     let items = representer.mergedItems.items
-                    let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState(items) }) ?? ListState()
+                    let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) ?? ListState()
                     ChatView.FloatingButtonModel.shared.updateOnListChange(items, listState)
-                    //self.preloadIfNeeded(listState)
                 }
                 .store(in: &bag)
         }
@@ -213,8 +218,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         override public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-            runBlockOnEndDecelerating?()
-            runBlockOnEndDecelerating = nil
+            if !updatingInProgress {
+                runBlockOnEndDecelerating?()
+                runBlockOnEndDecelerating = nil
+            }
         }
 
         /// depending on tableView layout phase conditions, it can already have known size or not. Not possible to correctly scroll to required
@@ -273,6 +280,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     // in case of listener will not be called
                     await MainActor.run {
                         representer.scrollState = .atDestination
+                        if let listState = self.getListState() {
+                            self.preloadIfNeeded(listState)
+                        }
                     }
                 } catch {}
             }
@@ -280,16 +290,24 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 task.cancel()
                 self.representer.scrollState = .atDestination
                 self.runBlockOnEndScrolling = nil
+                if let listState = self.getListState() {
+                    self.preloadIfNeeded(listState)
+                }
             }
         }
 
-        func update(
-            _ items: [MergedItem],
-            _ snapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>,
-            _ prevSnapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>
-        ) {
+        func update(_ mergedItems: MergedItems) {
+            if updatingInProgress {
+                return
+            }
+            updatingInProgress = true
+            tableView.panGestureRecognizer.isEnabled = false
+            let items: [MergedItem] = mergedItems.items
+            let indexInParentItems = mergedItems.indexInParentItems
+            let snapshot = mergedItems.snapshot
+
             logger.debug("LALAL STEP 1  \(items.count)")
-            let wasCount = prevSnapshot.numberOfItems
+            let wasCount = self.prevSnapshot.numberOfItems
             let willBeCount = items.count
             let c = 1
             let insertedSeveralNewestItems = wasCount != 0 && willBeCount - wasCount == c && prevSnapshot.itemIdentifiers.first!.hashValue == items[c].hashValue
@@ -301,19 +319,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             logger.debug("LALAL STEP 3")
             dataSource.defaultRowAnimation = .none
 
-            let wasContentHeight = tableView.contentSize.height
-            let wasOffset = tableView.contentOffset.y
-            let listState = getListState(items)
-            let wasFirstVisibleRow = listState?.firstVisibleItemIndex ?? 0//tableView.indexPathsForVisibleRows?.first?.row ?? 0
-            let wasFirstVisibleOffset = listState?.firstVisibleItemOffset ?? 0
             // Sets content offset on initial load
             logger.debug("LALAL STEP 4")
-            tableView.panGestureRecognizer.isEnabled = true
             if wasCount == 0 {
                 dataSource.apply(
                     snapshot,
                     animatingDifferences: insertedSeveralNewestItems
                 )
+                prevSnapshot = snapshot
+                prevMergedItems = mergedItems
                 if let firstUnreadItem = snapshot.itemIdentifiers.lastIndex(where: { $0.hasUnread() }) {
                     scrollToRowWhenKnowSize(firstUnreadItem)
                 } else {
@@ -323,6 +337,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     )
                 }
                 logger.debug("LALAL STEP 5 0")
+                updatingInProgress = false
+                tableView.panGestureRecognizer.isEnabled = true
             } else if wasCount != snapshot.numberOfItems {
                 logger.debug("LALAL drag \(self.tableView.isDragging), decel \(self.tableView.isDecelerating)")
                 if useSmoothScrolling && tableView.isDecelerating {
@@ -332,9 +348,12 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         snapshot,
                         animatingDifferences: false
                     )
+                    prevSnapshot = snapshot
+                    prevMergedItems = mergedItems
                     tableView.endUpdates()
                     tableView.panGestureRecognizer.isEnabled = true
                     logger.debug("LALAL STEP 5 1")
+                    updatingInProgress = false
                 } else {
                     // remember current translation
                     var translationToApply: CGPoint? = nil
@@ -344,56 +363,91 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                             translationToApply = t
                         }
                     }
+                    let listState = getListState()
+                    let wasFirstVisibleOffset = listState?.firstVisibleItemOffset ?? 0
+                    let wasFirstIndex = listState?.firstVisibleItemIndex
+                    let wasFirstId: Int64? = if let wasFirstIndex, prevSnapshot.itemIdentifiers.count > wasFirstIndex { prevSnapshot.itemIdentifiers[wasFirstIndex].newest().item.id
+                    } else {
+                        nil
+                    }
+                    let nowFirstIndex: Int? = if let wasFirstId { indexInParentItems[wasFirstId] } else { nil }
+//                    let countDiff = if let wasFirstIndex, let nowFirstIndex {
+//                        nowFirstIndex - wasFirstIndex
+//                    } else {
+//                        0
+//                    }
+                    //if countDiff > 0 {
+                        //self.stopScrolling()
+                    //}
+                    self.prevSnapshot = snapshot
+                    self.prevMergedItems = mergedItems
                     dataSource.apply(
                         snapshot,
                         animatingDifferences: false
                     )
-                    logger.debug("LALAL WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState(items)?.firstVisibleItemIndex ?? -4)")
-                    let newListState = getListState(items)
-                    if listState?.firstVisibleItemIndex == newListState?.firstVisibleItemIndex {
-                    // added new items to top
-                    } else {
-                        stopScrolling()
-                    // added new items to bottom
-                    //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
-                        let countDiff = if let listState, let newListState {
-                            newListState.firstVisibleItemIndex - listState.firstVisibleItemIndex
-                        } else {
-                            max(0, snapshot.numberOfItems - prevSnapshot.numberOfItems)
-                        }
-                    logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstVisibleRow)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)")
-                    getListState(items)
-                    self.tableView.scrollToRow(
-                        at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + wasFirstVisibleRow)), section: 0),
-                        at: .top,
-                        animated: false
-                    )
-                    self.tableView.setContentOffset(
-                        CGPoint(x: 0, y: self.tableView.contentOffset.y - wasFirstVisibleOffset),
-                        animated: false
-                    )
-                    logger.debug("LALAL AFTER SCROLLTOROW")
-                    let state = getListState(items)!
-                    logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
+//                    logger.debug("LALAL WAS0 \(self.prevSnapshot.itemIdentifiers.map({ item in item.newest().item.id}))")
+                    //                        logger.debug("LALAL WAS1 \(snapshot.itemIdentifiers.map({ item in item.newest().item.id}))")
 
-                    if let t = translationToApply {
-                        //                        self.tableView.panGestureRecognizer.setTranslation(CGPointMake(t.x, t.y), in: self.tableView.superview!)
-                        let o = self.tableView.contentOffset
-                        //                        UIView.animate(withDuration: 0.5) {
-                        //                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: false)
-                        //                            self.tableView.layoutIfNeeded()
-                        //                        }
-                        self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
+                    // sometimes it moved position but there is no reason for it - dataset has same item indexes
+                    let tableViewProducedDiff = if let wasFirst = listState?.firstVisibleItemIndex, let nowFirst = self.getListState()?.firstVisibleItemIndex {
+                        0//wasFirst - nowFirst
+                    } else {
+                        0
                     }
+
+                    let countDiff = if let wasFirstIndex, let nowFirstIndex {
+                        nowFirstIndex - wasFirstIndex - tableViewProducedDiff
+                    } else { 0 }
+
+                    logger.debug("LALAL NEARSPLIT split lower WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState()?.firstVisibleItemIndex ?? -4)  countDiff \(countDiff) (tableDiff \(tableViewProducedDiff))    wasFirstIndex \(wasFirstIndex ?? -5) nowIndex \(nowFirstIndex ?? -1)   wasFirstId \(wasFirstId ?? -1) count \(self.prevSnapshot.itemIdentifiers.count)")
+
+                    if countDiff <= 0 && tableViewProducedDiff == 0 {
+                        // added new items to top, nothing to do, scrolling position is correct
+                    } else {
+                        logger.debug("LALAL NEARSPLIT split lower added on BOTTOM")
+                        self.stopScrolling()
+                        // added new items to bottom
+                        //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
+                        logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstIndex ?? -5)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)   \(String(describing: self.representer.mergedItems.splits))")
+                        self.getListState()
+                        self.tableView.scrollToRow(
+                            at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + (wasFirstIndex ?? 0))), section: 0),
+                            at: .top,
+                            animated: false
+                        )
+                        self.tableView.setContentOffset(
+                            CGPoint(x: 0, y: self.tableView.contentOffset.y - wasFirstVisibleOffset),
+                            animated: false
+                        )
+                        logger.debug("LALAL AFTER SCROLLTOROW")
+                        let state = self.getListState()!
+                        logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
+
+                        if let t = translationToApply {
+                            //                        self.tableView.panGestureRecognizer.setTranslation(CGPointMake(t.x, t.y), in: self.tableView.superview!)
+                            let o = self.tableView.contentOffset
+                            //                        UIView.animate(withDuration: 0.5) {
+                            //                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: false)
+                            //                            self.tableView.layoutIfNeeded()
+                            //                        }
+                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
+                        }
                     }
                     logger.debug("LALAL STEP 5 2")
+                    self.updatingInProgress = false
+                    tableView.panGestureRecognizer.isEnabled = true
                 }
             } else {
                 dataSource.apply(
                     snapshot,
                     animatingDifferences: false
                 )
+                prevSnapshot = snapshot
+                prevMergedItems = mergedItems
+                self.getListState()
                 logger.debug("LALAL STEP 5 3")
+                updatingInProgress = false
+                tableView.panGestureRecognizer.isEnabled = true
             }
             updateFloatingButtons.send()
             logger.debug("LALAL STEP 6")
@@ -402,13 +456,24 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
             updateFloatingButtons.send()
 
-            if let listState = self.getListState(representer.mergedItems.items) {
-                if let block = runBlockOnEndDecelerating, nearSplit(remaining: 40, listState, representer.mergedItems) {
-                    tableView.panGestureRecognizer.isEnabled = false
-                    block()
+            if representer.scrollState == .atDestination, let listState = self.getListState() {
+                if nearSplit(remaining: 30, ignoreTopOfTopSplit: true, listState, prevMergedItems) {
+                    logger.debug("LALAL IN SPLIT OR NO YESSSSSS  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+                    stopScrolling(disable: false)
                 }
-                logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, listState, self.representer.mergedItems))   \(String(describing: self.representer.mergedItems.splits))")
-                preloadIfNeeded(listState)
+                logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, self.prevMergedItems))  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+                if let block = runBlockOnEndDecelerating, nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, prevMergedItems) {
+                    if !updatingInProgress {
+                        runBlockOnEndDecelerating = nil
+                        // it's important to have it in DispatchQueue.main. Otherwise, it will be deadlock and jumping scroll
+                        // without any visible reason
+                        DispatchQueue.main.async {
+                            block()
+                        }
+                    }
+                } else {
+                    preloadIfNeeded(listState)
+                }
             }
         }
 
@@ -427,14 +492,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             }
         }
 
-        func nearSplit(remaining: Int, _ listState: ListState, _ mergedItems: MergedItems) -> Bool {
-            if mergedItems.splits.isEmpty { return false }
+        func nearSplit(remaining: Int, ignoreTopOfTopSplit: Bool , _ listState: ListState, _ prevMergedItems: MergedItems) -> Bool {
+            if prevMergedItems.splits.isEmpty { return false }
 
             let firstVisibleIndex = listState.firstVisibleItemIndex
             let lastVisibleIndex = listState.lastVisibleItemIndex
-            for split in mergedItems.splits {
+            for split in prevMergedItems.splits {
                 // before any split
-                if split.indexRangeInParentItems.lowerBound > firstVisibleIndex {
+                logger.debug("LALAL NEARSPLIT split lower \(split.indexRangeInParentItems.lowerBound)  last \(lastVisibleIndex) first \(firstVisibleIndex) remaining \(remaining)")
+                if split.indexRangeInParentItems.lowerBound > lastVisibleIndex {
                     if lastVisibleIndex > (split.indexRangeInParentItems.lowerBound - remaining) {
                         return true
                     }
@@ -444,7 +510,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 if containsInRange {
                     if lastVisibleIndex > (split.indexRangeInParentItems.upperBound - remaining) {
                         // situation when there is nothing to load from top
-                        if self.representer.ignoreLoadingRequests.contains(where: { $0 == mergedItems.items.last?.oldest().item.id } ) {
+                        if ignoreTopOfTopSplit && split.indexRangeInParentItems == prevMergedItems.splits.last?.indexRangeInParentItems {
                             return false
                         }
                         return true
@@ -458,8 +524,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             return false
         }
 
-        func getListState(_ items: [MergedItem]) -> ListState? {
+        func getListState() -> ListState? {
             logger.debug("LALAL VISIBLE ROWS \((self.tableView.indexPathsForVisibleRows ?? []).map({ $0.row }))")
+            let items = prevSnapshot.itemIdentifiers
             if let visibleRows = tableView.indexPathsForVisibleRows,
                visibleRows.last?.row ?? 0 < items.count {
                 let scrollOffset: Double = tableView.contentOffset.y + InvertedTableView.inset
@@ -469,19 +536,15 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 } else {
                     nil
                 }
-                let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) })
-                let firstVisibleOffset: CGFloat? = if let row = firstVisible?.row {
-                    offsetForRow(row)
-                } else { nil }
-                let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) })
-                logger.debug("LALAL LAST \(lastVisible?.item ?? -2)")
-                let bottomItemId: ChatItem.ID? =
-                if let firstVisible {
-                    items[firstVisible.row].newest().item.id
-                } else {
-                    nil
+                guard let firstVisible = visibleRows.first(where: { isVisible(indexPath: $0) }),
+                      let lastVisible = visibleRows.last(where: { isVisible(indexPath: $0) }) else {
+                    return nil
                 }
-                return ListState(scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId, firstVisibleItemIndex: firstVisible?.row ?? 0, lastVisibleItemIndex: lastVisible?.row ?? 0, firstVisibleItemOffset: firstVisibleOffset ?? 0)
+
+                let firstVisibleOffset: CGFloat? = offsetForRow(firstVisible.row)
+                logger.debug("LALAL LAST \(lastVisible.item)")
+                let bottomItemId: ChatItem.ID = items[firstVisible.row].newest().item.id
+                return ListState(scrollOffset: scrollOffset, topItemDate: topItemDate, bottomItemId: bottomItemId, firstVisibleItemIndex: firstVisible.row, lastVisibleItemIndex: lastVisible.row, firstVisibleItemOffset: firstVisibleOffset ?? 0)
             }
             return nil
         }
@@ -527,7 +590,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     if index == nil {
                         let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
                         let oldSize = ItemsModel.shared.reversedChatItems.count
-                        _ = await self.representer.loadItems(true, pagination, { self.visibleItemIndexesNonReversed(self.representer.mergedItems.items)})
+                        _ = await self.representer.loadItems(true, pagination, { self.visibleItemIndexesNonReversed(self.prevMergedItems)})
                         var repeatsLeft = 50
                         while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
                             try await Task.sleep(nanoseconds: 20_000000)
@@ -555,18 +618,20 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         }
 
         func preloadIfNeeded(_ state: ListState) {
+            let mergedItems = self.representer.mergedItems
+            logger.debug("LALAL LOADING BEFORE ANYTHING \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(self.representer.$mergedItems.wrappedValue.items[state.firstVisibleItemIndex].newest().item.id)")
             if representer.scrollState == .atDestination, prevFirstVisible != state.firstVisibleItemIndex, !preloading {
-                logger.debug("LALAL LOADING before \(String(describing: self.representer.scrollState))")
+                logger.debug("LALAL LOADING before \(mergedItems.indexInParentItems.count) \(ItemsModel.shared.reversedChatItems.count)")
                 prevFirstVisible = state.firstVisibleItemIndex
+                preloading = true
                 Task {
-                    preloading = true
                     defer {
                         preloading = false
                     }
-                    let mergedItems = self.representer.mergedItems
+                    logger.debug("LALAL LOADING BEFORE INSIDE \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits)")
                     await preloadItems(mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
-                        logger.debug("LALAL LOADING INSIDE")
-                        let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(mergedItems.items) })
+                        logger.debug("LALAL LOADING INSIDE \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits)")
+                        let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(self.prevMergedItems) })
                         return triedToLoad
                     }
                 }

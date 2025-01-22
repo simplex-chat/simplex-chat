@@ -47,7 +47,7 @@ struct ChatView: View {
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
     @State private var allowLoadMoreItems: Bool = false
-    @State private var ignoreLoadingRequests: [Int64] = []
+    @State private var ignoreLoadingRequests: Int64? = nil
     @State private var updateMergedItemsTask: Task<Void, Never>? = nil
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -446,7 +446,7 @@ struct ChatView: View {
         return GeometryReader { g in
             let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
             // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
-            ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant([])) { index, mergedItem in
+            ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant(nil)) { index, mergedItem in
                 let ci = switch mergedItem {
                 case let .single(item, _, _): item.item
                 case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
@@ -1099,7 +1099,7 @@ struct ChatView: View {
             }
             .onAppear {
                 // LALAL
-                //return ()
+                return ()
                 
                 if markedRead {
                     return

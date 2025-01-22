@@ -30,15 +30,16 @@ func loadLastItems(_ loadingMoreItems: Binding<Bool>, _ chatInfo: ChatInfo) {
     }
 }
 
-func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ listState: ListState, _ ignoreLoadingRequests: Binding<[Int64]>, _ loadItems: @escaping (ChatPagination) async -> Bool) async {
+func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ listState: ListState, _ ignoreLoadingRequests: Binding<Int64?>, _ loadItems: @escaping (ChatPagination) async -> Bool) async {
     let allowLoad = allowLoadMoreItems || mergedItems.items.count == listState.lastVisibleItemIndex + 1
     let remaining = ChatPagination.UNTIL_PRELOAD_COUNT
     let firstVisibleIndex = listState.firstVisibleItemIndex
 
-    await preloadItemsBefore()
-    await preloadItemsAfter()
+    if !(await preloadItemsBefore()) {
+        await preloadItemsAfter()
+    }
 
-    func preloadItemsBefore() async {
+    func preloadItemsBefore() async -> Bool {
         let splits = mergedItems.splits
         let lastVisibleIndex = listState.lastVisibleItemIndex
         var lastIndexToLoadFrom: Int? = findLastIndexToLoadFromInSplits(firstVisibleIndex, lastVisibleIndex, remaining, splits)
@@ -57,16 +58,17 @@ func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ list
             logger.debug("LALAL LOADFROMNIL")
             loadFromItemId = nil
         }
-        guard let loadFromItemId, !ignoreLoadingRequests.wrappedValue.contains(loadFromItemId) else {
-            return
+        guard let loadFromItemId, ignoreLoadingRequests.wrappedValue != loadFromItemId else {
+            return false
         }
         let sizeWas = items.count
         let firstItemIdWas = items.first?.id
         let triedToLoad = await loadItems(ChatPagination.before(chatItemId: loadFromItemId, count: ChatPagination.PRELOAD_COUNT))
-        logger.debug("LALAL PRELOAD BEFORE \(String(describing: splits)) \(firstVisibleIndex) \(sizeWas) \(triedToLoad) \(lastIndexToLoadFrom ?? -1)")
+        logger.debug("LALAL PRELOAD BEFORE \(String(describing: splits)) \(firstVisibleIndex) sizeWas \(sizeWas) now \(ItemsModel.shared.reversedChatItems.count) \(triedToLoad) \(lastIndexToLoadFrom ?? -1)")
         if triedToLoad && sizeWas == ItemsModel.shared.reversedChatItems.count && firstItemIdWas == ItemsModel.shared.reversedChatItems.last?.id {
-            ignoreLoadingRequests.wrappedValue.append(loadFromItemId)
+            ignoreLoadingRequests.wrappedValue = loadFromItemId
         }
+        return triedToLoad
     }
 
     func preloadItemsAfter() async {
@@ -78,6 +80,7 @@ func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ list
         if let split, split.indexRangeInParentItems.lowerBound + remaining > firstVisibleIndex {
             let index = items.count - 1 - split.indexRangeInReversed.lowerBound
             if index >= 0 {
+                logger.debug("LALAL SPLITS \(String(describing: splits)) \(index) \(split.indexRangeInParentItems.debugDescription) \(items.firstIndex(where: { item in item.id == ItemsModel.shared.chatState.splits.first! }) ?? -1)  \(ItemsModel.shared.chatState.splits.first!)    \(items[index].id)      \(String(describing: items.map({ item in item.id })))")
                 let loadFromItemId = items[index].id
                 _ = await loadItems(ChatPagination.after(chatItemId: loadFromItemId, count: ChatPagination.PRELOAD_COUNT))
             }
