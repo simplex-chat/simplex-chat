@@ -425,7 +425,8 @@ CREATE TABLE chat_items(
   fwd_from_group_id BIGINT REFERENCES groups ON DELETE SET NULL,
   fwd_from_chat_item_id BIGINT REFERENCES chat_items ON DELETE SET NULL,
   via_proxy SMALLINT,
-  msg_content_tag TEXT
+  msg_content_tag TEXT,
+  include_in_history SMALLINT NOT NULL DEFAULT 0,
 );
 ALTER TABLE groups
 ADD CONSTRAINT fk_groups_chat_items
@@ -1011,5 +1012,13 @@ CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON chat_items(
   msg_content_tag,
   item_deleted,
   item_sent
+);
+CREATE INDEX idx_chat_items_groups_history ON chat_items(
+  user_id,
+  group_id,
+  include_in_history,
+  item_deleted,
+  item_ts,
+  chat_item_id
 );
 |]
