@@ -198,9 +198,9 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
 }
 
 @Composable
-fun ProgressIndicator(disableInteractions: Boolean = false) {
+fun ProgressIndicator() {
   Box(
-    Modifier.fillMaxSize().then(if (disableInteractions) Modifier.clickable(enabled = false, onClick = {}) else Modifier),
+    Modifier.fillMaxSize(),
     contentAlignment = Alignment.Center
   ) {
     CircularProgressIndicator(

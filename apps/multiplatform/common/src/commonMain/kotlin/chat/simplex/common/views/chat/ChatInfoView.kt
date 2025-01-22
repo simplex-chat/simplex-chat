@@ -42,6 +42,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.group.ChatTTLSection
 import chat.simplex.common.views.chat.group.ProgressIndicator
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.database.*
@@ -78,7 +79,7 @@ fun ChatInfoView(
     val chatRh = chat.remoteHostId
     val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     val chatItemTTL = remember(contact.id) { mutableStateOf(if (contact.chatItemTTL != null) ChatItemTTL.fromSeconds(contact.chatItemTTL) else null) }
-    val progressIndicator = rememberSaveable(contact.id) { mutableStateOf(false) }
+    val deletingItems = rememberSaveable(contact.id) { mutableStateOf(false) } 
 
     ChatInfoLayout(
       chat,
@@ -98,7 +99,7 @@ fun ChatInfoView(
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
-        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, progressIndicator)
+        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       connStats = connStats,
       contactNetworkStatus.value,
@@ -190,12 +191,8 @@ fun ChatInfoView(
       },
       close = close,
       onSearchClicked = onSearchClicked,
-      disabled = progressIndicator
+      deletingItems = deletingItems
     )
-
-    if (progressIndicator.value) {
-      ProgressIndicator(true)
-    }
   }
 }
 
@@ -544,7 +541,7 @@ fun ChatInfoLayout(
   verifyClicked: () -> Unit,
   close: () -> Unit,
   onSearchClicked: () -> Unit,
-  disabled: State<Boolean>
+  deletingItems: State<Boolean>
 ) {
   val cStats = connStats.value
   val scrollState = rememberScrollState()
@@ -552,7 +549,7 @@ fun ChatInfoLayout(
   KeyChangeEffect(chat.id) {
     scope.launch { scrollState.scrollTo(0) }
   }
-  ColumnWithScrollBar(Modifier.alpha(if (disabled.value) 0.6f else 1f)) {
+  ColumnWithScrollBar {
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
@@ -621,15 +618,7 @@ fun ChatInfoLayout(
     }
     SectionDividerSpaced(maxBottomPadding = false)
 
-    SectionView {
-      TtlOptions(
-        chatItemTTL,
-        enabled = remember { mutableStateOf(true) },
-        onSelected = setChatItemTTL,
-        default = chatModel.chatItemTTL
-      )
-    }
-    SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
     SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
     val conn = contact.activeConn
@@ -1381,6 +1370,7 @@ private fun setChatTTL(
   withBGApi {
     try {
       chatModel.controller.setChatTTL(rhId, chatInfo.chatType, chatInfo.apiId, chatTTL.value)
+      delay(5000)
       afterSetChatTTL(rhId, chatInfo, progressIndicator)
     } catch (e: Exception) {
       chatTTL.value = previousChatTTL
@@ -1450,7 +1440,7 @@ fun PreviewChatInfoLayout() {
       verifyClicked = {},
       close = {},
       onSearchClicked = {},
-      disabled = remember { mutableStateOf(true) }
+      deletingItems = remember { mutableStateOf(false) }
     )
   }
 }

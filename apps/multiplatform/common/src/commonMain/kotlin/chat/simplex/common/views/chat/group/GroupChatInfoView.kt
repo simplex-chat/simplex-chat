@@ -58,7 +58,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
     val groupInfo = chat.chatInfo.groupInfo
     val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
     val chatItemTTL = remember(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
-    val progressIndicator = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
+    val deletingItems = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     GroupChatInfoLayout(
@@ -79,7 +79,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
         val previousChatTTL = chatItemTTL.value
         chatItemTTL.value = it
 
-        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, progressIndicator)
+        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       members = remember { chatModel.groupMembers }.value
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
@@ -141,12 +141,8 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
       },
       onSearchClicked = onSearchClicked,
-      disabled = progressIndicator
+      deletingItems = deletingItems
     )
-
-    if (progressIndicator.value) {
-      ProgressIndicator(true)
-    }
   }
 }
 
@@ -323,7 +319,7 @@ fun ModalData.GroupChatInfoLayout(
   manageGroupLink: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
   onSearchClicked: () -> Unit,
-  disabled: State<Boolean>
+  deletingItems: State<Boolean>
 ) {
   val listState = remember { appBarHandler.listState }
   val scope = rememberCoroutineScope()
@@ -337,7 +333,7 @@ fun ModalData.GroupChatInfoLayout(
       if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
     }
   }
-  Box(Modifier.alpha(if (disabled.value) 0.6f else 1f)) {
+  Box {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
   LazyColumnWithScrollBar(
     state = listState,
@@ -419,15 +415,7 @@ fun ModalData.GroupChatInfoLayout(
       SectionTextFooter(stringResource(footerId))
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
-      SectionView {
-        TtlOptions(
-          chatItemTTL,
-          enabled = remember { mutableStateOf(true) },
-          onSelected = setChatItemTTL,
-          default = chatModel.chatItemTTL
-        )
-      }
-      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+      ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
@@ -495,6 +483,24 @@ fun ModalData.GroupChatInfoLayout(
       NavigationBarBackground(oneHandUI.value, oneHandUI.value)
     }
   }
+}
+
+@Composable
+fun ChatTTLSection(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL?) -> Unit, deletingItems: State<Boolean>) {
+  SectionView {
+    Box(contentAlignment = Alignment.Center) {
+      TtlOptions(
+        chatItemTTL,
+        enabled = remember { derivedStateOf { !deletingItems.value } },
+        onSelected = setChatItemTTL,
+        default = chatModel.chatItemTTL
+      )
+      if (deletingItems.value) {
+        ProgressIndicator()
+      }
+    }
+  }
+  SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
 }
 
 @Composable
@@ -811,7 +817,7 @@ fun PreviewGroupChatInfoLayout() {
       onLocalAliasChanged = {},
       groupLink = null,
       scrollToItemId = remember { mutableStateOf(null) },
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, disabled = remember { mutableStateOf(true) }
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, deletingItems = remember { mutableStateOf(true) }
     )
   }
 }
