@@ -426,7 +426,7 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id BIGINT REFERENCES chat_items ON DELETE SET NULL,
   via_proxy SMALLINT,
   msg_content_tag TEXT,
-  include_in_history SMALLINT NOT NULL DEFAULT 0,
+  include_in_history SMALLINT NOT NULL DEFAULT 0
 );
 ALTER TABLE groups
 ADD CONSTRAINT fk_groups_chat_items
