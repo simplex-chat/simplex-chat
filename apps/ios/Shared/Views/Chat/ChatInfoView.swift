@@ -682,17 +682,23 @@ struct ChatTTLOption: View {
             ) {
                 progressIndicator = true
                 Task {
+                    let m = ChatModel.shared
                     do {
                         try await setChatTTL(chatType: chat.chatInfo.chatType, id: chat.chatInfo.apiId, ttl)
-                        await loadChat(chat: chat, clearItems: true, replaceChat: true)
+                        await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, clearItems: true)
                         await MainActor.run {
                             progressIndicator = false
                             currentChatItemTTL = chatItemTTL
+                            if ItemsModel.shared.reversedChatItems.isEmpty && m.chatId == chat.id,
+                               let chat = m.getChat(chat.id) {
+                                chat.chatItems = []
+                                m.replaceChat(chat.id, chat)
+                            }
                         }
                     }
                     catch let error {
                         logger.error("setChatTTL error \(responseError(error))")
-                        await loadChat(chat: chat, clearItems: true, replaceChat: true)
+                        await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, clearItems: true)
                         await MainActor.run {
                             chatItemTTL = currentChatItemTTL
                             progressIndicator = false
