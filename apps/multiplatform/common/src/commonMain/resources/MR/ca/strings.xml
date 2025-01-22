@@ -2286,4 +2286,12 @@
     <string name="report_item_visibility_submitter">Només ho veieu vosaltres i moderació</string>
     <string name="error_creating_report">Error en crear informe</string>
     <string name="text_field_set_chat_placeholder">Establir nom del xat…</string>
+    <string name="chat_ttl_options_footer">Suprimir els missatges de xat del teu dispositiu.</string>
+    <string name="change_automatic_deletion_question">Voleu canviar la supressió automàtica de missatges?</string>
+    <string name="chat_item_ttl_default">predeterminat (%s)</string>
+    <string name="chat_item_ttl_year">1 any</string>
+    <string name="disable_automatic_deletion">Desactivar la supressió de missatges</string>
+    <string name="disable_automatic_deletion_question">Desactivar la supressió automàtica de missatges?</string>
+    <string name="change_automatic_chat_deletion_message">Aquesta acció no es pot desfer; els missatges enviats i rebuts en aquest xat abans del seleccionat se suprimiran.</string>
+    <string name="disable_automatic_deletion_message">Els missatges d\'aquest xat no se suprimiran mai.</string>
 </resources>
