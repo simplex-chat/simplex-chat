@@ -77,6 +77,8 @@ chatProfileTests = do
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
+  describe "group aliases" $ do
+    it "set group alias" testSetGroupAlias
   describe "pending connection users" $ do
     it "change user for pending connection" testChangePCCUser
     it "change from incognito profile connects as new user" testChangePCCUserFromIncognito
@@ -1977,6 +1979,20 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     alice @@@ [("@bob", lastChatFeature)]
     alice ##> "/contacts"
     alice <## "bob (Bob) (alias: friend)"
+
+testSetGroupAlias :: HasCallStack => FilePath -> IO ()
+testSetGroupAlias = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    createGroup2 "team" alice bob
+    threadDelay 1500000
+    alice ##> "/_set alias #1 friends"
+    alice <## "group #team alias updated: friends"
+    alice ##> "/groups"
+    alice <## "#team (2 members) (alias: friends)"
+    alice ##> "/_set alias #1"
+    alice <## "group #team alias removed"
+    alice ##> "/groups"
+    alice <## "#team (2 members)"
 
 testSetContactPrefs :: HasCallStack => FilePath -> IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $

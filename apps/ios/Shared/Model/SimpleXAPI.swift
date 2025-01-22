@@ -342,6 +342,7 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
 
 func loadChat(type: ChatType, id: Int64, search: String = "", clearItems: Bool = true) async {
 //    do {
+        let cInfo = chat.chatInfo
         let m = ChatModel.shared
         let im = ItemsModel.shared
         m.chatItemStatuses = [:]
@@ -643,13 +644,24 @@ func getChatItemTTLAsync() async throws -> ChatItemTTL {
 }
 
 private func chatItemTTLResponse(_ r: ChatResponse) throws -> ChatItemTTL {
-    if case let .chatItemTTL(_, chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    if case let .chatItemTTL(_, chatItemTTL) = r {
+        if let ttl = chatItemTTL {
+            return ChatItemTTL(ttl)
+        } else {
+            throw RuntimeError("chatItemTTLResponse: invalid ttl")
+        }
+    }
     throw r
 }
 
 func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
     let userId = try currentUserId("setChatItemTTL")
     try await sendCommandOkResp(.apiSetChatItemTTL(userId: userId, seconds: chatItemTTL.seconds))
+}
+
+func setChatTTL(chatType: ChatType, id: Int64, _ chatItemTTL: ChatTTL) async throws {
+    let userId = try currentUserId("setChatItemTTL")
+    try await sendCommandOkResp(.apiSetChatTTL(userId: userId, type: chatType, id: id, seconds: chatItemTTL.value))
 }
 
 func getNetworkConfig() async throws -> NetCfg? {
@@ -798,7 +810,7 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
 
 func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection? {
     let r = await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
-    
+
     if case let .connectionUserChanged(_, _, toConnection, _) = r {return toConnection}
     throw r
 }
@@ -1040,6 +1052,12 @@ func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws
 func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactAlias(contactId: contactId, localAlias: localAlias))
     if case let .contactAliasUpdated(_, toContact) = r { return toContact }
+    throw r
+}
+
+func apiSetGroupAlias(groupId: Int64, localAlias: String) async throws -> GroupInfo? {
+    let r = await chatSendCmd(.apiSetGroupAlias(groupId: groupId, localAlias: localAlias))
+    if case let .groupAliasUpdated(_, toGroup) = r { return toGroup }
     throw r
 }
 
@@ -2122,7 +2140,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .groupLinkConnecting(user, groupInfo, hostMember):
         if !active(user) { return }
-        
+
         await MainActor.run {
             m.updateGroup(groupInfo)
             if let hostConn = hostMember.activeConn {

@@ -46,6 +46,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
@@ -54,13 +55,6 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTy
 import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple.FromField (FromField (..))
-import Database.PostgreSQL.Simple.ToField (ToField (..))
-#else
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
-#endif
 
 usageConditionsCommit :: Text
 usageConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"

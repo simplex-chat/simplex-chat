@@ -267,7 +267,8 @@ struct ChatView: View {
                                     chat.created = Date.now
                                 }
                             ),
-                            onSearch: { focusSearch() }
+                            onSearch: { focusSearch() },
+                            localAlias: groupInfo.localAlias
                         )
                     }
                 } else if case .local = cInfo {

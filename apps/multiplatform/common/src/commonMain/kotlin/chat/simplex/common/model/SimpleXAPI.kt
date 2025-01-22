@@ -1562,6 +1562,13 @@ object ChatController {
     return null
   }
 
+  suspend fun apiSetGroupAlias(rh: Long?, groupId: Long, localAlias: String): GroupInfo? {
+    val r = sendCmd(rh, CC.ApiSetGroupAlias(groupId, localAlias))
+    if (r is CR.GroupAliasUpdated) return r.toGroup
+    Log.e(TAG, "apiSetGroupAlias bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiSetConnectionAlias(rh: Long?, connId: Long, localAlias: String): PendingContactConnection? {
     val r = sendCmd(rh, CC.ApiSetConnectionAlias(connId, localAlias))
     if (r is CR.ConnectionAliasUpdated) return r.toConnection
@@ -3411,6 +3418,7 @@ sealed class CC {
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
+  class ApiSetGroupAlias(val groupId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class ApiSetUserUIThemes(val userId: Long, val themes: ThemeModeOverrides?): CC()
   class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
@@ -3592,6 +3600,7 @@ sealed class CC {
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
+    is ApiSetGroupAlias -> "/_set alias #$groupId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
     is ApiSetUserUIThemes -> "/_set theme user $userId ${if (themes != null) json.encodeToString(themes) else ""}"
     is ApiSetChatUIThemes -> "/_set theme $chatId ${if (themes != null) json.encodeToString(themes) else ""}"
@@ -3751,6 +3760,7 @@ sealed class CC {
     is ApiUpdateProfile -> "apiUpdateProfile"
     is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiSetContactAlias -> "apiSetContactAlias"
+    is ApiSetGroupAlias -> "apiSetGroupAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
     is ApiSetUserUIThemes -> "apiSetUserUIThemes"
     is ApiSetChatUIThemes -> "apiSetChatUIThemes"
@@ -5645,6 +5655,7 @@ sealed class CR {
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
   @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User, val updatedUser: User): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("groupAliasUpdated") class GroupAliasUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: UserRef, val fromContact: Contact, val toContact: Contact): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val user: User, val contactLink: UserContactLinkRec): CR()
@@ -5832,6 +5843,7 @@ sealed class CR {
     is UserProfileUpdated -> "userProfileUpdated"
     is UserPrivacy -> "userPrivacy"
     is ContactAliasUpdated -> "contactAliasUpdated"
+    is GroupAliasUpdated -> "groupAliasUpdated"
     is ConnectionAliasUpdated -> "connectionAliasUpdated"
     is ContactPrefsUpdated -> "contactPrefsUpdated"
     is UserContactLink -> "userContactLink"
@@ -6009,6 +6021,7 @@ sealed class CR {
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
     is UserPrivacy -> withUser(user, json.encodeToString(updatedUser))
     is ContactAliasUpdated -> withUser(user, json.encodeToString(toContact))
+    is GroupAliasUpdated -> withUser(user, json.encodeToString(toGroup))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
     is UserContactLink -> withUser(user, contactLink.responseDetails)

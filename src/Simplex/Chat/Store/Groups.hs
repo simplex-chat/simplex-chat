@@ -126,6 +126,10 @@ module Simplex.Chat.Store.Groups
     setGroupUIThemes,
     updateGroupChatTags,
     getGroupChatTags,
+    setGroupChatTTL,
+    getGroupChatTTL,
+    getUserGroupsToExpire,
+    updateGroupAlias,
   )
 where
 
@@ -160,13 +164,9 @@ import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
-import Database.PostgreSQL.Simple.SqlQQ (sql)
-#else
+
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
-#endif
 
 type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences))
 
@@ -268,9 +268,9 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -337,6 +337,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
         { groupId,
           localDisplayName = ldn,
           groupProfile,
+          localAlias = "",
           businessChat = Nothing,
           fullGroupPreferences,
           membership,
@@ -347,6 +348,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatTs = Just currentTs,
           userMemberProfileSentAt = Just currentTs,
           chatTags = [],
+          chatItemTTL = Nothing,
           uiThemes = Nothing,
           customData = Nothing
         }
@@ -406,6 +408,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                 { groupId,
                   localDisplayName,
                   groupProfile,
+                  localAlias = "",
                   businessChat = Nothing,
                   fullGroupPreferences,
                   membership,
@@ -416,6 +419,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTs = Just currentTs,
                   userMemberProfileSentAt = Just currentTs,
                   chatTags = [],
+                  chatItemTTL = Nothing,
                   uiThemes = Nothing,
                   customData = Nothing
                 },
@@ -646,9 +650,9 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
         db
         [sql|
           SELECT
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
           FROM groups g
@@ -1388,9 +1392,9 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
             g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data,
+            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2074,7 +2078,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, chatTags = [], uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -2111,7 +2115,7 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, chatTags = [], uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where
@@ -2350,3 +2354,28 @@ untagGroupChat db groupId tId =
       WHERE group_id = ? AND chat_tag_id = ?
     |]
     (groupId, tId)
+
+setGroupChatTTL :: DB.Connection -> GroupId -> Maybe Int64 -> IO ()
+setGroupChatTTL db gId ttl = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET chat_item_ttl = ?, updated_at = ? WHERE group_id = ?"
+    (ttl, updatedAt, gId)
+
+getGroupChatTTL :: DB.Connection -> GroupId -> IO (Maybe Int64)
+getGroupChatTTL db gId =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT chat_item_ttl FROM groups WHERE group_id = ? LIMIT 1" (Only gId)
+
+getUserGroupsToExpire :: DB.Connection -> User -> Int64 -> IO [GroupId]
+getUserGroupsToExpire db User {userId} globalTTL =
+  map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
+  where
+    cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
+
+updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
+updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
+  pure (g :: GroupInfo) {localAlias = localAlias}
