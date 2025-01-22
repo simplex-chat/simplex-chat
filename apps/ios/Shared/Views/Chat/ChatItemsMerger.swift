@@ -98,19 +98,18 @@ struct MergedItems {
                 // found item that is considered as a split
                 if let unclosedSplitIndex, let unclosedSplitIndexInParent {
                     // it was at least second split in the list
-                    splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
+                    splitRanges.append(SplitRange(indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
                 }
                 unclosedSplitIndex = index
                 unclosedSplitIndexInParent = visibleItemIndexInParent
             } else if index + 1 == items.count, let unclosedSplitIndex, let unclosedSplitIndexInParent {
                 // just one split for the whole list, there will be no more, it's the end
-                splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
+                splitRanges.append(SplitRange(indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
             }
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
         }
         logger.debug("LALAL STEP 7")
-        logger.debug("LALAL SPLITs IN MERGED \(String(describing: splitRanges))  in state \(chatState.splits)")
         var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
         snapshot.appendSections([ReverseListSection.main])
         snapshot.appendItems(mergedItems)
@@ -225,9 +224,6 @@ enum MergedItem: Hashable, Equatable {
 }
 
 struct SplitRange {
-    // added in iOS only to check whether the state is synchronized.
-    // TODO: find a better way to synchronize MergedItems with ActiveChatState && reversedChatItems
-    let itemId: Int64
     /** range of indexes inside reversedChatItems where the first element is the split (it's index is [indexRangeInReversed.first])
      * so [0, 1, 2, -100-, 101] if the 3 is a split, SplitRange(indexRange = 3 .. 4) will be this SplitRange instance
      * (3, 4 indexes of the splitRange with the split itself at index 3)

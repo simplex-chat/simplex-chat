@@ -371,45 +371,25 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         nil
                     }
                     let nowFirstIndex: Int? = if let wasFirstId { indexInParentItems[wasFirstId] } else { nil }
-//                    let countDiff = if let wasFirstIndex, let nowFirstIndex {
-//                        nowFirstIndex - wasFirstIndex
-//                    } else {
-//                        0
-//                    }
-                    //if countDiff > 0 {
-                        //self.stopScrolling()
-                    //}
                     self.prevSnapshot = snapshot
                     self.prevMergedItems = mergedItems
                     dataSource.apply(
                         snapshot,
                         animatingDifferences: false
                     )
-//                    logger.debug("LALAL WAS0 \(self.prevSnapshot.itemIdentifiers.map({ item in item.newest().item.id}))")
-                    //                        logger.debug("LALAL WAS1 \(snapshot.itemIdentifiers.map({ item in item.newest().item.id}))")
-
-                    // sometimes it moved position but there is no reason for it - dataset has same item indexes
-                    let tableViewProducedDiff = if let wasFirst = listState?.firstVisibleItemIndex, let nowFirst = self.getListState()?.firstVisibleItemIndex {
-                        0//wasFirst - nowFirst
-                    } else {
-                        0
-                    }
-
                     let countDiff = if let wasFirstIndex, let nowFirstIndex {
-                        nowFirstIndex - wasFirstIndex - tableViewProducedDiff
+                        nowFirstIndex - wasFirstIndex
                     } else { 0 }
 
-                    logger.debug("LALAL NEARSPLIT split lower WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState()?.firstVisibleItemIndex ?? -4)  countDiff \(countDiff) (tableDiff \(tableViewProducedDiff))    wasFirstIndex \(wasFirstIndex ?? -5) nowIndex \(nowFirstIndex ?? -1)   wasFirstId \(wasFirstId ?? -1) count \(self.prevSnapshot.itemIdentifiers.count)")
+                    //logger.debug("LALAL NEARSPLIT split lower WAS LISTSTATE \(listState?.firstVisibleItemIndex ?? -3)  now \(self.getListState()?.firstVisibleItemIndex ?? -4)  countDiff \(countDiff)    wasFirstIndex \(wasFirstIndex ?? -5) nowIndex \(nowFirstIndex ?? -1)   wasFirstId \(wasFirstId ?? -1) count \(self.prevSnapshot.itemIdentifiers.count)")
 
-                    if countDiff <= 0 && tableViewProducedDiff == 0 {
+                    if countDiff <= 0 {
                         // added new items to top, nothing to do, scrolling position is correct
                     } else {
-                        logger.debug("LALAL NEARSPLIT split lower added on BOTTOM")
                         self.stopScrolling()
                         // added new items to bottom
-                        //                        logger.debug("LALAL WAS HEIGHT \(wasContentHeight) now \(self.tableView.contentSize.height), offset was \(wasOffset), now \(self.tableView.contentOffset.y), will be \(self.tableView.contentOffset.y + (self.tableView.contentSize.height - wasContentHeight)), countDiff \(countDiff), wasVisibleRow \(wasFirstVisibleRow), wasFirstVisibleOffset \(wasFirstVisibleOffset)")
-                        logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstIndex ?? -5)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)   \(String(describing: self.representer.mergedItems.splits))")
-                        self.getListState()
+                        //logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstIndex ?? -5)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)   \(String(describing: self.representer.mergedItems.splits))")
+                        //self.getListState()
                         self.tableView.scrollToRow(
                             at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + (wasFirstIndex ?? 0))), section: 0),
                             at: .top,
@@ -419,9 +399,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                             CGPoint(x: 0, y: self.tableView.contentOffset.y - wasFirstVisibleOffset),
                             animated: false
                         )
-                        logger.debug("LALAL AFTER SCROLLTOROW")
-                        let state = self.getListState()!
-                        logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
+                        //logger.debug("LALAL AFTER SCROLLTOROW")
+                        //let state = self.getListState()!
+                        //logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
 
                         if let t = translationToApply {
                             //                        self.tableView.panGestureRecognizer.setTranslation(CGPointMake(t.x, t.y), in: self.tableView.superview!)
@@ -444,7 +424,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 )
                 prevSnapshot = snapshot
                 prevMergedItems = mergedItems
-                self.getListState()
+                //self.getListState()
                 logger.debug("LALAL STEP 5 3")
                 updatingInProgress = false
                 tableView.panGestureRecognizer.isEnabled = true
@@ -458,10 +438,10 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
             if representer.scrollState == .atDestination, let listState = self.getListState() {
                 if nearSplit(remaining: 30, ignoreTopOfTopSplit: true, listState, prevMergedItems) {
-                    logger.debug("LALAL IN SPLIT OR NO YESSSSSS  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+                    //logger.debug("LALAL IN SPLIT OR NO YESSSSSS  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
                     stopScrolling(disable: false)
                 }
-                logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, self.prevMergedItems))  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+                //logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, self.prevMergedItems))  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
                 if let block = runBlockOnEndDecelerating, nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, prevMergedItems) {
                     if !updatingInProgress {
                         runBlockOnEndDecelerating = nil
@@ -499,7 +479,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             let lastVisibleIndex = listState.lastVisibleItemIndex
             for split in prevMergedItems.splits {
                 // before any split
-                logger.debug("LALAL NEARSPLIT split lower \(split.indexRangeInParentItems.lowerBound)  last \(lastVisibleIndex) first \(firstVisibleIndex) remaining \(remaining)")
+                //logger.debug("LALAL NEARSPLIT split lower \(split.indexRangeInParentItems.lowerBound)  last \(lastVisibleIndex) first \(firstVisibleIndex) remaining \(remaining)")
                 if split.indexRangeInParentItems.lowerBound > lastVisibleIndex {
                     if lastVisibleIndex > (split.indexRangeInParentItems.lowerBound - remaining) {
                         return true
