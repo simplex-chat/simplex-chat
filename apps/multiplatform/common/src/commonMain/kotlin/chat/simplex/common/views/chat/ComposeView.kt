@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -27,6 +28,7 @@ import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.group.GroupMentions
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -70,14 +72,16 @@ data class ComposeState(
   val preview: ComposePreview = ComposePreview.NoPreview,
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
-  val useLinkPreviews: Boolean
+  val useLinkPreviews: Boolean,
+  val mentions: List<GroupMember> = emptyList()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<GroupMember> = emptyList()): this(
     editingItem.content.text,
     liveMessage,
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),
-    useLinkPreviews = useLinkPreviews
+    useLinkPreviews = useLinkPreviews,
+    mentions = mentions
   )
 
   val editing: Boolean
@@ -286,7 +290,8 @@ fun ComposeView(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   attachmentOption: MutableState<AttachmentOption?>,
-  showChooseAttachment: () -> Unit
+  showChooseAttachment: () -> Unit,
+  textSelection: MutableState<Pair<Int, Int>>
 ) {
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   fun isSimplexLink(link: String): Boolean =
@@ -310,7 +315,6 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
-
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   fun loadLinkPreview(url: String, wait: Long? = null) {
@@ -1128,7 +1132,8 @@ fun ComposeView(
           editPrevMessage = ::editPrevMessage,
           onFilesPasted = { composeState.onFilesAttached(it) },
           onMessageChange = ::onMessageChange,
-          textStyle = textStyle
+          textStyle = textStyle,
+          onSelectionChanged = { start, end -> textSelection.value = start to end },
         )
       }
     }
