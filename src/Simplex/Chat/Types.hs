@@ -373,6 +373,26 @@ optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""
   | otherwise = " (" <> fullName <> ")"
 
+data ShortGroup = ShortGroup
+  { shortInfo :: ShortGroupInfo,
+    members :: [ShortGroupMember]
+  }
+
+data ShortGroupInfo = ShortGroupInfo
+  { groupId :: GroupId,
+    groupName :: GroupName,
+    membershipStatus :: GroupMemberStatus
+  }
+  deriving (Eq, Show)
+
+data ShortGroupMember = ShortGroupMember
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
+    memberName :: ContactName,
+    connId :: AgentConnId
+  }
+  deriving (Show)
+
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
 
@@ -1812,3 +1832,7 @@ $(JQ.deriveJSON defaultJSON ''ContactRef)
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupInfo)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupMember)
