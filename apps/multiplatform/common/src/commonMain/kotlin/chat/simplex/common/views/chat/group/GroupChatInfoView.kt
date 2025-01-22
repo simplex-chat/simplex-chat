@@ -58,7 +58,7 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
     val groupInfo = chat.chatInfo.groupInfo
     val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
     val chatItemTTL = remember(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
-    val deletingItems = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
+    val deletingItems = rememberSaveable(groupInfo.id) { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
     GroupChatInfoLayout(
