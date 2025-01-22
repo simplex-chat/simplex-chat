@@ -54,6 +54,7 @@ actual fun PlatformTextField(
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  onSelectionChanged: (Int, Int) -> Unit,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -105,6 +106,7 @@ actual fun PlatformTextField(
           }
         }
         textFieldValueState = it
+        onSelectionChanged(it.selection.min, it.selection.max)
         onMessageChange(it.text)
       }
     },

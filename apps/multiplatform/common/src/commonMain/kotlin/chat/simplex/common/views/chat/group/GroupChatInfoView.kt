@@ -9,6 +9,7 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -451,7 +452,7 @@ fun ModalData.GroupChatInfoLayout(
       val showMenu = remember { mutableStateOf(false) }
       SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         DropDownMenuForMember(chat.remoteHostId, member, groupInfo, showMenu)
-        MemberRow(member, onClick = { showMemberInfo(member) })
+        MemberRow(member)
       }
     }
     item {
@@ -599,7 +600,7 @@ private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialThem
 }
 
 @Composable
-private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -> Unit)? = null) {
+fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true) {
   @Composable
   fun MemberInfo() {
     if (member.blocked) {
@@ -644,18 +645,23 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }
-        val statusDescr =
-          if (user) String.format(generalGetString(MR.strings.group_info_member_you), member.memberStatus.shortText) else memberConnStatus()
-        Text(
-          statusDescr,
-          color = MaterialTheme.colors.secondary,
-          fontSize = 12.sp,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
+
+        if (infoPage) {
+          val statusDescr =
+            if (user) String.format(generalGetString(MR.strings.group_info_member_you), member.memberStatus.shortText) else memberConnStatus()
+          Text(
+            statusDescr,
+            color = MaterialTheme.colors.secondary,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+          )
+        }
       }
     }
-    MemberInfo()
+    if (infoPage) {
+      MemberInfo()
+    }
   }
 }
 

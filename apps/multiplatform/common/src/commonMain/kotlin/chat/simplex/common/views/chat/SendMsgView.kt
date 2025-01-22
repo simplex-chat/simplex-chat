@@ -57,10 +57,10 @@ fun SendMsgView(
   editPrevMessage: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
   onMessageChange: (String) -> Unit,
-  textStyle: MutableState<TextStyle>
-) {
+  textStyle: MutableState<TextStyle>,
+  onSelectionChanged: (Int, Int) -> Unit,
+  ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
-
   val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
   Box(Modifier.padding(padding)) {
     val cs = composeState.value
@@ -92,7 +92,8 @@ fun SendMsgView(
       showVoiceButton,
       onMessageChange,
       editPrevMessage,
-      onFilesPasted
+      onFilesPasted,
+      onSelectionChanged
     ) {
       if (!cs.inProgress) {
         sendMessage(null)
@@ -586,7 +587,8 @@ fun PreviewSendMsgView() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
+      onSelectionChanged = { _, _ -> }
     )
   }
 }
@@ -622,7 +624,8 @@ fun PreviewSendMsgViewEditing() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
+      onSelectionChanged = { _, _ -> }
     )
   }
 }
@@ -658,7 +661,8 @@ fun PreviewSendMsgViewInProgress() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
+      onSelectionChanged = { _, _ -> }
     )
   }
 }

@@ -58,6 +58,7 @@ actual fun PlatformTextField(
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  onSelectionChanged: (Int, Int) -> Unit,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -116,6 +117,13 @@ actual fun PlatformTextField(
           true
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
+      }
+
+      override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+        val start = minOf(selStart, selEnd)
+        val end = maxOf(selStart, selEnd)
+        onSelectionChanged(start, end)
+        super.onSelectionChanged(selStart, selEnd)
       }
     }
     editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)

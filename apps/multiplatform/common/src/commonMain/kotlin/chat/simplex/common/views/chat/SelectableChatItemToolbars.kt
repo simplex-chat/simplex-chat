@@ -63,7 +63,7 @@ fun SelectedItemsBottomToolbar(
   val forwardCountProhibited = remember { mutableStateOf(false) }
   Box {
     // It's hard to measure exact height of ComposeView with different fontSizes. Better to depend on actual ComposeView, even empty
-    ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {})
+    ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {}, remember { mutableStateOf(0 to 0) })
     Row(
       Modifier
         .matchParentSize()
