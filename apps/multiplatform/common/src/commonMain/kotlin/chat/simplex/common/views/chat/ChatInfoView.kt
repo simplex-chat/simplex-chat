@@ -1370,7 +1370,6 @@ private fun setChatTTL(
   withBGApi {
     try {
       chatModel.controller.setChatTTL(rhId, chatInfo.chatType, chatInfo.apiId, chatTTL.value)
-      delay(5000)
       afterSetChatTTL(rhId, chatInfo, progressIndicator)
     } catch (e: Exception) {
       chatTTL.value = previousChatTTL
