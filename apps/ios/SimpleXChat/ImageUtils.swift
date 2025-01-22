@@ -100,7 +100,7 @@ public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha
     return data
 }
 
-public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> String? {
+public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int) -> String? {
     // XXX: only needed when the original encoding isn't available
     let tmpFile = generateNewFileName(getTempFilesDirectory().path + "/" + "resize", "png", fullPath: true)
     // encode as png and let the backend deal with alpha and formats
@@ -124,7 +124,7 @@ public func resizeImageToStrSizeSync(_ image: UIImage, maxDataSize: Int64) -> St
     }
 }
 
-public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) async -> String? {
+public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int) async -> String? {
     resizeImageToStrSizeSync(image, maxDataSize: maxDataSize)
 }
 

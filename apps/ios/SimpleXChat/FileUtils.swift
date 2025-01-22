@@ -223,7 +223,7 @@ public func saveFile(_ data: Data, _ fileName: String, encrypted: Bool) -> Crypt
     }
 }
 
-public func saveImage(_ data: Data, _ fileName: String, maxSize: Long, encrypted: Bool) -> CryptoFile? {
+public func saveImage(_ data: Data, _ fileName: String, maxSize: Int, encrypted: Bool) -> CryptoFile? {
     let filePath = getAppFilePath(fileName)
     do {
         let cfArgs = try writeCryptoImage(maxSize: maxSize, path: filePath.path, data: data, encrypted: encrypted)
