@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -39,6 +40,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.database.TtlOptions
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
@@ -55,7 +57,10 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
   if (chat != null && chat.chatInfo is ChatInfo.Group && currentUser != null) {
     val groupInfo = chat.chatInfo.groupInfo
     val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
+    val chatItemTTL = remember(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
+    val deletingItems = rememberSaveable(groupInfo.id) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
     GroupChatInfoLayout(
       chat,
       groupInfo,
@@ -65,6 +70,16 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
         val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
         updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
+      },
+      chatItemTTL = chatItemTTL,
+      setChatItemTTL = {
+        if (it == chatItemTTL.value) {
+          return@GroupChatInfoLayout
+        }
+        val previousChatTTL = chatItemTTL.value
+        chatItemTTL.value = it
+
+        setChatTTLAlert(chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       members = remember { chatModel.groupMembers }.value
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
@@ -125,7 +140,8 @@ fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: Strin
       manageGroupLink = {
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
       },
-      onSearchClicked = onSearchClicked
+      onSearchClicked = onSearchClicked,
+      deletingItems = deletingItems
     )
   }
 }
@@ -285,6 +301,8 @@ fun ModalData.GroupChatInfoLayout(
   currentUser: User,
   sendReceipts: State<SendReceipts>,
   setSendReceipts: (SendReceipts) -> Unit,
+  chatItemTTL: MutableState<ChatItemTTL?>,
+  setChatItemTTL: (ChatItemTTL?) -> Unit,
   members: List<GroupMember>,
   developerTools: Boolean,
   onLocalAliasChanged: (String) -> Unit,
@@ -300,7 +318,8 @@ fun ModalData.GroupChatInfoLayout(
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
   close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
-  onSearchClicked: () -> Unit
+  onSearchClicked: () -> Unit,
+  deletingItems: State<Boolean>
 ) {
   val listState = remember { appBarHandler.listState }
   val scope = rememberCoroutineScope()
@@ -394,7 +413,10 @@ fun ModalData.GroupChatInfoLayout(
       }
       val footerId = if (groupInfo.businessChat == null) MR.strings.only_group_owners_can_change_prefs else MR.strings.only_chat_owners_can_change_prefs
       SectionTextFooter(stringResource(footerId))
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+
+      ChatTTLSection(chatItemTTL, setChatItemTTL, deletingItems)
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = true)
 
       SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), members.count() + 1)) {
         if (groupInfo.canAddMembers) {
@@ -459,6 +481,26 @@ fun ModalData.GroupChatInfoLayout(
   }
     if (!oneHandUI.value) {
       NavigationBarBackground(oneHandUI.value, oneHandUI.value)
+    }
+  }
+}
+
+@Composable
+fun ChatTTLSection(chatItemTTL: State<ChatItemTTL?>, setChatItemTTL: (ChatItemTTL?) -> Unit, deletingItems: State<Boolean>) {
+  Box {
+    SectionView {
+      TtlOptions(
+        chatItemTTL,
+        enabled = remember { derivedStateOf { !deletingItems.value } },
+        onSelected = setChatItemTTL,
+        default = chatModel.chatItemTTL
+      )
+      SectionTextFooter(stringResource(MR.strings.chat_ttl_options_footer))
+    }
+    if (deletingItems.value) {
+      Box(Modifier.matchParentSize()) {
+        ProgressIndicator()
+      }
     }
   }
 }
@@ -770,12 +812,14 @@ fun PreviewGroupChatInfoLayout() {
       User.sampleData,
       sendReceipts = remember { mutableStateOf(SendReceipts.Yes) },
       setSendReceipts = {},
+      chatItemTTL = remember { mutableStateOf(ChatItemTTL.fromSeconds(0)) },
+      setChatItemTTL = {},
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       onLocalAliasChanged = {},
       groupLink = null,
       scrollToItemId = remember { mutableStateOf(null) },
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {}, deletingItems = remember { mutableStateOf(true) }
     )
   }
 }

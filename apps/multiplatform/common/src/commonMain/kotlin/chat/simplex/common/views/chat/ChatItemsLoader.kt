@@ -34,7 +34,16 @@ suspend fun apiLoadMessages(
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
     || !isActive) return@coroutineScope
+  processLoadedChat(chat, navInfo, contentTag, pagination, visibleItemIndexesNonReversed)
+}
 
+suspend fun processLoadedChat(
+  chat: Chat,
+  navInfo: NavigationInfo,
+  contentTag: MsgContentTag?,
+  pagination: ChatPagination,
+  visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
+) {
   val chatState = chatModel.chatStateForContent(contentTag)
   val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter, unreadAfterNewestLoaded) = chatState
   val oldItems = chatModel.chatItemsForContent(contentTag).value
@@ -70,7 +79,7 @@ suspend fun apiLoadMessages(
     is ChatPagination.Before -> {
       newItems.addAll(oldItems)
       val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
-      if (indexInCurrentItems == -1) return@coroutineScope
+      if (indexInCurrentItems == -1) return
       val (newIds, _) = mapItemsToIds(chat.chatItems)
       val wasSize = newItems.size
       val (oldUnreadSplitIndex, newUnreadSplitIndex, trimmedIds, newSplits) = removeDuplicatesAndModifySplitsOnBeforePagination(
@@ -87,7 +96,7 @@ suspend fun apiLoadMessages(
     is ChatPagination.After -> {
       newItems.addAll(oldItems)
       val indexInCurrentItems: Int = oldItems.indexOfFirst { it.id == pagination.chatItemId }
-      if (indexInCurrentItems == -1) return@coroutineScope
+      if (indexInCurrentItems == -1) return
 
       val mappedItems = mapItemsToIds(chat.chatItems)
       val newIds = mappedItems.first
