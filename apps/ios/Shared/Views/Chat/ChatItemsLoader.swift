@@ -9,7 +9,7 @@
 import SimpleXChat
 import SwiftUI
 
-let TRIM_KEEP_COUNT = 20000
+let TRIM_KEEP_COUNT = 200
 
 func apiLoadMessages(
     _ chatType: ChatType,
@@ -19,6 +19,7 @@ func apiLoadMessages(
     _ search: String = "",
     _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
 ) async {
+    //try? await Task.sleep(nanoseconds: 2000_000000)
     let chat: Chat
     let navInfo: NavigationInfo
     do {
@@ -209,6 +210,7 @@ private func removeDuplicatesAndModifySplitsOnBeforePagination(
         index += 1
         return (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains($0.id)
     })
+    logger.debug("LALAL TRIMMED COUNT \(trimmedIds.count)  \(visibleItemIndexes) \(trimRange) \(prevItemTrimRange)")
     // will remove any splits that now becomes obsolete because items were merged
     newSplits = newSplits.filter { split in !newIds.contains(split) && !trimmedIds.contains(split) }
     return ModifiedSplits(oldUnreadSplitIndex: oldUnreadSplitIndex, newUnreadSplitIndex:  newUnreadSplitIndex, trimmedIds: trimmedIds, newSplits: newSplits)

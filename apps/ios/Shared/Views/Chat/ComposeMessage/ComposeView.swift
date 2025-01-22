@@ -577,8 +577,8 @@ struct ComposeView: View {
             }
         }
         .onAppear {
-            // LALAL
-//            for i in 301 ... 600 {
+             //LALAL
+//            for i in 0 ... 500 {
 //                Task {
 //                    await sendMessageAsync("\(i)", live: false, ttl: nil)
 //                }

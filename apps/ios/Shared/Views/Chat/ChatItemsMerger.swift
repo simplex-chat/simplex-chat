@@ -135,8 +135,8 @@ enum MergedItem: Hashable, Equatable {
 
     var hash: String {
         switch self {
-        case .single(_, _, let hash): hash
-        case .grouped(_, _, _, _, _, _, _, let hash): hash
+        case .single(_, _, let hash): hash + " 1"
+        case .grouped(let items, _, _, _, _, _, _, let hash): hash + " \(items.boxedValue.count)"
         }
     }
 

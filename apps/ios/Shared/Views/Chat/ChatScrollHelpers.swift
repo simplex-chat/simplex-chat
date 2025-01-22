@@ -10,7 +10,6 @@ import SwiftUI
 import SimpleXChat
 
 func loadLastItems(_ loadingMoreItems: Binding<Bool>, _ chatInfo: ChatInfo) {
-    //return ()
     if ItemsModel.shared.chatState.totalAfter == 0 {
         return
     }
@@ -124,6 +123,7 @@ private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVis
     return nil
 }
 
+// LALAL DELETE?
 func tryBlockAndSetLoadingMore(_ loadingMoreItems: Binding<Bool>, _ block: @escaping () async throws -> Void) async {
     do {
         await MainActor.run {
