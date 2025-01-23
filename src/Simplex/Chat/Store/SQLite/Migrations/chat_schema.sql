@@ -991,3 +991,5 @@ CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_s
   chat_item_id,
   group_member_id
 );
+CREATE INDEX chat_items_group_id ON chat_items(group_id);
+CREATE INDEX connections_group_member_id ON connections(group_member_id);

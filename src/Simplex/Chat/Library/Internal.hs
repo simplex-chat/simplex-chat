@@ -1115,8 +1115,8 @@ deleteMembersConnections' user members waitDelivery = do
   let memberConns =
         filter (\Connection {connStatus} -> connStatus /= ConnDeleted) $
           mapMaybe (\GroupMember {activeConn} -> activeConn) members
-  deleteAgentConnectionsAsync' user (map aConnId memberConns) waitDelivery
-  lift . void . withStoreBatch' $ \db -> map (\conn -> updateConnectionStatus db conn ConnDeleted) memberConns
+  timeItM "[deleteMembersConnections'] deleteAgentConnectionsAsync'" $ deleteAgentConnectionsAsync' user (map aConnId memberConns) waitDelivery
+  timeItM "[deleteMembersConnections'] batch updateConnectionStatus" $ lift . void . withStoreBatch' $ \db -> map (\conn -> updateConnectionStatus db conn ConnDeleted) memberConns
 
 deleteMemberConnection :: User -> GroupMember -> CM ()
 deleteMemberConnection user mem = deleteMemberConnection' user mem False
@@ -1917,4 +1917,13 @@ timeItToView s action = do
   t2 <- liftIO getCurrentTime
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView' $ CRTimedAction s diff
+  pure a
+
+timeItM :: String -> CM a -> CM a
+timeItM s action = do
+  t1 <- liftIO getCurrentTime
+  a <- action
+  t2 <- liftIO getCurrentTime
+  let diff = diffToMilliseconds $ diffUTCTime t2 t1
+  liftIO . print $ show diff <> " ms - " <> s
   pure a
