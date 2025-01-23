@@ -410,7 +410,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                             //                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: false)
                             //                            self.tableView.layoutIfNeeded()
                             //                        }
-                            self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
+                            //self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
                         }
                     }
                     logger.debug("LALAL STEP 5 2")
