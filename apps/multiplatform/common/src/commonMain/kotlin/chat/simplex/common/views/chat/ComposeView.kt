@@ -28,7 +28,6 @@ import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.group.GroupMentions
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -66,6 +65,9 @@ data class LiveMessage(
 )
 
 @Serializable
+data class MentionMember(val usedName: String, val member: GroupMember)
+
+@Serializable
 data class ComposeState(
   val message: String = "",
   val liveMessage: LiveMessage? = null,
@@ -73,9 +75,9 @@ data class ComposeState(
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: List<GroupMember> = emptyList()
+  val mentions: List<MentionMember> = emptyList()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<GroupMember> = emptyList()): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<MentionMember> = emptyList()): this(
     editingItem.content.text,
     liveMessage,
     chatItemPreview(editingItem),
