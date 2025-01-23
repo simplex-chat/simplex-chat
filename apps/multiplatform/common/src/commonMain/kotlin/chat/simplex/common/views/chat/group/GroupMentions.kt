@@ -34,6 +34,7 @@ const val QUOTE_END = "' "
 const val QUOTED_MENTION_START = "@'"
 const val MENTION_START = "@"
 const val QUOTE = '\''
+const val MAX_NUMBER_OF_MENTIONS = 3
 
 @Composable
 fun GroupMentions(
@@ -70,13 +71,12 @@ fun GroupMentions(
         if (txt != null) {
           // TODO - [MENTIONS] replace with real api
           val gms = chatModel.controller.apiListMembers(rhId, chatInfo.groupInfo.groupId)
-
           val search = txt.trim().removePrefix(QUOTED_MENTION_START).removePrefix(MENTION_START).removeSuffix(QUOTE.toString())
 
           membersToMention.value = gms.filter { gm ->
-            gm.displayName.contains(search, ignoreCase = true)
+            gm.displayName.contains(search, ignoreCase = true) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
           }
-        } else {
+        } else if (membersToMention.value.isNotEmpty()) {
           membersToMention.value = emptyList()
         }
       }
@@ -96,7 +96,7 @@ fun GroupMentions(
   }
 
   val selection = mentionSelection.value
-  if (membersToMention.value.isNotEmpty() && selection != null) {
+  if (selection != null && composeState.value.mentions.size < MAX_NUMBER_OF_MENTIONS) {
     LazyColumn(
       Modifier.background(MaterialTheme.colors.surface),
     ) {
