@@ -7235,12 +7235,12 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new connections of your current chat profile **%@**.</source>
-        <target state="translated">Az Ön jelenlegi **%@** nevű csevegő-profiljához tartozó új kapcsolatok kiszolgálói.</target>
+        <target state="translated">A jelenlegi **%@** nevű csevegő-profiljához tartozó új kapcsolatok kiszolgálói.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new files of your current chat profile **%@**.</source>
-        <target state="translated">Az Ön jelenlegi **%@** nevű csevegő-profiljához tartozó új fájlok kiszolgálói.</target>
+        <target state="translated">A jelenlegi **%@** nevű csevegő-profiljához tartozó új fájlok kiszolgálói.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
@@ -7265,7 +7265,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="These settings are for your current profile **%@**." xml:space="preserve" approved="no">
         <source>These settings are for your current profile **%@**.</source>
-        <target state="translated">Ezek a beállítások csak az Ön jelenlegi **%@** nevű csevegő-profiljára vonatkoznak.</target>
+        <target state="translated">Ezek a beállítások csak a jelenlegi **%@** nevű csevegő-profiljára vonatkoznak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve">
@@ -8483,17 +8483,17 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
-        <target state="translated">A Ön profilja az eszközén van tárolva és csak az ismerőseivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.</target>
+        <target state="translated">A profilja az eszközén van tárolva és csak az ismerőseivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve" approved="no">
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
-        <target state="translated">Az Ön profilja megváltozott. Ha elmenti, a profilfrissítés el lesz küldve az Ön ismerősei számára.</target>
+        <target state="translated">A profilja megváltozott. Ha elmenti, a profilfrissítés el lesz küldve az Ön ismerősei számára.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve" approved="no">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target state="translated">Az Ön profilja, az ismerősei és az elküldött üzenetei az Ön eszközén vannak tárolva.</target>
+        <target state="translated">A profilja, az ismerősei és az elküldött üzenetei az Ön eszközén vannak tárolva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
@@ -8678,7 +8678,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
         <source>changing address for %@…</source>
-        <target state="translated">cím megváltoztatása a következő számára: %@…</target>
+        <target state="translated">cím megváltoztatása %@ számára…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changing address…" xml:space="preserve">
@@ -8886,9 +8886,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>titkosítás rendben</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption ok for %@" xml:space="preserve">
+      <trans-unit id="encryption ok for %@" xml:space="preserve" approved="no">
         <source>encryption ok for %@</source>
-        <target>titkosítás rendben vele: %@</target>
+        <target state="translated">titkosítás rendben van %@ számára</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed" xml:space="preserve" approved="no">
@@ -8898,7 +8898,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve" approved="no">
         <source>encryption re-negotiation allowed for %@</source>
-        <target state="translated">a titkosítás újraegyeztetése engedélyezve van a következőhöz: %@</target>
+        <target state="translated">a titkosítás újraegyeztetése engedélyezve van %@ számára</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required" xml:space="preserve" approved="no">
@@ -8908,7 +8908,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve" approved="no">
         <source>encryption re-negotiation required for %@</source>
-        <target state="translated">a titkosítás újraegyeztetése szükséges a következőhöz: %@</target>
+        <target state="translated">a titkosítás újraegyeztetése szükséges %@ számára</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
@@ -9459,7 +9459,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="you changed address for %@" xml:space="preserve" approved="no">
         <source>you changed address for %@</source>
-        <target state="translated">Ön megváltoztatta a címet a következő számára: %@</target>
+        <target state="translated">Ön megváltoztatta a címet %@ számára</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed role for yourself to %@" xml:space="preserve" approved="no">
