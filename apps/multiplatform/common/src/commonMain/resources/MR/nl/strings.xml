@@ -2321,4 +2321,12 @@
     <string name="privacy_chat_list_open_web_link_question">Weblink openen?</string>
     <string name="privacy_chat_list_open_links_yes">Ja</string>
     <string name="text_field_set_chat_placeholder">Stel chatnaam in</string>
+    <string name="change_automatic_deletion_question">Automatisch verwijderen van berichten wijzigen?</string>
+    <string name="chat_item_ttl_year">1 jaar</string>
+    <string name="disable_automatic_deletion_message">Berichten in deze chat zullen nooit worden verwijderd.</string>
+    <string name="change_automatic_chat_deletion_message">Deze actie kan niet ongedaan worden gemaakt. De berichten die eerder in deze chat zijn verzonden en ontvangen dan geselecteerd, worden verwijderd.</string>
+    <string name="disable_automatic_deletion_question">Automatisch verwijderen van berichten uitschakelen?</string>
+    <string name="chat_ttl_options_footer">Verwijder chatberichten van uw apparaat.</string>
+    <string name="disable_automatic_deletion">Berichten verwijderen uitschakelen</string>
+    <string name="chat_item_ttl_default">standaard (%s)</string>
 </resources>
