@@ -87,7 +87,9 @@ fun GroupMentions(
       .distinctUntilChanged()
       .collect { txt ->
         // TODO - [MENTIONS] review this, checks if mention was removed
-        val filteredMentions = composeState.value.mentions.filter { txt.contains("@${it.usedName}") }
+        val filteredMentions = composeState.value.mentions.filter {
+          txt.contains("${MENTION_START}${it.memberName}") || txt.contains("${QUOTED_MENTION_START}${it.memberName}${QUOTE}")
+        }
 
         if (filteredMentions.size != composeState.value.mentions.size) {
           composeState.value = composeState.value.copy(mentions = filteredMentions.toMutableList())
@@ -108,8 +110,11 @@ fun GroupMentions(
             .clickable {
               val msg = composeState.value.message
               val nameHasSpaces = member.displayName.contains(' ')
-              val existingMention = composeState.value.mentions.find { it.member.groupMemberId == member.groupMemberId }
-              val displayName = existingMention?.usedName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
+              val existingMention = composeState.value.mentions.find { it.memberId == member.memberId }
+              val displayName = existingMention?.memberName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
+              val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
+                add(MemberMention(displayName, member.memberId))
+              }
 
               composeState.value = composeState.value.copy(
                 message = msg.replaceRange(
@@ -117,9 +122,7 @@ fun GroupMentions(
                   selection.second + 1,
                   if (nameHasSpaces) "@'${displayName}' " else "@${displayName} "
                 ),
-                mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
-                  add(MentionMember(displayName, member))
-                }
+                mentions = mentions
               )
             }
             .padding(horizontal = DEFAULT_PADDING_HALF)
@@ -178,8 +181,8 @@ private fun parseActiveMentionRange(textSelection: Pair<Int, Int>, text: String)
   return startM to endM
 }
 
-private fun uniqueMentionName(n: Int, name: String, mentions: List<MentionMember>): String {
+private fun uniqueMentionName(n: Int, name: String, mentions: List<MemberMention>): String {
   val tryName = if (n == 0) name else "${name}_$n"
-  val used = mentions.any { it.usedName == tryName }
+  val used = mentions.any { it.memberName == tryName }
   return if (used) uniqueMentionName(n + 1, name, mentions) else tryName
 }

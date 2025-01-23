@@ -2252,6 +2252,15 @@ data class MemberReaction(
 )
 
 @Serializable
+class MentionedMember(
+  // name used in the message text, used to look up this object
+  val mentionName: String,
+  // current member display name or alias, shown in the message
+  val memberViewName: String,
+  val memberRole: GroupMemberRole
+)
+
+@Serializable
 class CIReaction(
   val chatDir: CIDirection,
   val chatItem: ChatItem,
@@ -2265,6 +2274,7 @@ data class ChatItem (
   val meta: CIMeta,
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
+  val mentions: List<MentionedMember> = emptyList(),
   val quotedItem: CIQuote? = null,
   val reactions: List<CIReactionCount>,
   val file: CIFile? = null
@@ -2280,6 +2290,8 @@ data class ChatItem (
       else -> content.text
     }
   }
+
+  val mentionsSample: List<MemberMention> get() = listOf(MemberMention("MajorSensibility", "UkFVYlE4TUplYm91THdVVA=="))
 
   val isRcvNew: Boolean get() = meta.isRcvNew
 
@@ -2564,7 +2576,8 @@ data class ChatItem (
           itemTimed = null,
           itemLive = false,
           deletable = false,
-          editable = false
+          editable = false,
+          userMention = false,
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
@@ -2588,7 +2601,8 @@ data class ChatItem (
           itemTimed = null,
           itemLive = true,
           deletable = false,
-          editable = false
+          editable = false,
+          userMention = false,
         ),
         content = CIContent.SndMsgContent(MsgContent.MCText("")),
         quotedItem = null,
@@ -2745,6 +2759,7 @@ data class CIMeta (
   val itemEdited: Boolean,
   val itemTimed: CITimed?,
   val itemLive: Boolean?,
+  val userMention: Boolean,
   val deletable: Boolean,
   val editable: Boolean
 ) {
@@ -2783,7 +2798,8 @@ data class CIMeta (
         itemTimed = itemTimed,
         itemLive = itemLive,
         deletable = deletable,
-        editable = editable
+        editable = editable,
+        userMention = false,
       )
 
     fun invalidJSON(): CIMeta =
@@ -2802,7 +2818,8 @@ data class CIMeta (
         itemTimed = null,
         itemLive = false,
         deletable = false,
-        editable = false
+        editable = false,
+        userMention = false
       )
   }
 }
@@ -3831,6 +3848,7 @@ sealed class Format {
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
+  @Serializable @SerialName("mention") class Mention(val memberId: String): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 
@@ -3843,6 +3861,7 @@ sealed class Format {
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is SimplexLink -> linkStyle
+    is Mention -> SpanStyle(color = MaterialTheme.colors.primary)
     is Email -> linkStyle
     is Phone -> linkStyle
   }

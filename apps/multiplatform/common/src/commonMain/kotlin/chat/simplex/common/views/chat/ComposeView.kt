@@ -65,9 +65,6 @@ data class LiveMessage(
 )
 
 @Serializable
-data class MentionMember(val usedName: String, val member: GroupMember)
-
-@Serializable
 data class ComposeState(
   val message: String = "",
   val liveMessage: LiveMessage? = null,
@@ -75,9 +72,9 @@ data class ComposeState(
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: List<MentionMember> = emptyList()
+  val mentions: List<MemberMention> = emptyList()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<MentionMember> = emptyList()): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<MemberMention> = emptyList()): this(
     editingItem.content.text,
     liveMessage,
     chatItemPreview(editingItem),
@@ -409,13 +406,13 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: List<MemberMention>): ChatItem? {
     val cInfo = chat.chatInfo
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(
         rh = chat.remoteHostId,
         noteFolderId = chat.chatInfo.apiId,
-        composedMessages = listOf(ComposedMessage(file, null, mc))
+        composedMessages = listOf(ComposedMessage(file, null, mc, mentions))
       )
     else
       chatModel.controller.apiSendMessages(
@@ -424,7 +421,7 @@ fun ComposeView(
         id = cInfo.apiId,
         live = live,
         ttl = ttl,
-        composedMessages = listOf(ComposedMessage(file, quoted, mc))
+        composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
       )
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
@@ -581,7 +578,7 @@ fun ComposeView(
       if (cs.message.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.mentions)
           } else {
             message
           }
@@ -692,7 +689,8 @@ fun ComposeView(
         }
         val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
-          ttl = ttl
+          ttl = ttl,
+          mentions = cs.mentions
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {
