@@ -585,20 +585,19 @@
     <string name="error_stopping_chat">Fehler beim Beenden des Chats</string>
     <string name="error_exporting_chat_database">Fehler beim Exportieren der Chat-Datenbank</string>
     <string name="import_database_question">Chat-Datenbank importieren?</string>
-    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die importierte ERSETZT.
-\nDiese Aktion kann nicht rückgängig gemacht werden! Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die importierte ERSETZT.\nIhr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="import_database_confirmation">Importieren</string>
     <string name="error_deleting_database">Fehler beim Löschen der Chat-Datenbank</string>
     <string name="error_importing_database">Fehler beim Importieren der Chat-Datenbank</string>
     <string name="chat_database_imported">Chat-Datenbank importiert</string>
     <string name="restart_the_app_to_use_imported_chat_database">Starten Sie die App neu, um die importierte Chat-Datenbank zu verwenden.</string>
     <string name="delete_chat_profile_question">Chat-Profil löschen?</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">Diese Aktion kann nicht rückgängig gemacht werden! Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="chat_database_deleted">Chat-Datenbank gelöscht</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
-    <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
+    <string name="delete_files_and_media_desc">Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
     <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
     <string name="chat_item_ttl_none">nie</string>
@@ -608,7 +607,7 @@
     <string name="chat_item_ttl_seconds">%s Sekunde(n)</string>
     <string name="delete_messages_after">Löschen der Nachrichten</string>
     <string name="enable_automatic_deletion_question">Automatisches Löschen von Nachrichten aktivieren?</string>
-    <string name="enable_automatic_deletion_message">Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</string>
+    <string name="enable_automatic_deletion_message">Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="delete_messages">Nachrichten löschen</string>
     <string name="error_changing_message_deletion">Fehler beim Ändern der Einstellung</string>
     <!-- DatabaseEncryptionView.kt -->
@@ -2396,4 +2395,12 @@
     <string name="privacy_chat_list_open_web_link_question">Web-Link öffnen?</string>
     <string name="privacy_chat_list_open_links_yes">Ja</string>
     <string name="text_field_set_chat_placeholder">Chat-Name festlegen…</string>
+    <string name="change_automatic_chat_deletion_message">Die älteren als die ausgewählten gesendeten und empfangenen Nachrichten in diesem Chat werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="change_automatic_deletion_question">Automatisches Löschen von Nachrichten ändern?</string>
+    <string name="chat_ttl_options_footer">Chat-Nachrichten von Ihrem Gerät löschen</string>
+    <string name="disable_automatic_deletion_question">Automatisches Löschen von Nachrichten deaktivieren?</string>
+    <string name="disable_automatic_deletion">Löschen von Nachrichten deaktivieren</string>
+    <string name="chat_item_ttl_year">1 Jahr</string>
+    <string name="chat_item_ttl_default">Voreinstellung (%s)</string>
+    <string name="disable_automatic_deletion_message">Die Nachrichten in diesem Chat werden nie gelöscht.</string>
 </resources>
