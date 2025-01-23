@@ -657,8 +657,12 @@ struct ChatView: View {
                         }
                         .onTapGesture {
                             if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
-                                // scroll to the top unread item
-                                scrollModel.scrollToRow(row: index)
+                                if !loadingMoreItems {
+                                    // scroll to the top unread item
+                                    scrollModel.scrollToRow(row: index)
+                                } else {
+                                    AlertManager.shared.showAlertMsg(title: "Wait", message: "Wait until items loaded")
+                                }
                             }
                         }
                         .contextMenu {
@@ -679,17 +683,26 @@ struct ChatView: View {
                                 .foregroundColor(theme.colors.primary)
                         }
                         .onTapGesture {
-                            scrollModel.scrollToBottom()
+                            if !loadingMoreItems {
+                                scrollModel.scrollToBottom()
+                            } else {
+                                AlertManager.shared.showAlertMsg(title: "Wait", message: "Wait until items loaded")
+                            }
                         }
                     } else if !model.isNearBottom {
                         circleButton {
                             Image(systemName: "chevron.down")
                                 .foregroundColor(theme.colors.primary)
                         }
-                        .onTapGesture { scrollModel.scrollToBottom() }
+                        .onTapGesture {
+                            if !loadingMoreItems {
+                                scrollModel.scrollToBottom()
+                            } else {
+                                AlertManager.shared.showAlertMsg(title: "Wait", message: "Wait until items loaded")
+                            }
+                        }
                     }
                 }
-                .disabled(loadingMoreItems)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
