@@ -657,12 +657,8 @@ struct ChatView: View {
                         }
                         .onTapGesture {
                             if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
-                                if !loadingMoreItems {
-                                    // scroll to the top unread item
-                                    scrollModel.scrollToRow(row: index)
-                                } else {
-                                    AlertManager.shared.showAlertMsg(title: "Wait", message: "Wait until items loaded")
-                                }
+                                // scroll to the top unread item
+                                scrollModel.scrollToRow(row: index)
                             }
                         }
                         .contextMenu {
@@ -683,26 +679,17 @@ struct ChatView: View {
                                 .foregroundColor(theme.colors.primary)
                         }
                         .onTapGesture {
-                            if !loadingMoreItems {
-                                scrollModel.scrollToBottom()
-                            } else {
-                                AlertManager.shared.showAlertMsg(title: "Wait", message: "Wait until items loaded")
-                            }
+                            scrollModel.scrollToBottom()
                         }
                     } else if !model.isNearBottom {
                         circleButton {
                             Image(systemName: "chevron.down")
                                 .foregroundColor(theme.colors.primary)
                         }
-                        .onTapGesture {
-                            if !loadingMoreItems {
-                                scrollModel.scrollToBottom()
-                            } else {
-                                AlertManager.shared.showAlertMsg(title: "Wait", message: "Wait until items loaded")
-                            }
-                        }
+                        .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
+                .disabled(loadingMoreItems)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
