@@ -758,6 +758,20 @@ fun ChatLayout(
                   setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
                 )
               }
+              if (chatInfo is ChatInfo.Group && composeState.value.message.isNotEmpty()) {
+                Column(
+                  Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = composeViewHeight.value)
+                ) {
+                  GroupMentions(
+                    rhId = remoteHostId,
+                    composeState = composeState,
+                    textSelection = textSelection,
+                    chatInfo = chatInfo,
+                  )
+                }
+              }
             }
           }
           if (groupReports.value.reportsView) {
@@ -816,21 +830,6 @@ fun ChatLayout(
           }
         } else {
           NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
-        }
-        if (chatInfo is ChatInfo.Group && composeState.value.message.isNotEmpty()) {
-          Column(
-            Modifier
-              .align(Alignment.BottomStart)
-              .padding(bottom = composeViewHeight.value)
-              .heightIn(max = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f)
-          ) {
-            GroupMentions(
-              rhId = remoteHostId,
-              composeState = composeState,
-              textSelection = textSelection,
-              chatInfo = chatInfo,
-            )
-          }
         }
         if (groupReports.value.reportsView) {
           if (oneHandUI.value) {

@@ -1,33 +1,21 @@
 package chat.simplex.common.views.chat.group
 
-import SectionDivider
-import SectionItemView
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
-import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chatlist.setGroupMembers
-import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 
 const val WORD_SEPARATOR = " "
 const val QUOTE_END = "' "
@@ -35,6 +23,7 @@ const val QUOTED_MENTION_START = "@'"
 const val MENTION_START = "@"
 const val QUOTE = '\''
 const val MAX_NUMBER_OF_MENTIONS = 3
+val GROUP_MENTIONS_MAX_HEIGHT = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f
 
 @Composable
 fun GroupMentions(
@@ -96,44 +85,60 @@ fun GroupMentions(
         }
       }
   }
+  val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
+  val offsetY = remember { Animatable(maxHeightInPx) }
 
-  val selection = mentionSelection.value
-  if (selection != null && composeState.value.mentions.size < MAX_NUMBER_OF_MENTIONS) {
-    LazyColumn(
-      Modifier.background(MaterialTheme.colors.surface),
-    ) {
-      itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
-        Divider()
-        Row(
-          Modifier
-            .fillMaxWidth()
-            .clickable {
-              val msg = composeState.value.message
-              val nameHasSpaces = member.displayName.contains(' ')
-              val existingMention = composeState.value.mentions.find { it.memberId == member.memberId }
-              val displayName = existingMention?.memberName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
-              val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
-                add(MemberMention(displayName, member.memberId))
-              }
+  LaunchedEffect(mentionSelection.value, composeState.value.mentions.size) {
+    if (mentionSelection.value != null && composeState.value.mentions.size < MAX_NUMBER_OF_MENTIONS) {
+      offsetY.animateTo(
+        targetValue = 0f,
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+      )
+    } else {
+      offsetY.animateTo(
+        targetValue = maxHeightInPx,
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+      )
+    }
+  }
 
-              composeState.value = composeState.value.copy(
-                message = msg.replaceRange(
-                  selection.first,
-                  selection.second + 1,
-                  if (nameHasSpaces) "@'${displayName}' " else "@${displayName} "
-                ),
-                mentions = mentions
-              )
+  LazyColumn(
+    Modifier
+      .offset { IntOffset(0, offsetY.value.toInt()) }
+      .heightIn(max = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f)
+      .background(MaterialTheme.colors.surface)
+  ) {
+    itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
+      Divider()
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .clickable {
+            val selection = mentionSelection.value ?: return@clickable
+            val msg = composeState.value.message
+            val nameHasSpaces = member.displayName.contains(' ')
+            val existingMention = composeState.value.mentions.find { it.memberId == member.memberId }
+            val displayName = existingMention?.memberName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
+            val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
+              add(MemberMention(displayName, member.memberId))
             }
-            .padding(horizontal = DEFAULT_PADDING_HALF)
-          ,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          MemberRow(
-            member,
-            infoPage = false,
-          )
-        }
+
+            composeState.value = composeState.value.copy(
+              message = msg.replaceRange(
+                selection.first,
+                selection.second + 1,
+                if (nameHasSpaces) "@'${displayName}' " else "@${displayName} "
+              ),
+              mentions = mentions
+            )
+          }
+          .padding(horizontal = DEFAULT_PADDING_HALF),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        MemberRow(
+          member,
+          infoPage = false,
+        )
       }
     }
   }
