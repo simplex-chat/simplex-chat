@@ -1060,12 +1060,12 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
-      Group gInfo@GroupInfo {membership} members <- timeItM "getGroup" $ withStore $ \db -> getGroup db vr user chatId
+      Group gInfo@GroupInfo {membership} members <- timeItM "getGroup" $ withFastStore $ \db -> getGroup db vr user chatId
       let GroupMember {memberRole = membershipMemRole} = membership
       let isOwner = membershipMemRole == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
-      filesInfo <- timeItM "getGroupFileInfo" $ withStore' $ \db -> getGroupFileInfo db user gInfo
+      filesInfo <- timeItM "getGroupFileInfo" $ withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId . procCmd $ do
         timeItM "cancelFilesInProgress" $ cancelFilesInProgress user filesInfo
         timeItM "deleteFilesLocally" $ deleteFilesLocally filesInfo
@@ -1077,9 +1077,9 @@ processChatCommand' vr = \case
         timeItM "updateCIGroupInvitationStatus" $ updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
-        timeItM "deleteGroupConnectionsAndFiles" $ withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        timeItM "deleteGroupItemsAndMembers" $ withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        timeItM "deleteGroup" $ withStore' $ \db -> deleteGroup db user gInfo
+        timeItM "deleteGroupConnectionsAndFiles" $ withFastStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+        timeItM "deleteGroupItemsAndMembers" $ withFastStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
+        timeItM "deleteGroup" $ withFastStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
         (errs1, (errs2, connIds)) <- timeItM "batch deleteUnusedContact" $ lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
         let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
