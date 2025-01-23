@@ -2322,4 +2322,13 @@
     <string name="privacy_chat_list_open_web_link_question">¿Abrir enlace web?</string>
     <string name="privacy_chat_list_open_links_ask">Preguntar</string>
     <string name="privacy_chat_list_open_web_link">Abrir enlace</string>
+    <string name="text_field_set_chat_placeholder">Nombre para el chat…</string>
+    <string name="disable_automatic_deletion_question">¿Desactivar la eliminación automática de mensajes?</string>
+    <string name="disable_automatic_deletion">Desactivar la eliminación de mensajes</string>
+    <string name="change_automatic_deletion_question">¿Modificar la eliminación automática de mensajes?</string>
+    <string name="chat_ttl_options_footer">Eliminar todos los mensajes del dispositivo</string>
+    <string name="disable_automatic_deletion_message">Los mensajes nunca se borran en esta conversación</string>
+    <string name="change_automatic_chat_deletion_message">Todos los mensajes previos a la selección serán eliminados de este chat. ¡No podrá deshacerse!</string>
+    <string name="chat_item_ttl_year">Un año</string>
+    <string name="chat_item_ttl_default">predefinido (%s)</string>
 </resources>
