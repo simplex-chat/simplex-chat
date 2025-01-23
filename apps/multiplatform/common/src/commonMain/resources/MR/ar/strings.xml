@@ -2309,4 +2309,13 @@
     <string name="blocking_reason_content">المحتوى ينتهك شروط الاستخدام</string>
     <string name="connection_error_blocked_desc">حُظر الاتصال بواسطة مُشغل الخادم:\n%1$s.</string>
     <string name="file_error_blocked">حُظر الملف بواسطة مُشغل الخادم:\n%1$s.</string>
+    <string name="chat_item_ttl_default">الافتراضي %s</string>
+    <string name="chat_item_ttl_year">سنة واحدة</string>
+    <string name="disable_automatic_deletion">عطّل حذف الرسائل التلقائي</string>
+    <string name="disable_automatic_deletion_question">تعطيل حذف الرسائل التلقائي؟</string>
+    <string name="disable_automatic_deletion_message">لن يتم حذف الرسائل الموجودة في هذه الدردشة أبدًا.</string>
+    <string name="chat_ttl_options_footer">احذف رسائل الدردشة من جهازك.</string>
+    <string name="text_field_set_chat_placeholder">عيّن اسم الدردشة…</string>
+    <string name="change_automatic_chat_deletion_message">لا يمكن التراجع عن هذا الإجراء - سيتم حذف الرسائل المُرسلة والمُستلمة في هذه الدردشة قبل التاريخ المحدّد.</string>
+    <string name="change_automatic_deletion_question">تغيير حذف الرسائل التلقائي؟</string>
 </resources>
