@@ -809,7 +809,7 @@ fun ChatLayout(
         } else {
           NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
         }
-        if (chatInfo is ChatInfo.Group) {
+        if (chatInfo is ChatInfo.Group && composeState.value.message.isNotEmpty()) {
           Column(
             Modifier
               .align(Alignment.BottomStart)
