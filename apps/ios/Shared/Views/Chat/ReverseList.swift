@@ -62,8 +62,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     Task {
                         let mergedItems = $mergedItems.wrappedValue
                         let prevSnapshot = controller.prevSnapshot
+                        logger.debug("LALAL SAME ITEMS, not rebuilding the tableview0")
                         if mergedItems.items == prevSnapshot.itemIdentifiers {
-                            logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
+                            logger.debug("LALAL SAME ITEMS, not rebuilding the tableview1")
                             // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
                             controller.updateFloatingButtons.send()
                             return
@@ -81,8 +82,9 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 } else {
                     Task {
                         let mergedItems = $mergedItems.wrappedValue
+                        logger.debug("LALAL SAME ITEMS, not rebuilding the tableview2")
                         if mergedItems.items == controller.prevSnapshot.itemIdentifiers {
-                            logger.debug("LALAL SAME ITEMS, not rebuilding the tableview")
+                            logger.debug("LALAL SAME ITEMS, not rebuilding the tableview3")
                             // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
                             controller.updateFloatingButtons.send()
                             return
@@ -236,7 +238,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 // Without this small scroll position is not correct pixel-to-pixel.
                 // Only needed when viewDidAppear has not been called yet because in there clipsToBounds is applied
                 if tableView.clipsToBounds {
-                    tableView.setContentOffset(CGPointMake(0, tableView.contentOffset.y - 5), animated: false)
+                    //tableView.setContentOffset(CGPointMake(0, tableView.contentOffset.y - 5), animated: false)
                 }
                 //                logger.debug("LALAL OFFSET after \(self.tableView.contentOffset.y) \(self.tableView.indexPathsForVisibleRows!)")
                 scrollToRowOnAppear = 0
@@ -368,11 +370,16 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         nil
                     }
                     let nowFirstIndex: Int? = if let wasFirstId { indexInParentItems[wasFirstId] } else { nil }
+//                    let wasRowY = tableView.superview?.convert(
+//                        tableView.rectForRow(at: IndexPath(row: wasFirstIndex!, section: 0)),
+//                        from: tableView
+//                    ).maxY
                     //logger.debug("LALAL DIFF start")
                     //let diff = snapshot.itemIdentifiers.difference(from: prevSnapshot.itemIdentifiers)
                     //logger.debug("LALAL DIFFERENCES \(diff.insertions.count) \(diff.removals.count)")
                     self.prevSnapshot = snapshot
                     self.prevMergedItems = mergedItems
+                    UIView.setAnimationsEnabled(false)
                     dataSource.apply(
                         snapshot,
                         animatingDifferences: false
@@ -390,6 +397,19 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         // added new items to bottom
                         logger.debug("LALAL BEFORE SCROLLTOROW \(snapshot.numberOfItems - 1)  \(countDiff)  \(wasFirstIndex ?? -5)  \(self.tableView.contentOffset.y)  \(wasFirstVisibleOffset)   \(String(describing: self.representer.mergedItems.splits))")
                         self.getListState()
+//                        let currentRowY = tableView.superview?.convert(
+//                            tableView.rectForRow(at: IndexPath(row: (max(0, min(snapshot.numberOfItems - 1, countDiff + (wasFirstIndex ?? 0)))), section: 0)),
+//                            from: tableView
+//                        ).maxY
+//                        if let wasRowY, let currentRowY {
+//                            //self.tableView.setContentOffset(
+//                            //    CGPoint(x: 0, y: self.tableView.contentOffset.y + (wasRowY - currentRowY)),
+//                            //    animated: false
+//                            //)
+//                            logger.debug("LALAL WAS ROW \(wasRowY) \(currentRowY)")
+//                        } else {
+//                            logger.debug("LALAL WAS ROW \(wasRowY ?? -1) \(currentRowY ?? -2)")
+//                        }
                         self.tableView.scrollToRow(
                             at: IndexPath(row: max(0, min(snapshot.numberOfItems - 1, countDiff + (wasFirstIndex ?? 0))), section: 0),
                             at: .top,
@@ -413,6 +433,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                             //self.tableView.setContentOffset(CGPointMake(o.x + t.x, o.y + t.y), animated: true)
                         }
                     }
+                    UIView.setAnimationsEnabled(true)
                     logger.debug("LALAL STEP 5 2")
                     self.updatingInProgress = false
                     tableView.panGestureRecognizer.isEnabled = true
