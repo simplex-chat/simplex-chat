@@ -2308,4 +2308,12 @@
     <string name="privacy_chat_list_open_web_link">打开链接</string>
     <string name="privacy_chat_list_open_links">打开来自聊天列表的链接</string>
     <string name="text_field_set_chat_placeholder">设置聊天名称…</string>
+    <string name="disable_automatic_deletion_question">停用消息自动删除？</string>
+    <string name="disable_automatic_deletion">停用消息删除</string>
+    <string name="chat_item_ttl_year">1 年</string>
+    <string name="chat_item_ttl_default">默认（%s）</string>
+    <string name="chat_ttl_options_footer">从你的设备删除聊天消息。</string>
+    <string name="change_automatic_chat_deletion_message">此操作无法撤销 —— 比此聊天中所选消息更早发出并收到的消息将被删除。</string>
+    <string name="disable_automatic_deletion_message">此聊天中的消息永远不会被删除。</string>
+    <string name="change_automatic_deletion_question">更改消息自动删除设置？</string>
 </resources>
