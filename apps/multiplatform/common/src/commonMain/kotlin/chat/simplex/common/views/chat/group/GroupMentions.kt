@@ -18,9 +18,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
-import chat.simplex.common.views.chat.ComposeState
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -30,6 +29,12 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 
+const val WORD_SEPARATOR = " "
+const val QUOTE_END = "' "
+const val QUOTED_MENTION_START = "@'"
+const val MENTION_START = "@"
+const val QUOTE = '\''
+
 @Composable
 fun GroupMentions(
   rhId: Long?,
@@ -38,25 +43,8 @@ fun GroupMentions(
   chatInfo: ChatInfo.Group) {
   val mentionSelection = remember {
     derivedStateOf {
-      val (start, end) = textSelection.value
       val text = composeState.value.message
-      if (text.isEmpty() || start > text.length || end > text.length || start == 0 || end == 0) {
-        null
-      } else {
-        val range = if (start == end) {
-          val lastSpaceIndex = text.substring(0, start).lastIndexOf(' ')
-          val rangeStart = if (lastSpaceIndex != -1) minOf(lastSpaceIndex + 1, text.lastIndex) else 0
-          rangeStart to start
-        } else {
-          start to end
-        }
-
-        if (text[range.first] == '@') {
-          range
-        } else {
-          null
-        }
-      }
+      parseActiveMentionRange(textSelection.value, text)
     }
   }
   val membersToMention = remember { mutableStateOf<List<GroupMember>>(emptyList()) }
@@ -67,7 +55,7 @@ fun GroupMentions(
         if (selection.first == selection.second) {
           ""
         } else {
-          composeState.value.message.substring(selection.first + 1, selection.second)
+          composeState.value.message.substring(selection.first, selection.second + 1)
         }
       } else {
         null
@@ -82,8 +70,11 @@ fun GroupMentions(
         if (txt != null) {
           // TODO - [MENTIONS] replace with real api
           val gms = chatModel.controller.apiListMembers(rhId, chatInfo.groupInfo.groupId)
+
+          val search = txt.trim().removePrefix(QUOTED_MENTION_START).removePrefix(MENTION_START).removeSuffix(QUOTE.toString())
+
           membersToMention.value = gms.filter { gm ->
-            gm.displayName.contains(txt, ignoreCase = true) && composeState.value.mentions.none { m -> m.groupMemberId == gm.groupMemberId }
+            gm.displayName.contains(search, ignoreCase = true)
           }
         } else {
           membersToMention.value = emptyList()
@@ -96,13 +87,14 @@ fun GroupMentions(
       .distinctUntilChanged()
       .collect { txt ->
         // TODO - [MENTIONS] review this, checks if mention was removed
-        val filteredMentions = composeState.value.mentions.filter { txt.contains("@${it.displayName}") }
+        val filteredMentions = composeState.value.mentions.filter { txt.contains("@${it.usedName}") }
 
         if (filteredMentions.size != composeState.value.mentions.size) {
           composeState.value = composeState.value.copy(mentions = filteredMentions.toMutableList())
         }
       }
   }
+
   val selection = mentionSelection.value
   if (membersToMention.value.isNotEmpty() && selection != null) {
     LazyColumn(
@@ -115,16 +107,18 @@ fun GroupMentions(
             .fillMaxWidth()
             .clickable {
               val msg = composeState.value.message
-              val lastSpaceIndex = msg.indexOf(' ', selection.first).takeIf { it != -1 } ?: msg.length
+              val nameHasSpaces = member.displayName.contains(' ')
+              val existingMention = composeState.value.mentions.find { it.member.groupMemberId == member.groupMemberId }
+              val displayName = existingMention?.usedName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
 
               composeState.value = composeState.value.copy(
                 message = msg.replaceRange(
                   selection.first,
-                  lastSpaceIndex,
-                  "@${member.displayName} "
+                  selection.second + 1,
+                  if (nameHasSpaces) "@'${displayName}' " else "@${displayName} "
                 ),
-                mentions = composeState.value.mentions.toMutableList().apply {
-                  add(member)
+                mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
+                  add(MentionMember(displayName, member))
                 }
               )
             }
@@ -140,4 +134,52 @@ fun GroupMentions(
       }
     }
   }
+}
+
+private fun parseActiveMentionRange(textSelection: Pair<Int, Int>, text: String): Pair<Int, Int>? {
+  val (start, end) = textSelection
+  // Prevents empty spaces, and possible race conditions between text and selection changes.
+  if (text.isEmpty() || start > text.length || end > text.length || start == 0 || end == 0) {
+    return null
+  }
+
+  val leftSide = text.substring(0, start)
+  val startOfQuotedMention = leftSide.lastIndexOf(QUOTED_MENTION_START).takeIf { it != -1 }
+  val hasOpenQuote = leftSide.count { it == QUOTE } % 2 == 1
+  var isQuotedMention = startOfQuotedMention != null && hasOpenQuote
+
+  val startM: Int? = if (isQuotedMention) {
+    startOfQuotedMention
+  } else {
+    val lastMention = leftSide.lastIndexOf(MENTION_START).takeIf { it != -1 }
+    if (lastMention == null || leftSide.lastIndexOf(WORD_SEPARATOR) > lastMention) {
+      null
+    } else {
+      lastMention
+    }
+  }
+
+  if (startM == null) {
+    return null
+  }
+
+  val rightSide = text.substring(start)
+
+  if (rightSide.startsWith(QUOTE)) {
+    isQuotedMention = true
+  }
+
+  val rangeMax = if (start == end) text.lastIndex else end
+  val endM = minOf(
+    start + (rightSide.indexOf(if (isQuotedMention) QUOTE_END else WORD_SEPARATOR).takeIf { it != -1 } ?: rightSide.lastIndex),
+    rangeMax
+  )
+
+  return startM to endM
+}
+
+private fun uniqueMentionName(n: Int, name: String, mentions: List<MentionMember>): String {
+  val tryName = if (n == 0) name else "${name}_$n"
+  val used = mentions.any { it.usedName == tryName }
+  return if (used) uniqueMentionName(n + 1, name, mentions) else tryName
 }
