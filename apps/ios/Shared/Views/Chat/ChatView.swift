@@ -650,43 +650,54 @@ struct ChatView: View {
                 VStack {
                     let unreadAbove = model.totalUnread - model.unreadBelow
                     if unreadAbove > 0 {
-                        circleButton {
-                            unreadCountText(unreadAbove)
-                                .font(.callout)
-                                .foregroundColor(theme.colors.primary)
-                        }
-                        .onTapGesture {
-                            if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
-                                // scroll to the top unread item
-                                scrollModel.scrollToRow(row: index)
+                        if loadingMoreItems {
+                            circleButton { ProgressView() }
+                        } else {
+                            circleButton {
+                                unreadCountText(unreadAbove)
+                                    .font(.callout)
+                                    .foregroundColor(theme.colors.primary)
                             }
-                        }
-                        .contextMenu {
-                            Button {
-                                Task {
-                                    await markChatRead(chat)
+                            .onTapGesture {
+                                if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
+                                    // scroll to the top unread item
+                                    scrollModel.scrollToRow(row: index)
                                 }
-                            } label: {
-                                Label("Mark read", systemImage: "checkmark")
+                            }
+                            .contextMenu {
+                                Button {
+                                    Task {
+                                        await markChatRead(chat)
+                                    }
+                                } label: {
+                                    Label("Mark read", systemImage: "checkmark")
+                                }
                             }
                         }
                     }
                     Spacer()
                     if model.unreadBelow > 0 {
-                        circleButton {
-                            unreadCountText(model.unreadBelow)
-                                .font(.callout)
-                                .foregroundColor(theme.colors.primary)
-                        }
-                        .onTapGesture {
-                            scrollModel.scrollToBottom()
+                        if loadingMoreItems {
+                            circleButton { ProgressView() }
+                        } else {
+                            circleButton {
+                                unreadCountText(model.unreadBelow)
+                                    .font(.callout)
+                                    .foregroundColor(theme.colors.primary)
+                            }
+                            .onTapGesture {
+                                scrollModel.scrollToBottom()
+                            }
                         }
                     } else if !model.isNearBottom {
-                        circleButton {
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(theme.colors.primary)
+                        if loadingMoreItems {
+                            circleButton { ProgressView() }
+                        } else {
+                            circleButton {
+                                Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
+                            }
+                            .onTapGesture { scrollModel.scrollToBottom() }
                         }
-                        .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
                 .disabled(loadingMoreItems)
