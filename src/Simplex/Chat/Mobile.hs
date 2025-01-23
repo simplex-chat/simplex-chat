@@ -49,6 +49,7 @@ import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
@@ -237,7 +238,7 @@ getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 -- only used in tests
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = do
-  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration = True}
+  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, trackQueries = DB.TQSlow 5000, vacuumOnMigration = True}
   chatMigrateInitKey chatDBOpts False confirm False
 #endif
 

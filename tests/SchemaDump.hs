@@ -1,19 +1,32 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module SchemaDump where
 
 import ChatClient (withTmpFiles)
+import ChatTests.DBUtils
+import Control.Concurrent.STM
 import Control.DeepSeq
+import qualified Control.Exception as E
 import Control.Monad (unless, void)
-import Data.List (dropWhileEnd)
+import Data.List (dropWhileEnd, sort)
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, isJust)
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Database.SQLite.Simple (Query (..))
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
+import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.Interface
 import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Util (ifM, whenM)
+import Simplex.Messaging.Util (ifM, tshow, whenM)
 import System.Directory (doesFileExist, removeFile)
 import System.Process (readCreateProcess, shell)
 import Test.Hspec
@@ -40,6 +53,9 @@ appSchema = "src/Simplex/Chat/Store/SQLite/Migrations/chat_schema.sql"
 appLint :: FilePath
 appLint = "src/Simplex/Chat/Store/SQLite/Migrations/chat_lint.sql"
 
+appQueryPlans :: FilePath
+appQueryPlans = "src/Simplex/Chat/Store/SQLite/Migrations/chat_query_plans.txt"
+
 testSchema :: FilePath
 testSchema = "tests/tmp/test_agent_schema.sql"
 
@@ -53,7 +69,7 @@ testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
-  void $ createChatStore (DBOpts testDB "" False True) MCError
+  void $ createChatStore (DBOpts testDB "" False True TQOff) MCError
   getSchema testDB appSchema `shouldReturn` savedSchema
   removeFile testDB
 
@@ -61,14 +77,14 @@ testVerifyLintFKeyIndexes :: IO ()
 testVerifyLintFKeyIndexes = withTmpFiles $ do
   savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
   savedLint `deepseq` pure ()
-  void $ createChatStore (DBOpts testDB "" False True) MCError
+  void $ createChatStore (DBOpts testDB "" False True TQOff) MCError
   getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
 testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createDBStore (DBOpts testDB "" False True) noDownMigrations MCError
+  Right st <- createDBStore (DBOpts testDB "" False True TQOff) noDownMigrations MCError
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
   closeDBStore st
   removeFile testDB
@@ -120,3 +136,25 @@ getLintFKeyIndexes dbPath lintPath = do
   void $ readCreateProcess (shell $ "sqlite3 " <> dbPath <> " '.lint fkey-indexes' > " <> lintPath) ""
   lint <- readFile lintPath
   lint `deepseq` pure lint
+
+saveQueryPlans :: SpecWith TestParams
+saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {queryStats} -> do
+  savedPlans <- ifM (doesFileExist appQueryPlans) (T.readFile appQueryPlans) (pure "")
+  savedPlans `deepseq` pure ()
+  queries <- sort . M.keys <$> readTVarIO queryStats
+  Right st <- createChatStore (DBOpts testDB "" False True TQOff) MCError
+  plans' <- withConnection st $ \db -> do
+    DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)"
+    mapM (getQueryPlan db) queries
+  let savedPlans' = T.unlines plans'
+  T.writeFile appQueryPlans savedPlans'
+  savedPlans' `shouldBe` savedPlans
+  where
+    getQueryPlan :: DB.Connection -> Query -> IO Text
+    getQueryPlan db q =
+      (("Query: " <> fromQuery q) <>) . result <$> E.try (DB.query_ db $ "explain query plan " <> q)
+    result = \case
+      Right r -> "\nPlan:\n" <> T.unlines (map planDetail r)
+      Left (e :: E.SomeException) -> "\nError: " <> tshow e <> "\n"
+    planDetail :: (Int, Int, Int, Text) -> Text
+    planDetail (_, _, _, detail) = detail

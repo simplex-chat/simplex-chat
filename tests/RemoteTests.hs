@@ -6,6 +6,7 @@
 module RemoteTests where
 
 import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Logger.Simple
 import qualified Data.Aeson as J
@@ -26,7 +27,7 @@ import UnliftIO
 import UnliftIO.Concurrent
 import UnliftIO.Directory
 
-remoteTests :: SpecWith FilePath
+remoteTests :: SpecWith TestParams
 remoteTests = describe "Remote" $ do
   describe "protocol handshake" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
@@ -45,7 +46,7 @@ remoteTests = describe "Remote" $ do
 
 -- * Chat commands
 
-remoteHandshakeTest :: HasCallStack => Bool -> FilePath -> IO ()
+remoteHandshakeTest :: HasCallStack => Bool -> TestParams -> IO ()
 remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
@@ -74,7 +75,7 @@ remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \m
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
-remoteHandshakeStoredTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeStoredTest :: HasCallStack => TestParams -> IO ()
 remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   logNote "Starting new session"
   startRemote mobile desktop
@@ -95,7 +96,7 @@ remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile
   startRemoteStored mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
-remoteHandshakeDiscoverTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeDiscoverTest :: HasCallStack => TestParams -> IO ()
 remoteHandshakeDiscoverTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   logNote "Preparing new session"
   startRemote mobile desktop
@@ -105,7 +106,7 @@ remoteHandshakeDiscoverTest = testChat2 aliceProfile aliceDesktopProfile $ \mobi
   startRemoteDiscover mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
-remoteHandshakeRejectTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeRejectTest :: HasCallStack => TestParams -> IO ()
 remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop mobileBob -> do
   logNote "Starting new session"
   startRemote mobile desktop
@@ -135,7 +136,7 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   desktop <## "remote host 1 connected"
   stopMobile mobile desktop
 
-storedBindingsTest :: HasCallStack => FilePath -> IO ()
+storedBindingsTest :: HasCallStack => TestParams -> IO ()
 storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
@@ -166,7 +167,7 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
 
 -- TODO: more parser tests
 
-remoteMessageTest :: HasCallStack => FilePath -> IO ()
+remoteMessageTest :: HasCallStack => TestParams -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
   startRemote mobile desktop
   contactBob desktop bob
@@ -192,7 +193,7 @@ remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   threadDelay 1000000
   logNote "done"
 
-remoteStoreFileTest :: HasCallStack => FilePath -> IO ()
+remoteStoreFileTest :: HasCallStack => TestParams -> IO ()
 remoteStoreFileTest =
   testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
     withXFTPServer $ do
@@ -322,7 +323,7 @@ remoteStoreFileTest =
       r `shouldStartWith` "remote host 1 error"
       r `shouldContain` err
 
-remoteCLIFileTest :: HasCallStack => FilePath -> IO ()
+remoteCLIFileTest :: HasCallStack => TestParams -> IO ()
 remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
   let mobileFiles = "./tests/tmp/mobile_files"
   mobile ##> ("/_files_folder " <> mobileFiles)
@@ -391,7 +392,7 @@ remoteCLIFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
 
   stopMobile mobile desktop
 
-switchRemoteHostTest :: FilePath -> IO ()
+switchRemoteHostTest :: TestParams -> IO ()
 switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
   startRemote mobile desktop
   contactBob desktop bob
@@ -417,7 +418,7 @@ switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \
   desktop <## "remote host 1 error: RHEInactive"
   desktop ##> "/contacts"
 
-indicateRemoteHostTest :: FilePath -> IO ()
+indicateRemoteHostTest :: TestParams -> IO ()
 indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
   connectUsers desktop cath
   startRemote mobile desktop
@@ -441,7 +442,7 @@ indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile c
   desktop <##> cath
   cath <##> desktop
 
-multipleProfilesTest :: FilePath -> IO ()
+multipleProfilesTest :: TestParams -> IO ()
 multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
   connectUsers desktop cath
 
