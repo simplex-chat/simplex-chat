@@ -2324,4 +2324,12 @@
     <string name="privacy_chat_list_open_web_link">Apri link</string>
     <string name="privacy_chat_list_open_links_ask">Chiedi</string>
     <string name="text_field_set_chat_placeholder">Imposta il nome della chat…</string>
+    <string name="disable_automatic_deletion">Disattiva eliminazione messaggi</string>
+    <string name="chat_item_ttl_year">1 anno</string>
+    <string name="disable_automatic_deletion_question">Disattivare l\'eliminazione automatica dei messaggi?</string>
+    <string name="change_automatic_deletion_question">Cambiare l\'eliminazione automatica dei messaggi?</string>
+    <string name="change_automatic_chat_deletion_message">Questa azione non è reversibile: i messaggi inviati e ricevuti in questa chat prima della selezione verranno eliminati.</string>
+    <string name="chat_ttl_options_footer">Elimina i messaggi di chat dal tuo dispositivo.</string>
+    <string name="disable_automatic_deletion_message">I messaggi in questa chat non verranno mai eliminati.</string>
+    <string name="chat_item_ttl_default">predefinito (%s)</string>
 </resources>
