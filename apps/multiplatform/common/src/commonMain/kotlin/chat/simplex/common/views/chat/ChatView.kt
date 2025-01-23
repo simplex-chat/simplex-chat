@@ -749,6 +749,20 @@ fun ChatLayout(
                   setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
                 )
               }
+              if (chatInfo is ChatInfo.Group && composeState.value.message.isNotEmpty()) {
+                Column(
+                  Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = composeViewHeight.value)
+                ) {
+                  GroupMentions(
+                    rhId = remoteHostId,
+                    composeState = composeState,
+                    textSelection = textSelection,
+                    chatInfo = chatInfo,
+                  )
+                }
+              }
             }
           }
           if (contentTag == MsgContentTag.Report) {
