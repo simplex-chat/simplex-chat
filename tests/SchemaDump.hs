@@ -146,20 +146,24 @@ getLintFKeyIndexes dbPath lintPath = do
 
 saveQueryPlans :: SpecWith TestParams
 saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryStats, agentQueryStats} -> do
-  compareAndUpdatePlans
-    appChatQueryPlans
-    chatQueryStats
-    (createChatStore (DBOpts testDB "" False True TQOff) MCError)
-    (`DB.execute_` "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)")
-  compareAndUpdatePlans
-    appAgentQueryPlans
-    agentQueryStats
-    (createAgentStore (DBOpts testAgentDB "" False True TQOff) MCError)
-    (const $ pure ())
+  (chatSavedPlans, chatSavedPlans') <-
+    updatePlans
+      appChatQueryPlans
+      chatQueryStats
+      (createChatStore (DBOpts testDB "" False True TQOff) MCError)
+      (`DB.execute_` "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)")
+  (agentSavedPlans, agentSavedPlans') <-
+    updatePlans
+      appAgentQueryPlans
+      agentQueryStats
+      (createAgentStore (DBOpts testAgentDB "" False True TQOff) MCError)
+      (const $ pure ())
+  chatSavedPlans' `shouldBe` chatSavedPlans
+  agentSavedPlans' `shouldBe` agentSavedPlans
   removeFile testDB
   removeFile testAgentDB
   where
-    compareAndUpdatePlans plansFile statsSel createStore prepareStore = do
+    updatePlans plansFile statsSel createStore prepareStore = do
       savedPlans <- ifM (doesFileExist plansFile) (T.readFile plansFile) (pure "")
       savedPlans `deepseq` pure ()
       queries <- sort . M.keys <$> readTVarIO statsSel
@@ -169,7 +173,7 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
         mapM (getQueryPlan db) queries
       let savedPlans' = T.unlines plans'
       T.writeFile plansFile savedPlans'
-      savedPlans' `shouldBe` savedPlans
+      pure (savedPlans, savedPlans')
     getQueryPlan :: DB.Connection -> Query -> IO Text
     getQueryPlan db q =
       (("Query: " <> fromQuery q) <>) . result <$> E.try (DB.query_ db $ "explain query plan " <> q)

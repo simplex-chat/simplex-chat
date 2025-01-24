@@ -18,4 +18,4 @@ chatTests = do
   describe "local chats tests" chatLocalChatsTests
   describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests
-  fdescribe "chat list pagination tests" chatListTests
+  describe "chat list pagination tests" chatListTests

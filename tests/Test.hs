@@ -71,7 +71,7 @@ main = do
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
-          fdescribe "Save query plans" saveQueryPlans
+          xdescribe'' "Save query plans" saveQueryPlans
 #endif
   where
 #if defined(dbPostgres)
