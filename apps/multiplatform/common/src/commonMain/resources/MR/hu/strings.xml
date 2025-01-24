@@ -167,7 +167,7 @@
     <string name="icon_descr_audio_on">Hang bekapcsolva</string>
     <string name="audio_call_no_encryption">hanghívás (nem e2e titkosított)</string>
     <string name="blocked_item_description">letiltva</string>
-    <string name="change_database_passphrase_question">Adatbázis-jelmondat megváltoztatása?</string>
+    <string name="change_database_passphrase_question">Az adatbázis jelmondatának megváltoztatása?</string>
     <string name="callstate_connected">kapcsolódva</string>
     <string name="la_change_app_passcode">Jelkód megváltoztatása</string>
     <string name="rcv_group_event_changed_member_role">%s szerepkörét megváltoztatta a következőre: %s</string>
@@ -898,7 +898,7 @@
     <string name="only_you_can_send_voice">Csak Ön tud hangüzeneteket küldeni.</string>
     <string name="update_network_settings_confirmation">Frissítés</string>
     <string name="icon_descr_video_snd_complete">Videó elküldve</string>
-    <string name="update_database_passphrase">Adatbázis-jelmondat megváltoztatása</string>
+    <string name="update_database_passphrase">Az adatbázis jelmondatának megváltoztatása</string>
     <string name="turn_off_system_restriction_button">Alkalmazás beállítások megnyitása</string>
     <string name="passcode_not_changed">A jelkód nem változott meg!</string>
     <string name="refresh_qr_code">Frissítés</string>
