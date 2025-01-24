@@ -16,6 +16,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.helpers.mentionPickerAnimSpec
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 const val QUOTE_END = "' "
@@ -52,13 +53,21 @@ fun GroupMentions(
       }
     }
   }
+  val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
+  val offsetY = remember { Animatable(maxHeightInPx) }
 
   LaunchedEffect(chatInfo.groupInfo.groupId, composeState.value.mentions) {
     snapshotFlow { mentionSelectionText }
       .distinctUntilChanged()
       .collect { txt ->
         if (txt == null) {
-          membersToMention.value = emptyList()
+          if (membersToMention.value.isNotEmpty()) {
+            offsetY.animateTo(
+              targetValue = maxHeightInPx,
+              animationSpec = mentionPickerAnimSpec(),
+            )
+            membersToMention.value = emptyList()
+          }
           return@collect
         }
 
@@ -99,19 +108,12 @@ fun GroupMentions(
         }
       }
   }
-  val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
-  val offsetY = remember { Animatable(maxHeightInPx) }
 
   LaunchedEffect(mentionSelection.value) {
-    if (mentionSelection.value != null) {
+    if (mentionSelection.value != null && offsetY.value != 0f) {
       offsetY.animateTo(
         targetValue = 0f,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-      )
-    } else {
-      offsetY.animateTo(
-        targetValue = maxHeightInPx,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
+        animationSpec = mentionPickerAnimSpec()
       )
     }
   }
