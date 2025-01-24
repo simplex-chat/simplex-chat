@@ -649,7 +649,7 @@ deleteGroupItemsAndMembers db user@User {userId} g@GroupInfo {groupId} members =
   void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   forM_ members $ cleanupMemberProfileAndName_ db user
-  forM_ (incognitoMembershipProfile g) $ \p -> deleteUnusedIncognitoProfileById_ db user (localProfileId p)
+  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
@@ -671,7 +671,7 @@ deleteGroup db user@User {userId} g@GroupInfo {groupId, localDisplayName} = do
   deleteGroupProfile_ db userId groupId
   DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
   safeDeleteLDN db user localDisplayName
-  forM_ (incognitoMembershipProfile g) $ \p -> deleteUnusedIncognitoProfileById_ db user (localProfileId p)
+  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =
