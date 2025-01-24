@@ -2,6 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Options.SQLite where
 
@@ -11,11 +12,13 @@ import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Options.Applicative
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
+import Simplex.Messaging.Agent.Store.SQLite.DB (TrackQueries (..))
 import System.FilePath (combine)
 
 data ChatDbOpts = ChatDbOpts
   { dbFilePrefix :: String,
     dbKey :: ScrubbedBytes,
+    trackQueries :: TrackQueries,
     vacuumOnMigration :: Bool
   }
 
@@ -43,17 +46,24 @@ chatDbOptsP appDir defaultDbName = do
       ( long "disable-vacuum"
           <> help "Do not vacuum database after migrations"
       )
-  pure ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration = not disableVacuum}
+  pure
+    ChatDbOpts
+      { dbFilePrefix,
+        dbKey,
+        trackQueries = TQSlow 5000, -- 5ms
+        vacuumOnMigration = not disableVacuum
+      }
 
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbFilePrefix} = dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
 
 toDBOpts :: ChatDbOpts -> String -> Bool -> DBOpts
-toDBOpts ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration} dbSuffix keepKey = do
+toDBOpts ChatDbOpts {dbFilePrefix, dbKey, trackQueries, vacuumOnMigration} dbSuffix keepKey = do
   DBOpts
     { dbFilePath = dbFilePrefix <> dbSuffix,
       dbKey,
       keepKey,
+      track = trackQueries,
       vacuum = vacuumOnMigration
     }
 
@@ -71,18 +81,14 @@ mobileDbOpts fp key = do
     ChatDbOpts
       { dbFilePrefix,
         dbKey,
+        trackQueries = TQSlow 5000, -- 5ms
         vacuumOnMigration = True
       }
 
 -- used to create new chat controller,
 -- at that point database is already opened, and the key in options is not used
 removeDbKey :: ChatDbOpts -> ChatDbOpts
-removeDbKey ChatDbOpts {dbFilePrefix, vacuumOnMigration} =
-  ChatDbOpts
-    { dbFilePrefix,
-      dbKey = "",
-      vacuumOnMigration
-    }
+removeDbKey opts = opts {dbKey = ""} :: ChatDbOpts
 
 errorDbStr :: DBOpts -> String
 errorDbStr DBOpts {dbFilePath} = dbFilePath
