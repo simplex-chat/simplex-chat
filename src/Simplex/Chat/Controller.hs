@@ -824,8 +824,8 @@ data ChatResponse
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
-  | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
-  | CRAgentConnDeleted {agentConnId :: AgentConnId}
+  | CRAgentRcvQueuesDeleted {deletedRcvQueues :: NonEmpty DeletedRcvQueue}
+  | CRAgentConnsDeleted {agentConnIds :: NonEmpty AgentConnId}
   | CRAgentUserDeleted {agentUserId :: Int64}
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
@@ -834,6 +834,14 @@ data ChatResponse
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
+  deriving (Show)
+
+data DeletedRcvQueue = DeletedRcvQueue
+  { agentConnId :: AgentConnId,
+    server :: SMPServer,
+    agentQueueId :: AgentQueueId,
+    agentError_ :: Maybe AgentErrorType
+  }
   deriving (Show)
 
 -- some of these can only be used as command responses
@@ -874,8 +882,8 @@ logResponseToFile = \case
   CRHostConnected {} -> True
   CRHostDisconnected {} -> True
   CRConnectionDisabled {} -> True
-  CRAgentRcvQueueDeleted {} -> True
-  CRAgentConnDeleted {} -> True
+  CRAgentRcvQueuesDeleted {} -> True
+  CRAgentConnsDeleted {} -> True
   CRAgentUserDeleted {} -> True
   CRChatCmdError {} -> True
   CRChatError {} -> True
@@ -1597,6 +1605,8 @@ $(JQ.deriveJSON defaultJSON ''SwitchProgress)
 
 $(JQ.deriveJSON defaultJSON ''RatchetSyncProgress)
 
+$(JQ.deriveJSON defaultJSON ''DeletedRcvQueue)
+
 $(JQ.deriveJSON defaultJSON ''ServerAddress)
 
 $(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
@@ -1608,29 +1618,6 @@ $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 #if !defined(dbPostgres)
 $(JQ.deriveJSON defaultJSON ''SlowSQLQuery)
 #endif
-
--- instance ProtocolTypeI p => FromJSON (ProtoServersConfig p) where
---   parseJSON = $(JQ.mkParseJSON defaultJSON ''ProtoServersConfig)
-
--- instance ProtocolTypeI p => FromJSON (UserProtoServers p) where
---   parseJSON = $(JQ.mkParseJSON defaultJSON ''UserProtoServers)
-
--- instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
---   toJSON = $(JQ.mkToJSON defaultJSON ''UserProtoServers)
---   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserProtoServers)
-
--- instance FromJSON AUserProtoServers where
---   parseJSON v = J.withObject "AUserProtoServers" parse v
---     where
---       parse o = do
---         AProtocolType (p :: SProtocolType p) <- o .: "serverProtocol"
---         case userProtocol p of
---           Just Dict -> AUPS <$> J.parseJSON @(UserProtoServers p) v
---           Nothing -> fail $ "AUserProtoServers: unsupported protocol " <> show p
-
--- instance ToJSON AUserProtoServers where
---   toJSON (AUPS s) = $(JQ.mkToJSON defaultJSON ''UserProtoServers) s
---   toEncoding (AUPS s) = $(JQ.mkToEncoding defaultJSON ''UserProtoServers) s
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RemoteCtrlSessionState)
 
