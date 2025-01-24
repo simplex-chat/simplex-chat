@@ -1356,9 +1356,9 @@
         <target>Csevegési profilok megváltoztatása</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change database passphrase?" xml:space="preserve">
+      <trans-unit id="Change database passphrase?" xml:space="preserve" approved="no">
         <source>Change database passphrase?</source>
-        <target>Adatbázis-jelmondat megváltoztatása?</target>
+        <target state="translated">Az adatbázis jelmondatának megváltoztatása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change lock mode" xml:space="preserve">
@@ -7627,9 +7627,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Frissítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update database passphrase" xml:space="preserve">
+      <trans-unit id="Update database passphrase" xml:space="preserve" approved="no">
         <source>Update database passphrase</source>
-        <target>Adatbázis-jelmondat megváltoztatása</target>
+        <target state="translated">Az adatbázis jelmondatának megváltoztatása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update network settings?" xml:space="preserve">
