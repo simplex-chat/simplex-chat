@@ -30,7 +30,17 @@ struct FramedItemView: View {
     var body: some View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                if let di = chatItem.meta.itemDeleted {
+                if chatItem.isReport {
+                    if chatItem.meta.itemDeleted == nil {
+                        let txt = chatItem.chatDir.sent ?
+                        Text("Only you and moderators see it") :
+                        Text("Only sender and moderators see it")
+                        
+                        framedItemHeader(icon: "flag", iconColor: .red, caption: txt.italic())
+                    } else {
+                        framedItemHeader(icon: "flag", caption: Text("archived report").italic())
+                    }
+                } else if let di = chatItem.meta.itemDeleted {
                     switch di {
                     case let .moderated(_, byGroupMember):
                         framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
@@ -144,6 +154,8 @@ struct FramedItemView: View {
                 }
             case let .file(text):
                 ciFileView(chatItem, text)
+            case let .report(text, reason):
+                ciMsgContentView(chatItem, Text(text.isEmpty ? reason.text : "\(reason.text): ").italic().foregroundColor(.red))
             case let .link(_, preview):
                 CILinkView(linkPreview: preview)
                 ciMsgContentView(chatItem)
@@ -159,13 +171,14 @@ struct FramedItemView: View {
         }
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
+    @ViewBuilder func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
         let v = HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 14, height: 14)
+                    .foregroundColor(iconColor ?? theme.colors.secondary)
             }
             caption
                 .font(.caption)
@@ -228,7 +241,6 @@ struct FramedItemView: View {
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(chatItemFrameContextColor(chatItem, theme))
-
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
@@ -281,7 +293,7 @@ struct FramedItemView: View {
         }
     }
     
-    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem) -> some View {
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ txtPrefix: Text? = nil) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
@@ -291,7 +303,8 @@ struct FramedItemView: View {
             formattedText: ft,
             meta: ci.meta,
             rightToLeft: rtl,
-            showSecrets: showSecrets
+            showSecrets: showSecrets,
+            prefix: txtPrefix
         ))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)

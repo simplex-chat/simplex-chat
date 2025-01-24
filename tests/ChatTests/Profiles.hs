@@ -17,6 +17,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options
+import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -2565,7 +2566,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 11)"
+      a <## ("peer chat protocol version range: (Version 1, " <> show currentChatVersion <> ")")
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

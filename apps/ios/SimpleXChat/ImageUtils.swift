@@ -267,14 +267,23 @@ public func saveWallpaperFile(image: UIImage) -> String? {
 
 public func removeWallpaperFile(fileName: String? = nil) {
     do {
-        try FileManager.default.contentsOfDirectory(atPath: getWallpaperDirectory().path).forEach {
-            if URL(fileURLWithPath: $0).lastPathComponent == fileName { try FileManager.default.removeItem(atPath: $0) }
+        try FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: getWallpaperDirectory().path), includingPropertiesForKeys: nil, options: []).forEach { url in
+            if url.lastPathComponent == fileName {
+                try FileManager.default.removeItem(at: url)
+            }
         }
     } catch {
-        logger.error("FileUtils.removeWallpaperFile error: \(error.localizedDescription)")
+        logger.error("FileUtils.removeWallpaperFile error: \(error)")
     }
     if let fileName {
         WallpaperType.cachedImages.removeValue(forKey: fileName)
+    }
+}
+
+public func removeWallpaperFilesFromTheme(_ theme: ThemeModeOverrides?) {
+    if let theme {
+        removeWallpaperFile(fileName: theme.light?.wallpaper?.imageFile)
+        removeWallpaperFile(fileName: theme.dark?.wallpaper?.imageFile)
     }
 }
 
