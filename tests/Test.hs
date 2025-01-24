@@ -1,9 +1,12 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections #-}
 
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
 import ChatTests
+import ChatTests.DBUtils
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
@@ -21,6 +24,7 @@ import ViewTests
 #if defined(dbPostgres)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
 #else
+import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
 import WebRTCTests
@@ -29,6 +33,9 @@ import WebRTCTests
 main :: IO ()
 main = do
   setLogLevel LogError
+#if !defined(dbPostgres)
+  queryStats <- TM.emptyIO
+#endif
   withGlobalLogging logCfg . hspec
 #if defined(dbPostgres)
     . beforeAll_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
@@ -48,9 +55,11 @@ main = do
       describe "Message batching" batchingTests
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
-      around testBracket
 #if defined(dbPostgres)
+      around testBracket
         . after_ (dropAllSchemasExceptSystem testDBConnectInfo)
+#else
+      around (testBracket queryStats)
 #endif
         $ do
 #if !defined(dbPostgres)
@@ -60,8 +69,15 @@ main = do
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
           describe "Remote session" remoteTests
+#if !defined(dbPostgres)
+          xdescribe'' "Save query plans" saveQueryPlans
+#endif
   where
-    testBracket test = withSmpServer $ tmpBracket test
+#if defined(dbPostgres)    
+    testBracket test = withSmpServer $ tmpBracket $ test . TestParams
+#else
+    testBracket queryStats test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, queryStats}
+#endif
     tmpBracket test = do
       t <- getSystemTime
       let ts = show (systemSeconds t) <> show (systemNanoseconds t)
