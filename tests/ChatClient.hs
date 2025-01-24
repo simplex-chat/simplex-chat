@@ -70,6 +70,7 @@ import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
 #else
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
+import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import System.FilePath ((</>))
 #endif
@@ -324,8 +325,10 @@ stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}
   uninterruptibleCancel chatAsync
   liftIO $ disposeAgentClient smpAgent
 #if !defined(dbPostgres)
-  stats <- withConnection chatStore $ readTVarIO . DB.slow
-  atomically $ modifyTVar' (queryStats ps) $ M.unionWith combineStats stats
+  chatStats <- withConnection chatStore $ readTVarIO . DB.slow
+  atomically $ modifyTVar' (chatQueryStats ps) $ M.unionWith combineStats chatStats
+  agentStats <- withConnection (agentClientStore smpAgent) $ readTVarIO . DB.slow
+  atomically $ modifyTVar' (agentQueryStats ps) $ M.unionWith combineStats agentStats
 #endif
   closeDBStore chatStore
   threadDelay 200000

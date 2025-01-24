@@ -6,5 +6,6 @@ import Simplex.Messaging.TMap (TMap)
 
 data TestParams = TestParams
   { tmpPath :: FilePath,
-    queryStats :: TMap Query SlowQueryStats
+    chatQueryStats :: TMap Query SlowQueryStats,
+    agentQueryStats :: TMap Query SlowQueryStats
   }
