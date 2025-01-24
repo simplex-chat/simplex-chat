@@ -47,7 +47,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock (UTCTime, getCurrentTime, nominalDay)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
@@ -1019,7 +1019,7 @@ processChatCommand' vr = \case
         liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChat cRef@(ChatRef cType chatId) cdm -> withUser' $ \user@User {userId} -> case cType of
+  APIDeleteChat cRef@(ChatRef cType chatId) cdm -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withFastStore $ \db -> getContact db vr user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
@@ -1060,31 +1060,31 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
-      Group gInfo@GroupInfo {membership} members <- timeItM "getGroup" $ withFastStore $ \db -> getGroup db vr user chatId
+      Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user chatId
       let GroupMember {memberRole = membershipMemRole} = membership
       let isOwner = membershipMemRole == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
-      filesInfo <- timeItM "getGroupFileInfo" $ withFastStore' $ \db -> getGroupFileInfo db user gInfo
+      filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId . procCmd $ do
-        timeItM "cancelFilesInProgress" $ cancelFilesInProgress user filesInfo
-        timeItM "deleteFilesLocally" $ deleteFilesLocally filesInfo
+        cancelFilesInProgress user filesInfo
+        deleteFilesLocally filesInfo
         let doSendDel = memberActive membership && isOwner
         liftIO $ print $ "doSendDel = " <> show doSendDel
-        when doSendDel . void $ timeItM "sendGroupMessage' XGrpDel" $ sendGroupMessage' user gInfo members XGrpDel
-        timeItM "deleteGroupLinkIfExists" $ deleteGroupLinkIfExists user gInfo
-        timeItM "deleteMembersConnections'" $ deleteMembersConnections' user members doSendDel
-        timeItM "updateCIGroupInvitationStatus" $ updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
+        when doSendDel . void $ sendGroupMessage' user gInfo members XGrpDel
+        deleteGroupLinkIfExists user gInfo
+        deleteMembersConnections' user members doSendDel
+        updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
-        timeItM "deleteGroupConnectionsAndFiles" $ withFastStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        timeItM "deleteGroupItemsAndMembers" $ withFastStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        timeItM "deleteGroup" $ withFastStore' $ \db -> deleteGroup db user gInfo
+        withFastStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+        withFastStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
+        withFastStore' $ \db -> deleteGroup db user gInfo
         let contactIds = mapMaybe memberContactId members
-        (errs1, (errs2, connIds)) <- timeItM "batch deleteUnusedContact" $ lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
+        (errs1, (errs2, connIds)) <- lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
         let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
         unless (null errs) $ toView $ CRChatErrors (Just user) errs
-        timeItM "batch deleteAgentConnectionsAsync" $ deleteAgentConnectionsAsync user $ concat connIds
+        deleteAgentConnectionsAsync user $ concat connIds
         pure $ CRGroupDeletedUser user gInfo
       where
         deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, [ConnId]))
@@ -2092,19 +2092,19 @@ processChatCommand' vr = \case
               -- undeleted "member connected" chat item will prevent deletion of member record
               deleteOrUpdateMemberRecord user m
           pure $ CRUserDeletedMember user gInfo m {memberStatus = GSMemRemoved}
-  APILeaveGroup groupId -> withUser' $ \user@User {userId} -> do
-    Group gInfo@GroupInfo {membership} members <- timeItM "getGroup" $ withFastStore $ \db -> getGroup db vr user groupId
-    filesInfo <- timeItM "getGroupFileInfo" $ withFastStore' $ \db -> getGroupFileInfo db user gInfo
+  APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
+    Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
+    filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
     withGroupLock "leaveGroup" groupId . procCmd $ do
-      timeItM "getGroupFileInfo" $ cancelFilesInProgress user filesInfo
-      msg <- timeItM "sendGroupMessage'" $ sendGroupMessage' user gInfo members XGrpLeave
-      ci <- timeItM "saveSndChatItem" $ saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
+      cancelFilesInProgress user filesInfo
+      msg <- sendGroupMessage' user gInfo members XGrpLeave
+      ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
       -- TODO delete direct connections that were unused
-      timeItM "deleteGroupLinkIfExists" $ deleteGroupLinkIfExists user gInfo
+      deleteGroupLinkIfExists user gInfo
       -- member records are not deleted to keep history
-      timeItM "deleteMembersConnections'" $ deleteMembersConnections' user members True
-      timeItM "updateGroupMemberStatus" $ withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
+      deleteMembersConnections' user members True
+      withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
     CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)

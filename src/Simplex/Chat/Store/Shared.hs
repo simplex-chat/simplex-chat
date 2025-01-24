@@ -27,8 +27,6 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (diffUTCTime)
-import Simplex.Messaging.Util (diffToMilliseconds)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
@@ -694,12 +692,3 @@ addGroupChatTags :: DB.Connection -> GroupInfo -> IO GroupInfo
 addGroupChatTags db g@GroupInfo {groupId} = do
   chatTags <- getGroupChatTags db groupId
   pure (g :: GroupInfo) {chatTags}
-
-timeItIO :: String -> IO a -> IO a
-timeItIO s action = do
-  t1 <- getCurrentTime
-  a <- action
-  t2 <- getCurrentTime
-  let diff = diffToMilliseconds $ diffUTCTime t2 t1
-  print $ show diff <> " ms - " <> s
-  pure a
