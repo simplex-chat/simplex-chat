@@ -766,7 +766,7 @@ SEARCH i USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-SEARCH ri USING INDEX idx_chat_items_shared_msg_id (shared_msg_id=?) LEFT-JOIN
+SEARCH ri USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?) LEFT-JOIN
 SEARCH rm USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH rp USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH dbm USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
@@ -975,7 +975,7 @@ Query:
           LIMIT 1
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
 Query: 
           SELECT chat_item_id
@@ -985,8 +985,7 @@ Query:
           LIMIT 1
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
-USE TEMP B-TREE FOR ORDER BY
+SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
 Query: 
           SELECT chat_item_id, contact_id, group_id, note_folder_id
@@ -1139,7 +1138,7 @@ Query:
         
 Plan:
 SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
-SEARCH i USING INDEX idx_chat_items_shared_msg_id (shared_msg_id=?)
+SEARCH i USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 
 Query: 
           SELECT i.chat_item_id
@@ -1151,10 +1150,9 @@ Query:
           LIMIT 1
         
 Plan:
-SEARCH i USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH i USING INDEX idx_chat_items_group_id (group_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
-USE TEMP B-TREE FOR ORDER BY
 
 Query: 
           SELECT i.chat_item_id, i.contact_id, i.group_id, i.note_folder_id
@@ -2830,7 +2828,7 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
-SEARCH cc
+SEARCH cc USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
 SEARCH mh USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 SEARCH ch USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 2
@@ -2930,8 +2928,7 @@ Query:
         LIMIT 1
       
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
-USE TEMP B-TREE FOR ORDER BY
+SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
 Query: 
         SELECT chat_item_id
@@ -5121,7 +5118,7 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_mem
 SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
-SCAN connections USING COVERING INDEX idx_connections_group_member
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
 SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
@@ -5144,7 +5141,7 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_mem
 SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
-SCAN connections USING COVERING INDEX idx_connections_group_member
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
 SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
 SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
@@ -5159,7 +5156,7 @@ SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_grou
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group_id (group_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_group_id (fwd_from_group_id=?)
-SCAN chat_items USING COVERING INDEX idx_chat_items_groups_item_ts
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_id (group_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
 SEARCH user_contact_links USING COVERING INDEX idx_user_contact_links_group_id (group_id=?)
 SEARCH files USING COVERING INDEX idx_files_group_id (group_id=?)
@@ -5673,7 +5670,7 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3
 Plan:
-SCAN connections
+SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
 Query: UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?
 Plan:
