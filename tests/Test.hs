@@ -34,7 +34,8 @@ main :: IO ()
 main = do
   setLogLevel LogError
 #if !defined(dbPostgres)
-  queryStats <- TM.emptyIO
+  chatQueryStats <- TM.emptyIO
+  agentQueryStats <- TM.emptyIO
 #endif
   withGlobalLogging logCfg . hspec
 #if defined(dbPostgres)
@@ -59,7 +60,7 @@ main = do
       around testBracket
         . after_ (dropAllSchemasExceptSystem testDBConnectInfo)
 #else
-      around (testBracket queryStats)
+      around (testBracket chatQueryStats agentQueryStats)
 #endif
         $ do
 #if !defined(dbPostgres)
@@ -73,10 +74,11 @@ main = do
           xdescribe'' "Save query plans" saveQueryPlans
 #endif
   where
-#if defined(dbPostgres)    
+#if defined(dbPostgres)
     testBracket test = withSmpServer $ tmpBracket $ test . TestParams
 #else
-    testBracket queryStats test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, queryStats}
+    testBracket chatQueryStats agentQueryStats test =
+      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats}
 #endif
     tmpBracket test = do
       t <- getSystemTime

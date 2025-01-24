@@ -20,12 +20,13 @@ import qualified Data.Text.IO as T
 import Database.SQLite.Simple (Query (..))
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
+import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
-import Simplex.Messaging.Agent.Store.Interface
-import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.Interface
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
+import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Util (ifM, tshow, whenM)
 import System.Directory (doesFileExist, removeFile)
 import System.Process (readCreateProcess, shell)
@@ -33,6 +34,9 @@ import Test.Hspec
 
 testDB :: FilePath
 testDB = "tests/tmp/test_chat.db"
+
+testAgentDB :: FilePath
+testAgentDB = "tests/tmp/test_agent.db"
 
 appSchema :: FilePath
 appSchema = "src/Simplex/Chat/Store/SQLite/Migrations/chat_schema.sql"
@@ -53,8 +57,11 @@ appSchema = "src/Simplex/Chat/Store/SQLite/Migrations/chat_schema.sql"
 appLint :: FilePath
 appLint = "src/Simplex/Chat/Store/SQLite/Migrations/chat_lint.sql"
 
-appQueryPlans :: FilePath
-appQueryPlans = "src/Simplex/Chat/Store/SQLite/Migrations/chat_query_plans.txt"
+appChatQueryPlans :: FilePath
+appChatQueryPlans = "src/Simplex/Chat/Store/SQLite/Migrations/chat_query_plans.txt"
+
+appAgentQueryPlans :: FilePath
+appAgentQueryPlans = "src/Simplex/Chat/Store/SQLite/Migrations/agent_query_plans.txt"
 
 testSchema :: FilePath
 testSchema = "tests/tmp/test_agent_schema.sql"
@@ -138,18 +145,35 @@ getLintFKeyIndexes dbPath lintPath = do
   lint `deepseq` pure lint
 
 saveQueryPlans :: SpecWith TestParams
-saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {queryStats} -> do
-  savedPlans <- ifM (doesFileExist appQueryPlans) (T.readFile appQueryPlans) (pure "")
-  savedPlans `deepseq` pure ()
-  queries <- sort . M.keys <$> readTVarIO queryStats
-  Right st <- createChatStore (DBOpts testDB "" False True TQOff) MCError
-  plans' <- withConnection st $ \db -> do
-    DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)"
-    mapM (getQueryPlan db) queries
-  let savedPlans' = T.unlines plans'
-  T.writeFile appQueryPlans savedPlans'
-  savedPlans' `shouldBe` savedPlans
+saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryStats, agentQueryStats} -> do
+  (chatSavedPlans, chatSavedPlans') <-
+    updatePlans
+      appChatQueryPlans
+      chatQueryStats
+      (createChatStore (DBOpts testDB "" False True TQOff) MCError)
+      (`DB.execute_` "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)")
+  (agentSavedPlans, agentSavedPlans') <-
+    updatePlans
+      appAgentQueryPlans
+      agentQueryStats
+      (createAgentStore (DBOpts testAgentDB "" False True TQOff) MCError)
+      (const $ pure ())
+  chatSavedPlans' `shouldBe` chatSavedPlans
+  agentSavedPlans' `shouldBe` agentSavedPlans
+  removeFile testDB
+  removeFile testAgentDB
   where
+    updatePlans plansFile statsSel createStore prepareStore = do
+      savedPlans <- ifM (doesFileExist plansFile) (T.readFile plansFile) (pure "")
+      savedPlans `deepseq` pure ()
+      queries <- sort . M.keys <$> readTVarIO statsSel
+      Right st <- createStore
+      plans' <- withConnection st $ \db -> do
+        void $ prepareStore db
+        mapM (getQueryPlan db) queries
+      let savedPlans' = T.unlines plans'
+      T.writeFile plansFile savedPlans'
+      pure (savedPlans, savedPlans')
     getQueryPlan :: DB.Connection -> Query -> IO Text
     getQueryPlan db q =
       (("Query: " <> fromQuery q) <>) . result <$> E.try (DB.query_ db $ "explain query plan " <> q)
