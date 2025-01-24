@@ -9,6 +9,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -88,8 +89,8 @@ fun GroupMentions(
   val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
   val offsetY = remember { Animatable(maxHeightInPx) }
 
-  LaunchedEffect(mentionSelection.value, composeState.value.mentions.size) {
-    if (mentionSelection.value != null && composeState.value.mentions.size < MAX_NUMBER_OF_MENTIONS) {
+  LaunchedEffect(mentionSelection.value) {
+    if (mentionSelection.value != null) {
       offsetY.animateTo(
         targetValue = 0f,
         animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
@@ -110,14 +111,16 @@ fun GroupMentions(
   ) {
     itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
       Divider()
+      val existingMention = composeState.value.mentions.find { it.memberId == member.memberId }
+      val enabled = composeState.value.mentions.size < MAX_NUMBER_OF_MENTIONS || existingMention != null
       Row(
         Modifier
           .fillMaxWidth()
-          .clickable {
+          .alpha(if (enabled) 1f else 0.6f)
+          .clickable(enabled = enabled) {
             val selection = mentionSelection.value ?: return@clickable
             val msg = composeState.value.message
             val nameHasSpaces = member.displayName.contains(' ')
-            val existingMention = composeState.value.mentions.find { it.memberId == member.memberId }
             val displayName = existingMention?.memberName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
             val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
               add(MemberMention(displayName, member.memberId))
