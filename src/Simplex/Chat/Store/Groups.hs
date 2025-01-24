@@ -641,17 +641,17 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
 
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
-  timeItIO "[deleteGroupConnectionsAndFiles] DELETE FROM connections" $ forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
-  timeItIO "[deleteGroupConnectionsAndFiles] DELETE FROM files" $ DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
+  DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupItemsAndMembers db user@User {userId} g@GroupInfo {groupId} members = do
-  timeItIO "[deleteGroupItemsAndMembers] DELETE FROM chat_items" $ DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  timeItIO "[deleteGroupItemsAndMembers] cleanupHostGroupLinkConn_" $ void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
-  timeItIO "[deleteGroupItemsAndMembers] DELETE FROM group_members" $ DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
+  DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   currentTs <- getCurrentTime
-  timeItIO "[deleteGroupItemsAndMembers] forM_ createMemberCleanupRecord_" $ forM_ members $ createMemberCleanupRecord_ db user currentTs
-  forM_ (incognitoMembershipProfile g) $ \p -> timeItIO "[deleteGroupItemsAndMembers] deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user (localProfileId p)
+  forM_ members $ createMemberCleanupRecord_ db user currentTs
+  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
@@ -670,10 +670,10 @@ deleteGroupItemsAndMembers db user@User {userId} g@GroupInfo {groupId} members =
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db user@User {userId} g@GroupInfo {groupId, localDisplayName} = do
-  timeItIO "[deleteGroup] deleteGroupProfile_" $ deleteGroupProfile_ db userId groupId
-  timeItIO "[deleteGroup] DELETE FROM groups" $ DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  timeItIO "[deleteGroup] safeDeleteLDN" $ safeDeleteLDN db user localDisplayName
-  forM_ (incognitoMembershipProfile g) $ \p -> timeItIO "[deleteGroup] deleteUnusedIncognitoProfileById_" $ deleteUnusedIncognitoProfileById_ db user (localProfileId p)
+  deleteGroupProfile_ db userId groupId
+  DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  safeDeleteLDN db user localDisplayName
+  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =
