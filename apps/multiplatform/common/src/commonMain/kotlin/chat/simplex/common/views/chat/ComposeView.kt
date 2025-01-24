@@ -65,6 +65,12 @@ data class LiveMessage(
 )
 
 @Serializable
+data class GroupMemberMention(
+  val memberName: String,
+  val member: GroupMember
+)
+
+@Serializable
 data class ComposeState(
   val message: String = "",
   val liveMessage: LiveMessage? = null,
@@ -72,9 +78,9 @@ data class ComposeState(
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: List<MemberMention> = emptyList()
+  val mentions: List<GroupMemberMention> = emptyList()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<MemberMention> = emptyList()): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<GroupMemberMention> = emptyList()): this(
     editingItem.content.text,
     liveMessage,
     chatItemPreview(editingItem),
@@ -82,6 +88,9 @@ data class ComposeState(
     useLinkPreviews = useLinkPreviews,
     mentions = mentions
   )
+
+  val memberMentions: List<MemberMention>
+    get() = this.mentions.map { MemberMention(it.memberName, it.member.memberId) }
 
   val editing: Boolean
     get() =
@@ -578,7 +587,7 @@ fun ComposeView(
       if (cs.message.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.mentions)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions)
           } else {
             message
           }
@@ -690,7 +699,7 @@ fun ComposeView(
         val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl,
-          mentions = cs.mentions
+          mentions = cs.memberMentions
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {

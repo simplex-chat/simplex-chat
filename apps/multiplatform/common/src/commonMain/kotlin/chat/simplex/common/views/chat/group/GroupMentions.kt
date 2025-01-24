@@ -54,20 +54,33 @@ fun GroupMentions(
     }
   }
 
-  LaunchedEffect(chatInfo.groupInfo.groupId) {
+  LaunchedEffect(chatInfo.groupInfo.groupId, composeState.value.mentions) {
     snapshotFlow { mentionSelectionText }
       .distinctUntilChanged()
       .collect { txt ->
-        if (txt != null) {
-          // TODO - [MENTIONS] replace with real api
-          val gms = chatModel.controller.apiListMembers(rhId, chatInfo.groupInfo.groupId)
-          val search = txt.trim().removePrefix(QUOTED_MENTION_START).removePrefix(MENTION_START).removeSuffix(QUOTE.toString())
-
-          membersToMention.value = gms.filter { gm ->
-            gm.displayName.contains(search, ignoreCase = true) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
-          }
-        } else if (membersToMention.value.isNotEmpty()) {
+        if (txt == null) {
           membersToMention.value = emptyList()
+          return@collect
+        }
+
+        val txtAsMention = composeState.value.mentions.firstOrNull {
+          if (it.memberName.contains(WORD_SEPARATOR)) {
+            txt.contains("${QUOTED_MENTION_START}${it.memberName}${QUOTE_END}")
+          } else {
+            txt.contains("${MENTION_START}${it.memberName} ")
+          }
+        }
+        if (txtAsMention != null) {
+          membersToMention.value = listOf(txtAsMention.member)
+          return@collect
+        }
+
+        // TODO - [MENTIONS] replace with real api
+        val gms = chatModel.controller.apiListMembers(rhId, chatInfo.groupInfo.groupId)
+        val search = txt.trim().removePrefix(QUOTED_MENTION_START).removePrefix(MENTION_START).removeSuffix(QUOTE.toString())
+
+        membersToMention.value = gms.filter { gm ->
+          gm.displayName.contains(search, ignoreCase = true) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
         }
       }
   }
@@ -111,7 +124,7 @@ fun GroupMentions(
   ) {
     itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
       Divider()
-      val existingMention = composeState.value.mentions.find { it.memberId == member.memberId }
+      val existingMention = composeState.value.mentions.find { it.member.memberId == member.memberId }
       val enabled = composeState.value.mentions.size < MAX_NUMBER_OF_MENTIONS || existingMention != null
       Row(
         Modifier
@@ -123,7 +136,7 @@ fun GroupMentions(
             val nameHasSpaces = member.displayName.contains(' ')
             val displayName = existingMention?.memberName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
             val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
-              add(MemberMention(displayName, member.memberId))
+              add(GroupMemberMention(displayName, member))
             }
 
             composeState.value = composeState.value.copy(
@@ -189,7 +202,7 @@ private fun parseActiveMentionRange(textSelection: Pair<Int, Int>, text: String)
   return startM to endM
 }
 
-private fun uniqueMentionName(n: Int, name: String, mentions: List<MemberMention>): String {
+private fun uniqueMentionName(n: Int, name: String, mentions: List<GroupMemberMention>): String {
   val tryName = if (n == 0) name else "${name}_$n"
   val used = mentions.any { it.memberName == tryName }
   return if (used) uniqueMentionName(n + 1, name, mentions) else tryName
