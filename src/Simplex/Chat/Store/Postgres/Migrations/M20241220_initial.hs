@@ -676,6 +676,13 @@ CREATE TABLE chat_tags_chats(
   group_id BIGINT REFERENCES groups ON DELETE CASCADE,
   chat_tag_id BIGINT NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
+CREATE TABLE group_members_cleanup(
+  group_member_cleanup_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
+  local_display_name TEXT NOT NULL,
+  contact_profile_id BIGINT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT (now())
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1029,5 +1036,8 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_group_members_cleanup_user_id ON group_members_cleanup(
+  user_id
 );
 |]

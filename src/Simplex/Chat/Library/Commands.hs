@@ -3525,6 +3525,8 @@ cleanupManager = do
       liftIO $ threadDelay' stepDelay
       cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
+      withStore' $ \db -> processMemberCleanupRecords db user
+      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts

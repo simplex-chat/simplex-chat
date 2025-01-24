@@ -565,7 +565,10 @@ assertNotUser db User {userId} Contact {contactId, localDisplayName} = do
   when (isJust r) $ throwError $ SEProhibitedDeleteUser userId contactId
 
 safeDeleteLDN :: DB.Connection -> User -> ContactName -> IO ()
-safeDeleteLDN db User {userId} localDisplayName = do
+safeDeleteLDN db User {userId} = safeDeleteLDN' db userId
+
+safeDeleteLDN' :: DB.Connection -> UserId -> ContactName -> IO ()
+safeDeleteLDN' db userId localDisplayName = do
   DB.execute
     db
     [sql|
