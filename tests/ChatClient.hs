@@ -23,7 +23,6 @@ import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
@@ -46,7 +45,6 @@ import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -71,6 +69,8 @@ import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
 #else
 import Data.ByteArray (ScrubbedBytes)
+import qualified Data.Map.Strict as M
+import Simplex.Messaging.Agent.Store.Common (withConnection)
 import System.FilePath ((</>))
 #endif
 
@@ -329,6 +329,7 @@ stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}
 #endif
   closeDBStore chatStore
   threadDelay 200000
+#if !defined(dbPostgres)
   where
     combineStats
       DB.SlowQueryStats {count, timeMax, timeAvg, errs}
@@ -339,6 +340,7 @@ stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}
             timeAvg = (timeAvg * count + timeAvg' * count') `div` (count + count'),
             errs = M.unionWith (+) errs errs'
           }
+#endif
 
 withNewTestChat :: HasCallStack => TestParams -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChat ps = withNewTestChatCfgOpts ps testCfg testOpts

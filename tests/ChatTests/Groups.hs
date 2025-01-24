@@ -21,7 +21,6 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -35,6 +34,7 @@ import Test.Hspec hiding (it)
 import Database.PostgreSQL.Simple (Only (..))
 #else
 import Database.SQLite.Simple (Only (..))
+import Simplex.Chat.Options.DB
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 #endif

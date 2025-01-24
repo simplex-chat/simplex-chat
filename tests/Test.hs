@@ -69,10 +69,12 @@ main = do
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
           describe "Remote session" remoteTests
+#if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans
+#endif
   where
 #if defined(dbPostgres)    
-    testBracket test = withSmpServer $ tmpBracket $ test
+    testBracket test = withSmpServer $ tmpBracket $ test . TestParams
 #else
     testBracket queryStats test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, queryStats}
 #endif
