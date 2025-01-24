@@ -1070,7 +1070,6 @@ processChatCommand' vr = \case
         cancelFilesInProgress user filesInfo
         deleteFilesLocally filesInfo
         let doSendDel = memberActive membership && isOwner
-        liftIO $ print $ "doSendDel = " <> show doSendDel
         when doSendDel . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
