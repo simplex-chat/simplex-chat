@@ -2041,4 +2041,5 @@
     <string name="cant_call_member_send_message_alert_text">Pošlete zprávu pro povolení volání.</string>
     <string name="accept_conditions">Přijmout podmínky</string>
     <string name="operator_conditions_accepted">Přijaté podmínky</string>
+    <string name="chat_list_add_list">Přidat seznam</string>
 </resources>

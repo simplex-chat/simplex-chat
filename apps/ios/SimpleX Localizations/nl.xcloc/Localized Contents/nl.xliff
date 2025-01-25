@@ -4183,9 +4183,9 @@ Binnenkort meer verbeteringen!</target>
         <target>Japanse interface</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join" xml:space="preserve">
+      <trans-unit id="Join" xml:space="preserve" approved="no">
         <source>Join</source>
-        <target>Word lid van</target>
+        <target state="translated">Word lid</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
@@ -6078,9 +6078,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Groep profiel opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase and open chat" xml:space="preserve">
+      <trans-unit id="Save passphrase and open chat" xml:space="preserve" approved="no">
         <source>Save passphrase and open chat</source>
-        <target>Bewaar het wachtwoord en open je chats</target>
+        <target state="translated">Wachtwoord opslaan en open je chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
@@ -6951,9 +6951,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Krachtig</target>
         <note>blur media</note>
       </trans-unit>
-      <trans-unit id="Submit" xml:space="preserve">
+      <trans-unit id="Submit" xml:space="preserve" approved="no">
         <source>Submit</source>
-        <target>Indienen</target>
+        <target state="translated">Bevestigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscribed" xml:space="preserve">
@@ -7298,9 +7298,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze chat wordt beschermd door quantum bestendige end-to-end codering.</target>
         <note>E2EE info chat item</note>
       </trans-unit>
-      <trans-unit id="This device name" xml:space="preserve">
+      <trans-unit id="This device name" xml:space="preserve" approved="no">
         <source>This device name</source>
-        <target>Deze apparaatnaam</target>
+        <target state="translated">Naam van dit apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
@@ -7787,9 +7787,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruikersnaam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
+      <trans-unit id="Using SimpleX Chat servers." xml:space="preserve" approved="no">
         <source>Using SimpleX Chat servers.</source>
-        <target>SimpleX Chat servers gebruiken.</target>
+        <target state="translated">Gebruik SimpleX Chat servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify code with desktop" xml:space="preserve">
@@ -8621,9 +8621,9 @@ Verbindingsverzoek herhalen?</target>
         <target>geblokkeerd</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
-      <trans-unit id="blocked %@" xml:space="preserve">
+      <trans-unit id="blocked %@" xml:space="preserve" approved="no">
         <source>blocked %@</source>
-        <target>geblokkeerd %@</target>
+        <target state="translated">blokkeerde %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="blocked by admin" xml:space="preserve">
@@ -9238,9 +9238,9 @@ Verbindingsverzoek herhalen?</target>
         <target>heeft je verwijderd</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested to connect" xml:space="preserve">
+      <trans-unit id="requested to connect" xml:space="preserve" approved="no">
         <source>requested to connect</source>
-        <target>gevraagd om verbinding te maken</target>
+        <target state="translated">verzocht om verbinding te maken</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="saved" xml:space="preserve">
