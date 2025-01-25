@@ -8,6 +8,7 @@ module Bots.BroadcastTests where
 import Broadcast.Bot
 import Broadcast.Options
 import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (bracket)
@@ -21,7 +22,7 @@ import Test.Hspec hiding (it)
 import System.FilePath ((</>))
 #endif
 
-broadcastBotTests :: SpecWith FilePath
+broadcastBotTests :: SpecWith TestParams
 broadcastBotTests = do
   it "should broadcast message" testBroadcastMessages
 
@@ -34,8 +35,8 @@ withBroadcastBot opts test =
 broadcastBotProfile :: Profile
 broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", image = Nothing, contactLink = Nothing, preferences = Nothing}
 
-mkBotOpts :: FilePath -> [KnownContact] -> BroadcastBotOpts
-mkBotOpts tmp publishers =
+mkBotOpts :: TestParams -> [KnownContact] -> BroadcastBotOpts
+mkBotOpts ps publishers =
   BroadcastBotOpts
     { coreOptions =
         testCoreOpts
@@ -44,7 +45,7 @@ mkBotOpts tmp publishers =
 #if defined(dbPostgres)
                 {dbSchemaPrefix = "client_" <> botDbPrefix}
 #else
-                {dbFilePrefix = tmp </> botDbPrefix}
+                {dbFilePrefix = tmpPath ps </> botDbPrefix}
 #endif
 
           },
@@ -56,19 +57,19 @@ mkBotOpts tmp publishers =
 botDbPrefix :: FilePath
 botDbPrefix = "broadcast_bot"
 
-testBroadcastMessages :: HasCallStack => FilePath -> IO ()
-testBroadcastMessages tmp = do
+testBroadcastMessages :: HasCallStack => TestParams -> IO ()
+testBroadcastMessages ps = do
   botLink <-
-    withNewTestChat tmp botDbPrefix broadcastBotProfile $ \bc_bot ->
-      withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps botDbPrefix broadcastBotProfile $ \bc_bot ->
+      withNewTestChat ps "alice" aliceProfile $ \alice -> do
         connectUsers bc_bot alice
         bc_bot ##> "/ad"
         getContactLink bc_bot True
-  let botOpts = mkBotOpts tmp [KnownContact 2 "alice"]
+  let botOpts = mkBotOpts ps [KnownContact 2 "alice"]
   withBroadcastBot botOpts $
-    withTestChat tmp "alice" $ \alice ->
-      withNewTestChat tmp "bob" bobProfile $ \bob ->
-        withNewTestChat tmp "cath" cathProfile $ \cath -> do
+    withTestChat ps "alice" $ \alice ->
+      withNewTestChat ps "bob" bobProfile $ \bob ->
+        withNewTestChat ps "cath" cathProfile $ \cath -> do
           alice <## "1 contacts connected (use /cs for the list)"
           bob `connectVia` botLink
           bob #> "@broadcast_bot hello"

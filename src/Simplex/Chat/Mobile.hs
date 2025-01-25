@@ -16,7 +16,6 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
-import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -57,8 +56,10 @@ import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
 #if !defined(dbPostgres)
+import Data.ByteArray (ScrubbedBytes)
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 #endif
 
 data DBMigrationResult
@@ -237,7 +238,7 @@ getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 -- only used in tests
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = do
-  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, vacuumOnMigration = True}
+  let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, trackQueries = DB.TQSlow 5000, vacuumOnMigration = True}
   chatMigrateInitKey chatDBOpts False confirm False
 #endif
 

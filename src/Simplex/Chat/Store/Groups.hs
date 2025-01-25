@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Groups
     deleteGroupItemsAndMembers,
     deleteGroup,
     getUserGroups,
+    getUserGroupsToSubscribe,
     getUserGroupDetails,
     getUserGroupsWithSummary,
     getGroupSummary,
@@ -164,9 +165,13 @@ import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (eitherToMaybe, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
-
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple.SqlQQ (sql)
+#else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+#endif
 
 type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData, Maybe ConnReqContact, Maybe LocalAlias, Maybe Preferences))
 
@@ -588,6 +593,51 @@ getGroup db vr user groupId = do
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
 
+getGroupToSubscribe :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ShortGroup
+getGroupToSubscribe db User {userId, userContactId} groupId = do
+  shortInfo <- getGroupInfoToSubscribe
+  members <- liftIO getGroupMembersToSubscribe
+  pure $ ShortGroup shortInfo members
+  where
+    getGroupInfoToSubscribe :: ExceptT StoreError IO ShortGroupInfo
+    getGroupInfoToSubscribe = ExceptT $ do
+      firstRow toInfo (SEGroupNotFound groupId) $
+        DB.query
+          db
+          [sql|
+              SELECT g.local_display_name, mu.member_status
+              FROM groups g
+              JOIN group_members mu ON mu.group_id = g.group_id
+              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+                AND mu.member_status NOT IN (?,?,?)
+          |]
+          (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+      where
+        toInfo :: (GroupName, GroupMemberStatus) -> ShortGroupInfo
+        toInfo (groupName, membershipStatus) =
+          ShortGroupInfo groupId groupName membershipStatus
+    getGroupMembersToSubscribe :: IO [ShortGroupMember]
+    getGroupMembersToSubscribe = do
+      map toShortMember
+        <$> DB.query
+          db
+          [sql|
+              SELECT m.group_member_id, m.local_display_name, c.agent_conn_id
+              FROM group_members m
+              JOIN connections c ON c.connection_id = (
+                SELECT max(cc.connection_id)
+                FROM connections cc
+                WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
+              )
+              WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
+                AND m.member_status NOT IN (?,?,?)
+          |]
+          (userId, userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+      where
+        toShortMember :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
+        toShortMember (groupMemberId, localDisplayName, agentConnId) =
+          ShortGroupMember groupMemberId groupId localDisplayName agentConnId
+
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
@@ -641,6 +691,11 @@ getUserGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
 getUserGroups db vr user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroup db vr user) groupIds
+
+getUserGroupsToSubscribe :: DB.Connection -> User -> IO [ShortGroup]
+getUserGroupsToSubscribe db user@User {userId} = do
+  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
+  rights <$> mapM (runExceptT . getGroupToSubscribe db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do

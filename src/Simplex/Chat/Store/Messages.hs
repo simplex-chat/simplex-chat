@@ -416,20 +416,20 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, created_at, updated_at, item_live, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ((userId, msgId_) :. idsRow :. itemRow :. quoteRow' :. forwardedFromRow)
   ciId <- insertedRowId db
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId) :. (UTCTime, UTCTime, Maybe BoolInt) :. (Maybe Int, Maybe UTCTime)
-    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember) :. (createdAt, createdAt, BI <$> (justTrue live)) :. ciTimedRow timed
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt) :. (Maybe Int, Maybe UTCTime)
+    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> (justTrue live)) :. ciTimedRow timed
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
     idsRow :: (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
     idsRow = case chatDirection of
@@ -439,6 +439,10 @@ createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent q
       CDGroupSnd GroupInfo {groupId} -> (Nothing, Just groupId, Nothing, Nothing)
       CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
       CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
+    includeInHistory :: Bool
+    includeInHistory =
+      let (_, groupId_, _, _) = idsRow
+       in isJust groupId_ && isJust (ciMsgContent ciContent) && ((msgContentTag <$> ciMsgContent ciContent) /= Just MCReport_)
     forwardedFromRow :: (Maybe CIForwardedFromTag, Maybe Text, Maybe MsgDirection, Maybe Int64, Maybe Int64, Maybe Int64)
     forwardedFromRow = case itemForwarded of
       Nothing ->
@@ -3075,12 +3079,11 @@ getGroupHistoryItems db user@User {userId} GroupInfo {groupId} m count = do
             SELECT i.chat_item_id
             FROM chat_items i
             LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
-            WHERE i.user_id = ? AND i.group_id = ?
-              AND i.item_content_tag IN (?,?)
-              AND i.msg_content_tag NOT IN (?)
+            WHERE s.group_snd_item_status_id IS NULL
+              AND i.user_id = ? AND i.group_id = ?
+              AND i.include_in_history = 1
               AND i.item_deleted = 0
-              AND s.group_snd_item_status_id IS NULL
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
-          (groupMemberId' m, userId, groupId, rcvMsgContentTag, sndMsgContentTag, MCReport_, count)
+          (groupMemberId' m, userId, groupId, count)

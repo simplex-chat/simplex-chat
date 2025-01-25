@@ -220,6 +220,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20241230_reports
           Simplex.Chat.Store.SQLite.Migrations.M20250105_indexes
           Simplex.Chat.Store.SQLite.Migrations.M20250115_chat_ttl
+          Simplex.Chat.Store.SQLite.Migrations.M20250122_chat_items_include_in_history
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -445,6 +446,7 @@ test-suite simplex-chat-test
       ChatTests
       ChatTests.ChatList
       ChatTests.Direct
+      ChatTests.DBUtils
       ChatTests.Files
       ChatTests.Forward
       ChatTests.Groups
@@ -469,8 +471,12 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Paths_simplex_chat
-  if !flag(client_postgres)
+  if flag(client_postgres)
       other-modules:
+          ChatTests.DBUtils.Postgres
+  else
+      other-modules:
+          ChatTests.DBUtils.SQLite
           MobileTests
           SchemaDump
           WebRTCTests
