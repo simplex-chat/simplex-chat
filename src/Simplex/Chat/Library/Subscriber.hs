@@ -92,10 +92,12 @@ smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
 
 processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
-processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
-  toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
-processAgentMessage _ connId DEL_CONN =
-  toView $ CRAgentConnDeleted (AgentConnId connId)
+processAgentMessage _ _ (DEL_RCVQS delQs) =
+  toView $ CRAgentRcvQueuesDeleted $ L.map rcvQ delQs
+  where
+    rcvQ (connId, server, rcvId, err_) = DeletedRcvQueue (AgentConnId connId) server (AgentQueueId rcvId) err_
+processAgentMessage _ _ (DEL_CONNS connIds) =
+  toView $ CRAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
   toView $ CRChatError Nothing $ ChatErrorAgent e Nothing
 processAgentMessage corrId connId msg = do
