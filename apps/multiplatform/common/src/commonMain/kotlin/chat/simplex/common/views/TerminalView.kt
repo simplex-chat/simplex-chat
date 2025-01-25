@@ -111,7 +111,8 @@ fun TerminalLayout(
             editPrevMessage = {},
             onMessageChange = ::onMessageChange,
             onFilesPasted = {},
-            textStyle = textStyle
+            textStyle = textStyle,
+            onSelectionChanged = { _, _ -> }
           )
         }
       }

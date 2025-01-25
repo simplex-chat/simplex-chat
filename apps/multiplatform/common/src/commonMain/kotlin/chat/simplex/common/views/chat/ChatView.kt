@@ -135,6 +135,7 @@ fun ChatView(
         val perChatTheme = remember(chatInfo, CurrentColors.value.base) { if (chatInfo is ChatInfo.Direct) chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
         val overrides = if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get()) else null
         val fullDeleteAllowed = remember(chatInfo) { chatInfo.featureEnabled(ChatFeature.FullDelete) }
+
         SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
           val onSearchValueChanged: (String) -> Unit = onSearchValueChanged@{ value ->
             if (searchText.value == value) return@onSearchValueChanged
@@ -151,7 +152,7 @@ fun ChatView(
             reversedChatItems = reversedChatItems,
             unreadCount,
             composeState,
-            composeView = {
+            composeView = { textSelection ->
               if (selectedChatItems.value == null) {
                 Column(
                   Modifier.fillMaxWidth(),
@@ -172,7 +173,8 @@ fun ChatView(
                   }
                   ComposeView(
                     chatModel, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
-                    showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+                    showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } },
+                    textSelection = textSelection
                   )
                 }
               } else {
@@ -663,7 +665,7 @@ fun ChatLayout(
   reversedChatItems: State<List<ChatItem>>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
-  composeView: (@Composable () -> Unit),
+  composeView: (@Composable (MutableState<Pair<Int, Int>>) -> Unit),
   groupReports: State<GroupReports>,
   scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
@@ -740,9 +742,10 @@ fun ChatLayout(
         val chatInfo = remember { chatInfo }.value
         val oneHandUI = remember { appPrefs.oneHandUI.state }
         val chatBottomBar = remember { appPrefs.chatBottomBar.state }
+        val textSelection = remember { mutableStateOf(0 to 0) }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chatInfo != null) {
-            Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
               // disables scrolling to top of chat item on click inside the bubble
               CompositionLocalProvider(LocalBringIntoViewSpec provides object : BringIntoViewSpec {
                 override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
@@ -754,6 +757,20 @@ fun ChatLayout(
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
                   setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
                 )
+              }
+              if (chatInfo is ChatInfo.Group && composeState.value.message.isNotEmpty()) {
+                Column(
+                  Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = composeViewHeight.value)
+                ) {
+                  GroupMentions(
+                    rhId = remoteHostId,
+                    composeState = composeState,
+                    textSelection = textSelection,
+                    chatInfo = chatInfo,
+                  )
+                }
               }
             }
           }
@@ -801,7 +818,7 @@ fun ChatLayout(
                 .navigationBarsPadding()
                 .then(if (oneHandUI.value && chatBottomBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
             ) {
-              composeView()
+              composeView(textSelection)
             }
           }
         }

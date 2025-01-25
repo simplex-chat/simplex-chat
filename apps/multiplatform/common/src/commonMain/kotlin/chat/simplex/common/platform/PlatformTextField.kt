@@ -19,5 +19,6 @@ expect fun PlatformTextField(
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  onSelectionChanged: (Int, Int) -> Unit,
   onDone: () -> Unit,
 )

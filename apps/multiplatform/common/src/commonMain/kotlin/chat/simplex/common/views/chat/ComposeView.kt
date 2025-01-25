@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -64,21 +65,32 @@ data class LiveMessage(
 )
 
 @Serializable
+data class GroupMemberMention(
+  val memberName: String,
+  val member: GroupMember
+)
+
+@Serializable
 data class ComposeState(
   val message: String = "",
   val liveMessage: LiveMessage? = null,
   val preview: ComposePreview = ComposePreview.NoPreview,
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
-  val useLinkPreviews: Boolean
+  val useLinkPreviews: Boolean,
+  val mentions: List<GroupMemberMention> = emptyList()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<GroupMemberMention> = emptyList()): this(
     editingItem.content.text,
     liveMessage,
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),
-    useLinkPreviews = useLinkPreviews
+    useLinkPreviews = useLinkPreviews,
+    mentions = mentions
   )
+
+  val memberMentions: List<MemberMention>
+    get() = this.mentions.map { MemberMention(it.memberName, it.member.memberId) }
 
   val editing: Boolean
     get() =
@@ -286,7 +298,8 @@ fun ComposeView(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   attachmentOption: MutableState<AttachmentOption?>,
-  showChooseAttachment: () -> Unit
+  showChooseAttachment: () -> Unit,
+  textSelection: MutableState<Pair<Int, Int>>
 ) {
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   fun isSimplexLink(link: String): Boolean =
@@ -310,7 +323,6 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
   val recState: MutableState<RecordingState> = remember { mutableStateOf(RecordingState.NotStarted) }
-
   AttachmentSelection(composeState, attachmentOption, composeState::processPickedFile) { uris, text -> CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(uris, text) } }
 
   fun loadLinkPreview(url: String, wait: Long? = null) {
@@ -403,13 +415,13 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: List<MemberMention>): ChatItem? {
     val cInfo = chat.chatInfo
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(
         rh = chat.remoteHostId,
         noteFolderId = chat.chatInfo.apiId,
-        composedMessages = listOf(ComposedMessage(file, null, mc))
+        composedMessages = listOf(ComposedMessage(file, null, mc, mentions))
       )
     else
       chatModel.controller.apiSendMessages(
@@ -418,7 +430,7 @@ fun ComposeView(
         id = cInfo.apiId,
         live = live,
         ttl = ttl,
-        composedMessages = listOf(ComposedMessage(file, quoted, mc))
+        composedMessages = listOf(ComposedMessage(file, quoted, mc, mentions))
       )
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
@@ -575,7 +587,7 @@ fun ComposeView(
       if (cs.message.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions)
           } else {
             message
           }
@@ -686,7 +698,8 @@ fun ComposeView(
         }
         val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
-          ttl = ttl
+          ttl = ttl,
+          mentions = cs.memberMentions
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {
@@ -1128,7 +1141,8 @@ fun ComposeView(
           editPrevMessage = ::editPrevMessage,
           onFilesPasted = { composeState.onFilesAttached(it) },
           onMessageChange = ::onMessageChange,
-          textStyle = textStyle
+          textStyle = textStyle,
+          onSelectionChanged = { start, end -> textSelection.value = start to end },
         )
       }
     }
