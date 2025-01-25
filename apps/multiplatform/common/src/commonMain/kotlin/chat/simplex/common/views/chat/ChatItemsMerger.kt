@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.chatModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -240,14 +239,13 @@ data class ActiveChatState (
   }
 }
 
-fun visibleItemIndexesNonReversed(mergedItems: State<MergedItems>, listState: LazyListState): IntRange {
+fun visibleItemIndexesNonReversed(mergedItems: State<MergedItems>, reversedItemsSize: Int, listState: LazyListState): IntRange {
   val zero = 0 .. 0
   if (listState.layoutInfo.totalItemsCount == 0) return zero
   val newest = mergedItems.value.items.getOrNull(listState.firstVisibleItemIndex)?.startIndexInReversedItems
   val oldest = mergedItems.value.items.getOrNull(listState.layoutInfo.visibleItemsInfo.last().index)?.lastIndexInReversed()
   if (newest == null || oldest == null) return zero
-  val size = chatModel.chatItems.value.size
-  val range = size - oldest .. size - newest
+  val range = reversedItemsSize - oldest .. reversedItemsSize - newest
   if (range.first < 0 || range.last < 0) return zero
 
   // visible items mapped to their underlying data structure which is chatModel.chatItems

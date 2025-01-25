@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
@@ -36,10 +37,11 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
-import Simplex.Chat (defaultChatConfig, maxImageSize)
+import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
+import Simplex.Chat.Library.Commands (maxImageSize)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
@@ -57,7 +59,6 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
@@ -65,13 +66,16 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
 import Simplex.RemoteControl.Types (RCCtrlAddress (..), RCErrorType (..))
 import System.Console.ANSI.Types
+#if !defined(dbPostgres)
+import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
+#endif
 
 type CurrentTime = UTCTime
 
@@ -96,6 +100,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
+  CRChatTags u tags -> ttyUser u $ [viewJSON tags]
   CRApiParsedMarkdown ft -> [viewJSON ft]
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
@@ -149,10 +154,12 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     | otherwise -> []
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
+  CRTagsUpdated u _ _ -> ttyUser u ["chat tags updated"]
   CRChatItemsDeleted u deletions byUser timed -> case deletions of
     [ChatItemDeletion (AChatItem _ _ chat deletedItem) toItem] ->
       ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
     deletions' -> ttyUser u [sShow (length deletions') <> " messages deleted"]
+  CRGroupChatItemsDeleted u g ciIds byUser member_ -> ttyUser u [ttyGroup' g <> ": " <> sShow (length ciIds) <> " messages deleted by " <> if byUser then "user" else "member" <> maybe "" (\m -> " " <> ttyMember m) member_]
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRReactionMembers u memberReactions -> ttyUser u $ viewReactionMembers memberReactions
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
@@ -230,6 +237,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserProfileImage u p -> ttyUser u $ viewUserProfileImage p
   CRContactPrefsUpdated {user = u, fromContact, toContact} -> ttyUser u $ viewUserContactPrefsUpdated u fromContact toContact
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
+  CRGroupAliasUpdated u g -> ttyUser u $ viewGroupAliasUpdated g
   CRConnectionAliasUpdated u c -> ttyUser u $ viewConnectionAliasUpdated c
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CRGroupMemberUpdated {} -> []
@@ -284,7 +292,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CRNetworkStatus status conns -> if testView then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
   CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
-  CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
+  CRGroupInvitation u g -> ttyUser u [groupInvitationSub g]
   CRReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -299,8 +307,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
-  CRGroupEmpty u g -> ttyUser u [ttyFullGroup g <> ": group is empty"]
-  CRGroupRemoved u g -> ttyUser u [ttyFullGroup g <> ": you are no longer a member or group deleted"]
+  CRGroupEmpty u ShortGroupInfo {groupName = g} -> ttyUser u [ttyGroup g <> ": group is empty"]
   CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
@@ -315,9 +322,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   CRContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
-  CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
+  CRMemberSubError u ShortGroupInfo {groupName = g} ShortGroupMember {memberName = n} e -> ttyUser u [ttyGroup g <> " member " <> ttyContact n <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
-  CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
+  CRGroupSubscribed u ShortGroupInfo {groupName = g} -> ttyUser u $ viewGroupSubscribed g
   CRPendingSubSummary u _ -> ttyUser u []
   CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->
     ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
@@ -386,6 +393,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlStopped {rcStopReason} -> viewRemoteCtrlStopped rcStopReason
   CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption enabled"]
   CRSQLResult rows -> map plain rows
+#if !defined(dbPostgres)
+  CRArchiveExported archiveErrs -> if null archiveErrs then ["ok"] else ["archive export errors: " <> plain (show archiveErrs)]
+  CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
           ("count: " <> sShow count)
@@ -393,6 +403,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
+#endif
   CRDebugLocks {chatLockName, chatEntityLocks, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       "chat entity locks: " <> viewJSON chatEntityLocks,
@@ -437,8 +448,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError True logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError False logLevel testView e
   CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError False logLevel testView) errs
-  CRArchiveExported archiveErrs -> if null archiveErrs then ["ok"] else ["archive export errors: " <> plain (show archiveErrs)]
-  CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRTimedAction _ _ -> []
   CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
@@ -561,8 +570,8 @@ viewUsersList us =
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
 
-viewGroupSubscribed :: GroupInfo -> [StyledString]
-viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
+viewGroupSubscribed :: GroupName -> [StyledString]
+viewGroupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
 showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
@@ -1173,7 +1182,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
     groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s
+        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
       where
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
@@ -1188,6 +1197,9 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
               unmute = "you can " <> highlight ("/unmute #" <> viewGroupName g)
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
+        alias GroupInfo {localAlias}
+          | localAlias == "" = ""
+          | otherwise = " (alias: " <> plain localAlias <> ")"
 
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
@@ -1202,6 +1214,15 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
     joinText = case incognitoMembershipProfile g of
       Just mp -> " to join as " <> incognitoProfile' (fromLocalProfile mp) <> ", "
       Nothing -> " to join, "
+
+groupInvitationSub :: ShortGroupInfo -> StyledString
+groupInvitationSub ShortGroupInfo {groupName = ldn} =
+  highlight ("#" <> viewName ldn)
+    <> " - you are invited ("
+    <> highlight ("/j " <> viewName ldn)
+    <> " to join, "
+    <> highlight ("/d #" <> viewName ldn)
+    <> " to delete invitation)"
 
 viewContactsMerged :: Contact -> Contact -> Contact -> [StyledString]
 viewContactsMerged c1 c2 ct' =
@@ -1311,7 +1332,7 @@ viewOpIdTag ServerOperator {operatorId, operatorTag} = case operatorId of
 
 viewOpConditions :: ConditionsAcceptance -> Text
 viewOpConditions = \case
-  CAAccepted ts -> viewCond "accepted" ts
+  CAAccepted ts _ -> viewCond "accepted" ts
   CARequired ts -> viewCond "required" ts
   where
     viewCond w ts = w <> maybe "" (parens . tshow) ts
@@ -1350,11 +1371,13 @@ viewUsageConditions current accepted_ =
 
 viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
-  Nothing -> ["old messages are not being deleted"]
+  Nothing -> ["old messages are set to delete according to default user config"]
   Just ttl
+    | ttl == 0 -> ["old messages are not being deleted"]
     | ttl == 86400 -> deletedAfter "one day"
     | ttl == 7 * 86400 -> deletedAfter "one week"
     | ttl == 30 * 86400 -> deletedAfter "one month"
+    | ttl == 365 * 86400 -> deletedAfter "one year"
     | otherwise -> deletedAfter $ sShow ttl <> " second(s)"
   where
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
@@ -1616,6 +1639,11 @@ viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated ct@Contact {profile = LocalProfile {localAlias}}
   | localAlias == "" = ["contact " <> ttyContact' ct <> " alias removed"]
   | otherwise = ["contact " <> ttyContact' ct <> " alias updated: " <> plain localAlias]
+
+viewGroupAliasUpdated :: GroupInfo -> [StyledString]
+viewGroupAliasUpdated g@GroupInfo {localAlias}
+  | localAlias == "" = ["group " <> ttyGroup' g <> " alias removed"]
+  | otherwise = ["group " <> ttyGroup' g <> " alias updated: " <> plain localAlias]
 
 viewConnectionAliasUpdated :: PendingContactConnection -> [StyledString]
 viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
@@ -2212,9 +2240,14 @@ viewChatError isCmd logLevel testView = \case
     CMD PROHIBITED cxt -> [withConnEntity <> plain ("error: command is prohibited, " <> cxt)]
     SMP _ SMP.AUTH ->
       [ withConnEntity
-          <> "error: connection authorization failed - this could happen if connection was deleted,\
-             \ secured with different credentials, or due to a bug - please re-create the connection"
+          <> "error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
       ]
+    SMP _ (SMP.BLOCKED BlockingInfo {reason}) ->
+      [withConnEntity <> "error: connection blocked by server operator: " <> reasonStr]
+      where
+        reasonStr = case reason of
+          BRSpam -> "spam"
+          BRContent -> "content violates conditions of use"
     BROKER _ NETWORK | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]

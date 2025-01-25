@@ -5,6 +5,7 @@ module ChatTests.Local where
 
 import ChatClient
 import ChatTests.ChatList (getChats_)
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Data.Time (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
@@ -13,7 +14,7 @@ import System.Directory (copyFile, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
-chatLocalChatsTests :: SpecWith FilePath
+chatLocalChatsTests :: SpecWith TestParams
 chatLocalChatsTests = do
   describe "note folders" $ do
     it "create folders, add notes, read, search" testNotes
@@ -26,14 +27,14 @@ chatLocalChatsTests = do
     it "create multiple messages api" testCreateMulti
     it "create multiple messages with files" testCreateMultiFiles
 
-testNotes :: FilePath -> IO ()
-testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testNotes :: TestParams -> IO ()
+testNotes ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
 
   alice ##> "/contacts"
   -- not a contact
 
-  alice /* "keep in mind"
+  alice >* "keep in mind"
   alice ##> "/tail"
   alice <# "* keep in mind"
   alice ##> "/chats"
@@ -50,16 +51,16 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/tail"
   alice ##> "/chats"
 
-  alice /* "ahoy!"
+  alice >* "ahoy!"
   alice ##> "/_update item *1 2 text Greetings."
   alice ##> "/tail *"
   alice <# "* Greetings."
 
-testUserNotes :: FilePath -> IO ()
-testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testUserNotes :: TestParams -> IO ()
+testUserNotes ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
 
-  alice /* "keep in mind"
+  alice >* "keep in mind"
   alice ##> "/tail"
   alice <# "* keep in mind"
 
@@ -73,14 +74,14 @@ testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/_delete item *1 1 internal"
   alice <## "chat db error: SENoteFolderNotFound {noteFolderId = 1}"
 
-testPreviewsPagination :: FilePath -> IO ()
-testPreviewsPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testPreviewsPagination :: TestParams -> IO ()
+testPreviewsPagination ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
 
   tsS <- iso8601Show <$> getCurrentTime
-  alice /* "first"
+  alice >* "first"
   tsM <- iso8601Show <$> getCurrentTime
-  alice /* "last"
+  alice >* "last"
   tsE <- iso8601Show <$> getCurrentTime
 
   -- there's only one folder that got updated after tsM and before tsE
@@ -91,14 +92,14 @@ testPreviewsPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -
   getChats_ alice ("before=" <> tsE <> " count=10") [("*", "last")]
   getChats_ alice ("before=" <> tsS <> " count=10") []
 
-testChatPagination :: FilePath -> IO ()
-testChatPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testChatPagination :: TestParams -> IO ()
+testChatPagination ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
 
-  alice /* "hello world"
-  alice /* "memento mori"
-  alice /* "knock-knock"
-  alice /* "who's there?"
+  alice >* "hello world"
+  alice >* "memento mori"
+  alice >* "knock-knock"
+  alice >* "who's there?"
 
   alice #$> ("/_get chat *1 count=100", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock"), (1, "who's there?")])
   alice #$> ("/_get chat *1 count=1", chat, [(1, "who's there?")])
@@ -115,8 +116,8 @@ testChatPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
   alice #$> ("/_get chat *1 count=10 search=k-k", chat, [(1, "knock-knock")])
 
-testFiles :: FilePath -> IO ()
-testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testFiles :: TestParams -> IO ()
+testFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- setup
   createCCNoteFolder alice
   let files = "./tests/tmp/app_files"
@@ -163,7 +164,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/tail"
   doesFileExist stored `shouldReturn` False
 
-testOtherFiles :: FilePath -> IO ()
+testOtherFiles :: TestParams -> IO ()
 testOtherFiles =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
     connectUsers alice bob
@@ -184,7 +185,7 @@ testOtherFiles =
            ]
     bob <## "completed receiving file 1 (test.jpg) from alice"
 
-    bob /* "test"
+    bob >* "test"
     bob ##> "/tail *"
     bob <# "* test"
     bob ##> "/clear *"
@@ -196,16 +197,16 @@ testOtherFiles =
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
-testCreateMulti :: FilePath -> IO ()
-testCreateMulti tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testCreateMulti :: TestParams -> IO ()
+testCreateMulti ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
 
   alice ##> "/_create *1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
   alice <# "* test 1"
   alice <# "* test 2"
 
-testCreateMultiFiles :: FilePath -> IO ()
-testCreateMultiFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testCreateMultiFiles :: TestParams -> IO ()
+testCreateMultiFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   createCCNoteFolder alice
   alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
   copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"

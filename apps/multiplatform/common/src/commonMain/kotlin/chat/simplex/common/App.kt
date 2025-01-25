@@ -114,7 +114,7 @@ fun MainScreen() {
 
   @Composable
   fun AuthView() {
-    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+    Surface(color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
       Box(
         Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -223,7 +223,7 @@ fun MainScreen() {
       if (chatModel.controller.appPrefs.performLA.get() && AppLock.laFailed.value) {
         AuthView()
       } else {
-        SplashView()
+        SplashView(true)
         ModalManager.fullscreen.showPasscodeInView()
       }
     } else {
@@ -339,7 +339,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
       currentChatId.value?.let {
-        ChatView(currentChatId, onComposed)
+        ChatView(currentChatId, reportsView = false, onComposed = onComposed)
       }
     }
   }
@@ -393,7 +393,7 @@ fun CenterPartOfScreen() {
         ModalManager.center.showInView()
       }
     }
-    else -> ChatView(currentChatId) {}
+    else -> ChatView(currentChatId, reportsView = false) {}
   }
 }
 

@@ -10,6 +10,8 @@ permalink: "/blog/20241016-wired-attack-on-privacy.html"
 
 # Wired’s Attack on Privacy
 
+**Published:** Oct 16, 2024
+
 <img src="./images/20241016-wired-privacy.jpg" width="330" class="float-to-right">
 
 The [Wired article](https://www.wired.com/story/neo-nazis-flee-telegram-encrypted-app-simplex/) by David Gilbert focusing on neo-Nazis moving to SimpleX Chat following the Telegram's changes in privacy policy is biased and misleading. By cherry-picking information from [the report](https://www.isdglobal.org/digital_dispatches/neo-nazi-accelerationists-seek-new-digital-refuge-amid-looming-telegram-crackdown/) by the Institute for Strategic Dialogue (ISD), Wired fails to mention that SimpleX network design prioritizes privacy in order to protect human rights defenders, journalists, and everyday users who value their privacy &mdash; many people feel safer using SimpleX than non-private apps, being protected from strangers contacting them.

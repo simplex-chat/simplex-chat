@@ -253,7 +253,8 @@ struct ChatView: View {
                                     chat.created = Date.now
                                 }
                             ),
-                            onSearch: { focusSearch() }
+                            onSearch: { focusSearch() },
+                            localAlias: groupInfo.localAlias
                         )
                     }
                 } else if case .local = cInfo {
@@ -440,6 +441,7 @@ struct ChatView: View {
                     maxWidth: maxWidth,
                     composeState: $composeState,
                     selectedMember: $selectedMember,
+                    showChatInfoSheet: $showChatInfoSheet,
                     revealedChatItem: $revealedChatItem,
                     selectedChatItems: $selectedChatItems,
                     forwardedChatItems: $forwardedChatItems
@@ -893,12 +895,14 @@ struct ChatView: View {
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
+        @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
         @Binding @ObservedObject var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
+        @Binding var showChatInfoSheet: Bool
         @Binding var revealedChatItem: ChatItem?
 
         @State private var deletingItem: ChatItem? = nil
@@ -914,6 +918,7 @@ struct ChatView: View {
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
+        @State private var actionSheet: SomeActionSheet? = nil
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -998,6 +1003,7 @@ struct ChatView: View {
                     }
                 }
             }
+            .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
         private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
@@ -1205,7 +1211,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal, moderate: false)
                     }
-                    if let di = deletingItem, di.meta.deletable && !di.localNote {
+                    if let di = deletingItem, di.meta.deletable && !di.localNote && !di.isReport {
                         Button(broadcastDeleteButtonText(chat), role: .destructive) {
                             deleteMessage(.cidmBroadcast, moderate: false)
                         }
@@ -1255,16 +1261,22 @@ struct ChatView: View {
                             setReaction(ci, add: !r.userReacted, reaction: r.reaction)
                         }
                     }
-                    if case let .group(groupInfo) = chat.chatInfo {
+                    switch chat.chatInfo {
+                    case let .group(groupInfo):
                         v.contextMenu {
                             ReactionContextMenu(
                                 groupInfo: groupInfo,
                                 itemId: ci.id,
                                 reactionCount: r,
-                                selectedMember: $selectedMember
+                                selectedMember: $selectedMember,
+                                profileRadius: profileRadius
                             )
                         }
-                    } else {
+                    case let .direct(contact):
+                        v.contextMenu {
+                            contactReactionMenu(contact, r)
+                        }
+                    default:
                         v
                     }
                 }
@@ -1273,7 +1285,12 @@ struct ChatView: View {
 
         @ViewBuilder
         private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> some View {
-            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
+            if case let .group(gInfo) = chat.chatInfo, ci.isReport, ci.meta.itemDeleted == nil {
+                if ci.chatDir != .groupSnd, gInfo.membership.memberRole >= .moderator {
+                    archiveReportButton(ci)
+                }
+                deleteButton(ci, label: "Delete report")
+            } else if let mc = ci.content.msgContent, !ci.isReport, ci.meta.itemDeleted == nil || revealed {
                 if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
                    availableReactions.count > 0 {
                     reactionsGroup
@@ -1323,8 +1340,12 @@ struct ChatView: View {
                 if !live || !ci.meta.isLive {
                     deleteButton(ci)
                 }
-                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
-                    moderateButton(ci, groupInfo)
+                if ci.chatDir != .groupSnd {
+                    if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                        moderateButton(ci, groupInfo)
+                    } // else if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole == .member, !live, composeState.voiceMessageRecordingState == .noRecording {
+                        // reportButton(ci)
+                    // }
                 }
             } else if ci.meta.itemDeleted != nil {
                 if revealed {
@@ -1598,7 +1619,7 @@ struct ChatView: View {
             }
         }
 
-        private func deleteButton(_ ci: ChatItem) -> Button<some View> {
+        private func deleteButton(_ ci: ChatItem, label: LocalizedStringKey = "Delete") -> Button<some View> {
             Button(role: .destructive) {
                 if !revealed,
                    let currIndex = m.getChatItemIndex(ci),
@@ -1620,10 +1641,7 @@ struct ChatView: View {
                     deletingItem = ci
                 }
             } label: {
-                Label(
-                    NSLocalizedString("Delete", comment: "chat item action"),
-                    systemImage: "trash"
-                )
+                Label(label, systemImage: "trash")
             }
         }
 
@@ -1642,10 +1660,10 @@ struct ChatView: View {
                 AlertManager.shared.showAlert(Alert(
                     title: Text("Delete member message?"),
                     message: Text(
-                                groupInfo.fullGroupPreferences.fullDelete.on
-                                ? "The message will be deleted for all members."
-                                : "The message will be marked as moderated for all members."
-                            ),
+                        groupInfo.fullGroupPreferences.fullDelete.on
+                        ? "The message will be deleted for all members."
+                        : "The message will be marked as moderated for all members."
+                    ),
                     primaryButton: .destructive(Text("Delete")) {
                         deletingItem = ci
                         deleteMessage(.cidmBroadcast, moderate: true)
@@ -1657,6 +1675,24 @@ struct ChatView: View {
                     NSLocalizedString("Moderate", comment: "chat item action"),
                     systemImage: "flag"
                 )
+            }
+        }
+        
+        private func archiveReportButton(_ cItem: ChatItem) -> Button<some View> {
+            Button(role: .destructive) {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text("Archive report?"),
+                        message: Text("The report will be archived for you."),
+                        primaryButton: .destructive(Text("Archive")) {
+                            deletingItem = cItem
+                            deleteMessage(.cidmInternalMark, moderate: false)
+                        },
+                        secondaryButton: .cancel()
+                    )
+                )
+            } label: {
+                Label("Archive report", systemImage: "archivebox")
             }
         }
 
@@ -1698,7 +1734,38 @@ struct ChatView: View {
                 )
             }
         }
-
+        
+        private func reportButton(_ ci: ChatItem) -> Button<some View> {
+            Button(role: .destructive) {
+                var buttons: [ActionSheet.Button] = ReportReason.supportedReasons.map { reason in
+                    .default(Text(reason.text)) {
+                        withAnimation {
+                            if composeState.editing {
+                                composeState = ComposeState(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                            } else {
+                                composeState = composeState.copy(preview: .noPreview, contextItem: .reportedItem(chatItem: chatItem, reason: reason))
+                            }
+                        }
+                    }
+                }
+                
+                buttons.append(.cancel())
+               
+                actionSheet = SomeActionSheet(
+                    actionSheet: ActionSheet(
+                        title: Text("Report reason?"),
+                        buttons: buttons
+                    ),
+                    id: "reportChatMessage"
+                )
+            } label: {
+                Label (
+                    NSLocalizedString("Report", comment: "chat item action"),
+                    systemImage: "flag"
+                )
+            }
+        }
+        
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
             return n == 1 ? "Delete message?" : "Delete \(n) messages?"
@@ -1759,12 +1826,30 @@ struct ChatView: View {
                                 } else {
                                     m.removeChatItem(chat.chatInfo, itemDeletion.deletedChatItem.chatItem)
                                 }
+                                let deletedItem = itemDeletion.deletedChatItem.chatItem
+                                if deletedItem.isActiveReport {
+                                    m.decreaseGroupReportsCounter(chat.chatInfo.id)
+                                }
                             }
                         }
                     }
                 } catch {
-                    logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+                    logger.error("ChatView.deleteMessage error: \(error)")
                 }
+            }
+        }
+        
+        @ViewBuilder private func contactReactionMenu(_ contact: Contact, _ r: CIReactionCount) -> some View {
+            if !r.userReacted || r.totalReacted > 1 {
+                Button { showChatInfoSheet = true } label: {
+                    profileMenuItem(Text(contact.displayName), contact.image, radius: profileRadius)
+                }
+            }
+            if r.userReacted {
+                Button {} label: {
+                    profileMenuItem(Text("you"), m.currentUser?.profile.image, radius: profileRadius)
+                }
+                .disabled(true)
             }
         }
 
@@ -1822,6 +1907,10 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                         } else {
                             ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
                         }
+                        let deletedItem = di.deletedChatItem.chatItem
+                        if deletedItem.isActiveReport {
+                            ChatModel.shared.decreaseGroupReportsCounter(chat.chatInfo.id)
+                        }
                     }
                 }
                 await onSuccess()
@@ -1859,13 +1948,12 @@ struct ReactionContextMenu: View {
     var itemId: Int64
     var reactionCount: CIReactionCount
     @Binding var selectedMember: GMember?
+    var profileRadius: CGFloat
     @State private var memberReactions: [MemberReaction] = []
-    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
 
     var body: some View {
         groupMemberReactionList()
             .task {
-                logger.debug("ReactionContextMenu task \(radius)")
                 await loadChatItemReaction()
             }
     }
@@ -1889,25 +1977,10 @@ struct ReactionContextMenu: View {
                         selectedMember = member
                     }
                 } label: {
-                    HStack {
-                        Text(mem.displayName)
-                        if let img = cropImage(mem.image) {
-                            Image(uiImage: img)
-                        } else {
-                            Image(systemName: "person.crop.circle")
-                        }
-                    }
+                    profileMenuItem(Text(mem.displayName), mem.image, radius: profileRadius)
                 }
                 .disabled(userMember)
             }
-        }
-    }
-        
-    private func cropImage(_ img: String?) -> UIImage? {
-        return if let originalImage = imageFromBase64(img) {
-            maskToCustomShape(originalImage, size: 30, radius: radius)
-        } else {
-            nil
         }
     }
 
@@ -1923,6 +1996,17 @@ struct ReactionContextMenu: View {
             }
         } catch let error {
             logger.error("apiGetReactionMembers error: \(responseError(error))")
+        }
+    }
+}
+
+func profileMenuItem(_ nameText: Text, _ image: String?, radius: CGFloat) -> some View {
+    HStack {
+        nameText
+        if let image, let img = imageFromBase64(image) {
+            Image(uiImage: maskToCustomShape(img, size: 30, radius: radius))
+        } else {
+            Image(systemName: "person.crop.circle")
         }
     }
 }
@@ -1989,6 +2073,9 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
         do {
             try await apiSetChatSettings(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatSettings: chatSettings)
             await MainActor.run {
+                let wasFavorite = chat.chatInfo.chatSettings?.favorite ?? false
+                ChatTagsModel.shared.updateChatFavorite(favorite: chatSettings.favorite, wasFavorite: wasFavorite)
+                let wasUnread = chat.unreadTag
                 switch chat.chatInfo {
                 case var .direct(contact):
                     contact.chatSettings = chatSettings
@@ -1998,6 +2085,7 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
                     ChatModel.shared.updateGroup(groupInfo)
                 default: ()
                 }
+                ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
             }
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")

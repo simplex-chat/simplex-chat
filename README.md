@@ -163,13 +163,14 @@ Your donations help us raise more funds - any amount, even the price of the cup 
 It is possible to donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) (commission-free) or [OpenCollective](https://opencollective.com/simplex-chat) (~10% commission).
-- Bitcoin: bc1qd74rc032ek2knhhr3yjq2ajzc5enz3h4qwnxad
-- Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- BTC: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
+- XMR: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
-- Ethereum: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
-- USDT:
-  - Ethereum: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
-- Solana: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
+- ETH: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- USDT (Ethereum): 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
+- DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf
+- SOL: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
 - please ask if you want to donate any other coins.
 
 Thank you,

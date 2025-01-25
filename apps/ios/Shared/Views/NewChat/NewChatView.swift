@@ -25,6 +25,7 @@ struct SomeActionSheet: Identifiable {
 struct SomeSheet<Content: View>: Identifiable {
     @ViewBuilder var content: Content
     var id: String
+    var fraction = 0.4
 }
 
 private enum NewChatViewAlert: Identifiable {

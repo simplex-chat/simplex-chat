@@ -38,12 +38,11 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, nominalDay)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.TypeLits (ErrorMessage (ShowType, type (:<>:)), TypeError)
 import qualified GHC.TypeLits as Type
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -53,7 +52,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
-import Simplex.Messaging.Protocol (MsgBody)
+import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
@@ -90,14 +89,6 @@ chatInfoChatTs = \case
   DirectChat Contact {chatTs} -> chatTs
   GroupChat GroupInfo {chatTs} -> chatTs
   _ -> Nothing
-
-chatInfoUpdatedAt :: ChatInfo c -> UTCTime
-chatInfoUpdatedAt = \case
-  DirectChat Contact {updatedAt} -> updatedAt
-  GroupChat GroupInfo {updatedAt} -> updatedAt
-  LocalChat NoteFolder {updatedAt} -> updatedAt
-  ContactRequest UserContactRequest {updatedAt} -> updatedAt
-  ContactConnection PendingContactConnection {updatedAt} -> updatedAt
 
 chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
@@ -318,11 +309,15 @@ data AChat = forall c. ChatTypeI c => AChat (SChatType c) (Chat c)
 deriving instance Show AChat
 
 data ChatStats = ChatStats
-  { unreadCount :: Int,
+  { unreadCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
+    reportsCount :: Int, -- returned both in /_get chat initial API and in /_get chats API
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }
   deriving (Show)
+
+emptyChatStats :: ChatStats
+emptyChatStats = ChatStats 0 0 0 False
 
 data NavigationInfo = NavigationInfo
   { afterUnread :: Int,
@@ -739,6 +734,7 @@ aciFileStatusJSON = \case
 
 data FileError
   = FileErrAuth
+  | FileErrBlocked {server :: String, blockInfo :: BlockingInfo}
   | FileErrNoFile
   | FileErrRelay {srvError :: SrvError}
   | FileErrOther {fileError :: Text}
@@ -747,14 +743,16 @@ data FileError
 instance StrEncoding FileError where
   strEncode = \case
     FileErrAuth -> "auth"
+    FileErrBlocked srv info -> "blocked " <> strEncode (srv, info)
     FileErrNoFile -> "no_file"
     FileErrRelay srvErr -> "relay " <> strEncode srvErr
     FileErrOther e -> "other " <> encodeUtf8 e
   strP =
     A.takeWhile1 (/= ' ') >>= \case
       "auth" -> pure FileErrAuth
+      "blocked" -> FileErrBlocked <$> _strP <*> _strP
       "no_file" -> pure FileErrNoFile
-      "relay" -> FileErrRelay <$> (A.space *> strP)
+      "relay" -> FileErrRelay <$> _strP
       "other" -> FileErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       s -> FileErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString
 

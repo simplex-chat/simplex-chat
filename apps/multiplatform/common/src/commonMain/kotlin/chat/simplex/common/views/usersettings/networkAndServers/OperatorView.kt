@@ -735,7 +735,10 @@ private fun ConditionsAppliedToOtherOperatorsText(userServers: List<UserOperator
   }
 
   if (otherOperatorsToApply.value.isNotEmpty()) {
-      ReadableText(MR.strings.operator_conditions_will_be_applied)
+    ReadableText(
+      MR.strings.operator_conditions_will_be_applied,
+      args = otherOperatorsToApply.value.joinToString(", ") { it.legalName_ }
+    )
   }
 }
 

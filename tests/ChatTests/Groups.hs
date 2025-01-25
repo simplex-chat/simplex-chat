@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,6 +10,7 @@
 module ChatTests.Groups where
 
 import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -16,24 +18,28 @@ import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
-import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
+import Test.Hspec hiding (it)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+import Simplex.Chat.Options.DB
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import Test.Hspec hiding (it)
+#endif
 
-chatGroupTests :: SpecWith FilePath
+chatGroupTests :: SpecWith TestParams
 chatGroupTests = do
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
@@ -104,10 +110,13 @@ chatGroupTests = do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
     it "group link without contact - connecting (slow handshake)" testPlanGroupLinkNoContactConnectingSlow
+#if !defined(dbPostgres)
+  -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
     it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
     it "synchronize ratchets, reset connection code" testGroupSyncRatchetCodeReset
+#endif
   describe "group message reactions" $ do
     it "set group message reactions" testSetGroupMessageReactions
   describe "group delivery receipts" $ do
@@ -175,6 +184,8 @@ chatGroupTests = do
     it "can't repeat block, unblock" testBlockForAllCantRepeat
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
+  describe "group member reports" $ do
+    it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -190,17 +201,17 @@ chatGroupTests = do
         )
         $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
 
-testGroup :: HasCallStack => FilePath -> IO ()
+testGroup :: HasCallStack => TestParams -> IO ()
 testGroup =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> testGroupShared alice bob cath False True
 
-testGroupCheckMessages :: HasCallStack => FilePath -> IO ()
+testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> testGroupShared alice bob cath True True
 
-testGroupMatrix :: SpecWith FilePath
+testGroupMatrix :: SpecWith TestParams
 testGroupMatrix =
   versionTestMatrix3 $ \alice bob cath -> testGroupShared alice bob cath False False
 
@@ -359,7 +370,7 @@ testGroupShared alice bob cath checkMessages directConnections = do
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
 
-testMarkReadGroup :: HasCallStack => FilePath -> IO ()
+testMarkReadGroup :: HasCallStack => TestParams -> IO ()
 testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
   createGroup2 "team" alice bob
   alice #> "#team 1"
@@ -375,7 +386,7 @@ testMarkReadGroup = testChat2 aliceProfile bobProfile $ \alice bob -> do
   let itemIds = intercalate "," $ map show [i - 3 .. i]
   bob #$> ("/_read chat items #1 " <> itemIds, id, "ok")
 
-testChatPaginationInitial :: HasCallStack => FilePath -> IO ()
+testChatPaginationInitial :: HasCallStack => TestParams -> IO ()
 testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
   createGroup2 "team" alice bob
   -- Wait, otherwise ids are going to be wrong.
@@ -407,7 +418,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
         { markRead = False
         }
 
-testGroupLargeMessage :: HasCallStack => FilePath -> IO ()
+testGroupLargeMessage :: HasCallStack => TestParams -> IO ()
 testGroupLargeMessage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -421,7 +432,7 @@ testGroupLargeMessage =
       bob <## "alice updated group #team:"
       bob <## "profile image updated"
 
-testNewGroupIncognito :: HasCallStack => FilePath -> IO ()
+testNewGroupIncognito :: HasCallStack => TestParams -> IO ()
 testNewGroupIncognito =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
@@ -471,7 +482,7 @@ testNewGroupIncognito =
       bob ##> "/gs"
       bob <## "#team (2 members)"
 
-testGroup2 :: HasCallStack => FilePath -> IO ()
+testGroup2 :: HasCallStack => TestParams -> IO ()
 testGroup2 =
   testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -671,7 +682,7 @@ testGroup2 =
       bob <##> cath
       bob <##> alice
 
-testGroupDelete :: HasCallStack => FilePath -> IO ()
+testGroupDelete :: HasCallStack => TestParams -> IO ()
 testGroupDelete =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -707,7 +718,7 @@ testGroupDelete =
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
-testGroupSameName :: HasCallStack => FilePath -> IO ()
+testGroupSameName :: HasCallStack => TestParams -> IO ()
 testGroupSameName =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
@@ -719,7 +730,7 @@ testGroupSameName =
       alice <## "group #team_1 is created"
       alice <## "to add members use /a team_1 <name> or /create link #team_1"
 
-testGroupDeleteWhenInvited :: HasCallStack => FilePath -> IO ()
+testGroupDeleteWhenInvited :: HasCallStack => TestParams -> IO ()
 testGroupDeleteWhenInvited =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -746,7 +757,7 @@ testGroupDeleteWhenInvited =
             bob <## "use /j team to accept"
         ]
 
-testGroupReAddInvited :: HasCallStack => FilePath -> IO ()
+testGroupReAddInvited :: HasCallStack => TestParams -> IO ()
 testGroupReAddInvited =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -781,7 +792,7 @@ testGroupReAddInvited =
             bob <## "use /j team_1 to accept"
         ]
 
-testGroupReAddInvitedChangeRole :: HasCallStack => FilePath -> IO ()
+testGroupReAddInvitedChangeRole :: HasCallStack => TestParams -> IO ()
 testGroupReAddInvitedChangeRole =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -821,7 +832,7 @@ testGroupReAddInvitedChangeRole =
       alice ##> "/d #team"
       alice <## "#team: you deleted the group"
 
-testGroupDeleteInvitedContact :: HasCallStack => FilePath -> IO ()
+testGroupDeleteInvitedContact :: HasCallStack => TestParams -> IO ()
 testGroupDeleteInvitedContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -866,7 +877,7 @@ testGroupDeleteInvitedContact =
         (bob <## "alice (Alice): contact is connected")
       alice <##> bob
 
-testDeleteGroupMemberProfileKept :: HasCallStack => FilePath -> IO ()
+testDeleteGroupMemberProfileKept :: HasCallStack => TestParams -> IO ()
 testDeleteGroupMemberProfileKept =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -936,7 +947,7 @@ testDeleteGroupMemberProfileKept =
       bob #> "#club received"
       alice <# "#club bob> received"
 
-testGroupRemoveAdd :: HasCallStack => FilePath -> IO ()
+testGroupRemoveAdd :: HasCallStack => TestParams -> IO ()
 testGroupRemoveAdd =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -987,7 +998,7 @@ testGroupRemoveAdd =
         (alice <# "#team cath> hello")
         (bob <# "#team_1 cath> hello")
 
-testGroupList :: HasCallStack => FilePath -> IO ()
+testGroupList :: HasCallStack => TestParams -> IO ()
 testGroupList =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -1017,7 +1028,7 @@ testGroupList =
       bob ##> "/gs"
       bob <## "#team (2 members)"
 
-testGroupMessageQuotedReply :: HasCallStack => FilePath -> IO ()
+testGroupMessageQuotedReply :: HasCallStack => TestParams -> IO ()
 testGroupMessageQuotedReply =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1087,7 +1098,7 @@ testGroupMessageQuotedReply =
             cath <## "      go on"
         )
 
-testGroupMessageUpdate :: HasCallStack => FilePath -> IO ()
+testGroupMessageUpdate :: HasCallStack => TestParams -> IO ()
 testGroupMessageUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1159,7 +1170,7 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((1, "hi alice"), Just (0, "hey 👋")), ((0, "greetings!"), Just (0, "greetings 🤝"))])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "greetings 🤝"), Nothing), ((0, "hi alice"), Just (0, "hey 👋")), ((1, "greetings!"), Just (0, "greetings 🤝"))])
 
-testGroupMessageEditHistory :: HasCallStack => FilePath -> IO ()
+testGroupMessageEditHistory :: HasCallStack => TestParams -> IO ()
 testGroupMessageEditHistory =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -1233,7 +1244,7 @@ testGroupMessageEditHistory =
       bob <## "message history:"
       bob .<## ": hey there"
 
-testGroupMessageDelete :: HasCallStack => FilePath -> IO ()
+testGroupMessageDelete :: HasCallStack => TestParams -> IO ()
 testGroupMessageDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1317,7 +1328,7 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "how are you? [marked deleted]"), Nothing)])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!")), ((1, "how are you? [marked deleted]"), Nothing)])
 
-testGroupMessageDeleteMultiple :: HasCallStack => FilePath -> IO ()
+testGroupMessageDeleteMultiple :: HasCallStack => TestParams -> IO ()
 testGroupMessageDeleteMultiple =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1353,7 +1364,7 @@ testGroupMessageDeleteMultiple =
       bob #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
       cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
 
-testGroupMessageDeleteMultipleManyBatches :: HasCallStack => FilePath -> IO ()
+testGroupMessageDeleteMultipleManyBatches :: HasCallStack => TestParams -> IO ()
 testGroupMessageDeleteMultipleManyBatches =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1391,7 +1402,7 @@ testGroupMessageDeleteMultipleManyBatches =
           (bob <# ("#team alice> [marked deleted] message " <> show i))
           (cath <# ("#team alice> [marked deleted] message " <> show i))
 
-testGroupLiveMessage :: HasCallStack => FilePath -> IO ()
+testGroupLiveMessage :: HasCallStack => TestParams -> IO ()
 testGroupLiveMessage =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     createGroup3 "team" alice bob cath
@@ -1429,7 +1440,7 @@ testGroupLiveMessage =
     bob .<## ": hello 2"
     bob .<## ":"
 
-testUpdateGroupProfile :: HasCallStack => FilePath -> IO ()
+testUpdateGroupProfile :: HasCallStack => TestParams -> IO ()
 testUpdateGroupProfile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1456,7 +1467,7 @@ testUpdateGroupProfile =
         (alice <# "#my_team bob> hi")
         (cath <# "#my_team bob> hi")
 
-testUpdateMemberRole :: HasCallStack => FilePath -> IO ()
+testUpdateMemberRole :: HasCallStack => TestParams -> IO ()
 testUpdateMemberRole =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1502,7 +1513,7 @@ testUpdateMemberRole =
       alice ##> "/d #team"
       alice <## "#team: you have insufficient permissions for this action, the required role is owner"
 
-testGroupDeleteUnusedContacts :: HasCallStack => FilePath -> IO ()
+testGroupDeleteUnusedContacts :: HasCallStack => TestParams -> IO ()
 testGroupDeleteUnusedContacts =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1589,7 +1600,7 @@ testGroupDeleteUnusedContacts =
       cath ##> ("/d #" <> group)
       cath <## ("#" <> group <> ": you deleted the group")
 
-testGroupDescription :: HasCallStack => FilePath -> IO ()
+testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
   connectUsers alice bob
   alice ##> "/g team"
@@ -1660,7 +1671,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
 
-testGroupModerate :: HasCallStack => FilePath -> IO ()
+testGroupModerate :: HasCallStack => TestParams -> IO ()
 testGroupModerate =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1691,7 +1702,7 @@ testGroupModerate =
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "hi [marked deleted by bob]")])
 
-testGroupModerateOwn :: HasCallStack => FilePath -> IO ()
+testGroupModerateOwn :: HasCallStack => TestParams -> IO ()
 testGroupModerateOwn =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -1705,7 +1716,7 @@ testGroupModerateOwn =
       alice #$> ("/_get chat #1 count=1", chat, [(1, "hello [marked deleted by you]")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hello [marked deleted by alice]")])
 
-testGroupModerateMultiple :: HasCallStack => FilePath -> IO ()
+testGroupModerateMultiple :: HasCallStack => TestParams -> IO ()
 testGroupModerateMultiple =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1740,7 +1751,7 @@ testGroupModerateMultiple =
       bob #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (1, "hey [marked deleted by alice]")])
       cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (0, "hey [marked deleted by alice]")])
 
-testGroupModerateFullDelete :: HasCallStack => FilePath -> IO ()
+testGroupModerateFullDelete :: HasCallStack => TestParams -> IO ()
 testGroupModerateFullDelete =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1778,12 +1789,12 @@ testGroupModerateFullDelete =
       bob #$> ("/_get chat #1 count=1", chat, [(0, "moderated [deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "moderated [deleted by bob]")])
 
-testGroupDelayedModeration :: HasCallStack => FilePath -> IO ()
-testGroupDelayedModeration tmp = do
-  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+testGroupDelayedModeration :: HasCallStack => TestParams -> IO ()
+testGroupDelayedModeration ps = do
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+    withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
       cath ##> "/j team"
@@ -1804,11 +1815,11 @@ testGroupDelayedModeration tmp = do
       alice ##> "\\\\ #team @cath hi"
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
-    withTestChatCfg tmp cfg "bob" $ \bob -> do
+    withTestChatCfg ps cfg "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-      withTestChatCfg tmp cfg "cath" $ \cath -> do
+      withTestChatCfg ps cfg "cath" $ \cath -> do
         cath <## "2 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
@@ -1824,12 +1835,12 @@ testGroupDelayedModeration tmp = do
   where
     cfg = testCfgCreateGroupDirect
 
-testGroupDelayedModerationFullDelete :: HasCallStack => FilePath -> IO ()
-testGroupDelayedModerationFullDelete tmp = do
-  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+testGroupDelayedModerationFullDelete :: HasCallStack => TestParams -> IO ()
+testGroupDelayedModerationFullDelete ps = do
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-    withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+    withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
       cath ##> "/j team"
@@ -1858,14 +1869,14 @@ testGroupDelayedModerationFullDelete tmp = do
       cath <## "alice updated group #team:"
       cath <## "updated group preferences:"
       cath <## "Full deletion: on"
-    withTestChatCfg tmp cfg "bob" $ \bob -> do
+    withTestChatCfg ps cfg "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
-      withTestChatCfg tmp cfg "cath" $ \cath -> do
+      withTestChatCfg ps cfg "cath" $ \cath -> do
         cath <## "2 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
@@ -1881,7 +1892,7 @@ testGroupDelayedModerationFullDelete tmp = do
   where
     cfg = testCfgCreateGroupDirect
 
-testSendMulti :: HasCallStack => FilePath -> IO ()
+testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1895,7 +1906,7 @@ testSendMulti =
       cath <# "#team alice> test 1"
       cath <# "#team alice> test 2"
 
-testSendMultiTimed :: HasCallStack => FilePath -> IO ()
+testSendMultiTimed :: HasCallStack => TestParams -> IO ()
 testSendMultiTimed =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1932,7 +1943,7 @@ testSendMultiTimed =
                "timed message deleted: test 2"
              ]
 
-testSendMultiManyBatches :: HasCallStack => FilePath -> IO ()
+testSendMultiManyBatches :: HasCallStack => TestParams -> IO ()
 testSendMultiManyBatches =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -1967,10 +1978,10 @@ testSendMultiManyBatches =
         DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdCath) :: IO [[Int]]
       cathItemsCount `shouldBe` [[300]]
 
-testGroupAsync :: HasCallStack => FilePath -> IO ()
-testGroupAsync tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+testGroupAsync :: HasCallStack => TestParams -> IO ()
+testGroupAsync ps = do
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -1988,8 +1999,8 @@ testGroupAsync tmp = do
         (bob <## "#team: you joined the group")
       alice #> "#team hello bob"
       bob <# "#team alice> hello bob"
-  withTestChat tmp "alice" $ \alice -> do
-    withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withTestChat ps "alice" $ \alice -> do
+    withNewTestChat ps "cath" cathProfile $ \cath -> do
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "#team: connected to server(s)"
       connectUsers alice cath
@@ -2007,8 +2018,8 @@ testGroupAsync tmp = do
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
-  withTestChat tmp "bob" $ \bob -> do
-    withTestChat tmp "cath" $ \cath -> do
+  withTestChat ps "bob" $ \bob -> do
+    withTestChat ps "cath" $ \cath -> do
       concurrentlyN_
         [ do
             bob <## "1 contacts connected (use /cs for the list)"
@@ -2022,8 +2033,8 @@ testGroupAsync tmp = do
             cath <## "#team: member bob (Bob) is connected"
         ]
   threadDelay 500000
-  withTestChat tmp "bob" $ \bob -> do
-    withNewTestChat tmp "dan" danProfile $ \dan -> do
+  withTestChat ps "bob" $ \bob -> do
+    withNewTestChat ps "dan" danProfile $ \dan -> do
       bob <## "2 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       connectUsers bob dan
@@ -2041,9 +2052,9 @@ testGroupAsync tmp = do
         ]
       threadDelay 1000000
   threadDelay 1000000
-  withTestChat tmp "alice" $ \alice -> do
-    withTestChat tmp "cath" $ \cath -> do
-      withTestChat tmp "dan" $ \dan -> do
+  withTestChat ps "alice" $ \alice -> do
+    withTestChat ps "cath" $ \cath -> do
+      withTestChat ps "dan" $ \dan -> do
         concurrentlyN_
           [ do
               alice <## "2 contacts connected (use /cs for the list)"
@@ -2062,10 +2073,10 @@ testGroupAsync tmp = do
               dan <## "#team: member cath (Catherine) is connected"
           ]
         threadDelay 1000000
-  withTestChat tmp "alice" $ \alice -> do
-    withTestChat tmp "bob" $ \bob -> do
-      withTestChat tmp "cath" $ \cath -> do
-        withTestChat tmp "dan" $ \dan -> do
+  withTestChat ps "alice" $ \alice -> do
+    withTestChat ps "bob" $ \bob -> do
+      withTestChat ps "cath" $ \cath -> do
+        withTestChat ps "dan" $ \dan -> do
           concurrentlyN_
             [ do
                 alice <## "3 contacts connected (use /cs for the list)"
@@ -2108,7 +2119,7 @@ testGroupAsync tmp = do
           dan <##> cath
           dan <##> alice
 
-testGroupLink :: HasCallStack => FilePath -> IO ()
+testGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupLink =
   testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -2212,7 +2223,7 @@ testGroupLink =
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
 
-testGroupLinkDeleteGroupRejoin :: HasCallStack => FilePath -> IO ()
+testGroupLinkDeleteGroupRejoin :: HasCallStack => TestParams -> IO ()
 testGroupLinkDeleteGroupRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
@@ -2269,7 +2280,7 @@ testGroupLinkDeleteGroupRejoin =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
-testGroupLinkContactUsed :: HasCallStack => FilePath -> IO ()
+testGroupLinkContactUsed :: HasCallStack => TestParams -> IO ()
 testGroupLinkContactUsed =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
@@ -2303,7 +2314,7 @@ testGroupLinkContactUsed =
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
       bob @@@ [("@alice", ""), ("#team", "connected")]
 
-testGroupLinkIncognitoMembership :: HasCallStack => FilePath -> IO ()
+testGroupLinkIncognitoMembership :: HasCallStack => TestParams -> IO ()
 testGroupLinkIncognitoMembership =
   testChatCfg4 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -2417,7 +2428,7 @@ testGroupLinkIncognitoMembership =
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
 
-testGroupLinkUnusedHostContactDeleted :: HasCallStack => FilePath -> IO ()
+testGroupLinkUnusedHostContactDeleted :: HasCallStack => TestParams -> IO ()
 testGroupLinkUnusedHostContactDeleted =
   testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
@@ -2492,7 +2503,7 @@ testGroupLinkUnusedHostContactDeleted =
       bob ##> ("/d #" <> group)
       bob <## ("#" <> group <> ": you deleted the group")
 
-testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => FilePath -> IO ()
+testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => TestParams -> IO ()
 testGroupLinkIncognitoUnusedHostContactsDeleted =
   testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
@@ -2553,7 +2564,7 @@ testGroupLinkIncognitoUnusedHostContactsDeleted =
       bob ##> ("/d #" <> group)
       bob <## ("#" <> group <> ": you deleted the group")
 
-testGroupLinkMemberRole :: HasCallStack => FilePath -> IO ()
+testGroupLinkMemberRole :: HasCallStack => TestParams -> IO ()
 testGroupLinkMemberRole =
   testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -2620,7 +2631,7 @@ testGroupLinkMemberRole =
         (alice <# "#team bob> hey now")
         (cath <# "#team bob> hey now")
 
-testGroupLinkLeaveDelete :: HasCallStack => FilePath -> IO ()
+testGroupLinkLeaveDelete :: HasCallStack => TestParams -> IO ()
 testGroupLinkLeaveDelete =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -2689,7 +2700,7 @@ testGroupLinkLeaveDelete =
       bob <## "alice (Alice)"
       bob <## "cath (Catherine)"
 
-testPlanGroupLinkOkKnown :: HasCallStack => FilePath -> IO ()
+testPlanGroupLinkOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkOkKnown =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
@@ -2733,7 +2744,7 @@ testPlanGroupLinkOkKnown =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
-testPlanHostContactDeletedGroupLinkKnown :: HasCallStack => FilePath -> IO ()
+testPlanHostContactDeletedGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanHostContactDeletedGroupLinkKnown =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
@@ -2780,9 +2791,9 @@ testPlanHostContactDeletedGroupLinkKnown =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
-testPlanGroupLinkOwn :: HasCallStack => FilePath -> IO ()
-testPlanGroupLinkOwn tmp =
-  withNewTestChatCfg tmp (mkCfgGroupLinkViaContact testCfgSlow) "alice" aliceProfile $ \alice -> do
+testPlanGroupLinkOwn :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkOwn ps =
+  withNewTestChatCfg ps (mkCfgGroupLinkViaContact testCfgSlow) "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
@@ -2841,18 +2852,18 @@ testPlanGroupLinkOwn tmp =
              WithTime "#team alice_1> 4"
            ]
 
-testPlanGroupLinkConnecting :: HasCallStack => FilePath -> IO ()
-testPlanGroupLinkConnecting tmp = do
-  -- gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
-  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+testPlanGroupLinkConnecting :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkConnecting ps = do
+  -- gLink <- withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+  gLink <- withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
-  -- withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
-  withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+  -- withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> gLink)
@@ -2866,15 +2877,15 @@ testPlanGroupLinkConnecting tmp = do
     bob <## "group link: connecting, allowed to reconnect"
 
     threadDelay 100000
-  -- withTestChatCfg tmp cfg "alice" $ \alice -> do
-  withTestChatCfg tmp cfg "alice" $ \alice -> do
+  -- withTestChatCfg ps cfg "alice" $ \alice -> do
+  withTestChatCfg ps cfg "alice" $ \alice -> do
     alice
       <### [ "1 group links active",
              "#team: group is empty",
              "bob (Bob): accepting request to join group #team..."
            ]
-  -- withTestChatCfg tmp cfg "bob" $ \bob -> do
-  withTestChatCfg tmp cfg "bob" $ \bob -> do
+  -- withTestChatCfg ps cfg "bob" $ \bob -> do
+  withTestChatCfg ps cfg "bob" $ \bob -> do
     threadDelay 500000
     bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting"
@@ -2888,7 +2899,7 @@ testPlanGroupLinkConnecting tmp = do
   where
     cfg = mkCfgGroupLinkViaContact testCfgSlow
 
-testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
+testPlanGroupLinkLeaveRejoin :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
@@ -2977,7 +2988,7 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "group link: known group #team_1"
       bob <## "use #team_1 <message> to send messages"
 
-testGroupLinkNoContact :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContact :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -3038,7 +3049,7 @@ testGroupLinkNoContact =
       alice <# "#team bob> hi cath"
       cath <# "#team bob> hi cath"
 
-testGroupLinkNoContactInviteesWereConnected :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactInviteesWereConnected :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContactInviteesWereConnected =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -3110,7 +3121,7 @@ testGroupLinkNoContactInviteesWereConnected =
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
 
-testGroupLinkNoContactAllMembersWereConnected :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactAllMembersWereConnected :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContactAllMembersWereConnected =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -3201,7 +3212,7 @@ testGroupLinkNoContactAllMembersWereConnected =
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
 
-testGroupLinkNoContactMemberRole :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactMemberRole :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContactMemberRole =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -3282,7 +3293,7 @@ testGroupLinkNoContactMemberRole =
       bob <## "#team: cath changed your role from member to admin"
       alice <## "#team: cath changed the role of bob from member to admin"
 
-testGroupLinkNoContactHostIncognito :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactHostIncognito :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContactHostIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -3315,7 +3326,7 @@ testGroupLinkNoContactHostIncognito =
       bob #> "#team hi there"
       alice ?<# "#team bob> hi there"
 
-testGroupLinkNoContactInviteeIncognito :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactInviteeIncognito :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContactInviteeIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -3349,7 +3360,7 @@ testGroupLinkNoContactInviteeIncognito =
       bob ?#> "#team hi there"
       alice <# ("#team " <> bobIncognito <> "> hi there")
 
-testGroupLinkNoContactHostProfileReceived :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactHostProfileReceived :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContactHostProfileReceived =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -3377,7 +3388,7 @@ testGroupLinkNoContactHostProfileReceived =
       aliceImage <- getProfilePictureByName bob "alice"
       aliceImage `shouldBe` Just profileImage
 
-testGroupLinkNoContactExistingContactMerged :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactExistingContactMerged :: HasCallStack => TestParams -> IO ()
 testGroupLinkNoContactExistingContactMerged =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -3420,7 +3431,7 @@ testGroupLinkNoContactExistingContactMerged =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
-testPlanGroupLinkNoContactKnown :: HasCallStack => FilePath -> IO ()
+testPlanGroupLinkNoContactKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkNoContactKnown =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -3457,16 +3468,16 @@ testPlanGroupLinkNoContactKnown =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
-testPlanGroupLinkNoContactConnecting :: HasCallStack => FilePath -> IO ()
-testPlanGroupLinkNoContactConnecting tmp = do
-  gLink <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testPlanGroupLinkNoContactConnecting :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkNoContactConnecting ps = do
+  gLink <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
-  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> gLink)
@@ -3480,13 +3491,13 @@ testPlanGroupLinkNoContactConnecting tmp = do
     bob <## "group link: connecting, allowed to reconnect"
 
     threadDelay 100000
-  withTestChat tmp "alice" $ \alice -> do
+  withTestChat ps "alice" $ \alice -> do
     alice
       <### [ "1 group links active",
              "#team: group is empty",
              "bob (Bob): accepting request to join group #team..."
            ]
-  withTestChat tmp "bob" $ \bob -> do
+  withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
     bob <## "#team: joining the group..."
     bob <## "#team: you joined the group"
@@ -3504,16 +3515,16 @@ testPlanGroupLinkNoContactConnecting tmp = do
     bob <## "group link: known group #team"
     bob <## "use #team <message> to send messages"
 
-testPlanGroupLinkNoContactConnectingSlow :: HasCallStack => FilePath -> IO ()
-testPlanGroupLinkNoContactConnectingSlow tmp = do
-  gLink <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+testPlanGroupLinkNoContactConnectingSlow :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkNoContactConnectingSlow ps = do
+  gLink <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
-  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> gLink)
@@ -3527,13 +3538,13 @@ testPlanGroupLinkNoContactConnectingSlow tmp = do
     bob <## "group link: connecting, allowed to reconnect"
 
     threadDelay 100000
-  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+  withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
     alice
       <### [ "1 group links active",
              "#team: group is empty",
              "bob (Bob): accepting request to join group #team..."
            ]
-  withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
+  withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
     threadDelay 500000
     bob <## "#team: joining the group..."
 
@@ -3547,17 +3558,18 @@ testPlanGroupLinkNoContactConnectingSlow tmp = do
     bob ##> ("/c " <> gLink)
     bob <## "group link: connecting to group #team"
 
-testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
-testGroupMsgDecryptError tmp =
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+#if !defined(dbPostgres)
+testGroupMsgDecryptError :: HasCallStack => TestParams -> IO ()
+testGroupMsgDecryptError ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       alice #> "#team hi"
       bob <# "#team alice> hi"
       bob #> "#team hey"
       alice <# "#team bob> hey"
-    setupDesynchronizedRatchet tmp alice
-    withTestChat tmp "bob" $ \bob -> do
+    setupDesynchronizedRatchet ps alice
+    withTestChat ps "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       alice #> "#team hello again"
@@ -3566,10 +3578,10 @@ testGroupMsgDecryptError tmp =
       bob #> "#team received!"
       alice <# "#team bob> received!"
 
-setupDesynchronizedRatchet :: HasCallStack => FilePath -> TestCC -> IO ()
-setupDesynchronizedRatchet tmp alice = do
+setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
+setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
-  withTestChat tmp "bob" $ \bob -> do
+  withTestChat ps "bob" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
     alice #> "#team 1"
@@ -3580,7 +3592,7 @@ setupDesynchronizedRatchet tmp alice = do
     bob <# "#team alice> 3"
     bob #> "#team 4"
     alice <# "#team bob> 4"
-  withTestChat tmp "bob_old" $ \bob -> do
+  withTestChat ps "bob_old" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
     bob ##> "/sync #team alice"
@@ -3594,21 +3606,22 @@ setupDesynchronizedRatchet tmp alice = do
     bob ##> "/tail #team 1"
     bob <# "#team alice> decryption error, possibly due to the device change (header, 3 messages)"
   where
+    tmp = tmpPath ps
     copyDb from to = do
-      copyFile (chatStoreFile $ tmp </> from) (chatStoreFile $ tmp </> to)
-      copyFile (agentStoreFile $ tmp </> from) (agentStoreFile $ tmp </> to)
+      copyFile (tmp </> (from <> chatSuffix)) (tmp </> (to <> chatSuffix))
+      copyFile (tmp </> (from <> agentSuffix)) (tmp </> (to <> agentSuffix))
 
-testGroupSyncRatchet :: HasCallStack => FilePath -> IO ()
-testGroupSyncRatchet tmp =
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+testGroupSyncRatchet :: HasCallStack => TestParams -> IO ()
+testGroupSyncRatchet ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       alice #> "#team hi"
       bob <# "#team alice> hi"
       bob #> "#team hey"
       alice <# "#team bob> hey"
-    setupDesynchronizedRatchet tmp alice
-    withTestChat tmp "bob_old" $ \bob -> do
+    setupDesynchronizedRatchet ps alice
+    withTestChat ps "bob_old" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
@@ -3633,10 +3646,10 @@ testGroupSyncRatchet tmp =
       bob #> "#team received!"
       alice <# "#team bob> received!"
 
-testGroupSyncRatchetCodeReset :: HasCallStack => FilePath -> IO ()
-testGroupSyncRatchetCodeReset tmp =
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+testGroupSyncRatchetCodeReset :: HasCallStack => TestParams -> IO ()
+testGroupSyncRatchetCodeReset ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
       alice #> "#team hi"
       bob <# "#team alice> hi"
@@ -3653,8 +3666,8 @@ testGroupSyncRatchetCodeReset tmp =
       -- connection verified
       bob ##> "/i #team alice"
       aliceInfo bob True
-    setupDesynchronizedRatchet tmp alice
-    withTestChat tmp "bob_old" $ \bob -> do
+    setupDesynchronizedRatchet ps alice
+    withTestChat ps "bob_old" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob ##> "/sync #team alice"
@@ -3690,8 +3703,9 @@ testGroupSyncRatchetCodeReset tmp =
         connVerified
           | verified = "connection verified"
           | otherwise = "connection not verified, use /code command to see security code"
+#endif
 
-testSetGroupMessageReactions :: HasCallStack => FilePath -> IO ()
+testSetGroupMessageReactions :: HasCallStack => TestParams -> IO ()
 testSetGroupMessageReactions =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -3763,11 +3777,11 @@ testSetGroupMessageReactions =
       cath <# "#team alice> hi"
       cath <## "      👍 1"
 
-testSendGroupDeliveryReceipts :: HasCallStack => FilePath -> IO ()
-testSendGroupDeliveryReceipts tmp =
-  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+testSendGroupDeliveryReceipts :: HasCallStack => TestParams -> IO ()
+testSendGroupDeliveryReceipts ps =
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
         -- turn off contacts receipts for tests
         alice ##> "/_set receipts contacts 1 off"
         alice <## "ok"
@@ -3793,11 +3807,11 @@ testSendGroupDeliveryReceipts tmp =
   where
     cfg = testCfg {showReceipts = True}
 
-testConfigureGroupDeliveryReceipts :: HasCallStack => FilePath -> IO ()
-testConfigureGroupDeliveryReceipts tmp =
-  withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp cfg "cath" cathProfile $ \cath -> do
+testConfigureGroupDeliveryReceipts :: HasCallStack => TestParams -> IO ()
+testConfigureGroupDeliveryReceipts ps =
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
         -- turn off contacts receipts for tests
         alice ##> "/_set receipts contacts 1 off"
         alice <## "ok"
@@ -3942,11 +3956,11 @@ testConfigureGroupDeliveryReceipts tmp =
       cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
       cc1 <// 50000
 
-testNoGroupDirectConns :: HasCallStack => VersionRangeChat -> VersionRangeChat -> VersionRangeChat -> Bool -> FilePath -> IO ()
-testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
-  withNewTestChatCfg tmp testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg tmp testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg tmp testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
+testNoGroupDirectConns :: HasCallStack => VersionRangeChat -> VersionRangeChat -> VersionRangeChat -> Bool -> TestParams -> IO ()
+testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns ps =
+  withNewTestChatCfg ps testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfg ps testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg ps testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
         if noDirectConns
           then contactsDontExist bob cath
@@ -3970,7 +3984,7 @@ testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns tmp =
              ]
       bob <##> cath
 
-testNoDirectDifferentLDNs :: HasCallStack => FilePath -> IO ()
+testNoDirectDifferentLDNs :: HasCallStack => TestParams -> IO ()
 testNoDirectDifferentLDNs =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4040,7 +4054,7 @@ testNoDirectDifferentLDNs =
           bob <# ("#" <> gName <> " " <> cathLDN <> "> hey")
         ]
 
-testMergeMemberExistingContact :: HasCallStack => FilePath -> IO ()
+testMergeMemberExistingContact :: HasCallStack => TestParams -> IO ()
 testMergeMemberExistingContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4087,7 +4101,7 @@ testMergeMemberExistingContact =
       alice `hasContactProfiles` ["alice", "bob", "cath"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
 
-testMergeContactExistingMember :: HasCallStack => FilePath -> IO ()
+testMergeContactExistingMember :: HasCallStack => TestParams -> IO ()
 testMergeContactExistingMember =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4118,7 +4132,7 @@ testMergeContactExistingMember =
       bob `hasContactProfiles` ["alice", "bob", "cath"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
 
-testMergeContactMultipleMembers :: HasCallStack => FilePath -> IO ()
+testMergeContactMultipleMembers :: HasCallStack => TestParams -> IO ()
 testMergeContactMultipleMembers =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4156,7 +4170,7 @@ testMergeContactMultipleMembers =
       bob `hasContactProfiles` ["alice", "bob", "cath"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
 
-testMergeGroupLinkHostMultipleContacts :: HasCallStack => FilePath -> IO ()
+testMergeGroupLinkHostMultipleContacts :: HasCallStack => TestParams -> IO ()
 testMergeGroupLinkHostMultipleContacts =
   testChatCfg2 testCfgGroupLinkViaContact bobProfile cathProfile $
     \bob cath -> do
@@ -4205,7 +4219,7 @@ testMergeGroupLinkHostMultipleContacts =
       bob `hasContactProfiles` ["bob", "cath", "cath"]
       cath `hasContactProfiles` ["cath", "bob", "bob"]
 
-testMemberContactMessage :: HasCallStack => FilePath -> IO ()
+testMemberContactMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4272,7 +4286,7 @@ testMemberContactMessage =
       cath #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
       bob <##> cath
 
-testMemberContactNoMessage :: HasCallStack => FilePath -> IO ()
+testMemberContactNoMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactNoMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4293,7 +4307,7 @@ testMemberContactNoMessage =
       cath #$> ("/_get chat #1 count=1", chat, [(0, "started direct connection with you")])
       bob <##> cath
 
-testMemberContactProhibitedContactExists :: HasCallStack => FilePath -> IO ()
+testMemberContactProhibitedContactExists :: HasCallStack => TestParams -> IO ()
 testMemberContactProhibitedContactExists =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4306,7 +4320,7 @@ testMemberContactProhibitedContactExists =
       alice <# "@bob hi"
       bob <# "alice> hi"
 
-testMemberContactProhibitedRepeatInv :: HasCallStack => FilePath -> IO ()
+testMemberContactProhibitedRepeatInv :: HasCallStack => TestParams -> IO ()
 testMemberContactProhibitedRepeatInv =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4333,11 +4347,11 @@ testMemberContactProhibitedRepeatInv =
 
       bob <##> cath
 
-testMemberContactInvitedConnectionReplaced :: HasCallStack => FilePath -> IO ()
-testMemberContactInvitedConnectionReplaced tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+testMemberContactInvitedConnectionReplaced :: HasCallStack => TestParams -> IO ()
+testMemberContactInvitedConnectionReplaced ps = do
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
 
         alice ##> "/d bob"
@@ -4365,20 +4379,20 @@ testMemberContactInvitedConnectionReplaced tmp = do
         items <- chat <$> getTermLine bob
         items `shouldContain` [(0, "security code changed")]
 
-    withTestChat tmp "bob" $ \bob -> do
+    withTestChat ps "bob" $ \bob -> do
       subscriptions bob 1
 
       checkConnectionsWork alice bob
 
-  withTestChat tmp "alice" $ \alice -> do
+  withTestChat ps "alice" $ \alice -> do
     subscriptions alice 2
 
-    withTestChat tmp "bob" $ \bob -> do
+    withTestChat ps "bob" $ \bob -> do
       subscriptions bob 1
 
       checkConnectionsWork alice bob
 
-      withTestChat tmp "cath" $ \cath -> do
+      withTestChat ps "cath" $ \cath -> do
         subscriptions cath 1
 
         -- group messages work
@@ -4404,7 +4418,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
       alice @@@ [("@bob", "hey"), ("@cath", "sent invitation to join group team as admin"), ("#team", "connected")]
       bob @@@ [("@alice", "hey"), ("#team", "started direct connection with you")]
 
-testMemberContactIncognito :: HasCallStack => FilePath -> IO ()
+testMemberContactIncognito :: HasCallStack => TestParams -> IO ()
 testMemberContactIncognito =
   testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4504,7 +4518,7 @@ testMemberContactIncognito =
           bob ?<# ("#team " <> cathIncognito <> "> hey")
         ]
 
-testMemberContactProfileUpdate :: HasCallStack => FilePath -> IO ()
+testMemberContactProfileUpdate :: HasCallStack => TestParams -> IO ()
 testMemberContactProfileUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4572,7 +4586,7 @@ testMemberContactProfileUpdate =
       alice <# "#team kate> hello there"
       bob <# "#team kate> hello there" -- updated profile
 
-testRecreateMemberContactManyGroups :: HasCallStack => FilePath -> IO ()
+testRecreateMemberContactManyGroups :: HasCallStack => TestParams -> IO ()
 testRecreateMemberContactManyGroups =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -4639,7 +4653,7 @@ testRecreateMemberContactManyGroups =
       bob <# "@alice 4"
       alice <# "bob> 4"
 
-testGroupMsgForward :: HasCallStack => FilePath -> IO ()
+testGroupMsgForward :: HasCallStack => TestParams -> IO ()
 testGroupMsgForward =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4679,7 +4693,7 @@ setupGroupForwarding3 gName alice bob cath = do
   void $ withCCTransaction alice $ \db ->
     DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
 
-testGroupMsgForwardDeduplicate :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardDeduplicate :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeduplicate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4716,7 +4730,7 @@ testGroupMsgForwardDeduplicate =
       cath <#. "#team bob> hi there"
       cath <# "#team hey team"
 
-testGroupMsgForwardEdit :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardEdit :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardEdit =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4739,7 +4753,7 @@ testGroupMsgForwardEdit =
       cath ##> "/tail #team 1"
       cath <# "#team bob> hello there [>>]"
 
-testGroupMsgForwardReaction :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardReaction :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReaction =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4756,7 +4770,7 @@ testGroupMsgForwardReaction =
       bob <# "#team cath> > bob hi there"
       bob <## "    + 👍"
 
-testGroupMsgForwardDeletion :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardDeletion :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeletion =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4771,7 +4785,7 @@ testGroupMsgForwardDeletion =
       alice <# "#team bob> [marked deleted] hi there"
       cath <# "#team bob> [marked deleted] hi there" -- TODO show as forwarded
 
-testGroupMsgForwardFile :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardFile :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardFile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -4796,7 +4810,7 @@ testGroupMsgForwardFile =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
 
-testGroupMsgForwardChangeRole :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardChangeRole :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardChangeRole =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4807,7 +4821,7 @@ testGroupMsgForwardChangeRole =
       alice <## "#team: cath changed the role of bob from admin to member"
       bob <## "#team: cath changed your role from admin to member" -- TODO show as forwarded
 
-testGroupMsgForwardNewMember :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardNewMember :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardNewMember =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -4848,7 +4862,7 @@ testGroupMsgForwardNewMember =
                "dan (Daniel): member"
              ]
 
-testGroupMsgForwardLeave :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardLeave :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardLeave =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4860,7 +4874,7 @@ testGroupMsgForwardLeave =
       alice <## "#team: bob left the group"
       cath <## "#team: bob left the group"
 
-testGroupHistory :: HasCallStack => FilePath -> IO ()
+testGroupHistory :: HasCallStack => TestParams -> IO ()
 testGroupHistory =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4904,7 +4918,7 @@ testGroupHistory =
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
 
-testGroupHistoryGroupLink :: HasCallStack => FilePath -> IO ()
+testGroupHistoryGroupLink :: HasCallStack => TestParams -> IO ()
 testGroupHistoryGroupLink =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -4952,7 +4966,7 @@ testGroupHistoryGroupLink =
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
 
-testGroupHistoryPreferenceOff :: HasCallStack => FilePath -> IO ()
+testGroupHistoryPreferenceOff :: HasCallStack => TestParams -> IO ()
 testGroupHistoryPreferenceOff =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -5037,7 +5051,7 @@ testGroupHistoryPreferenceOff =
       cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
 
-testGroupHistoryHostFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryHostFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryHostFile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -5076,7 +5090,7 @@ testGroupHistoryHostFile =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
 
-testGroupHistoryMemberFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryMemberFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryMemberFile =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -5115,7 +5129,7 @@ testGroupHistoryMemberFile =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
 
-testGroupHistoryLargeFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryLargeFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryLargeFile =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -5173,7 +5187,7 @@ testGroupHistoryLargeFile =
   where
     cfg = testCfg {xftpDescrPartSize = 200}
 
-testGroupHistoryMultipleFiles :: HasCallStack => FilePath -> IO ()
+testGroupHistoryMultipleFiles :: HasCallStack => TestParams -> IO ()
 testGroupHistoryMultipleFiles =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -5253,7 +5267,7 @@ testGroupHistoryMultipleFiles =
                           ((0, "hey bob"), Just "./tests/tmp/testfile_alice_1")
                         ]
 
-testGroupHistoryFileCancel :: HasCallStack => FilePath -> IO ()
+testGroupHistoryFileCancel :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancel =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -5308,7 +5322,7 @@ testGroupHistoryFileCancel =
             bob <## "#team: new member cath is connected"
         ]
 
-testGroupHistoryFileCancelNoText :: HasCallStack => FilePath -> IO ()
+testGroupHistoryFileCancelNoText :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancelNoText =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -5367,7 +5381,7 @@ testGroupHistoryFileCancelNoText =
             bob <## "#team: new member cath is connected"
         ]
 
-testGroupHistoryQuotes :: HasCallStack => FilePath -> IO ()
+testGroupHistoryQuotes :: HasCallStack => TestParams -> IO ()
 testGroupHistoryQuotes =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -5473,7 +5487,7 @@ testGroupHistoryQuotes =
                           ((0, "4"), Just (0, "BOB"))
                         ]
 
-testGroupHistoryDeletedMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryDeletedMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryDeletedMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -5511,7 +5525,7 @@ testGroupHistoryDeletedMessage =
       r `shouldContain` [(0, "hello")]
       r `shouldNotContain` [(0, "hey!")]
 
-testGroupHistoryDisappearingMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryDisappearingMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryDisappearingMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -5595,7 +5609,7 @@ testGroupHistoryDisappearingMessage =
       r2 `shouldNotContain` [(0, "2")]
       r2 `shouldNotContain` [(0, "3")]
 
-testGroupHistoryWelcomeMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryWelcomeMessage :: HasCallStack => TestParams -> IO ()
 testGroupHistoryWelcomeMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -5652,7 +5666,7 @@ testGroupHistoryWelcomeMessage =
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
 
-testGroupHistoryUnknownMember :: HasCallStack => FilePath -> IO ()
+testGroupHistoryUnknownMember :: HasCallStack => TestParams -> IO ()
 testGroupHistoryUnknownMember =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -5720,7 +5734,7 @@ testGroupHistoryUnknownMember =
       dan #> "#team 3"
       [alice, cath] *<# "#team dan> 3"
 
-testMembershipProfileUpdateNextGroupMessage :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateNextGroupMessage :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateNextGroupMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -5818,7 +5832,7 @@ testMembershipProfileUpdateNextGroupMessage =
       rc <- chat <$> getTermLine cath
       rc `shouldContain` [(0, "updated profile")]
 
-testMembershipProfileUpdateSameMember :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateSameMember :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateSameMember =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -5876,7 +5890,7 @@ testMembershipProfileUpdateSameMember =
       rClub <- chat <$> getTermLine bob
       rClub `shouldNotContain` [(0, "updated profile")]
 
-testMembershipProfileUpdateContactActive :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactActive :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactActive =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -5947,7 +5961,7 @@ testMembershipProfileUpdateContactActive =
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
 
-testMembershipProfileUpdateContactDeleted :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactDeleted :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDeleted =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -6026,7 +6040,7 @@ testMembershipProfileUpdateContactDeleted =
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
 
-testMembershipProfileUpdateContactDisabled :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactDisabled :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactDisabled =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -6081,7 +6095,7 @@ testMembershipProfileUpdateContactDisabled =
       rGrp <- chat <$> getTermLine bob
       rGrp `shouldContain` [(0, "updated profile")]
 
-testMembershipProfileUpdateNoChangeIgnored :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateNoChangeIgnored :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateNoChangeIgnored =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -6120,7 +6134,7 @@ testMembershipProfileUpdateNoChangeIgnored =
       rGrp <- chat <$> getTermLine bob
       rGrp `shouldNotContain` [(0, "updated profile")]
 
-testMembershipProfileUpdateContactLinkIgnored :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactLinkIgnored :: HasCallStack => TestParams -> IO ()
 testMembershipProfileUpdateContactLinkIgnored =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -6162,7 +6176,7 @@ testMembershipProfileUpdateContactLinkIgnored =
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
 
-testBlockForAllMarkedBlocked :: HasCallStack => FilePath -> IO ()
+testBlockForAllMarkedBlocked :: HasCallStack => TestParams -> IO ()
 testBlockForAllMarkedBlocked =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -6249,7 +6263,7 @@ testBlockForAllMarkedBlocked =
             )
       bob #$> ("/_get chat #1 count=4", chat, [(1, "1"), (1, "2"), (1, "3"), (1, "4")])
 
-testBlockForAllFullDelete :: HasCallStack => FilePath -> IO ()
+testBlockForAllFullDelete :: HasCallStack => TestParams -> IO ()
 testBlockForAllFullDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -6329,7 +6343,7 @@ testBlockForAllFullDelete =
             )
       bob #$> ("/_get chat #1 count=4", chat, [(1, "1"), (1, "2"), (1, "3"), (1, "4")])
 
-testBlockForAllAnotherAdminUnblocks :: HasCallStack => FilePath -> IO ()
+testBlockForAllAnotherAdminUnblocks :: HasCallStack => TestParams -> IO ()
 testBlockForAllAnotherAdminUnblocks =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -6357,7 +6371,7 @@ testBlockForAllAnotherAdminUnblocks =
 
       bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
 
-testBlockForAllBeforeJoining :: HasCallStack => FilePath -> IO ()
+testBlockForAllBeforeJoining :: HasCallStack => TestParams -> IO ()
 testBlockForAllBeforeJoining =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -6425,7 +6439,7 @@ testBlockForAllBeforeJoining =
       cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
 
-testBlockForAllCantRepeat :: HasCallStack => FilePath -> IO ()
+testBlockForAllCantRepeat :: HasCallStack => TestParams -> IO ()
 testBlockForAllCantRepeat =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -6471,11 +6485,11 @@ testBlockForAllCantRepeat =
 
       bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
 
-testGroupMemberInactive :: HasCallStack => FilePath -> IO ()
-testGroupMemberInactive tmp = do
+testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
+testGroupMemberInactive ps = do
   withSmpServer' serverCfg' $ do
-    withNewTestChatCfgOpts tmp cfg' opts' "alice" aliceProfile $ \alice -> do
-      withNewTestChatCfgOpts tmp cfg' opts' "bob" bobProfile $ \bob -> do
+    withNewTestChatCfgOpts ps cfg' opts' "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
         createGroup2 "team" alice bob
 
         alice #> "#team hi"
@@ -6498,7 +6512,7 @@ testGroupMemberInactive tmp = do
 
       threadDelay 1500000
 
-      withTestChatCfgOpts tmp cfg' opts' "bob" $ \bob -> do
+      withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
         bob <## "1 contacts connected (use /cs for the list)"
         bob <## "#team: connected to server(s)"
         bob <# "#team alice> 1"
@@ -6540,3 +6554,80 @@ testGroupMemberInactive tmp = do
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testGroupMemberReports :: HasCallStack => TestParams -> IO ()
+testGroupMemberReports =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "jokes" alice bob cath
+      alice ##> "/mr jokes bob moderator"
+      concurrentlyN_
+        [ alice <## "#jokes: you changed the role of bob from admin to moderator",
+          bob <## "#jokes: alice changed your role from admin to moderator",
+          cath <## "#jokes: alice changed the role of bob from admin to moderator"
+        ]
+      alice ##> "/mr jokes cath member"
+      concurrentlyN_
+        [ alice <## "#jokes: you changed the role of cath from admin to member",
+          bob <## "#jokes: alice changed the role of cath from admin to member",
+          cath <## "#jokes: alice changed your role from admin to member"
+        ]
+      alice ##> "/create link #jokes"
+      gLink <- getGroupLink alice "jokes" GRMember True
+      dan ##> ("/c " <> gLink)
+      dan <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "dan (Daniel): accepting request to join group #jokes..."
+            alice <## "#jokes: dan joined the group",
+          do
+            dan <## "#jokes: joining the group..."
+            dan <## "#jokes: you joined the group"
+            dan <###
+              [ "#jokes: member bob (Bob) is connected",
+                "#jokes: member cath (Catherine) is connected"
+              ],
+          do
+            bob <## "#jokes: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#jokes: new member dan is connected",
+          do
+            cath <## "#jokes: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#jokes: new member dan is connected"
+        ]
+      cath #> "#jokes inappropriate joke"
+      concurrentlyN_
+        [ alice <# "#jokes cath> inappropriate joke",
+          bob <# "#jokes cath> inappropriate joke",
+          dan <# "#jokes cath> inappropriate joke"
+        ]
+      dan ##> "/report #jokes content inappropriate joke"
+      dan <# "#jokes > cath inappropriate joke"
+      dan <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#jokes dan> > cath inappropriate joke"
+            alice <## "      report content",
+          do
+            bob <# "#jokes dan> > cath inappropriate joke"
+            bob <## "      report content",
+          (cath </)
+        ]
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
+      alice ##> "\\\\ #jokes cath inappropriate joke"
+      concurrentlyN_
+        [ do
+            alice <## "#jokes: 1 messages deleted by member alice"
+            alice <## "message marked deleted by you",
+          do
+            bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
+            bob <## "#jokes: 1 messages deleted by member alice",
+          cath <# "#jokes cath> [marked deleted by alice] inappropriate joke",
+          do
+            dan <# "#jokes cath> [marked deleted by alice] inappropriate joke"
+            dan <## "#jokes: 1 messages deleted by member alice"
+        ]
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])

@@ -174,7 +174,6 @@ struct CreateFirstProfile: View {
         }
         .onAppear() {
             focusDisplayName = true
-            setLastVersionDefault()
         }
         .padding(.horizontal, 25)
         .padding(.top, 10)

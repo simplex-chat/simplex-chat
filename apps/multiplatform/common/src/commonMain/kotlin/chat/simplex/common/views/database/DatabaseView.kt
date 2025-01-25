@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
@@ -21,6 +22,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -30,6 +32,7 @@ import kotlinx.datetime.*
 import java.io.*
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -44,11 +47,14 @@ fun DatabaseView() {
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val stopped = remember { m.chatRunning }.value == false
   val saveArchiveLauncher = rememberFileChooserLauncher(false) { to: URI? ->
-    val file = chatArchiveFile.value
-    if (file != null && to != null) {
-      copyFileToFile(File(file), to) {
-        chatArchiveFile.value = null
-      }
+    val archive = chatArchiveFile.value
+    if (archive != null && to != null) {
+      copyFileToFile(File(archive), to) {}
+    }
+    // delete no matter the database was exported or canceled the export process
+    if (archive != null) {
+      File(archive).delete()
+      chatArchiveFile.value = null
     }
   }
   val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
@@ -56,8 +62,7 @@ fun DatabaseView() {
     if (to != null) {
       importArchiveAlert {
         stopChatRunBlockStartChat(stopped, chatLastStart, progressIndicator) {
-          importArchive(to, appFilesCountAndSize, progressIndicator)
-          true
+          importArchive(to, appFilesCountAndSize, progressIndicator, false)
         }
       }
     }
@@ -104,6 +109,9 @@ fun DatabaseView() {
         }
       },
       onChatItemTTLSelected = {
+        if (it == null) {
+          return@DatabaseLayout
+        }
         val oldValue = chatItemTTL.value
         chatItemTTL.value = it
         if (it < oldValue) {
@@ -154,7 +162,7 @@ fun DatabaseLayout(
   exportArchive: () -> Unit,
   deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
-  onChatItemTTLSelected: (ChatItemTTL) -> Unit,
+  onChatItemTTLSelected: (ChatItemTTL?) -> Unit,
   disconnectAllHosts: () -> Unit,
 ) {
   val operationsDisabled = progressIndicator && !chatModel.desktopNoUserNoRemote
@@ -296,21 +304,25 @@ private fun setChatItemTTLAlert(
 }
 
 @Composable
-private fun TtlOptions(current: State<ChatItemTTL>, enabled: State<Boolean>, onSelected: (ChatItemTTL) -> Unit) {
+fun TtlOptions(
+  current: State<ChatItemTTL?>,
+  enabled: State<Boolean>,
+  onSelected: (ChatItemTTL?) -> Unit,
+  default: State<ChatItemTTL>? = null
+) {
   val values = remember {
-    val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Month, ChatItemTTL.Week, ChatItemTTL.Day)
-    if (current.value is ChatItemTTL.Seconds) {
-      all.add(current.value)
+    val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Year, ChatItemTTL.Month, ChatItemTTL.Week, ChatItemTTL.Day)
+    val currentValue = current.value
+    if (currentValue is ChatItemTTL.Seconds) {
+      all.add(currentValue)
     }
-    all.map {
-      when (it) {
-        is ChatItemTTL.None -> it to generalGetString(MR.strings.chat_item_ttl_none)
-        is ChatItemTTL.Day -> it to generalGetString(MR.strings.chat_item_ttl_day)
-        is ChatItemTTL.Week -> it to generalGetString(MR.strings.chat_item_ttl_week)
-        is ChatItemTTL.Month -> it to generalGetString(MR.strings.chat_item_ttl_month)
-        is ChatItemTTL.Seconds -> it to String.format(generalGetString(MR.strings.chat_item_ttl_seconds), it.secs)
-      }
+    val options: MutableList<Pair<ChatItemTTL?, String>> = all.map { it to it.text }.toMutableList()
+
+    if (default != null) {
+      options.add(null to String.format(generalGetString(MR.strings.chat_item_ttl_default), default.value.text))
     }
+
+    options
   }
   ExposedDropDownSettingRow(
     generalGetString(MR.strings.delete_messages_after),
@@ -525,9 +537,14 @@ fun deleteChatDatabaseFilesAndState() {
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
-  chatModel.chatItems.clearAndNotify()
   withLongRunningApi {
     withChats {
+      chatItems.clearAndNotify()
+      chats.clear()
+      popChatCollector.clear()
+    }
+    withReportsChatsIfOpen {
+      chatItems.clearAndNotify()
       chats.clear()
       popChatCollector.clear()
     }
@@ -641,6 +658,7 @@ suspend fun importArchive(
   importedArchiveURI: URI,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   progressIndicator: MutableState<Boolean>,
+  migration: Boolean
 ): Boolean {
   val m = chatModel
   progressIndicator.value = true
@@ -662,12 +680,13 @@ suspend fun importArchive(
           if (chatModel.localUserCreated.value == false) {
             chatModel.chatRunning.value = false
           }
+          return true
         } else {
           operationEnded(m, progressIndicator) {
             showArchiveImportedWithErrorsAlert(archiveErrors)
           }
+          return migration
         }
-        return true
       } catch (e: Error) {
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_importing_database), e.toString())
@@ -680,6 +699,8 @@ suspend fun importArchive(
     } finally {
       File(archivePath).delete()
     }
+  } else {
+    progressIndicator.value = false
   }
   return false
 }
@@ -691,14 +712,15 @@ private fun saveArchiveFromURI(importedArchiveURI: URI): String? {
     if (inputStream != null && archiveName != null) {
       val archivePath = "$databaseExportDir${File.separator}$archiveName"
       val destFile = File(archivePath)
-      Files.copy(inputStream, destFile.toPath())
+      Files.copy(inputStream, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
       archivePath
     } else {
       Log.e(TAG, "saveArchiveFromURI null inputStream")
       null
     }
   } catch (e: Exception) {
-    Log.e(TAG, "saveArchiveFromURI error: ${e.message}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_saving_database), e.stackTraceToString())
+    Log.e(TAG, "saveArchiveFromURI error: ${e.stackTraceToString()}")
     null
   }
 }

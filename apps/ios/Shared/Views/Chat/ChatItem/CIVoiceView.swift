@@ -169,18 +169,12 @@ struct VoiceMessagePlayer: View {
                 case let .sndError(sndFileError):
                     fileStatusIcon("multiply", 14)
                         .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("File error"),
-                                message: Text(sndFileError.errorInfo)
-                            ))
+                            showFileErrorAlert(sndFileError)
                         }
                 case let .sndWarning(sndFileError):
                     fileStatusIcon("exclamationmark.triangle.fill", 16)
                         .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("Temporary file error"),
-                                message: Text(sndFileError.errorInfo)
-                            ))
+                            showFileErrorAlert(sndFileError, temporary: true)
                         }
                 case .rcvInvitation: downloadButton(recordingFile, "play.fill")
                 case .rcvAccepted: loadingIcon()
@@ -191,18 +185,12 @@ struct VoiceMessagePlayer: View {
                 case let .rcvError(rcvFileError):
                     fileStatusIcon("multiply", 14)
                         .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("File error"),
-                                message: Text(rcvFileError.errorInfo)
-                            ))
+                            showFileErrorAlert(rcvFileError)
                         }
                 case let .rcvWarning(rcvFileError):
                     fileStatusIcon("exclamationmark.triangle.fill", 16)
                         .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("Temporary file error"),
-                                message: Text(rcvFileError.errorInfo)
-                            ))
+                            showFileErrorAlert(rcvFileError, temporary: true)
                         }
                 case .invalid: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }

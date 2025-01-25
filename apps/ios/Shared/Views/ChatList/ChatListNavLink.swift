@@ -43,9 +43,11 @@ func dynamicSize(_ font: DynamicTypeSize) -> DynamicSizes {
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatTagsModel: ChatTagsModel
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = false
     @ObservedObject var chat: Chat
+    @Binding var parentSheet: SomeSheet<AnyView>?
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
@@ -85,6 +87,7 @@ struct ChatListNavLink: View {
                 progressByTimeout = false
             }
         }
+        .actionSheet(item: $actionSheet) { $0.actionSheet }
     }
     
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
@@ -124,6 +127,7 @@ struct ChatListNavLink: View {
                     toggleNtfsButton(chat: chat)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    tagChatButton(chat)
                     if !chat.chatItems.isEmpty {
                         clearChatButton()
                     }
@@ -145,11 +149,10 @@ struct ChatListNavLink: View {
             }
         }
         .alert(item: $alert) { $0.alert }
-        .actionSheet(item: $actionSheet) { $0.actionSheet }
         .sheet(item: $sheet) {
             if #available(iOS 16.0, *) {
                 $0.content
-                    .presentationDetents([.fraction(0.4)])
+                    .presentationDetents([.fraction($0.fraction)])
             } else {
                 $0.content
             }
@@ -185,6 +188,7 @@ struct ChatListNavLink: View {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
                 .swipeActions(edge: .trailing) {
+                    tagChatButton(chat)
                     if (groupInfo.membership.memberCurrent) {
                         leaveGroupChatButton(groupInfo)
                     }
@@ -206,14 +210,25 @@ struct ChatListNavLink: View {
                 toggleNtfsButton(chat: chat)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                if !chat.chatItems.isEmpty {
+                tagChatButton(chat)
+                let showClearButton = !chat.chatItems.isEmpty
+                let showDeleteGroup = groupInfo.canDelete
+                let showLeaveGroup = groupInfo.membership.memberCurrent
+                let totalNumberOfButtons = 1 + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
+
+                if showClearButton, totalNumberOfButtons <= 3 {
                     clearChatButton()
                 }
-                if (groupInfo.membership.memberCurrent) {
+                if (showLeaveGroup) {
                     leaveGroupChatButton(groupInfo)
                 }
-                if groupInfo.canDelete {
-                    deleteGroupChatButton(groupInfo)
+                
+                if showDeleteGroup {
+                    if totalNumberOfButtons <= 3 {
+                        deleteGroupChatButton(groupInfo)
+                    } else {
+                        moreOptionsButton(chat, groupInfo)
+                    }
                 }
             }
         }
@@ -306,7 +321,67 @@ struct ChatListNavLink: View {
         }
         .tint(Color.orange)
     }
-
+    
+    private func tagChatButton(_ chat: Chat) -> some View {
+        Button {
+            setTagChatSheet(chat)
+        } label: {
+            SwipeLabel(NSLocalizedString("List", comment: "swipe action"), systemImage: "tag.fill", inverted: oneHandUI)
+        }
+        .tint(.mint)
+    }
+    
+    private func setTagChatSheet(_ chat: Chat) {
+        let screenHeight = UIScreen.main.bounds.height
+        let reservedSpace: Double = 4 * 44 // 2 for padding, 1 for "Create list" and another for extra tag
+        let tagsSpace = Double(max(chatTagsModel.userTags.count, 3)) * 44
+        let fraction = min((reservedSpace + tagsSpace) / screenHeight, 0.62)
+        
+        parentSheet = SomeSheet(
+            content: {
+                AnyView(
+                    NavigationView {
+                        if chatTagsModel.userTags.isEmpty {
+                            TagListEditor(chat: chat)
+                        } else {
+                            TagListView(chat: chat)
+                        }
+                    }
+                )
+            },
+            id: "lists sheet",
+            fraction: fraction
+        )
+    }
+    
+    private func moreOptionsButton(_ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
+        Button {
+            var buttons: [Alert.Button] = [
+                .default(Text("Clear")) {
+                    AlertManager.shared.showAlert(clearChatAlert())
+                }
+            ]
+            
+            if let gi = groupInfo, gi.canDelete {
+                buttons.append(.destructive(Text("Delete")) {
+                    AlertManager.shared.showAlert(deleteGroupAlert(gi))
+                })
+            }
+            
+            buttons.append(.cancel())
+                               
+            actionSheet = SomeActionSheet(
+                actionSheet: ActionSheet(
+                    title: Text("Clear or delete group?"),
+                    buttons: buttons
+                ),
+                id: "other options"
+            )
+        } label: {
+            SwipeLabel(NSLocalizedString("More", comment: "swipe action"), systemImage: "ellipsis", inverted: oneHandUI)
+        }
+    }
+    
     private func clearNoteFolderButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearNoteFolderAlert())
@@ -585,15 +660,15 @@ struct ChatListNavLink_Previews: PreviewProvider {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), parentSheet: .constant(nil))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), parentSheet: .constant(nil))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ))
+            ), parentSheet: .constant(nil))
         }
         .previewLayout(.fixed(width: 360, height: 82))
     }

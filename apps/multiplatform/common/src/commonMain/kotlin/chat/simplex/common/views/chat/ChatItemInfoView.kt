@@ -296,6 +296,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         }
       }
       SectionBottomSpacer()
+      SectionBottomSpacer()
     }
   }
 
@@ -308,6 +309,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         Text(stringResource(MR.strings.in_reply_to), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
         QuotedMsgView(qi)
       }
+      SectionBottomSpacer()
       SectionBottomSpacer()
     }
   }
@@ -323,6 +325,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING))
         ForwardedFromView(forwardedFromItem)
       }
+      SectionBottomSpacer()
       SectionBottomSpacer()
     }
   }
@@ -395,6 +398,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         }
       }
       SectionBottomSpacer()
+      SectionBottomSpacer()
     }
   }
 
@@ -433,12 +437,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   Column {
     if (numTabs() > 1) {
-      Column(
+      Box(
         Modifier
-          .fillMaxHeight(),
-        verticalArrangement = Arrangement.SpaceBetween
+          .fillMaxHeight()
       ) {
-        Column(Modifier.weight(1f)) {
+        Column {
           when (val sel = selection.value) {
             is CIInfoTab.Delivery -> {
               DeliveryTab(sel.memberDeliveryStatuses)
@@ -479,7 +482,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           }
         }
         val oneHandUI = remember { appPrefs.oneHandUI.state }
-        Box(Modifier.offset(x = 0.dp, y = if (oneHandUI.value) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)) {
+        Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().offset(x = 0.dp, y = if (oneHandUI.value) -AppBarHeight * fontSizeSqrtMultiplier else 0.dp)) {
           TabRow(
             selectedTabIndex = availableTabs.indexOfFirst { it::class == selection.value::class },
             Modifier.height(AppBarHeight * fontSizeSqrtMultiplier),

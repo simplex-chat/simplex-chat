@@ -15,26 +15,29 @@ import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatOpts (..), ChatCmdLog (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
+    ownersGroup :: Maybe KnownGroup,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
+    runCLI :: Bool,
     searchResults :: Int,
     testing :: Bool
   }
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
-directoryOpts appDir defaultDbFileName = do
-  coreOptions <- coreChatOptsP appDir defaultDbFileName
+directoryOpts appDir defaultDbName = do
+  coreOptions <- coreChatOptsP appDir defaultDbName
   adminUsers <-
     option
       parseKnownContacts
       ( long "admin-users"
           <> metavar "ADMIN_USERS"
+          <> value []
           <> help "Comma-separated list of admin-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
       )
   superUsers <-
@@ -44,6 +47,14 @@ directoryOpts appDir defaultDbFileName = do
           <> metavar "SUPER_USERS"
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
       )
+  ownersGroup <-
+    optional $
+      option
+        parseKnownGroup
+        ( long "owners-group"
+            <> metavar "OWNERS_GROUP"
+            <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
+        )
   directoryLog <-
     Just
       <$> strOption
@@ -58,22 +69,29 @@ directoryOpts appDir defaultDbFileName = do
           <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
           <> value "SimpleX-Directory"
       )
+  runCLI <- 
+    switch
+      ( long "run-cli"
+          <> help "Run directory service as CLI"
+      )
   pure
     DirectoryOpts
       { coreOptions,
         adminUsers,
         superUsers,
+        ownersGroup,
         directoryLog,
         serviceName = T.pack serviceName,
+        runCLI,
         searchResults = 10,
         testing = False
       }
 
 getDirectoryOpts :: FilePath -> FilePath -> IO DirectoryOpts
-getDirectoryOpts appDir defaultDbFileName =
+getDirectoryOpts appDir defaultDbName =
   execParser $
     info
-      (helper <*> versionOption <*> directoryOpts appDir defaultDbFileName)
+      (helper <*> versionOption <*> directoryOpts appDir defaultDbName)
       (header versionStr <> fullDesc <> progDesc "Start SimpleX Directory Service with DB_FILE, DIRECTORY_FILE and SUPER_USERS options")
   where
     versionStr = versionString versionNumber
