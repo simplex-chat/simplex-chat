@@ -1847,7 +1847,7 @@
     <string name="wallpaper_scale">Мащаб</string>
     <string name="please_try_later">Моля, опитайте по-късно.</string>
     <string name="file_error_no_file">Файлът не е намерен - най-вероятно файлът е бил изтрит или отказан.</string>
-    <string name="file_error_relay">Грешка на файловия сървър: %1 $ S</string>
+    <string name="file_error_relay">Грешка на файловия сървър: %1$s</string>
     <string name="file_error_auth">Грешен ключ или неизвестен адрес на файлово парче - най-вероятно файлът е изтрит.</string>
     <string name="share_text_file_status">Файлов статус: %s</string>
     <string name="all_users">Всички профили</string>
@@ -1881,7 +1881,7 @@
     <string name="servers_info_modal_error_title">Грешка</string>
     <string name="message_queue_info">Информация за опашката за съобщения</string>
     <string name="message_queue_info_none">няма</string>
-    <string name="message_queue_info_server_info">информация за опашката на сървъра: %1 $ S\n\nпоследно получено съобщение: %2 $ S</string>
+    <string name="message_queue_info_server_info">информация за опашката на сървъра: %1$s\n\nпоследно получено съобщение: %2$s</string>
     <string name="servers_info_details">Подробности</string>
     <string name="servers_info_reconnect_servers_title">Повторно свързване на сървърите?</string>
     <string name="servers_info_previously_connected_servers_section_header">Предишни свързани сървъри</string>

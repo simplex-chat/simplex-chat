@@ -478,7 +478,7 @@
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Ja sou al grup <b>%1$s</b>.]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Ja us esteu unint al grup <b>%1$s</b>.]]></string>
     <string name="migrate_from_device_delete_database_from_device">Suprimir la base de dades d\'aquest dispositiu</string>
-    <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[No heu d'utilitzar la mateixa base de dades en dos dispositius.]]></string>
+    <string name="migrate_from_device_you_must_not_start_database_on_two_device">No heu d'utilitzar la mateixa base de dades en dos dispositius.</string>
     <string name="servers_info_details">Detalls</string>
     <string name="decryption_errors">errors de desxifrat</string>
     <string name="servers_info_detailed_statistics">Estadístiques detallades</string>

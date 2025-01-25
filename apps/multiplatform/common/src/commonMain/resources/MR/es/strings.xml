@@ -36,7 +36,7 @@
     <string name="appearance_settings">Apariencia</string>
     <string name="app_version_title">Versión</string>
     <string name="network_session_mode_user_description"><![CDATA[Se usará una conexión TCP (y credenciales SOCKS) independiente <b>por cada perfil que tengas en la aplicación</b>.]]></string>
-    <string name="network_session_mode_entity_description">Se usará una conexión TCP (y credenciales SOCKS) independiente <b>por cada contacto y miembro del grupo</b>. \n<b>Recuerda</b>: si tienes muchas conexiones, el consumo de batería y tráfico pueden aumentar bastante y algunas conexiones pueden fallar.</string>
+    <string name="network_session_mode_entity_description"><![CDATA[Se usará una conexión TCP (y credenciales SOCKS) independiente <b>por cada contacto y miembro del grupo</b>. \n<b>Recuerda</b>: si tienes muchas conexiones, el consumo de batería y tráfico pueden aumentar bastante y algunas conexiones pueden fallar.]]></string>
     <string name="a_plus_b">a + b</string>
     <string name="about_simplex">Acerca de SimpleX</string>
     <string name="bold_text">negrita</string>

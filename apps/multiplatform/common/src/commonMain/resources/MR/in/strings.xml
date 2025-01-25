@@ -1968,7 +1968,7 @@
     <string name="share_text_moderated_at">Dimoderasi pada: %s</string>
     <string name="share_text_received_at">Diterima pada: %s</string>
     <string name="chat_archive">Atau impor berkas arsip</string>
-    <string name="agent_internal_error_desc">Harap laporkan ke pengembang:\n%S</string>
+    <string name="agent_internal_error_desc">Harap laporkan ke pengembang:\n%s</string>
     <string name="display_name__field">Nama profil:</string>
     <string name="servers_info_subscriptions_connections_pending">Tertunda</string>
     <string name="servers_info_previously_connected_servers_section_header">Server yang terhubung sebelumnya</string>

@@ -2116,7 +2116,7 @@
     <string name="address_or_1_time_link">Adres lub link jednorazowy?</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Link jednorazowy może być użyty <i>tylko z jednym kontaktem</i> - udostępnij go osobiście lub przez dowolny komunikator.]]></string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Adres SimpleX i jednorazowe linki są bezpieczne do udostępniania przez dowolny komunikator.</string>
-    <string name="report_item_archived_by">raport zarchiwizował</string>
+    <string name="report_item_archived_by">raport zarchiwizowany przez %s</string>
     <string name="report_reason_other">Inny powód</string>
     <string name="archive_report">Zarchiwizuj raport</string>
     <string name="address_settings">Ustawienia adresowe</string>
