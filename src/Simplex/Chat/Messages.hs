@@ -161,6 +161,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
 
 data MentionedMember = MentionedMember
   { mentionName :: ContactName, -- name used in the message text, used to look up this object
+    groupMemberId :: GroupMemberId,
     memberViewName :: Text, -- current member display name or alias, shown in the message
     memberRole :: GroupMemberRole -- used for admins/owners in the message
   }

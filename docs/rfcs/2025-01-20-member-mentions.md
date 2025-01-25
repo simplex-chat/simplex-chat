@@ -23,11 +23,11 @@ or
 Hello @'member name'
 ```
 
-This is the same format that people already use and that is currently supported in the API. The name in the message should use the display name at the time of mention, for backwards compatibility, and the message should additionally the mapping from used display names to shared group member IDs, and the UI would show the current display name (at the time of loading the message).
+This is the same format that people already use and that is currently supported in the API. The name in the message should use the display name at the time of mention, both for backwards compatibility and for better view in compose field, and the message should additionally include the mapping from used display names to shared group member IDs, and the UI would show the current display name (at the time of loading the message to the view).
 
 For this mapping the message JSON will include the array of mentions, as objects with properties `displayName` and `memberId`. This is to ensure the intent and that the fragments of text are treated as mentions.
 
-Using an immutable `memberId` would prevent any race conditions and duplicate display names. The receiving client would show a local view name (display name or an alias), and would open a correct member card when mention is tapped.
+Using an immutable `memberId` would prevent any race conditions and duplicate display names. The receiving client would show a local view name (display name or an alias), and might open a correct member card when mention is tapped.
 
 As display names are not unique in the group, we should convert them to locally-unique names (per message), by appending _1, _2, as necessary, and the same locally unique names should be used in the mapping to member IDs. These locally unique names must NOT use local user aliases, and must NOT use localDisplayName, as otherwise it may leak information that is known only to the user's client.
 

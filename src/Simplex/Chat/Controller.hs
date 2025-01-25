@@ -1080,7 +1080,7 @@ data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent,
-    mentions :: [MemberId]
+    mentions :: [MemberMention]
   }
   deriving (Show)
 
