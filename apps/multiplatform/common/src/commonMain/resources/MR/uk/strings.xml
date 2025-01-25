@@ -1440,7 +1440,7 @@
     <string name="only_one_device_can_work_at_the_same_time">Одночасно може працювати лише один пристрій</string>
     <string name="v5_4_link_mobile_desktop">Підключіть мобільний і десктопний додатки! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Через безпечний квантовостійкий протокол.</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Відкрийте <i>Використовувати з комп'ютера</i> в мобільному додатку та відскануйте QR-код.]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Відкрийте <i>Використовувати з комп\'ютера</i> в мобільному додатку та відскануйте QR-код.]]></string>
     <string name="v5_4_block_group_members_descr">Щоб приховати небажані повідомлення.</string>
     <string name="desktop_incompatible_version">Несумісна версія</string>
     <string name="new_desktop"><![CDATA[<i>(новий)</i>]]></string>
