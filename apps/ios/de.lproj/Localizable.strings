@@ -242,9 +242,6 @@
 "%lld new interface languages" = "%lld neue Sprachen für die Bedienoberfläche";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld Sekunde(n)";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld Sekunden";
 
 /* No comment provided by engineer. */
@@ -289,7 +286,8 @@
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "täglich";
 
 /* time interval */
@@ -298,10 +296,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 Minute";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "monatlich";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "wöchentlich";
 
 /* No comment provided by engineer. */
@@ -344,7 +344,7 @@
 "Abort changing address?" = "Wechsel der Empfängeradresse beenden?";
 
 /* No comment provided by engineer. */
-"About operators" = "Über Betreiber";
+"About operators" = "Über die Betreiber";
 
 /* No comment provided by engineer. */
 "About SimpleX Chat" = "Über SimpleX Chat";
@@ -380,7 +380,7 @@
 "Accepted conditions" = "Akzeptierte Nutzungsbedingungen";
 
 /* chat list item title */
-"accepted invitation" = "Einladung akzeptiert";
+"accepted invitation" = "Einladung angenommen";
 
 /* No comment provided by engineer. */
 "Acknowledged" = "Bestätigt";
@@ -785,7 +785,7 @@
 "Blur for better privacy." = "Für bessere Privatsphäre verpixeln.";
 
 /* No comment provided by engineer. */
-"Blur media" = "Medium unscharf machen";
+"Blur media" = "Medium verpixeln";
 
 /* No comment provided by engineer. */
 "bold" = "fett";
@@ -1476,7 +1476,8 @@
 /* No comment provided by engineer. */
 "decryption errors" = "Entschlüsselungs-Fehler";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "Voreinstellung (%@)";
 
 /* No comment provided by engineer. */
@@ -1486,7 +1487,6 @@
 "default (yes)" = "Voreinstellung (Ja)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "Löschen";
 
@@ -1574,7 +1574,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Die Nachricht löschen?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "Nachrichten löschen";
 
 /* No comment provided by engineer. */
@@ -1836,7 +1836,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Aktivieren (vorgenommene Einstellungen bleiben erhalten)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "Automatisches Löschen von Nachrichten aktivieren?";
 
 /* No comment provided by engineer. */
@@ -2259,7 +2259,7 @@
 /* swipe action */
 "Favorite" = "Favorit";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "File error" = "Datei-Fehler";
 
 /* alert message */
@@ -2983,13 +2983,13 @@
 "Members can send direct messages." = "Gruppenmitglieder können Direktnachrichten versenden.";
 
 /* No comment provided by engineer. */
-"Members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten senden.";
+"Members can send disappearing messages." = "Gruppenmitglieder können verschwindende Nachrichten versenden.";
 
 /* No comment provided by engineer. */
-"Members can send files and media." = "Gruppenmitglieder können Dateien und Medien senden.";
+"Members can send files and media." = "Gruppenmitglieder können Dateien und Medien versenden.";
 
 /* No comment provided by engineer. */
-"Members can send SimpleX links." = "Gruppenmitglieder können SimpleX-Links senden.";
+"Members can send SimpleX links." = "Gruppenmitglieder können SimpleX-Links versenden.";
 
 /* No comment provided by engineer. */
 "Members can send voice messages." = "Gruppenmitglieder können Sprachnachrichten versenden.";
@@ -3192,7 +3192,7 @@
 /* No comment provided by engineer. */
 "Network status" = "Netzwerkstatus";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "nie";
 
 /* No comment provided by engineer. */
@@ -4682,7 +4682,7 @@
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "Temporary file error" = "Temporärer Datei-Fehler";
 
 /* server test failure */
@@ -4803,13 +4803,13 @@
 "They can be overridden in contact and group settings." = "Sie können in den Kontakteinstellungen überschrieben werden.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern.";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern. Diese Aktion kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden! Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!";
 
 /* E2EE info chat item */
 "This chat is protected by end-to-end encryption." = "Dieser Chat ist durch Ende-zu-Ende-Verschlüsselung geschützt.";
@@ -5559,7 +5559,7 @@
 "You will still receive calls and notifications from muted profiles when they are active." = "Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.";
 
 /* No comment provided by engineer. */
-"You will stop receiving messages from this chat. Chat history will be preserved." = "Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.";
+"You will stop receiving messages from this chat. Chat history will be preserved." = "Sie werden von diesem Chat keine Nachrichten mehr erhalten. Der Nachrichtenverlauf bleibt erhalten.";
 
 /* No comment provided by engineer. */
 "You will stop receiving messages from this group. Chat history will be preserved." = "Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.";
@@ -5619,7 +5619,7 @@
 "Your preferences" = "Ihre Präferenzen";
 
 /* No comment provided by engineer. */
-"Your privacy" = "Ihre Privatsphäre";
+"Your privacy" = "Privatsphäre";
 
 /* No comment provided by engineer. */
 "Your profile" = "Mein Profil";

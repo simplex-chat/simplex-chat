@@ -242,9 +242,6 @@
 "%lld new interface languages" = "%lld новых языков интерфейса";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld секунд";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld секунд";
 
 /* No comment provided by engineer. */
@@ -289,7 +286,8 @@
 /* No comment provided by engineer. */
 "0s" = "0с";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "1 день";
 
 /* time interval */
@@ -298,10 +296,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 минута";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "1 месяц";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "1 неделю";
 
 /* No comment provided by engineer. */
@@ -1476,7 +1476,8 @@
 /* No comment provided by engineer. */
 "decryption errors" = "ошибки расшифровки";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "по умолчанию (%@)";
 
 /* No comment provided by engineer. */
@@ -1486,7 +1487,6 @@
 "default (yes)" = "по умолчанию (да)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "Удалить";
 
@@ -1574,7 +1574,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Удалить сообщение?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "Удалить сообщения";
 
 /* No comment provided by engineer. */
@@ -1836,7 +1836,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Включить (кроме исключений)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "Включить автоматическое удаление сообщений?";
 
 /* No comment provided by engineer. */
@@ -2259,7 +2259,7 @@
 /* swipe action */
 "Favorite" = "Избранный";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "File error" = "Ошибка файла";
 
 /* alert message */
@@ -3192,7 +3192,7 @@
 /* No comment provided by engineer. */
 "Network status" = "Состояние сети";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "никогда";
 
 /* No comment provided by engineer. */
@@ -4682,7 +4682,7 @@
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "Temporary file error" = "Временная ошибка файла";
 
 /* server test failure */
