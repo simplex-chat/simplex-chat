@@ -538,7 +538,7 @@ processChatCommand' vr = \case
         _ -> pure Nothing
   APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case cType of
     CTDirect -> do
-      -- TODO [mentions] throw error if any of cms has mentions
+      mapM_ assertNoMentions cms
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
     CTGroup -> do
@@ -569,8 +569,7 @@ processChatCommand' vr = \case
     withFastStore' $ \db -> reorderChatTags db user $ L.toList tagIds
     ok user
   APICreateChatItems folderId cms -> withUser $ \user -> do
-    -- TODO [mentions] validate there are no mentions
-    mapM_ assertAllowedContent' cms
+    forM_ cms $ \cm -> assertAllowedContent' cm >> assertNoMentions cm
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
   APIReportMessage gId reportedItemId reportReason reportText -> withUser $ \user ->
     withGroupLock "reportMessage" gId $ do
@@ -2955,7 +2954,11 @@ processChatCommand' vr = \case
       MCReport {} -> throwChatError $ CECommandError "sending reports via this API is not supported"
       _ -> pure ()
     assertAllowedContent' :: ComposedMessage -> CM ()
-    assertAllowedContent' ComposedMessage {msgContent} = assertAllowedContent msgContent        
+    assertAllowedContent' ComposedMessage {msgContent} = assertAllowedContent msgContent
+    assertNoMentions :: ComposedMessage -> CM ()
+    assertNoMentions ComposedMessage {mentions}
+      | null mentions = pure ()
+      | otherwise = throwChatError $ CECommandError "mentions are not supported in this chat"
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cmrs = do
       assertMultiSendable live cmrs

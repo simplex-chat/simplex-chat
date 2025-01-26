@@ -102,6 +102,9 @@ import UnliftIO.STM
 maxMsgReactions :: Int
 maxMsgReactions = 3
 
+maxRcvMentions :: Int
+maxRcvMentions = 5
+
 withChatLock :: String -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
 
@@ -1588,18 +1591,36 @@ saveRcvChatItem :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
   saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content Nothing Nothing False []
 
--- TODO [mentions] check if user is mentioned to update/set userMention
 saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> UTCTime -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> [MemberMention] -> CM (ChatItem c 'MDRcv)
-saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerTs content ciFile itemTimed live _mentions = do
+saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} sharedMsgId_ brokerTs content ciFile itemTimed live mentions = do
   createdAt <- liftIO getCurrentTime
-  -- TODO [mentions]
-  let userMention = False -- set to True on replies to user messages and to mentions of user
-  (ciId, quotedItem, itemForwarded) <- withStore' $ \db -> do
+  let itemText = ciContentToText content
+      formattedText = parseMaybeMarkdownList itemText
+      itemStatus = ciCreateStatus content
+  withStore' $ \db -> do
     when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
-    r@(ciId, _, _) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
+    let (mentions' :: [MemberMention], userMention) = case cd of
+          CDGroupRcv GroupInfo {membership} _ ->
+            let mentions2 = case formattedText of
+                  Just ft | not (null mentions) ->
+                    let msgMentions = S.fromList $ mapMaybe (\(FormattedText f _) -> mentionedName =<< f) ft
+                     in filter (\MemberMention {memberName} -> memberName `S.member` msgMentions) $ take maxRcvMentions mentions
+                  _ -> []
+                userReply = case cmToQuotedMsg chatMsgEvent of
+                  Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
+                  _ -> False
+                userMention' = userReply || any (\MemberMention {memberId} -> sameMemberId memberId membership) mentions2
+             in (mentions2, userMention')
+          _ -> ([], False)
+    (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-    pure r
-  pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
+    let meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId_ itemForwarded Nothing False itemTimed (justTrue live) userMention createdAt brokerTs forwardedByMember createdAt createdAt
+        ci = ChatItem {chatDir = toCIDirection cd, meta, content, mentions = [], formattedText, quotedItem, reactions = [], file = ciFile}
+    case cd of
+      CDGroupRcv g _ | not (null mentions') -> do
+        mms <- createGroupCIMentions db user g ci mentions'
+        pure (ci :: ChatItem 'CTGroup 'MDRcv) {mentions = mms}
+      _ -> pure ci
 
 mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
 mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =

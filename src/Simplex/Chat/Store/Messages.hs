@@ -35,6 +35,7 @@ module Simplex.Chat.Store.Messages
     updateChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
+    createGroupCIMentions,
     createNewChatItemNoMsg,
     createNewChatItem_,
     getChatPreviews,
@@ -402,8 +403,8 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forw
 -- TODO [mentions] store chat item mentions
 -- validate mentions (there is already parsed text)
 -- get mentioned members
-createGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MemberMention] -> IO (ChatItem 'CTGroup d)
-createGroupCIMentions _db _user _g ci _mentions = pure ci
+createGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MemberMention] -> IO [MentionedMember]
+createGroupCIMentions _db _user _g _ci _mentions = pure []
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection ciContent itemTs =

@@ -55,6 +55,11 @@ data Format
   | Phone
   deriving (Eq, Show)
 
+mentionedName :: Format -> Maybe Text
+mentionedName = \case
+  Mention name -> Just name
+  _ -> Nothing
+
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show)
 
