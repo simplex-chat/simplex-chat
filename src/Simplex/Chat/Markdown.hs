@@ -50,7 +50,7 @@ data Format
   | Colored {color :: FormatColor}
   | Uri
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
-  | Mention {memberId :: MemberId}
+  | Mention
   | Email
   | Phone
   deriving (Eq, Show)
@@ -60,9 +60,11 @@ data SimplexLinkType = XLContact | XLInvitation | XLGroup
 
 colored :: Color -> Format
 colored = Colored . FormatColor
+{-# INLINE colored #-}
 
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
+{-# INLINE markdown #-}
 
 instance Semigroup Markdown where
   m <> (Markdown _ "") = m
@@ -164,6 +166,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '`' -> formattedP '`' Snippet
           '#' -> A.char '#' *> secretP
           '!' -> coloredP <|> wordP
+          '@' -> mentionP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -193,6 +196,7 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.last s == ' '
         then fail "not colored"
         else pure $ markdown (colored clr) s
+    mentionP = markdown Mention <$> (A.char '@' *> displayNameTextP)
     colorP =
       A.anyChar >>= \case
         'r' -> "ed" $> Red <|> pure Red
@@ -251,6 +255,15 @@ markdownP = mconcat <$> A.many' fragmentP
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
+
+displayNameTextP :: Parser Text
+displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
+  where
+    takeNameTill p =
+      A.peekChar' >>= \c ->
+        if refChar c then A.takeTill p else fail "invalid first character in display name"
+    quoted c = A.char c *> takeNameTill (== c) <* A.char c
+    refChar c = c > ' ' && c /= '#' && c /= '@'
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

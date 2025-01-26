@@ -864,9 +864,6 @@ startUpdatedTimedItemThread user chatRef ci ci' =
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 
-sameMemberId :: MemberId -> GroupMember -> Bool
-sameMemberId memId GroupMember {memberId} = memId == memberId
-
 createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
   flip catchChatError (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
@@ -1581,30 +1578,35 @@ saveSndChatItems user cd itemsData itemTimed live = do
   where
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
     createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId}, content, ciFile, quotedItem, itemForwarded} = do
-      ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live createdAt
+      -- TODO [mentions]
+      let userMention = False -- set to True on replies to user messages and to mentions of user
+      ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live userMention createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ Right $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live createdAt Nothing createdAt
+      pure $ Right $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live userMention createdAt Nothing createdAt
 
 saveRcvChatItem :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
-  saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content Nothing Nothing False
+  saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content Nothing Nothing False []
 
-saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> UTCTime -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDRcv)
-saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerTs content ciFile itemTimed live = do
+-- TODO [mentions] check if user is mentioned to update/set userMention
+saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> UTCTime -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> [MemberMention] -> CM (ChatItem c 'MDRcv)
+saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerTs content ciFile itemTimed live _mentions = do
   createdAt <- liftIO getCurrentTime
+  -- TODO [mentions]
+  let userMention = False -- set to True on replies to user messages and to mentions of user
   (ciId, quotedItem, itemForwarded) <- withStore' $ \db -> do
     when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
-    r@(ciId, _, _) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
+    r@(ciId, _, _) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure r
-  pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live brokerTs forwardedByMember createdAt
+  pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
 
--- TODO [mentions]
-mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
-mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live itemTs forwardedByMember currentTs =
+mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
+mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
+  -- TODO [mentions] probably move formatted text to parameter, so that userMention can be determined without parsing twice
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention currentTs itemTs forwardedByMember currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 createAgentConnectionAsync :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> CM (CommandId, ConnId)
@@ -1817,7 +1819,7 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
       ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
-      let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+      let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 createLocalChatItems ::
@@ -1834,9 +1836,9 @@ createLocalChatItems user cd itemsData createdAt = do
   where
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom) -> IO (ChatItem 'CTLocal 'MDSnd)
     createItem db (content, ciFile, itemForwarded) = do
-      ciId <- createNewChatItem_ db user cd Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False createdAt Nothing createdAt
+      ciId <- createNewChatItem_ db user cd Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False createdAt Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem cd ciId content ciFile Nothing Nothing itemForwarded Nothing False createdAt Nothing createdAt
+      pure $ mkChatItem cd ciId content ciFile Nothing Nothing itemForwarded Nothing False False createdAt Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =

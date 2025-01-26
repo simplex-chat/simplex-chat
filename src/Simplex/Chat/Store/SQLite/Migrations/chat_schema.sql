@@ -407,7 +407,8 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
   via_proxy INTEGER,
   msg_content_tag TEXT,
-  include_in_history INTEGER NOT NULL DEFAULT 0
+  include_in_history INTEGER NOT NULL DEFAULT 0,
+  user_mention INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -641,6 +642,12 @@ CREATE TABLE chat_tags_chats(
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
+);
+CREATE TABLE chat_item_mentions(
+  chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items,
+  member_id BLOB NOT NULL,
+  member_name TEXT NOT NULL
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -990,4 +997,7 @@ CREATE INDEX idx_chat_items_groups_history ON chat_items(
 CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_snd_item_statuses(
   chat_item_id,
   group_member_id
+);
+CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(
+  chat_item_id
 );

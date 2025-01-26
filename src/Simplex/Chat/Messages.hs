@@ -161,17 +161,18 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
 
 data MentionedMember = MentionedMember
   { mentionName :: ContactName, -- name used in the message text, used to look up this object
-    groupMemberId :: GroupMemberId,
+    memberId :: MemberId,
+    groupMemberId :: Maybe GroupMemberId,
     memberViewName :: Text, -- current member display name or alias, shown in the message
     memberRole :: GroupMemberRole -- used for admins/owners in the message
   }
   deriving (Show)
 
--- TODO [mentions]
-isMention :: ChatItem c d -> Bool
-isMention ChatItem {chatDir, quotedItem} = case chatDir of
-  CIDirectRcv -> userItem quotedItem
-  CIGroupRcv _ -> userItem quotedItem
+isUserMention :: ChatInfo c -> ChatItem c d -> Bool
+isUserMention cInfo ChatItem {chatDir, quotedItem, mentions} = case (cInfo, chatDir) of
+  (_, CIDirectRcv) -> userItem quotedItem
+  (GroupChat GroupInfo {membership = m}, CIGroupRcv _) ->
+    userItem quotedItem || any (\MentionedMember {memberId} -> sameMemberId memberId m) mentions
   _ -> False
   where
     userItem = \case
@@ -384,12 +385,11 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention currentTs itemTs forwardedByMember createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
-      -- TODO [mentions]
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention = False, deletable, editable, forwardedByMember, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, deletable, editable, forwardedByMember, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted itemTs allowedInterval currentTs =

@@ -1087,23 +1087,12 @@ data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent,
-    mentions :: [MemberMention]
+    mentions :: [GroupMemberMention]
   }
   deriving (Show)
 
--- This instance is needed for backward compatibility, can be removed in v6.0
-instance FromJSON ComposedMessage where
-  parseJSON (J.Object v) = do
-    fileSource <-
-      (v .:? "fileSource") >>= \case
-        Nothing -> CF.plain <$$> (v .:? "filePath")
-        f -> pure f
-    quotedItemId <- v .:? "quotedItemId"
-    msgContent <- v .: "msgContent"
-    mentions <- fromMaybe [] <$> v .:? "mentions"
-    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
-  parseJSON invalid =
-    JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+data GroupMemberMention = GroupMemberMention {memberName :: ContactName, groupMemberId :: GroupMemberId}
+  deriving (Show)
 
 data ChatTagData = ChatTagData
   { emoji :: Maybe Text,
@@ -1636,6 +1625,22 @@ $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
+$(JQ.deriveJSON defaultJSON ''GroupMemberMention)
+
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
+
+-- This instance is needed for backward compatibility, can be removed in v6.0
+instance FromJSON ComposedMessage where
+  parseJSON (J.Object v) = do
+    fileSource <-
+      (v .:? "fileSource") >>= \case
+        Nothing -> CF.plain <$$> (v .:? "filePath")
+        f -> pure f
+    quotedItemId <- v .:? "quotedItemId"
+    msgContent <- v .: "msgContent"
+    mentions <- fromMaybe [] <$> v .:? "mentions"
+    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
+  parseJSON invalid =
+    JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
 $(JQ.deriveToJSON defaultJSON ''ChatTagData)

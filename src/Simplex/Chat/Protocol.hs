@@ -310,7 +310,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: [MemberMention], ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -531,6 +531,11 @@ mcExtMsgContent = \case
   MCComment _ c -> c
   MCForward c -> c
 
+isMCForward :: MsgContainer -> Bool
+isMCForward = \case
+  MCForward _ -> True
+  _ -> False
+
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
@@ -676,8 +681,8 @@ parseMsgContainer v =
       file <- v .:? "file"
       ttl <- v .:? "ttl"
       live <- v .:? "live"
-      -- TODO [mentions] should allow absent mentions property and parse it as empty array
-      pure ExtMsgContent {content, mentions = [], file, ttl, live}
+      mentions <- fromMaybe [] <$> (v .:? "mentions")
+      pure ExtMsgContent {content, mentions, file, ttl, live}
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
 extMsgContent mc file = ExtMsgContent mc [] file Nothing Nothing
@@ -729,9 +734,8 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    -- TODO [mentions] should encode empty array as absent property
-    msgContent ExtMsgContent {content, file, ttl, live} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= content]
+    msgContent ExtMsgContent {content, mentions, file, ttl, live} =
+      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? L.nonEmpty mentions) ["content" .= content]
 
 instance ToJSON MsgContent where
   toJSON = \case
@@ -1016,7 +1020,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
       XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
-      XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "ttl" <*> opt "live"
+      XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> (fromMaybe [] <$> opt "mentions") <*> opt "ttl" <*> opt "live"
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId"
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> p "reaction" <*> p "add"
@@ -1078,7 +1082,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
     params = \case
       XMsgNew container -> msgContainerJSON container
       XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
-      XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
+      XMsgUpdate msgId' content mentions ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? L.nonEmpty mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId reaction add -> o $ ("memberId" .=? memberId) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]

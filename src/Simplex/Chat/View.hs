@@ -499,7 +499,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
     unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
-    unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isMention ci
+    unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isUserMention chat ci
     unmutedReaction :: User -> ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
     unmutedReaction u chat CIReaction {chatDir} = unmuted' u chat chatDir False
     unmuted' :: User -> ChatInfo c -> CIDirection c d -> Bool -> [StyledString] -> [StyledString]

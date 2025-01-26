@@ -537,10 +537,12 @@ processChatCommand' vr = \case
           Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
         _ -> pure Nothing
   APISendMessages (ChatRef cType chatId) live itemTTL cms -> withUser $ \user -> mapM_ assertAllowedContent' cms >> case cType of
-    CTDirect ->
+    CTDirect -> do
+      -- TODO [mentions] throw error if any of cms has mentions
       withContactLock "sendMessage" chatId $
         sendContactContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
-    CTGroup ->
+    CTGroup -> do
+      -- TODO [mentions] validate and replace names in mentions
       withGroupLock "sendMessage" chatId $
         sendGroupContentMessages user chatId live itemTTL (L.map (,Nothing) cms)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
@@ -567,6 +569,7 @@ processChatCommand' vr = \case
     withFastStore' $ \db -> reorderChatTags db user $ L.toList tagIds
     ok user
   APICreateChatItems folderId cms -> withUser $ \user -> do
+    -- TODO [mentions] validate there are no mentions
     mapM_ assertAllowedContent' cms
     createNoteFolderContentItems user folderId (L.map (,Nothing) cms)
   APIReportMessage gId reportedItemId reportReason reportText -> withUser $ \user ->
@@ -599,7 +602,7 @@ processChatCommand' vr = \case
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                  (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XMsgUpdate itemSharedMId mc [] (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
                     when changed $
@@ -625,13 +628,15 @@ processChatCommand' vr = \case
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
                     then do
-                      SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                      -- TODO [mentions]
+                      SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc [] (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                         let edited = itemLive /= Just True
-                        updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
+                            mentions = [] -- TODO [mentions]
+                        updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live mentions $ Just msgId
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                       pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
                     else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
@@ -1921,7 +1926,7 @@ processChatCommand' vr = \case
       combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False createdAt
+        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False False createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
