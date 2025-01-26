@@ -16,6 +16,8 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
+    @State var mergedItems: MergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, 0, [], ItemsModel.shared.chatState)
+    @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
@@ -30,9 +32,7 @@ struct ChatView: View {
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
-    @State private var loadingItems = false
-    @State private var firstPage = false
-    @State private var revealedChatItem: ChatItem?
+    @State private var loadingMoreItems = false
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -46,6 +46,9 @@ struct ChatView: View {
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
+    @State private var allowLoadMoreItems: Bool = false
+    @State private var ignoreLoadingRequests: Int64? = nil
+    @State private var updateMergedItemsTask: Task<Void, Never>? = nil
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -76,7 +79,7 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
-                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
+                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat, loadingMoreItems: $loadingMoreItems)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -168,11 +171,14 @@ struct ChatView: View {
         }
         .onAppear {
             selectedChatItems = nil
+            revealedItems = Set()
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
             selectedChatItems = nil
+            revealedItems = Set()
+            // LALAL
             scrollModel.scrollToBottom()
             stopAudioPlayer()
             if let cId {
@@ -185,14 +191,22 @@ struct ChatView: View {
                 dismiss()
             }
         }
-        .onChange(of: revealedChatItem) { _ in
+        .onChange(of: revealedItems) { _ in
             NotificationCenter.postReverseListNeedsLayout()
         }
         .onChange(of: im.isLoading) { isLoading in
             if !isLoading,
                im.reversedChatItems.count <= loadItemsPerPage,
                filtered(im.reversedChatItems).count < 10 {
-                loadChatItems(chat.chatInfo)
+                let pagination: ChatPagination =
+                if let lastItem = im.reversedChatItems.last {
+                    .before(chatItemId: lastItem.id, count: loadItemsPerPage)
+                } else {
+                    .last(count: loadItemsPerPage)
+                }
+                Task {
+                    _ = await loadChatItems(chat.chatInfo, pagination)
+                }
             }
         }
         .environmentObject(scrollModel)
@@ -397,7 +411,7 @@ struct ChatView: View {
                 searchText = ""
                 searchMode = false
                 searchFocussed = false
-                Task { await loadChat(chat: chat) }
+                Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId) }
             }
         }
         .padding(.horizontal)
@@ -421,40 +435,99 @@ struct ChatView: View {
             .map { $0.element }
     }
 
+    var searchValueIsEmpty: Bool {
+        get {
+            searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
 
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
-        let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
+            let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
+            // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
+            ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant(nil)) { index, mergedItem in
+                let ci = switch mergedItem {
+                case let .single(item, _, _): item.item
+                case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
+                }
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
-                                ? voiceNoFrame
-                                    ? (g.size.width - 28) - 42
-                                    : (g.size.width - 28) * 0.84 - 42
-                                : voiceNoFrame
-                                    ? (g.size.width - 32)
-                                    : (g.size.width - 32) * 0.84
+                ? voiceNoFrame
+                ? (g.size.width - 28) - 42
+                : (g.size.width - 28) * 0.84 - 42
+                : voiceNoFrame
+                ? (g.size.width - 32)
+                : (g.size.width - 32) * 0.84
                 return ChatItemWithMenu(
                     chat: $chat,
+                    index: index,
+                    isLastItem: index == mergedItems.items.count - 1,
                     chatItem: ci,
+                    merged: mergedItem,
                     maxWidth: maxWidth,
                     composeState: $composeState,
                     selectedMember: $selectedMember,
                     showChatInfoSheet: $showChatInfoSheet,
-                    revealedChatItem: $revealedChatItem,
+                    revealedItems: $revealedItems,
                     selectedChatItems: $selectedChatItems,
-                    forwardedChatItems: $forwardedChatItems
+                    forwardedChatItems: $forwardedChatItems,
+                    reveal: { reveal in
+                        mergedItem.reveal(reveal, $revealedItems)
+                        updateMergedItemsTask?.cancel()
+                        mergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    }
                 )
+                .environmentObject(theme) // crashes without this line when scrolling to the first unread in ReverseList
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
-            } loadPage: {
-                loadChatItems(cInfo)
+            } loadItems: { unchecked, pagination, visibleItemIndexesNonReversed in
+                if unchecked {
+                    await loadChatItemsUnchecked(cInfo, pagination, visibleItemIndexesNonReversed)
+                } else {
+                    await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
+                }
+            }
+            .onAppear {
+                mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                loadLastItems($loadingMoreItems, chat.chatInfo)
+                allowLoadMoreItems = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    allowLoadMoreItems = true
+                }
+            }
+            .onChange(of: im.reversedChatItems) { items in
+                updateMergedItemsTask?.cancel()
+                updateMergedItemsTask = Task {
+                    let items = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    if Task.isCancelled {
+                        return
+                    }
+                    await MainActor.run {
+                        mergedItems = items
+                    }
+                }
+            }
+            .onChange(of: revealedItems) { revealed in
+                updateMergedItemsTask?.cancel()
+                mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealed, ItemsModel.shared.chatState)
+            }
+            .onChange(of: chat.chatStats.unreadCount) { unreadCount in
+                updateMergedItemsTask?.cancel()
+                mergedItems = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
+            }
+            .onChange(of: chat.id) { _ in
+                loadLastItems($loadingMoreItems, chat.chatInfo)
+                allowLoadMoreItems = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    allowLoadMoreItems = true
+                }
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
-                Task { await loadChat(chat: chat, search: searchText) }
+                Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, search: searchText) }
             }
             .onChange(of: im.itemAdded) { added in
                 if added {
@@ -487,22 +560,19 @@ struct ChatView: View {
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
+        var items: [MergedItem] = []
         var totalUnread: Int = 0
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
-        func updateOnListChange(_ listState: ListState) {
+        func updateOnListChange(_ items: [MergedItem], _ listState: ListState) {
             let im = ItemsModel.shared
-            let unreadBelow =
-                if let id = listState.bottomItemId,
-                   let index = im.reversedChatItems.firstIndex(where: { $0.id == id })
-                {
-                 im.reversedChatItems[..<index].reduce(into: 0) { unread, chatItem in
-                     if chatItem.isRcvNew { unread += 1 }
-                 }
-                } else {
-                    0
-                }
+            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(items, listState)
+            let unreadBelow = if let lastVisibleItem {
+                    max(0, totalUnread - lastVisibleItem.unreadBefore)
+            } else {
+             0
+            }
             let date: Date? =
                 if let topItemDate = listState.topItemDate {
                     Calendar.current.startOfDay(for: topItemDate)
@@ -517,6 +587,7 @@ struct ChatView: View {
                 it.unreadBelow = unreadBelow
                 it.date = date
                 it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
+                it.items = items
             }
             
             // set floating button indication mode
@@ -563,6 +634,7 @@ struct ChatView: View {
         let theme: AppTheme
         let scrollModel: ReverseListScrollModel
         let chat: Chat
+        @Binding var loadingMoreItems: Bool
         @ObservedObject var model = FloatingButtonModel.shared
 
         var body: some View {
@@ -573,46 +645,62 @@ struct ChatView: View {
                          .background(.thinMaterial)
                          .clipShape(Capsule())
                          .opacity(model.isDateVisible ? 1 : 0)
+                         .padding(.vertical, 4)
                 }
                 VStack {
                     let unreadAbove = model.totalUnread - model.unreadBelow
                     if unreadAbove > 0 {
-                        circleButton {
-                            unreadCountText(unreadAbove)
-                                .font(.callout)
-                                .foregroundColor(theme.colors.primary)
-                        }
-                        .onTapGesture {
-                            scrollModel.scrollToNextPage()
-                        }
-                        .contextMenu {
-                            Button {
-                                Task {
-                                    await markChatRead(chat)
+                        if loadingMoreItems {
+                            circleButton { ProgressView() }
+                        } else {
+                            circleButton {
+                                unreadCountText(unreadAbove)
+                                    .font(.callout)
+                                    .foregroundColor(theme.colors.primary)
+                            }
+                            .onTapGesture {
+                                if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
+                                    // scroll to the top unread item
+                                    scrollModel.scrollToRow(row: index)
                                 }
-                            } label: {
-                                Label("Mark read", systemImage: "checkmark")
+                            }
+                            .contextMenu {
+                                Button {
+                                    Task {
+                                        await markChatRead(chat)
+                                    }
+                                } label: {
+                                    Label("Mark read", systemImage: "checkmark")
+                                }
                             }
                         }
                     }
                     Spacer()
                     if model.unreadBelow > 0 {
-                        circleButton {
-                            unreadCountText(model.unreadBelow)
-                                .font(.callout)
-                                .foregroundColor(theme.colors.primary)
-                        }
-                        .onTapGesture {
-                            scrollModel.scrollToBottom()
+                        if loadingMoreItems {
+                            circleButton { ProgressView() }
+                        } else {
+                            circleButton {
+                                unreadCountText(model.unreadBelow)
+                                    .font(.callout)
+                                    .foregroundColor(theme.colors.primary)
+                            }
+                            .onTapGesture {
+                                scrollModel.scrollToBottom()
+                            }
                         }
                     } else if !model.isNearBottom {
-                        circleButton {
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(theme.colors.primary)
+                        if loadingMoreItems {
+                            circleButton { ProgressView() }
+                        } else {
+                            circleButton {
+                                Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
+                            }
+                            .onTapGesture { scrollModel.scrollToBottom() }
                         }
-                        .onTapGesture { scrollModel.scrollToBottom() }
                     }
                 }
+                .disabled(loadingMoreItems)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
@@ -848,43 +936,54 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo) {
-        Task {
-            if loadingItems || firstPage { return }
-            loadingItems = true
-            do {
-                var reversedPage = Array<ChatItem>()
-                var chatItemsAvailable = true
-                // Load additional items until the page is +50 large after merging
-                while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
-                    let pagination: ChatPagination =
-                        if let lastItem = reversedPage.last ?? im.reversedChatItems.last {
-                            .before(chatItemId: lastItem.id, count: loadItemsPerPage)
-                        } else {
-                            .last(count: loadItemsPerPage)
-                        }
-                    let chatItems = try await apiGetChatItems(
-                        type: cInfo.chatType,
-                        id: cInfo.apiId,
-                        pagination: pagination,
-                        search: searchText
-                    )
-                    chatItemsAvailable = !chatItems.isEmpty
-                    reversedPage.append(contentsOf: chatItems.reversed())
-                }
-                await MainActor.run {
-                    if reversedPage.count == 0 {
-                        firstPage = true
-                    } else {
-                        im.reversedChatItems.append(contentsOf: reversedPage)
-                    }
-                    loadingItems = false
-                }
-            } catch let error {
-                logger.error("apiGetChat error: \(responseError(error))")
-                await MainActor.run { loadingItems = false }
-            }
+    private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
+        if loadingMoreItems { return false }
+        await MainActor.run {
+            loadingMoreItems = true
         }
+        var chatItemsAvailable = true
+        var itemsCountChanged = false
+        // Load additional items until the page is +50 large after merging
+        //while chatItemsAvailable && filtered(im.reversedChatItems).count < loadItemsPerPage {
+        let oldCount = im.reversedChatItems.count
+        await apiLoadMessages(
+            cInfo.chatType,
+            cInfo.apiId,
+            pagination,
+            im.chatState,
+            searchText,
+            visibleItemIndexesNonReversed
+        )
+        itemsCountChanged = im.reversedChatItems.count != oldCount
+        chatItemsAvailable = itemsCountChanged
+        //}
+        logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
+
+        await MainActor.run {
+            loadingMoreItems = false
+        }
+        return true
+    }
+
+    private func loadChatItemsUnchecked(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
+        var chatItemsAvailable = true
+        var itemsCountChanged = false
+        // Load additional items until the page is +50 large after merging
+        //while chatItemsAvailable && filtered(im.reversedChatItems).count < loadItemsPerPage {
+        let oldCount = im.reversedChatItems.count
+        await apiLoadMessages(
+            cInfo.chatType,
+            cInfo.apiId,
+            pagination,
+            im.chatState,
+            searchText,
+            visibleItemIndexesNonReversed
+        )
+        itemsCountChanged = im.reversedChatItems.count != oldCount
+        chatItemsAvailable = itemsCountChanged
+        //}
+        logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
+        return true
     }
 
     func stopAudioPlayer() {
@@ -898,12 +997,15 @@ struct ChatView: View {
         @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileRadius = defaultProfileImageCorner
         @Binding @ObservedObject var chat: Chat
         @ObservedObject var dummyModel: ChatItemDummyModel = .shared
+        let index: Int
+        let isLastItem: Bool
         let chatItem: ChatItem
+        let merged: MergedItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         @Binding var showChatInfoSheet: Bool
-        @Binding var revealedChatItem: ChatItem?
+        @Binding var revealedItems: Set<Int64>
 
         @State private var deletingItem: ChatItem? = nil
         @State private var showDeleteMessage = false
@@ -920,58 +1022,79 @@ struct ChatView: View {
         @State private var markedRead = false
         @State private var actionSheet: SomeActionSheet? = nil
 
-        var revealed: Bool { chatItem == revealedChatItem }
+        var reveal: (Bool) -> Void
+
+        var revealed: Bool { revealedItems.contains(chatItem.id) }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
 
-        func getItemSeparation(_ chatItem: ChatItem, at i: Int?) -> ItemSeparation {
-            let im = ItemsModel.shared
-            if let i, i > 0 && im.reversedChatItems.count >= i {
-                let nextItem = im.reversedChatItems[i - 1]
-                let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
-                return (
-                    timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(nextItem.meta.itemTs),
-                    largeGap: largeGap,
-                    date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: nextItem.meta.itemTs) ? nil : nextItem.meta.itemTs
-                )
+        func getItemSeparation(_ chatItem: ChatItem, _ prevItem: ChatItem?) -> ItemSeparation {
+            guard let prevItem else {
+                return ItemSeparation(timestamp: true, largeGap: true, date: nil)
+            }
+
+            let sameMemberAndDirection = if case .groupRcv(let prevGroupMember) = prevItem.chatDir, case .groupRcv(let groupMember) = chatItem.chatDir {
+                groupMember.groupMemberId == prevGroupMember.groupMemberId
             } else {
-                return (timestamp: true, largeGap: true, date: nil)
+                chatItem.chatDir.sent == prevItem.chatDir.sent
+            }
+            let largeGap = !sameMemberAndDirection || prevItem.meta.itemTs.timeIntervalSince(chatItem.meta.itemTs) > 60
+
+            return ItemSeparation(
+                timestamp: largeGap || formatTimestampMeta(chatItem.meta.itemTs) != formatTimestampMeta(prevItem.meta.itemTs),
+                largeGap: largeGap,
+                date: Calendar.current.isDate(chatItem.meta.itemTs, inSameDayAs: prevItem.meta.itemTs) ? nil : prevItem.meta.itemTs
+            )
+        }
+
+        func shouldShowAvatar(_ current: ChatItem, _ older: ChatItem?) -> Bool {
+            let oldIsGroupRcv = switch older?.chatDir {
+            case .groupRcv: true
+            default: false
+            }
+            let sameMember = switch (older?.chatDir, current.chatDir) {
+            case (.groupRcv(let oldMember), .groupRcv(let member)):
+                oldMember.memberId == member.memberId
+            default:
+                false
+            }
+            if case .groupRcv = current.chatDir, (older == nil || (!oldIsGroupRcv || !sameMember)) {
+                return true
+            } else {
+                return false
             }
         }
 
         var body: some View {
-            let currIndex = m.getChatItemIndex(chatItem)
-            let ciCategory = chatItem.mergeCategory
-            let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
-            let range = itemsRange(currIndex, prevHidden)
-            let timeSeparation = getItemSeparation(chatItem, at: currIndex)
             let im = ItemsModel.shared
-            Group {
-                if revealed, let range = range {
-                    let items = Array(zip(Array(range), im.reversedChatItems[range]))
-                    VStack(spacing: 0) {
-                        ForEach(items.reversed(), id: \.1.viewId) { (i: Int, ci: ChatItem) in
-                            let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
-                            chatItemView(ci, nil, prev, getItemSeparation(ci, at: i))
-                                .overlay {
-                                    if let selected = selectedChatItems, ci.canBeDeletedForSelf {
-                                        Color.clear
-                                            .contentShape(Rectangle())
-                                            .onTapGesture {
-                                                let checked = selected.contains(ci.id)
-                                                selectUnselectChatItem(select: !checked, ci)
-                                            }
-                                    }
-                                }
-                        }
-                    }
-                } else {
-                    VStack(spacing: 0) {
-                        chatItemView(chatItem, range, prevItem, timeSeparation)
-                        if let date = timeSeparation.date {
-                            DateSeparator(date: date).padding(8)
-                        }
-                    }
+
+            let last = isLastItem ? im.reversedChatItems.last : nil
+            let listItem = merged.newest()
+            let item = listItem.item
+            let range: ClosedRange<Int>? = if case let .grouped(_, _, _, rangeInReversed, _, _, _, _) = merged {
+                rangeInReversed.boxedValue
+            } else {
+                nil
+            }
+            let showAvatar = shouldShowAvatar(item, listItem.nextItem)
+            let itemSeparation: ItemSeparation
+            let prevItemSeparationLargeGap: Bool
+            let single = switch merged {
+            case .single: true
+            default: false
+            }
+            if single || revealed {
+                let prev = listItem.prevItem
+                itemSeparation = getItemSeparation(item, prev)
+                let nextForGap = (item.mergeCategory != nil && item.mergeCategory == prev?.mergeCategory) || isLastItem ? nil : listItem.nextItem
+            } else {
+                itemSeparation = getItemSeparation(item, nil)
+            }
+            return VStack(spacing: 0) {
+                if let last {
+                    DateSeparator(date: last.meta.itemTs).padding(8)
+                }
+                chatItemListView(range, showAvatar, item, itemSeparation)
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
@@ -982,9 +1105,14 @@ struct ChatView: View {
                                 }
                         }
                     }
+                if let date = itemSeparation.date {
+                    DateSeparator(date: date).padding(8)
                 }
             }
             .onAppear {
+                // LALAL
+                return ()
+                
                 if markedRead {
                     return
                 } else {
@@ -1072,20 +1200,25 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ itemSeparation: ItemSeparation) -> some View {
+        @ViewBuilder func chatItemListView(
+            _ range: ClosedRange<Int>?,
+            _ showAvatar: Bool,
+            _ ci: ChatItem,
+            _ itemSeparation: ItemSeparation
+        ) -> some View {
             let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
             if case let .groupRcv(member) = ci.chatDir,
-               case let .group(groupInfo) = chat.chatInfo {
-                let (prevMember, memCount): (GroupMember?, Int) =
-                if let range = range {
-                    m.getPrevHiddenMember(member, range)
-                } else {
-                    (nil, 1)
-                }
-                if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
+               case .group = chat.chatInfo {
+                if showAvatar {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
                             Group {
+                                let (prevMember, memCount): (GroupMember?, Int) =
+                                if let range = range {
+                                    m.getPrevHiddenMember(member, range)
+                                } else {
+                                    (nil, 1)
+                                }
                                 if memCount == 1 && member.memberRole > .member {
                                     Group {
                                         if #available(iOS 16.0, *) {
@@ -1609,7 +1742,7 @@ struct ChatView: View {
         private func hideButton() -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    revealedChatItem = nil
+                    reveal(false)
                 }
             } label: {
                 Label(
@@ -1699,7 +1832,7 @@ struct ChatView: View {
         private func revealButton(_ ci: ChatItem) -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    revealedChatItem = ci
+                    reveal(true)
                 }
             } label: {
                 Label(
@@ -1712,7 +1845,7 @@ struct ChatView: View {
         private func expandButton() -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    revealedChatItem = chatItem
+                    reveal(true)
                 }
             } label: {
                 Label(
@@ -1725,7 +1858,7 @@ struct ChatView: View {
         private func shrinkButton() -> Button<some View> {
             Button {
                 withConditionalAnimation {
-                    revealedChatItem = nil
+                    reveal(false)
                 }
             } label: {
                 Label (
