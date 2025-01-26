@@ -50,7 +50,7 @@ data Format
   | Colored {color :: FormatColor}
   | Uri
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
-  | Mention
+  | Mention {memberName :: Text}
   | Email
   | Phone
   deriving (Eq, Show)
@@ -196,7 +196,11 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.last s == ' '
         then fail "not colored"
         else pure $ markdown (colored clr) s
-    mentionP = markdown Mention <$> (A.char '@' *> displayNameTextP)
+    mentionP = do
+      c <- A.char '@' *> A.peekChar'
+      name <- displayNameTextP
+      let sName = if c == '\'' then '\'' `T.cons` name `T.snoc` '\'' else name
+      pure $ markdown (Mention name) ('@' `T.cons` sName)
     colorP =
       A.anyChar >>= \case
         'r' -> "ed" $> Red <|> pure Red
@@ -263,7 +267,7 @@ displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
       A.peekChar' >>= \c ->
         if refChar c then A.takeTill p else fail "invalid first character in display name"
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
-    refChar c = c > ' ' && c /= '#' && c /= '@'
+    refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

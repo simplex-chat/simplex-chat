@@ -19,6 +19,7 @@ markdownTests = do
   textWithUri
   textWithEmail
   textWithPhone
+  textWithMentions
   multilineMarkdownList
 
 textFormat :: Spec
@@ -180,8 +181,10 @@ textWithEmail = describe "text with Email" do
     parseMarkdown "chat@simplex.chat test" `shouldBe` email "chat@simplex.chat" <> " test"
     parseMarkdown "test1 chat@simplex.chat test2" `shouldBe` "test1 " <> email "chat@simplex.chat" <> " test2"
   it "ignored as markdown" do
-    parseMarkdown "chat @simplex.chat" `shouldBe` "chat @simplex.chat"
-    parseMarkdown "this is chat @simplex.chat" `shouldBe` "this is chat @simplex.chat"
+    parseMarkdown "chat @simplex.chat" `shouldBe` "chat " <> mention "simplex.chat" "@simplex.chat"
+    parseMarkdown "this is chat @simplex.chat" `shouldBe` "this is chat " <> mention "simplex.chat" "@simplex.chat"
+    parseMarkdown "this is chat@ simplex.chat" `shouldBe` "this is chat@ simplex.chat"
+    parseMarkdown "this is chat @ simplex.chat" `shouldBe` "this is chat @ simplex.chat"
 
 phone :: Text -> Markdown
 phone = Markdown $ Just Phone
@@ -203,6 +206,21 @@ textWithPhone = describe "text with Phone" do
     parseMarkdown "test 077777 test" `shouldBe` "test 077777 test"
   it "ignored as markdown (double spaces)" $
     parseMarkdown "test 07777  777  777 test" `shouldBe` "test 07777  777  777 test"
+
+mention :: Text -> Text -> Markdown
+mention = Markdown . Just . Mention
+
+textWithMentions :: Spec
+textWithMentions = describe "text with mentions" do
+  it "correct markdown" do
+    parseMarkdown "@alice" `shouldBe` mention "alice" "@alice"
+    parseMarkdown "hello @alice" `shouldBe` "hello " <> mention "alice" "@alice"
+    parseMarkdown "hello @alice !" `shouldBe` "hello " <> mention "alice" "@alice" <> " !"
+    parseMarkdown "@'alice jones'" `shouldBe` mention "alice jones" "@'alice jones'"
+    parseMarkdown "hello @'alice jones'!" `shouldBe` "hello " <> mention "alice jones" "@'alice jones'" <> "!"
+  it "ignored as markdown" $ do
+    parseMarkdown "hello @'alice jones!" `shouldBe` "hello @'alice jones!"
+    parseMarkdown "hello @ alice!" `shouldBe` "hello @ alice!"
 
 uri' :: Text -> FormattedText
 uri' = FormattedText $ Just Uri
