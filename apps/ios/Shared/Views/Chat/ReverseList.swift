@@ -419,6 +419,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                             CGPoint(x: 0, y: self.tableView.contentOffset.y - wasFirstVisibleOffset),
                             animated: false
                         )
+                        self.tableView.layoutIfNeeded()
                         //logger.debug("LALAL AFTER SCROLLTOROW")
                         //let state = self.getListState()!
                         //logger.debug("LALAL NOW FIRST VISIBLE \(state.firstVisibleItemIndex) \(state.firstVisibleItemOffset)")
