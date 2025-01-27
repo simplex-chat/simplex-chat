@@ -2552,4 +2552,7 @@
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
   <string name="open_server_settings_button">Open server settings</string>
+
+  <!-- GroupMentions.kt -->
+  <string name="max_group_mentions_per_message_reached">You can mention up to %1$s members per message!</string>
 </resources>

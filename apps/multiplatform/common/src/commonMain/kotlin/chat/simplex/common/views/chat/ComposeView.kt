@@ -40,7 +40,7 @@ import java.io.File
 import java.net.URI
 import java.nio.file.Files
 
-private const val MAX_NUMBER_OF_MENTIONS = 3
+const val MAX_NUMBER_OF_MENTIONS = 3
 
 @Serializable
 sealed class ComposePreview {
@@ -96,8 +96,8 @@ data class ComposeState(
   val memberMentions: List<MemberMention>
     get() = this.mentions.map { MemberMention(it.memberName, it.member.memberId) }
 
-  val memberMentionsEnabled: Boolean
-    get() = this.mentions.size < MAX_NUMBER_OF_MENTIONS
+  val maxMemberMentionsReached: Boolean
+    get() = this.mentions.size >= MAX_NUMBER_OF_MENTIONS
 
   val editing: Boolean
     get() =
