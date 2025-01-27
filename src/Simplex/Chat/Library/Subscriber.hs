@@ -1743,7 +1743,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         live' = fromMaybe False live_
         ExtMsgContent content mentions fInv_ itemTTL live_ = mcExtMsgContent mc
         createBlockedByAdmin
-          | groupFeatureAllowed SGFFullDelete gInfo = do
+          | groupFeatureAllowed SGFFullDelete gInfo = do -- ignores member role when blocked by admin
               ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvBlocked Nothing timed' False []
               ci' <- withStore' $ \db -> updateGroupCIBlockedByAdmin db user gInfo ci brokerTs
               groupMsgToView gInfo ci'
@@ -1755,7 +1755,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         applyModeration CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, moderatedAt}
           | moderatorRole < GRModerator || moderatorRole < memberRole =
               createContentItem
-          | groupFeatureAllowed SGFFullDelete gInfo = do
+          | groupFeatureMemberAllowed SGFFullDelete moderator gInfo = do
               ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvModerated Nothing timed' False []
               ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo ci moderator moderatedAt
               groupMsgToView gInfo ci'
@@ -1858,7 +1858,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise = a
         delete :: CChatItem 'CTGroup -> Maybe GroupMember -> CM ChatResponse
         delete cci byGroupMember
-          | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCIs user gInfo [cci] False False byGroupMember brokerTs
+          | groupFeatureMemberAllowed SGFFullDelete m gInfo = deleteGroupCIs user gInfo [cci] False False byGroupMember brokerTs
           | otherwise = markGroupCIsDeleted user gInfo [cci] False byGroupMember brokerTs
         archiveMessageReports :: CChatItem 'CTGroup -> GroupMember -> CM ()
         archiveMessageReports (CChatItem _ ci) byMember = do
