@@ -35,7 +35,7 @@ module Simplex.Chat.Store.Direct
     deleteContactFiles,
     deleteContact,
     deleteContactWithoutGroups,
-    setContactDeleted,
+    deleteContactWithoutDeletingProfile,
     getDeletedContacts,
     getContactByName,
     getContact,
@@ -323,13 +323,19 @@ deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDis
       forM_ customUserProfileId $ \profileId ->
         deleteUnusedIncognitoProfileById_ db user profileId
 
-setContactDeleted :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-setContactDeleted db user@User {userId} ct@Contact {contactId} = do
+-- deletes contact record without deleting local display name and profile - it's used in deleted group cleanup,
+-- when members are deleted in next step (including deleting ldn and profile if not used elsewhere)
+deleteContactWithoutDeletingProfile :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
+deleteContactWithoutDeletingProfile db user@User {userId} ct@Contact {contactId, activeConn} = do
   assertNotUser db user ct
   liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
+    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+    forM_ activeConn $ \Connection {customUserProfileId} ->
+      forM_ customUserProfileId $ \profileId ->
+        deleteUnusedIncognitoProfileById_ db user profileId
 
+-- TODO remove in future versions - only used for legacy contact cleanup
 getDeletedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getDeletedContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)

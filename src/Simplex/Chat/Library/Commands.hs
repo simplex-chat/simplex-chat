@@ -3501,6 +3501,7 @@ cleanupManager = do
     cleanupUser cleanupInterval stepDelay user = do
       cleanupTimedItems cleanupInterval user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
+      -- TODO legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
       cleanupDeletedGroups user `catchChatError` (toView . CRChatError (Just user))
@@ -3524,28 +3525,27 @@ cleanupManager = do
       where
         cleanupGroup :: VersionRangeChat -> Group -> CM ()
         cleanupGroup vr Group {groupInfo = gInfo, members} = do
-          -- functions below are called in separate transactions to prevent crashes on android
-          -- (possibly, race condition on integrity check?)
-          withFastStore' $ \db -> deleteGroupMembers db user gInfo members
-          withFastStore' $ \db -> deleteGroup db user gInfo
           let contactIds = mapMaybe memberContactId members
-          (errs1, (errs2, connIds)) <- lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db vr) contactIds)
+          (errs1, (errs2, connIds)) <- lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
           let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
           unless (null errs) $ toView $ CRChatErrors (Just user) errs
           deleteAgentConnectionsAsync user $ concat connIds
-        deleteUnusedContact :: DB.Connection -> VersionRangeChat -> ContactId -> IO (Either ChatError (Maybe StoreError, [ConnId]))
-        deleteUnusedContact db vr contactId = runExceptT . withExceptT ChatErrorStore $ do
-          ct <- getContact db vr user contactId
-          ifM
-            ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct))
-            (pure (Nothing, []))
-            (getConnections ct)
+          withFastStore' $ \db -> deleteGroupMembers db user gInfo members
+          withFastStore' $ \db -> deleteGroup db user gInfo
           where
-            getConnections :: Contact -> ExceptT StoreError IO (Maybe StoreError, [ConnId])
-            getConnections ct = do
-              conns <- liftIO $ getContactConnections db vr userId ct
-              e_ <- (setContactDeleted db user ct $> Nothing) `catchStoreError` (pure . Just)
-              pure (e_, map aConnId conns)
+            deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, [ConnId]))
+            deleteUnusedContact db contactId = runExceptT . withExceptT ChatErrorStore $ do
+              ct <- getContact db vr user contactId
+              ifM
+                ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct))
+                (pure (Nothing, []))
+                (getConnections ct)
+              where
+                getConnections :: Contact -> ExceptT StoreError IO (Maybe StoreError, [ConnId])
+                getConnections ct = do
+                  conns <- liftIO $ getContactConnections db vr userId ct
+                  e_ <- (deleteContactWithoutDeletingProfile db user ct $> Nothing) `catchStoreError` (pure . Just)
+                  pure (e_, map aConnId conns)
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
