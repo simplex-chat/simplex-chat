@@ -19,13 +19,14 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.mentionPickerAnimSpec
+import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 const val MENTION_START = '@'
 const val QUOTE = '\''
-val GROUP_MENTIONS_MAX_HEIGHT = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f
 
 private data class MentionRange(val start: Int, var name: String)
 private data class MentionsState(
@@ -42,7 +43,7 @@ fun GroupMentions(
   composeViewFocusRequester: FocusRequester?,
   chatInfo: ChatInfo.Group
 ) {
-  val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
+  val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val membersToMention = remember { mutableStateOf<List<GroupMember>>(emptyList()) }
   val showMembersPicker = remember { mutableStateOf(false) }
   val offsetY = remember { Animatable(maxHeightInPx) }
@@ -50,8 +51,7 @@ fun GroupMentions(
   val scope = rememberCoroutineScope()
 
   suspend fun closeMembersPicker() {
-    showMembersPicker.value = false;
-
+    showMembersPicker.value = false
     if (offsetY.value != 0f) {
       return
     }
@@ -69,7 +69,7 @@ fun GroupMentions(
     if (search == null) {
       // If we don't call it sync in here the panel will close due to no results before showMembersPicker animation.
       closeMembersPicker()
-      if (membersToMention.value.size == 1 && composeState.value.memberMentionsEnabled) {
+      if (membersToMention.value.size == 1 && !composeState.value.maxMemberMentionsReached) {
         val member = membersToMention.value.first()
 
         if (composeState.value.mentions.none { it.member.memberId == member.memberId }) {
@@ -131,27 +131,40 @@ fun GroupMentions(
   Box(
     modifier = Modifier
       .fillMaxSize()
+      .offset { IntOffset(0, offsetY.value.toInt()) }
       .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
         scope.launch { closeMembersPicker() }
       },
     contentAlignment = Alignment.BottomStart
   ) {
+    val mentionsLookup = composeState.value.mentions.associateBy { it.member.memberId }
+    val showMaxReachedBox = composeState.value.maxMemberMentionsReached &&
+        showMembersPicker.value &&
+        membersToMention.value.any { it.memberId !in mentionsLookup }
+
     LazyColumn(
       Modifier
-        .offset { IntOffset(0, offsetY.value.toInt()) }
         .heightIn(max = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f)
         .background(MaterialTheme.colors.surface)
     ) {
-      itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
-        Divider()
+      if (showMaxReachedBox) {
+        stickyHeader {
+          MaxMentionsReached()
+        }
+      }
+      itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { i, member ->
+        if (i != 0 || !showMaxReachedBox) {
+          Divider()
+        }
         val existingMention = composeState.value.mentions.find { it.member.memberId == member.memberId }
-        val enabled = composeState.value.memberMentionsEnabled || existingMention != null
+        val enabled = !composeState.value.maxMemberMentionsReached || existingMention != null
         Row(
           Modifier
             .fillMaxWidth()
             .alpha(if (enabled) 1f else 0.6f)
             .clickable(enabled = enabled) {
               val selection = mentionsState.activeRange ?: return@clickable
+              showMembersPicker.value = false
               val msg = composeState.value.message
               val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
               val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
@@ -188,6 +201,23 @@ fun GroupMentions(
         }
       }
     }
+  }
+}
+
+@Composable
+private fun MaxMentionsReached() {
+  Column(Modifier.background(MaterialTheme.colors.surface)) {
+    Divider()
+    Row(
+      Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        String.format(generalGetString(MR.strings.max_group_mentions_per_message_reached), MAX_NUMBER_OF_MENTIONS),
+        Modifier.padding(12.dp),
+      )
+    }
+    Divider()
   }
 }
 
