@@ -1091,9 +1091,6 @@ data ComposedMessage = ComposedMessage
   }
   deriving (Show)
 
-data GroupMemberMention = GroupMemberMention {memberName :: ContactName, groupMemberId :: GroupMemberId}
-  deriving (Show)
-
 data ChatTagData = ChatTagData
   { emoji :: Maybe Text,
     text :: Text
@@ -1265,7 +1262,6 @@ data ChatErrorType
   | CEFileNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
-  | CEInvalidQuote
   | CEInvalidForward
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
@@ -1624,8 +1620,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
-
-$(JQ.deriveJSON defaultJSON ''GroupMemberMention)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
 

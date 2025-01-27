@@ -22,7 +22,7 @@ import Data.Functor (($>))
 import Data.List (foldl', intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import Data.Semigroup (sconcat)
 import Data.String
 import Data.Text (Text)
@@ -55,10 +55,12 @@ data Format
   | Phone
   deriving (Eq, Show)
 
-mentionedName :: Format -> Maybe Text
-mentionedName = \case
-  Mention name -> Just name
-  _ -> Nothing
+mentionedNames :: MarkdownList -> [Text]
+mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
+  where
+    mentionedName = \case
+      Mention name -> Just name
+      _ -> Nothing
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show)

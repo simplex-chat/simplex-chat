@@ -37,7 +37,7 @@ import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', isSuffixOf, partition, sortOn, zipWith4)
+import Data.List (find, foldl', isSuffixOf, partition, sortOn, zip5)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -80,7 +80,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Util (liftIOEither, neUnzip3)
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
 import Simplex.Messaging.Agent as Agent
@@ -1925,7 +1925,7 @@ processChatCommand' vr = \case
       combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False False createdAt
+        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -2976,9 +2976,9 @@ processChatCommand' vr = \case
         processComposedMessages ct = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers
           timed_ <- sndContactCITimed live ct itemTTL
-          (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
+          (msgContainers, quotedItems_, mms) <- neUnzip3 <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
-          let itemsData = prepareSndItemsData msgs_ cmrs ciFiles_ quotedItems_
+          let itemsData = prepareSndItemsData msgs_ cmrs ciFiles_ quotedItems_ mms
           when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
           r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
           processSendErrs user r
@@ -2995,27 +2995,29 @@ processChatCommand' vr = \case
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 $ CGContact ct
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
-            prepareMsgs :: NonEmpty (ComposeMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect)))
-            prepareMsgs cmsFileInvs timed_ =
-              forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded), fInv_) ->
+            prepareMsgs :: NonEmpty (ComposeMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect), (Text, Maybe MarkdownList, [MentionedMember], [MemberMention])))
+            prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
+              forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded), fInv_) -> do
+                let (t, ft_) = msgContentTexts mc
+                    mms = (t, ft_, [], [])
                 case (quotedItemId, itemForwarded) of
-                  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-                  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+                  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
+                  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
                   (Just qiId, Nothing) -> do
                     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
-                      withFastStore $ \db -> getDirectChatItem db user contactId qiId
+                      getDirectChatItem db user contactId qiId
                     (origQmc, qd, sent) <- quoteData qci
                     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                         qmc = quoteContent mc origQmc file
                         quotedItem = CIQuote {chatDir = qd, itemId = Just qiId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-                    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
-                  (Just _, Just _) -> throwChatError CEInvalidQuote
+                    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem, mms)
+                  (Just _, Just _) -> throwError SEInvalidQuote
               where
-                quoteData :: ChatItem c d -> CM (MsgContent, CIQDirection 'CTDirect, Bool)
-                quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidQuote
+                quoteData :: ChatItem c d -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTDirect, Bool)
+                quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwError SEInvalidQuote
                 quoteData ChatItem {content = CISndMsgContent qmc} = pure (qmc, CIQDirectSnd, True)
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
-                quoteData _ = throwChatError CEInvalidQuote
+                quoteData _ = throwError SEInvalidQuote
     sendGroupContentMessages :: User -> GroupId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendGroupContentMessages user groupId live itemTTL cmrs = do
       assertMultiSendable live cmrs
@@ -3042,9 +3044,9 @@ processChatCommand' vr = \case
         processComposedMessages = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo itemTTL
-          (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
+          (msgContainers, quotedItems_, mms) <- neUnzip3 <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, gsr) <- sendGroupMessages user gInfo ms $ L.map XMsgNew msgContainers
-          let itemsData = prepareSndItemsData (L.toList msgs_) cmrs ciFiles_ quotedItems_
+          let itemsData = prepareSndItemsData (L.toList msgs_) cmrs ciFiles_ quotedItems_ mms
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
           when (length itemsData /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
@@ -3063,10 +3065,10 @@ processChatCommand' vr = \case
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo ms
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
-            prepareMsgs :: NonEmpty (ComposeMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTGroup)))
-            prepareMsgs cmsFileInvs timed_ =
-              forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded), fInv_) ->
-                prepareGroupMsg user gInfo mc quotedItemId itemForwarded fInv_ timed_ live
+            prepareMsgs :: NonEmpty (ComposeMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTGroup), (Text, Maybe MarkdownList, [MentionedMember], [MemberMention])))
+            prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
+              forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc, mentions}, itemForwarded), fInv_) ->
+                prepareGroupMsg db user gInfo mc mentions quotedItemId itemForwarded fInv_ timed_ live
             createMemberSndStatuses ::
               [Either ChatError (ChatItem 'CTGroup 'MDSnd)] ->
               NonEmpty (Either ChatError SndMessage) ->
@@ -3132,14 +3134,15 @@ processChatCommand' vr = \case
       NonEmpty ComposeMessageReq ->
       NonEmpty (Maybe (CIFile 'MDSnd)) ->
       NonEmpty (Maybe (CIQuote c)) ->
+      NonEmpty (Text, Maybe MarkdownList, [MentionedMember], [MemberMention]) ->
       [Either ChatError (NewSndChatItemData c)]
-    prepareSndItemsData msgs_ cmrs' ciFiles_ quotedItems_ =
+    prepareSndItemsData msgs_ cmrs' ciFiles_ quotedItems_ mms =
       [ ( case msg_ of
-            Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) f q itemForwarded
+            Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) mm f q itemForwarded
             Left e -> Left e -- step over original error
         )
-        | (msg_, (ComposedMessage {msgContent}, itemForwarded), f, q) <-
-            zipWith4 (,,,) msgs_ (L.toList cmrs') (L.toList ciFiles_) (L.toList quotedItems_)
+        | (msg_, (ComposedMessage {msgContent}, itemForwarded), mm, f, q) <-
+            zip5 msgs_ (L.toList cmrs') (L.toList mms) (L.toList ciFiles_) (L.toList quotedItems_)
       ]
     processSendErrs :: User -> ([ChatError], [ChatItem c d]) -> CM ()
     processSendErrs user = \case

@@ -35,7 +35,7 @@ module Simplex.Chat.Store.Messages
     updateChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
-    createGroupCIMentions,
+    createRcvGroupCIMentions,
     createNewChatItemNoMsg,
     createNewChatItem_,
     getChatPreviews,
@@ -367,9 +367,9 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
   _ -> pure ()
 
 -- TODO [mentions] store chat item mentions
-createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live userMention createdAt =
-  createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live userMention createdAt Nothing createdAt
+createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
+createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live createdAt =
+  createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False createdAt Nothing createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -401,10 +401,9 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forw
             (Just $ Just userMemberId == memberId, memberId)
 
 -- TODO [mentions] store chat item mentions
--- validate mentions (there is already parsed text)
 -- get mentioned members
-createGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MemberMention] -> IO [MentionedMember]
-createGroupCIMentions _db _user _g _ci _mentions = pure []
+createRcvGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MemberMention] -> IO [MentionedMember]
+createRcvGroupCIMentions _db _user _g _ci _mentions = pure []
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection ciContent itemTs =
