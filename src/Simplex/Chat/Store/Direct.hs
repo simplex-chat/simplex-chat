@@ -335,7 +335,7 @@ deleteContactWithoutDeletingProfile db user@User {userId} ct@Contact {contactId,
       forM_ customUserProfileId $ \profileId ->
         deleteUnusedIncognitoProfileById_ db user profileId
 
--- TODO remove in future versions - only used for legacy contact cleanup
+-- TODO remove in future versions: only used for legacy contact cleanup
 getDeletedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getDeletedContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)

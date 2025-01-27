@@ -3501,7 +3501,7 @@ cleanupManager = do
     cleanupUser cleanupInterval stepDelay user = do
       cleanupTimedItems cleanupInterval user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
-      -- TODO legacy step - contacts are no longer marked as deleted
+      -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
       cleanupDeletedGroups user `catchChatError` (toView . CRChatError (Just user))
