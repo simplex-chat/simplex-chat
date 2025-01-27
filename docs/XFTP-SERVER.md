@@ -17,84 +17,102 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
 
 ## Installation
 
-0. First, install `xftp-server`:
+Here's the overview of installation options:
 
-   - Semi-automatic deployment:
+- [Installation script (native binaries, using systemd services)](#installation-script) **recommended**
+- [Docker](#docker)
+- [Linode marketplace](#linode-marketplace)
+- [Manual deployment](#manual-deployment)
 
-     - Installation script:
+### Installation script
 
-       **Please note** that currently only Ubuntu distribution is supported.
+This installation script will automatically install binaries, systemd services and additional scripts that will manage backups, updates and uninstallation. This is the recommended option due to its flexibility, easy updating, and being battle tested on our servers.
 
-       You can install and setup servers automatically using our script:
-       ```sh
-       curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &&\
-       if echo '53fcdb4ceab324316e2c4cda7e84dbbb344f32550a65975a7895425e5a1be757 simplex-server-install.sh' | sha256sum -c; then
-          chmod +x ./simplex-server-install.sh
-          ./simplex-server-install.sh
-          rm ./simplex-server-install.sh
-       else
-          echo "SHA-256 checksum is incorrect!"
-          rm ./simplex-server-install.sh
-       fi
-       ```
+**Please note** that currently only Ubuntu distribution is supported.
 
-     - Docker Compose:
+Run the following script on the server:
 
-       You can deploy xftp-server using Docker Compose. This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &&\
+if echo '53fcdb4ceab324316e2c4cda7e84dbbb344f32550a65975a7895425e5a1be757 simplex-server-install.sh' | sha256sum -c; then
+  chmod +x ./simplex-server-install.sh
+  ./simplex-server-install.sh
+  rm ./simplex-server-install.sh
+else
+  echo "SHA-256 checksum is incorrect!"
+  rm ./simplex-server-install.sh
+fi
+```
 
-       1. Create `xftp-server` directory and switch to it:
+Type `2` and hit enter to install `xftp-server`.
 
-          ```sh
-          mkdir xftp-server && cd xftp-server
-          ```
+### Docker
 
-       2. Create `docker-compose.yml` file with the following content:
+You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.
 
-          ```yaml
-          name: SimpleX Chat - xftp-server
+This deployment provides two Docker Compose files: the **automatic** one and **manual**. If you're not sure, choose **automatic**.
 
-          services:
-            xftp-server:
-              image: ${SIMPLEX_XFTP_IMAGE:-simplexchat/xftp-server:latest}
-              environment:
-                ADDR: ${ADDR?"Please specify the domain."}
-                QUOTA: ${QUOTA?"Please specify disk quota."}
-                PASS: ${PASS:-}
-              volumes:
-                - ./xftp_configs:/etc/opt/simplex-xftp
-                - ./xftp_state:/var/opt/simplex-xftp
-                - ./xftp_files:/srv/xftp
-              ports:
-                - 443:443
-              restart: unless-stopped
-          ```
+This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
 
-         3. In the same directory, create `.env` file with the following content:
+1. Create `xftp-server` directory and switch to it:
 
-            Change variables according to your preferences.
+  ```sh
+  mkdir xftp-server && cd xftp-server
+  ```
 
-            ```env
-            # Mandatory
-            ADDR=your_ip_or_addr
-            QUOTA=120gb
+2. Create `docker-compose.yml` file with the following content:
 
-            # Optional
-            #PASS='123123'
-            ```
+  You can also grab it from here - [docker-compose-xftp.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `docker-compose.yml`.
 
-         4. Start your containers:
+  ```yaml
+  name: SimpleX Chat - xftp-server
 
-            ```sh
-            docker compose up
-            ```
+  services:
+    xftp-server:
+      image: ${SIMPLEX_XFTP_IMAGE:-simplexchat/xftp-server:latest}
+      environment:
+        ADDR: ${ADDR?"Please specify the domain."}
+        QUOTA: ${QUOTA?"Please specify disk quota."}
+        PASS: ${PASS:-}
+      volumes:
+        - ./xftp_configs:/etc/opt/simplex-xftp
+        - ./xftp_state:/var/opt/simplex-xftp
+        - ./xftp_files:/srv/xftp
+      ports:
+        - 443:443
+      restart: unless-stopped
+  ```
 
-     - [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+3. In the same directory, create `.env` file with the following content:
 
-   - Manual deployment (see below)
+  You can also grab it from here - [docker-compose-xftp.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `.env`.
 
-Manual installation requires some preliminary actions:
+  Change variables according to your preferences.
 
-0. Install binary:
+  ```env
+  # Mandatory
+  ADDR=your_ip_or_addr
+  QUOTA=120gb
+
+  # Optional
+  #PASS='123123'
+  ```
+
+4. Start your containers:
+
+  ```sh
+  docker compose up
+  ```
+
+### Linode marketplace
+
+You can deploy xftp-server upon creating new Linode VM. Please refer to: [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
+   
+### Manual deployment
+
+Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.
+
+1. Install binary:
 
    - Using offical binaries:
 
@@ -107,20 +125,20 @@ Manual installation requires some preliminary actions:
      Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
 
 
-1. Create user and group for `xftp-server`:
+2. Create user and group for `xftp-server`:
 
    ```sh
    sudo useradd -m xftp
    ```
 
-2. Create necessary directories and assign permissions:
+3. Create necessary directories and assign permissions:
 
    ```sh
    sudo mkdir -p /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
    sudo chown xftp:xftp /var/opt/simplex-xftp /etc/opt/simplex-xftp /srv/xftp
    ```
 
-3. Allow xftp-server port in firewall:
+4. Allow xftp-server port in firewall:
 
    ```sh
    # For Ubuntu
@@ -130,7 +148,7 @@ Manual installation requires some preliminary actions:
    sudo firewall-cmd --reload
    ```
 
-4. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/xftp-server.service` file with the following content:
+5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/xftp-server.service` file with the following content:
 
    ```sh
    [Unit]
@@ -429,7 +447,7 @@ Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src
 
 ### Control port
 
-Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
+Enabling control port in the configuration allows administrator to see information about the xftp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
 
 1. Generate two passwords for each user:
 
