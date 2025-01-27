@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.group
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
@@ -20,6 +21,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.mentionPickerAnimSpec
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 const val MENTION_START = '@'
 const val QUOTE = '\''
@@ -42,15 +44,31 @@ fun GroupMentions(
 ) {
   val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
   val membersToMention = remember { mutableStateOf<List<GroupMember>>(emptyList()) }
-  val mentionsState by remember { derivedStateOf { parseMentionRanges(composeState.value.message, textSelection.value.start) }}
-  val showMembersPicker by remember { derivedStateOf { mentionsState.activeRange != null && membersToMention.value.isNotEmpty() }}
+  val showMembersPicker = remember { mutableStateOf(false) }
   val offsetY = remember { Animatable(maxHeightInPx) }
+  val mentionsState by remember { derivedStateOf { parseMentionRanges(composeState.value.message, textSelection.value.start) } }
+  val scope = rememberCoroutineScope()
+
+  suspend fun closeMembersPicker() {
+    showMembersPicker.value = false;
+
+    if (offsetY.value != 0f) {
+      return
+    }
+
+    offsetY.animateTo(
+      targetValue = maxHeightInPx,
+      animationSpec = mentionPickerAnimSpec()
+    )
+  }
 
   LaunchedEffect(mentionsState.activeRange) {
     val activeMentionRange = mentionsState.activeRange
     val search = activeMentionRange?.name?.trim(QUOTE)
 
     if (search == null) {
+      // If we don't call it sync in here the panel will close due to no results before showMembersPicker animation.
+      closeMembersPicker()
       if (membersToMention.value.size == 1 && composeState.value.memberMentionsEnabled) {
         val member = membersToMention.value.first()
 
@@ -64,15 +82,10 @@ fun GroupMentions(
         }
       }
       if (membersToMention.value.isNotEmpty()) {
-        offsetY.animateTo(
-          targetValue = maxHeightInPx,
-          animationSpec = mentionPickerAnimSpec(),
-        )
         membersToMention.value = emptyList()
       }
       return@LaunchedEffect
     }
-
     val txtAsMention = composeState.value.mentions.firstOrNull {
       if (it.member.displayName == it.memberName) {
         mentionsState.mentionMemberOccurrences[search] == 1 && search == it.memberName
@@ -81,6 +94,7 @@ fun GroupMentions(
       }
     }
     if (txtAsMention != null) {
+      showMembersPicker.value = true
       membersToMention.value = listOf(txtAsMention.member)
       return@LaunchedEffect
     }
@@ -88,6 +102,9 @@ fun GroupMentions(
     val gms = chatModel.controller.apiListMembers(rhId, chatInfo.groupInfo.groupId)
     membersToMention.value = gms.filter { gm ->
       gm.displayName.contains(search, ignoreCase = true) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
+    }
+    if (membersToMention.value.isNotEmpty()) {
+      showMembersPicker.value = true
     }
   }
 
@@ -103,65 +120,72 @@ fun GroupMentions(
       }
   }
 
-  LaunchedEffect(showMembersPicker) {
-    if (offsetY.value != 0f) {
+  LaunchedEffect(showMembersPicker.value) {
+    if (showMembersPicker.value) {
       offsetY.animateTo(
         targetValue = 0f,
         animationSpec = mentionPickerAnimSpec()
       )
     }
   }
-
-  LazyColumn(
-    Modifier
-      .offset { IntOffset(0, offsetY.value.toInt()) }
-      .heightIn(max = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f)
-      .background(MaterialTheme.colors.surface)
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
+        scope.launch { closeMembersPicker() }
+      },
+    contentAlignment = Alignment.BottomStart
   ) {
-    itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
-      Divider()
-      val existingMention = composeState.value.mentions.find { it.member.memberId == member.memberId }
-      val enabled = composeState.value.memberMentionsEnabled || existingMention != null
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .alpha(if (enabled) 1f else 0.6f)
-          .clickable(enabled = enabled) {
-            val selection = mentionsState.activeRange ?: return@clickable
-            val msg = composeState.value.message
-            val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.displayName)
-            val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
-              add(GroupMemberMention(displayName, member))
-            }
+    LazyColumn(
+      Modifier
+        .offset { IntOffset(0, offsetY.value.toInt()) }
+        .heightIn(max = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f)
+        .background(MaterialTheme.colors.surface)
+    ) {
+      itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
+        Divider()
+        val existingMention = composeState.value.mentions.find { it.member.memberId == member.memberId }
+        val enabled = composeState.value.memberMentionsEnabled || existingMention != null
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else 0.6f)
+            .clickable(enabled = enabled) {
+              val selection = mentionsState.activeRange ?: return@clickable
+              val msg = composeState.value.message
+              val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.displayName)
+              val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
+                add(GroupMemberMention(displayName, member))
+              }
+              val endIndex = selection.start + selection.name.length
+              var name = if (displayName.contains(" ")) "'$displayName'" else displayName
+              if (endIndex == msg.length) {
+                name += " "
+              }
 
-            val endIndex = selection.start + selection.name.length
-            var name = if (displayName.contains(" ")) "'$displayName'" else displayName
-            if (endIndex == msg.length) {
-              name += " "
-            }
+              composeState.value = composeState.value.copy(
+                message = msg.replaceRange(
+                  selection.start,
+                  endIndex,
+                  name
+                ),
+                mentions = mentions
+              )
 
-            composeState.value = composeState.value.copy(
-              message = msg.replaceRange(
-                selection.start,
-                endIndex,
-                name
-              ),
-              mentions = mentions
-            )
-
-            if (appPlatform.isDesktop) {
-              // Desktop doesn't auto focus after click, we need to do it manually in here.
-              composeViewFocusRequester?.requestFocus()
-              textSelection.value = TextRange(composeState.value.message.length)
+              if (appPlatform.isDesktop) {
+                // Desktop doesn't auto focus after click, we need to do it manually in here.
+                composeViewFocusRequester?.requestFocus()
+                textSelection.value = TextRange(composeState.value.message.length)
+              }
             }
-          }
-          .padding(horizontal = DEFAULT_PADDING_HALF),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        MemberRow(
-          member,
-          infoPage = false,
-        )
+            .padding(horizontal = DEFAULT_PADDING_HALF),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          MemberRow(
+            member,
+            infoPage = false,
+          )
+        }
       }
     }
   }
