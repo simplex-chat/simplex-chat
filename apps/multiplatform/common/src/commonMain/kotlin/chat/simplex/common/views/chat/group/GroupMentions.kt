@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 
 const val MENTION_START = '@'
 const val QUOTE = '\''
+private val MAX_PICKER_HEIGHT = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f
 
 private data class MentionRange(val start: Int, var name: String)
 private data class MentionsState(
@@ -142,10 +143,12 @@ fun GroupMentions(
         showMembersPicker.value &&
         membersToMention.value.any { it.memberId !in mentionsLookup }
 
-    LazyColumn(
+    LazyColumnWithScrollBarNoAppBar(
       Modifier
-        .heightIn(max = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f)
-        .background(MaterialTheme.colors.surface)
+        .heightIn(max = MAX_PICKER_HEIGHT)
+        .background(MaterialTheme.colors.surface),
+      maxHeight = remember { mutableStateOf(MAX_PICKER_HEIGHT) },
+      containerAlignment = Alignment.BottomEnd
     ) {
       if (showMaxReachedBox) {
         stickyHeader {
