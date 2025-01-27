@@ -870,7 +870,7 @@ Query:
           JOIN group_profiles gp USING (group_profile_id)
           JOIN group_members mu USING (group_id)
           JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-          WHERE g.user_id = ? AND mu.contact_id = ?
+          WHERE g.user_id = ? AND mu.contact_id = ? AND g.deleted = 0
             AND (LOWER(gp.display_name) LIKE '%' || LOWER(?) || '%'
               OR LOWER(gp.full_name) LIKE '%' || LOWER(?) || '%'
               OR LOWER(gp.description) LIKE '%' || LOWER(?) || '%'
@@ -5026,16 +5026,6 @@ SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?
 SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
 
-Query: DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?
-Plan:
-SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (member_profile_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (contact_profile_id=?)
-SEARCH groups USING COVERING INDEX idx_groups_host_conn_custom_user_profile_id (host_conn_custom_user_profile_id=?)
-SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
-
 Query: DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
@@ -5090,14 +5080,6 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 Query: DELETE FROM files WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH files USING INDEX idx_files_contact_id (contact_id=?)
-SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
-SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
-SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?)
-
-Query: DELETE FROM files WHERE user_id = ? AND group_id = ?
-Plan:
-SEARCH files USING INDEX idx_files_group_id (group_id=?)
 SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
@@ -5548,13 +5530,17 @@ Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMI
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE user_id = ?
-Plan:
-SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_2 (user_id=?)
-
 Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
 Plan:
 SCAN groups
+
+Query: SELECT group_id FROM groups WHERE user_id = ? AND deleted = 0
+Plan:
+SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
+
+Query: SELECT group_id FROM groups WHERE user_id = ? AND deleted = 1
+Plan:
+SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
 Query: SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?
 Plan:
@@ -5567,10 +5553,6 @@ SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
 Plan:
 SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
-
-Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
-Plan:
-SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?
 Plan:
@@ -5845,6 +5827,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET deleted = 1, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 

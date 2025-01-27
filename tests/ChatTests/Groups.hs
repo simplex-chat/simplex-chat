@@ -2237,7 +2237,7 @@ testGroupLink =
 
 testGroupLinkDeleteGroupRejoin :: HasCallStack => TestParams -> IO ()
 testGroupLinkDeleteGroupRejoin =
-  testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       threadDelay 100000
       alice ##> "/g team"
@@ -2268,6 +2268,7 @@ testGroupLinkDeleteGroupRejoin =
         ]
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
+      threadDelay 1500000
       -- re-join via same link
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
@@ -2291,6 +2292,8 @@ testGroupLinkDeleteGroupRejoin =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
+  where
+    cfg = testCfgGroupLinkViaContact {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupLinkContactUsed :: HasCallStack => TestParams -> IO ()
 testGroupLinkContactUsed =
