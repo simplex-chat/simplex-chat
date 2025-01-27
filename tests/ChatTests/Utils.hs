@@ -300,7 +300,7 @@ groupFeatures'' dir =
   [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
     ((dir, "Disappearing messages: off"), Nothing, Nothing),
     ((dir, "Direct messages: on"), Nothing, Nothing),
-    ((dir, "Full deletion: off"), Nothing, Nothing),
+    ((dir, "Full deletion: on for moderators"), Nothing, Nothing),
     ((dir, "Message reactions: on"), Nothing, Nothing),
     ((dir, "Voice messages: on"), Nothing, Nothing),
     ((dir, "Files and media: on"), Nothing, Nothing),
@@ -632,6 +632,16 @@ createGroup2' gName cc1 cc2 doConnectUsers = do
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
     (cc2 <## ("#" <> gName <> ": you joined the group"))
 
+disableFullDeletion2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
+disableFullDeletion2 gName cc1 cc2 = do
+  cc1 ##> ("/set delete #" <> gName <> " off")
+  cc1 <## "updated group preferences:"
+  cc1 <## "Full deletion: off"
+  name1 <- userName cc1
+  cc2 <## (name1 <> " updated group #" <> gName <> ":")
+  cc2 <## "updated group preferences:"
+  cc2 <## "Full deletion: off"
+
 createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
   createGroup2 gName cc1 cc2
@@ -651,6 +661,14 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
+
+disableFullDeletion3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
+disableFullDeletion3 gName cc1 cc2 cc3 = do
+  disableFullDeletion2 gName cc1 cc2
+  name1 <- userName cc1
+  cc3 <## (name1 <> " updated group #" <> gName <> ":")
+  cc3 <## "updated group preferences:"
+  cc3 <## "Full deletion: off"
 
 create2Groups3 :: HasCallStack => String -> String -> TestCC -> TestCC -> TestCC -> IO ()
 create2Groups3 gName1 gName2 cc1 cc2 cc3 = do

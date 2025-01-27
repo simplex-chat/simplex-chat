@@ -1249,6 +1249,7 @@ testGroupMessageDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
       threadDelay 1000000
       -- alice, bob: msg id 5, cath: msg id 4 (after group invitations & group events)
       alice #> "#team hello!"
@@ -1260,7 +1261,7 @@ testGroupMessageDelete =
       msgItemId1 <- lastItemId alice
       alice #$> ("/_delete item #1 " <> msgItemId1 <> " internal", id, "message deleted")
 
-      alice #$> ("/_get chat #1 count=1", chat, [(0, "connected")])
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "connected"), (1, "Full deletion: off")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
       cath #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
 
@@ -1286,7 +1287,7 @@ testGroupMessageDelete =
       msgItemId2 <- lastItemId alice
       alice #$> ("/_delete item #1 " <> msgItemId2 <> " internal", id, "message deleted")
 
-      alice #$> ("/_get chat #1 count=1", chat', [((0, "connected"), Nothing)])
+      alice #$> ("/_get chat #1 count=2", chat', [((0, "connected"), Nothing), ((1, "Full deletion: off"), Nothing)])
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
@@ -1333,6 +1334,7 @@ testGroupMessageDeleteMultiple =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       threadDelay 1000000
       alice #> "#team hello"
@@ -1369,6 +1371,7 @@ testGroupMessageDeleteMultipleManyBatches =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       bob ##> "/set receipts all off"
       bob <## "ok"
@@ -1606,6 +1609,9 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   alice ##> "/g team"
   alice <## "group #team is created"
   alice <## "to add members use /a team <name> or /create link #team"
+  alice ##> "/set delete #team off"
+  alice <## "updated group preferences:"
+  alice <## "Full deletion: off"
   addMember "team" alice bob GRAdmin
   bob ##> "/j team"
   concurrentlyN_
@@ -1676,6 +1682,7 @@ testGroupModerate =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
         [ alice <## "#team: you changed the role of cath from admin to member",
@@ -1707,6 +1714,7 @@ testGroupModerateOwn =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
+      disableFullDeletion2 "team" alice bob
       threadDelay 1000000
       alice #> "#team hello"
       bob <# "#team alice> hello"
@@ -1721,6 +1729,7 @@ testGroupModerateMultiple =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       threadDelay 1000000
       alice #> "#team hello"
@@ -1756,6 +1765,7 @@ testGroupModerateFullDelete =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
         [ alice <## "#team: you changed the role of cath from admin to member",
@@ -1794,6 +1804,7 @@ testGroupDelayedModeration ps = do
   withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
+      disableFullDeletion2 "team" alice bob
     withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
@@ -1840,6 +1851,7 @@ testGroupDelayedModerationFullDelete ps = do
   withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
+      disableFullDeletion2 "team" alice bob
     withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
@@ -4775,6 +4787,7 @@ testGroupMsgForwardDeletion =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -5492,6 +5505,7 @@ testGroupHistoryDeletedMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice bob
+      disableFullDeletion2 "team" alice bob
 
       alice #> "#team hello"
       bob <# "#team alice> hello"
@@ -6181,6 +6195,7 @@ testBlockForAllMarkedBlocked =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       threadDelay 1000000
 
@@ -6268,6 +6283,7 @@ testBlockForAllFullDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
@@ -6348,6 +6364,7 @@ testBlockForAllAnotherAdminUnblocks =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
@@ -6376,6 +6393,7 @@ testBlockForAllBeforeJoining =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
@@ -6444,6 +6462,7 @@ testBlockForAllCantRepeat =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      disableFullDeletion3 "team" alice bob cath
 
       alice ##> "/unblock for all #team bob"
       alice <## "bad chat command: already unblocked"
@@ -6560,6 +6579,7 @@ testGroupMemberReports =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       createGroup3 "jokes" alice bob cath
+      disableFullDeletion3 "jokes" alice bob cath
       alice ##> "/mr jokes bob moderator"
       concurrentlyN_
         [ alice <## "#jokes: you changed the role of bob from admin to moderator",
