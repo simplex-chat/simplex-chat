@@ -1059,7 +1059,7 @@
     <string name="passcode_set">Toegangscode ingesteld!</string>
     <string name="la_mode_system">Systeem</string>
     <string name="decryption_error">Decodering fout</string>
-    <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.</string>
+    <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.\"</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d berichten overgeslagen.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of de ander een oude database back-up gebruikt.</string>
     <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
@@ -1872,7 +1872,7 @@
     <string name="servers_info_details">Details</string>
     <string name="servers_info_messages_received">Berichten ontvangen</string>
     <string name="servers_info_subscriptions_section_header">Bericht ontvangst</string>
-    <string name="servers_info_private_data_disclaimer">Beginnend vanaf %s. \nAlle gegevens zijn privé op uw apparaat.</string>
+    <string name="servers_info_private_data_disclaimer">Vanaf %s.\nAlle gegevens blijven privé op uw apparaat.</string>
     <string name="servers_info_connected_servers_section_header">Verbonden servers</string>
     <string name="servers_info_subscriptions_connections_pending">In behandeling</string>
     <string name="servers_info_previously_connected_servers_section_header">Eerder verbonden servers</string>
