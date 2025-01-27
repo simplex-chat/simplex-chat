@@ -11,11 +11,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -310,7 +312,8 @@ fun ComposeView(
   composeState: MutableState<ComposeState>,
   attachmentOption: MutableState<AttachmentOption?>,
   showChooseAttachment: () -> Unit,
-  textSelection: MutableState<Pair<Int, Int>>
+  textSelection: MutableState<TextRange>,
+  focusRequester: FocusRequester?,
 ) {
   val cancelledLinks = rememberSaveable { mutableSetOf<String>() }
   fun isSimplexLink(link: String): Boolean =
@@ -1153,7 +1156,8 @@ fun ComposeView(
           onFilesPasted = { composeState.onFilesAttached(it) },
           onMessageChange = ::onMessageChange,
           textStyle = textStyle,
-          onSelectionChanged = { start, end -> textSelection.value = start to end },
+          textSelection = textSelection,
+          focusRequester = focusRequester,
         )
       }
     }

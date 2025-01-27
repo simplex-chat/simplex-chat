@@ -10,7 +10,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -34,15 +36,16 @@ private data class MentionsState(
 fun GroupMentions(
   rhId: Long?,
   composeState: MutableState<ComposeState>,
-  textSelection: MutableState<Pair<Int, Int>>,
+  textSelection: MutableState<TextRange>,
+  composeViewFocusRequester: FocusRequester?,
   chatInfo: ChatInfo.Group
 ) {
   val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
   val membersToMention = remember { mutableStateOf<List<GroupMember>>(emptyList()) }
-  val mentionsState by remember { derivedStateOf { parseMentionRanges(composeState.value.message, textSelection.value.first) }}
+  val mentionsState by remember { derivedStateOf { parseMentionRanges(composeState.value.message, textSelection.value.start) }}
   val showMembersPicker by remember { derivedStateOf { mentionsState.activeRange != null && membersToMention.value.isNotEmpty() }}
   val offsetY = remember { Animatable(maxHeightInPx) }
-  
+
   LaunchedEffect(mentionsState.activeRange) {
     val activeMentionRange = mentionsState.activeRange
     val search = activeMentionRange?.name?.trim(QUOTE)
@@ -145,6 +148,12 @@ fun GroupMentions(
               ),
               mentions = mentions
             )
+
+            if (appPlatform.isDesktop) {
+              // Desktop doesn't auto focus after click, we need to do it manually in here.
+              composeViewFocusRequester?.requestFocus()
+              textSelection.value = TextRange(composeState.value.message.length)
+            }
           }
           .padding(horizontal = DEFAULT_PADDING_HALF),
         verticalAlignment = Alignment.CenterVertically

@@ -12,10 +12,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -58,7 +60,8 @@ fun SendMsgView(
   onFilesPasted: (List<URI>) -> Unit,
   onMessageChange: (String) -> Unit,
   textStyle: MutableState<TextStyle>,
-  onSelectionChanged: (Int, Int) -> Unit,
+  textSelection: MutableState<TextRange>,
+  focusRequester: FocusRequester? = null,
   ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
   val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
@@ -93,7 +96,8 @@ fun SendMsgView(
       onMessageChange,
       editPrevMessage,
       onFilesPasted,
-      onSelectionChanged
+      textSelection,
+      focusRequester
     ) {
       if (!cs.inProgress) {
         sendMessage(null)
@@ -588,7 +592,7 @@ fun PreviewSendMsgView() {
       onMessageChange = { _ -> },
       onFilesPasted = {},
       textStyle = textStyle,
-      onSelectionChanged = { _, _ -> }
+      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }
@@ -625,7 +629,7 @@ fun PreviewSendMsgViewEditing() {
       onMessageChange = { _ -> },
       onFilesPasted = {},
       textStyle = textStyle,
-      onSelectionChanged = { _, _ -> }
+      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }
@@ -662,7 +666,7 @@ fun PreviewSendMsgViewInProgress() {
       onMessageChange = { _ -> },
       onFilesPasted = {},
       textStyle = textStyle,
-      onSelectionChanged = { _, _ -> }
+      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }

@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
@@ -47,6 +48,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
+import org.w3c.dom.Text
 import java.io.File
 import java.net.URI
 import kotlin.math.*
@@ -152,7 +154,7 @@ fun ChatView(
             reversedChatItems = reversedChatItems,
             unreadCount,
             composeState,
-            composeView = { textSelection ->
+            composeView = { textSelection, focusRequester ->
               if (selectedChatItems.value == null) {
                 Column(
                   Modifier.fillMaxWidth(),
@@ -174,7 +176,8 @@ fun ChatView(
                   ComposeView(
                     chatModel, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
                     showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } },
-                    textSelection = textSelection
+                    textSelection = textSelection,
+                    focusRequester = focusRequester
                   )
                 }
               } else {
@@ -665,7 +668,7 @@ fun ChatLayout(
   reversedChatItems: State<List<ChatItem>>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
-  composeView: (@Composable (MutableState<Pair<Int, Int>>) -> Unit),
+  composeView: (@Composable (MutableState<TextRange>, FocusRequester?) -> Unit),
   groupReports: State<GroupReports>,
   scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
@@ -742,7 +745,8 @@ fun ChatLayout(
         val chatInfo = remember { chatInfo }.value
         val oneHandUI = remember { appPrefs.oneHandUI.state }
         val chatBottomBar = remember { appPrefs.chatBottomBar.state }
-        val textSelection = remember { mutableStateOf(0 to 0) }
+        val textSelection = remember { mutableStateOf(TextRange(composeState.value.message.length)) }
+        val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chatInfo != null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
@@ -768,6 +772,7 @@ fun ChatLayout(
                     rhId = remoteHostId,
                     composeState = composeState,
                     textSelection = textSelection,
+                    composeViewFocusRequester = composeViewFocusRequester,
                     chatInfo = chatInfo,
                   )
                 }
@@ -818,7 +823,7 @@ fun ChatLayout(
                 .navigationBarsPadding()
                 .then(if (oneHandUI.value && chatBottomBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
             ) {
-              composeView(textSelection)
+              composeView(textSelection, composeViewFocusRequester)
             }
           }
         }
@@ -2685,7 +2690,7 @@ fun PreviewChatLayout() {
       reversedChatItems = remember { mutableStateOf(emptyList()) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = {},
+      composeView = { _,_ -> },
       groupReports = remember { mutableStateOf(GroupReports(0, false)) },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
@@ -2762,7 +2767,7 @@ fun PreviewGroupChatLayout() {
       reversedChatItems = remember { mutableStateOf(emptyList()) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = {},
+      composeView = { _, _ -> },
       groupReports = remember { mutableStateOf(GroupReports(0, false)) },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
