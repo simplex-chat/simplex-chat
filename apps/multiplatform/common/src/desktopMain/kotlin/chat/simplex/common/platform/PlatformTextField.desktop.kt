@@ -10,8 +10,7 @@ import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
@@ -54,17 +53,19 @@ actual fun PlatformTextField(
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
-  onSelectionChanged: (Int, Int) -> Unit,
+  textSelection: MutableState<TextRange>,
+  focusRequester: FocusRequester?,
   onDone: () -> Unit,
 ) {
+
   val cs = composeState.value
-  val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
+  val focusReq = focusRequester ?: remember { FocusRequester() }
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
-    focusRequester.requestFocus()
+    focusReq.requestFocus()
     delay(50)
     keyboard?.show()
   }
@@ -90,7 +91,7 @@ actual fun PlatformTextField(
   val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
   val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
-  val textFieldValue = textFieldValueState.copy(text = cs.message)
+  val textFieldValue = textFieldValueState.copy(text = cs.message, selection = textSelection.value)
   val clipboard = LocalClipboardManager.current
   BasicTextField(
     value = textFieldValue,
@@ -106,7 +107,7 @@ actual fun PlatformTextField(
           }
         }
         textFieldValueState = it
-        onSelectionChanged(it.selection.min, it.selection.max)
+        textSelection.value = it.selection
         onMessageChange(it.text)
       }
     },
@@ -120,7 +121,7 @@ actual fun PlatformTextField(
       .padding(start = startPadding, end = endPadding)
       .offset(y = (-5).dp)
       .fillMaxWidth()
-      .focusRequester(focusRequester)
+      .focusRequester(focusReq)
       .onPreviewKeyEvent {
         if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
           if (it.isShiftPressed) {

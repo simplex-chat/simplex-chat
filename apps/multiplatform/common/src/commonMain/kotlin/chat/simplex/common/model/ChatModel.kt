@@ -2295,8 +2295,6 @@ data class ChatItem (
     }
   }
 
-  val mentionsSample: List<MemberMention> get() = listOf(MemberMention("MajorSensibility", "UkFVYlE4TUplYm91THdVVA=="))
-
   val isRcvNew: Boolean get() = meta.isRcvNew
 
   val allowAddReaction: Boolean get() =
