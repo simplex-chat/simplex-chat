@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 const val MENTION_START = '@'
 const val QUOTE = '\''
-const val MAX_NUMBER_OF_MENTIONS = 3
 val GROUP_MENTIONS_MAX_HEIGHT = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f
 
 private data class MentionRange(val start: Int, var name: String)
@@ -42,7 +41,20 @@ fun GroupMentions(
 
   LaunchedEffect(activeMentionRange) {
     val search = activeMentionRange?.name?.trim(QUOTE)
+
     if (search == null) {
+      if (membersToMention.value.size == 1 && composeState.value.memberMentionsEnabled) {
+        val member = membersToMention.value.first()
+
+        if (composeState.value.mentions.none { it.member.memberId == member.memberId }) {
+          val displayName = composeState.value.mentionMemberName(member.displayName)
+          composeState.value = composeState.value.copy(
+            mentions = composeState.value.mentions.toMutableList().apply {
+              add(GroupMemberMention(displayName, member))
+            }
+          )
+        }
+      }
       if (membersToMention.value.isNotEmpty()) {
         offsetY.animateTo(
           targetValue = maxHeightInPx,
@@ -53,7 +65,6 @@ fun GroupMentions(
       return@LaunchedEffect
     }
 
-    println("ranges: ${activeMentionRange}")
     val txtAsMention = composeState.value.mentions.firstOrNull {
       if (it.member.displayName == it.memberName) {
         allMentionRanges.second[search] == 1 && search == it.memberName
@@ -76,11 +87,10 @@ fun GroupMentions(
     snapshotFlow { allMentionRanges }
       .distinctUntilChanged()
       .collect { (_, m) ->
-        // TODO - [MENTIONS] review this, checks if mention was removed
         val filteredMentions = composeState.value.mentions.filter { m.contains(it.memberName) }
 
         if (filteredMentions.size != composeState.value.mentions.size) {
-          composeState.value = composeState.value.copy(mentions = filteredMentions.toMutableList())
+          composeState.value = composeState.value.copy(mentions = filteredMentions)
         }
       }
   }
@@ -103,7 +113,7 @@ fun GroupMentions(
     itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { _, member ->
       Divider()
       val existingMention = composeState.value.mentions.find { it.member.memberId == member.memberId }
-      val enabled = composeState.value.mentions.size < MAX_NUMBER_OF_MENTIONS || existingMention != null
+      val enabled = composeState.value.memberMentionsEnabled || existingMention != null
       Row(
         Modifier
           .fillMaxWidth()
@@ -111,7 +121,7 @@ fun GroupMentions(
           .clickable(enabled = enabled) {
             val selection = activeMentionRange ?: return@clickable
             val msg = composeState.value.message
-            val displayName = existingMention?.memberName ?: uniqueMentionName(0, member.displayName, composeState.value.mentions)
+            val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.displayName)
             val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
               add(GroupMemberMention(displayName, member))
             }
@@ -195,10 +205,4 @@ private fun parseMentionRanges(message: String): Pair<Map<Int, MentionRange>, Ma
   }
 
   return mentionByRange to parsedMentions
-}
-
-private fun uniqueMentionName(n: Int, name: String, mentions: List<GroupMemberMention>): String {
-  val tryName = if (n == 0) name else "${name}_$n"
-  val used = mentions.any { it.memberName == tryName }
-  return if (used) uniqueMentionName(n + 1, name, mentions) else tryName
 }

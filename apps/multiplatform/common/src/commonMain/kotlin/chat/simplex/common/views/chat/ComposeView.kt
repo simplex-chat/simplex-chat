@@ -38,6 +38,8 @@ import java.io.File
 import java.net.URI
 import java.nio.file.Files
 
+private const val MAX_NUMBER_OF_MENTIONS = 3
+
 @Serializable
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
@@ -91,6 +93,9 @@ data class ComposeState(
 
   val memberMentions: List<MemberMention>
     get() = this.mentions.map { MemberMention(it.memberName, it.member.memberId) }
+
+  val memberMentionsEnabled: Boolean
+    get() = this.mentions.size < MAX_NUMBER_OF_MENTIONS
 
   val editing: Boolean
     get() =
@@ -181,6 +186,12 @@ data class ComposeState(
         mutableStateOf(json.decodeFromString(it))
       }
     )
+  }
+
+  fun mentionMemberName(name: String, n: Int = 0): String {
+    val tryName = if (n == 0) name else "${name}_$n"
+    val used = mentions.any { it.memberName == tryName }
+    return if (used) mentionMemberName(name, n + 1) else tryName
   }
 }
 
