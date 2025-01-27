@@ -35,7 +35,6 @@ module Simplex.Chat.Store.Messages
     updateChatTs,
     createNewSndChatItem,
     createNewRcvChatItem,
-    createRcvGroupCIMentions,
     createNewChatItemNoMsg,
     createNewChatItem_,
     getChatPreviews,
@@ -54,6 +53,8 @@ module Simplex.Chat.Store.Messages
     markDirectChatItemDeleted,
     updateGroupChatItemStatus,
     updateGroupChatItem,
+    createGroupCIMentions,
+    updateGroupCIMentions,
     deleteGroupChatItem,
     updateGroupChatItemModerated,
     updateGroupCIBlockedByAdmin,
@@ -366,7 +367,6 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       (chatTs, userId, noteFolderId)
   _ -> pure ()
 
--- TODO [mentions] store chat item mentions
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live createdAt =
   createNewChatItem_ db user chatDirection createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False createdAt Nothing createdAt
@@ -399,11 +399,6 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forw
           CDDirectRcv _ -> (Just $ not sent, Nothing)
           CDGroupRcv GroupInfo {membership = GroupMember {memberId = userMemberId}} _ ->
             (Just $ Just userMemberId == memberId, memberId)
-
--- TODO [mentions] store chat item mentions
--- get mentioned members
-createRcvGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MemberMention] -> IO [MentionedMember]
-createRcvGroupCIMentions _db _user _g _ci _mentions = pure []
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection ciContent itemTs =
@@ -1928,7 +1923,6 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =
-      -- TODO [mentions] probably, mentions should be passed as array here
       CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
@@ -2274,9 +2268,8 @@ groupCIWithReactions db g cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemId, 
       pure $ CChatItem md ci {reactions, mentions}
     Nothing -> pure $ if null mentions then cci else CChatItem md ci {mentions}
 
--- TODO [mentions]
-updateGroupChatItem :: MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Bool -> [MemberMention] -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
-updateGroupChatItem db user groupId ci newContent edited live _mentions msgId_ = do
+updateGroupChatItem :: MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
+updateGroupChatItem db user groupId ci newContent edited live msgId_ = do
   currentTs <- liftIO getCurrentTime
   let ci' = updatedChatItem ci newContent edited live Nothing currentTs
   liftIO $ updateGroupChatItem_ db user groupId ci' msgId_
@@ -2298,6 +2291,22 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
     |]
     ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
+
+-- TODO [mentions] DB create
+createGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MentionedMember] -> IO ()
+createGroupCIMentions _db _user _g _ci _mentions = pure ()
+
+-- TODO [mentions] DB update
+updateGroupCIMentions :: forall d. DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MentionedMember] -> IO (ChatItem 'CTGroup d)
+updateGroupCIMentions db user g ci@ChatItem {mentions} mentions'
+  | mentions' == mentions = pure ci
+  | otherwise = do
+      unless (null mentions) $ deleteGroupCIMentions db user g ci
+      unless (null mentions') $ createGroupCIMentions db user g ci mentions'
+      pure (ci :: ChatItem 'CTGroup d) {mentions = mentions'}
+  where
+    deleteGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
+    deleteGroupCIMentions _db _user _g _ci = pure ()
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
@@ -2774,7 +2783,7 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
       |]
       (groupId, itemMemberId, itemSharedMsgId)
 
--- TODO [mentions]
+-- TODO [mentions] DB read
 getGroupCIMentions :: DB.Connection -> GroupInfo -> ChatItemId -> IO [MentionedMember]
 getGroupCIMentions _db _g _ciId = pure []
 

@@ -314,7 +314,7 @@ data ChatCommand
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIReportMessage {groupId :: GroupId, chatItemId :: ChatItemId, reportReason :: ReportReason, reportText :: Text}
   | ReportMessage {groupName :: GroupName, contactName_ :: Maybe ContactName, reportReason :: ReportReason, reportedMessage :: Text}
-  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
+  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, updatedMessage :: UpdatedMessage}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
@@ -347,7 +347,6 @@ data ChatCommand
   | APISetConnectionAlias Int64 LocalAlias
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
-  | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
@@ -1091,6 +1090,12 @@ data ComposedMessage = ComposedMessage
   }
   deriving (Show)
 
+data UpdatedMessage = UpdatedMessage
+  { msgContent :: MsgContent,
+    mentions :: [GroupMemberMention]
+  }
+  deriving (Show)
+
 data ChatTagData = ChatTagData
   { emoji :: Maybe Text,
     text :: Text
@@ -1623,7 +1628,6 @@ $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
 
--- This instance is needed for backward compatibility, can be removed in v6.0
 instance FromJSON ComposedMessage where
   parseJSON (J.Object v) = do
     fileSource <-
@@ -1636,5 +1640,7 @@ instance FromJSON ComposedMessage where
     pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+
+$(JQ.deriveJSON defaultJSON ''UpdatedMessage)
 
 $(JQ.deriveToJSON defaultJSON ''ChatTagData)

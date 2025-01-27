@@ -166,7 +166,7 @@ data MentionedMember = MentionedMember
     memberViewName :: Text, -- current member display name or alias, shown in the message
     memberRole :: GroupMemberRole -- used for admins/owners in the message
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 isUserMention :: ChatInfo c -> ChatItem c d -> Bool
 isUserMention cInfo ChatItem {chatDir, quotedItem, mentions} = case (cInfo, chatDir) of
@@ -1261,14 +1261,14 @@ data ChatItemVersion = ChatItemVersion
   deriving (Eq, Show)
 
 mkItemVersion :: ChatItem c d -> Maybe ChatItemVersion
-mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
+mkItemVersion ChatItem {content, formattedText, meta} = version <$> ciMsgContent content
   where
     CIMeta {itemId, itemTs, createdAt} = meta
     version mc =
       ChatItemVersion
         { chatItemVersionId = itemId,
           msgContent = mc,
-          formattedText = parseMaybeMarkdownList $ msgContentText mc,
+          formattedText,
           itemVersionTs = itemTs,
           createdAt = createdAt
         }

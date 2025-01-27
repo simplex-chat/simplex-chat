@@ -645,7 +645,7 @@ CREATE TABLE chat_tags_chats(
 );
 CREATE TABLE chat_item_mentions(
   chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  chat_item_id INTEGER NOT NULL REFERENCES chat_items,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   member_id BLOB NOT NULL,
   member_name TEXT NOT NULL
 );

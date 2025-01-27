@@ -48,6 +48,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByName,
     getGroupMember,
     getMentionedGroupMember,
+    getMentionedMemberByMemberId,
     getGroupMemberById,
     getGroupMemberByMemberId,
     getGroupMembers,
@@ -149,7 +150,7 @@ import Data.Ord (Down (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (groupForwardVersion)
+import Simplex.Chat.Protocol (MemberMention, groupForwardVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -799,9 +800,13 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
       (userId, groupId, groupMemberId, userId)
 
--- TODO [mentions]
+-- TODO [mentions] DB member
 getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberMention -> ExceptT StoreError IO MentionedMember
 getMentionedGroupMember = undefined
+
+-- TODO [mentions] DB member
+getMentionedMemberByMemberId :: DB.Connection -> User -> GroupId -> MemberMention -> IO MentionedMember
+getMentionedMemberByMemberId = undefined
 
 getGroupMemberById :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMemberById db vr user@User {userId} groupMemberId =
