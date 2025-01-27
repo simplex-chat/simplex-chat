@@ -3189,6 +3189,14 @@ Plan:
 SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT group_member_cleanup_id, local_display_name, contact_profile_id
+        FROM group_members_cleanup
+        WHERE user_id = ?
+      
+Plan:
+SEARCH group_members_cleanup USING INDEX idx_group_members_cleanup_user_id (user_id=?)
+
+Query: 
         SELECT group_member_id, group_snd_item_status, via_proxy
         FROM group_snd_item_statuses
         WHERE chat_item_id = ?
@@ -5257,6 +5265,7 @@ SEARCH connections USING COVERING INDEX idx_connections_user_contact_link_id (us
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_members_cleanup USING COVERING INDEX idx_group_members_cleanup_user_id (user_id=?)
 SEARCH chat_tags USING COVERING INDEX idx_chat_tags_user_id (user_id=?)
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_user_id (user_id=?)
@@ -5335,6 +5344,9 @@ Query: INSERT INTO files (user_id, file_name, file_path, file_size, chunk_size, 
 Plan:
 
 Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
+Plan:
+
+Query: INSERT INTO group_members_cleanup (user_id, local_display_name, contact_profile_id, created_at) VALUES (?,?,?,?)
 Plan:
 
 Query: INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)
@@ -5568,7 +5580,7 @@ Query: SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_
 Plan:
 SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
 
-Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
+Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? LIMIT 1
 Plan:
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
