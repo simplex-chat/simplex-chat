@@ -173,19 +173,8 @@ data MentionedMemberInfo = MentionedMemberInfo
   }
   deriving (Eq, Show)
 
-isUserMention :: ChatInfo c -> ChatItem c d -> Bool
-isUserMention cInfo ChatItem {chatDir, quotedItem, mentions} = case (cInfo, chatDir) of
-  (_, CIDirectRcv) -> userItem quotedItem
-  (GroupChat GroupInfo {membership = m}, CIGroupRcv _) ->
-    userItem quotedItem || any (\MentionedMember {memberId} -> sameMemberId memberId m) mentions
-  _ -> False
-  where
-    userItem = \case
-      Nothing -> False
-      Just CIQuote {chatDir = cd} -> case cd of
-        CIQDirectSnd -> True
-        CIQGroupSnd -> True
-        _ -> False
+isUserMention :: ChatItem c d -> Bool
+isUserMention ChatItem {meta = CIMeta {userMention}} = userMention
 
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd

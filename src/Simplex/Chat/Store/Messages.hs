@@ -2295,7 +2295,7 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
 
 createGroupCIMentions :: DB.Connection -> ChatItem 'CTGroup d -> [MentionedMember] -> IO ()
 createGroupCIMentions db ci mentions =
-  DB.executeMany db "INSERT INFO chat_item_mentions (chat_item_id, member_id, member_name) VALUES (?, ?, ?)" rows
+  DB.executeMany db "INSERT INTO chat_item_mentions (chat_item_id, member_id, display_name) VALUES (?, ?, ?)" rows
   where
     rows = map (\MentionedMember {memberId, mentionName} -> (ciId, memberId, mentionName)) mentions
     ciId = chatItemId' ci
@@ -2791,11 +2791,11 @@ getGroupCIMentions db ciId =
     <$> DB.query
       db
       [sql|
-        SELECT r.member_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
+        SELECT r.display_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
         FROM chat_item_mentions r
-        LEFT JOIN group_member m ON r.member_id = m.member_id
+        LEFT JOIN group_members m ON r.member_id = m.member_id
         LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id) 
-        WHERE ms.chat_item_id = ?
+        WHERE r.chat_item_id = ?
       |]
       (Only ciId)
   where

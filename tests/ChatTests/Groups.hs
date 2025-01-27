@@ -186,6 +186,8 @@ chatGroupTests = do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
+  describe "group member mentions" $ do
+    it "should send messages with member mentions" testMemberMention
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -6651,3 +6653,19 @@ testGroupMemberReports =
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
+
+testMemberMention :: HasCallStack => TestParams -> IO ()
+testMemberMention =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello!"
+      concurrentlyN_
+        [ bob <# "#team alice> hello!",
+          cath <# "#team alice> hello!"
+        ]
+      bob #> "#team hello @alice"
+      concurrentlyN_
+        [ alice <# "#team bob!> hello @alice",
+          cath <# "#team bob> hello @alice"
+        ]

@@ -647,7 +647,7 @@ CREATE TABLE chat_item_mentions(
   chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   member_id BLOB NOT NULL,
-  member_name TEXT NOT NULL
+  display_name TEXT NOT NULL
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

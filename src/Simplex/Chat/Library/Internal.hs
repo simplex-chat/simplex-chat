@@ -230,6 +230,15 @@ getRcvMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
     mapM (getMentionedMemberByMemberId db user groupId) mentions'
   _ -> pure []
 
+getMessageMentions :: DB.Connection -> User -> GroupId -> Text -> IO [GroupMemberMention]
+getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
+  Just ft -> catMaybes <$> mapM get (mentionedNames ft)
+  Nothing -> pure []
+  where
+    get name =
+      fmap (GroupMemberMention name) . eitherToMaybe
+        <$> runExceptT (getGroupMemberIdByName db user gId name)
+
 msgContentTexts :: MsgContent -> (Text, Maybe MarkdownList)
 msgContentTexts mc = let t = msgContentText mc in (t, parseMaybeMarkdownList t)
 

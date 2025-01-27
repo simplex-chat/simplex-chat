@@ -161,7 +161,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
     responseNotification ct cc r
   where
     markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
-      case (chatDirNtf u chat chatDir (isUserMention chat ci), itemStatus) of
+      case (chatDirNtf u chat chatDir (isUserMention ci), itemStatus) of
         (True, CISRcvNew) -> do
           let itemId = chatItemId' ci
               chatRef = chatInfoToRef chat
@@ -178,7 +178,7 @@ responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
 responseNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
   CRNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
-    when (chatDirNtf u cInfo chatDir $ isUserMention cInfo ci) $ do
+    when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
@@ -187,7 +187,7 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
     where
       text = msgText mc formattedText
   CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
-    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention cInfo ci) $ setActiveChat t cInfo
+    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ setActiveChat t cInfo
   CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")

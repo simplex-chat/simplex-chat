@@ -622,7 +622,7 @@ processChatCommand' vr = \case
         else do
           cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
-            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent, mentions = mentionedMembers} -> do
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
                 (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
                   let changed = mc /= oldMC
@@ -705,7 +705,7 @@ processChatCommand' vr = \case
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
-    (gInfo@GroupInfo {membership}, items) <- getCommandGroupChatItems user gId itemIds
+    (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
     assertDeletable gInfo items
     assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
@@ -1863,10 +1863,11 @@ processChatCommand' vr = \case
               _ ->
                 throwChatError $ CEContactNotFound name Nothing
       CTGroup -> do
-        -- TODO [mentions] CLI
-        gId <- withFastStore $ \db -> getGroupIdByName db user name
+        (gId, mentions) <- withFastStore $ \db -> do
+          gId <- getGroupIdByName db user name
+          (gId,) <$> liftIO (getMessageMentions db user gId msg)
         let chatRef = ChatRef CTGroup gId
-        processChatCommand $ APISendMessages chatRef False Nothing [ComposedMessage Nothing Nothing mc []]
+        processChatCommand $ APISendMessages chatRef False Nothing [ComposedMessage Nothing Nothing mc mentions]
       CTLocal
         | name == "" -> do
             folderId <- withFastStore (`getUserNoteFolderId` user)
@@ -1891,10 +1892,9 @@ processChatCommand' vr = \case
         let chatRef = ChatRef CTDirect ctId
         processChatCommand $ APISendMessages chatRef False Nothing [ComposedMessage Nothing Nothing mc []]
   SendLiveMessage chatName msg -> withUser $ \user -> do
-    chatRef <- getChatRef user chatName
+    (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     let mc = MCText msg
-    -- TODO [mentions] CLI
-    processChatCommand $ APISendMessages chatRef True Nothing [ComposedMessage Nothing Nothing mc []]
+    processChatCommand $ APISendMessages chatRef True Nothing [ComposedMessage Nothing Nothing mc mentions]
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withFastStore' $ \db -> getUserContacts db vr user
     withChatLock "sendMessageBroadcast" . procCmd $ do
@@ -1945,16 +1945,14 @@ processChatCommand' vr = \case
     deletedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId (Just mName) deletedMsg
     processChatCommand $ APIDeleteMemberChatItem gId (deletedItemId :| [])
   EditMessage chatName editedMsg msg -> withUser $ \user -> do
-    chatRef <- getChatRef user chatName
+    (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     editedItemId <- getSentChatItemIdByText user chatRef editedMsg
     let mc = MCText msg
-    -- TODO [mentions] CLI
-    processChatCommand $ APIUpdateChatItem chatRef editedItemId False $ UpdatedMessage mc []
+    processChatCommand $ APIUpdateChatItem chatRef editedItemId False $ UpdatedMessage mc mentions
   UpdateLiveMessage chatName chatItemId live msg -> withUser $ \user -> do
-    chatRef <- getChatRef user chatName
+    (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     let mc = MCText msg
-    -- TODO [mentions] CLI
-    processChatCommand $ APIUpdateChatItem chatRef chatItemId live $ UpdatedMessage mc []
+    processChatCommand $ APIUpdateChatItem chatRef chatItemId live $ UpdatedMessage mc mentions
   ReactToMessage add reaction chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
@@ -2224,11 +2222,13 @@ processChatCommand' vr = \case
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGetGroupLink groupId
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
-    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    quotedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
+    (groupId, quotedItemId, mentions) <-
+      withFastStore $ \db -> do
+        gId <- getGroupIdByName db user gName
+        qiId <- getGroupChatItemIdByText db user gId cName quotedMsg
+        (gId, qiId,) <$> liftIO (getMessageMentions db user gId msg)
     let mc = MCText msg
-    -- TODO [mentions] CLI
-    processChatCommand $ APISendMessages (ChatRef CTGroup groupId) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc []]
+    processChatCommand $ APISendMessages (ChatRef CTGroup groupId) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc mentions]
   ClearNoteFolder -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand $ APIClearChat (ChatRef CTLocal folderId)
@@ -2498,6 +2498,12 @@ processChatCommand' vr = \case
           | name == "" -> withFastStore (`getUserNoteFolderId` user)
           | otherwise -> throwChatError $ CECommandError "not supported"
         _ -> throwChatError $ CECommandError "not supported"
+    getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, [GroupMemberMention])
+    getChatRefAndMentions user cName msg = do
+      chatRef@(ChatRef cType chatId) <- getChatRef user cName
+      (chatRef,) <$> case cType of
+        CTGroup -> withFastStore' $ \db -> getMessageMentions db user chatId msg
+        _ -> pure []
 #if !defined(dbPostgres)
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
