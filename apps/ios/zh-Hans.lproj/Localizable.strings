@@ -215,9 +215,6 @@
 "%lld new interface languages" = "%lld 种新的界面语言";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld 秒";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld 秒";
 
 /* No comment provided by engineer. */
@@ -262,7 +259,8 @@
 /* No comment provided by engineer. */
 "0s" = "0秒";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "1天";
 
 /* time interval */
@@ -271,10 +269,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1分钟";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "1月";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "1周";
 
 /* No comment provided by engineer. */
@@ -1311,7 +1311,8 @@
 /* No comment provided by engineer. */
 "decryption errors" = "解密错误";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "默认 (%@)";
 
 /* No comment provided by engineer. */
@@ -1321,7 +1322,6 @@
 "default (yes)" = "默认 (是)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "删除";
 
@@ -1403,7 +1403,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "删除消息吗？";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "删除消息";
 
 /* No comment provided by engineer. */
@@ -1647,7 +1647,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "启用（保持覆盖）";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "启用自动删除消息？";
 
 /* No comment provided by engineer. */
@@ -2037,7 +2037,7 @@
 /* swipe action */
 "Favorite" = "最喜欢";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "File error" = "文件错误";
 
 /* file error text */
@@ -2895,7 +2895,7 @@
 /* No comment provided by engineer. */
 "Network status" = "网络状态";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "从不";
 
 /* No comment provided by engineer. */
@@ -4220,7 +4220,7 @@
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "Temporary file error" = "临时文件错误";
 
 /* server test failure */
