@@ -2286,7 +2286,7 @@
     <string name="privacy_chat_list_open_links">Hivatkozás megnyitása a csevegési listából</string>
     <string name="privacy_chat_list_open_links_no">Nem</string>
     <string name="privacy_chat_list_open_web_link_question">Webhivatkozás megnyitása?</string>
-    <string name="text_field_set_chat_placeholder">Csevegési név beállítása…</string>
+    <string name="text_field_set_chat_placeholder">Csevegés nevének beállítása…</string>
     <string name="disable_automatic_deletion_question">Automatikus üzenettörlés letiltása?</string>
     <string name="disable_automatic_deletion">Üzenetek törlésének letiltása</string>
     <string name="disable_automatic_deletion_message">Az ebben a csevegésben lévő üzenetek soha nem lesznek törölve.</string>
