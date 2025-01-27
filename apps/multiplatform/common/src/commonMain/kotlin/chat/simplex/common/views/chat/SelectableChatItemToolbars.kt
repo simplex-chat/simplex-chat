@@ -21,11 +21,10 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>) {
+fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>, onTop: Boolean) {
   val onBackClicked = { selectedChatItems.value = null }
   BackHandler(onBack = onBackClicked)
   val count = selectedChatItems.value?.size ?: 0
-  val oneHandUI = remember { appPrefs.oneHandUI.state }
   DefaultAppBar(
     navigationButton = { NavigationButtonClose(onButtonClicked = onBackClicked) },
     title = {
@@ -41,7 +40,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
       )
     },
     onTitleClick = null,
-    onTop = !oneHandUI.value,
+    onTop = onTop,
     onSearchValueChanged = {},
   )
 }
@@ -49,7 +48,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
 @Composable
 fun SelectedItemsBottomToolbar(
   chatInfo: ChatInfo,
-  chatItems: List<ChatItem>,
+  reversedChatItems: State<List<ChatItem>>,
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   moderateItems: () -> Unit,
@@ -108,8 +107,8 @@ fun SelectedItemsBottomToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  LaunchedEffect(chatInfo, chatItems, selectedChatItems.value) {
-    recheckItems(chatInfo, chatItems, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
+  LaunchedEffect(chatInfo, reversedChatItems.value, selectedChatItems.value) {
+    recheckItems(chatInfo, reversedChatItems.value.asReversed(), selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
   }
 }
 
@@ -138,10 +137,10 @@ private fun recheckItems(chatInfo: ChatInfo,
   for (ci in chatItems) {
     if (selected.contains(ci.id)) {
       rDeleteEnabled = rDeleteEnabled && ci.canBeDeletedForSelf
-      rDeleteForEveryoneEnabled = rDeleteForEveryoneEnabled && ci.meta.deletable && !ci.localNote
-      rOnlyOwnGroupItems = rOnlyOwnGroupItems && ci.chatDir is CIDirection.GroupSnd
-      rModerateEnabled = rModerateEnabled && ci.content.msgContent != null && ci.memberToModerate(chatInfo) != null
-      rForwardEnabled = rForwardEnabled && ci.content.msgContent != null && ci.meta.itemDeleted == null && !ci.isLiveDummy
+      rDeleteForEveryoneEnabled = rDeleteForEveryoneEnabled && ci.meta.deletable && !ci.localNote && !ci.isReport
+      rOnlyOwnGroupItems = rOnlyOwnGroupItems && ci.chatDir is CIDirection.GroupSnd && !ci.isReport
+      rModerateEnabled = rModerateEnabled && ci.content.msgContent != null && ci.memberToModerate(chatInfo) != null && !ci.isReport
+      rForwardEnabled = rForwardEnabled && ci.content.msgContent != null && ci.meta.itemDeleted == null && !ci.isLiveDummy && !ci.isReport
       rSelectedChatItems.add(ci.id) // we are collecting new selected items here to account for any changes in chat items list
     }
   }

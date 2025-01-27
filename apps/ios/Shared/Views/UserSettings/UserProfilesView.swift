@@ -298,6 +298,7 @@ struct UserProfilesView: View {
     private func removeUser(_ user: User, _ delSMPQueues: Bool, viewPwd: String?) async {
         do {
             if user.activeUser {
+                ChatModel.shared.removeWallpaperFilesFromAllChats(user)
                 if let newActive = m.users.first(where: { u in !u.user.activeUser && !u.user.hidden }) {
                     try await changeActiveUserAsync_(newActive.user.userId, viewPwd: nil)
                     try await deleteUser()
@@ -323,6 +324,7 @@ struct UserProfilesView: View {
 
         func deleteUser() async throws {
             try await apiDeleteUser(user.userId, delSMPQueues, viewPwd: viewPwd)
+            removeWallpaperFilesFromTheme(user.uiThemes)
             await MainActor.run { withAnimation { m.removeUser(user) } }
         }
     }

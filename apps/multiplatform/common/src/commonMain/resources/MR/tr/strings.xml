@@ -93,7 +93,7 @@
     <string name="save_preferences_question">Tercihleri kaydet\?</string>
     <string name="save_profile_password">Profil parolasını kaydet</string>
     <string name="profile_is_only_shared_with_your_contacts">Profil sadece konuştuğun kişilerle paylaşılır.</string>
-    <string name="next_generation_of_private_messaging">Gizli iletişimin\ngelecek kuşağı</string>
+    <string name="next_generation_of_private_messaging">Mesajlaşmanın geleceği</string>
     <string name="icon_descr_audio_off">Ses kapalı</string>
     <string name="authentication_cancelled">Doğrulama iptal edildi</string>
     <string name="settings_restart_app">Yeniden başlat</string>
@@ -1201,7 +1201,7 @@
     <string name="scan_from_mobile">Mobilden tara</string>
     <string name="verify_connections">Bağlantıları onayla</string>
     <string name="share_message">Mesaj paylaş…</string>
-    <string name="alert_text_msg_bad_hash">Önceki mesajın hash\'i farklı.</string>
+    <string name="alert_text_msg_bad_hash">Önceki mesajın hash\'i farklı.\"</string>
     <string name="lock_not_enabled">SimpleX Kilit aktif değil!</string>
     <string name="chat_lock">SimpleX Kilit</string>
     <string name="connect_via_member_address_alert_title">Doğrudan bağlanılsın mı?</string>
@@ -2124,4 +2124,18 @@
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1 kerelik bağlantı <i>sadece bir kişiyle</i> kullanılabilir - yüz yüze veya herhangi bir mesajlaşma programı aracılığıyla paylaşın]]></string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Aşağıdaki operatör(ler) için koşullar zaten kabul edilmiştir: <b>%s</b>.]]></string>
     <string name="operators_conditions_accepted_for"><![CDATA[Şart(lar) operatör(ler) için kabul edilir: <b>%s</b>.]]></string>
+    <string name="button_add_friends">Arkadaş ekle</string>
+    <string name="v6_2_business_chats">İş konuşmaları</string>
+    <string name="button_add_team_members">Takım üyesi ekle</string>
+    <string name="display_name_accepted_invitation">kabul edilmiş davet</string>
+    <string name="business_address">İş adresi</string>
+    <string name="add_your_team_members_to_conversations">Takım üyelerini konuşmalara ekle</string>
+    <string name="onboarding_notifications_mode_service_desc_short">Uygulama her zaman arka planda çalışır</string>
+    <string name="onboarding_network_about_operators">Operatörler hakkında</string>
+    <string name="a_plus_b">a+b</string>
+    <string name="chat_list_add_list">Liste ekle</string>
+    <string name="chat_list_all">Hepsi</string>
+    <string name="add_to_list">Listeye ekle</string>
+    <string name="delete_chat_list_warning">%s listesindeki bütün sohbetler kaldırılacak ve liste silinecek</string>
+    <string name="chat_list_businesses">İşletmeler</string>
 </resources>

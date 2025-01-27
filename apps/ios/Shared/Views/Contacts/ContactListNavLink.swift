@@ -20,7 +20,7 @@ struct ContactListNavLink: View {
     @State private var showContactRequestDialog = false
 
     var body: some View {
-        let contactType = chatContactType(chat: chat)
+        let contactType = chatContactType(chat)
 
         Group {
             switch (chat.chatInfo) {

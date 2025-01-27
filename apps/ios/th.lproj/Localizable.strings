@@ -143,9 +143,6 @@
 "%lld minutes" = "%lld นาที";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld วินาที";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld วินาที";
 
 /* No comment provided by engineer. */
@@ -187,7 +184,8 @@
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "1 วัน";
 
 /* time interval */
@@ -196,10 +194,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 นาที";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "1 เดือน";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "1 สัปดาห์";
 
 /* No comment provided by engineer. */
@@ -855,7 +855,8 @@
 /* message decrypt error item */
 "Decryption error" = "ข้อผิดพลาดในการ decrypt";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "ค่าเริ่มต้น (%@)";
 
 /* No comment provided by engineer. */
@@ -865,7 +866,6 @@
 "default (yes)" = "ค่าเริ่มต้น (ใช่)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "ลบ";
 
@@ -932,7 +932,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "ลบข้อความ?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "ลบข้อความ";
 
 /* No comment provided by engineer. */
@@ -1082,7 +1082,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "เปิดใช้งาน (เก็บการแทนที่)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "เปิดใช้งานการลบข้อความอัตโนมัติ?";
 
 /* No comment provided by engineer. */
@@ -1946,7 +1946,7 @@
 /* No comment provided by engineer. */
 "Network status" = "สถานะเครือข่าย";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "ไม่เคย";
 
 /* notification */

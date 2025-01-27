@@ -12,7 +12,7 @@ import Data.ByteString.Builder (toLazyByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU)
-import MobileTests
+import JSONFixtures
 import Simplex.Chat.Remote.Protocol (owsf2tagged)
 import Simplex.Messaging.Parsers
 import Test.Hspec

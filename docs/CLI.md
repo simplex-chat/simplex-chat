@@ -120,7 +120,7 @@ git checkout stable
 # git checkout v5.3.0-beta.8
 ```
 
-`master` is a development branch, it may containt unstable code.
+`master` is a development branch, it may contain unstable code.
 
 3. Prepare the system:
 

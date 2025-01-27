@@ -27,6 +27,7 @@ import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.ChatModel.withChats
+import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatJsonLength

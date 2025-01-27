@@ -161,9 +161,6 @@
 "%lld new interface languages" = "%lld uutta käyttöliittymän kieltä";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld sekunti(a)";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld sekuntia";
 
 /* No comment provided by engineer. */
@@ -205,7 +202,8 @@
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "1 päivä";
 
 /* time interval */
@@ -214,10 +212,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 minuutti";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "1 kuukausi";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "1 viikko";
 
 /* No comment provided by engineer. */
@@ -888,7 +888,8 @@
 /* message decrypt error item */
 "Decryption error" = "Salauksen purkuvirhe";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "oletusarvo (%@)";
 
 /* No comment provided by engineer. */
@@ -898,7 +899,6 @@
 "default (yes)" = "oletusarvo (kyllä)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "Poista";
 
@@ -965,7 +965,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Poista viesti?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "Poista viestit";
 
 /* No comment provided by engineer. */
@@ -1124,7 +1124,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Salli (pidä ohitukset)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "Ota automaattinen viestien poisto käyttöön?";
 
 /* No comment provided by engineer. */
@@ -2006,7 +2006,7 @@
 /* No comment provided by engineer. */
 "Network status" = "Verkon tila";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "ei koskaan";
 
 /* notification */

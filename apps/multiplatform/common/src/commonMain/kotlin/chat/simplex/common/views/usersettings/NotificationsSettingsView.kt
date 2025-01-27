@@ -78,7 +78,7 @@ fun NotificationsSettingsLayout(
         )
       }
       if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
-        SectionTextFooter(stringResource(MR.strings.xiaomi_ignore_battery_optimization))
+        SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
       }
     }
     SectionBottomSpacer()
@@ -95,7 +95,7 @@ fun NotificationsModeView(
     AppBarTitle(stringResource(MR.strings.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
     SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
     if (platform.androidIsXiaomiDevice() && (notificationsMode.value == NotificationsMode.PERIODIC || notificationsMode.value == NotificationsMode.SERVICE)) {
-      SectionTextFooter(stringResource(MR.strings.xiaomi_ignore_battery_optimization))
+      SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
     }
   }
 }

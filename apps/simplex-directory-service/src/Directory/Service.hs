@@ -9,6 +9,7 @@
 module Directory.Service
   ( welcomeGetOpts,
     directoryService,
+    directoryServiceCLI,
   )
 where
 
@@ -17,7 +18,8 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.List (find, intercalate)
+import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
@@ -36,6 +38,8 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Shared (StoreError (..))
+import Simplex.Chat.Terminal (terminalChatConfig)
+import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
@@ -71,39 +75,68 @@ newServiceState = do
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@DirectoryOpts {coreOptions = CoreChatOpts {dbFilePrefix}, testing} <- getDirectoryOpts appDir "simplex_directory_service"
+  opts@DirectoryOpts {coreOptions, testing, superUsers, adminUsers, ownersGroup} <- getDirectoryOpts appDir "simplex_directory_service"
   unless testing $ do
     putStrLn $ "SimpleX Directory Service Bot v" ++ versionNumber
-    putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
+    printDbOpts coreOptions
+    putStrLn $ knownContacts "superuser" superUsers
+    putStrLn $ knownContacts "admin user" adminUsers
+    putStrLn $ case ownersGroup of
+      Nothing -> "No owner's group"
+      Just KnownGroup {groupId, localDisplayName = n} -> "Owners' group: " <> knownName groupId n
   pure opts
+  where
+    knownContacts userType = \case
+      [] -> "No " <> userType <> "s"
+      cts -> show (length cts) <> " " <> userType <> "(s): " <> intercalate ", " (map knownContact cts)
+    knownContact KnownContact {contactId, localDisplayName = n} = knownName contactId n
+    knownName i n = show i <> ":" <> T.unpack (viewName n)
+
+directoryServiceCLI :: DirectoryStore -> DirectoryOpts -> IO ()
+directoryServiceCLI st opts = do
+  env <- newServiceState
+  eventQ <- newTQueueIO
+  let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
+  race_
+    (simplexChatCLI' terminalChatConfig {chatHooks = defaultChatHooks {eventHook}} (mkChatOpts opts) Nothing)
+    (processEvents eventQ env)
+  where
+    processEvents eventQ env = forever $ do
+      (cc, resp) <- atomically $ readTQueue eventQ
+      u_ <- readTVarIO (currentUser cc)
+      forM_ u_ $ \user -> directoryServiceEvent st opts env user cc resp
 
 directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchResults, testing} user@User {userId} cc = do
+directoryService st opts@DirectoryOpts {testing} user cc = do
   initializeBotAddress' (not testing) cc
   env <- newServiceState
   race_ (forever $ void getLine) . forever $ do
     (_, _, resp) <- atomically . readTBQueue $ outputQ cc
-    forM_ (crDirectoryEvent resp) $ \case
-      DEContactConnected ct -> deContactConnected ct
-      DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
-      DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
-      DEGroupUpdated {contactId, fromGroup, toGroup} -> deGroupUpdated contactId fromGroup toGroup
-      DEContactRoleChanged g ctId role -> deContactRoleChanged g ctId role
-      DEServiceRoleChanged g role -> deServiceRoleChanged g role
-      DEContactRemovedFromGroup ctId g -> deContactRemovedFromGroup ctId g
-      DEContactLeftGroup ctId g -> deContactLeftGroup ctId g
-      DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
-      DEGroupDeleted _g -> pure ()
-      DEUnsupportedMessage _ct _ciId -> pure ()
-      DEItemEditIgnored _ct -> pure ()
-      DEItemDeleteIgnored _ct -> pure ()
-      DEContactCommand ct ciId (ADC sUser cmd) -> do
-        logInfo $ "command received " <> directoryCmdTag cmd
-        case sUser of
-          SDRUser -> deUserCommand env ct ciId cmd
-          SDRAdmin -> deAdminCommand ct ciId cmd
-          SDRSuperUser -> deSuperUserCommand ct ciId cmd
-      DELogChatResponse r -> logInfo r
+    directoryServiceEvent st opts env user cc resp
+
+directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
+directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests} user@User {userId} cc event =
+  forM_ (crDirectoryEvent event) $ \case
+    DEContactConnected ct -> deContactConnected ct
+    DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
+    DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
+    DEGroupUpdated {contactId, fromGroup, toGroup} -> deGroupUpdated contactId fromGroup toGroup
+    DEContactRoleChanged g ctId role -> deContactRoleChanged g ctId role
+    DEServiceRoleChanged g role -> deServiceRoleChanged g role
+    DEContactRemovedFromGroup ctId g -> deContactRemovedFromGroup ctId g
+    DEContactLeftGroup ctId g -> deContactLeftGroup ctId g
+    DEServiceRemovedFromGroup g -> deServiceRemovedFromGroup g
+    DEGroupDeleted g -> deGroupDeleted g
+    DEUnsupportedMessage _ct _ciId -> pure ()
+    DEItemEditIgnored _ct -> pure ()
+    DEItemDeleteIgnored _ct -> pure ()
+    DEContactCommand ct ciId (ADC sUser cmd) -> do
+      logInfo $ "command received " <> directoryCmdTag cmd
+      case sUser of
+        SDRUser -> deUserCommand ct ciId cmd
+        SDRAdmin -> deAdminCommand ct ciId cmd
+        SDRSuperUser -> deSuperUserCommand ct ciId cmd
+    DELogChatResponse r -> logInfo r
   where
     withAdminUsers action = void . forkIO $ do
       forM_ superUsers $ \KnownContact {contactId} -> action contactId
@@ -153,7 +186,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
     processInvitation :: Contact -> GroupInfo -> IO ()
     processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = do
       void $ addGroupReg st ct g GRSProposed
-      r <- sendChatCmd cc $ APIJoinGroup groupId
+      r <- sendChatCmd cc $ APIJoinGroup groupId MFNone
       sendMessage cc ct $ case r of
         CRUserAcceptedGroupSent {} -> "Joining the group " <> displayName <> "…"
         _ -> "Error joining group " <> displayName <> ", please re-send the invitation!"
@@ -417,8 +450,16 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
         notifyOwner gr $ serviceName <> " is removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
 
-    deUserCommand :: ServiceState -> Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
-    deUserCommand env@ServiceState {searchRequests} ct ciId = \case
+    deGroupDeleted :: GroupInfo -> IO ()
+    deGroupDeleted g = do
+      logInfo $ "group removed " <> viewGroupName g
+      withGroupReg g "group removed" $ \gr -> do
+        setGroupStatus st gr GRSRemoved
+        notifyOwner gr $ "The group " <> userGroupReference gr g <> " is deleted.\n\nThe group is no longer listed in the directory."
+        notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
+
+    deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
+    deUserCommand ct ciId = \case
       DCHelp ->
         sendMessage cc ct $
           "You must be the owner to add the group to the directory:\n\
@@ -446,7 +487,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
                 STRecent -> withFoundListedGroups Nothing $ sendNextSearchResults takeRecent search
           Nothing -> showAllGroups
         where
-          showAllGroups = deUserCommand env ct ciId DCAllGroups
+          showAllGroups = deUserCommand ct ciId DCAllGroups
       DCAllGroups -> withFoundListedGroups Nothing $ sendAllGroups takeTop "top" STAll
       DCRecentGroups -> withFoundListedGroups Nothing $ sendAllGroups takeRecent "the most recent" STRecent
       DCSubmitGroup _link -> pure ()
@@ -561,8 +602,15 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
                               setGroupStatus st gr GRSActive
                               let approved = "The group " <> userGroupReference' gr n <> " is approved"
                               notifyOwner gr $ approved <> " and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
-                              sendReply "Group approved!"
-                              notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct)
+                              invited <-
+                                forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
+                                  inviteToOwnersGroup og gr $ \case
+                                    Right () -> do
+                                      owner <- groupOwnerInfo groupRef $ dbContactId gr
+                                      pure $ "Invited " <> owner <> " to owners' group " <> viewName ogName
+                                    Left err -> pure err
+                              sendReply $ "Group approved!" <> maybe "" ("\n" <>) invited
+                              notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct) <> fromMaybe "" invited
                             Just GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
                             Just GRSContactNotOwner -> replyNotApproved "user is not an owner."
                             Just GRSBadRoles -> replyNotApproved $ "user is not an owner, " <> serviceNotAdmin
@@ -620,10 +668,20 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
             let groupRef = groupReference' groupId gName
             withGroupAndReg sendReply groupId gName $ \_ gr@GroupReg {dbContactId} -> do
               notifyOwner gr msg
-              owner_ <- getContact cc dbContactId
-              let ownerInfo = "the owner of the group " <> groupRef
-                  ownerName ct' = "@" <> viewName (localDisplayName' ct') <> ", "
-              sendReply $ "Forwarded to " <> maybe "" ownerName owner_ <> ownerInfo
+              owner <- groupOwnerInfo groupRef dbContactId
+              sendReply $ "Forwarded to " <> owner
+          DCInviteOwnerToGroup groupId gName -> case ownersGroup of
+            Just og@KnownGroup {localDisplayName = ogName} ->
+              withGroupAndReg sendReply groupId gName $ \_ gr@GroupReg {dbContactId = ctId} -> do
+                inviteToOwnersGroup og gr $ \case
+                  Right () -> do
+                    let groupRef = groupReference' groupId gName
+                    owner <- groupOwnerInfo groupRef ctId
+                    let invited =  " invited " <> owner <> " to owners' group " <> viewName ogName
+                    notifyOtherSuperUsers $ viewName (localDisplayName' ct) <> invited
+                    sendReply $ "you" <> invited
+                  Left err -> sendReply err
+            Nothing -> sendReply "owners' group is not specified"
           DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       | otherwise = sendReply "You are not allowed to use this command"
       where
@@ -641,6 +699,29 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
               ct_ <- getContact cc dbContactId
               let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
               sendGroupInfo ct gr dbGroupId $ Just ownerStr
+        inviteToOwnersGroup :: KnownGroup -> GroupReg -> (Either Text () -> IO a) -> IO a
+        inviteToOwnersGroup KnownGroup {groupId = ogId} GroupReg {dbContactId = ctId} cont =
+          sendChatCmd cc (APIListMembers ogId) >>= \case
+            CRGroupMembers _ (Group _ ms)
+              | alreadyMember ms -> cont $ Left "Owner is already a member of owners' group"
+              | otherwise -> do
+                  sendChatCmd cc (APIAddMember ogId ctId GRMember) >>= \case
+                    CRSentGroupInvitation {} -> do
+                      printLog cc CLLInfo $ "invited contact ID " <> show ctId <> " to owners' group"
+                      cont $ Right ()
+                    r -> contErr r
+            r -> contErr r
+          where
+            alreadyMember = isJust . find ((Just ctId == ) . memberContactId)
+            contErr r = do
+              let err = "error inviting contact ID " <> tshow ctId <> " to owners' group: " <> tshow r
+              putStrLn $ T.unpack err
+              cont $ Left err
+        groupOwnerInfo groupRef dbContactId = do
+          owner_ <- getContact cc dbContactId
+          let ownerInfo = "the owner of the group " <> groupRef
+              ownerName ct' = "@" <> viewName (localDisplayName' ct') <> ", "
+          pure $ maybe "" ownerName owner_ <> ownerInfo
 
     deSuperUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRSuperUser -> IO ()
     deSuperUserCommand ct ciId cmd
@@ -688,7 +769,7 @@ directoryService st DirectoryOpts {adminUsers, superUsers, serviceName, searchRe
           sendComposedMessage cc ct Nothing $ MCText text
 
 getContact :: ChatController -> ContactId -> IO (Maybe Contact)
-getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) (CPLast 0) Nothing)
+getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) Nothing (CPLast 0) Nothing)
   where
     resp :: ChatResponse -> Maybe Contact
     resp = \case

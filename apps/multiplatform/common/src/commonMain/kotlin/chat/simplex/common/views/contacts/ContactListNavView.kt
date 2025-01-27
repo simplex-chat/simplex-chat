@@ -21,7 +21,9 @@ fun onRequestAccepted(chat: Chat) {
     if (chatInfo is ChatInfo.Direct) {
         ModalManager.start.closeModals()
         if (chatInfo.contact.sndReady) {
-            openLoadedChat(chat)
+            withApi {
+                openLoadedChat(chat)
+            }
         }
     }
 }

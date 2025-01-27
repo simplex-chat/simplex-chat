@@ -239,7 +239,7 @@ private fun ArchiveImportView(progressIndicator: MutableState<Boolean>, close: (
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
       withLongRunningApi {
-        val success = importArchive(to, mutableStateOf(0 to 0), progressIndicator)
+        val success = importArchive(to, mutableStateOf(0 to 0), progressIndicator, true)
         if (success) {
           startChat(
             chatModel,
@@ -691,6 +691,7 @@ private suspend fun finishMigration(appSettings: AppSettings, close: () -> Unit)
     if (user != null) {
       startChat(user)
     }
+    platform.androidChatStartedAfterBeingOff()
     hideView(close)
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_to_device_chat_migrated), generalGetString(MR.strings.migrate_to_device_finalize_migration))
   } catch (e: Exception) {
