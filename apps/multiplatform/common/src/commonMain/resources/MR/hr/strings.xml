@@ -849,4 +849,20 @@
     <string name="group_member_status_complete">završiti</string>
     <string name="icon_descr_expand_role">Proširiti selekciju uloga</string>
     <string name="opening_database">Otvaranje baze podataka…</string>
+    <string name="refresh_qr_code">Obnoviti</string>
+    <string name="icon_descr_speaker_off">Zvučnik isključen</string>
+    <string name="colored_text">obojen</string>
+    <string name="share_link">Podeli vezu</string>
+    <string name="report_reason_spam">Spam</string>
+    <string name="audio_device_speaker">Zvučnik</string>
+    <string name="blocking_reason_spam">Spam</string>
+    <string name="no_chats_found">Razgovori nisu pronađeni</string>
+    <string name="icon_descr_speaker_on">Zvučnik uključen</string>
+    <string name="v5_6_safer_groups">Bezbednije grupe</string>
+    <string name="reject_contact_button">Odbiti</string>
+    <string name="reject">Odbiti</string>
+    <string name="no_chats_in_list">Razgovori nisu u listi %s.</string>
+    <string name="images_limit_title">Previše slika!</string>
+    <string name="group_member_role_author">autor</string>
+    <string name="export_theme">Izvesti temu</string>
 </resources>
