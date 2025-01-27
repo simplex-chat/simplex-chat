@@ -1095,7 +1095,7 @@ window.addEventListener('scroll',changeHeaderBg);
     A SimpleX Chat az összes felhasználói adatot kizárólag a klienseken tárolja egy <strong>hordozható titkosított adatbázis-formátumban</strong> —, amely exportálható és átvihető bármely más támogatott eszközre.
 </p>
 <p>
-    A végpontok között titkosított üzenetek átmenetileg a SimpleX-közvetítő-kiszolgálókon tartózkodnak, amíg meg nem érkeznek a címzetthez, majd ezt követően véglegesen törlésre kerülnek.
+    A végpontok között titkosított üzenetek átmenetileg a SimpleX-továbbító-kiszolgálókon tartózkodnak, amíg meg nem érkeznek a címzetthez, majd ezt követően véglegesen törlésre kerülnek.
 </p>
 
                                     </div>
@@ -1291,10 +1291,10 @@ window.addEventListener('scroll',changeHeaderBg);
     A SimpleX Chat az összes felhasználói adatot kizárólag a klienseken tárolja egy <strong>hordozható titkosított adatbázis-formátumban</strong>, amely exportálható és átvihető bármely más támogatott eszközre.
 </p>
 <p>
-    A végpontok között titkosított üzenetek átmenetileg a SimpleX-közvetítő-kiszolgálókon tartózkodnak, amíg be nem érkeznek a címzetthez, majd véglegesen törlődnek onnan.
+    A végpontok között titkosított üzenetek átmenetileg a SimpleX-továbbító-kiszolgálókon tartózkodnak, amíg be nem érkeznek a címzetthez, majd véglegesen törlődnek onnan.
 </p>
 <p>
-    A föderált hálózatok kiszolgálóitól (e-mail, XMPP vagy Matrix) eltérően a SimpleX-kiszolgálók nem tárolják a felhasználói fiókokat, csak közvetítik az üzeneteket, így védve mindkét fél magánéletét.
+    A föderált hálózatok kiszolgálóitól (e-mail, XMPP vagy Matrix) eltérően a SimpleX-kiszolgálók nem tárolják a felhasználói fiókokat, csak továbbítják az üzeneteket, így védve mindkét fél magánéletét.
 </p>
 <p>
     A küldött és a fogadott kiszolgálóforgalom között nincsenek közös azonosítók vagy titkosított szövegek — ha bárki megfigyeli, nem tudja könnyen megállapítani, hogy ki kivel kommunikál, még akkor sem, ha a TLS-t kompromittálják.
@@ -1740,7 +1740,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
                     <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">A föderált hálózatokkal ellentétben</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        A SimpleX-közvetítő-kiszolgálók NEM tárolnak felhasználói profilokat, kapcsolatokat és kézbesített üzeneteket, NEM csatlakoznak egymáshoz, és NINCS kiszolgálókönyvtár.
+                        A SimpleX-továbbító-kiszolgálók NEM tárolnak felhasználói profilokat, kapcsolatokat és kézbesített üzeneteket, NEM csatlakoznak egymáshoz, és NINCS kiszolgálókönyvtár.
                     </p>
                 </div>
             </div>
@@ -1995,7 +1995,7 @@ window.addEventListener("load", function () {
                     <li> Általában telefonszám alapján, néhány esetben felhasználónév alapján</li>
                     <li> DNS-alapú címek</li>
                     <li> Nyilvános kulcs vagy más globális egyedi azonosító</li>
-                    <li> A SimpleX-közvetítő-kiszolgálók nem veszélyeztethetik az e2e titkosítást. Hitelesítse a biztonsági kódot a sávon kívüli csatorna elleni támadások veszélyeinek csökkentésére</li>
+                    <li> A SimpleX-továbbító-kiszolgálók nem veszélyeztethetik az e2e titkosítást. Hitelesítse a biztonsági kódot a sávon kívüli csatorna elleni támadások veszélyeinek csökkentésére</li>
                     <li> Ha az üzemeltetett kiszolgálók veszélybe kerülnek. Hitelesítse a biztonsági kódot a Signal vagy más biztonságos üzenetküldő alkalmazás segítségével a támadások veszélyeinek csökkentésére</li>
                     <li> Nem védi a felhasználók metaadatait</li>
                     <li> Bár a P2P elosztott, de nem föderált - egyetlen hálózatként működnek</li>
