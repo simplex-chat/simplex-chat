@@ -73,7 +73,7 @@ fun GroupMentions(
         val member = membersToMention.value.first()
 
         if (composeState.value.mentions.none { it.member.memberId == member.memberId }) {
-          val displayName = composeState.value.mentionMemberName(member.displayName)
+          val displayName = composeState.value.mentionMemberName(member.memberProfile.displayName)
           composeState.value = composeState.value.copy(
             mentions = composeState.value.mentions.toMutableList().apply {
               add(GroupMemberMention(displayName, member))
@@ -87,7 +87,7 @@ fun GroupMentions(
       return@LaunchedEffect
     }
     val txtAsMention = composeState.value.mentions.firstOrNull {
-      if (it.member.displayName == it.memberName) {
+      if (it.member.memberProfile.displayName == it.memberName) {
         mentionsState.mentionMemberOccurrences[search] == 1 && search == it.memberName
       } else {
         search == it.memberName
@@ -101,7 +101,7 @@ fun GroupMentions(
     // TODO - [MENTIONS] replace with real api
     val gms = chatModel.controller.apiListMembers(rhId, chatInfo.groupInfo.groupId)
     membersToMention.value = gms.filter { gm ->
-      gm.displayName.contains(search, ignoreCase = true) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
+      gm.memberProfile.displayName.contains(search, ignoreCase = true) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
     }
     if (membersToMention.value.isNotEmpty()) {
       showMembersPicker.value = true
@@ -153,7 +153,7 @@ fun GroupMentions(
             .clickable(enabled = enabled) {
               val selection = mentionsState.activeRange ?: return@clickable
               val msg = composeState.value.message
-              val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.displayName)
+              val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
               val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
                 add(GroupMemberMention(displayName, member))
               }
