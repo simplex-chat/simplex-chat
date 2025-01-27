@@ -174,7 +174,7 @@ Query:
               SELECT g.local_display_name, mu.member_status
               FROM groups g
               JOIN group_members mu ON mu.group_id = g.group_id
-              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ? AND g.deleted = 0
                 AND mu.member_status NOT IN (?,?,?)
           
 Plan:
@@ -1040,6 +1040,7 @@ Query:
           WHERE g.user_id = ?
             AND g.group_id = ?
             AND m.member_status NOT IN (?,?,?,?)
+            AND g.deleted = 0
         
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
@@ -1101,7 +1102,7 @@ Query:
           SELECT g.group_id
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
-          WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
+          WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?) AND g.deleted = 0
             AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?)
           LIMIT 1
         
@@ -1937,7 +1938,7 @@ Query:
         ) ReportCount ON ReportCount.group_id = g.group_id
        
                       JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND (
                           LOWER(g.local_display_name) LIKE '%' || LOWER(?) || '%'
                           OR LOWER(gp.display_name) LIKE '%' || LOWER(?) || '%'
@@ -1987,7 +1988,7 @@ Query:
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
        
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND (g.favorite = 1
                           OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                     ORDER BY g.chat_ts DESC LIMIT ?
@@ -2032,7 +2033,7 @@ Query:
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
        
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                     AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
@@ -2076,7 +2077,7 @@ Query:
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
        
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                     AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
@@ -2120,7 +2121,7 @@ Query:
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
        
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
@@ -2164,7 +2165,7 @@ Query:
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
        
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND g.favorite = 1
                     AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
@@ -2208,7 +2209,7 @@ Query:
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
        
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND g.favorite = 1
                     AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
@@ -2252,7 +2253,7 @@ Query:
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
        
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.deleted = 0
                         AND g.favorite = 1
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
@@ -2295,7 +2296,7 @@ Query:
             AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
-       WHERE g.user_id = ? AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
+       WHERE g.user_id = ? AND g.deleted = 0 AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
@@ -2336,7 +2337,7 @@ Query:
             AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
-       WHERE g.user_id = ? AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
+       WHERE g.user_id = ? AND g.deleted = 0 AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
@@ -2377,7 +2378,7 @@ Query:
             AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
           GROUP BY group_id
         ) ReportCount ON ReportCount.group_id = g.group_id
-       WHERE g.user_id = ? ORDER BY g.chat_ts DESC LIMIT ?
+       WHERE g.user_id = ? AND g.deleted = 0 ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
@@ -4489,7 +4490,7 @@ Query:
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id
     JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+   WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ? AND g.deleted = ?
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
@@ -5026,6 +5027,16 @@ SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?
 SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
 
+Query: DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (member_profile_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (contact_profile_id=?)
+SEARCH groups USING COVERING INDEX idx_groups_host_conn_custom_user_profile_id (host_conn_custom_user_profile_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
+
 Query: DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
@@ -5514,7 +5525,7 @@ Query: SELECT file_id FROM files WHERE user_id = ? AND redirect_file_id = ?
 Plan:
 SEARCH files USING INDEX idx_files_redirect_file_id (redirect_file_id=?)
 
-Query: SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?
+Query: SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ? AND g.deleted = 0
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -5522,15 +5533,15 @@ Query: SELECT group_id FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1
+Query: SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? AND group_id != ? LIMIT 1
 Plan:
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1
+Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? AND deleted = 0 LIMIT 1
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
+Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 AND deleted = 0 OR chat_item_ttl IS NULL
 Plan:
 SCAN groups
 
@@ -5542,9 +5553,9 @@ Query: SELECT group_id FROM groups WHERE user_id = ? AND deleted = 1
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
-Query: SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?
+Query: SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ? AND deleted = 0
 Plan:
-SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND local_display_name=?)
+SEARCH groups USING INDEX sqlite_autoindex_groups_1 (user_id=? AND local_display_name=?)
 
 Query: SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL
 Plan:
@@ -5553,6 +5564,10 @@ SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
 Plan:
 SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
+
+Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
+Plan:
+SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?
 Plan:
@@ -5711,10 +5726,6 @@ Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
