@@ -3541,10 +3541,10 @@ cleanupManager = do
               ifM
                 ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct gInfo))
                 (pure (Nothing, Nothing, []))
-                (getConnections ct)
+                (deleteCt ct)
               where
-                getConnections :: Contact -> ExceptT StoreError IO (Maybe StoreError, Maybe ContactId, [ConnId])
-                getConnections ct = do
+                deleteCt :: Contact -> ExceptT StoreError IO (Maybe StoreError, Maybe ContactId, [ConnId])
+                deleteCt ct = do
                   conns <- liftIO $ getContactConnections db vr userId ct
                   e_ <- (deleteContactWithoutDeletingProfile db user ct $> Nothing) `catchStoreError` (pure . Just)
                   pure (e_, Just contactId, map aConnId conns)
