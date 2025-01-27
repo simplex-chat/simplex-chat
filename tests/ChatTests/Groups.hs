@@ -732,7 +732,7 @@ testGroupSameName =
 
 testGroupDeleteWhenInvited :: HasCallStack => TestParams -> IO ()
 testGroupDeleteWhenInvited =
-  testChat2 aliceProfile bobProfile $
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/g team"
@@ -747,6 +747,7 @@ testGroupDeleteWhenInvited =
         ]
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
+      threadDelay 1500000
       -- alice doesn't receive notification that bob deleted group,
       -- but she can re-add bob
       alice ##> "/a team bob"
@@ -756,6 +757,8 @@ testGroupDeleteWhenInvited =
             bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupReAddInvited :: HasCallStack => TestParams -> IO ()
 testGroupReAddInvited =

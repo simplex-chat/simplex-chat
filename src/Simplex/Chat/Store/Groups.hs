@@ -773,9 +773,9 @@ getContactGroupPreferences db User {userId} Contact {contactId} = do
       |]
       (userId, contactId)
 
-checkContactHasGroups :: DB.Connection -> User -> Contact -> IO (Maybe GroupId)
-checkContactHasGroups db User {userId} Contact {contactId} =
-  maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+checkContactHasGroups :: DB.Connection -> User -> Contact -> GroupInfo -> IO (Maybe GroupId)
+checkContactHasGroups db User {userId} Contact {contactId} GroupInfo {groupId = exceptGroupId} =
+  maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? AND group_id != ? LIMIT 1" (userId, contactId, exceptGroupId)
 
 getGroupInfoByName :: DB.Connection -> VersionRangeChat -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db vr user gName = do
