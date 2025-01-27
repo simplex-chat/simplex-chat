@@ -53,8 +53,10 @@ module Simplex.Chat.Store.Groups
     getGroupModerators,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
-    deleteGroupConnectionsAndFiles,
-    deleteGroupItemsAndMembers,
+    deleteGroupChatItems,
+    setGroupDeleted,
+    getDeletedGroups,
+    deleteGroupMembers,
     deleteGroup,
     getUserGroups,
     getUserGroupsToSubscribe,
@@ -638,14 +640,22 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
         toShortMember (groupMemberId, localDisplayName, agentConnId) =
           ShortGroupMember groupMemberId groupId localDisplayName agentConnId
 
-deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
-  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
-  DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
-
-deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupItemsAndMembers db user@User {userId} g@GroupInfo {groupId} members = do
+deleteGroupChatItems :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupChatItems db User {userId} GroupInfo {groupId} =
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+setGroupDeleted :: DB.Connection -> User -> GroupInfo -> IO ()
+setGroupDeleted db User {userId} GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET deleted = 1, updated_at = ? WHERE user_id = ? AND group_id = ?" (currentTs, userId, groupId)
+
+getDeletedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
+getDeletedGroups db vr user@User {userId} = do
+  contactIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND deleted = 1" (Only userId)
+  rights <$> mapM (runExceptT . getGroup db vr user) contactIds
+
+deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
+deleteGroupMembers db user@User {userId} g@GroupInfo {groupId} members = do
   void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   forM_ members $ cleanupMemberProfileAndName_ db user
@@ -689,12 +699,12 @@ deleteGroupProfile_ db userId groupId =
 
 getUserGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
 getUserGroups db vr user@User {userId} = do
-  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
+  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND deleted = 0" (Only userId)
   rights <$> mapM (runExceptT . getGroup db vr user) groupIds
 
 getUserGroupsToSubscribe :: DB.Connection -> User -> IO [ShortGroup]
 getUserGroupsToSubscribe db user@User {userId} = do
-  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
+  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND deleted = 0" (Only userId)
   rights <$> mapM (runExceptT . getGroupToSubscribe db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
@@ -714,7 +724,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
           JOIN group_profiles gp USING (group_profile_id)
           JOIN group_members mu USING (group_id)
           JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-          WHERE g.user_id = ? AND mu.contact_id = ?
+          WHERE g.user_id = ? AND mu.contact_id = ? AND g.deleted = 0
             AND (LOWER(gp.display_name) LIKE '%' || LOWER(?) || '%'
               OR LOWER(gp.full_name) LIKE '%' || LOWER(?) || '%'
               OR LOWER(gp.description) LIKE '%' || LOWER(?) || '%'

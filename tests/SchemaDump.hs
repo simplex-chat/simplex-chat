@@ -118,7 +118,7 @@ skipComparisonForDownMigrations =
     -- indexes move down to the end of the file
     "20241125_indexes",
     -- indexes move down to the end of the file
-    "20250123_indexes"
+    "20250123_indexes_groups_deleted"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
