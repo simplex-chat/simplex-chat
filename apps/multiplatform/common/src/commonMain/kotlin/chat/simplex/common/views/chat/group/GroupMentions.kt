@@ -24,6 +24,11 @@ const val QUOTE = '\''
 val GROUP_MENTIONS_MAX_HEIGHT = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f
 
 private data class MentionRange(val start: Int, var name: String)
+private data class MentionsState(
+  val ranges: Map<Int, MentionRange>,
+  val activeRange: MentionRange?,
+  val mentionMemberOccurrences: Map<String, Int>
+)
 
 @Composable
 fun GroupMentions(
@@ -34,12 +39,12 @@ fun GroupMentions(
 ) {
   val maxHeightInPx = with(LocalDensity.current) { GROUP_MENTIONS_MAX_HEIGHT.toPx() }
   val membersToMention = remember { mutableStateOf<List<GroupMember>>(emptyList()) }
-  val allMentionRanges by remember { derivedStateOf { parseMentionRanges(composeState.value.message) }}
-  val activeMentionRange by remember { derivedStateOf { allMentionRanges.first[textSelection.value.first] }}
-  val showMembersPicker by remember { derivedStateOf { activeMentionRange != null && membersToMention.value.isNotEmpty() }}
+  val mentionsState by remember { derivedStateOf { parseMentionRanges(composeState.value.message, textSelection.value.first) }}
+  val showMembersPicker by remember { derivedStateOf { mentionsState.activeRange != null && membersToMention.value.isNotEmpty() }}
   val offsetY = remember { Animatable(maxHeightInPx) }
-
-  LaunchedEffect(activeMentionRange) {
+  
+  LaunchedEffect(mentionsState.activeRange) {
+    val activeMentionRange = mentionsState.activeRange
     val search = activeMentionRange?.name?.trim(QUOTE)
 
     if (search == null) {
@@ -67,7 +72,7 @@ fun GroupMentions(
 
     val txtAsMention = composeState.value.mentions.firstOrNull {
       if (it.member.displayName == it.memberName) {
-        allMentionRanges.second[search] == 1 && search == it.memberName
+        mentionsState.mentionMemberOccurrences[search] == 1 && search == it.memberName
       } else {
         search == it.memberName
       }
@@ -84,10 +89,10 @@ fun GroupMentions(
   }
 
   LaunchedEffect(Unit) {
-    snapshotFlow { allMentionRanges }
+    snapshotFlow { mentionsState.mentionMemberOccurrences }
       .distinctUntilChanged()
-      .collect { (_, m) ->
-        val filteredMentions = composeState.value.mentions.filter { m.contains(it.memberName) }
+      .collect { mmo ->
+        val filteredMentions = composeState.value.mentions.filter { mmo.contains(it.memberName) }
 
         if (filteredMentions.size != composeState.value.mentions.size) {
           composeState.value = composeState.value.copy(mentions = filteredMentions)
@@ -119,7 +124,7 @@ fun GroupMentions(
           .fillMaxWidth()
           .alpha(if (enabled) 1f else 0.6f)
           .clickable(enabled = enabled) {
-            val selection = activeMentionRange ?: return@clickable
+            val selection = mentionsState.activeRange ?: return@clickable
             val msg = composeState.value.message
             val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.displayName)
             val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
@@ -153,7 +158,7 @@ fun GroupMentions(
   }
 }
 
-private fun parseMentionRanges(message: String): Pair<Map<Int, MentionRange>, Map<String, Int>> {
+private fun parseMentionRanges(message: String, activeSelection: Int): MentionsState {
   val mentionByRange = mutableMapOf<Int, MentionRange>()
   val parsedMentions = mutableMapOf<String, Int>()
   var currentRange: MentionRange? = null
@@ -204,5 +209,5 @@ private fun parseMentionRanges(message: String): Pair<Map<Int, MentionRange>, Ma
     addToParseMentions(currentRange.name)
   }
 
-  return mentionByRange to parsedMentions
+  return MentionsState(mentionByRange, mentionByRange[activeSelection], parsedMentions)
 }
