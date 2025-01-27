@@ -678,7 +678,7 @@ processChatCommand' vr = \case
           let msgIds = itemsMsgIds items
               events = L.nonEmpty $ map (`XMsgDel` Nothing) msgIds
           mapM_ (sendGroupMessages user gInfo ms) events
-          delGroupChatItems user gInfo items Nothing
+          delGroupChatItems user gInfo items False
     CTLocal -> do
       (nf, items) <- getCommandLocalChatItems user chatId itemIds
       deleteLocalCIs user nf items True False
@@ -706,7 +706,7 @@ processChatCommand' vr = \case
     let msgMemIds = itemsMsgMemIds gInfo items
         events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
     mapM_ (sendGroupMessages user gInfo ms) events
-    delGroupChatItems user gInfo items (Just membership)
+    delGroupChatItems user gInfo items True
     where
       assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
       assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items =
@@ -2707,15 +2707,16 @@ processChatCommand' vr = \case
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    delGroupChatItems :: User -> GroupInfo -> [CChatItem 'CTGroup] -> Maybe GroupMember -> CM ChatResponse
-    delGroupChatItems user gInfo items byGroupMember = do
+    delGroupChatItems :: User -> GroupInfo -> [CChatItem 'CTGroup] -> Bool -> CM ChatResponse
+    delGroupChatItems user gInfo@GroupInfo {membership} items moderation = do
       deletedTs <- liftIO getCurrentTime
-      forM_ byGroupMember $ \byMember -> do
-        ciIds <- concat <$> withStore' (\db -> forM items $ \(CChatItem _ ci) -> markMessageReportsDeleted db user gInfo ci byMember deletedTs)
-        unless (null ciIds) $ toView $ CRGroupChatItemsDeleted user gInfo ciIds False (Just byMember)
-      if groupFeatureAllowed SGFFullDelete gInfo
-        then deleteGroupCIs user gInfo items True False byGroupMember deletedTs
-        else markGroupCIsDeleted user gInfo items True byGroupMember deletedTs
+      when moderation $ do
+        ciIds <- concat <$> withStore' (\db -> forM items $ \(CChatItem _ ci) -> markMessageReportsDeleted db user gInfo ci membership deletedTs)
+        unless (null ciIds) $ toView $ CRGroupChatItemsDeleted user gInfo ciIds False (Just membership)
+      let m = if moderation then Just membership else Nothing
+      if groupFeatureMemberAllowed SGFFullDelete membership gInfo
+        then deleteGroupCIs user gInfo items True False m deletedTs
+        else markGroupCIsDeleted user gInfo items True m deletedTs
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
     updateGroupProfileByName gName update = withUser $ \user -> do
       g@(Group GroupInfo {groupProfile = p} _) <- withStore $ \db ->
@@ -3919,7 +3920,7 @@ chatCommandP =
       "/set reactions #" *> (SetGroupFeature (AGFNR SGFReactions) <$> displayNameP <*> (A.space *> strP)),
       "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayNameP <*> optional (A.space *> strP)),
       "/set calls " *> (SetUserFeature (ACF SCFCalls) <$> strP),
-      "/set delete #" *> (SetGroupFeature (AGFNR SGFFullDelete) <$> displayNameP <*> (A.space *> strP)),
+      "/set delete #" *> (SetGroupFeatureRole (AGFR SGFFullDelete) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set delete @" *> (SetContactFeature (ACF SCFFullDelete) <$> displayNameP <*> optional (A.space *> strP)),
       "/set delete " *> (SetUserFeature (ACF SCFFullDelete) <$> strP),
       "/set direct #" *> (SetGroupFeatureRole (AGFR SGFDirectMessages) <$> displayNameP <*> _strP <*> optional memberRole),
