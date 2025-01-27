@@ -53,10 +53,11 @@ module Simplex.Chat.Store.Groups
     getGroupModerators,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
-    deleteGroupConnectionsAndFiles,
-    deleteGroupItemsAndMembers,
+    deleteGroupChatItems,
+    setGroupDeleted,
+    getDeletedGroups,
+    deleteGroupMembers,
     deleteGroup,
-    getUserGroups,
     getUserGroupsToSubscribe,
     getUserGroupDetails,
     getUserGroupsWithSummary,
@@ -380,7 +381,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
     getInvitationGroupId_ :: IO (Maybe Int64)
     getInvitationGroupId_ =
       maybeFirstRow fromOnly $
-        DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
+        DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? AND deleted = 0 LIMIT 1" (connRequest, userId)
     createGroupInvitation_ :: ExceptT StoreError IO (GroupInfo, GroupMemberId)
     createGroupInvitation_ = do
       let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
@@ -585,11 +586,14 @@ setGroupInvitationChatItemId db User {userId} groupId chatItemId = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET chat_item_id = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (chatItemId, currentTs, userId, groupId)
 
+getGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
+getGroup db vr user groupId = getGroup_ db vr user groupId False
+
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
-getGroup db vr user groupId = do
-  gInfo <- getGroupInfo db vr user groupId
+getGroup_ :: DB.Connection -> VersionRangeChat -> User -> GroupId -> Bool -> ExceptT StoreError IO Group
+getGroup_ db vr user groupId deleted = do
+  gInfo <- getGroupInfo_ db vr user groupId deleted
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
 
@@ -608,7 +612,7 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
               SELECT g.local_display_name, mu.member_status
               FROM groups g
               JOIN group_members mu ON mu.group_id = g.group_id
-              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ? AND g.deleted = 0
                 AND mu.member_status NOT IN (?,?,?)
           |]
           (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
@@ -638,14 +642,25 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
         toShortMember (groupMemberId, localDisplayName, agentConnId) =
           ShortGroupMember groupMemberId groupId localDisplayName agentConnId
 
-deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
-  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
-  DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
-
-deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupItemsAndMembers db user@User {userId} g@GroupInfo {groupId} members = do
+deleteGroupChatItems :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupChatItems db User {userId} GroupInfo {groupId} =
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+setGroupDeleted :: DB.Connection -> User -> GroupInfo -> IO ()
+setGroupDeleted db User {userId} GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET deleted = 1, updated_at = ? WHERE user_id = ? AND group_id = ?" (currentTs, userId, groupId)
+
+getDeletedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
+getDeletedGroups db vr user@User {userId} = do
+  contactIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND deleted = 1" (Only userId)
+  rights <$> mapM (runExceptT . getDeletedGroup db vr user) contactIds
+
+getDeletedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
+getDeletedGroup db vr user groupId = getGroup_ db vr user groupId True
+
+deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
+deleteGroupMembers db user@User {userId} g@GroupInfo {groupId} members = do
   void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   forM_ members $ cleanupMemberProfileAndName_ db user
@@ -687,14 +702,9 @@ deleteGroupProfile_ db userId groupId =
     |]
     (userId, groupId)
 
-getUserGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
-getUserGroups db vr user@User {userId} = do
-  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-  rights <$> mapM (runExceptT . getGroup db vr user) groupIds
-
 getUserGroupsToSubscribe :: DB.Connection -> User -> IO [ShortGroup]
 getUserGroupsToSubscribe db user@User {userId} = do
-  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
+  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND deleted = 0" (Only userId)
   rights <$> mapM (runExceptT . getGroupToSubscribe db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
@@ -714,7 +724,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
           JOIN group_profiles gp USING (group_profile_id)
           JOIN group_members mu USING (group_id)
           JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-          WHERE g.user_id = ? AND mu.contact_id = ?
+          WHERE g.user_id = ? AND mu.contact_id = ? AND g.deleted = 0
             AND (LOWER(gp.display_name) LIKE '%' || LOWER(?) || '%'
               OR LOWER(gp.full_name) LIKE '%' || LOWER(?) || '%'
               OR LOWER(gp.description) LIKE '%' || LOWER(?) || '%'
@@ -744,6 +754,7 @@ getGroupSummary db User {userId} groupId = do
           WHERE g.user_id = ?
             AND g.group_id = ?
             AND m.member_status NOT IN (?,?,?,?)
+            AND g.deleted = 0
         |]
         (userId, groupId, GSMemRemoved, GSMemLeft, GSMemUnknown, GSMemInvited)
   pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
@@ -762,9 +773,9 @@ getContactGroupPreferences db User {userId} Contact {contactId} = do
       |]
       (userId, contactId)
 
-checkContactHasGroups :: DB.Connection -> User -> Contact -> IO (Maybe GroupId)
-checkContactHasGroups db User {userId} Contact {contactId} =
-  maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+checkContactHasGroups :: DB.Connection -> User -> Contact -> GroupInfo -> IO (Maybe GroupId)
+checkContactHasGroups db User {userId} Contact {contactId} GroupInfo {groupId = exceptGroupId} =
+  maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? AND group_id != ? LIMIT 1" (userId, contactId, exceptGroupId)
 
 getGroupInfoByName :: DB.Connection -> VersionRangeChat -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db vr user gName = do
@@ -878,7 +889,7 @@ getGroupInvitation db vr user groupId =
     getConnRec_ :: User -> ExceptT StoreError IO (Maybe ConnReqInvitation)
     getConnRec_ User {userId} = ExceptT $ do
       firstRow fromOnly (SEGroupNotFound groupId) $
-        DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?" (groupId, userId)
+        DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ? AND g.deleted = 0" (groupId, userId)
 
 createNewContactMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createNewContactMember _ _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ _ _ = throwError $ SEContactNotReady localDisplayName
@@ -1576,13 +1587,16 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
       GroupProfile {displayName, fullName, description, image, groupPreferences}
 
 getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
+getGroupInfo db vr user groupId = getGroupInfo_ db vr user groupId False
+
+getGroupInfo_ :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Bool -> ExceptT StoreError IO GroupInfo
+getGroupInfo_ db vr User {userId, userContactId} groupId deleted = ExceptT $ do
   chatTags <- getGroupChatTags db groupId
   firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
     DB.query
       db
-      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-      (groupId, userId, userContactId)
+      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ? AND g.deleted = ?")
+      (groupId, userId, userContactId, BI deleted)
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
@@ -1608,7 +1622,7 @@ getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHa
           SELECT g.group_id
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
-          WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
+          WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?) AND g.deleted = 0
             AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?)
           LIMIT 1
         |]
@@ -1618,7 +1632,7 @@ getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHa
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
 getGroupIdByName db User {userId} gName =
   ExceptT . firstRow fromOnly (SEGroupNotFoundByName gName) $
-    DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?" (userId, gName)
+    DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ? AND deleted = 0" (userId, gName)
 
 getGroupMemberIdByName :: DB.Connection -> User -> GroupId -> ContactName -> ExceptT StoreError IO GroupMemberId
 getGroupMemberIdByName db User {userId} groupId groupMemberName =
@@ -2425,7 +2439,7 @@ getGroupChatTTL db gId =
 
 getUserGroupsToExpire :: DB.Connection -> User -> Int64 -> IO [GroupId]
 getUserGroupsToExpire db User {userId} globalTTL =
-  map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
+  map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 AND deleted = 0" <> cond) (Only userId)
   where
     cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
 

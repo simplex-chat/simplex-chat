@@ -699,7 +699,7 @@ processChatCommand' vr = \case
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
-    (gInfo@GroupInfo {membership}, items) <- getCommandGroupChatItems user gId itemIds
+    (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
     assertDeletable gInfo items
     assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
@@ -1074,31 +1074,9 @@ processChatCommand' vr = \case
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
-        -- functions below are called in separate transactions to prevent crashes on android
-        -- (possibly, race condition on integrity check?)
-        withFastStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        withFastStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        withFastStore' $ \db -> deleteGroup db user gInfo
-        let contactIds = mapMaybe memberContactId members
-        (errs1, (errs2, connIds)) <- lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
-        let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
-        unless (null errs) $ toView $ CRChatErrors (Just user) errs
-        deleteAgentConnectionsAsync user $ concat connIds
+        withFastStore' $ \db -> deleteGroupChatItems db user gInfo
+        withFastStore' $ \db -> setGroupDeleted db user gInfo
         pure $ CRGroupDeletedUser user gInfo
-      where
-        deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, [ConnId]))
-        deleteUnusedContact db contactId = runExceptT . withExceptT ChatErrorStore $ do
-          ct <- getContact db vr user contactId
-          ifM
-            ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct))
-            (pure (Nothing, []))
-            (getConnections ct)
-          where
-            getConnections :: Contact -> ExceptT StoreError IO (Maybe StoreError, [ConnId])
-            getConnections ct = do
-              conns <- liftIO $ getContactConnections db vr userId ct
-              e_ <- (setContactDeleted db user ct $> Nothing) `catchStoreError` (pure . Just)
-              pure (e_, map aConnId conns)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -3523,7 +3501,10 @@ cleanupManager = do
     cleanupUser cleanupInterval stepDelay user = do
       cleanupTimedItems cleanupInterval user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
+      -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
+      liftIO $ threadDelay' stepDelay
+      cleanupDeletedGroups user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
@@ -3536,6 +3517,41 @@ cleanupManager = do
       forM_ contacts $ \ct ->
         withStore (\db -> deleteContactWithoutGroups db user ct)
           `catchChatError` (toView . CRChatError (Just user))
+    cleanupDeletedGroups user@User {userId} = do
+      vr <- chatVersionRange
+      groups <- withStore' $ \db -> getDeletedGroups db vr user
+      forM_ groups $ \g ->
+        cleanupGroup vr g `catchChatError` (toView . CRChatError (Just user))
+      where
+        cleanupGroup :: VersionRangeChat -> Group -> CM ()
+        cleanupGroup vr Group {groupInfo = gInfo, members} = do
+          let contactIds = mapMaybe memberContactId members
+          (errs1, (errs2, deletedCtIds, connIds)) <- lift $ second unzip3 . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
+          let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
+          unless (null errs) $ toView $ CRChatErrors (Just user) errs
+          deleteAgentConnectionsAsync user $ concat connIds
+          let deletedCtIds' = catMaybes deletedCtIds
+              members' = map (updateContactId deletedCtIds') members
+          withFastStore' $ \db -> deleteGroupMembers db user gInfo members'
+          withFastStore' $ \db -> deleteGroup db user gInfo
+          where
+            deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, Maybe ContactId, [ConnId]))
+            deleteUnusedContact db contactId = runExceptT . withExceptT ChatErrorStore $ do
+              ct <- getContact db vr user contactId
+              ifM
+                ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct gInfo))
+                (pure (Nothing, Nothing, []))
+                (deleteCt ct)
+              where
+                deleteCt :: Contact -> ExceptT StoreError IO (Maybe StoreError, Maybe ContactId, [ConnId])
+                deleteCt ct = do
+                  conns <- liftIO $ getContactConnections db vr userId ct
+                  e_ <- (deleteContactWithoutDeletingProfile db user ct $> Nothing) `catchStoreError` (pure . Just)
+                  pure (e_, Just contactId, map aConnId conns)
+            updateContactId :: [ContactId] -> GroupMember -> GroupMember
+            updateContactId _ m@GroupMember {memberContactId = Nothing} = m
+            updateContactId deletedCtIds m@GroupMember {memberContactId = Just mctId} =
+              m {memberContactId = if mctId `elem` deletedCtIds then Nothing else Just mctId}
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
