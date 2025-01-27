@@ -1508,7 +1508,7 @@
     <string name="network_type_other">Altre</string>
     <string name="servers_info">Info servidors</string>
     <string name="servers_info_target">Mostrant info per a</string>
-    <string name="servers_info_private_data_disclaimer">Iniciat el %s\nLes dades es mantenen privades al vostre dispositiu..</string>
+    <string name="servers_info_private_data_disclaimer">Iniciat el %s\nTotes les dades es mantenen privades al vostre dispositiu.</string>
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="servers_info_proxied_servers_section_footer">No esteu connectats a aquests servidors. Per enviar missatges s\'usa l\'encaminament privat.</string>
     <string name="servers_info_reconnect_servers_title">Reconnectar servidors?</string>
