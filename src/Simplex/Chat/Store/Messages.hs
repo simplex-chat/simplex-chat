@@ -154,6 +154,7 @@ import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
@@ -2260,7 +2261,7 @@ getGroupCIWithReactions db user g@GroupInfo {groupId} itemId = do
 
 groupCIWithReactions :: DB.Connection -> GroupInfo -> CChatItem 'CTGroup -> IO (CChatItem 'CTGroup)
 groupCIWithReactions db g cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId}}) = do
-  mentions <- getGroupCIMentions db g itemId
+  mentions <- getGroupCIMentions db itemId
   case itemSharedMsgId of
     Just sharedMsgId -> do
       let GroupMember {memberId} = chatItemMember g ci
@@ -2292,21 +2293,22 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
     ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
--- TODO [mentions] DB create
-createGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MentionedMember] -> IO ()
-createGroupCIMentions _db _user _g _ci _mentions = pure ()
+createGroupCIMentions :: DB.Connection -> ChatItem 'CTGroup d -> [MentionedMember] -> IO ()
+createGroupCIMentions db ci mentions =
+  DB.executeMany db "INSERT INFO chat_item_mentions (chat_item_id, member_id, member_name) VALUES (?, ?, ?)" rows
+  where
+    rows = map (\MentionedMember {memberId, mentionName} -> (ciId, memberId, mentionName)) mentions
+    ciId = chatItemId' ci
 
--- TODO [mentions] DB update
-updateGroupCIMentions :: forall d. DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> [MentionedMember] -> IO (ChatItem 'CTGroup d)
-updateGroupCIMentions db user g ci@ChatItem {mentions} mentions'
+updateGroupCIMentions :: forall d. DB.Connection -> ChatItem 'CTGroup d -> [MentionedMember] -> IO (ChatItem 'CTGroup d)
+updateGroupCIMentions db ci@ChatItem {mentions} mentions'
   | mentions' == mentions = pure ci
   | otherwise = do
-      unless (null mentions) $ deleteGroupCIMentions db user g ci
-      unless (null mentions') $ createGroupCIMentions db user g ci mentions'
+      unless (null mentions) $ deleteGroupCIMentions
+      unless (null mentions') $ createGroupCIMentions db ci mentions'
       pure (ci :: ChatItem 'CTGroup d) {mentions = mentions'}
   where
-    deleteGroupCIMentions :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
-    deleteGroupCIMentions _db _user _g _ci = pure ()
+    deleteGroupCIMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
@@ -2783,9 +2785,27 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
       |]
       (groupId, itemMemberId, itemSharedMsgId)
 
--- TODO [mentions] DB read
-getGroupCIMentions :: DB.Connection -> GroupInfo -> ChatItemId -> IO [MentionedMember]
-getGroupCIMentions _db _g _ciId = pure []
+getGroupCIMentions :: DB.Connection -> ChatItemId -> IO [MentionedMember]
+getGroupCIMentions db ciId =
+  map mentionedMember 
+    <$> DB.query
+      db
+      [sql|
+        SELECT r.member_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
+        FROM chat_item_mentions r
+        LEFT JOIN group_member m ON r.member_id = m.member_id
+        LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id) 
+        WHERE ms.chat_item_id = ?
+      |]
+      (Only ciId)
+  where
+    mentionedMember :: (Text, MemberId, Maybe GroupMemberId, Maybe GroupMemberRole, Maybe Text, Maybe Text) -> MentionedMember
+    mentionedMember (mentionName, memberId, gmId_, mRole_, displayName_, localAlias) =
+      let memberRef = case (gmId_, mRole_, displayName_) of
+            (Just groupMemberId, Just memberRole, Just displayName) ->
+              Just MentionedMemberInfo {groupMemberId, memberRole, memberViewName = fromMaybe displayName localAlias}
+            _ -> Nothing
+       in MentionedMember {mentionName, memberId, memberRef}
 
 getACIReactions :: DB.Connection -> AChatItem -> IO AChatItem
 getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of

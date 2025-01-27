@@ -1649,8 +1649,8 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     let ci = mkChatItem_ cd ciId content (t, ft_) [] ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
     case cd of
-      CDGroupRcv g _ | not (null mentions') -> do
-        createGroupCIMentions db user g ci mentions'
+      CDGroupRcv {} | not (null mentions') -> do
+        createGroupCIMentions db ci mentions'
         pure (ci :: ChatItem 'CTGroup 'MDRcv) {mentions = mentions'}
       _ -> pure ci
 

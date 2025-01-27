@@ -1818,7 +1818,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         let edited = itemLive /= Just True
                         mentionedMembers <- getRcvMentionedMembers db user gInfo ft_ mentions
                         ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
-                        updateGroupCIMentions db user gInfo ci' mentionedMembers
+                        updateGroupCIMentions db ci' mentionedMembers
                       toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                     else toView $ CRChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)

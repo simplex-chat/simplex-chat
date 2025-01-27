@@ -162,9 +162,14 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
 data MentionedMember = MentionedMember
   { mentionName :: ContactName, -- name used in the message text, used to look up this object
     memberId :: MemberId,
-    groupMemberId :: Maybe GroupMemberId,
+    memberRef :: Maybe MentionedMemberInfo
+  }
+  deriving (Eq, Show)
+
+data MentionedMemberInfo = MentionedMemberInfo
+  { groupMemberId :: GroupMemberId,
     memberViewName :: Text, -- current member display name or alias, shown in the message
-    memberRole :: GroupMemberRole -- used for admins/owners in the message
+    memberRole :: GroupMemberRole -- shown for admins/owners in the message
   }
   deriving (Eq, Show)
 
@@ -1400,6 +1405,8 @@ instance ChatTypeI c => FromJSON (CIQuote c) where
 $(JQ.deriveToJSON defaultJSON ''CIQuote)
 
 $(JQ.deriveJSON defaultJSON ''CIReactionCount)
+
+$(JQ.deriveJSON defaultJSON ''MentionedMemberInfo)
 
 $(JQ.deriveJSON defaultJSON ''MentionedMember)
 

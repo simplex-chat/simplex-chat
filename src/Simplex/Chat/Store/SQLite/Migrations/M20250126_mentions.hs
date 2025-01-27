@@ -14,7 +14,7 @@ CREATE TABLE chat_item_mentions (
   chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   member_id BLOB NOT NULL,
-  member_name TEXT NOT NULL
+  display_name TEXT NOT NULL
 );
 
 CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(chat_item_id);

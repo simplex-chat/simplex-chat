@@ -636,7 +636,7 @@ processChatCommand' vr = \case
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                         let edited = itemLive /= Just True
                         ci' <- updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
-                        updateGroupCIMentions db user gInfo ci' mentionedMembers
+                        updateGroupCIMentions db ci' mentionedMembers
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                       pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
                     else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
