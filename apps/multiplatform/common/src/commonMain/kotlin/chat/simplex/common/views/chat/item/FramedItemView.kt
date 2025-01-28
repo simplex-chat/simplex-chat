@@ -59,7 +59,8 @@ fun FramedItemView(
       style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
-      showTimestamp = showTimestamp
+      showTimestamp = showTimestamp,
+      mentions = null, // TODO - mentions, what to do?
     )
   }
 
@@ -356,7 +357,7 @@ fun CIMarkdownText(
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
-      meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+      meta = ci.meta, chatTTL = chatTTL, mentions = ci.mentions, linkMode = linkMode,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
     )
   }

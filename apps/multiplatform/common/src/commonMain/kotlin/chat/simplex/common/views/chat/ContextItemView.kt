@@ -64,6 +64,7 @@ fun ContextItemView(
       inlineContent = inlineContent,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
+      mentions = contextItem.mentions
     )
   }
 

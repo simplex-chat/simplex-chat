@@ -60,6 +60,7 @@ fun MarkdownText (
   sender: String? = null,
   meta: CIMeta? = null,
   chatTTL: Int? = null,
+  mentions: Map<String, MentionedMember>? = null,
   toggleSecrets: Boolean,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
@@ -147,6 +148,13 @@ fun MarkdownText (
             val key = i.toString()
             withAnnotation(tag = "SECRET", annotation = key) {
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
+            }
+          } else if (ft.format is Format.Mention) {
+            println("formatting: ${ft.text.replace("'", "").removePrefix("@")}, mentions: ${mentions?.keys}")
+            if (mentions?.contains(ft.text.replace("'", "").removePrefix("@")) == true) {
+              withStyle(ft.format.style) { append(ft.text) }
+            } else {
+              append(ft.text)
             }
           } else {
             val link = ft.link(linkMode)
