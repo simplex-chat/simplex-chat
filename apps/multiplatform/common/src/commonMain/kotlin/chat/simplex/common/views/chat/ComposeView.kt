@@ -93,8 +93,8 @@ data class ComposeState(
     mentions = mentions
   )
 
-  val memberMentions: List<GroupMemberMention>
-    get() = this.mentions.map { GroupMemberMention(it.memberName, it.member.groupMemberId) }
+  val memberMentions: Map<String, Long>
+    get() = this.mentions.associate { it.memberName to it.member.groupMemberId }
 
   val maxMemberMentionsReached: Boolean
     get() = this.mentions.size >= MAX_NUMBER_OF_MENTIONS
@@ -429,7 +429,7 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: List<GroupMemberMention>): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: Map<String, Long>): ChatItem? {
     val cInfo = chat.chatInfo
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(
@@ -570,7 +570,7 @@ fun ComposeView(
           type = cInfo.chatType,
           id = cInfo.apiId,
           itemId = ei.meta.itemId,
-          mc = updateMsgContent(oldMsgContent),
+          um = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
           live = live
         )
         if (updatedItem != null) withChats {
