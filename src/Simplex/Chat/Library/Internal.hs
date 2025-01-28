@@ -1654,7 +1654,6 @@ saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
 ciContentNoParse :: CIContent 'MDRcv -> (CIContent 'MDRcv, (Text, Maybe MarkdownList))
 ciContentNoParse content = (content, (ciContentToText content, Nothing))
 
--- TODO [mentions] drop duplicate mentioned members
 saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> UTCTime -> (CIContent 'MDRcv, (Text, Maybe MarkdownList)) -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> Map MemberName MemberMention -> CM (ChatItem c 'MDRcv)
 saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} sharedMsgId_ brokerTs (content, (t, ft_)) ciFile itemTimed live mentions = do
   createdAt <- liftIO getCurrentTime
