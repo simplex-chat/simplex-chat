@@ -228,17 +228,17 @@ getMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
 getRcvMentionedMembers :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName MemberMention -> IO (Map MemberName MentionedMember)
 getRcvMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
   Just ft | not (null mentions) ->
-    let mentions' = uniqueMsgMentions mentions $ mentionedNames ft
+    let mentions' = uniqueMsgMentions maxRcvMentions mentions $ mentionedNames ft
      in mapM (getMentionedMemberByMemberId db user groupId) mentions'
   _ -> pure M.empty
 
 -- prevent "invisible" and repeated-with-different-name mentions
-uniqueMsgMentions :: Map MemberName MemberMention -> [ContactName] -> Map MemberName MemberMention
-uniqueMsgMentions mentions = go M.empty S.empty 0
+uniqueMsgMentions :: Int -> Map MemberName MemberMention -> [ContactName] -> Map MemberName MemberMention
+uniqueMsgMentions maxMentions mentions = go M.empty S.empty 0
   where
     go acc _ _ [] = acc
     go acc seen n (name : rest)
-      | n >= maxRcvMentions = acc
+      | n >= maxMentions = acc
       | otherwise = case M.lookup name mentions of
           Just mm@MemberMention {memberId} | S.notMember memberId seen -> 
             go (M.insert name mm acc) (S.insert memberId seen) (n + 1) rest

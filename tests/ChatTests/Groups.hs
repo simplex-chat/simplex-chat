@@ -15,14 +15,17 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
+import Data.Bifunctor (second)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Library.Internal (uniqueMsgMentions)
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Types (VersionRangeChat)
+import Simplex.Chat.Protocol (MemberMention (..), supportedChatVRange)
+import Simplex.Chat.Types (MemberId (..), VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -188,6 +191,7 @@ chatGroupTests = do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
     it "should send messages with member mentions" testMemberMention
+    describe "uniqueMsgMentions" testUniqueMsgMentions
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -6669,3 +6673,33 @@ testMemberMention =
         [ alice <# "#team bob!> hello @alice",
           cath <# "#team bob> hello @alice"
         ]
+      alice #> "#team hello @bob @bob @cath"
+      concurrentlyN_
+        [ bob <# "#team alice!> hello @bob @bob @cath",
+          cath <# "#team alice!> hello @bob @bob @cath"
+        ]
+      cath #> "#team hello @Alice" -- not a mention
+      concurrentlyN_
+        [ alice <# "#team cath> hello @Alice",
+          bob <# "#team cath> hello @Alice"
+        ]
+
+testUniqueMsgMentions :: SpecWith TestParams
+testUniqueMsgMentions = do
+  it "1 correct mention" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd")]) ["alice"]
+      `shouldBe` (mm [("alice", "abcd")])
+  it "2 correct mentions" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("bob", "efgh")]) ["alice", "bob"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  it "2 correct mentions with repetition" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("bob", "efgh")]) ["alice", "alice", "alice", "bob", "bob", "bob"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  it "too many mentions - drop extras" $ \_ ->
+    uniqueMsgMentions 3 (mm [("a", "abcd"), ("b", "efgh"), ("c", "1234"), ("d", "5678")]) ["a", "a", "a", "b", "b", "c", "d"]
+      `shouldBe` (mm [("a", "abcd"), ("b", "efgh"), ("c", "1234")])
+  it "repeated-with-different name - drop extras" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("alice2", "abcd"), ("bob", "efgh"), ("bob2", "efgh")]) ["alice", "alice2", "bob", "bob2"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  where
+    mm = M.fromList . map (second $ MemberMention . MemberId)

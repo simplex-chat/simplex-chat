@@ -646,8 +646,8 @@ CREATE TABLE chat_tags_chats(
 CREATE TABLE chat_item_mentions(
   chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  member_id BLOB NOT NULL,
-  display_name TEXT NOT NULL
+  display_name TEXT NOT NULL,
+  member_id BLOB NOT NULL
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1000,4 +1000,12 @@ CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_s
 );
 CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(
   chat_item_id
+);
+CREATE UNIQUE INDEX idx_chat_item_mentions_display_name ON chat_item_mentions(
+  chat_item_id,
+  display_name
+);
+CREATE UNIQUE INDEX idx_chat_item_mentions_member_id ON chat_item_mentions(
+  chat_item_id,
+  member_id
 );
