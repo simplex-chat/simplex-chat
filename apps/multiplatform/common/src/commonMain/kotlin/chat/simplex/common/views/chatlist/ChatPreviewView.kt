@@ -203,6 +203,7 @@ fun ChatPreviewView(
             cInfo is ChatInfo.Group && !ci.chatDir.sent -> ci.memberDisplayName
             else -> null
           },
+          mentions = ci.mentions,
           toggleSecrets = false,
           linkMode = linkMode,
           senderBold = true,
