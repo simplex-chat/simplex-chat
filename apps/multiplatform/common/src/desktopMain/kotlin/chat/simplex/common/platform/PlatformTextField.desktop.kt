@@ -128,9 +128,10 @@ actual fun PlatformTextField(
             val start = if (minOf(textFieldValue.selection.min) == 0) "" else textFieldValue.text.substring(0 until textFieldValue.selection.min)
             val newText = start + "\n" +
                   textFieldValue.text.substring(textFieldValue.selection.max, textFieldValue.text.length)
+            textSelection.value = TextRange(textFieldValue.selection.min + 1)
             textFieldValueState = textFieldValue.copy(
               text = newText,
-              selection = TextRange(textFieldValue.selection.min + 1)
+              selection = textSelection.value
             )
             onMessageChange(newText)
           } else if (!sendMsgButtonDisabled) {
