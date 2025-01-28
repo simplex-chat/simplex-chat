@@ -366,6 +366,8 @@ type UserName = Text
 
 type ContactName = Text
 
+type MemberName = Text
+
 type GroupName = Text
 
 optionalFullName :: ContactName -> Text -> Text
@@ -842,7 +844,7 @@ data NewGroupMember = NewGroupMember
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
   deriving newtype (FromField)
 
 instance ToField MemberId where toField (MemberId m) = toField $ Binary m

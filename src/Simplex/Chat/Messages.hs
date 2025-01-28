@@ -31,6 +31,7 @@ import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Kind (Constraint)
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -151,7 +152,9 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
     meta :: CIMeta c d,
     content :: CIContent d,
-    mentions :: [MentionedMember], -- to prevent loading all members from UI
+    -- The `mentions` map prevents loading all members from UI.
+    -- The key is a name used in the message text, used to look up MentionedMember.
+    mentions :: Map MemberName MentionedMember,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
     reactions :: [CIReactionCount],
@@ -160,8 +163,9 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   deriving (Show)
 
 data MentionedMember = MentionedMember
-  { mentionName :: ContactName, -- name used in the message text, used to look up this object
-    memberId :: MemberId,
+  { memberId :: MemberId,
+    -- member record can be created later than the mention is received
+    -- TODO [mentions] should we create member record for "unknown member" in this case?
     memberRef :: Maybe MentionedMemberInfo
   }
   deriving (Eq, Show)

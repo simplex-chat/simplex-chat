@@ -138,6 +138,8 @@ import Data.Int (Int64)
 import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
@@ -882,7 +884,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTLocal d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTLocal
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem = Nothing, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText = parseMaybeMarkdownList itemText, quotedItem = Nothing, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTLocal d
     ciMeta content status =
@@ -1024,7 +1026,7 @@ safeToDirectItem currentTs itemId = \case
               { chatDir = CIDirectSnd,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
-                mentions = [],
+                mentions = M.empty,
                 formattedText = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
@@ -1280,7 +1282,7 @@ safeToGroupItem currentTs itemId = \case
               { chatDir = CIGroupSnd,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
-                mentions = [],
+                mentions = M.empty,
                 formattedText = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
@@ -1506,7 +1508,7 @@ safeToLocalItem currentTs itemId = \case
               { chatDir = CILocalSnd,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
-                mentions = [],
+                mentions = M.empty,
                 formattedText = Nothing,
                 quotedItem = Nothing,
                 reactions = [],
@@ -1864,7 +1866,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
@@ -1924,7 +1926,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = [], formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, mentions = M.empty, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId (Just itemTs)
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
     ciMeta content status =
@@ -2293,22 +2295,22 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
     ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
-createGroupCIMentions :: DB.Connection -> ChatItem 'CTGroup d -> [MentionedMember] -> IO ()
+createGroupCIMentions :: DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO ()
 createGroupCIMentions db ci mentions =
   DB.executeMany db "INSERT INTO chat_item_mentions (chat_item_id, member_id, display_name) VALUES (?, ?, ?)" rows
   where
-    rows = map (\MentionedMember {memberId, mentionName} -> (ciId, memberId, mentionName)) mentions
+    rows = map (\(name, MentionedMember {memberId}) -> (ciId, memberId, name)) $ M.assocs mentions
     ciId = chatItemId' ci
 
-updateGroupCIMentions :: forall d. DB.Connection -> ChatItem 'CTGroup d -> [MentionedMember] -> IO (ChatItem 'CTGroup d)
+updateGroupCIMentions :: forall d. DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
 updateGroupCIMentions db ci@ChatItem {mentions} mentions'
   | mentions' == mentions = pure ci
   | otherwise = do
-      unless (null mentions) $ deleteGroupCIMentions
+      unless (null mentions) $ deleteMentions
       unless (null mentions') $ createGroupCIMentions db ci mentions'
       pure (ci :: ChatItem 'CTGroup d) {mentions = mentions'}
   where
-    deleteGroupCIMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
+    deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
@@ -2785,9 +2787,9 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
       |]
       (groupId, itemMemberId, itemSharedMsgId)
 
-getGroupCIMentions :: DB.Connection -> ChatItemId -> IO [MentionedMember]
+getGroupCIMentions :: DB.Connection -> ChatItemId -> IO (Map MemberName MentionedMember)
 getGroupCIMentions db ciId =
-  map mentionedMember 
+  M.fromList . map mentionedMember
     <$> DB.query
       db
       [sql|
@@ -2799,13 +2801,13 @@ getGroupCIMentions db ciId =
       |]
       (Only ciId)
   where
-    mentionedMember :: (Text, MemberId, Maybe GroupMemberId, Maybe GroupMemberRole, Maybe Text, Maybe Text) -> MentionedMember
-    mentionedMember (mentionName, memberId, gmId_, mRole_, displayName_, localAlias) =
+    mentionedMember :: (ContactName, MemberId, Maybe GroupMemberId, Maybe GroupMemberRole, Maybe Text, Maybe Text) -> (ContactName, MentionedMember)
+    mentionedMember (name, memberId, gmId_, mRole_, displayName_, localAlias) =
       let memberRef = case (gmId_, mRole_, displayName_) of
             (Just groupMemberId, Just memberRole, Just displayName) ->
               Just MentionedMemberInfo {groupMemberId, memberRole, memberViewName = fromMaybe displayName localAlias}
             _ -> Nothing
-       in MentionedMember {mentionName, memberId, memberRef}
+       in (name, MentionedMember {memberId, memberRef})
 
 getACIReactions :: DB.Connection -> AChatItem -> IO AChatItem
 getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of

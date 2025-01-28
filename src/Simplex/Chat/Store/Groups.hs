@@ -800,23 +800,23 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
       (userId, groupId, groupMemberId, userId)
 
-getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberMention -> ExceptT StoreError IO MentionedMember
-getMentionedGroupMember db User {userId} groupId GroupMemberMention {groupMemberId, memberName} =
-  ExceptT $ firstRow (toMentionedMember memberName) (SEGroupMemberNotFound groupMemberId) $
+getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO MentionedMember
+getMentionedGroupMember db User {userId} groupId gmId =
+  ExceptT $ firstRow toMentionedMember (SEGroupMemberNotFound gmId) $
     DB.query
       db
       (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
-      (groupId, groupMemberId, userId)
+      (groupId, gmId, userId)
 
 getMentionedMemberByMemberId :: DB.Connection -> User -> GroupId -> MemberMention -> IO MentionedMember
-getMentionedMemberByMemberId db User {userId} groupId MemberMention {memberId, memberName} =
-  fmap (fromMaybe mentionedMember) $ maybeFirstRow (toMentionedMember memberName) $
+getMentionedMemberByMemberId db User {userId} groupId MemberMention {memberId} =
+  fmap (fromMaybe mentionedMember) $ maybeFirstRow toMentionedMember $
     DB.query
       db
       (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ? AND m.user_id = ?")
       (groupId, memberId, userId)
   where
-    mentionedMember = MentionedMember {mentionName = memberName, memberId, memberRef = Nothing}
+    mentionedMember = MentionedMember {memberId, memberRef = Nothing}
 
 mentionedMemberQuery :: Query
 mentionedMemberQuery =
@@ -826,11 +826,11 @@ mentionedMemberQuery =
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
   |]
 
-toMentionedMember :: Text -> (GroupMemberId, MemberId, GroupMemberRole, Text, Maybe Text) -> MentionedMember
-toMentionedMember mentionName (groupMemberId, memberId, memberRole, displayName, localAlias) =
+toMentionedMember :: (GroupMemberId, MemberId, GroupMemberRole, Text, Maybe Text) -> MentionedMember
+toMentionedMember (groupMemberId, memberId, memberRole, displayName, localAlias) =
   let memberViewName = fromMaybe displayName localAlias
       memberRef = Just MentionedMemberInfo {groupMemberId, memberRole, memberViewName}
-   in MentionedMember {mentionName, memberId, memberRef}
+   in MentionedMember {memberId, memberRef}
 
 getGroupMemberById :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMemberById db vr user@User {userId} groupMemberId =

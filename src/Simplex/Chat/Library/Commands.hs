@@ -2498,7 +2498,7 @@ processChatCommand' vr = \case
           | name == "" -> withFastStore (`getUserNoteFolderId` user)
           | otherwise -> throwChatError $ CECommandError "not supported"
         _ -> throwChatError $ CECommandError "not supported"
-    getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, [GroupMemberMention])
+    getChatRefAndMentions :: User -> ChatName -> Text -> CM (ChatRef, Map MemberName GroupMemberId)
     getChatRefAndMentions user cName msg = do
       chatRef@(ChatRef cType chatId) <- getChatRef user cName
       (chatRef,) <$> case cType of
@@ -3011,10 +3011,10 @@ processChatCommand' vr = \case
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 $ CGContact ct
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
-            prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect), ([MentionedMember], [MemberMention])))
+            prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect), (Map MemberName MentionedMember, Map MemberName MemberMention)))
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _), fInv_) -> do
-                let mms = ([], [])
+                let mms = (M.empty, M.empty)
                 case (quotedItemId, itemForwarded) of
                   (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
                   (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
@@ -3080,7 +3080,7 @@ processChatCommand' vr = \case
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo ms
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
-            prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTGroup), ([MentionedMember], [MemberMention])))
+            prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTGroup), (Map MemberName MentionedMember, Map MemberName MemberMention)))
             prepareMsgs cmsFileInvs timed_ = withFastStore $ \db ->
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc, mentions}, itemForwarded, (_, ft_)), fInv_) ->
                 prepareGroupMsg db user gInfo mc ft_ mentions quotedItemId itemForwarded fInv_ timed_ live
@@ -3146,7 +3146,7 @@ processChatCommand' vr = \case
       pure (fInv, ciFile)
     prepareSndItemsData ::
       [ComposedMessageReq] ->
-      [([MentionedMember], [MemberMention])] ->
+      [(Map MemberName MentionedMember, Map MemberName MemberMention)] ->
       [Maybe (CIFile 'MDSnd)] ->
       [Maybe (CIQuote c)] ->
       [Either ChatError SndMessage] ->

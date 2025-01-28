@@ -13,17 +13,22 @@ ALTER TABLE chat_items ADD COLUMN user_mention INTEGER NOT NULL DEFAULT 0;
 CREATE TABLE chat_item_mentions (
   chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  member_id BLOB NOT NULL,
-  display_name TEXT NOT NULL
+  display_name TEXT NOT NULL,
+  member_id BLOB NOT NULL
 );
 
 CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(chat_item_id);
+CREATE UNIQUE INDEX idx_chat_item_mentions_display_name ON chat_item_mentions(chat_item_id, display_name);
+CREATE UNIQUE INDEX idx_chat_item_mentions_member_id ON chat_item_mentions(chat_item_id, member_id);
 |]
 
 down_m20250126_mentions :: Query
 down_m20250126_mentions =
   [sql|
 DROP INDEX idx_chat_item_mentions_chat_item_id;
+DROP INDEX idx_chat_item_mentions_display_name;
+DROP INDEX idx_chat_item_mentions_member_id;
+
 DROP TABLE chat_item_mentions;
 ALTER TABLE chat_items DROP COLUMN user_mention;
 |]

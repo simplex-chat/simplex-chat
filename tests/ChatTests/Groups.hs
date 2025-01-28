@@ -1046,7 +1046,7 @@ testGroupMessageQuotedReply =
       bob <## "      hello, all good, you?"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hello! how are you?"
+            alice <# "#team bob!> > alice hello! how are you?"
             alice <## "      hello, all good, you?"
         )
         ( do
@@ -1081,7 +1081,7 @@ testGroupMessageQuotedReply =
             alice <## "      hi there!"
         )
         ( do
-            bob <# "#team cath> > bob hello, all good, you?"
+            bob <# "#team cath!> > bob hello, all good, you?"
             bob <## "      hi there!"
         )
       cath #$> ("/_get chat #1 count=1", chat', [((1, "hi there!"), Just (0, "hello, all good, you?"))])
@@ -1092,7 +1092,7 @@ testGroupMessageQuotedReply =
       alice <## "      go on"
       concurrently_
         ( do
-            bob <# "#team alice> > bob will tell more"
+            bob <# "#team alice!> > bob will tell more"
             bob <## "      go on"
         )
         ( do
@@ -1133,7 +1133,7 @@ testGroupMessageUpdate =
       bob <## "      hi alice"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hey 👋"
+            alice <# "#team bob!> > alice hey 👋"
             alice <## "      hi alice"
         )
         ( do
@@ -1160,7 +1160,7 @@ testGroupMessageUpdate =
       cath <## "      greetings!"
       concurrently_
         ( do
-            alice <# "#team cath> > alice greetings 🤝"
+            alice <# "#team cath!> > alice greetings 🤝"
             alice <## "      greetings!"
         )
         ( do
@@ -1274,7 +1274,7 @@ testGroupMessageDelete =
       bob <## "      hi alic"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hello!"
+            alice <# "#team bob!> > alice hello!"
             alice <## "      hi alic"
         )
         ( do
@@ -5425,7 +5425,7 @@ testGroupHistoryQuotes =
       alice `send` "> #team @bob (BOB) 2"
       alice <# "#team > bob BOB"
       alice <## "      2"
-      bob <# "#team alice> > bob BOB"
+      bob <# "#team alice!> > bob BOB"
       bob <## "      2"
 
       threadDelay 1000000
@@ -5433,7 +5433,7 @@ testGroupHistoryQuotes =
       bob `send` "> #team @alice (ALICE) 3"
       bob <# "#team > alice ALICE"
       bob <## "      3"
-      alice <# "#team bob> > alice ALICE"
+      alice <# "#team bob!> > alice ALICE"
       alice <## "      3"
 
       threadDelay 1000000

@@ -1,18 +1,14 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Types.Shared where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
-import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Int (Int64)
-import Data.Text (Text)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON)
+import Simplex.Messaging.Parsers (blobFieldDecoder)
 import Simplex.Messaging.Util ((<$?>))
 
 data GroupMemberRole
@@ -52,8 +48,3 @@ instance FromJSON GroupMemberRole where
 instance ToJSON GroupMemberRole where
   toJSON = strToJSON
   toEncoding = strToJEncoding
-
-data GroupMemberMention = GroupMemberMention {memberName :: Text, groupMemberId :: Int64}
-  deriving (Show)
-
-$(JQ.deriveJSON defaultJSON ''GroupMemberMention)
