@@ -194,7 +194,7 @@ prepareGroupMsg db user g@GroupInfo {groupId, membership} mc ft_ memberMentions 
     mms@(_, mentions) <- getMentionedMembers db user g ft_ memberMentions
     pure (MCSimple (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
   (Nothing, Just _) ->
-    pure (MCForward (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, ([], []))
+    pure (MCForward (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, (M.empty, M.empty))
   (Just quotedItemId, Nothing) -> do
     mms@(_, mentions) <- getMentionedMembers db user g ft_ memberMentions
     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
@@ -223,7 +223,7 @@ getMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
     mentionedMembers <- mapM (getMentionedGroupMember db user groupId) mentions
     let mentions' = M.map (\MentionedMember {memberId} -> MemberMention {memberId}) mentionedMembers
     pure (mentionedMembers, mentions')
-  _ -> pure ([], [])
+  _ -> pure (M.empty, M.empty)
 
 getRcvMentionedMembers :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName MemberMention -> IO (Map MemberName MentionedMember)
 getRcvMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
@@ -1608,7 +1608,7 @@ saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothi
 saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDSnd)
 saveSndChatItem' user cd msg content ciFile quotedItem itemForwarded itemTimed live = do
   let itemTexts = ciContentTexts content
-      itemMentions = ([], [])
+      itemMentions = (M.empty, M.empty)
   saveSndChatItems user cd [Right NewSndChatItemData {msg, content, itemTexts, itemMentions, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
     [Right ci] -> pure ci
     _ -> throwChatError $ CEInternalError "saveSndChatItem': expected 1 item"
@@ -1650,7 +1650,7 @@ saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg broker
 
 saveRcvChatItem :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> (CIContent 'MDRcv, (Text, Maybe MarkdownList)) -> CM (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
-  saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content Nothing Nothing False []
+  saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content Nothing Nothing False M.empty
 
 ciContentNoParse :: CIContent 'MDRcv -> (CIContent 'MDRcv, (Text, Maybe MarkdownList))
 ciContentNoParse content = (content, (ciContentToText content, Nothing))

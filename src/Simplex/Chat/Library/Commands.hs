@@ -601,7 +601,7 @@ processChatCommand' vr = \case
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XMsgUpdate itemSharedMId mc [] (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                  (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XMsgUpdate itemSharedMId mc M.empty (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
                     when changed $
@@ -3016,8 +3016,8 @@ processChatCommand' vr = \case
               forM cmsFileInvs $ \((ComposedMessage {quotedItemId, msgContent = mc}, itemForwarded, _), fInv_) -> do
                 let mms = (M.empty, M.empty)
                 case (quotedItemId, itemForwarded) of
-                  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
-                  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
+                  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
+                  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
                   (Just qiId, Nothing) -> do
                     CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
                       getDirectChatItem db user contactId qiId
@@ -3025,7 +3025,7 @@ processChatCommand' vr = \case
                     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                         qmc = quoteContent mc origQmc file
                         quotedItem = CIQuote {chatDir = qd, itemId = Just qiId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-                    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc [] fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem, mms)
+                    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem, mms)
                   (Just _, Just _) -> throwError SEInvalidQuote
               where
                 quoteData :: ChatItem c d -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTDirect, Bool)
