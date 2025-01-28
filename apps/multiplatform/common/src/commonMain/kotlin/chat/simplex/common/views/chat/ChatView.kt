@@ -695,7 +695,7 @@ fun ChatLayout(
   openGroupLink: (GroupInfo) -> Unit,
   markItemsRead: (List<Long>) -> Unit,
   markChatRead: () -> Unit,
-  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
+  changeNtfsState: (MsgFilter, currentValue: MutableState<ChatNtfs>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
@@ -887,7 +887,7 @@ fun BoxScope.ChatInfoToolbar(
   endCall: () -> Unit,
   addMembers: (GroupInfo) -> Unit,
   openGroupLink: (GroupInfo) -> Unit,
-  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
+  changeNtfsState: (MsgFilter, currentValue: MutableState<ChatNtfs>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   showSearch: MutableState<Boolean>
 ) {
@@ -1006,21 +1006,25 @@ fun BoxScope.ChatInfoToolbar(
     }
   }
 
-  if ((chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) || chatInfo is ChatInfo.Group) {
-    val ntfsEnabled = remember { mutableStateOf(chatInfo.ntfsEnabled) }
-    menuItems.add {
-      ItemAction(
-        if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-        if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
-        onClick = {
-          showMenu.value = false
-          // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
-          scope.launch {
-            delay(200)
-            changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
+  if (((chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) || chatInfo is ChatInfo.Group)) {
+    val notificationMode = chatInfo.notificationMode()
+    if (notificationMode != null) {
+      val ntfMode = remember { mutableStateOf(notificationMode) }
+      val nextNtfMode by remember { derivedStateOf { chatInfo.nextNotificationMode(ntfMode.value.mode) ?: ChatNtfs.sampleData } }
+      menuItems.add {
+        ItemAction(
+          stringResource(nextNtfMode.text),
+          painterResource(nextNtfMode.icon),
+          onClick = {
+            showMenu.value = false
+            // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
+            scope.launch {
+              delay(200)
+              changeNtfsState(nextNtfMode.mode, ntfMode)
+            }
           }
-        }
-      )
+        )
+      }
     }
   }
 

@@ -837,17 +837,18 @@ fun MuteButton(
   chat: Chat,
   contact: Contact
 ) {
-  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+  val enableNtfs = remember { mutableStateOf(contact.notificationMode ) }
+  val nextNtfMode by remember { derivedStateOf { contact.nextNotificationMode(enableNtfs.value.mode) } }
   val disabled = !contact.ready || !contact.active
 
   InfoViewActionButton(
     modifier = modifier,
-    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
-    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    icon =  painterResource(nextNtfMode.icon),
+    title = stringResource(nextNtfMode.text),
     disabled = disabled,
     disabledLook = disabled,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, !ntfsEnabled.value, chatModel, ntfsEnabled)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNtfMode.mode, chatModel, enableNtfs)
     }
   )
 }

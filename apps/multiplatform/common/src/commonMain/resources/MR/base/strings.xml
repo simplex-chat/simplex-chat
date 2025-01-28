@@ -679,6 +679,7 @@
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>
+  <string name="mute_all_chat">Mute all</string>
   <string name="unmute_chat">Unmute</string>
   <string name="favorite_chat">Favorite</string>
   <string name="unfavorite_chat">Unfavorite</string>

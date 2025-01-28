@@ -37,6 +37,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -7467,4 +7468,15 @@ enum class MsgType {
   MESSAGE,
   @SerialName("quota")
   QUOTA
+}
+
+data class ChatNtfs(
+  val mode: MsgFilter,
+  val text: StringResource,
+  val icon: ImageResource,
+  val iconFilled: ImageResource
+) {
+  companion object {
+    val sampleData = ChatNtfs(MsgFilter.All, MR.strings.unmute_chat, MR.images.ic_notifications, MR.images.ic_notifications)
+  }
 }

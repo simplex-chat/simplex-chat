@@ -256,7 +256,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
       MarkUnreadChatAction(chat, chatModel, showMenu)
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-    ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+    ToggleNotificationsChatAction(chat, chatModel, contact.nextNotificationMode(contact.notificationMode.mode), showMenu)
     TagListAction(chat, showMenu)
     ClearChatAction(chat, showMenu)
   }
@@ -296,7 +296,7 @@ fun GroupMenuItems(
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-      ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+      ToggleNotificationsChatAction(chat, chatModel, groupInfo.nextNotificationMode(groupInfo.notificationMode.mode) , showMenu)
       TagListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
@@ -379,12 +379,12 @@ fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolea
 }
 
 @Composable
-fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled: Boolean, showMenu: MutableState<Boolean>) {
+fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, nextMsgFilter: ChatNtfs, showMenu: MutableState<Boolean>) {
   ItemAction(
-    if (ntfsEnabled) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-    if (ntfsEnabled) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+    generalGetString(nextMsgFilter.text),
+    painterResource(nextMsgFilter.icon),
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, !ntfsEnabled, chatModel)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextMsgFilter.mode, chatModel)
       showMenu.value = false
     }
   )
@@ -830,8 +830,8 @@ fun groupInvitationAcceptedAlert(rhId: Long?) {
   )
 }
 
-fun toggleNotifications(remoteHostId: Long?, chatInfo: ChatInfo, enableAllNtfs: Boolean, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
-  val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = if (enableAllNtfs) MsgFilter.All else MsgFilter.None)
+fun toggleNotifications(remoteHostId: Long?, chatInfo: ChatInfo, filter: MsgFilter, chatModel: ChatModel, currentState: MutableState<ChatNtfs>? = null) {
+  val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = filter)
   updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel, currentState)
 }
 
@@ -840,7 +840,7 @@ fun toggleChatFavorite(remoteHostId: Long?, chatInfo: ChatInfo, favorite: Boolea
   updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel)
 }
 
-fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
+fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<ChatNtfs>? = null) {
   val newChatInfo = when(chatInfo) {
     is ChatInfo.Direct -> with (chatInfo) {
       ChatInfo.Direct(contact.copy(chatSettings = chatSettings))
@@ -869,6 +869,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
         updateChatInfo(remoteHostId, newChatInfo)
       }
       if (chatSettings.enableNtfs != MsgFilter.All) {
+        // TODO - Check
         ntfManager.cancelNotificationsForChat(chatInfo.id)
       }
       val updatedChat = chatModel.getChat(chatInfo.id)
@@ -879,7 +880,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       }
       val current = currentState?.value
       if (current != null) {
-        currentState.value = !current
+        currentState.value = currentState.value.copy(mode = chatSettings.enableNtfs)
       }
     }
   }

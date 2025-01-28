@@ -8,6 +8,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import chat.simplex.common.model.MsgFilter.All
+import chat.simplex.common.model.MsgFilter.Mentions
+import chat.simplex.common.model.MsgFilter.None
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -1435,6 +1438,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
       else -> null
     }
 
+  fun notificationMode(): ChatNtfs? = when (this) {
+    is Group -> groupInfo.notificationMode
+    is Direct -> contact.notificationMode
+    else -> null
+  }
+
+  fun nextNotificationMode(from: MsgFilter): ChatNtfs? = when (this) {
+    is Group -> groupInfo.nextNotificationMode(from)
+    is Direct -> contact.nextNotificationMode(from)
+    else -> null
+  }
+
   val contactCard: Boolean
     get() = when (this) {
       is Direct -> contact.activeConn == null && contact.profile.contactLink != null && contact.active
@@ -1535,6 +1550,9 @@ data class Contact(
   val contactConnIncognito =
     activeConn?.customUserProfileId != null
 
+  val notificationMode: ChatNtfs
+    get() = ChatNtfs(chatSettings.enableNtfs, notificationModeText(this.ntfsEnabled), notificationModeIcon(this.ntfsEnabled, false), notificationModeIcon(this.ntfsEnabled, true))
+
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.contactPreference.allow != FeatureAllowed.NO
@@ -1550,6 +1568,17 @@ data class Contact(
     ChatFeature.Voice -> mergedPreferences.voice.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.Calls -> mergedPreferences.calls.userPreference.pref.allow != FeatureAllowed.NO
   }
+
+  fun nextNotificationMode(from: MsgFilter): ChatNtfs {
+    val ntfsEnabled = from == All
+    val nmf = if (ntfsEnabled) None else All
+    val nextEnabled = !ntfsEnabled
+    return ChatNtfs(nmf, notificationModeText(nextEnabled), notificationModeIcon(nextEnabled, false), notificationModeIcon(nextEnabled, true))
+  }
+
+  private fun notificationModeText(enabled: Boolean): StringResource = if (enabled) MR.strings.unmute_chat else MR.strings.mute_chat
+
+  private fun notificationModeIcon(enabled: Boolean, filled: Boolean): ImageResource = if (enabled) MR.images.ic_notifications else if (filled) MR.images.ic_notifications_off_filled else MR.images.ic_notifications_off
 
   companion object {
     val sampleData = Contact(
@@ -1754,6 +1783,9 @@ data class GroupInfo (
   val isOwner: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
 
+  val notificationMode: ChatNtfs
+    get() = ChatNtfs(chatSettings.enableNtfs, notificationModeText(chatSettings.enableNtfs), notificationModeIcon(chatSettings.enableNtfs, false), notificationModeIcon(chatSettings.enableNtfs, true))
+
   val canDelete: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrent
 
@@ -1762,6 +1794,29 @@ data class GroupInfo (
 
   val canModerate: Boolean
     get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
+
+  fun nextNotificationMode(from: MsgFilter): ChatNtfs {
+    val ntfModes = listOf(All, Mentions, None)
+    val i = ntfModes.indexOf(from)
+    val nextNtfMode = ntfModes[(i + 1) % ntfModes.size]
+    return ChatNtfs(nextNtfMode, notificationModeText(nextNtfMode), notificationModeIcon(nextNtfMode, false), notificationModeIcon(nextNtfMode, true))
+  }
+
+  private fun notificationModeText(m: MsgFilter): StringResource {
+    return when (m) {
+      All -> MR.strings.unmute_chat
+      Mentions -> MR.strings.mute_chat
+      None -> MR.strings.mute_all_chat
+    }
+  }
+
+  private fun notificationModeIcon(m: MsgFilter, filled: Boolean): ImageResource {
+    return when (m) {
+      None -> (if (filled) MR.images.ic_notifications_off_filled else MR.images.ic_notifications_off)
+      All -> MR.images.ic_notifications
+      Mentions -> if (filled) MR.images.ic_notifications_mentions_filled else MR.images.ic_notifications_mentions
+    }
+  }
 
   companion object {
     val sampleData = GroupInfo(

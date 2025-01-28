@@ -425,6 +425,7 @@ fun ChatPreviewView(
 
         Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
           val n = chat.chatStats.unreadCount
+          val ntfsMode = chat.chatInfo.notificationMode()
           val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
           if (n > 0 || chat.chatStats.unreadChat) {
             Text(
@@ -439,9 +440,9 @@ fun ChatPreviewView(
                 .padding(horizontal = 2.sp.toDp())
                 .padding(vertical = 1.sp.toDp())
             )
-          } else if (showNtfsIcon) {
+          } else if (showNtfsIcon && ntfsMode != null) {
             Icon(
-              painterResource(MR.images.ic_notifications_off_filled),
+              painterResource(ntfsMode.iconFilled),
               contentDescription = generalGetString(MR.strings.notifications),
               tint = MaterialTheme.colors.secondary,
               modifier = Modifier

@@ -9,7 +9,6 @@ import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -259,16 +258,17 @@ fun MuteButton(
   chat: Chat,
   groupInfo: GroupInfo
 ) {
-  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+  val notificationMode = remember { mutableStateOf(groupInfo.notificationMode) }
+  val nextNotificationMode by remember { derivedStateOf { groupInfo.nextNotificationMode(notificationMode.value.mode) } }
 
   InfoViewActionButton(
     modifier = modifier,
-    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
-    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    icon =  painterResource(nextNotificationMode.icon),
+    title = generalGetString(nextNotificationMode.text),
     disabled = !groupInfo.ready,
     disabledLook = !groupInfo.ready,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, !ntfsEnabled.value, chatModel, ntfsEnabled)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNotificationMode.mode, chatModel, notificationMode)
     }
   )
 }

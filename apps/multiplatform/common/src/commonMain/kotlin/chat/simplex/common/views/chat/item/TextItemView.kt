@@ -150,7 +150,6 @@ fun MarkdownText (
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
             }
           } else if (ft.format is Format.Mention) {
-            println("formatting: ${ft.text.replace("'", "").removePrefix("@")}, mentions: ${mentions?.keys}")
             if (mentions?.contains(ft.text.replace("'", "").removePrefix("@")) == true) {
               withStyle(ft.format.style) { append(ft.text) }
             } else {
