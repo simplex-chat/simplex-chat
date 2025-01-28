@@ -36,6 +36,7 @@ module Simplex.Chat.Store.Direct
     deleteContact,
     deleteContactWithoutGroups,
     deleteContactWithoutDeletingProfile,
+    getUnusedContacts,
     getDeletedContacts,
     getContactByName,
     getContact,
@@ -334,6 +335,11 @@ deleteContactWithoutDeletingProfile db user@User {userId} ct@Contact {contactId,
     forM_ activeConn $ \Connection {customUserProfileId} ->
       forM_ customUserProfileId $ \profileId ->
         deleteUnusedIncognitoProfileById_ db user profileId
+
+getUnusedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
+getUnusedContacts db vr user@User {userId} = do
+  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND contact_used = 0" (Only userId)
+  rights <$> mapM (runExceptT . getContact db vr user) contactIds
 
 -- TODO remove in future versions: only used for legacy contact cleanup
 getDeletedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
