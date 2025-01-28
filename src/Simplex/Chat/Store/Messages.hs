@@ -2295,20 +2295,22 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
     ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
-createGroupCIMentions :: DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO ()
-createGroupCIMentions db ci mentions =
+createGroupCIMentions :: forall d. DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
+createGroupCIMentions db ci mentions = do
   DB.executeMany db "INSERT INTO chat_item_mentions (chat_item_id, member_id, display_name) VALUES (?, ?, ?)" rows
+  pure (ci :: ChatItem 'CTGroup d) {mentions}
   where
     rows = map (\(name, MentionedMember {memberId}) -> (ciId, memberId, name)) $ M.assocs mentions
     ciId = chatItemId' ci
 
-updateGroupCIMentions :: forall d. DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
+updateGroupCIMentions :: DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
 updateGroupCIMentions db ci@ChatItem {mentions} mentions'
   | mentions' == mentions = pure ci
   | otherwise = do
       unless (null mentions) $ deleteMentions
-      unless (null mentions') $ createGroupCIMentions db ci mentions'
-      pure (ci :: ChatItem 'CTGroup d) {mentions = mentions'}
+      if null mentions'
+        then pure ci
+        else createGroupCIMentions db ci mentions'
   where
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
 

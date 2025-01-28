@@ -4360,6 +4360,14 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+      UPDATE group_members
+      SET show_messages = ?, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+    
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
       UPDATE group_profiles
       SET preferences = ?, updated_at = ?
       WHERE group_profile_id IN (
