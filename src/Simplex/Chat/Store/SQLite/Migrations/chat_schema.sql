@@ -134,7 +134,8 @@ CREATE TABLE groups(
   business_xcontact_id BLOB NULL,
   customer_member_id BLOB NULL,
   chat_item_ttl INTEGER,
-  local_alias TEXT DEFAULT '', -- received
+  local_alias TEXT DEFAULT '',
+  deleted INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -650,7 +651,6 @@ CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
-CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
   user_id,
   contact_id,
@@ -990,4 +990,10 @@ CREATE INDEX idx_chat_items_groups_history ON chat_items(
 CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_snd_item_statuses(
   chat_item_id,
   group_member_id
+);
+CREATE INDEX idx_chat_items_group_id ON chat_items(group_id);
+CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
+CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
+  group_id,
+  shared_msg_id
 );
