@@ -2265,8 +2265,6 @@ class MentionedMemberInfo(
 
 @Serializable
 class MentionedMember(
-  // name used in the message text, used to look up this object
-  val mentionName: String,
   val memberId: String,
   val memberRef: MentionedMemberInfo?
 )
@@ -2285,7 +2283,7 @@ data class ChatItem (
   val meta: CIMeta,
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
-  val mentions: List<MentionedMember> = emptyList(),
+  val mentions: Map<String, MentionedMember>? = null,
   val quotedItem: CIQuote? = null,
   val reactions: List<CIReactionCount>,
   val file: CIFile? = null
