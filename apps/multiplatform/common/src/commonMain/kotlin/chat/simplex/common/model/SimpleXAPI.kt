@@ -3890,15 +3890,15 @@ sealed class ChatPagination {
 }
 
 @Serializable
-class MemberMention(
+class GroupMemberMention(
   // Local (per message) unique display name of member, suffixes _1, _2 are appended to make names locally unique.
   val memberName: String,
   // Shared id for member.
-  val memberId: String
+  val groupMemberId: Long
 )
 
 @Serializable
-class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent, val mentions: List<MemberMention>)
+class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent, val mentions: List<GroupMemberMention>)
 
 @Serializable
 class ChatTagData(val emoji: String?, val text: String)

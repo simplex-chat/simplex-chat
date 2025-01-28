@@ -2256,12 +2256,19 @@ data class MemberReaction(
 )
 
 @Serializable
-class MentionedMember(
-  // name used in the message text, used to look up this object
-  val mentionName: String,
+class MentionedMemberInfo(
+  val groupMemberId: Long,
   // current member display name or alias, shown in the message
   val memberViewName: String,
   val memberRole: GroupMemberRole
+)
+
+@Serializable
+class MentionedMember(
+  // name used in the message text, used to look up this object
+  val mentionName: String,
+  val memberId: String,
+  val memberRef: MentionedMemberInfo?
 )
 
 @Serializable
@@ -3850,7 +3857,7 @@ sealed class Format {
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
-  @Serializable @SerialName("mention") class Mention(val memberId: String): Format()
+  @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 
