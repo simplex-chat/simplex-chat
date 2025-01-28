@@ -338,7 +338,7 @@ deleteContactWithoutDeletingProfile db user@User {userId} ct@Contact {contactId,
 
 getUnusedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getUnusedContacts db vr user@User {userId} = do
-  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND contact_used = 0" (Only userId)
+  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND is_user = 0 AND contact_used = 0" (Only userId)
   rights <$> mapM (runExceptT . getContact db vr user) contactIds
 
 -- TODO remove in future versions: only used for legacy contact cleanup
