@@ -865,7 +865,7 @@ processChatCommand' vr = \case
             ciComposeMsgReq ct (CChatItem md ci) (mc', file) =
               let itemId = chatItemId' ci
                   ciff = forwardCIFF ci $ Just (CIFFContact (forwardName ct) (toMsgDirection md) (Just fromChatId) (Just itemId))
-               in (ComposedMessage file Nothing mc' [], ciff, msgContentTexts mc')
+               in (composedMessage file mc', ciff, msgContentTexts mc')
               where
                 forwardName :: Contact -> ContactName
                 forwardName Contact {profile = LocalProfile {displayName, localAlias}}
@@ -881,7 +881,7 @@ processChatCommand' vr = \case
             ciComposeMsgReq gInfo (CChatItem md ci) (mc', file) = do
               let itemId = chatItemId' ci
                   ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId))
-               in (ComposedMessage file Nothing mc' [], ciff, msgContentTexts mc')
+               in (composedMessage file mc', ciff, msgContentTexts mc')
               where
                 forwardName :: GroupInfo -> ContactName
                 forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
@@ -892,7 +892,7 @@ processChatCommand' vr = \case
             ciComposeMsgReq :: CChatItem 'CTLocal -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
             ciComposeMsgReq (CChatItem _ ci) (mc', file) =
               let ciff = forwardCIFF ci Nothing
-               in (ComposedMessage file Nothing mc' [], ciff, msgContentTexts mc')
+               in (composedMessage file mc', ciff, msgContentTexts mc')
         CTContactRequest -> throwChatError $ CECommandError "not supported"
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
@@ -1851,7 +1851,7 @@ processChatCommand' vr = \case
         withFastStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
           Right ctId -> do
             let chatRef = ChatRef CTDirect ctId
-            processChatCommand $ APISendMessages chatRef False Nothing [ComposedMessage Nothing Nothing mc []]
+            processChatCommand $ APISendMessages chatRef False Nothing [composedMessage Nothing mc]
           Left _ ->
             withFastStore' (\db -> runExceptT $ getActiveMembersByName db vr user name) >>= \case
               Right [(gInfo, member)] -> do
@@ -1871,7 +1871,7 @@ processChatCommand' vr = \case
       CTLocal
         | name == "" -> do
             folderId <- withFastStore (`getUserNoteFolderId` user)
-            processChatCommand $ APICreateChatItems folderId [ComposedMessage Nothing Nothing mc []]
+            processChatCommand $ APICreateChatItems folderId [composedMessage Nothing mc]
         | otherwise -> throwChatError $ CECommandError "not supported"
       _ -> throwChatError $ CECommandError "not supported"
   SendMemberContactMessage gName mName msg -> withUser $ \user -> do
@@ -1890,7 +1890,7 @@ processChatCommand' vr = \case
           cr -> pure cr
       Just ctId -> do
         let chatRef = ChatRef CTDirect ctId
-        processChatCommand $ APISendMessages chatRef False Nothing [ComposedMessage Nothing Nothing mc []]
+        processChatCommand $ APISendMessages chatRef False Nothing [composedMessage Nothing mc]
   SendLiveMessage chatName msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     let mc = MCText msg
@@ -1935,7 +1935,7 @@ processChatCommand' vr = \case
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
-    processChatCommand $ APISendMessages (ChatRef CTDirect contactId) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc []]
+    processChatCommand $ APISendMessages (ChatRef CTDirect contactId) False Nothing [ComposedMessage Nothing (Just quotedItemId) mc M.empty]
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
@@ -2268,8 +2268,8 @@ processChatCommand' vr = \case
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     case chatRef of
-      ChatRef CTLocal folderId -> processChatCommand $ APICreateChatItems folderId [ComposedMessage (Just f) Nothing (MCFile "") []]
-      _ -> processChatCommand $ APISendMessages chatRef False Nothing [ComposedMessage (Just f) Nothing (MCFile "") []]
+      ChatRef CTLocal folderId -> processChatCommand $ APICreateChatItems folderId [composedMessage (Just f) (MCFile "")]
+      _ -> processChatCommand $ APISendMessages chatRef False Nothing [composedMessage (Just f) (MCFile "")]
   SendImage chatName f@(CryptoFile fPath _) -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     filePath <- lift $ toFSFilePath fPath
@@ -2277,7 +2277,7 @@ processChatCommand' vr = \case
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
-    processChatCommand $ APISendMessages chatRef False Nothing [ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview) []]
+    processChatCommand $ APISendMessages chatRef False Nothing [composedMessage (Just f) (MCImage "" fixedImagePreview)]
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
@@ -3253,6 +3253,9 @@ updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers} =
 
 type ComposedMessageReq = (ComposedMessage, Maybe CIForwardedFrom, (Text, Maybe MarkdownList))
 
+composedMessage :: Maybe CryptoFile -> MsgContent -> ComposedMessage
+composedMessage f mc = ComposedMessage {fileSource = f, quotedItemId = Nothing, msgContent = mc, mentions = M.empty}
+
 composedMessageReq :: ComposedMessage -> ComposedMessageReq
 composedMessageReq cm@ComposedMessage {msgContent = mc} = (cm, Nothing, msgContentTexts mc)
 
@@ -4025,7 +4028,7 @@ chatCommandP =
       c -> c
     composedMessagesTextP = do
       text <- mcTextP
-      pure [ComposedMessage Nothing Nothing text []]
+      pure [composedMessage Nothing text]
     updatedMessagesTextP = (`UpdatedMessage` []) <$> mcTextP
     liveMessageP = " live=" *> onOffP <|> pure False
     sendMessageTTLP = " ttl=" *> ((Just <$> A.decimal) <|> ("default" $> Nothing)) <|> pure Nothing
