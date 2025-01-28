@@ -695,7 +695,7 @@
     <string name="moderated_description">moderált</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból – ez a művelet nem vonható vissza!</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az XFTP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
-    <string name="no_contacts_selected">Nincs kijelölve ismerős</string>
+    <string name="no_contacts_selected">Nincs ismerős kijelölve</string>
     <string name="no_received_app_files">Nincsenek fogadott, vagy küldött fájlok</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 hordozható eszköz: koppintson a <b>Megnyitás hordozható eszköz-alkalmazásban</b>, majd koppintson a <b>Kapcsolódás</b> gombra az alkalmazásban.]]></string>
     <string name="markdown_in_messages">Markdown az üzenetekben</string>
@@ -818,7 +818,7 @@
     <string name="color_surface">Menük és figyelmeztetések</string>
     <string name="icon_descr_add_members">Tagok meghívása</string>
     <string name="group_preview_join_as">csatlakozás mint %s</string>
-    <string name="no_selected_chat">Nincs kijelölve csevegés</string>
+    <string name="no_selected_chat">Nincs csevegés kijelölve</string>
     <string name="users_delete_data_only">Csak helyi profiladatok</string>
     <string name="description_via_one_time_link_incognito">inkognitó egy egyszer használható hivatkozáson keresztül</string>
     <string name="share_text_moderated_at">Moderálva lett ekkor: %s</string>
@@ -1978,7 +1978,7 @@
     <string name="compose_message_placeholder">Üzenet…</string>
     <string name="select_verb">Kijelölés</string>
     <string name="moderate_messages_will_be_marked_warning">Az üzenetek az összes tag számára moderáltként lesznek megjelölve.</string>
-    <string name="selected_chat_items_nothing_selected">Nincs kijelölve semmi</string>
+    <string name="selected_chat_items_nothing_selected">Nincs semmi kijelölve</string>
     <string name="delete_messages_mark_deleted_warning">Az üzenetek törlésre lesznek jelölve. A címzett(ek) képes(ek) lesz(nek) felfedni ezt az üzenetet.</string>
     <string name="delete_members_messages__question">Törli a tagok %d üzenetét?</string>
     <string name="selected_chat_items_selected_n">%d kijelölve</string>
