@@ -69,7 +69,7 @@ data class LiveMessage(
 )
 
 @Serializable
-data class GroupMemberMention(
+data class MemberMention(
   val memberName: String,
   val member: GroupMember
 )
@@ -82,9 +82,9 @@ data class ComposeState(
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: List<GroupMemberMention> = emptyList()
+  val mentions: List<MemberMention> = emptyList()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<GroupMemberMention> = emptyList()): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<MemberMention> = emptyList()): this(
     editingItem.content.text,
     liveMessage,
     chatItemPreview(editingItem),
@@ -93,8 +93,8 @@ data class ComposeState(
     mentions = mentions
   )
 
-  val memberMentions: List<MemberMention>
-    get() = this.mentions.map { MemberMention(it.memberName, it.member.memberId) }
+  val memberMentions: List<GroupMemberMention>
+    get() = this.mentions.map { GroupMemberMention(it.memberName, it.member.groupMemberId) }
 
   val maxMemberMentionsReached: Boolean
     get() = this.mentions.size >= MAX_NUMBER_OF_MENTIONS
@@ -429,7 +429,7 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: List<MemberMention>): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?, mentions: List<GroupMemberMention>): ChatItem? {
     val cInfo = chat.chatInfo
     val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
       chatModel.controller.apiCreateChatItems(

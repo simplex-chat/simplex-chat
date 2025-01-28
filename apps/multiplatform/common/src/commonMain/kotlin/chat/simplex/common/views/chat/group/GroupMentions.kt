@@ -77,7 +77,7 @@ fun GroupMentions(
           val displayName = composeState.value.mentionMemberName(member.memberProfile.displayName)
           composeState.value = composeState.value.copy(
             mentions = composeState.value.mentions.toMutableList().apply {
-              add(GroupMemberMention(displayName, member))
+              add(MemberMention(displayName, member))
             }
           )
         }
@@ -171,7 +171,7 @@ fun GroupMentions(
               val msg = composeState.value.message
               val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
               val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
-                add(GroupMemberMention(displayName, member))
+                add(MemberMention(displayName, member))
               }
               val endIndex = selection.start + selection.name.length
               var name = if (displayName.contains(" ")) "'$displayName'" else displayName
@@ -258,7 +258,7 @@ private fun parseMentionRanges(message: String, activeSelection: Int): MentionsS
         addToParseMentions(currentRange.name)
         currentRange = null
       }
-      continue;
+      continue
     }
 
     if (currentRange == null && char == MENTION_START) {
