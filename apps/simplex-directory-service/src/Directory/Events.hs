@@ -30,6 +30,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Directory.Store
 import Simplex.Chat.Controller
+import Simplex.Chat.Markdown (displayNameTextP)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
@@ -222,13 +223,7 @@ directoryCmdP =
       DCInviteOwnerToGroup_ -> gc DCInviteOwnerToGroup
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
       where
-        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameP
-        displayNameP = quoted '\'' <|> takeNameTill (== ' ')
-        takeNameTill p =
-          A.peekChar' >>= \c ->
-            if refChar c then A.takeTill p else fail "invalid first character in display name"
-        quoted c = A.char c *> takeNameTill (== c) <* A.char c
-        refChar c = c > ' ' && c /= '#' && c /= '@'
+        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameTextP
 
 viewName :: Text -> Text
 viewName n = if any (== ' ') (T.unpack n) then "'" <> n <> "'" else n

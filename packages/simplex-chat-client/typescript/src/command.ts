@@ -29,7 +29,6 @@ export type ChatCommand =
   | APIRejectContact
   | APIUpdateProfile
   | APISetContactAlias
-  | APIParseMarkdown
   | NewGroup
   | APIAddMember
   | APIJoinGroup
@@ -128,7 +127,6 @@ type ChatCommandTag =
   | "apiRejectContact"
   | "apiUpdateProfile"
   | "apiSetContactAlias"
-  | "apiParseMarkdown"
   | "newGroup"
   | "apiAddMember"
   | "apiJoinGroup"
@@ -353,11 +351,6 @@ export interface APISetContactAlias extends IChatCommand {
   type: "apiSetContactAlias"
   contactId: number
   localAlias: string
-}
-
-export interface APIParseMarkdown extends IChatCommand {
-  type: "apiParseMarkdown"
-  text: string
 }
 
 export interface NewGroup extends IChatCommand {
@@ -732,8 +725,6 @@ export function cmdString(cmd: ChatCommand): string {
       return `/_profile ${cmd.userId} ${JSON.stringify(cmd.profile)}`
     case "apiSetContactAlias":
       return `/_set alias @${cmd.contactId} ${cmd.localAlias.trim()}`
-    case "apiParseMarkdown":
-      return `/_parse ${cmd.text}`
     case "newGroup":
       return `/_group ${JSON.stringify(cmd.groupProfile)}`
     case "apiAddMember":

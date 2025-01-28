@@ -21,6 +21,7 @@ testMkValidName = do
   mkValidName "J . . Doe" `shouldBe` "J . Doe"
   mkValidName "@alice" `shouldBe` "alice"
   mkValidName "#alice" `shouldBe` "alice"
+  mkValidName "'alice" `shouldBe` "alice"
   mkValidName " alice" `shouldBe` "alice"
   mkValidName "alice " `shouldBe` "alice"
   mkValidName "John  Doe" `shouldBe` "John Doe"

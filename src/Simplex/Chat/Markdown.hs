@@ -22,7 +22,7 @@ import Data.Functor (($>))
 import Data.List (foldl', intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import Data.Semigroup (sconcat)
 import Data.String
 import Data.Text (Text)
@@ -50,18 +50,28 @@ data Format
   | Colored {color :: FormatColor}
   | Uri
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
+  | Mention {memberName :: Text}
   | Email
   | Phone
   deriving (Eq, Show)
+
+mentionedNames :: MarkdownList -> [Text]
+mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
+  where
+    mentionedName = \case
+      Mention name -> Just name
+      _ -> Nothing
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show)
 
 colored :: Color -> Format
 colored = Colored . FormatColor
+{-# INLINE colored #-}
 
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
+{-# INLINE markdown #-}
 
 instance Semigroup Markdown where
   m <> (Markdown _ "") = m
@@ -163,6 +173,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '`' -> formattedP '`' Snippet
           '#' -> A.char '#' *> secretP
           '!' -> coloredP <|> wordP
+          '@' -> mentionP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -192,6 +203,11 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.last s == ' '
         then fail "not colored"
         else pure $ markdown (colored clr) s
+    mentionP = do
+      c <- A.char '@' *> A.peekChar'
+      name <- displayNameTextP
+      let sName = if c == '\'' then '\'' `T.cons` name `T.snoc` '\'' else name
+      pure $ markdown (Mention name) ('@' `T.cons` sName)
     colorP =
       A.anyChar >>= \case
         'r' -> "ed" $> Red <|> pure Red
@@ -250,6 +266,15 @@ markdownP = mconcat <$> A.many' fragmentP
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
+
+displayNameTextP :: Parser Text
+displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
+  where
+    takeNameTill p =
+      A.peekChar' >>= \c ->
+        if refChar c then A.takeTill p else fail "invalid first character in display name"
+    quoted c = A.char c *> takeNameTill (== c) <* A.char c
+    refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

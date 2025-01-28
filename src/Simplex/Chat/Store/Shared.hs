@@ -140,6 +140,8 @@ data StoreError
   | SEProhibitedDeleteUser {userId :: UserId, contactId :: ContactId}
   | SEOperatorNotFound {serverOperatorId :: Int64}
   | SEUsageConditionsNotFound
+  | SEInvalidQuote
+  | SEInvalidMention
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
