@@ -172,7 +172,8 @@ data MentionedMember = MentionedMember
 
 data MentionedMemberInfo = MentionedMemberInfo
   { groupMemberId :: GroupMemberId,
-    memberViewName :: Text, -- current member display name or alias, shown in the message
+    displayName :: Text, -- use `displayName` in copy/share actions
+    localAlias :: Maybe Text, -- use `fromMaybe displayName localAlias` in chat view
     memberRole :: GroupMemberRole -- shown for admins/owners in the message
   }
   deriving (Eq, Show)

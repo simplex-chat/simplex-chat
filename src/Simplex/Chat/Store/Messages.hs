@@ -2807,7 +2807,7 @@ getGroupCIMentions db ciId =
     mentionedMember (name, memberId, gmId_, mRole_, displayName_, localAlias) =
       let memberRef = case (gmId_, mRole_, displayName_) of
             (Just groupMemberId, Just memberRole, Just displayName) ->
-              Just MentionedMemberInfo {groupMemberId, memberRole, memberViewName = fromMaybe displayName localAlias}
+              Just MentionedMemberInfo {groupMemberId, displayName, localAlias, memberRole}
             _ -> Nothing
        in (name, MentionedMember {memberId, memberRef})
 

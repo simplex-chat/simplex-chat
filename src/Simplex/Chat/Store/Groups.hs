@@ -828,8 +828,7 @@ mentionedMemberQuery =
 
 toMentionedMember :: (GroupMemberId, MemberId, GroupMemberRole, Text, Maybe Text) -> MentionedMember
 toMentionedMember (groupMemberId, memberId, memberRole, displayName, localAlias) =
-  let memberViewName = fromMaybe displayName localAlias
-      memberRef = Just MentionedMemberInfo {groupMemberId, memberRole, memberViewName}
+  let memberRef = Just MentionedMemberInfo {groupMemberId, displayName, localAlias, memberRole}
    in MentionedMember {memberId, memberRef}
 
 getGroupMemberById :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
