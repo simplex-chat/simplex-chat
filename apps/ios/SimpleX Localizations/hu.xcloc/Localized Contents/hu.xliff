@@ -785,7 +785,7 @@
       </trans-unit>
       <trans-unit id="All chats will be removed from the list (text), and the list deleted." xml:space="preserve" approved="no">
         <source>All chats will be removed from the list (text), and the list deleted.</source>
-        <target state="translated">Az összes csevegés el lesz távolítva a listáról (text), és a lista is törölve lesz.</target>
+        <target state="translated">Az összes csevegés el lesz távolítva a(z) (text) nevű listáról, és a lista is törölve lesz.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -5106,9 +5106,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target state="translated">Nincsenek csevegések a(z) %@ nevű listában</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No contacts selected" xml:space="preserve">
+      <trans-unit id="No contacts selected" xml:space="preserve" approved="no">
         <source>No contacts selected</source>
-        <target>Nincs kijelölve ismerős</target>
+        <target state="translated">Nincs ismerős kijelölve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No contacts to add" xml:space="preserve">
@@ -5231,9 +5231,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target state="translated">Jegyzetek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing selected" xml:space="preserve">
+      <trans-unit id="Nothing selected" xml:space="preserve" approved="no">
         <source>Nothing selected</source>
-        <target>Nincs kijelölve semmi</target>
+        <target state="translated">Nincs semmi kijelölve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing to forward!" xml:space="preserve">
