@@ -11,7 +11,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
-import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Controller
@@ -69,8 +69,8 @@ sendComposedMessage cc = sendComposedMessage' cc . contactId'
 
 sendComposedMessage' :: ChatController -> ContactId -> Maybe ChatItemId -> MsgContent -> IO ()
 sendComposedMessage' cc ctId quotedItemId msgContent = do
-  let cm = ComposedMessage {fileSource = Nothing, quotedItemId, msgContent, mentions = []}
-  sendChatCmd cc (APISendMessages (ChatRef CTDirect ctId) False Nothing (cm :| [])) >>= \case
+  let cm = ComposedMessage {fileSource = Nothing, quotedItemId, msgContent, mentions = M.empty}
+  sendChatCmd cc (APISendMessages (ChatRef CTDirect ctId) False Nothing [cm]) >>= \case
     CRNewChatItems {} -> printLog cc CLLInfo $ "sent message to contact ID " <> show ctId
     r -> putStrLn $ "unexpected send message response: " <> show r
 

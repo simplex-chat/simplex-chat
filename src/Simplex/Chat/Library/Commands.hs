@@ -578,7 +578,7 @@ processChatCommand' vr = \case
           (gInfo,) <$> liftIO (getGroupModerators db vr user gInfo)
       let ms' = filter compatibleModerator ms
           mc = MCReport reportText reportReason
-          cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = []}
+          cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty}
       when (null ms') $ throwChatError $ CECommandError "no moderators support receiving reports"
       sendGroupContentMessages_ user gInfo ms' False Nothing [composedMessageReq cm]
     where
