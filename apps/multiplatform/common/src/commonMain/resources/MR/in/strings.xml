@@ -2285,4 +2285,19 @@
     <string name="report_item_visibility_moderators">Hanya pengirim dan moderator dapat melihat</string>
     <string name="report_item_visibility_submitter">Hanya Anda dan moderator dapat melihat</string>
     <string name="report_reason_spam">Spam</string>
+    <string name="text_field_set_chat_placeholder">Setel nama obrolan…</string>
+    <string name="privacy_chat_list_open_web_link_question">Buka tautan peramban?</string>
+    <string name="privacy_chat_list_open_web_link">Buka tautan</string>
+    <string name="change_automatic_deletion_question">Ubah hapus pesan otomatis?</string>
+    <string name="disable_automatic_deletion_question">Matikan hapus pesan otomatis?</string>
+    <string name="disable_automatic_deletion_message">Pesan dalam obrolan ini tidak akan pernah dihapus.</string>
+    <string name="chat_ttl_options_footer">Hapus pesan obrolan dari perangkat Anda.</string>
+    <string name="disable_automatic_deletion">Matikan hapus pesan</string>
+    <string name="change_automatic_chat_deletion_message">Tindakan tak dapat dibatalkan - pesan yang dikirim dan diterima dalam obrolan ini sebelum yang dipilih akan dihapus.</string>
+    <string name="privacy_chat_list_open_links_ask">Tanya</string>
+    <string name="privacy_chat_list_open_links_no">Tidak</string>
+    <string name="privacy_chat_list_open_links">Buka tautan dari daftar obrolan</string>
+    <string name="privacy_chat_list_open_links_yes">Ya</string>
+    <string name="chat_item_ttl_year">1 tahun</string>
+    <string name="chat_item_ttl_default">bawaan (%s)</string>
 </resources>
