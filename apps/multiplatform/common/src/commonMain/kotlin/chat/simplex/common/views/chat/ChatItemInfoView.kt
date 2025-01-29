@@ -49,7 +49,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
-  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, MentionedMember>?) {
+  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: MarkdownMentions?) {
     if (text != "") {
       MarkdownText(
         text, if (text.isEmpty()) emptyList() else formattedText,

@@ -868,8 +868,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       withChats {
         updateChatInfo(remoteHostId, newChatInfo)
       }
-      if (chatSettings.enableNtfs != MsgFilter.All) {
-        // TODO - Check
+      if (chatSettings.enableNtfs == MsgFilter.None) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
       }
       val updatedChat = chatModel.getChat(chatInfo.id)

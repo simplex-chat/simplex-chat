@@ -931,16 +931,16 @@ fun ComposeView(
   fun contextItemView() {
     when (val contextItem = composeState.value.contextItem) {
       ComposeContextItem.NoContextItem -> {}
-      is ComposeContextItem.QuotedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_reply), chatType = chat.chatInfo.chatType) {
+      is ComposeContextItem.QuotedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_reply), chatInfo = chat.chatInfo) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.EditingItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_edit_filled),  chatType = chat.chatInfo.chatType) {
+      is ComposeContextItem.EditingItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_edit_filled),  chatInfo = chat.chatInfo) {
         clearState()
       }
-      is ComposeContextItem.ForwardingItems -> ContextItemView(contextItem.chatItems, painterResource(MR.images.ic_forward), showSender = false,  chatType = chat.chatInfo.chatType) {
+      is ComposeContextItem.ForwardingItems -> ContextItemView(contextItem.chatItems, painterResource(MR.images.ic_forward), showSender = false,  chatInfo = chat.chatInfo) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
-      is ComposeContextItem.ReportedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_flag), chatType = chat.chatInfo.chatType, contextIconColor = Color.Red) {
+      is ComposeContextItem.ReportedItem -> ContextItemView(listOf(contextItem.chatItem), painterResource(MR.images.ic_flag), chatInfo = chat.chatInfo, contextIconColor = Color.Red) {
         composeState.value = composeState.value.copy(contextItem = ComposeContextItem.NoContextItem)
       }
     }

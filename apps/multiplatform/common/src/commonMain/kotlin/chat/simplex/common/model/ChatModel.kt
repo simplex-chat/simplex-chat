@@ -15,6 +15,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.MarkdownMentions
 import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -2539,6 +2540,26 @@ data class ChatItem (
 
   fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
 
+  fun markdownMentions(chatInfo: ChatInfo): MarkdownMentions? = when (chatInfo) {
+    is ChatInfo.Group -> {
+      val m = mentions?.toMutableMap() ?: mutableMapOf()
+      val gInfo = chatInfo.groupInfo
+      val memberId = gInfo.membership.memberId
+
+      m[gInfo.membership.displayName] = MentionedMember(
+        memberId,
+        MentionedMemberInfo(
+          groupMemberId = gInfo.membership.groupMemberId,
+          displayName = gInfo.membership.displayName,
+          localAlias = gInfo.membership.localAlias,
+          memberRole = gInfo.membership.memberRole
+        )
+      )
+      MarkdownMentions(m, memberId)
+    }
+    else -> null
+  }
+
   companion object {
     fun getSampleData(
       id: Long = 1,
@@ -3319,6 +3340,27 @@ class CIQuote (
     null -> null
   }
 
+  fun markdownMentions(chatInfo: ChatInfo): MarkdownMentions? = when (chatInfo) {
+    is ChatInfo.Group -> {
+      val gInfo = chatInfo.groupInfo
+      val memberId = gInfo.membership.memberId
+
+      MarkdownMentions(
+        mutableMapOf(gInfo.membership.displayName to MentionedMember(
+          memberId,
+          MentionedMemberInfo(
+            groupMemberId = gInfo.membership.groupMemberId,
+            displayName = gInfo.membership.displayName,
+            localAlias = gInfo.membership.localAlias,
+            memberRole = gInfo.membership.memberRole
+          )
+        )),
+        memberId
+      )
+    }
+    else -> null
+  }
+
   companion object {
     fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
       CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))
@@ -3935,7 +3977,7 @@ sealed class Format {
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is SimplexLink -> linkStyle
-    is Mention -> SpanStyle(color = MaterialTheme.colors.primary)
+    is Mention -> SpanStyle(fontWeight = FontWeight.SemiBold)
     is Email -> linkStyle
     is Phone -> linkStyle
   }
