@@ -1091,7 +1091,7 @@
     <string name="la_mode_passcode">Jelkód</string>
     <string name="unknown_error">Ismeretlen hiba</string>
     <string name="smp_servers_your_server_address">Saját SMP-kiszolgálójának címe</string>
-    <string name="auth_open_chat_console">Csevegés konzol megnyitása</string>
+    <string name="auth_open_chat_console">Csevegési konzol megnyitása</string>
     <string name="remove_member_button">Eltávolítás</string>
     <string name="set_database_passphrase">Adatbázis-jelmondat beállítása</string>
     <string name="view_security_code">Biztonsági kód megtekintése</string>
