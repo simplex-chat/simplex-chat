@@ -771,7 +771,7 @@ getGroupChatPreview_ :: DB.Connection -> VersionRangeChat -> User -> ChatPreview
 getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
   groupInfo <- getGroupInfo db vr user groupId
   lastItem <- case lastItemId_ of
-    Just lastItemId -> (: []) <$> getGroupChatItem db user groupId lastItemId
+    Just lastItemId -> (: []) <$> getGroupCIWithReactions db user groupInfo lastItemId
     Nothing -> pure []
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo) lastItem stats)
 
