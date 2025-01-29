@@ -699,7 +699,7 @@ processChatCommand' vr = \case
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
-    (gInfo@GroupInfo {membership}, items) <- getCommandGroupChatItems user gId itemIds
+    (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
     assertDeletable gInfo items
     assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
@@ -1079,26 +1079,7 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
-        let contactIds = mapMaybe memberContactId members
-        (errs1, (errs2, connIds)) <- lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
-        let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
-        unless (null errs) $ toView $ CRChatErrors (Just user) errs
-        deleteAgentConnectionsAsync user $ concat connIds
         pure $ CRGroupDeletedUser user gInfo
-      where
-        deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, [ConnId]))
-        deleteUnusedContact db contactId = runExceptT . withExceptT ChatErrorStore $ do
-          ct <- getContact db vr user contactId
-          ifM
-            ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct))
-            (pure (Nothing, []))
-            (getConnections ct)
-          where
-            getConnections :: Contact -> ExceptT StoreError IO (Maybe StoreError, [ConnId])
-            getConnections ct = do
-              conns <- liftIO $ getContactConnections db vr userId ct
-              e_ <- (setContactDeleted db user ct $> Nothing) `catchStoreError` (pure . Just)
-              pure (e_, map aConnId conns)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -1130,18 +1111,15 @@ processChatCommand' vr = \case
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
-      (user@User {userId}, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
+      (user, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
-      ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
-      let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
       ct' <- withStore' $ \db -> do
         deleteContactRequestRec db user cReq
-        updateContactAccepted db user ct contactUsed
         conn' <-
           if sqSecured
             then conn {connStatus = ConnSndReady} <$ updateConnectionStatusFromTo db connId ConnNew ConnSndReady
             else pure conn
-        pure ct {contactUsed, activeConn = Just conn'}
+        pure (ct :: Contact) {activeConn = Just conn'}
       pure $ CRAcceptingContactRequest user ct'
   APIRejectContact connReqId -> withUser $ \user -> do
     userContactLinkId <- withFastStore $ \db -> getUserContactLinkIdByCReq db connReqId
@@ -1907,7 +1885,7 @@ processChatCommand' vr = \case
       mc = MCText msg
       addContactConn :: Contact -> [(Contact, Connection)] -> [(Contact, Connection)]
       addContactConn ct ctConns = case contactSendConn_ ct of
-        Right conn | directOrUsed ct -> (ct, conn) : ctConns
+        Right conn | contactDirect ct -> (ct, conn) : ctConns
         _ -> ctConns
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
@@ -2630,7 +2608,7 @@ processChatCommand' vr = \case
                 msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
-                let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
+                let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> contactDirect ct' && mergedPreferences ct' /= mergedPreferences ct) cts
                 lift $ createContactsSndFeatureItems user' changedCts'
                 pure
                   UserProfileUpdateSummary
@@ -2670,7 +2648,7 @@ processChatCommand' vr = \case
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateProfile" (contactId' ct) $ do
               void (sendDirectContactMessage user ct' $ XInfo mergedProfile') `catchChatError` (toView . CRChatError (Just user))
-              lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
+              lift . when (contactDirect ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> CM ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} ms) p'@GroupProfile {displayName = n'} = do
@@ -2955,10 +2933,9 @@ processChatCommand' vr = \case
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      ct@Contact {contactUsed} <- withFastStore $ \db -> getContact db vr user contactId
+      ct <- withFastStore $ \db -> getContact db vr user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
       assertVoiceAllowed ct
-      unless contactUsed $ withFastStore' $ \db -> updateContactUsed db user ct
       processComposedMessages ct
       where
         assertVoiceAllowed :: Contact -> CM ()
@@ -3251,7 +3228,7 @@ createContactsSndFeatureItems user cts =
 
 assertDirectAllowed :: User -> MsgDirection -> Contact -> CMEventTag e -> CM ()
 assertDirectAllowed user dir ct event =
-  unless (allowedChatEvent || anyDirectOrUsed ct) . unlessM directMessagesAllowed $
+  unless (allowedChatEvent || anyDirect ct) . unlessM directMessagesAllowed $
     throwChatError (CEDirectMessagesProhibited dir ct)
   where
     directMessagesAllowed = any (uncurry $ groupFeatureMemberAllowed' SGFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)

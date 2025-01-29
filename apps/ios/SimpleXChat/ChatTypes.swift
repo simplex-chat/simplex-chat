@@ -1579,7 +1579,6 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var profile: LocalProfile
     public var activeConn: Connection?
     public var viaGroup: Int64?
-    public var contactUsed: Bool
     public var contactStatus: ContactStatus
     public var chatSettings: ChatSettings
     public var userPreferences: Preferences
@@ -1618,7 +1617,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
 
     public var directOrUsed: Bool {
         if let activeConn = activeConn {
-            (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+            (activeConn.connLevel == 0 && !activeConn.viaGroupLink)
         } else {
             true
         }
@@ -1653,7 +1652,6 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
         activeConn: Connection.sampleData,
-        contactUsed: true,
         contactStatus: .active,
         chatSettings: ChatSettings.defaults,
         userPreferences: Preferences.sampleData,

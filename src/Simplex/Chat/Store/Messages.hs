@@ -601,7 +601,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
     baseParams = (userId, userId, CISRcvNew)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
-        let q = baseQuery <> " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1"
+        let q = baseQuery <> " WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0"
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQFilters {favorite = True, unread = False} -> do
@@ -609,7 +609,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
               baseQuery
                 <> " "
                 <> [sql|
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0
                         AND ct.favorite = 1
                    |]
             p = baseParams :. Only userId
@@ -619,7 +619,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
               baseQuery
                 <> " "
                 <> [sql|
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0
                         AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                    |]
             p = baseParams :. Only userId
@@ -629,7 +629,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
               baseQuery
                 <> " "
                 <> [sql|
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0
                         AND (ct.favorite = 1
                           OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                    |]
@@ -641,7 +641,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
                 <> " "
                 <> [sql|
                       JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used = 1
+                      WHERE ct.user_id = ? AND ct.is_user = 0 AND ct.deleted = 0
                         AND (
                           LOWER(ct.local_display_name) LIKE '%' || LOWER(?) || '%'
                           OR LOWER(cp.display_name) LIKE '%' || LOWER(?) || '%'

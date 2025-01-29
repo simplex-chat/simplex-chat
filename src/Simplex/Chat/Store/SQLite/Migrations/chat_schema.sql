@@ -65,7 +65,6 @@ CREATE TABLE contacts(
   xcontact_id BLOB,
   enable_ntfs INTEGER,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
-  contact_used INTEGER DEFAULT 0 CHECK(contact_used NOT NULL),
   user_preferences TEXT DEFAULT '{}' CHECK(user_preferences NOT NULL),
   chat_ts TEXT,
   deleted INTEGER NOT NULL DEFAULT 0,

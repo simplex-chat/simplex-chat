@@ -46,7 +46,6 @@ module Simplex.Chat.Store.Direct
     updateContactConnectionAlias,
     updatePCCIncognito,
     deletePCCIncognitoProfile,
-    updateContactUsed,
     updateContactUnreadChat,
     setUserChatsRead,
     updateContactStatus,
@@ -65,7 +64,6 @@ module Simplex.Chat.Store.Direct
     deleteContactRequest,
     createAcceptedContact,
     deleteContactRequestRec,
-    updateContactAccepted,
     getUserByContactRequestId,
     getPendingContactConnections,
     updatePCCUser,
@@ -200,7 +198,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash = do
         [sql|
           SELECT
             -- Contact
-            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -240,10 +238,10 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createDirectContact :: DB.Connection -> User -> Connection -> Profile -> Bool -> ExceptT StoreError IO Contact
-createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} contactUsed = do
+createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs contactUsed
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
@@ -255,7 +253,6 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         profile,
         activeConn = Just conn,
         viaGroup = Nothing,
-        contactUsed,
         contactStatus = CSActive,
         chatSettings = defaultChatSettings,
         userPreferences,
@@ -471,11 +468,6 @@ deletePCCIncognitoProfile db User {userId} profileId =
     |]
     (userId, profileId)
 
-updateContactUsed :: DB.Connection -> User -> Contact -> IO ()
-updateContactUsed db User {userId} Contact {contactId} = do
-  updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (updatedAt, userId, contactId)
-
 updateContactUnreadChat :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactUnreadChat db User {userId} Contact {contactId} unreadChat = do
   updatedAt <- getCurrentTime
@@ -662,7 +654,7 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
             [sql|
               SELECT
                 -- Contact
-                ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+                ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
                 cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
@@ -809,8 +801,8 @@ deleteContactRequest db User {userId} contactRequestId = do
     (userId, userId, contactRequestId, userId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> Bool -> IO (Contact, Connection)
-createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed = do
+createAcceptedContact :: DB.Connection -> User -> ConnId -> VersionChat -> VersionRangeChat -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe IncognitoProfile -> SubscriptionMode -> PQSupport -> IO (Contact, Connection)
+createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}} agentConnId connChatVersion cReqChatVRange localDisplayName profileId profile userContactLinkId xContactId incognitoProfile subMode pqSup = do
   createdAt <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId createdAt p
@@ -818,8 +810,8 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
     db
-    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
-    (userId, localDisplayName, profileId, BI True, userPreferences, createdAt, createdAt, createdAt, xContactId, BI contactUsed)
+    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id) VALUES (?,?,?,?,?,?,?,?,?)"
+    (userId, localDisplayName, profileId, BI True, userPreferences, createdAt, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
   DB.execute db "UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?" (contactId, userId, localDisplayName)
   conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId ConnNew connChatVersion cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode pqSup
@@ -831,7 +823,6 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
             profile = toLocalProfile profileId profile "",
             activeConn = Just conn,
             viaGroup = Nothing,
-            contactUsed,
             contactStatus = CSActive,
             chatSettings = defaultChatSettings,
             userPreferences,
@@ -853,13 +844,6 @@ deleteContactRequestRec :: DB.Connection -> User -> UserContactRequest -> IO ()
 deleteContactRequestRec db User {userId} UserContactRequest {contactRequestId} =
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-updateContactAccepted :: DB.Connection -> User -> Contact -> Bool -> IO ()
-updateContactAccepted db User {userId} Contact {contactId} contactUsed =
-  DB.execute
-    db
-    "UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?"
-    (BI contactUsed, userId, contactId)
-
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
@@ -877,7 +861,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,

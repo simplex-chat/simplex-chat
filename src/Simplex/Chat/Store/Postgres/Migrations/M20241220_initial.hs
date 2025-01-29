@@ -70,7 +70,6 @@ CREATE TABLE contacts(
   xcontact_id BYTEA,
   enable_ntfs SMALLINT,
   unread_chat SMALLINT NOT NULL DEFAULT 0,
-  contact_used SMALLINT NOT NULL DEFAULT 0,
   user_preferences TEXT NOT NULL DEFAULT '{}',
   chat_ts TIMESTAMPTZ,
   deleted SMALLINT NOT NULL DEFAULT 0,

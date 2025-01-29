@@ -1473,7 +1473,6 @@ data class Contact(
   val profile: LocalProfile,
   val activeConn: Connection? = null,
   val viaGroup: Long? = null,
-  val contactUsed: Boolean,
   val contactStatus: ContactStatus,
   val chatSettings: ChatSettings,
   val userPreferences: ChatPreferences,
@@ -1527,7 +1526,7 @@ data class Contact(
 
   val directOrUsed: Boolean get() =
     if (activeConn != null) {
-      (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+      (activeConn.connLevel == 0 && !activeConn.viaGroupLink)
     } else {
       true
     }
@@ -1557,7 +1556,6 @@ data class Contact(
       localDisplayName = "alice",
       profile = LocalProfile.sampleData,
       activeConn = Connection.sampleData,
-      contactUsed = true,
       contactStatus = ContactStatus.Active,
       chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       userPreferences = ChatPreferences.sampleData,

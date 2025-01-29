@@ -379,10 +379,10 @@ setCommandConnId db User {userId} cmdId connId = do
 createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
 createContact db User {userId} profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db userId profile "" Nothing currentTs True
+  void $ createContact_ db userId profile "" Nothing currentTs
 
-createContact_ :: DB.Connection -> UserId -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Bool -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs contactUsed =
+createContact_ :: DB.Connection -> UserId -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
+createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -391,8 +391,8 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?)"
-      (profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI contactUsed)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
+      (profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     pure $ Right (ldn, contactId, profileId)
 
@@ -414,18 +414,18 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
     |]
     (userId, profileId, userId, profileId, userId, profileId)
 
-type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. (Maybe GroupMemberId, BoolInt, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
+type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. (Maybe GroupMemberId, BoolInt, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
 
 type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, BI contactGrpInvSent, uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
+toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, BI contactGrpInvSent, uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =

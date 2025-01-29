@@ -177,7 +177,6 @@ data Contact = Contact
     profile :: LocalProfile,
     activeConn :: Maybe Connection,
     viaGroup :: Maybe Int64,
-    contactUsed :: Bool,
     contactStatus :: ContactStatus,
     chatSettings :: ChatSettings,
     userPreferences :: Preferences,
@@ -226,12 +225,8 @@ contactDirect Contact {activeConn} = maybe True connDirect activeConn
 connDirect :: Connection -> Bool
 connDirect Connection {connLevel, viaGroupLink} = connLevel == 0 && not viaGroupLink
 
-directOrUsed :: Contact -> Bool
-directOrUsed ct@Contact {contactUsed} =
-  contactDirect ct || contactUsed
-
-anyDirectOrUsed :: Contact -> Bool
-anyDirectOrUsed Contact {contactUsed, activeConn} = ((\Connection {connLevel} -> connLevel) <$> activeConn) == Just 0 || contactUsed
+anyDirect :: Contact -> Bool
+anyDirect Contact {activeConn} = ((\Connection {connLevel} -> connLevel) <$> activeConn) == Just 0
 
 contactReady :: Contact -> Bool
 contactReady Contact {activeConn} = maybe False connReady activeConn
