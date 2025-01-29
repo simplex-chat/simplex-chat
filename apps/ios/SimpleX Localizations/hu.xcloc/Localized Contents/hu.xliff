@@ -1085,7 +1085,7 @@
       </trans-unit>
       <trans-unit id="Archive report?" xml:space="preserve" approved="no">
         <source>Archive report?</source>
-        <target state="translated">Jelentés archiválása</target>
+        <target state="translated">Jelentés archiválása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -5419,9 +5419,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csevegés megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open chat console" xml:space="preserve">
+      <trans-unit id="Open chat console" xml:space="preserve" approved="no">
         <source>Open chat console</source>
-        <target>Csevegés konzol megnyitása</target>
+        <target state="translated">Csevegési konzol megnyitása</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Open conditions" xml:space="preserve">
