@@ -9,6 +9,7 @@ maintainer: chat@simplex.chat
 copyright: 2020-22 simplex.chat
 category: Web, System, Services, Cryptography
 extra-source-files:
+  - PRIVACY.md
   - README.md
   - cabal.project
 
