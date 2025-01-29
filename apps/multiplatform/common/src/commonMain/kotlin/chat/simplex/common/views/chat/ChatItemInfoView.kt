@@ -42,7 +42,7 @@ sealed class CIInfoTab {
 }
 
 @Composable
-fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
+fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean, chatInfo: ChatInfo?) {
   val sent = ci.chatDir.sent
   val appColors = MaterialTheme.appColors
   val uriHandler = LocalUriHandler.current
@@ -81,7 +81,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = null)
+          TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = if (chatInfo != null) ci.markdownMentions(chatInfo) else null)
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {
@@ -128,7 +128,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           .onRightClick { showMenu.value = true }
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-          TextBubble(text, qi.formattedText, sender = qi.sender(null), showMenu, mentions = null) // TODO [mentions] - check this
+          TextBubble(text, qi.formattedText, sender = qi.sender(null), showMenu, mentions = if (chatInfo != null) qi.markdownMentions(chatInfo) else null)
         }
       }
       Row(Modifier.padding(start = 12.dp, top = 3.dp, bottom = 16.dp)) {

@@ -536,7 +536,7 @@ fun ChatView(
                   }
                 }) { close ->
                   var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
-                  ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+                  ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
                   LaunchedEffect(cItem.id) {
                     withContext(Dispatchers.Default) {
                       for (apiResp in controller.messagesChannel) {
