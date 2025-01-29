@@ -6,7 +6,7 @@ revision: 31.07.2023
 
 ## Overview
 
-XFTP is a new file transfer protocol focussed on meta-data protection - it is based on the same principles as SimpleX Messaging Protocol used in SimpleX Chat messenger:
+XFTP is a new file transfer protocol focused on meta-data protection - it is based on the same principles as SimpleX Messaging Protocol used in SimpleX Chat messenger:
 
    - asynchronous file delivery - the sender does not need to be online for file to be received, it is stored on XFTP relays for a limited time (currently, it is 48 hours) or until deleted by the sender.
    - padded e2e encryption of file content.
