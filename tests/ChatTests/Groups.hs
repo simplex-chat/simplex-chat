@@ -23,9 +23,9 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
-import Simplex.Chat.Messages (MentionedMember (..), MentionedMemberInfo (..), ChatItemId)
+import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MemberMention (..), MsgContent (..), msgContentText, supportedChatVRange)
+import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText, supportedChatVRange)
 import Simplex.Chat.Types (MemberId (..), VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
@@ -6710,7 +6710,19 @@ testForwardQuoteMention =
             cath <# "#team alice> > bob hello @alice @cath"
             cath <## "      hi there!"
         )
-      -- -- forward mentions
+      -- forward mentions to the same group
+      alice `send` "#team <- #team hello"
+      alice <# "#team <- #team"
+      alice <## "      hello @alice @cath"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> -> forwarded"
+            bob <## "      hello @alice @cath",
+          do
+            cath <# "#team alice!> -> forwarded"
+            cath <## "      hello @alice @cath"          
+        ]
+      -- forward mentions
       alice `send` "@bob <- #team hello"
       alice <# "@bob <- #team"
       alice <## "      hello @alice @cath"
@@ -6759,7 +6771,7 @@ testUniqueMsgMentions = do
     uniqueMsgMentions 2 (mm [("alice", "abcd"), ("alice2", "abcd"), ("bob", "efgh"), ("bob2", "efgh")]) ["alice", "alice2", "bob", "bob2"]
       `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
   where
-    mm = M.fromList . map (second $ MemberMention . MemberId)
+    mm = M.fromList . map (second $ MsgMention . MemberId)
 
 testUpdatedMentionNames :: SpecWith TestParams
 testUpdatedMentionNames = do
@@ -6780,9 +6792,9 @@ testUpdatedMentionNames = do
       `shouldBe` "hello @alice @alice_1"
   where
     test mentions t =
-      let (mc', _) = updatedMentionNames mentions (MCText t) (parseMaybeMarkdownList t)
+      let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentions
        in msgContentText mc'
     mm = M.fromList . map (second mentionedMember)
-    mentionedMember name_ = MentionedMember {memberId = MemberId "abcd", memberRef = memberInfo <$> name_}
+    mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = memberInfo <$> name_}
       where
-        memberInfo name = MentionedMemberInfo {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}
+        memberInfo name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}

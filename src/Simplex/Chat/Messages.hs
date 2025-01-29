@@ -153,8 +153,8 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     meta :: CIMeta c d,
     content :: CIContent d,
     -- The `mentions` map prevents loading all members from UI.
-    -- The key is a name used in the message text, used to look up MentionedMember.
-    mentions :: Map MemberName MentionedMember,
+    -- The key is a name used in the message text, used to look up CIMention.
+    mentions :: Map MemberName CIMention,
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
     reactions :: [CIReactionCount],
@@ -162,15 +162,14 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   }
   deriving (Show)
 
-data MentionedMember = MentionedMember
+data CIMention = CIMention
   { memberId :: MemberId,
     -- member record can be created later than the mention is received
-    -- TODO [mentions] should we create member record for "unknown member" in this case?
-    memberRef :: Maybe MentionedMemberInfo
+    memberRef :: Maybe CIMentionMember
   }
   deriving (Eq, Show)
 
-data MentionedMemberInfo = MentionedMemberInfo
+data CIMentionMember = CIMentionMember
   { groupMemberId :: GroupMemberId,
     displayName :: Text, -- use `displayName` in copy/share actions
     localAlias :: Maybe Text, -- use `fromMaybe displayName localAlias` in chat view
@@ -1400,9 +1399,9 @@ $(JQ.deriveToJSON defaultJSON ''CIQuote)
 
 $(JQ.deriveJSON defaultJSON ''CIReactionCount)
 
-$(JQ.deriveJSON defaultJSON ''MentionedMemberInfo)
+$(JQ.deriveJSON defaultJSON ''CIMentionMember)
 
-$(JQ.deriveJSON defaultJSON ''MentionedMember)
+$(JQ.deriveJSON defaultJSON ''CIMention)
 
 instance (ChatTypeI c, MsgDirectionI d) => FromJSON (ChatItem c d) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''ChatItem)
