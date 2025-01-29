@@ -1079,26 +1079,7 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
-        let contactIds = mapMaybe memberContactId members
-        (errs1, (errs2, connIds)) <- lift $ second unzip . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
-        let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
-        unless (null errs) $ toView $ CRChatErrors (Just user) errs
-        deleteAgentConnectionsAsync user $ concat connIds
         pure $ CRGroupDeletedUser user gInfo
-      where
-        deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, [ConnId]))
-        deleteUnusedContact db contactId = runExceptT . withExceptT ChatErrorStore $ do
-          ct <- getContact db vr user contactId
-          ifM
-            ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct))
-            (pure (Nothing, []))
-            (getConnections ct)
-          where
-            getConnections :: Contact -> ExceptT StoreError IO (Maybe StoreError, [ConnId])
-            getConnections ct = do
-              conns <- liftIO $ getContactConnections db vr userId ct
-              e_ <- (setContactDeleted db user ct $> Nothing) `catchStoreError` (pure . Just)
-              pure (e_, map aConnId conns)
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -2955,10 +2936,9 @@ processChatCommand' vr = \case
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      ct@Contact {contactUsed} <- withFastStore $ \db -> getContact db vr user contactId
+      ct <- withFastStore $ \db -> getContact db vr user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
       assertVoiceAllowed ct
-      unless contactUsed $ withFastStore' $ \db -> updateContactUsed db user ct
       processComposedMessages ct
       where
         assertVoiceAllowed :: Contact -> CM ()

@@ -108,7 +108,6 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberSettings,
     updateGroupMemberBlocked,
     getXGrpMemIntroContDirect,
-    getXGrpMemIntroContGroup,
     getHostConnId,
     createMemberContact,
     getMemberContact,
@@ -1364,33 +1363,23 @@ getForwardInvitedMembers db vr user forwardMember highlyAvailable = do
         WHERE re_group_member_id = ? AND intro_status NOT IN (?,?,?)
       |]
 
-createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> ExceptT StoreError IO GroupMember
+createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember
   db
   user@User {userId}
-  gInfo@GroupInfo {groupId}
+  gInfo
   _host@GroupMember {memberContactId, activeConn}
   chatV
   memInfo@(MemberInfo _ _ memChatVRange memberProfile)
   memRestrictions_
   (groupCmdId, groupAgentConnId)
-  directConnIds
-  customUserProfileId
   subMode = do
     let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
         cLevel = 1 + maybe 0 (\Connection {connLevel} -> connLevel) activeConn
         memRestriction = restriction <$> memRestrictions_
     currentTs <- liftIO getCurrentTime
-    newMember <- case directConnIds of
-      Just (directCmdId, directAgentConnId) -> do
-        Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId ConnNew chatV mcvr memberContactId Nothing customUserProfileId cLevel currentTs subMode PQSupportOff
-        liftIO $ setCommandConnId db user directCmdId directConnId
-        (localDisplayName, contactId, memProfileId) <- createContact_ db userId memberProfile "" (Just groupId) currentTs False
-        liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, directConnId)
-        pure $ NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Just contactId, memProfileId}
-      Nothing -> do
-        (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
-        pure $ NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
+    (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
+    let newMember = NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
     liftIO $ do
       member <- createNewMember_ db user gInfo newMember currentTs
       conn@Connection {connId = groupConnId} <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId chatV mcvr memberContactId cLevel currentTs subMode
@@ -1817,12 +1806,6 @@ mergeContactRecords db vr user@User {userId} to@Contact {localDisplayName = keep
   assertNotUser db user fromCt
   liftIO $ do
     currentTs <- getCurrentTime
-    -- next query fixes incorrect unused contacts deletion
-    when (contactDirect toCt && not (contactUsed toCt)) $
-      DB.execute
-        db
-        "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?"
-        (currentTs, userId, toContactId)
     DB.execute
       db
       "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
@@ -2026,36 +2009,6 @@ getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
     toCont :: (Int64, GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation) -> Maybe (Int64, XGrpMemIntroCont)
     toCont (hostConnId, groupId, groupMemberId, memberId, connReq_) = case connReq_ of
       Just groupConnReq -> Just (hostConnId, XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq})
-      _ -> Nothing
-
-getXGrpMemIntroContGroup :: DB.Connection -> User -> GroupMember -> IO (Maybe (Int64, ConnReqInvitation))
-getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
-  fmap join . maybeFirstRow toCont $
-    DB.query
-      db
-      [sql|
-        SELECT ch.connection_id, c.conn_req_inv
-        FROM group_members m
-        JOIN contacts ct ON ct.contact_id = m.contact_id
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT MAX(cc.connection_id)
-          FROM connections cc
-          WHERE cc.contact_id = ct.contact_id
-        )
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
-        )
-        WHERE m.user_id = ? AND m.group_member_id = ? AND mh.member_category = ? AND ct.deleted = 0
-      |]
-      (userId, userId, groupMemberId, GCHostMember)
-  where
-    toCont :: (Int64, Maybe ConnReqInvitation) -> Maybe (Int64, ConnReqInvitation)
-    toCont (hostConnId, connReq_) = case connReq_ of
-      Just connReq -> Just (hostConnId, connReq)
       _ -> Nothing
 
 getHostConnId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId

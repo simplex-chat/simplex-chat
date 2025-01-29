@@ -583,7 +583,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               lift $ setContactNetworkStatus ct' NSConnected
               toView $ CRContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct') $ do
-                unless (contactUsed ct') $ withFastStore' $ \db -> updateContactUsed db user ct'
                 createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo pqEnc) Nothing
                 createFeatureEnabledItems ct'
               when (contactConnInitiated conn') $ do
@@ -696,7 +695,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
               CFCreateConnGrpMemInv
                 | maxVersion (peerChatVRange conn) >= groupDirectInvVersion -> sendWithoutDirectCReq
-                | otherwise -> sendWithDirectCReq
+                | otherwise -> messageError "processGroupMessage INV: member chat version range incompatible"
                 where
                   sendWithoutDirectCReq = do
                     let GroupMember {groupMemberId, memberId} = m
@@ -704,13 +703,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       liftIO $ setConnConnReqInv db user connId cReq
                       getHostConnId db user groupId
                     sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
-                  sendWithDirectCReq = do
-                    let GroupMember {groupMemberId, memberId} = m
-                    contData <- withStore' $ \db -> do
-                      setConnConnReqInv db user connId cReq
-                      getXGrpMemIntroContGroup db user m
-                    forM_ contData $ \(hostConnId, directConnReq) ->
-                      sendXGrpMemInv hostConnId (Just directConnReq) XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               -- [async agent commands] group link auto-accept continuation on receiving INV
               CFCreateConnGrpInv -> do
                 ct <- withStore $ \db -> getContactViaMember db vr user m
@@ -1307,9 +1299,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               case autoAccept of
                 Just AutoAccept {acceptIncognito, businessAddress}
                   | businessAddress ->
-                      if v < groupFastLinkJoinVersion || (isSimplexTeam && v < businessChatsVersion)
+                      if isSimplexTeam && v < businessChatsVersion
                         then do
-                          ct <- acceptContactRequestAsync user cReq Nothing True reqPQSup
+                          ct <- acceptContactRequestAsync user cReq Nothing reqPQSup
                           toView $ CRAcceptingContactRequest user ct
                         else do
                           gInfo <- acceptBusinessJoinRequestAsync user cReq
@@ -1318,7 +1310,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-                        ct <- acceptContactRequestAsync user cReq incognitoProfile True reqPQSup
+                        ct <- acceptContactRequestAsync user cReq incognitoProfile reqPQSup
                         toView $ CRAcceptingContactRequest user ct
                       Just groupId -> do
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
@@ -1328,10 +1320,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
                             createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                             toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                          else do
-                            -- TODO v5.7 remove old API (or v6.0?)
-                            ct <- acceptContactRequestAsync user cReq profileMode False PQSupportOff
-                            toView $ CRAcceptingGroupJoinRequest user gInfo ct
+                          else messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                 _ -> toView $ CRReceivedContactRequest user cReq
 
     memberCanSend :: GroupMember -> CM () -> CM ()
@@ -1537,8 +1526,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     messageError = toView . CRMessageError user "error"
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
-    newContentMessage ct@Contact {contactUsed} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
-      unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
+    newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
@@ -1742,7 +1730,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         live' = fromMaybe False live_
         ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
         createBlockedByAdmin
-          | groupFeatureAllowed SGFFullDelete gInfo = do -- ignores member role when blocked by admin
+          | groupFeatureAllowed SGFFullDelete gInfo = do
+              -- ignores member role when blocked by admin
               ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvBlocked Nothing timed' False
               ci' <- withStore' $ \db -> updateGroupCIBlockedByAdmin db user gInfo ci brokerTs
               groupMsgToView gInfo ci'
@@ -2453,8 +2442,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          let contactUsed = connDirect activeConn
-          ct <- withStore $ \db -> createDirectContact db user conn' p contactUsed
+          ct <- withStore $ \db -> createDirectContact db user conn' p
           toView $ CRContactConnecting user ct
           pure (conn', False)
         XGrpLinkInv glInv -> do
@@ -2492,17 +2480,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Right _ -> messageError "x.grp.mem.intro ignored: member already exists"
             Left _ -> do
               when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
-              subMode <- chatReadVar subscriptionMode
-              -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-              groupConnIds <- createConn subMode
-              directConnIds <- case memChatVRange of
-                Nothing -> Just <$> createConn subMode
+              case memChatVRange of
+                Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
                 Just (ChatVersionRange mcvr)
-                  | maxVersion mcvr >= groupDirectInvVersion -> pure Nothing
-                  | otherwise -> Just <$> createConn subMode
-              let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
-                  chatV = maybe (minVersion vr) (\peerVR -> vr `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
-              void $ withStore $ \db -> createIntroReMember db user gInfo m chatV memInfo memRestrictions groupConnIds directConnIds customUserProfileId subMode
+                  | maxVersion mcvr >= groupDirectInvVersion -> do
+                      subMode <- chatReadVar subscriptionMode
+                      -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
+                      groupConnIds <- createConn subMode
+                      let chatV = maybe (minVersion vr) (\peerVR -> vr `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
+                      void $ withStore $ \db -> createIntroReMember db user gInfo m chatV memInfo memRestrictions groupConnIds subMode
+                  | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
         createConn subMode = createAgentConnectionAsync user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation subMode
