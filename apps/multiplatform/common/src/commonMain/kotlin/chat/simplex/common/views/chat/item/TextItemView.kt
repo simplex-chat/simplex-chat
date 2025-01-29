@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.views.chat.group.MENTION_START
+import chat.simplex.common.views.chat.group.QUOTE
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 import java.awt.*
@@ -152,7 +154,7 @@ fun MarkdownText (
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
             }
           } else if (ft.format is Format.Mention) {
-            val mention = mentions?.mentions?.get(ft.text.replace("'", "").removePrefix("@"))
+            val mention = mentions?.mentions?.get(ft.text.replace("$QUOTE", "").removePrefix("$MENTION_START"))
             if (mention?.memberRef != null) {
               val name = mention.memberRef.localAlias.takeIf { !it.isNullOrEmpty() } ?: mention.memberRef.displayName
               val mentionStyle = if (mention.memberId == mentions.selfMemberId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style

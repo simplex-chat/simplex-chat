@@ -8,9 +8,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.common.model.MsgFilter.All
-import chat.simplex.common.model.MsgFilter.Mentions
-import chat.simplex.common.model.MsgFilter.None
+import chat.simplex.common.model.MsgFilter.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*

@@ -48,7 +48,6 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
-import org.w3c.dom.Text
 import java.io.File
 import java.net.URI
 import kotlin.math.*
