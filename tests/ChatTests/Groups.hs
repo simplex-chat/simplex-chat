@@ -15,14 +15,17 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
+import Data.Bifunctor (second)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Library.Internal (uniqueMsgMentions)
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Types (VersionRangeChat)
+import Simplex.Chat.Protocol (MemberMention (..), supportedChatVRange)
+import Simplex.Chat.Types (MemberId (..), VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -186,6 +189,9 @@ chatGroupTests = do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
+  describe "group member mentions" $ do
+    it "should send messages with member mentions" testMemberMention
+    describe "uniqueMsgMentions" testUniqueMsgMentions
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -1044,7 +1050,7 @@ testGroupMessageQuotedReply =
       bob <## "      hello, all good, you?"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hello! how are you?"
+            alice <# "#team bob!> > alice hello! how are you?"
             alice <## "      hello, all good, you?"
         )
         ( do
@@ -1079,7 +1085,7 @@ testGroupMessageQuotedReply =
             alice <## "      hi there!"
         )
         ( do
-            bob <# "#team cath> > bob hello, all good, you?"
+            bob <# "#team cath!> > bob hello, all good, you?"
             bob <## "      hi there!"
         )
       cath #$> ("/_get chat #1 count=1", chat', [((1, "hi there!"), Just (0, "hello, all good, you?"))])
@@ -1090,7 +1096,7 @@ testGroupMessageQuotedReply =
       alice <## "      go on"
       concurrently_
         ( do
-            bob <# "#team alice> > bob will tell more"
+            bob <# "#team alice!> > bob will tell more"
             bob <## "      go on"
         )
         ( do
@@ -1131,7 +1137,7 @@ testGroupMessageUpdate =
       bob <## "      hi alice"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hey 👋"
+            alice <# "#team bob!> > alice hey 👋"
             alice <## "      hi alice"
         )
         ( do
@@ -1158,7 +1164,7 @@ testGroupMessageUpdate =
       cath <## "      greetings!"
       concurrently_
         ( do
-            alice <# "#team cath> > alice greetings 🤝"
+            alice <# "#team cath!> > alice greetings 🤝"
             alice <## "      greetings!"
         )
         ( do
@@ -1272,7 +1278,7 @@ testGroupMessageDelete =
       bob <## "      hi alic"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hello!"
+            alice <# "#team bob!> > alice hello!"
             alice <## "      hi alic"
         )
         ( do
@@ -5423,7 +5429,7 @@ testGroupHistoryQuotes =
       alice `send` "> #team @bob (BOB) 2"
       alice <# "#team > bob BOB"
       alice <## "      2"
-      bob <# "#team alice> > bob BOB"
+      bob <# "#team alice!> > bob BOB"
       bob <## "      2"
 
       threadDelay 1000000
@@ -5431,7 +5437,7 @@ testGroupHistoryQuotes =
       bob `send` "> #team @alice (ALICE) 3"
       bob <# "#team > alice ALICE"
       bob <## "      3"
-      alice <# "#team bob> > alice ALICE"
+      alice <# "#team bob!> > alice ALICE"
       alice <## "      3"
 
       threadDelay 1000000
@@ -6651,3 +6657,49 @@ testGroupMemberReports =
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
+
+testMemberMention :: HasCallStack => TestParams -> IO ()
+testMemberMention =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello!"
+      concurrentlyN_
+        [ bob <# "#team alice> hello!",
+          cath <# "#team alice> hello!"
+        ]
+      bob #> "#team hello @alice"
+      concurrentlyN_
+        [ alice <# "#team bob!> hello @alice",
+          cath <# "#team bob> hello @alice"
+        ]
+      alice #> "#team hello @bob @bob @cath"
+      concurrentlyN_
+        [ bob <# "#team alice!> hello @bob @bob @cath",
+          cath <# "#team alice!> hello @bob @bob @cath"
+        ]
+      cath #> "#team hello @Alice" -- not a mention
+      concurrentlyN_
+        [ alice <# "#team cath> hello @Alice",
+          bob <# "#team cath> hello @Alice"
+        ]
+
+testUniqueMsgMentions :: SpecWith TestParams
+testUniqueMsgMentions = do
+  it "1 correct mention" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd")]) ["alice"]
+      `shouldBe` (mm [("alice", "abcd")])
+  it "2 correct mentions" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("bob", "efgh")]) ["alice", "bob"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  it "2 correct mentions with repetition" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("bob", "efgh")]) ["alice", "alice", "alice", "bob", "bob", "bob"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  it "too many mentions - drop extras" $ \_ ->
+    uniqueMsgMentions 3 (mm [("a", "abcd"), ("b", "efgh"), ("c", "1234"), ("d", "5678")]) ["a", "a", "a", "b", "b", "c", "d"]
+      `shouldBe` (mm [("a", "abcd"), ("b", "efgh"), ("c", "1234")])
+  it "repeated-with-different name - drop extras" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("alice2", "abcd"), ("bob", "efgh"), ("bob2", "efgh")]) ["alice", "alice2", "bob", "bob2"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  where
+    mm = M.fromList . map (second $ MemberMention . MemberId)
