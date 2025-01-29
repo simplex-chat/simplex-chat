@@ -25,7 +25,7 @@ for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc
 for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
 
 rm -rf $BUILD_DIR
-cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -flink-rts -threaded' --constraint 'simplexmq +client_library'
+cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN -flink-rts -threaded' --constraint 'simplexmq +client_library' --constraint 'jpeg-turbo +static-gcc'
 cd $BUILD_DIR/build
 #patchelf --add-needed libHSrts_thr-ghc${GHC_VERSION}.so libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
 #patchelf --add-rpath '$ORIGIN' libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
