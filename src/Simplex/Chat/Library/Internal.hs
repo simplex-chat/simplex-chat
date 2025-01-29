@@ -256,8 +256,6 @@ getCIMentions db user GroupInfo {groupId} ft_ mentions = case ft_ of
     unless (n <= maxSndMentions && all (`S.member` msgMentions) (M.keys mentions) && S.size (S.fromList $ M.elems mentions) == n) $
       throwError SEInvalidMention
     mapM (getMentionedGroupMember db user groupId) mentions
-    -- let mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentionedMembers
-    -- pure (mentionedMembers, mentions')
   _ -> pure M.empty
 
 getRcvCIMentions :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName MsgMention -> IO (Map MemberName CIMention)
