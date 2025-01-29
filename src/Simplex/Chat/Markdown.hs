@@ -267,6 +267,36 @@ markdownP = mconcat <$> A.many' fragmentP
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
 
+markdownText :: FormattedText -> Text
+markdownText (FormattedText f_ t) = case f_ of
+  Nothing -> t
+  Just f -> case f of
+    Bold -> around '*'
+    Italic -> around '_'
+    StrikeThrough -> around '~'
+    Snippet -> around '`'
+    Secret -> around '#'
+    Colored (FormatColor c) -> colored c
+    Uri -> t
+    SimplexLink {simplexUri} -> simplexUri
+    Mention _ -> t
+    Email -> t
+    Phone -> t
+    where
+      around c = c `T.cons` t `T.snoc` c
+      colored c = case colorStr c of
+        Just cStr -> cStr <> t `T.snoc` '!'
+        Nothing -> t
+      colorStr = \case
+        Red -> Just "!1 " 
+        Green -> Just "!2 "
+        Blue -> Just "!3 "
+        Yellow -> Just "!4 "
+        Cyan -> Just "!5 "
+        Magenta -> Just "!6 "
+        Black -> Nothing
+        White -> Nothing
+
 displayNameTextP :: Parser Text
 displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
   where

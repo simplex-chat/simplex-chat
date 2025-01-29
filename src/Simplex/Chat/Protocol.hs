@@ -539,12 +539,12 @@ isMCForward = \case
   _ -> False
 
 data MsgContent
-  = MCText Text
+  = MCText {text :: Text}
   | MCLink {text :: Text, preview :: LinkPreview}
   | MCImage {text :: Text, image :: ImageData}
   | MCVideo {text :: Text, image :: ImageData, duration :: Int}
   | MCVoice {text :: Text, duration :: Int}
-  | MCFile Text
+  | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)

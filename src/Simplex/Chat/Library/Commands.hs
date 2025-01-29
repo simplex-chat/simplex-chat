@@ -904,7 +904,7 @@ processChatCommand' vr = \case
             Just CIFFUnknown -> ciff
             Just prevCIFF -> Just prevCIFF
           forwardContent :: ChatItem c d -> MsgContent -> CM (Maybe (MsgContent, Maybe CryptoFile))
-          forwardContent ChatItem {file} mc = case file of
+          forwardContent ChatItem {file, mentions, formattedText} originalMC = case file of
             Nothing -> pure $ Just (mc, Nothing)
             Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}
               | ciFileLoaded fileStatus ->
@@ -929,6 +929,9 @@ processChatCommand' vr = \case
                         (pure contentWithoutFile)
             _ -> pure contentWithoutFile
             where
+              mc = case fromCType of              
+                CTGroup -> fst $ updatedMentionNames mentions originalMC formattedText
+                _ -> originalMC
               contentWithoutFile = case mc of
                 MCImage {} -> Just (mc, Nothing)
                 MCLink {} -> Just (mc, Nothing)

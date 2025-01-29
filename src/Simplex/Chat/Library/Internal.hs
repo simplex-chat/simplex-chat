@@ -189,7 +189,7 @@ toggleNtf user m ntfOn =
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
 
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> MsgContent -> Maybe MarkdownList -> Map MemberName GroupMemberId -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (MsgContainer, Maybe (CIQuote 'CTGroup), (Map MemberName MentionedMember, Map MemberName MemberMention))
-prepareGroupMsg db user g@GroupInfo {groupId, membership} mc ft_ memberMentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
+prepareGroupMsg db user g@GroupInfo {membership} mc ft_ memberMentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
   (Nothing, Nothing) -> do
     mms@(_, mentions) <- getMentionedMembers db user g ft_ memberMentions
     pure (MCSimple (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, mms)
@@ -197,13 +197,14 @@ prepareGroupMsg db user g@GroupInfo {groupId, membership} mc ft_ memberMentions 
     pure (MCForward (ExtMsgContent mc M.empty fInv_ (ttl' <$> timed_) (justTrue live)), Nothing, (M.empty, M.empty))
   (Just quotedItemId, Nothing) -> do
     mms@(_, mentions) <- getMentionedMembers db user g ft_ memberMentions
-    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
-      getGroupChatItem db user groupId quotedItemId
+    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
+      getGroupCIWithReactions db user g quotedItemId
     (origQmc, qd, sent, GroupMember {memberId}) <- quoteData qci membership
     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
         qmc = quoteContent mc origQmc file
-        quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem, mms)
+        (qmc', ft') = updatedMentionNames quoteMentions qmc formattedText
+        quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
+    pure (MCQuote QuotedMsg {msgRef, content = qmc'} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem, mms)
   (Just _, Just _) -> throwError SEInvalidQuote
   where
     quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
@@ -212,9 +213,16 @@ prepareGroupMsg db user g@GroupInfo {groupId, membership} mc ft_ memberMentions 
     quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
     quoteData _ _ = throwError SEInvalidQuote
 
+updatedMentionNames :: Map MemberName MentionedMember -> MsgContent -> Maybe MarkdownList -> (MsgContent, Maybe MarkdownList)
+updatedMentionNames mentions mc = \case
+  Just ft | not (null ft) && not (null mentions) -> (mc {text = T.concat $ map markdownText ft'}, Just ft')
+    where
+      ft' = ft -- TODO [mentions] update formatted text here to change names in mentions to reflect current display names
+  _ -> (mc, Nothing)
+
 getMentionedMembers :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName GroupMemberId -> ExceptT StoreError IO (Map MemberName MentionedMember, Map MemberName MemberMention)
 getMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
-  Just ft | not (null mentions) -> do
+  Just ft | not (null ft) && not (null mentions) -> do
     let msgMentions = S.fromList $ mentionedNames ft
         n = M.size mentions
     -- prevent "invisible" and repeated-with-different-name mentions (when the same member is mentioned via another name)
@@ -227,7 +235,7 @@ getMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
 
 getRcvMentionedMembers :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName MemberMention -> IO (Map MemberName MentionedMember)
 getRcvMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
-  Just ft | not (null mentions) ->
+  Just ft | not (null ft) && not (null mentions) ->
     let mentions' = uniqueMsgMentions maxRcvMentions mentions $ mentionedNames ft
      in mapM (getMentionedMemberByMemberId db user groupId) mentions'
   _ -> pure M.empty
@@ -246,8 +254,8 @@ uniqueMsgMentions maxMentions mentions = go M.empty S.empty 0
 
 getMessageMentions :: DB.Connection -> User -> GroupId -> Text -> IO (Map MemberName GroupMemberId)
 getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
-  Just ft -> M.fromList . catMaybes <$> mapM get (nubOrd $ mentionedNames ft)
-  Nothing -> pure M.empty
+  Just ft | not (null ft) -> M.fromList . catMaybes <$> mapM get (nubOrd $ mentionedNames ft)
+  _ -> pure M.empty
   where
     get name =
       fmap (name,) . eitherToMaybe
