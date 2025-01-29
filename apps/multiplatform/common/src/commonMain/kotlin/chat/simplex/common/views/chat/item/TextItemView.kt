@@ -150,8 +150,11 @@ fun MarkdownText (
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
             }
           } else if (ft.format is Format.Mention) {
-            if (mentions?.contains(ft.text.replace("'", "").removePrefix("@")) == true) {
-              withStyle(ft.format.style) { append(ft.text) }
+            val mention = mentions?.get(ft.text.replace("'", "").removePrefix("@"))
+            if (mention?.memberRef != null) {
+              val name = mention.memberRef.localAlias.takeIf { !it.isNullOrEmpty() } ?: mention.memberRef.displayName
+              println("[mentions]: ${mention}")
+              withStyle(ft.format.style) { append("@$name") }
             } else {
               append(ft.text)
             }

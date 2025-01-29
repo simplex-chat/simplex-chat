@@ -2311,15 +2311,15 @@ data class MemberReaction(
 )
 
 @Serializable
-class MentionedMemberInfo(
+data class MentionedMemberInfo(
   val groupMemberId: Long,
-  // current member display name or alias, shown in the message
-  val memberViewName: String,
+  val displayName: String,
+  val localAlias: String?,
   val memberRole: GroupMemberRole
 )
 
 @Serializable
-class MentionedMember(
+data class MentionedMember(
   val memberId: String,
   val memberRef: MentionedMemberInfo?
 )
