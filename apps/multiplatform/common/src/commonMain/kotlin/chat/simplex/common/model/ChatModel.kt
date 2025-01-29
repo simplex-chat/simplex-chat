@@ -1182,6 +1182,7 @@ interface SomeChat {
   val ntfsEnabled: Boolean
   val incognito: Boolean
   fun featureEnabled(feature: ChatFeature): Boolean
+  fun itemNtfEnabled(cItem: ChatItem): Boolean
   val timedMessagesTTL: Int?
   val createdAt: Instant
   val updatedAt: Instant
@@ -1266,6 +1267,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = contact.ntfsEnabled
     override val incognito get() = contact.incognito
     override fun featureEnabled(feature: ChatFeature) = contact.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = contact.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = contact.timedMessagesTTL
     override val createdAt get() = contact.createdAt
     override val updatedAt get() = contact.updatedAt
@@ -1292,6 +1294,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = groupInfo.ntfsEnabled
     override val incognito get() = groupInfo.incognito
     override fun featureEnabled(feature: ChatFeature) = groupInfo.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = groupInfo.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = groupInfo.timedMessagesTTL
     override val createdAt get() = groupInfo.createdAt
     override val updatedAt get() = groupInfo.updatedAt
@@ -1317,6 +1320,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = noteFolder.ntfsEnabled
     override val incognito get() = noteFolder.incognito
     override fun featureEnabled(feature: ChatFeature) = noteFolder.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = noteFolder.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = noteFolder.timedMessagesTTL
     override val createdAt get() = noteFolder.createdAt
     override val updatedAt get() = noteFolder.updatedAt
@@ -1342,6 +1346,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = contactRequest.ntfsEnabled
     override val incognito get() = contactRequest.incognito
     override fun featureEnabled(feature: ChatFeature) = contactRequest.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = contactRequest.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = contactRequest.timedMessagesTTL
     override val createdAt get() = contactRequest.createdAt
     override val updatedAt get() = contactRequest.updatedAt
@@ -1367,6 +1372,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = false
     override val incognito get() = contactConnection.incognito
     override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = false
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
     override val createdAt get() = contactConnection.createdAt
     override val updatedAt get() = contactConnection.updatedAt
@@ -1393,6 +1399,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = false
     override val incognito get() = false
     override fun featureEnabled(feature: ChatFeature) = false
+    override fun itemNtfEnabled(cItem: ChatItem) = false
     override val timedMessagesTTL: Int? get() = null
     override val createdAt get() = Clock.System.now()
     override val updatedAt get() = Clock.System.now()
@@ -1526,6 +1533,7 @@ data class Contact(
     ChatFeature.Voice -> mergedPreferences.voice.enabled.forUser
     ChatFeature.Calls -> mergedPreferences.calls.enabled.forUser
   }
+  override fun itemNtfEnabled(cItem: ChatItem) = ntfsEnabled
   override val timedMessagesTTL: Int? get() = with(mergedPreferences.timedMessages) { if (enabled.forUser) userPreference.pref.ttl else null }
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
@@ -1775,6 +1783,7 @@ data class GroupInfo (
     ChatFeature.Voice -> fullGroupPreferences.voice.on(membership)
     ChatFeature.Calls -> false
   }
+  override fun itemNtfEnabled(cItem: ChatItem) = if (ntfsEnabled) true else cItem.meta.userMention && chatSettings.enableNtfs == MsgFilter.Mentions
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
@@ -2135,6 +2144,7 @@ class NoteFolder(
   override val ntfsEnabled get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = feature == ChatFeature.Voice
+  override fun itemNtfEnabled(cItem: ChatItem) = false
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = generalGetString(MR.strings.note_folder_local_display_name)
   override val fullName get() = ""
@@ -2172,6 +2182,7 @@ class UserContactRequest (
   override val ntfsEnabled get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = false
+  override fun itemNtfEnabled(cItem: ChatItem) = false
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
@@ -2212,6 +2223,7 @@ class PendingContactConnection(
   override val ntfsEnabled get() = false
   override val incognito get() = customUserProfileId != null
   override fun featureEnabled(feature: ChatFeature) = false
+  override fun itemNtfEnabled(cItem: ChatItem) = false
   override val timedMessagesTTL: Int? get() = null
   override val localDisplayName get() = String.format(generalGetString(MR.strings.connection_local_display_name), pccConnId)
   override val displayName: String get() {
