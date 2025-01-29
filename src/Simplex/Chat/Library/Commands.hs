@@ -3182,12 +3182,12 @@ processChatCommand' vr = \case
     getCommandGroupChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (GroupInfo, [CChatItem 'CTGroup])
     getCommandGroupChatItems user gId itemIds = do
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
-      (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db) (L.toList itemIds))
+      (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db gInfo) (L.toList itemIds))
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
       pure (gInfo, items)
       where
-        getGroupCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
-        getGroupCI db itemId = runExceptT . withExceptT ChatErrorStore $ getGroupChatItem db user gId itemId
+        getGroupCI :: DB.Connection -> GroupInfo -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
+        getGroupCI db gInfo itemId = runExceptT . withExceptT ChatErrorStore $ getGroupCIWithReactions db user gInfo itemId
     getCommandLocalChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (NoteFolder, [CChatItem 'CTLocal])
     getCommandLocalChatItems user nfId itemIds = do
       nf <- withStore $ \db -> getNoteFolder db user nfId

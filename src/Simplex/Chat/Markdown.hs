@@ -16,7 +16,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit, isPunctuation)
+import Data.Char (isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (foldl', intercalate)
@@ -276,7 +276,7 @@ markdownText (FormattedText f_ t) = case f_ of
     StrikeThrough -> around '~'
     Snippet -> around '`'
     Secret -> around '#'
-    Colored (FormatColor c) -> colored c
+    Colored (FormatColor c) -> color c
     Uri -> t
     SimplexLink {simplexUri} -> simplexUri
     Mention _ -> t
@@ -284,7 +284,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Phone -> t
     where
       around c = c `T.cons` t `T.snoc` c
-      colored c = case colorStr c of
+      color c = case colorStr c of
         Just cStr -> cStr <> t `T.snoc` '!'
         Nothing -> t
       colorStr = \case
@@ -305,6 +305,9 @@ displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
         if refChar c then A.takeTill p else fail "invalid first character in display name"
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
+
+viewName :: Text -> Text
+viewName s = if T.any isSpace s then "'" <> s <> "'" else s
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

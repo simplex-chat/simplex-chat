@@ -17,7 +17,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Char (isSpace, toUpper)
+import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -2403,9 +2403,6 @@ ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
 ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
-
-viewName :: Text -> Text
-viewName s = if T.any isSpace s then "'" <> s <> "'" else s
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

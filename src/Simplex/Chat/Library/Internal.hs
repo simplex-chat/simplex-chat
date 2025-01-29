@@ -29,6 +29,7 @@ import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (isDigit)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Either (partitionEithers, rights)
 import Data.Fixed (div')
@@ -215,10 +216,35 @@ prepareGroupMsg db user g@GroupInfo {membership} mc ft_ memberMentions quotedIte
 
 updatedMentionNames :: Map MemberName MentionedMember -> MsgContent -> Maybe MarkdownList -> (MsgContent, Maybe MarkdownList)
 updatedMentionNames mentions mc = \case
-  Just ft | not (null ft) && not (null mentions) -> (mc {text = T.concat $ map markdownText ft'}, Just ft')
-    where
-      ft' = ft -- TODO [mentions] update formatted text here to change names in mentions to reflect current display names
-  _ -> (mc, Nothing)
+  Just ft | not (null ft) && not (null mentions) && not (all sameName $ M.assocs mentions) ->
+    let ft' = snd $ mapAccumL update S.empty ft
+        text = T.concat $ map markdownText ft'
+     in (mc {text} :: MsgContent, Just ft')
+  ft_ -> (mc, ft_)
+  where
+    sameName (name, MentionedMember {memberRef}) = case memberRef of
+      Just MentionedMemberInfo {displayName} -> case T.stripPrefix displayName name of
+        Just rest
+          | T.null rest -> True
+          | otherwise -> case T.uncons rest of
+              Just ('_', suffix) -> T.all isDigit suffix
+              _ -> False
+        Nothing -> False
+      Nothing -> True
+    update seen ft@(FormattedText f _) = case f of
+      Just (Mention name) -> case M.lookup name mentions of
+        Just MentionedMember {memberRef} ->
+          let name' = uniqueMentionName 0 $ case memberRef of
+                Just MentionedMemberInfo {displayName} -> displayName
+                Nothing -> name
+           in (S.insert name' seen, FormattedText (Just $ Mention name') ('@' `T.cons` viewName name'))
+        Nothing -> (S.insert name seen, ft)
+      _ -> (seen, ft)
+      where
+        uniqueMentionName :: Int -> Text -> Text
+        uniqueMentionName pfx name =
+          let prefixed = if pfx == 0 then name else (name `T.snoc` '_') <> tshow pfx
+           in if prefixed `S.member` seen then uniqueMentionName (pfx + 1) name else prefixed
 
 getMentionedMembers :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName GroupMemberId -> ExceptT StoreError IO (Map MemberName MentionedMember, Map MemberName MemberMention)
 getMentionedMembers db user GroupInfo {groupId} ft_ mentions = case ft_ of
