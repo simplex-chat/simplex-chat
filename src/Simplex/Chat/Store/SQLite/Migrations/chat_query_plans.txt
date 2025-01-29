@@ -3298,13 +3298,13 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 Query: 
         SELECT r.display_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
         FROM chat_item_mentions r
-        LEFT JOIN group_members m ON r.member_id = m.member_id
+        LEFT JOIN group_members m ON r.group_id = m.group_id AND r.member_id = m.member_id
         LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id) 
         WHERE r.chat_item_id = ?
       
 Plan:
 SEARCH r USING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
-SCAN m LEFT-JOIN
+SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?) LEFT-JOIN
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
@@ -5193,6 +5193,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM groups WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_group_id (group_id=?)
 SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_group_id (group_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group_id (group_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
@@ -5331,7 +5332,7 @@ Plan:
 Query: INSERT INTO app_settings (app_settings) VALUES (?)
 Plan:
 
-Query: INSERT INTO chat_item_mentions (chat_item_id, member_id, display_name) VALUES (?, ?, ?)
+Query: INSERT INTO chat_item_mentions (chat_item_id, group_id, member_id, display_name) VALUES (?, ?, ?, ?)
 Plan:
 
 Query: INSERT INTO chat_item_messages (chat_item_id, message_id, created_at, updated_at) VALUES (?,?,?,?)
