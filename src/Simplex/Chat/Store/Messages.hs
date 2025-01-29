@@ -2295,22 +2295,22 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
     ((content, itemText, itemStatus, BI itemDeleted', itemDeletedTs', BI itemEdited, BI <$> itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
-createGroupCIMentions :: forall d. DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
-createGroupCIMentions db ci mentions = do
-  DB.executeMany db "INSERT INTO chat_item_mentions (chat_item_id, member_id, display_name) VALUES (?, ?, ?)" rows
+createGroupCIMentions :: forall d. DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
+createGroupCIMentions db GroupInfo {groupId} ci mentions = do
+  DB.executeMany db "INSERT INTO chat_item_mentions (chat_item_id, group_id, member_id, display_name) VALUES (?, ?, ?, ?)" rows
   pure (ci :: ChatItem 'CTGroup d) {mentions}
   where
-    rows = map (\(name, MentionedMember {memberId}) -> (ciId, memberId, name)) $ M.assocs mentions
+    rows = map (\(name, MentionedMember {memberId}) -> (ciId, groupId, memberId, name)) $ M.assocs mentions
     ciId = chatItemId' ci
 
-updateGroupCIMentions :: DB.Connection -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
-updateGroupCIMentions db ci@ChatItem {mentions} mentions'
+updateGroupCIMentions :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Map MemberName MentionedMember -> IO (ChatItem 'CTGroup d)
+updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
   | mentions' == mentions = pure ci
   | otherwise = do
       unless (null mentions) $ deleteMentions
       if null mentions'
         then pure ci
-        else createGroupCIMentions db ci mentions'
+        else createGroupCIMentions db g ci mentions'
   where
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
 
@@ -2797,7 +2797,7 @@ getGroupCIMentions db ciId =
       [sql|
         SELECT r.display_name, r.member_id, m.group_member_id, m.member_role, p.display_name, p.local_alias
         FROM chat_item_mentions r
-        LEFT JOIN group_members m ON r.member_id = m.member_id
+        LEFT JOIN group_members m ON r.group_id = m.group_id AND r.member_id = m.member_id
         LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id) 
         WHERE r.chat_item_id = ?
       |]

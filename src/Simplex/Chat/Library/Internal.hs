@@ -1643,7 +1643,10 @@ saveSndChatItems user cd itemsData itemTimed live = do
       ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
       let ci = mkChatItem_ cd ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False createdAt Nothing createdAt
-      Right <$> saveMentions db cd ci (fst itemMentions)
+          mentions = fst itemMentions
+      Right <$> case cd of
+        CDGroupSnd g | not (null mentions) -> createGroupCIMentions db g ci mentions
+        _ -> pure ci
 
 saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv)
 saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg brokerTs . ciContentNoParse
@@ -1668,16 +1671,13 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
               _ -> False
             userMention' = userReply || any (\MentionedMember {memberId} -> sameMemberId memberId membership) mentions'
          in pure (mentions', userMention')
-      _ -> pure (M.empty, False)
+      CDDirectRcv _ -> pure (M.empty, False)
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     let ci = mkChatItem_ cd ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
-    saveMentions db cd ci mentions'
-
-saveMentions :: DB.Connection -> ChatDirection c d -> ChatItem c d -> Map MemberName MentionedMember -> IO (ChatItem c d)
-saveMentions db cd ci mentions = case cd of
-  CDGroupRcv {} | not (null mentions) -> createGroupCIMentions db ci mentions
-  _ -> pure ci
+    case cd of
+      CDGroupRcv g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
+      _ -> pure ci
 
 -- TODO [mentions] optimize by avoiding unnecessary parsing
 mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
