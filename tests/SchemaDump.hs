@@ -129,9 +129,7 @@ skipComparisonForDownMigrations =
     -- sequence table moves down to the end of the file
     "20241023_chat_item_autoincrement_id",
     -- indexes move down to the end of the file
-    "20241125_indexes",
-    -- on down migration field moves down to the end of table
-    "20250129_delete_unused_contacts"
+    "20241125_indexes"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
