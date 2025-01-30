@@ -1933,6 +1933,17 @@ data class GroupMember (
       name
   }
 
+  val localAliasWithDisplay: String
+    get() {
+      val p = memberProfile
+      val name = if (p.localAlias.isNotEmpty()) {
+        "${p.localAlias} (${p.displayName})"
+      } else {
+        p.displayName
+      }
+      return pastMember(name)
+    }
+
   val memberActive: Boolean get() = when (this.memberStatus) {
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false

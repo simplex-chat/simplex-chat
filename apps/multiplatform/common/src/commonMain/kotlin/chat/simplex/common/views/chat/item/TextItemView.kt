@@ -153,7 +153,12 @@ fun MarkdownText (
           } else if (ft.format is Format.Mention) {
             val mention = mentions?.get(ft.text.replace("$QUOTE", "").removePrefix("$MENTION_START"))
             if (mention?.memberRef != null) {
-              val name = mention.memberRef.localAlias.takeIf { !it.isNullOrEmpty() } ?: mention.memberRef.displayName
+              val displayName = mention.memberRef.displayName
+              val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
+                displayName
+              } else {
+                "${mention.memberRef.localAlias} ($displayName)"
+              }
               val mentionStyle = if (mention.memberId == groupMembershipId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
 
               withStyle(mentionStyle) { append("@$name") }

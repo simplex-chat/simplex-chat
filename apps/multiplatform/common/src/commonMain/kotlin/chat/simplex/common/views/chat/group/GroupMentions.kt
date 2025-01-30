@@ -200,6 +200,7 @@ fun GroupMentions(
           MemberRow(
             member,
             infoPage = false,
+            localAliasWithDisplay = true
           )
         }
       }
