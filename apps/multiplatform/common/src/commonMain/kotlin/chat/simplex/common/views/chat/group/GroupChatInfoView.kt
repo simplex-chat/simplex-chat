@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -46,6 +45,8 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
+val MEMBER_ROW_AVATAR_SIZE = 42.dp
+val MEMBER_ROW_VERTICAL_PADDING = 8.dp
 
 @Composable
 fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, scrollToItemId: MutableState<Long?>, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
@@ -629,11 +630,11 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.weight(1f).padding(top = 8.dp, end = DEFAULT_PADDING, bottom = 8.dp),
+      Modifier.weight(1f).padding(top = MEMBER_ROW_VERTICAL_PADDING, end = DEFAULT_PADDING, bottom = MEMBER_ROW_VERTICAL_PADDING),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      MemberProfileImage(size = 42.dp, member)
+      MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {

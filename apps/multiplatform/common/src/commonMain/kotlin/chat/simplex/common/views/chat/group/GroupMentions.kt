@@ -19,15 +19,15 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.common.views.helpers.mentionPickerAnimSpec
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 const val MENTION_START = '@'
 const val QUOTE = '\''
-private val MAX_PICKER_HEIGHT = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f
+private val PICKER_ROW_SIZE = MEMBER_ROW_AVATAR_SIZE + (MEMBER_ROW_VERTICAL_PADDING * 2f)
+private val MAX_PICKER_HEIGHT = (PICKER_ROW_SIZE * 4) + (MEMBER_ROW_AVATAR_SIZE + MEMBER_ROW_VERTICAL_PADDING - 4.dp)
 
 private data class MentionRange(val start: Int, var name: String)
 private data class MentionsState(
