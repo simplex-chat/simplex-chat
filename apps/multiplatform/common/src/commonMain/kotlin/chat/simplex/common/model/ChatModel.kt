@@ -1939,7 +1939,7 @@ data class GroupMember (
       val name = if (p.localAlias.isNotEmpty()) {
         "${p.localAlias} (${p.displayName})"
       } else {
-        p.displayName
+        p.chatViewName
       }
       return pastMember(name)
     }
