@@ -48,7 +48,7 @@ expect fun LazyColumnWithScrollBarNoAppBar(
   maxHeight: State<Dp>? = null,
   containerAlignment: Alignment = Alignment.TopStart,
   content: LazyListScope.() -> Unit
-  )
+)
 
 @Composable
 expect fun ColumnWithScrollBar(

@@ -203,7 +203,11 @@ fun ChatPreviewView(
             cInfo is ChatInfo.Group && !ci.chatDir.sent -> ci.memberDisplayName
             else -> null
           },
-          mentions = ci.markdownMentions(chat.chatInfo),
+          mentions = ci.mentions,
+          groupMembershipId = when {
+            cInfo is ChatInfo.Group -> cInfo.groupInfo.membership.memberId
+            else -> null
+          },
           toggleSecrets = false,
           linkMode = linkMode,
           senderBold = true,

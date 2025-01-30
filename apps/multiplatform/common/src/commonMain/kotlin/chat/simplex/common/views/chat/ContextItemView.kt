@@ -64,7 +64,11 @@ fun ContextItemView(
       inlineContent = inlineContent,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
-      mentions = contextItem.markdownMentions(chatInfo)
+      mentions = contextItem.mentions,
+      groupMembershipId = when {
+        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+        else -> null
+      }
     )
   }
 

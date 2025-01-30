@@ -60,7 +60,6 @@ fun FramedItemView(
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null,
       showTimestamp = showTimestamp,
-      mentions = qi.markdownMentions(chatInfo)
     )
   }
 
@@ -358,7 +357,11 @@ fun CIMarkdownText(
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
-      meta = ci.meta, chatTTL = chatTTL, mentions = ci.markdownMentions(chatInfo), linkMode = linkMode,
+      meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+      mentions = ci.mentions, groupMembershipId = when {
+        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+        else -> null
+      },
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, showViaProxy = showViaProxy, showTimestamp = showTimestamp, prefix = prefix
     )
   }

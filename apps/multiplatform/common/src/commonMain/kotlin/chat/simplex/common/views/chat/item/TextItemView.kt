@@ -13,7 +13,6 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
@@ -24,7 +23,6 @@ import chat.simplex.common.views.chat.group.MENTION_START
 import chat.simplex.common.views.chat.group.QUOTE
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
-import java.awt.*
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
@@ -55,8 +53,6 @@ private fun typingIndicator(recent: Boolean, typingIdx: Int): AnnotatedString = 
 private fun typing(w: FontWeight = FontWeight.Light): AnnotatedString =
   AnnotatedString(".", SpanStyle(fontWeight = w))
 
-class MarkdownMentions(val mentions: Map<String, MentionedMember>, val selfMemberId: String)
-
 @Composable
 fun MarkdownText (
   text: CharSequence,
@@ -64,7 +60,8 @@ fun MarkdownText (
   sender: String? = null,
   meta: CIMeta? = null,
   chatTTL: Int? = null,
-  mentions: MarkdownMentions? = null,
+  mentions: Map<String, CIMention>? = null,
+  groupMembershipId: String? = null,
   toggleSecrets: Boolean,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
@@ -154,10 +151,10 @@ fun MarkdownText (
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
             }
           } else if (ft.format is Format.Mention) {
-            val mention = mentions?.mentions?.get(ft.text.replace("$QUOTE", "").removePrefix("$MENTION_START"))
+            val mention = mentions?.get(ft.text.replace("$QUOTE", "").removePrefix("$MENTION_START"))
             if (mention?.memberRef != null) {
               val name = mention.memberRef.localAlias.takeIf { !it.isNullOrEmpty() } ?: mention.memberRef.displayName
-              val mentionStyle = if (mention.memberId == mentions.selfMemberId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
+              val mentionStyle = if (mention.memberId == groupMembershipId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
 
               withStyle(mentionStyle) { append("@$name") }
             } else {

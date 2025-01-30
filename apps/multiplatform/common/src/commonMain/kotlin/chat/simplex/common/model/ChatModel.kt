@@ -13,7 +13,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.item.MarkdownMentions
 import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -1804,9 +1803,11 @@ data class GroupInfo (
     get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
 
   fun nextNotificationMode(from: MsgFilter): ChatNtfs {
-    val ntfModes = listOf(All, Mentions, None)
-    val i = ntfModes.indexOf(from)
-    val nextNtfMode = ntfModes[(i + 1) % ntfModes.size]
+    val nextNtfMode = when (from) {
+      All -> Mentions
+      Mentions -> None
+      None -> All
+    }
     return ChatNtfs(nextNtfMode, notificationModeText(nextNtfMode), notificationModeIcon(nextNtfMode, false), notificationModeIcon(nextNtfMode, true))
   }
 
@@ -2322,7 +2323,7 @@ data class MemberReaction(
 )
 
 @Serializable
-data class MentionedMemberInfo(
+data class CIMentionMember(
   val groupMemberId: Long,
   val displayName: String,
   val localAlias: String?,
@@ -2330,9 +2331,9 @@ data class MentionedMemberInfo(
 )
 
 @Serializable
-data class MentionedMember(
+data class CIMention(
   val memberId: String,
-  val memberRef: MentionedMemberInfo?
+  val memberRef: CIMentionMember?
 )
 
 @Serializable
@@ -2349,7 +2350,7 @@ data class ChatItem (
   val meta: CIMeta,
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
-  val mentions: Map<String, MentionedMember>? = null,
+  val mentions: Map<String, CIMention>? = null,
   val quotedItem: CIQuote? = null,
   val reactions: List<CIReactionCount>,
   val file: CIFile? = null
@@ -2537,26 +2538,6 @@ data class ChatItem (
     }
 
   fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
-
-  fun markdownMentions(chatInfo: ChatInfo): MarkdownMentions? = when (chatInfo) {
-    is ChatInfo.Group -> {
-      val m = mentions?.toMutableMap() ?: mutableMapOf()
-      val gInfo = chatInfo.groupInfo
-      val memberId = gInfo.membership.memberId
-
-      m[gInfo.membership.displayName] = MentionedMember(
-        memberId,
-        MentionedMemberInfo(
-          groupMemberId = gInfo.membership.groupMemberId,
-          displayName = gInfo.membership.displayName,
-          localAlias = gInfo.membership.localAlias,
-          memberRole = gInfo.membership.memberRole
-        )
-      )
-      MarkdownMentions(m, memberId)
-    }
-    else -> null
-  }
 
   companion object {
     fun getSampleData(
@@ -3338,27 +3319,6 @@ class CIQuote (
     null -> null
   }
 
-  fun markdownMentions(chatInfo: ChatInfo): MarkdownMentions? = when (chatInfo) {
-    is ChatInfo.Group -> {
-      val gInfo = chatInfo.groupInfo
-      val memberId = gInfo.membership.memberId
-
-      MarkdownMentions(
-        mutableMapOf(gInfo.membership.displayName to MentionedMember(
-          memberId,
-          MentionedMemberInfo(
-            groupMemberId = gInfo.membership.groupMemberId,
-            displayName = gInfo.membership.displayName,
-            localAlias = gInfo.membership.localAlias,
-            memberRole = gInfo.membership.memberRole
-          )
-        )),
-        memberId
-      )
-    }
-    else -> null
-  }
-
   companion object {
     fun getSample(itemId: Long?, sentAt: Instant, text: String, chatDir: CIDirection?): CIQuote =
       CIQuote(chatDir = chatDir, itemId = itemId, sentAt = sentAt, content = MsgContent.MCText(text))
@@ -3975,7 +3935,7 @@ sealed class Format {
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is SimplexLink -> linkStyle
-    is Mention -> SpanStyle(fontWeight = FontWeight.SemiBold)
+    is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
     is Phone -> linkStyle
   }
