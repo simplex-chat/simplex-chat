@@ -878,12 +878,16 @@ processChatCommand' vr = \case
                   | otherwise = displayName
         CTGroup -> withGroupLock "forwardChatItem, from group" fromChatId $ do
           (gInfo, items) <- getCommandGroupChatItems user fromChatId itemIds
-          catMaybes <$> mapM (\ci -> ciComposeMsgReq gInfo ci <$$> prepareMsgReq_ ci) items
+          catMaybes <$> mapM (\ci -> ciComposeMsgReq gInfo ci <$$> prepareMsgReq ci) items
           where
-            ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile, Map MemberName CIMention) -> ComposedMessageReq
-            ciComposeMsgReq gInfo (CChatItem md ci) (mc', file, ciMentions) = do
+            ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
+            ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText}) (mc, file) = do
               let itemId = chatItemId' ci
                   ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId))
+                  -- updates text to reflect current mentioned member names,
+                  -- only includes mentions when forwarding to the same group.
+                  (mc', _, mentions') = updatedMentionNames mc formattedText mentions
+                  ciMentions = if toChat == fromChat then mentions' else M.empty
                in (ComposedMessage file Nothing mc' M.empty, ciff, msgContentTexts mc', ciMentions)
               where
                 forwardName :: GroupInfo -> ContactName
@@ -900,22 +904,20 @@ processChatCommand' vr = \case
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
           prepareMsgReq :: CChatItem c -> CM (Maybe (MsgContent, Maybe CryptoFile))
-          prepareMsgReq cci = (\(mc, f, _) -> (mc, f)) <$$> prepareMsgReq_ cci
-          prepareMsgReq_ :: CChatItem c -> CM (Maybe (MsgContent, Maybe CryptoFile, Map MemberName CIMention))
-          prepareMsgReq_ (CChatItem _ ci) = forwardMsgContent ci $>>= forwardContent ci
+          prepareMsgReq (CChatItem _ ci) = forwardMsgContent ci $>>= forwardContent ci
           forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
           forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
             Nothing -> ciff
             Just CIFFUnknown -> ciff
             Just prevCIFF -> Just prevCIFF
-          forwardContent :: ChatItem c d -> MsgContent -> CM (Maybe (MsgContent, Maybe CryptoFile, Map MemberName CIMention))
-          forwardContent ChatItem {file, mentions, formattedText} originalMC = case file of
-            Nothing -> pure $ Just (mc, Nothing, ciMentions)
+          forwardContent :: ChatItem c d -> MsgContent -> CM (Maybe (MsgContent, Maybe CryptoFile))
+          forwardContent ChatItem {file, mentions, formattedText} mc = case file of
+            Nothing -> pure $ Just (mc, Nothing)
             Just CIFile {fileName, fileStatus, fileSource = Just fromCF@CryptoFile {filePath}}
               | ciFileLoaded fileStatus ->
                   chatReadVar filesFolder >>= \case
                     Nothing ->
-                      ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF, ciMentions)) (pure contentWithoutFile)
+                      ifM (doesFileExist filePath) (pure $ Just (mc, Just fromCF)) (pure contentWithoutFile)
                     Just filesFolder -> do
                       let fsFromPath = filesFolder </> filePath
                       ifM
@@ -929,22 +931,15 @@ processChatCommand' vr = \case
                             let toCF = CryptoFile fsNewPath cfArgs
                             -- to keep forwarded file in case original is deleted
                             liftIOEither $ runExceptT $ withExceptT (ChatError . CEInternalError . show) $ copyCryptoFile (fromCF {filePath = fsFromPath} :: CryptoFile) toCF
-                            pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile), ciMentions)
+                            pure $ Just (mc, Just (toCF {filePath = takeFileName fsNewPath} :: CryptoFile))
                         )
                         (pure contentWithoutFile)
             _ -> pure contentWithoutFile
             where
-              (mc, ciMentions) = case fromCType of              
-                CTGroup ->
-                  -- updates text to reflect current mentioned member names,
-                  -- only includes mentions when forwarding to the same group.
-                  let (mc', _, mentions') = updatedMentionNames originalMC formattedText mentions
-                   in (mc', if toChat == fromChat then mentions' else M.empty)
-                _ -> (originalMC, M.empty)
               contentWithoutFile = case mc of
-                MCImage {} -> Just (mc, Nothing, ciMentions)
-                MCLink {} -> Just (mc, Nothing, ciMentions)
-                _ | contentText /= "" -> Just (MCText contentText, Nothing, ciMentions)
+                MCImage {} -> Just (mc, Nothing)
+                MCLink {} -> Just (mc, Nothing)
+                _ | contentText /= "" -> Just (MCText contentText, Nothing)
                 _ -> Nothing
               contentText = msgContentText mc
           copyCryptoFile :: CryptoFile -> CryptoFile -> ExceptT CF.FTCryptoError IO ()
