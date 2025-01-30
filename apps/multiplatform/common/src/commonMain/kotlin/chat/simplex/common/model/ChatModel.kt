@@ -1933,13 +1933,15 @@ data class GroupMember (
       name
   }
 
-  val localAliasWithDisplay: String
+  val localAliasAndFullName: String
     get() {
       val p = memberProfile
+      val fullName = p.displayName + (if (p.fullName == "" || p.fullName == p.displayName) "" else " / ${p.fullName}")
+
       val name = if (p.localAlias.isNotEmpty()) {
-        "${p.localAlias} (${p.displayName})"
+        "${p.localAlias} ($fullName)"
       } else {
-        p.chatViewName
+        fullName
       }
       return pastMember(name)
     }

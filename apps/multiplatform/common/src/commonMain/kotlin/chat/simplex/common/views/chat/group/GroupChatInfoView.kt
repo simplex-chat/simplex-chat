@@ -601,7 +601,7 @@ private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialThem
 }
 
 @Composable
-fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, localAliasWithDisplay: Boolean = false) {
+fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false) {
   @Composable
   fun MemberInfo() {
     if (member.blocked) {
@@ -642,7 +642,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
             MemberVerifiedShield()
           }
           Text(
-            if (localAliasWithDisplay) member.localAliasWithDisplay else member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }
