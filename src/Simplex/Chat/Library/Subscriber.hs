@@ -894,16 +894,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                          in Just (fInv, fileDescrText)
                     | otherwise = Nothing
                   processContentItem :: GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [ChatMsgEvent 'Json]
-                  processContentItem sender ChatItem {meta, quotedItem} mc fInvDescr_ =
+                  processContentItem sender ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
                     if isNothing fInvDescr_ && not (msgContentHasText mc)
                       then pure []
                       else do
                         let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
                             quotedItemId_ = quoteItemId =<< quotedItem
                             fInv_ = fst <$> fInvDescr_
-                        -- TODO [mentions] history?
-                        -- let (_t, ft_) = msgContentTexts mc
-                        (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo mc M.empty quotedItemId_ Nothing fInv_ itemTimed False
+                            (mc', _, mentions') = updatedMentionNames mc formattedText mentions
+                            mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
+                        (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
                         let senderVRange = memberChatVRange' sender
                             xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
                         fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of

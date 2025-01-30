@@ -570,7 +570,12 @@ data AChatPreviewData = forall c. ChatTypeI c => ACPD (SChatType c) (ChatPreview
 type ChatStatsRow = (Int, Int, ChatItemId, BoolInt)
 
 toChatStats :: ChatStatsRow -> ChatStats
-toChatStats (unreadCount, reportsCount, minUnreadItemId, BI unreadChat) = ChatStats {unreadCount, reportsCount, minUnreadItemId, unreadChat}
+toChatStats (unreadCount, reportsCount, minUnreadItemId, BI unreadChat) = ChatStats {unreadCount, unreadMentions = 0, reportsCount, minUnreadItemId, unreadChat}
+
+type GroupStatsRow = (Int, Int, Int, ChatItemId, BoolInt)
+
+toGroupStats :: GroupStatsRow -> ChatStats
+toGroupStats (unreadCount, unreadMentions, reportsCount, minUnreadItemId, BI unreadChat) = ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat}
 
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
@@ -674,9 +679,9 @@ findGroupChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQ
 findGroupChatPreviews_ db User {userId} pagination clq =
   map toPreview <$> getPreviews
   where
-    toPreview :: (GroupId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
+    toPreview :: (GroupId, UTCTime, Maybe ChatItemId) :. GroupStatsRow -> AChatPreviewData
     toPreview ((groupId, ts, lastItemId_) :. statsRow) =
-      ACPD SCTGroup $ GroupChatPD ts groupId lastItemId_ (toChatStats statsRow)
+      ACPD SCTGroup $ GroupChatPD ts groupId lastItemId_ (toGroupStats statsRow)
     baseQuery =
       [sql|
         SELECT
@@ -690,12 +695,13 @@ findGroupChatPreviews_ db User {userId} pagination clq =
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -761,7 +767,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
                    |]
             p = baseParams :. (userId, search, search, search, search)
         queryWithPagination q p
-    queryWithPagination :: ToRow p => Query -> p -> IO [(GroupId, UTCTime, Maybe ChatItemId) :. ChatStatsRow]
+    queryWithPagination :: ToRow p => Query -> p -> IO [(GroupId, UTCTime, Maybe ChatItemId) :. GroupStatsRow]
     queryWithPagination query params = case pagination of
       PTLast count -> DB.query db (query <> " ORDER BY g.chat_ts DESC LIMIT ?") (params :. Only count)
       PTAfter ts count -> DB.query db (query <> " AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?") (params :. (ts, count))
@@ -1353,19 +1359,19 @@ getGroupChatInitial_ db user g contentFilter count = do
       stats <- liftIO $ getStats minUnreadItemId =<< getGroupUnreadCount_ db user g Nothing
       getGroupChatAround' db user g contentFilter minUnreadItemId count "" stats
     Nothing -> liftIO $ do
-      stats <- getStats 0 0
+      stats <- getStats 0 (0, 0)
       (,Just $ NavigationInfo 0 0) <$> getGroupChatLast_ db user g contentFilter count "" stats
   where
-    getStats minUnreadItemId unreadCount = do
+    getStats minUnreadItemId (unreadCount, unreadMentions) = do
       reportsCount <- getGroupReportsCount_ db user g False
-      pure ChatStats {unreadCount, reportsCount, minUnreadItemId, unreadChat = False}
+      pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
 
 getGroupStats_ :: DB.Connection -> User -> GroupInfo -> IO ChatStats
 getGroupStats_ db user g = do
   minUnreadItemId <- fromMaybe 0 <$> getGroupMinUnreadId_ db user g Nothing
-  unreadCount <- getGroupUnreadCount_ db user g Nothing
+  (unreadCount, unreadMentions) <- getGroupUnreadCount_ db user g Nothing
   reportsCount <- getGroupReportsCount_ db user g False
-  pure ChatStats {unreadCount, reportsCount, minUnreadItemId, unreadChat = False}
+  pure ChatStats {unreadCount, unreadMentions, reportsCount, minUnreadItemId, unreadChat = False}
 
 getGroupMinUnreadId_ :: DB.Connection -> User -> GroupInfo -> Maybe MsgContentTag -> IO (Maybe ChatItemId)
 getGroupMinUnreadId_ db user g contentFilter =
@@ -1375,11 +1381,11 @@ getGroupMinUnreadId_ db user g contentFilter =
     baseQuery = "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? "
     orderLimit = " ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1"
 
-getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe MsgContentTag -> IO Int
+getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe MsgContentTag -> IO (Int, Int)
 getGroupUnreadCount_ db user g contentFilter =
-  fromOnly . head <$> queryUnreadGroupItems db user g contentFilter baseQuery ""
+  head <$> queryUnreadGroupItems db user g contentFilter baseQuery ""
   where
-    baseQuery = "SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? "
+    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? "
 
 getGroupReportsCount_ :: DB.Connection -> User -> GroupInfo -> Bool -> IO Int
 getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
@@ -3111,10 +3117,9 @@ getGroupSndStatusCounts db itemId =
     (Only itemId)
 
 getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
-getGroupHistoryItems db user@User {userId} GroupInfo {groupId} m count = do
+getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
   ciIds <- getLastItemIds_
-  -- use getGroupCIWithReactions to read reactions data
-  reverse <$> mapM (runExceptT . getGroupChatItem db user groupId) ciIds
+  reverse <$> mapM (runExceptT . getGroupCIWithReactions db user g) ciIds
   where
     getLastItemIds_ :: IO [ChatItemId]
     getLastItemIds_ =
