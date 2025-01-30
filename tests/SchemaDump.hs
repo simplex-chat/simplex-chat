@@ -158,8 +158,8 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
       agentQueryStats
       (createAgentStore (DBOpts testAgentDB "" False True TQOff) MCError)
       (const $ pure ())
-  chatSavedPlans' `shouldBe` chatSavedPlans
-  agentSavedPlans' `shouldBe` agentSavedPlans
+  chatSavedPlans' == chatSavedPlans `shouldBe` True
+  agentSavedPlans' == agentSavedPlans `shouldBe` True
   removeFile testDB
   removeFile testAgentDB
   where

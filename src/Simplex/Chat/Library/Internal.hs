@@ -29,6 +29,8 @@ import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (isDigit)
+import Data.Containers.ListUtils (nubOrd)
 import Data.Either (partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Foldable (foldr')
@@ -101,6 +103,12 @@ import UnliftIO.STM
 
 maxMsgReactions :: Int
 maxMsgReactions = 3
+
+maxRcvMentions :: Int
+maxRcvMentions = 5
+
+maxSndMentions :: Int
+maxSndMentions = 3
 
 withChatLock :: String -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
@@ -181,25 +189,108 @@ toggleNtf user m ntfOn =
     forM_ (memberConnId m) $ \connId ->
       withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
 
-prepareGroupMsg :: User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> CM (MsgContainer, Maybe (CIQuote 'CTGroup))
-prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
-  (Nothing, Nothing) -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-  (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
+prepareGroupMsg db user g@GroupInfo {membership} mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
+  (Nothing, Nothing) ->
+    let mc' = MCSimple $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live)
+     in pure (XMsgNew mc', Nothing)
+  (Nothing, Just _) ->
+    let mc' = MCForward $ ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live)
+     in pure (XMsgNew mc', Nothing)
   (Just quotedItemId, Nothing) -> do
-    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
-      withStore $ \db -> getGroupChatItem db user groupId quotedItemId
+    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, mentions = quoteMentions, file} <-
+      getGroupCIWithReactions db user g quotedItemId
     (origQmc, qd, sent, GroupMember {memberId}) <- quoteData qci membership
     let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
         qmc = quoteContent mc origQmc file
-        quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
-  (Just _, Just _) -> throwChatError CEInvalidQuote
+        (qmc', ft', _) = updatedMentionNames qmc formattedText quoteMentions
+        quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc', formattedText = ft'}
+        mc' = MCQuote QuotedMsg {msgRef, content = qmc'} (ExtMsgContent mc mentions fInv_ (ttl' <$> timed_) (justTrue live))
+    pure (XMsgNew mc', Just quotedItem)
+  (Just _, Just _) -> throwError SEInvalidQuote
   where
-    quoteData :: ChatItem c d -> GroupMember -> CM (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
-    quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwChatError CEInvalidQuote
+    quoteData :: ChatItem c d -> GroupMember -> ExceptT StoreError IO (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
+    quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwError SEInvalidQuote
     quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
     quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
-    quoteData _ _ = throwChatError CEInvalidQuote
+    quoteData _ _ = throwError SEInvalidQuote
+
+updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
+updatedMentionNames mc ft_ mentions = case ft_ of
+  Just ft | not (null ft) && not (null mentions) && not (all sameName $ M.assocs mentions) ->
+    let (mentions', ft') = mapAccumL update M.empty ft
+        text = T.concat $ map markdownText ft'
+     in (mc {text} :: MsgContent, Just ft', mentions')
+  _ -> (mc, ft_, mentions)
+  where
+    sameName (name, CIMention {memberRef}) = case memberRef of
+      Just CIMentionMember {displayName} -> case T.stripPrefix displayName name of
+        Just rest
+          | T.null rest -> True
+          | otherwise -> case T.uncons rest of
+              Just ('_', suffix) -> T.all isDigit suffix
+              _ -> False
+        Nothing -> False
+      Nothing -> True
+    update mentions' ft@(FormattedText f _) = case f of
+      Just (Mention name) -> case M.lookup name mentions of
+        Just mm@CIMention {memberRef} ->
+          let name' = uniqueMentionName 0 $ case memberRef of
+                Just CIMentionMember {displayName} -> displayName
+                Nothing -> name
+           in (M.insert name' mm mentions', FormattedText (Just $ Mention name') ('@' `T.cons` viewName name'))
+        Nothing -> (mentions', ft)
+      _ -> (mentions', ft)
+      where
+        uniqueMentionName :: Int -> Text -> Text
+        uniqueMentionName pfx name =
+          let prefixed = if pfx == 0 then name else (name `T.snoc` '_') <> tshow pfx
+           in if prefixed `M.member` mentions' then uniqueMentionName (pfx + 1) name else prefixed
+
+getCIMentions :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName GroupMemberId -> ExceptT StoreError IO (Map MemberName CIMention)
+getCIMentions db user GroupInfo {groupId} ft_ mentions = case ft_ of
+  Just ft | not (null ft) && not (null mentions) -> do
+    let msgMentions = S.fromList $ mentionedNames ft
+        n = M.size mentions
+    -- prevent "invisible" and repeated-with-different-name mentions (when the same member is mentioned via another name)
+    unless (n <= maxSndMentions && all (`S.member` msgMentions) (M.keys mentions) && S.size (S.fromList $ M.elems mentions) == n) $
+      throwError SEInvalidMention
+    mapM (getMentionedGroupMember db user groupId) mentions
+  _ -> pure M.empty
+
+getRcvCIMentions :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName MsgMention -> IO (Map MemberName CIMention)
+getRcvCIMentions db user GroupInfo {groupId} ft_ mentions = case ft_ of
+  Just ft | not (null ft) && not (null mentions) ->
+    let mentions' = uniqueMsgMentions maxRcvMentions mentions $ mentionedNames ft
+     in mapM (getMentionedMemberByMemberId db user groupId) mentions'
+  _ -> pure M.empty
+
+-- prevent "invisible" and repeated-with-different-name mentions
+uniqueMsgMentions :: Int -> Map MemberName MsgMention -> [ContactName] -> Map MemberName MsgMention
+uniqueMsgMentions maxMentions mentions = go M.empty S.empty 0
+  where
+    go acc _ _ [] = acc
+    go acc seen n (name : rest)
+      | n >= maxMentions = acc
+      | otherwise = case M.lookup name mentions of
+          Just mm@MsgMention {memberId} | S.notMember memberId seen -> 
+            go (M.insert name mm acc) (S.insert memberId seen) (n + 1) rest
+          _ -> go acc seen n rest
+
+getMessageMentions :: DB.Connection -> User -> GroupId -> Text -> IO (Map MemberName GroupMemberId)
+getMessageMentions db user gId msg = case parseMaybeMarkdownList msg of
+  Just ft | not (null ft) -> M.fromList . catMaybes <$> mapM get (nubOrd $ mentionedNames ft)
+  _ -> pure M.empty
+  where
+    get name =
+      fmap (name,) . eitherToMaybe
+        <$> runExceptT (getGroupMemberIdByName db user gId name)
+
+msgContentTexts :: MsgContent -> (Text, Maybe MarkdownList)
+msgContentTexts mc = let t = msgContentText mc in (t, parseMaybeMarkdownList t)
+
+ciContentTexts :: CIContent d -> (Text, Maybe MarkdownList)
+ciContentTexts content = let t = ciContentToText content in (t, parseMaybeMarkdownList t)
 
 quoteContent :: forall d. MsgContent -> MsgContent -> Maybe (CIFile d) -> MsgContent
 quoteContent mc qmc ciFile_
@@ -228,17 +319,17 @@ quoteContent mc qmc ciFile_
     qFileName = maybe qText (T.pack . getFileName) ciFile_
     qTextOrFile = if T.null qText then qFileName else qText
 
-prohibitedGroupContent :: GroupInfo -> GroupMember -> MsgContent -> Maybe f -> Maybe GroupFeature
-prohibitedGroupContent gInfo m mc file_
+prohibitedGroupContent :: GroupInfo -> GroupMember -> MsgContent -> Maybe MarkdownList -> Maybe f -> Maybe GroupFeature
+prohibitedGroupContent gInfo m mc ft file_
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
   | not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
-  | prohibitedSimplexLinks gInfo m mc = Just GFSimplexLinks
+  | prohibitedSimplexLinks gInfo m ft = Just GFSimplexLinks
   | otherwise = Nothing
 
-prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Bool
-prohibitedSimplexLinks gInfo m mc =
+prohibitedSimplexLinks :: GroupInfo -> GroupMember -> Maybe MarkdownList -> Bool
+prohibitedSimplexLinks gInfo m ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
-    && maybe False (any ftIsSimplexLink) (parseMaybeMarkdownList $ msgContentText mc)
+    && maybe False (any ftIsSimplexLink) ft
   where
     ftIsSimplexLink :: FormattedText -> Bool
     ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
@@ -862,9 +953,6 @@ startUpdatedTimedItemThread user chatRef ci ci' =
 
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
-
-sameMemberId :: MemberId -> GroupMember -> Bool
-sameMemberId memId GroupMember {memberId} = memId == memberId
 
 createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
@@ -1549,15 +1637,19 @@ saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember@GroupMember {me
 saveSndChatItem :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> CM (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing Nothing False
 
+-- TODO [mentions] optimize by avoiding unnecesary parsing of control messages
 saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDSnd)
-saveSndChatItem' user cd msg content ciFile quotedItem itemForwarded itemTimed live =
-  saveSndChatItems user cd [Right NewSndChatItemData {msg, content, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
+saveSndChatItem' user cd msg content ciFile quotedItem itemForwarded itemTimed live = do
+  let itemTexts = ciContentTexts content
+  saveSndChatItems user cd [Right NewSndChatItemData {msg, content, itemTexts, itemMentions = M.empty, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
     [Right ci] -> pure ci
     _ -> throwChatError $ CEInternalError "saveSndChatItem': expected 1 item"
 
 data NewSndChatItemData c = NewSndChatItemData
   { msg :: SndMessage,
     content :: CIContent 'MDSnd,
+    itemTexts :: (Text, Maybe MarkdownList),
+    itemMentions :: Map MemberName CIMention,
     ciFile :: Maybe (CIFile 'MDSnd),
     quotedItem :: Maybe (CIQuote c),
     itemForwarded :: Maybe CIForwardedFrom
@@ -1579,31 +1671,56 @@ saveSndChatItems user cd itemsData itemTimed live = do
   lift $ withStoreBatch (\db -> map (bindRight $ createItem db createdAt) itemsData)
   where
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
-    createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId}, content, ciFile, quotedItem, itemForwarded} = do
+    createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId}, content, itemTexts, itemMentions, ciFile, quotedItem, itemForwarded} = do
       ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ Right $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live createdAt Nothing createdAt
+      let ci = mkChatItem_ cd ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False createdAt Nothing createdAt
+      Right <$> case cd of
+        CDGroupSnd g | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
+        _ -> pure ci
 
-saveRcvChatItem :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv)
+saveRcvChatItemNoParse :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv)
+saveRcvChatItemNoParse user cd msg brokerTs = saveRcvChatItem user cd msg brokerTs . ciContentNoParse
+
+saveRcvChatItem :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> (CIContent 'MDRcv, (Text, Maybe MarkdownList)) -> CM (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
-  saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content Nothing Nothing False
+  saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content Nothing Nothing False M.empty
 
-saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> UTCTime -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDRcv)
-saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerTs content ciFile itemTimed live = do
+ciContentNoParse :: CIContent 'MDRcv -> (CIContent 'MDRcv, (Text, Maybe MarkdownList))
+ciContentNoParse content = (content, (ciContentToText content, Nothing))
+
+saveRcvChatItem' :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> UTCTime -> (CIContent 'MDRcv, (Text, Maybe MarkdownList)) -> Maybe (CIFile 'MDRcv) -> Maybe CITimed -> Bool -> Map MemberName MsgMention -> CM (ChatItem c 'MDRcv)
+saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} sharedMsgId_ brokerTs (content, (t, ft_)) ciFile itemTimed live mentions = do
   createdAt <- liftIO getCurrentTime
-  (ciId, quotedItem, itemForwarded) <- withStore' $ \db -> do
+  withStore' $ \db -> do
     when (ciRequiresAttention content || contactChatDeleted cd) $ updateChatTs db user cd createdAt
-    r@(ciId, _, _) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
+    (mentions' :: Map MemberName CIMention, userMention) <- case cd of
+      CDGroupRcv g@GroupInfo {membership} _ -> do
+        mentions' <- getRcvCIMentions db user g ft_ mentions
+        let userReply = case cmToQuotedMsg chatMsgEvent of
+              Just QuotedMsg {msgRef = MsgRef {memberId = Just mId}} -> sameMemberId mId membership
+              _ -> False
+            userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
+         in pure (mentions', userMention')
+      CDDirectRcv _ -> pure (M.empty, False)
+    (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-    pure r
-  pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live brokerTs forwardedByMember createdAt
+    let ci = mkChatItem_ cd ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
+    case cd of
+      CDGroupRcv g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
+      _ -> pure ci
 
-mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
-mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live itemTs forwardedByMember currentTs =
-  let itemText = ciContentToText content
-      itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
-   in ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
+-- TODO [mentions] optimize by avoiding unnecessary parsing
+mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
+mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
+  let ts = ciContentTexts content
+   in mkChatItem_ cd ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs
+
+mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
+mkChatItem_ cd ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember currentTs =
+  let itemStatus = ciCreateStatus content
+      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention currentTs itemTs forwardedByMember currentTs currentTs
+   in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, formattedText, quotedItem, reactions = [], file}
 
 createAgentConnectionAsync :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> CM (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
@@ -1815,26 +1932,26 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
     createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
     createACIs db itemTs createdAt cd = map $ \content -> do
       ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
-      let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+      let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 createLocalChatItems ::
   User ->
   ChatDirection 'CTLocal 'MDSnd ->
-  [(CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom)] ->
+  NonEmpty (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList)) ->
   UTCTime ->
   CM [ChatItem 'CTLocal 'MDSnd]
 createLocalChatItems user cd itemsData createdAt = do
   withStore' $ \db -> updateChatTs db user cd createdAt
-  (errs, items) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (createItem db) itemsData)
+  (errs, items) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (createItem db) $ L.toList itemsData)
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   pure items
   where
-    createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom) -> IO (ChatItem 'CTLocal 'MDSnd)
-    createItem db (content, ciFile, itemForwarded) = do
-      ciId <- createNewChatItem_ db user cd Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False createdAt Nothing createdAt
+    createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList)) -> IO (ChatItem 'CTLocal 'MDSnd)
+    createItem db (content, ciFile, itemForwarded, ts) = do
+      ciId <- createNewChatItem_ db user cd Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False createdAt Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem cd ciId content ciFile Nothing Nothing itemForwarded Nothing False createdAt Nothing createdAt
+      pure $ mkChatItem_ cd ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False createdAt Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =
