@@ -884,10 +884,11 @@ processChatCommand' vr = \case
             ciComposeMsgReq gInfo (CChatItem md ci@ChatItem {mentions, formattedText}) (mc, file) = do
               let itemId = chatItemId' ci
                   ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) (toMsgDirection md) (Just fromChatId) (Just itemId))
-                  -- updates text to reflect current mentioned member names,
-                  -- only includes mentions when forwarding to the same group.
+                  -- updates text to reflect current mentioned member names
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
+                  -- only includes mentions when forwarding to the same group
                   ciMentions = if toChat == fromChat then mentions' else M.empty
+                  -- no need to have mentions in ComposedMessage, they are in ciMentions
                in (ComposedMessage file Nothing mc' M.empty, ciff, msgContentTexts mc', ciMentions)
               where
                 forwardName :: GroupInfo -> ContactName
