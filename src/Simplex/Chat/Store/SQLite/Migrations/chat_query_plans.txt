@@ -1128,11 +1128,6 @@ Query:
 Plan:
 SEARCH i USING INDEX idx_chat_items_group_id (group_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-<<<<<<< HEAD
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
-=======
-USE TEMP B-TREE FOR ORDER BY
->>>>>>> f/delete-unused-contacts
 
 Query: 
           SELECT i.chat_item_id, i.contact_id, i.group_id, i.note_folder_id
@@ -2747,69 +2742,6 @@ SEARCH c USING INDEX idx_connections_updated_at (user_id=?)
 SEARCH uc USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-<<<<<<< HEAD
-        SELECT ch.connection_id, c.conn_req_inv
-        FROM group_members m
-        JOIN contacts ct ON ct.contact_id = m.contact_id
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT MAX(cc.connection_id)
-          FROM connections cc
-          WHERE cc.contact_id = ct.contact_id
-        )
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
-        )
-        WHERE m.user_id = ? AND m.group_member_id = ? AND mh.member_category = ? AND ct.deleted = 0
-      
-Plan:
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH cc USING COVERING INDEX idx_connections_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mh USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-SEARCH ch USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 2
-SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
-
-Query: 
-        SELECT ch.connection_id, g.group_id, m.group_member_id, m.member_id, c.conn_req_inv
-        FROM contacts ct
-        JOIN group_members m ON m.contact_id = ct.contact_id
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT MAX(cc.connection_id)
-          FROM connections cc
-          WHERE cc.group_member_id = m.group_member_id
-        )
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
-        )
-        WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = 0 AND mh.member_category = ?
-      
-Plan:
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH cc USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
-SEARCH mh USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-SEARCH ch USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 2
-SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
-
-Query: 
-=======
->>>>>>> f/delete-unused-contacts
         SELECT chat_item_id
         FROM chat_item_messages
         WHERE message_id IN (
@@ -5436,15 +5368,7 @@ Query: SELECT group_id FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-<<<<<<< HEAD
-Query: SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? AND group_id != ? LIMIT 1
-Plan:
-SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
-
 Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? AND deleted = 0 LIMIT 1
-=======
-Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1
->>>>>>> f/delete-unused-contacts
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
