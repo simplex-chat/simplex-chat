@@ -43,7 +43,7 @@
     <string name="network_session_mode_user_description"><![CDATA[<b>Az összes csevegési profiljához az alkalmazásban</b> külön TCP-kapcsolat (és SOCKS-hitelesítőadat) lesz használva.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják – lehetővé teszi az értesítési szolgáltatás működését.</string>
-    <string name="alert_title_msg_bad_hash">Érvénytelen az üzenet hasító-értéke</string>
+    <string name="alert_title_msg_bad_hash">Érvénytelen az üzenet hasítóértéke</string>
     <string name="color_background">Háttér</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító-kiszolgálók SOCKS-proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének elküldése közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
@@ -122,7 +122,7 @@
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet visszavonása</string>
     <string name="allow_irreversible_message_deletion_only_if">Az üzenetek végleges törlése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
-    <string name="integrity_msg_bad_hash">érvénytelen az üzenet hasító-értéke</string>
+    <string name="integrity_msg_bad_hash">érvénytelen az üzenet hasítóértéke</string>
     <string name="notifications_mode_service">Mindig fut</string>
     <string name="keychain_allows_to_receive_ntfs">Az Android Keystore biztonságosan fogja tárolni a jelmondatot az alkalmazás újraindítása, vagy a jelmondat megváltoztatása után – lehetővé teszi az értesítések fogadását.</string>
     <string name="all_app_data_will_be_cleared">Az összes alkalmazásadat törölve.</string>
@@ -1475,7 +1475,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
-    <string name="alert_text_msg_bad_hash">Az előző üzenet hasító értéke különbözik.</string>
+    <string name="alert_text_msg_bad_hash">Az előző üzenet hasítóértéke különbözik.</string>
     <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi csevegő-profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
