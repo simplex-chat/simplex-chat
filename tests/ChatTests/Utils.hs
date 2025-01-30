@@ -361,6 +361,13 @@ cc <#. line = do
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
+(.<#) :: HasCallStack => TestCC -> String -> Expectation
+cc .<# line = do
+  l <- dropTime <$> getTermLine cc
+  let suffix = line `isSuffixOf` l
+  unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
+  suffix `shouldBe` True
+
 (<##..) :: HasCallStack => TestCC -> [String] -> Expectation
 cc <##.. ls = do
   l <- getTermLine cc

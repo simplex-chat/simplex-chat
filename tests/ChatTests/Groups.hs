@@ -21,14 +21,14 @@ import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Types (VersionRangeChat)
+import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
+import Simplex.Messaging.Version
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -43,10 +43,9 @@ chatGroupTests :: SpecWith TestParams
 chatGroupTests = do
   describe "chat groups" $ do
     describe "add contacts, create group and send/receive messages" testGroupMatrix
+    it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "mark multiple messages as read" testMarkReadGroup
     it "initial chat pagination" testChatPaginationInitial
-    it "v1: add contacts, create group and send/receive messages" testGroup
-    it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "send large message" testGroupLargeMessage
     it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
@@ -68,7 +67,6 @@ chatGroupTests = do
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
-    it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate own message (should process as deletion)" testGroupModerateOwn
@@ -84,32 +82,21 @@ chatGroupTests = do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
+    it "invitees were previously connected as contacts" testGroupLinkInviteesWereConnected
+    it "all members were previously connected as contacts" testGroupLinkAllMembersWereConnected
     it "delete group, re-join via same link" testGroupLinkDeleteGroupRejoin
-    it "sending message to contact created via group link marks it used" testGroupLinkContactUsed
-    it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
-    it "unused host contact is deleted after all groups with it are deleted" testGroupLinkUnusedHostContactDeleted
-    it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
+    it "host incognito" testGroupLinkHostIncognito
+    it "invitee incognito" testGroupLinkInviteeIncognito
+    it "incognito - join/invite" testGroupLinkIncognitoJoinInvite
     it "group link member role" testGroupLinkMemberRole
-    it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
+    it "host profile received" testGroupLinkHostProfileReceived
+    it "existing contact merged" testGroupLinkExistingContactMerged
   describe "group link connection plan" $ do
-    it "group link ok to connect; known group" testPlanGroupLinkOkKnown
-    it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
+    it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
-    it "connecting via group link" testPlanGroupLinkConnecting
+    it "group link without contact - connecting" testPlanGroupLinkConnecting
+    it "group link without contact - connecting (slow handshake)" testPlanGroupLinkConnectingSlow
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
-  describe "group links without contact" $ do
-    it "join via group link without creating contact" testGroupLinkNoContact
-    it "invitees were previously connected as contacts" testGroupLinkNoContactInviteesWereConnected
-    it "all members were previously connected as contacts" testGroupLinkNoContactAllMembersWereConnected
-    it "group link member role" testGroupLinkNoContactMemberRole
-    it "host incognito" testGroupLinkNoContactHostIncognito
-    it "invitee incognito" testGroupLinkNoContactInviteeIncognito
-    it "host profile received" testGroupLinkNoContactHostProfileReceived
-    it "existing contact merged" testGroupLinkNoContactExistingContactMerged
-  describe "group links without contact connection plan" $ do
-    it "group link without contact - known group" testPlanGroupLinkNoContactKnown
-    it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
-    it "group link without contact - connecting (slow handshake)" testPlanGroupLinkNoContactConnectingSlow
 #if !defined(dbPostgres)
   -- TODO [postgres] restore from outdated db backup (same as in agent)
   describe "group message errors" $ do
@@ -123,11 +110,7 @@ chatGroupTests = do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
   describe "direct connections in group are not established based on chat protocol version" $ do
-    describe "3 members group" $ do
-      testNoDirect _0 _0 True
-      testNoDirect _0 _1 True
-      testNoDirect _1 _0 False
-      testNoDirect _1 _1 False
+    it "direct contacts are not created" testNoGroupDirectConns
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
   describe "merge members and contacts" $ do
     it "new member should merge with existing contact" testMergeMemberExistingContact
@@ -186,37 +169,18 @@ chatGroupTests = do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
-  where
-    _0 = supportedChatVRange -- don't create direct connections
-    _1 = groupCreateDirectVRange
-    -- having host configured with older version doesn't have effect in tests
-    -- because host uses current code and sends version in MemberInfo
-    testNoDirect vrMem2 vrMem3 noConns =
-      it
-        ( "host "
-            <> vRangeStr supportedChatVRange
-            <> (", 2nd mem " <> vRangeStr vrMem2)
-            <> (", 3rd mem " <> vRangeStr vrMem3)
-            <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
-        )
-        $ testNoGroupDirectConns supportedChatVRange vrMem2 vrMem3 noConns
-
-testGroup :: HasCallStack => TestParams -> IO ()
-testGroup =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
-    \alice bob cath -> testGroupShared alice bob cath False True
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
-    \alice bob cath -> testGroupShared alice bob cath True True
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> testGroupShared alice bob cath True
 
 testGroupMatrix :: SpecWith TestParams
 testGroupMatrix =
-  versionTestMatrix3 $ \alice bob cath -> testGroupShared alice bob cath False False
+  versionTestMatrix3 $ \alice bob cath -> testGroupShared alice bob cath False
 
-testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> Bool -> IO ()
-testGroupShared alice bob cath checkMessages directConnections = do
+testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> IO ()
+testGroupShared alice bob cath checkMessages = do
   connectUsers alice bob
   connectUsers alice cath
   alice ##> "/g team"
@@ -268,8 +232,6 @@ testGroupShared alice bob cath checkMessages directConnections = do
     (alice <# "#team cath> hey team")
     (bob <# "#team cath> hey team")
   msgItem2 <- lastItemId alice
-  when directConnections $
-    bob <##> cath
   when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
   alice ##> "/gs"
@@ -326,8 +288,6 @@ testGroupShared alice bob cath checkMessages directConnections = do
     (cath </)
   cath ##> "#team hello"
   cath <## "you are no longer a member of the group"
-  when directConnections $
-    bob <##> cath
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
@@ -340,7 +300,7 @@ testGroupShared alice bob cath checkMessages directConnections = do
   alice <# "#team bob> received"
   when checkMessages $ do
     alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "received")]
-    bob @@@ [("@alice", "contact deleted"), ("@cath", "hey"), ("#team", "received")]
+    bob @@@ [("@alice", "contact deleted"), ("#team", "received")]
   -- test clearing chat
   threadDelay 1000000
   alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
@@ -360,9 +320,9 @@ testGroupShared alice bob cath checkMessages directConnections = do
       alice #$> ("/_get chat #1 before=" <> msgItem2 <> " count=100", chat, sndGroupFeatures <> [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
       alice #$> ("/_get chat #1 around=" <> msgItem1 <> " count=2", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
-      bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
+      bob @@@ [("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
-      cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
+      cath @@@ [("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "connected"), (0, "hello"), (0, "hi there"), (1, "hey team")])
       alice #$> ("/_read chat #1", id, "ok")
       bob #$> ("/_read chat #1", id, "ok")
@@ -434,7 +394,7 @@ testGroupLargeMessage =
 
 testNewGroupIncognito :: HasCallStack => TestParams -> IO ()
 testNewGroupIncognito =
-  testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
+  testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
 
@@ -453,22 +413,35 @@ testNewGroupIncognito =
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob_1 (Bob): accepting request to join group #team..."
-      _ <- getTermLine alice
       concurrentlyN_
-        [ do
-            alice <## ("bob_1 (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-            alice <## "use /i bob_1 to print out this incognito profile again"
-            alice <## "bob_1 invited to group #team via your group link"
-            alice <## "#team: bob_1 joined the group",
+        [ alice <## "#team: bob_1 joined the group",
           do
-            bob <## (aliceIncognito <> ": contact is connected")
+            bob <## "#team: joining the group..."
             bob <## "#team: you joined the group"
         ]
 
       alice <##> bob
 
-      alice ?#> "@bob_1 hi, I'm incognito"
-      bob <# (aliceIncognito <> "> hi, I'm incognito")
+      alice ##> "@#team bob_1 hi, I'm incognito"
+      alice
+        <### [ "member #team bob_1 does not have direct connection, creating",
+                "contact for member #team bob_1 is created",
+                "sent invitation to connect directly to member #team bob_1",
+                WithTime "i @bob_1 hi, I'm incognito"
+              ]
+      bob
+        <### [ ConsoleString ("#team " <> aliceIncognito <> " is creating direct contact " <> aliceIncognito <> " with you"),
+                WithTime (aliceIncognito <> "> hi, I'm incognito")
+              ]
+      bob <## (aliceIncognito <> ": you can send messages to contact")
+      _ <- getTermLine alice
+      concurrentlyN_
+        [ do
+            alice <## ("bob_1 (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+            alice <## "use /i bob_1 to print out this incognito profile again",
+          bob <## (aliceIncognito <> ": contact is connected")
+        ]
+
       bob #> ("@" <> aliceIncognito <> " hey, I'm bob")
       alice ?<# "bob_1> hey, I'm bob"
 
@@ -484,7 +457,7 @@ testNewGroupIncognito =
 
 testGroup2 :: HasCallStack => TestParams -> IO ()
 testGroup2 =
-  testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       connectUsers alice bob
       connectUsers alice cath
@@ -535,14 +508,14 @@ testGroup2 =
             dan <## "#club: you joined the group"
             dan
               <### [ "#club: member alice_1 (Alice) is connected",
-                     "contact alice_1 is merged into alice",
+                     "contact and member are merged: alice, #club alice_1",
                      "use @alice <message> to send messages",
                      "#club: member cath (Catherine) is connected"
                    ],
           do
             alice <## "#club: bob added dan_1 (Daniel) to the group (connecting...)"
             alice <## "#club: new member dan_1 is connected"
-            alice <## "contact dan_1 is merged into dan"
+            alice <## "contact and member are merged: dan, #club dan_1"
             alice <## "use @dan <message> to send messages",
           do
             cath <## "#club: bob added dan (Daniel) to the group (connecting...)"
@@ -572,8 +545,6 @@ testGroup2 =
           bob <# "#club dan> how is it going?",
           cath <# "#club dan> how is it going?"
         ]
-      bob <##> cath
-      dan <##> cath
       dan <##> alice
       -- show last messages
       alice ##> "/t #club 17"
@@ -656,7 +627,6 @@ testGroup2 =
       dan <## "you are no longer a member of the group"
       dan ##> "/d #club"
       dan <## "#club: you deleted the group"
-      dan <##> cath
       dan <##> alice
       -- member leaves
       bob ##> "/l club"
@@ -679,7 +649,6 @@ testGroup2 =
       bob <## "you are no longer a member of the group"
       bob ##> "/d #club"
       bob <## "#club: you deleted the group"
-      bob <##> cath
       bob <##> alice
 
 testGroupDelete :: HasCallStack => TestParams -> IO ()
@@ -949,7 +918,7 @@ testDeleteGroupMemberProfileKept =
 
 testGroupRemoveAdd :: HasCallStack => TestParams -> IO ()
 testGroupRemoveAdd =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
@@ -976,14 +945,10 @@ testGroupRemoveAdd =
         [ alice <## "#team: bob joined the group",
           do
             bob <## "#team_1: you joined the group"
-            bob <## "#team_1: member cath_1 (Catherine) is connected"
-            bob <## "contact cath_1 is merged into cath"
-            bob <## "use @cath <message> to send messages",
+            bob <## "#team_1: member cath_1 (Catherine) is connected",
           do
             cath <## "#team: alice added bob_1 (Bob) to the group (connecting...)"
             cath <## "#team: new member bob_1 is connected"
-            cath <## "contact bob_1 is merged into bob"
-            cath <## "use @bob <message> to send messages"
         ]
       alice #> "#team hi"
       concurrently_
@@ -992,11 +957,11 @@ testGroupRemoveAdd =
       bob #> "#team_1 hey"
       concurrently_
         (alice <# "#team bob> hey")
-        (cath <# "#team bob> hey")
+        (cath <# "#team bob_1> hey")
       cath #> "#team hello"
       concurrently_
         (alice <# "#team cath> hello")
-        (bob <# "#team_1 cath> hello")
+        (bob <# "#team_1 cath_1> hello")
 
 testGroupList :: HasCallStack => TestParams -> IO ()
 testGroupList =
@@ -1030,7 +995,7 @@ testGroupList =
 
 testGroupMessageQuotedReply :: HasCallStack => TestParams -> IO ()
 testGroupMessageQuotedReply =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -1516,93 +1481,6 @@ testUpdateMemberRole =
       alice ##> "/d #team"
       alice <## "#team: you have insufficient permissions for this action, the required role is owner"
 
-testGroupDeleteUnusedContacts :: HasCallStack => TestParams -> IO ()
-testGroupDeleteUnusedContacts =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      -- create group 1
-      createGroup3 "team" alice bob cath
-      -- create group 2
-      alice ##> "/g club"
-      alice <## "group #club is created"
-      alice <## "to add members use /a club <name> or /create link #club"
-      alice ##> "/a club bob"
-      concurrentlyN_
-        [ alice <## "invitation to join the group #club sent to bob",
-          do
-            bob <## "#club: alice invites you to join the group as member"
-            bob <## "use /j club to accept"
-        ]
-      bob ##> "/j club"
-      concurrently_
-        (alice <## "#club: bob joined the group")
-        (bob <## "#club: you joined the group")
-      alice ##> "/a club cath"
-      concurrentlyN_
-        [ alice <## "invitation to join the group #club sent to cath",
-          do
-            cath <## "#club: alice invites you to join the group as member"
-            cath <## "use /j club to accept"
-        ]
-      cath ##> "/j club"
-      concurrentlyN_
-        [ alice <## "#club: cath joined the group",
-          do
-            cath <## "#club: you joined the group"
-            cath <## "#club: member bob_1 (Bob) is connected"
-            cath <## "contact bob_1 is merged into bob"
-            cath <## "use @bob <message> to send messages",
-          do
-            bob <## "#club: alice added cath_1 (Catherine) to the group (connecting...)"
-            bob <## "#club: new member cath_1 is connected"
-            bob <## "contact cath_1 is merged into cath"
-            bob <## "use @cath <message> to send messages"
-        ]
-      -- list contacts
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      bob <## "cath (Catherine)"
-      cath ##> "/contacts"
-      cath <## "alice (Alice)"
-      cath <## "bob (Bob)"
-      -- delete group 1, contacts and profiles are kept
-      deleteGroup alice bob cath "team"
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      bob <## "cath (Catherine)"
-      bob `hasContactProfiles` ["alice", "bob", "cath"]
-      cath ##> "/contacts"
-      cath <## "alice (Alice)"
-      cath <## "bob (Bob)"
-      cath `hasContactProfiles` ["alice", "bob", "cath"]
-      -- delete group 2, unused contacts and profiles are deleted
-      deleteGroup alice bob cath "club"
-      threadDelay 3000000
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      bob `hasContactProfiles` ["alice", "bob"]
-      cath ##> "/contacts"
-      cath <## "alice (Alice)"
-      cath `hasContactProfiles` ["alice", "cath"]
-  where
-    cfg = mkCfgCreateGroupDirect $ testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
-    deleteGroup :: HasCallStack => TestCC -> TestCC -> TestCC -> String -> IO ()
-    deleteGroup alice bob cath group = do
-      alice ##> ("/d #" <> group)
-      concurrentlyN_
-        [ alice <## ("#" <> group <> ": you deleted the group"),
-          do
-            bob <## ("#" <> group <> ": alice deleted the group")
-            bob <## ("use /d #" <> group <> " to delete the local copy of the group"),
-          do
-            cath <## ("#" <> group <> ": alice deleted the group")
-            cath <## ("use /d #" <> group <> " to delete the local copy of the group")
-        ]
-      bob ##> ("/d #" <> group)
-      bob <## ("#" <> group <> ": you deleted the group")
-      cath ##> ("/d #" <> group)
-      cath <## ("#" <> group <> ": you deleted the group")
-
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
   connectUsers alice bob
@@ -1620,7 +1498,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
     ]
   alice ##> "/group_profile team"
   alice <## "#team"
-  groupInfo alice
+  groupInfo' alice
   alice ##> "/group_descr team Welcome to the team!"
   alice <## "description changed to:"
   alice <## "Welcome to the team!"
@@ -1631,7 +1509,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   alice <## "#team"
   alice <## "description:"
   alice <## "Welcome to the team!"
-  groupInfo alice
+  groupInfo' alice
   connectUsers alice cath
   addMember "team" alice cath GRMember
   cath ##> "/j team"
@@ -1661,8 +1539,8 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       bobAddedDan cath
     ]
   where
-    groupInfo :: HasCallStack => TestCC -> IO ()
-    groupInfo alice = do
+    groupInfo' :: HasCallStack => TestCC -> IO ()
+    groupInfo' alice = do
       alice <## "group preferences:"
       alice <## "Disappearing messages: off"
       alice <## "Direct messages: on"
@@ -1679,7 +1557,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
 
 testGroupModerate :: HasCallStack => TestParams -> IO ()
 testGroupModerate =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       disableFullDeletion3 "team" alice bob cath
@@ -1762,7 +1640,7 @@ testGroupModerateMultiple =
 
 testGroupModerateFullDelete :: HasCallStack => TestParams -> IO ()
 testGroupModerateFullDelete =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       disableFullDeletion3 "team" alice bob cath
@@ -1831,7 +1709,7 @@ testGroupDelayedModeration ps = do
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "2 contacts connected (use /cs for the list)"
+        cath <## "1 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
         bob
@@ -1844,7 +1722,8 @@ testGroupDelayedModeration ps = do
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
   where
-    cfg = testCfgCreateGroupDirect
+    -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
+    cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
 
 testGroupDelayedModerationFullDelete :: HasCallStack => TestParams -> IO ()
 testGroupDelayedModerationFullDelete ps = do
@@ -1889,7 +1768,7 @@ testGroupDelayedModerationFullDelete ps = do
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "2 contacts connected (use /cs for the list)"
+        cath <## "1 contacts connected (use /cs for the list)"
         cath <## "#team: connected to server(s)"
         cath <## "#team: member bob (Bob) is connected"
         bob
@@ -1902,7 +1781,8 @@ testGroupDelayedModerationFullDelete ps = do
         r <- chat <$> getTermLine bob
         r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
   where
-    cfg = testCfgCreateGroupDirect
+    -- version before forwarding, so cath doesn't expect alice to forward messages (groupForwardVersion = 4)
+    cfg = testCfg {chatVRange = mkVersionRange (VersionChat 1) (VersionChat 3)}
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
@@ -2131,113 +2011,9 @@ testGroupAsync ps = do
           dan <##> cath
           dan <##> alice
 
-testGroupLink :: HasCallStack => TestParams -> IO ()
-testGroupLink =
-  testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      threadDelay 100000
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/show link #team"
-      alice <## "no group link, to create: /create link #team"
-      alice ##> "/create link #team"
-      _ <- getGroupLink alice "team" GRMember True
-      alice ##> "/delete link #team"
-      alice <## "Group link is deleted - joined members will remain connected."
-      alice <## "To create a new group link use /create link #team"
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" GRMember True
-      alice ##> "/show link #team"
-      _ <- getGroupLink alice "team" GRMember False
-      alice ##> "/create link #team"
-      alice <## "you already have link for this group, to show: /show link #team"
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: you joined the group"
-        ]
-      threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, sndGroupFeatures <> [(0, "invited via your group link"), (0, "connected")])
-      -- contacts connected via group link are not in chat previews
-      alice @@@ [("#team", "connected")]
-      bob @@@ [("#team", "connected")]
-      alice <##> bob
-      alice @@@ [("@bob", "hey"), ("#team", "connected")]
-
-      -- user address doesn't interfere
-      alice ##> "/ad"
-      cLink <- getContactLink alice True
-      cath ##> ("/c " <> cLink)
-      alice <#? cath
-      alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
-      concurrently_
-        (cath <## "alice (Alice): contact is connected")
-        (alice <## "cath (Catherine): contact is connected")
-      alice <##> cath
-
-      -- third member
-      cath ##> ("/c " <> gLink)
-      cath <## "connection request sent!"
-      alice <## "cath_1 (Catherine): accepting request to join group #team..."
-      -- if contact existed it is merged
-      concurrentlyN_
-        [ alice
-            <### [ "cath_1 (Catherine): contact is connected",
-                   "contact cath_1 is merged into cath",
-                   "use @cath <message> to send messages",
-                   EndsWith "invited to group #team via your group link",
-                   EndsWith "joined the group"
-                 ],
-          cath
-            <### [ "alice_1 (Alice): contact is connected",
-                   "contact alice_1 is merged into alice",
-                   "use @alice <message> to send messages",
-                   "#team: you joined the group",
-                   "#team: member bob (Bob) is connected"
-                 ],
-          do
-            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-            bob <## "#team: new member cath is connected"
-        ]
-      alice #> "#team hello"
-      concurrently_
-        (bob <# "#team alice> hello")
-        (cath <# "#team alice> hello")
-      bob #> "#team hi there"
-      concurrently_
-        (alice <# "#team bob> hi there")
-        (cath <# "#team bob> hi there")
-      cath #> "#team hey team"
-      concurrently_
-        (alice <# "#team cath> hey team")
-        (bob <# "#team cath> hey team")
-
-      threadDelay 100000
-
-      -- leaving team removes link
-      alice ##> "/l team"
-      concurrentlyN_
-        [ do
-            alice <## "#team: you left the group"
-            alice <## "use /d #team to delete the group",
-          bob <## "#team: alice left the group",
-          cath <## "#team: alice left the group"
-        ]
-      alice ##> "/show link #team"
-      alice <## "no group link, to create: /create link #team"
-
 testGroupLinkDeleteGroupRejoin :: HasCallStack => TestParams -> IO ()
 testGroupLinkDeleteGroupRejoin =
-  testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
+  testChat2 aliceProfile bobProfile $
     \alice bob -> do
       threadDelay 100000
       alice ##> "/g team"
@@ -2249,16 +2025,11 @@ testGroupLinkDeleteGroupRejoin =
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
+        [ alice <## "#team: bob joined the group",
           do
-            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: joining the group..."
             bob <## "#team: you joined the group"
         ]
-      -- use contact so it's not deleted when deleting group
-      bob <##> alice
       bob ##> "/l team"
       concurrentlyN_
         [ do
@@ -2273,62 +2044,20 @@ testGroupLinkDeleteGroupRejoin =
       bob <## "connection request sent!"
       alice <## "bob_1 (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ alice
-            <### [ "bob_1 (Bob): contact is connected",
-                   "contact bob_1 is merged into bob",
-                   "use @bob <message> to send messages",
-                   EndsWith "invited to group #team via your group link",
-                   EndsWith "joined the group"
-                 ],
+        [ alice <## "#team: bob_1 joined the group",
           bob
-            <### [ "alice_1 (Alice): contact is connected",
-                   "contact alice_1 is merged into alice",
-                   "use @alice <message> to send messages",
+            <### [ "#team: joining the group...",
                    "#team: you joined the group"
                  ]
         ]
       alice #> "#team hello"
       bob <# "#team alice> hello"
       bob #> "#team hi there"
-      alice <# "#team bob> hi there"
+      alice <# "#team bob_1> hi there"
 
-testGroupLinkContactUsed :: HasCallStack => TestParams -> IO ()
-testGroupLinkContactUsed =
-  testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
-      threadDelay 100000
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" GRMember True
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: you joined the group"
-        ]
-      -- sending/receiving a message marks contact as used
-      threadDelay 100000
-      alice @@@ [("#team", "connected")]
-      bob @@@ [("#team", "connected")]
-      alice #> "@bob hello"
-      bob <# "alice> hello"
-      threadDelay 500000
-      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
-      alice @@@ [("@bob", ""), ("#team", "connected")]
-      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
-      bob @@@ [("@alice", ""), ("#team", "connected")]
-
-testGroupLinkIncognitoMembership :: HasCallStack => TestParams -> IO ()
-testGroupLinkIncognitoMembership =
-  testChatCfg4 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile danProfile $
+testGroupLinkIncognitoJoinInvite :: HasCallStack => TestParams -> IO ()
+testGroupLinkIncognitoJoinInvite =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       -- bob connected incognito to alice
       alice ##> "/c"
@@ -2364,41 +2093,25 @@ testGroupLinkIncognitoMembership =
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       bob <## "cath (Catherine): accepting request to join group #team..."
-      _ <- getTermLine bob
       concurrentlyN_
-        [ do
-            bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## "use /i cath to print out this incognito profile again"
-            bob <## "cath invited to group #team via your group link"
-            bob <## "#team: cath joined the group",
+        [ bob <## "#team: cath joined the group",
           do
-            cath <## (bobIncognito <> ": contact is connected")
+            cath <## "#team: joining the group..."
             cath <## "#team: you joined the group"
             cath <## "#team: member alice (Alice) is connected",
           do
             alice <## ("#team: " <> bobIncognito <> " added cath (Catherine) to the group (connecting...)")
             alice <## "#team: new member cath is connected"
         ]
-      bob ?#> "@cath hi, I'm incognito"
-      cath <# (bobIncognito <> "> hi, I'm incognito")
-      cath #> ("@" <> bobIncognito <> " hey, I'm cath")
-      bob ?<# "cath> hey, I'm cath"
       -- dan joins incognito
       dan ##> ("/c i " <> gLink)
       danIncognito <- getTermLine dan
       dan <## "connection request sent incognito!"
       bob <## (danIncognito <> ": accepting request to join group #team...")
-      _ <- getTermLine bob
-      _ <- getTermLine dan
       concurrentlyN_
-        [ do
-            bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## ("use /i " <> danIncognito <> " to print out this incognito profile again")
-            bob <## (danIncognito <> " invited to group #team via your group link")
-            bob <## ("#team: " <> danIncognito <> " joined the group"),
+        [ bob <## ("#team: " <> danIncognito <> " joined the group"),
           do
-            dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
-            dan <## ("use /i " <> bobIncognito <> " to print out this incognito profile again")
+            dan <## "#team: joining the group..."
             dan <## ("#team: you joined the group incognito as " <> danIncognito)
             dan
               <### [ "#team: member alice (Alice) is connected",
@@ -2411,10 +2124,6 @@ testGroupLinkIncognitoMembership =
             cath <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
             cath <## ("#team: new member " <> danIncognito <> " is connected")
         ]
-      bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
-      dan ?<# (bobIncognito <> "> hi, I'm incognito")
-      dan ?#> ("@" <> bobIncognito <> " hey, me too")
-      bob ?<# (danIncognito <> "> hey, me too")
       alice #> "#team hello"
       concurrentlyN_
         [ bob ?<# "#team alice> hello",
@@ -2440,372 +2149,9 @@ testGroupLinkIncognitoMembership =
           cath <# ("#team " <> danIncognito <> "> how is it going?")
         ]
 
-testGroupLinkUnusedHostContactDeleted :: HasCallStack => TestParams -> IO ()
-testGroupLinkUnusedHostContactDeleted =
-  testChatCfg2 cfg aliceProfile bobProfile $
-    \alice bob -> do
-      -- create group 1
-      threadDelay 100000
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/create link #team"
-      gLinkTeam <- getGroupLink alice "team" GRMember True
-      bob ##> ("/c " <> gLinkTeam)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: you joined the group"
-        ]
-      -- create group 2
-      alice ##> "/g club"
-      alice <## "group #club is created"
-      alice <## "to add members use /a club <name> or /create link #club"
-      alice ##> "/create link #club"
-      gLinkClub <- getGroupLink alice "club" GRMember True
-      bob ##> ("/c " <> gLinkClub)
-      bob <## "connection request sent!"
-      alice <## "bob_1 (Bob): accepting request to join group #club..."
-      concurrentlyN_
-        [ alice
-            <### [ "bob_1 (Bob): contact is connected",
-                   "contact bob_1 is merged into bob",
-                   "use @bob <message> to send messages",
-                   EndsWith "invited to group #club via your group link",
-                   EndsWith "joined the group"
-                 ],
-          bob
-            <### [ "alice_1 (Alice): contact is connected",
-                   "contact alice_1 is merged into alice",
-                   "use @alice <message> to send messages",
-                   "#club: you joined the group"
-                 ]
-        ]
-      -- list contacts
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      -- delete group 1, host contact and profile are kept
-      bobLeaveDeleteGroup alice bob "team"
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      bob `hasContactProfiles` ["alice", "bob"]
-      -- delete group 2, unused host contact and profile are deleted
-      bobLeaveDeleteGroup alice bob "club"
-      threadDelay 3000000
-      bob ##> "/contacts"
-      (bob </)
-      bob `hasContactProfiles` ["bob"]
-  where
-    cfg = mkCfgGroupLinkViaContact $ testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
-    bobLeaveDeleteGroup :: HasCallStack => TestCC -> TestCC -> String -> IO ()
-    bobLeaveDeleteGroup alice bob group = do
-      bob ##> ("/l " <> group)
-      concurrentlyN_
-        [ do
-            bob <## ("#" <> group <> ": you left the group")
-            bob <## ("use /d #" <> group <> " to delete the group"),
-          alice <## ("#" <> group <> ": bob left the group")
-        ]
-      bob ##> ("/d #" <> group)
-      bob <## ("#" <> group <> ": you deleted the group")
-
-testGroupLinkIncognitoUnusedHostContactsDeleted :: HasCallStack => TestParams -> IO ()
-testGroupLinkIncognitoUnusedHostContactsDeleted =
-  testChatCfg2 cfg aliceProfile bobProfile $
-    \alice bob -> do
-      bobIncognitoTeam <- createGroupBobIncognito alice bob "team" "alice"
-      bobIncognitoClub <- createGroupBobIncognito alice bob "club" "alice_1"
-      bobIncognitoTeam `shouldNotBe` bobIncognitoClub
-      -- list contacts
-      bob ##> "/contacts"
-      bob <## "i alice (Alice)"
-      bob <## "i alice_1 (Alice)"
-      bob `hasContactProfiles` ["alice", "alice", "bob", T.pack bobIncognitoTeam, T.pack bobIncognitoClub]
-      -- delete group 1, unused host contact and profile are deleted
-      bobLeaveDeleteGroup alice bob "team" bobIncognitoTeam
-      threadDelay 3000000
-      bob ##> "/contacts"
-      bob <## "i alice_1 (Alice)"
-      bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognitoClub]
-      -- delete group 2, unused host contact and profile are deleted
-      bobLeaveDeleteGroup alice bob "club" bobIncognitoClub
-      threadDelay 3000000
-      bob ##> "/contacts"
-      (bob </)
-      bob `hasContactProfiles` ["bob"]
-  where
-    cfg = mkCfgGroupLinkViaContact $ testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
-    createGroupBobIncognito :: HasCallStack => TestCC -> TestCC -> String -> String -> IO String
-    createGroupBobIncognito alice bob group bobsAliceContact = do
-      alice ##> ("/g " <> group)
-      alice <## ("group #" <> group <> " is created")
-      alice <## ("to add members use /a " <> group <> " <name> or /create link #" <> group)
-      alice ##> ("/create link #" <> group)
-      gLinkTeam <- getGroupLink alice group GRMember True
-      bob ##> ("/c i " <> gLinkTeam)
-      bobIncognito <- getTermLine bob
-      bob <## "connection request sent incognito!"
-      alice <## (bobIncognito <> ": accepting request to join group #" <> group <> "...")
-      _ <- getTermLine bob
-      concurrentlyN_
-        [ do
-            alice <## (bobIncognito <> ": contact is connected")
-            alice <## (bobIncognito <> " invited to group #" <> group <> " via your group link")
-            alice <## ("#" <> group <> ": " <> bobIncognito <> " joined the group"),
-          do
-            bob <## (bobsAliceContact <> " (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## ("use /i " <> bobsAliceContact <> " to print out this incognito profile again")
-            bob <## ("#" <> group <> ": you joined the group incognito as " <> bobIncognito)
-        ]
-      pure bobIncognito
-    bobLeaveDeleteGroup :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
-    bobLeaveDeleteGroup alice bob group bobIncognito = do
-      bob ##> ("/l " <> group)
-      concurrentlyN_
-        [ do
-            bob <## ("#" <> group <> ": you left the group")
-            bob <## ("use /d #" <> group <> " to delete the group"),
-          alice <## ("#" <> group <> ": " <> bobIncognito <> " left the group")
-        ]
-      bob ##> ("/d #" <> group)
-      bob <## ("#" <> group <> ": you deleted the group")
-
-testGroupLinkMemberRole :: HasCallStack => TestParams -> IO ()
-testGroupLinkMemberRole =
-  testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      threadDelay 100000
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/create link #team admin"
-      alice <## "#team: initial role for group member cannot be admin, use member or observer"
-      alice ##> "/create link #team observer"
-      gLink <- getGroupLink alice "team" GRObserver True
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: you joined the group"
-        ]
-      alice ##> "/set link role #team admin"
-      alice <## "#team: initial role for group member cannot be admin, use member or observer"
-      alice ##> "/set link role #team member"
-      _ <- getGroupLink alice "team" GRMember False
-      cath ##> ("/c " <> gLink)
-      cath <## "connection request sent!"
-      alice <## "cath (Catherine): accepting request to join group #team..."
-      -- if contact existed it is merged
-      concurrentlyN_
-        [ alice
-            <### [ "cath (Catherine): contact is connected",
-                   EndsWith "invited to group #team via your group link",
-                   EndsWith "joined the group"
-                 ],
-          cath
-            <### [ "alice (Alice): contact is connected",
-                   "#team: you joined the group",
-                   "#team: member bob (Bob) is connected"
-                 ],
-          do
-            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
-            bob <## "#team: new member cath is connected"
-        ]
-      alice #> "#team hello"
-      concurrently_
-        (bob <# "#team alice> hello")
-        (cath <# "#team alice> hello")
-      cath #> "#team hello too"
-      concurrently_
-        (alice <# "#team cath> hello too")
-        (bob <# "#team cath> hello too")
-      bob ##> "#team hey"
-      bob <## "#team: you don't have permission to send messages"
-      alice ##> "/mr #team bob member"
-      alice <## "#team: you changed the role of bob from observer to member"
-      concurrently_
-        (bob <## "#team: alice changed your role from observer to member")
-        (cath <## "#team: alice changed the role of bob from observer to member")
-      bob #> "#team hey now"
-      concurrently_
-        (alice <# "#team bob> hey now")
-        (cath <# "#team bob> hey now")
-
-testGroupLinkLeaveDelete :: HasCallStack => TestParams -> IO ()
-testGroupLinkLeaveDelete =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      connectUsers alice bob
-      connectUsers cath bob
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" GRMember True
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob_1 (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ alice
-            <### [ "bob_1 (Bob): contact is connected",
-                   "contact bob_1 is merged into bob",
-                   "use @bob <message> to send messages",
-                   EndsWith "invited to group #team via your group link",
-                   EndsWith "joined the group"
-                 ],
-          bob
-            <### [ "alice_1 (Alice): contact is connected",
-                   "contact alice_1 is merged into alice",
-                   "use @alice <message> to send messages",
-                   "#team: you joined the group"
-                 ]
-        ]
-      cath ##> ("/c " <> gLink)
-      cath <## "connection request sent!"
-      alice <## "cath (Catherine): accepting request to join group #team..."
-      concurrentlyN_
-        [ alice
-            <### [ "cath (Catherine): contact is connected",
-                   "cath invited to group #team via your group link",
-                   "#team: cath joined the group"
-                 ],
-          cath
-            <### [ "alice (Alice): contact is connected",
-                   "#team: you joined the group",
-                   "#team: member bob_1 (Bob) is connected",
-                   "contact bob_1 is merged into bob",
-                   "use @bob <message> to send messages"
-                 ],
-          bob
-            <### [ "#team: alice added cath_1 (Catherine) to the group (connecting...)",
-                   "#team: new member cath_1 is connected",
-                   "contact cath_1 is merged into cath",
-                   "use @cath <message> to send messages"
-                 ]
-        ]
-      bob ##> "/l team"
-      concurrentlyN_
-        [ do
-            bob <## "#team: you left the group"
-            bob <## "use /d #team to delete the group",
-          alice <## "#team: bob left the group",
-          cath <## "#team: bob left the group"
-        ]
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      bob <## "cath (Catherine)"
-      bob ##> "/d #team"
-      bob <## "#team: you deleted the group"
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      bob <## "cath (Catherine)"
-
-testPlanGroupLinkOkKnown :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkOkKnown =
-  testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
-      threadDelay 100000
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" GRMember True
-
-      bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: ok to connect"
-
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: you joined the group"
-        ]
-      alice #> "#team hi"
-      bob <# "#team alice> hi"
-      bob #> "#team hey"
-      alice <# "#team bob> hey"
-
-      bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: known group #team"
-      bob <## "use #team <message> to send messages"
-
-      let gLinkSchema2 = linkAnotherSchema gLink
-      bob ##> ("/_connect plan 1 " <> gLinkSchema2)
-      bob <## "group link: known group #team"
-      bob <## "use #team <message> to send messages"
-
-      bob ##> ("/c " <> gLink)
-      bob <## "group link: known group #team"
-      bob <## "use #team <message> to send messages"
-
-testPlanHostContactDeletedGroupLinkKnown :: HasCallStack => TestParams -> IO ()
-testPlanHostContactDeletedGroupLinkKnown =
-  testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
-      threadDelay 100000
-      alice ##> "/g team"
-      alice <## "group #team is created"
-      alice <## "to add members use /a team <name> or /create link #team"
-      alice ##> "/create link #team"
-      gLink <- getGroupLink alice "team" GRMember True
-
-      bob ##> ("/c " <> gLink)
-      bob <## "connection request sent!"
-      alice <## "bob (Bob): accepting request to join group #team..."
-      concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
-          do
-            bob <## "alice (Alice): contact is connected"
-            bob <## "#team: you joined the group"
-        ]
-      alice #> "#team hi"
-      bob <# "#team alice> hi"
-      bob #> "#team hey"
-      alice <# "#team bob> hey"
-
-      alice <##> bob
-      threadDelay 500000
-      bob ##> "/d alice"
-      bob <## "alice: contact is deleted"
-      alice <## "bob (Bob) deleted contact with you"
-
-      bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: known group #team"
-      bob <## "use #team <message> to send messages"
-
-      let gLinkSchema2 = linkAnotherSchema gLink
-      bob ##> ("/_connect plan 1 " <> gLinkSchema2)
-      bob <## "group link: known group #team"
-      bob <## "use #team <message> to send messages"
-
-      bob ##> ("/c " <> gLink)
-      bob <## "group link: known group #team"
-      bob <## "use #team <message> to send messages"
-
 testPlanGroupLinkOwn :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkOwn ps =
-  withNewTestChatCfg ps (mkCfgGroupLinkViaContact testCfgSlow) "alice" aliceProfile $ \alice -> do
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
@@ -2824,18 +2170,14 @@ testPlanGroupLinkOwn ps =
     alice <## "connection request sent!"
     alice <## "alice_1 (Alice): accepting request to join group #team..."
     alice
-      <### [ "alice_1 (Alice): contact is connected",
-             "alice_1 invited to group #team via your group link",
-             "#team: alice_1 joined the group",
-             "alice_2 (Alice): contact is connected",
-             "#team_1: you joined the group",
-             "contact alice_2 is merged into alice_1",
-             "use @alice_1 <message> to send messages"
+      <### [ "#team: alice_1 joined the group",
+             "#team_1: joining the group...",
+             "#team_1: you joined the group"
            ]
     alice `send` "#team 1"
     alice
       <### [ WithTime "#team 1",
-             WithTime "#team_1 alice_1> 1"
+             WithTime "#team_1 alice_2> 1"
            ]
     alice `send` "#team_1 2"
     alice
@@ -2849,71 +2191,9 @@ testPlanGroupLinkOwn ps =
     alice ##> ("/_connect plan 1 " <> gLinkSchema2)
     alice <## "group link: own link for group #team"
 
-    -- group works if merged contact is deleted
-    alice ##> "/d alice_1"
-    alice <## "alice_1: contact is deleted"
-
-    alice `send` "#team 3"
-    alice
-      <### [ WithTime "#team 3",
-             WithTime "#team_1 alice_1> 3"
-           ]
-    alice `send` "#team_1 4"
-    alice
-      <### [ WithTime "#team_1 4",
-             WithTime "#team alice_1> 4"
-           ]
-
-testPlanGroupLinkConnecting :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkConnecting ps = do
-  -- gLink <- withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
-  gLink <- withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
-    threadDelay 100000
-    alice ##> "/g team"
-    alice <## "group #team is created"
-    alice <## "to add members use /a team <name> or /create link #team"
-    alice ##> "/create link #team"
-    getGroupLink alice "team" GRMember True
-  -- withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
-  withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
-    threadDelay 100000
-
-    bob ##> ("/c " <> gLink)
-    bob <## "connection request sent!"
-
-    bob ##> ("/_connect plan 1 " <> gLink)
-    bob <## "group link: connecting, allowed to reconnect"
-
-    let gLinkSchema2 = linkAnotherSchema gLink
-    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
-    bob <## "group link: connecting, allowed to reconnect"
-
-    threadDelay 100000
-  -- withTestChatCfg ps cfg "alice" $ \alice -> do
-  withTestChatCfg ps cfg "alice" $ \alice -> do
-    alice
-      <### [ "1 group links active",
-             "#team: group is empty",
-             "bob (Bob): accepting request to join group #team..."
-           ]
-  -- withTestChatCfg ps cfg "bob" $ \bob -> do
-  withTestChatCfg ps cfg "bob" $ \bob -> do
-    threadDelay 500000
-    bob ##> ("/_connect plan 1 " <> gLink)
-    bob <## "group link: connecting"
-
-    let gLinkSchema2 = linkAnotherSchema gLink
-    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
-    bob <## "group link: connecting"
-
-    bob ##> ("/c " <> gLink)
-    bob <## "group link: connecting"
-  where
-    cfg = mkCfgGroupLinkViaContact testCfgSlow
-
 testPlanGroupLinkLeaveRejoin :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkLeaveRejoin =
-  testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
+  testChat2 aliceProfile bobProfile $
     \alice bob -> do
       threadDelay 100000
       alice ##> "/g team"
@@ -2926,12 +2206,9 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ do
-            alice <## "bob (Bob): contact is connected"
-            alice <## "bob invited to group #team via your group link"
-            alice <## "#team: bob joined the group",
+        [ alice <## "#team: bob joined the group",
           do
-            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: joining the group..."
             bob <## "#team: you joined the group"
         ]
 
@@ -2968,25 +2245,17 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "connection request sent!"
       alice <## "bob_1 (Bob): accepting request to join group #team..."
       concurrentlyN_
-        [ alice
-            <### [ "bob_1 (Bob): contact is connected",
-                   EndsWith "invited to group #team via your group link",
-                   EndsWith "joined the group",
-                   "contact bob_1 is merged into bob",
-                   "use @bob <message> to send messages"
-                 ],
+        [ alice <## "#team: bob_1 joined the group",
           bob
-            <### [ "alice_1 (Alice): contact is connected",
-                   "#team_1: you joined the group",
-                   "contact alice_1 is merged into alice",
-                   "use @alice <message> to send messages"
+            <### [ "#team_1: joining the group...",
+                   "#team_1: you joined the group"
                  ]
         ]
 
       alice #> "#team hi"
-      bob <# "#team_1 alice> hi"
+      bob <# "#team_1 alice_1> hi"
       bob #> "#team_1 hey"
-      alice <# "#team bob> hey"
+      alice <# "#team bob_1> hey"
 
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team_1"
@@ -3000,8 +2269,8 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "group link: known group #team_1"
       bob <## "use #team_1 <message> to send messages"
 
-testGroupLinkNoContact :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContact =
+testGroupLink :: HasCallStack => TestParams -> IO ()
+testGroupLink =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       threadDelay 100000
@@ -3038,16 +2307,34 @@ testGroupLinkNoContact =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
+      -- user address doesn't interfere
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      cath ##> ("/c " <> cLink)
+      alice <#? cath
+      alice ##> "/ac cath"
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
+      concurrently_
+        (cath <## "alice (Alice): contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice <##> cath
+
+      -- third member
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
       concurrentlyN_
         [ do
-            alice <## "cath (Catherine): accepting request to join group #team..."
-            alice <## "#team: cath joined the group",
-          do
-            cath <## "#team: joining the group..."
-            cath <## "#team: you joined the group"
-            cath <## "#team: member bob (Bob) is connected",
+            alice <## "cath_1 (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath_1 joined the group"
+            alice <## "contact and member are merged: cath, #team cath_1"
+            alice <## "use @cath <message> to send messages",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member bob (Bob) is connected",
+                   "contact and member are merged: alice, #team alice_1",
+                   "use @alice <message> to send messages"
+                 ],
           do
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
@@ -3061,8 +2348,28 @@ testGroupLinkNoContact =
       alice <# "#team bob> hi cath"
       cath <# "#team bob> hi cath"
 
-testGroupLinkNoContactInviteesWereConnected :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContactInviteesWereConnected =
+      -- leaving group removes link
+      alice ##> "/l team"
+      concurrentlyN_
+        [ do
+            alice <## "#team: you left the group"
+            alice <## "use /d #team to delete the group",
+          bob <## "#team: alice left the group",
+          cath <## "#team: alice left the group"
+        ]
+      alice ##> "/show link #team"
+      alice <## "no group link, to create: /create link #team"
+
+      -- deleting group keeps contacts
+      alice ##> "/contacts"
+      alice <## "cath (Catherine)"
+      alice ##> "/d #team"
+      alice <## "#team: you deleted the group"
+      alice ##> "/contacts"
+      alice <## "cath (Catherine)"
+
+testGroupLinkInviteesWereConnected :: HasCallStack => TestParams -> IO ()
+testGroupLinkInviteesWereConnected =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       connectUsers bob cath
@@ -3133,8 +2440,8 @@ testGroupLinkNoContactInviteesWereConnected =
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
 
-testGroupLinkNoContactAllMembersWereConnected :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContactAllMembersWereConnected =
+testGroupLinkAllMembersWereConnected :: HasCallStack => TestParams -> IO ()
+testGroupLinkAllMembersWereConnected =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       connectUsers alice bob
@@ -3224,8 +2531,8 @@ testGroupLinkNoContactAllMembersWereConnected =
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
 
-testGroupLinkNoContactMemberRole :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContactMemberRole =
+testGroupLinkMemberRole :: HasCallStack => TestParams -> IO ()
+testGroupLinkMemberRole =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       threadDelay 100000
@@ -3305,8 +2612,8 @@ testGroupLinkNoContactMemberRole =
       bob <## "#team: cath changed your role from member to admin"
       alice <## "#team: cath changed the role of bob from member to admin"
 
-testGroupLinkNoContactHostIncognito :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContactHostIncognito =
+testGroupLinkHostIncognito :: HasCallStack => TestParams -> IO ()
+testGroupLinkHostIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g i team"
@@ -3338,8 +2645,8 @@ testGroupLinkNoContactHostIncognito =
       bob #> "#team hi there"
       alice ?<# "#team bob> hi there"
 
-testGroupLinkNoContactInviteeIncognito :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContactInviteeIncognito =
+testGroupLinkInviteeIncognito :: HasCallStack => TestParams -> IO ()
+testGroupLinkInviteeIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       threadDelay 100000
@@ -3372,8 +2679,8 @@ testGroupLinkNoContactInviteeIncognito =
       bob ?#> "#team hi there"
       alice <# ("#team " <> bobIncognito <> "> hi there")
 
-testGroupLinkNoContactHostProfileReceived :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContactHostProfileReceived =
+testGroupLinkHostProfileReceived :: HasCallStack => TestParams -> IO ()
+testGroupLinkHostProfileReceived =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       let profileImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
@@ -3400,8 +2707,8 @@ testGroupLinkNoContactHostProfileReceived =
       aliceImage <- getProfilePictureByName bob "alice"
       aliceImage `shouldBe` Just profileImage
 
-testGroupLinkNoContactExistingContactMerged :: HasCallStack => TestParams -> IO ()
-testGroupLinkNoContactExistingContactMerged =
+testGroupLinkExistingContactMerged :: HasCallStack => TestParams -> IO ()
+testGroupLinkExistingContactMerged =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
@@ -3443,8 +2750,8 @@ testGroupLinkNoContactExistingContactMerged =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
-testPlanGroupLinkNoContactKnown :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkNoContactKnown =
+testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkKnown =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       threadDelay 100000
@@ -3480,8 +2787,8 @@ testPlanGroupLinkNoContactKnown =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
-testPlanGroupLinkNoContactConnecting :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkNoContactConnecting ps = do
+testPlanGroupLinkConnecting :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkConnecting ps = do
   gLink <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
@@ -3527,8 +2834,8 @@ testPlanGroupLinkNoContactConnecting ps = do
     bob <## "group link: known group #team"
     bob <## "use #team <message> to send messages"
 
-testPlanGroupLinkNoContactConnectingSlow :: HasCallStack => TestParams -> IO ()
-testPlanGroupLinkNoContactConnectingSlow ps = do
+testPlanGroupLinkConnectingSlow :: HasCallStack => TestParams -> IO ()
+testPlanGroupLinkConnectingSlow ps = do
   gLink <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
@@ -3863,14 +3170,10 @@ testConfigureGroupDeliveryReceipts ps =
           [ alice <## "#club: cath joined the group",
             do
               cath <## "#club: you joined the group"
-              cath <## "#club: member bob_1 (Bob) is connected"
-              cath <## "contact bob_1 is merged into bob"
-              cath <## "use @bob <message> to send messages",
+              cath <## "#club: member bob_1 (Bob) is connected",
             do
               bob <## "#club: alice added cath_1 (Catherine) to the group (connecting...)"
               bob <## "#club: new member cath_1 is connected"
-              bob <## "contact cath_1 is merged into cath"
-              bob <## "use @cath <message> to send messages"
           ]
         threadDelay 1000000
 
@@ -3947,54 +3250,33 @@ testConfigureGroupDeliveryReceipts ps =
         receipt bob alice cath "team" "25"
         noReceipt bob alice cath "club" "26"
   where
-    cfg = mkCfgCreateGroupDirect $ testCfg {showReceipts = True}
+    cfg = testCfg {showReceipts = True}
     receipt cc1 cc2 cc3 gName msg = do
-      name1 <- userName cc1
       cc1 #> ("#" <> gName <> " " <> msg)
-      cc2 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
-      cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc2 .<## ("> " <> msg)
+      cc3 .<## ("> " <> msg)
       cc1 % ("#" <> gName <> " " <> msg)
       cc1 ⩗ ("#" <> gName <> " " <> msg)
     partialReceipt cc1 cc2 cc3 gName msg = do
-      name1 <- userName cc1
       cc1 #> ("#" <> gName <> " " <> msg)
-      cc2 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
-      cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc2 .<## ("> " <> msg)
+      cc3 .<## ("> " <> msg)
       cc1 % ("#" <> gName <> " " <> msg)
     noReceipt cc1 cc2 cc3 gName msg = do
-      name1 <- userName cc1
       cc1 #> ("#" <> gName <> " " <> msg)
-      cc2 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
-      cc3 <# ("#" <> gName <> " " <> name1 <> "> " <> msg)
+      cc2 .<## ("> " <> msg)
+      cc3 .<## ("> " <> msg)
       cc1 <// 50000
 
-testNoGroupDirectConns :: HasCallStack => VersionRangeChat -> VersionRangeChat -> VersionRangeChat -> Bool -> TestParams -> IO ()
-testNoGroupDirectConns hostVRange mem2VRange mem3VRange noDirectConns ps =
-  withNewTestChatCfg ps testCfg {chatVRange = hostVRange} "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg ps testCfg {chatVRange = mem2VRange} "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg ps testCfg {chatVRange = mem3VRange} "cath" cathProfile $ \cath -> do
-        createGroup3 "team" alice bob cath
-        if noDirectConns
-          then contactsDontExist bob cath
-          else contactsExist bob cath
-  where
-    contactsDontExist bob cath = do
+testNoGroupDirectConns :: HasCallStack => TestParams -> IO ()
+testNoGroupDirectConns =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
       bob ##> "/contacts"
       bob <## "alice (Alice)"
       cath ##> "/contacts"
       cath <## "alice (Alice)"
-    contactsExist bob cath = do
-      bob ##> "/contacts"
-      bob
-        <### [ "alice (Alice)",
-               "cath (Catherine)"
-             ]
-      cath ##> "/contacts"
-      cath
-        <### [ "alice (Alice)",
-               "bob (Bob)"
-             ]
-      bob <##> cath
 
 testNoDirectDifferentLDNs :: HasCallStack => TestParams -> IO ()
 testNoDirectDifferentLDNs =
@@ -4184,7 +3466,7 @@ testMergeContactMultipleMembers =
 
 testMergeGroupLinkHostMultipleContacts :: HasCallStack => TestParams -> IO ()
 testMergeGroupLinkHostMultipleContacts =
-  testChatCfg2 testCfgGroupLinkViaContact bobProfile cathProfile $
+  testChat2 bobProfile cathProfile $
     \bob cath -> do
       connectUsers bob cath
 
@@ -4209,16 +3491,14 @@ testMergeGroupLinkHostMultipleContacts =
       bob <## "cath_2 (Catherine): accepting request to join group #party..."
       concurrentlyN_
         [ bob
-            <### [ "cath_2 (Catherine): contact is connected",
-                   EndsWith "invited to group #party via your group link",
-                   EndsWith "joined the group",
-                   StartsWith "contact cath_2 is merged into cath",
+            <### [ EndsWith "joined the group",
+                   "contact and member are merged: cath, #party cath_2",
                    StartsWith "use @cath"
                  ],
           cath
-            <### [ "bob_2 (Bob): contact is connected",
+            <### [ "#party: joining the group...",
                    "#party: you joined the group",
-                   StartsWith "contact bob_2 is merged into bob",
+                   "contact and member are merged: bob, #party bob_2",
                    StartsWith "use @bob"
                  ]
         ]
@@ -4432,7 +3712,7 @@ testMemberContactInvitedConnectionReplaced ps = do
 
 testMemberContactIncognito :: HasCallStack => TestParams -> IO ()
 testMemberContactIncognito =
-  testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       -- create group, bob joins incognito
       threadDelay 100000
@@ -4445,15 +3725,10 @@ testMemberContactIncognito =
       bobIncognito <- getTermLine bob
       bob <## "connection request sent incognito!"
       alice <## (bobIncognito <> ": accepting request to join group #team...")
-      _ <- getTermLine bob
       concurrentlyN_
-        [ do
-            alice <## (bobIncognito <> ": contact is connected")
-            alice <## (bobIncognito <> " invited to group #team via your group link")
-            alice <## ("#team: " <> bobIncognito <> " joined the group"),
+        [ alice <## ("#team: " <> bobIncognito <> " joined the group"),
           do
-            bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## "use /i alice to print out this incognito profile again"
+            bob <## "#team: joining the group..."
             bob <## ("#team: you joined the group incognito as " <> bobIncognito)
         ]
       -- cath joins incognito
@@ -4461,15 +3736,10 @@ testMemberContactIncognito =
       cathIncognito <- getTermLine cath
       cath <## "connection request sent incognito!"
       alice <## (cathIncognito <> ": accepting request to join group #team...")
-      _ <- getTermLine cath
       concurrentlyN_
-        [ do
-            alice <## (cathIncognito <> ": contact is connected")
-            alice <## (cathIncognito <> " invited to group #team via your group link")
-            alice <## ("#team: " <> cathIncognito <> " joined the group"),
+        [ alice <## ("#team: " <> cathIncognito <> " joined the group"),
           do
-            cath <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> cathIncognito)
-            cath <## "use /i alice to print out this incognito profile again"
+            cath <## "#team: joining the group..."
             cath <## ("#team: you joined the group incognito as " <> cathIncognito)
             cath <## ("#team: member " <> bobIncognito <> " is connected"),
           do
@@ -4630,6 +3900,12 @@ testRecreateMemberContactManyGroups =
 
       bob ##> "/d alice"
       bob <## "alice: contact is deleted"
+
+      -- group messages work
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
 
       -- alice creates member contact with bob
       alice ##> "@#team bob hi"

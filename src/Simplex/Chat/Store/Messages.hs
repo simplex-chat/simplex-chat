@@ -2527,8 +2527,7 @@ getGroupChatItemIdByText db User {userId, localDisplayName = userName} groupId c
           SELECT i.chat_item_id
           FROM chat_items i
           JOIN group_members m ON m.group_member_id = i.group_member_id
-          JOIN contacts c ON c.contact_id = m.contact_id
-          WHERE i.user_id = ? AND i.group_id = ? AND c.local_display_name = ? AND i.item_text like ?
+          WHERE i.user_id = ? AND i.group_id = ? AND m.local_display_name = ? AND i.item_text like ?
           ORDER BY i.chat_item_id DESC
           LIMIT 1
         |]
