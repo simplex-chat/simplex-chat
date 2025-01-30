@@ -312,7 +312,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
-  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MemberMention, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
@@ -539,12 +539,12 @@ isMCForward = \case
   _ -> False
 
 data MsgContent
-  = MCText Text
+  = MCText {text :: Text}
   | MCLink {text :: Text, preview :: LinkPreview}
   | MCImage {text :: Text, image :: ImageData}
   | MCVideo {text :: Text, image :: ImageData, duration :: Int}
   | MCVoice {text :: Text, duration :: Int}
-  | MCFile Text
+  | MCFile {text :: Text}
   | MCReport {text :: Text, reason :: ReportReason}
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -601,17 +601,17 @@ data ExtMsgContent = ExtMsgContent
     -- the key used in mentions is a locally (per message) unique display name of member.
     -- Suffixes _1, _2 should be appended to make names locally unique.
     -- It should be done in the UI, as they will be part of the text, and validated in the API.
-    mentions :: Map MemberName MemberMention,
+    mentions :: Map MemberName MsgMention,
     file :: Maybe FileInvitation,
     ttl :: Maybe Int,
     live :: Maybe Bool
   }
   deriving (Eq, Show)
 
-data MemberMention = MemberMention {memberId :: MemberId}
+data MsgMention = MsgMention {memberId :: MemberId}
   deriving (Eq, Show)
 
-$(JQ.deriveJSON defaultJSON ''MemberMention)
+$(JQ.deriveJSON defaultJSON ''MsgMention)
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 

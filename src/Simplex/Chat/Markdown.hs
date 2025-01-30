@@ -16,7 +16,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit, isPunctuation)
+import Data.Char (isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (foldl', intercalate)
@@ -267,6 +267,36 @@ markdownP = mconcat <$> A.many' fragmentP
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
 
+markdownText :: FormattedText -> Text
+markdownText (FormattedText f_ t) = case f_ of
+  Nothing -> t
+  Just f -> case f of
+    Bold -> around '*'
+    Italic -> around '_'
+    StrikeThrough -> around '~'
+    Snippet -> around '`'
+    Secret -> around '#'
+    Colored (FormatColor c) -> color c
+    Uri -> t
+    SimplexLink {} -> t
+    Mention _ -> t
+    Email -> t
+    Phone -> t
+    where
+      around c = c `T.cons` t `T.snoc` c
+      color c = case colorStr c of
+        Just cStr -> cStr <> t `T.snoc` '!'
+        Nothing -> t
+      colorStr = \case
+        Red -> Just "!1 " 
+        Green -> Just "!2 "
+        Blue -> Just "!3 "
+        Yellow -> Just "!4 "
+        Cyan -> Just "!5 "
+        Magenta -> Just "!6 "
+        Black -> Nothing
+        White -> Nothing
+
 displayNameTextP :: Parser Text
 displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
   where
@@ -275,6 +305,9 @@ displayNameTextP = quoted '\'' <|> takeNameTill (== ' ')
         if refChar c then A.takeTill p else fail "invalid first character in display name"
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
+
+viewName :: Text -> Text
+viewName s = if T.any isSpace s then "'" <> s <> "'" else s
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

@@ -902,10 +902,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             quotedItemId_ = quoteItemId =<< quotedItem
                             fInv_ = fst <$> fInvDescr_
                         -- TODO [mentions] history?
-                        let (_t, ft_) = msgContentTexts mc
-                        (msgContainer, _, _) <- withStore $ \db -> prepareGroupMsg db user gInfo mc ft_ M.empty quotedItemId_ Nothing fInv_ itemTimed False
+                        -- let (_t, ft_) = msgContentTexts mc
+                        (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo mc M.empty quotedItemId_ Nothing fInv_ itemTimed False
                         let senderVRange = memberChatVRange' sender
-                            xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
+                            xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
                         fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
                           (Just fileDescrText, Just msgId) -> do
                             partSize <- asks $ xftpDescrPartSize . config
@@ -1782,7 +1782,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo memberId sharedMsgId) sharedMsgId_
           groupMsgToView gInfo ci' {reactions}
 
-    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MemberMention -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
+    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
     groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc mentions msg@RcvMessage {msgId} brokerTs ttl_ live_
       | prohibitedSimplexLinks gInfo m ft_ =
           messageWarning $ "x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks
@@ -1817,9 +1817,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
                         reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
                         let edited = itemLive /= Just True
-                        mentionedMembers <- getRcvMentionedMembers db user gInfo ft_ mentions
+                        ciMentions <- getRcvCIMentions db user gInfo ft_ mentions
                         ci' <- updateGroupChatItem db user groupId ci {reactions} content edited live $ Just msgId
-                        updateGroupCIMentions db gInfo ci' mentionedMembers
+                        updateGroupCIMentions db gInfo ci' ciMentions
                       toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                     else toView $ CRChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)

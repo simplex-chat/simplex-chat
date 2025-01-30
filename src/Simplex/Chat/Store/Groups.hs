@@ -150,7 +150,7 @@ import Data.Ord (Down (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (MemberMention (..), groupForwardVersion)
+import Simplex.Chat.Protocol (MsgMention (..), groupForwardVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -800,7 +800,7 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
       (userId, groupId, groupMemberId, userId)
 
-getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO MentionedMember
+getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO CIMention
 getMentionedGroupMember db User {userId} groupId gmId =
   ExceptT $ firstRow toMentionedMember (SEGroupMemberNotFound gmId) $
     DB.query
@@ -808,15 +808,15 @@ getMentionedGroupMember db User {userId} groupId gmId =
       (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
       (groupId, gmId, userId)
 
-getMentionedMemberByMemberId :: DB.Connection -> User -> GroupId -> MemberMention -> IO MentionedMember
-getMentionedMemberByMemberId db User {userId} groupId MemberMention {memberId} =
+getMentionedMemberByMemberId :: DB.Connection -> User -> GroupId -> MsgMention -> IO CIMention
+getMentionedMemberByMemberId db User {userId} groupId MsgMention {memberId} =
   fmap (fromMaybe mentionedMember) $ maybeFirstRow toMentionedMember $
     DB.query
       db
       (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ? AND m.user_id = ?")
       (groupId, memberId, userId)
   where
-    mentionedMember = MentionedMember {memberId, memberRef = Nothing}
+    mentionedMember = CIMention {memberId, memberRef = Nothing}
 
 mentionedMemberQuery :: Query
 mentionedMemberQuery =
@@ -826,10 +826,10 @@ mentionedMemberQuery =
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
   |]
 
-toMentionedMember :: (GroupMemberId, MemberId, GroupMemberRole, Text, Maybe Text) -> MentionedMember
+toMentionedMember :: (GroupMemberId, MemberId, GroupMemberRole, Text, Maybe Text) -> CIMention
 toMentionedMember (groupMemberId, memberId, memberRole, displayName, localAlias) =
-  let memberRef = Just MentionedMemberInfo {groupMemberId, displayName, localAlias, memberRole}
-   in MentionedMember {memberId, memberRef}
+  let memberRef = Just CIMentionMember {groupMemberId, displayName, localAlias, memberRole}
+   in CIMention {memberId, memberRef}
 
 getGroupMemberById :: DB.Connection -> VersionRangeChat -> User -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMemberById db vr user@User {userId} groupMemberId =

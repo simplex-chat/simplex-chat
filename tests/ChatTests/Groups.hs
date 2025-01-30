@@ -21,10 +21,11 @@ import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
-import Simplex.Chat.Library.Internal (uniqueMsgMentions)
-import Simplex.Chat.Messages (ChatItemId)
+import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Markdown (parseMaybeMarkdownList)
+import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (MemberMention (..), supportedChatVRange)
+import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText, supportedChatVRange)
 import Simplex.Chat.Types (MemberId (..), VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
@@ -191,7 +192,9 @@ chatGroupTests = do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
     it "should send messages with member mentions" testMemberMention
+    it "should forward and quote message updating mentioned member name" testForwardQuoteMention
     describe "uniqueMsgMentions" testUniqueMsgMentions
+    describe "updatedMentionNames" testUpdatedMentionNames
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -6684,6 +6687,72 @@ testMemberMention =
           bob <# "#team cath> hello @Alice"
         ]
 
+testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
+testForwardQuoteMention =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob #> "#team hello @alice @cath"
+      concurrentlyN_
+        [ alice <# "#team bob!> hello @alice @cath",
+          cath <# "#team bob!> hello @alice @cath"
+        ]
+      -- quote mentions
+      alice `send` "> #team @bob (hello) hi there!"
+      alice <# "#team > bob hello @alice @cath"
+      alice <## "      hi there!"
+      concurrently_
+        ( do
+            bob <# "#team alice!> > bob hello @alice @cath"
+            bob <## "      hi there!"
+        )
+        ( do
+            cath <# "#team alice> > bob hello @alice @cath"
+            cath <## "      hi there!"
+        )
+      -- forward mentions to the same group
+      alice `send` "#team <- #team hello"
+      alice <# "#team <- #team"
+      alice <## "      hello @alice @cath"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> -> forwarded"
+            bob <## "      hello @alice @cath",
+          do
+            cath <# "#team alice!> -> forwarded"
+            cath <## "      hello @alice @cath"          
+        ]
+      -- forward mentions
+      alice `send` "@bob <- #team hello"
+      alice <# "@bob <- #team"
+      alice <## "      hello @alice @cath"
+      bob <# "alice> -> forwarded"
+      bob <## "      hello @alice @cath"
+      -- member renamed to duplicate name
+      cath ##> "/p alice_1"
+      cath <## "user profile is changed to alice_1 (your 1 contacts are notified)"
+      alice <## "contact cath changed to alice_1"
+      alice <## "use @alice_1 <message> to send messages"
+      -- mention changed in quoted mentions
+      alice `send` "> #team @bob (hello) hi there!"
+      alice <# "#team > bob hello @alice @alice_1"
+      alice <## "      hi there!"
+      concurrently_
+        ( do
+            bob <# "#team alice!> > bob hello @alice @alice_1"
+            bob <## "      hi there!"
+        )
+        ( do
+            cath <# "#team alice> > bob hello @alice @alice_1"
+            cath <## "      hi there!"
+        )
+      -- mention changed in forwarded message
+      alice `send` "@bob <- #team hello"
+      alice <# "@bob <- #team"
+      alice <## "      hello @alice @alice_1"
+      bob <# "alice> -> forwarded"
+      bob <## "      hello @alice @alice_1"
+
 testUniqueMsgMentions :: SpecWith TestParams
 testUniqueMsgMentions = do
   it "1 correct mention" $ \_ ->
@@ -6702,4 +6771,30 @@ testUniqueMsgMentions = do
     uniqueMsgMentions 2 (mm [("alice", "abcd"), ("alice2", "abcd"), ("bob", "efgh"), ("bob2", "efgh")]) ["alice", "alice2", "bob", "bob2"]
       `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
   where
-    mm = M.fromList . map (second $ MemberMention . MemberId)
+    mm = M.fromList . map (second $ MsgMention . MemberId)
+
+testUpdatedMentionNames :: SpecWith TestParams
+testUpdatedMentionNames = do
+  it "keep mentions" $ \_ -> do
+    test (mm [("alice", Just "alice"), ("bob", Nothing)]) "hello @alice @bob"
+      `shouldBe` "hello @alice @bob"
+    test (mm [("alice_1", Just "alice"), ("alice", Just "alice")]) "hello @alice @alice_1"
+      `shouldBe` "hello @alice @alice_1"
+  it "keep non-mentions" $ \_ -> do
+    test (mm []) "hello @alice @bob"
+      `shouldBe` "hello @alice @bob"
+    test (mm [("alice", Just "alice")]) "hello @alice @bob"
+      `shouldBe` "hello @alice @bob"
+  it "replace changed names" $ \_ -> do
+    test (mm [("alice", Just "Alice Jones"), ("bob", Just "robert")]) "hello @alice @bob"
+      `shouldBe` "hello @'Alice Jones' @robert"
+    test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
+      `shouldBe` "hello @alice @alice_1"
+  where
+    test mentions t =
+      let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentions
+       in msgContentText mc'
+    mm = M.fromList . map (second mentionedMember)
+    mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = memberInfo <$> name_}
+      where
+        memberInfo name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}

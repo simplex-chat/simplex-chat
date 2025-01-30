@@ -226,7 +226,7 @@ directoryCmdP =
         gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameTextP
 
 viewName :: Text -> Text
-viewName n = if any (== ' ') (T.unpack n) then "'" <> n <> "'" else n
+viewName n = if T.any (== ' ') n then "'" <> n <> "'" else n
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
