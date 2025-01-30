@@ -26,6 +26,7 @@ struct ChatView: View {
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
+    @State private var selectedRange = NSRange()
     @State private var keyboardVisible = false
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
@@ -76,6 +77,9 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
+                    if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
+                        GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
+                    }
                     FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
                 }
                 connectingText()
@@ -83,7 +87,8 @@ struct ChatView: View {
                     ComposeView(
                         chat: chat,
                         composeState: $composeState,
-                        keyboardVisible: $keyboardVisible
+                        keyboardVisible: $keyboardVisible,
+                        selectedRange: $selectedRange
                     )
                     .disabled(!cInfo.sendMsgEnabled)
                 } else {

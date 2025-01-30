@@ -18,6 +18,7 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var focused: Bool
     @Binding var placeholder: String?
     let onImagesAdded: ([UploadContent]) -> Void
+    let onTextSelectedRangeChanged: (NSRange) -> Void
     
     private let minHeight: CGFloat = 37
 
@@ -52,6 +53,7 @@ struct NativeTextEditor: UIViewRepresentable {
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
         field.setPlaceholderView()
+        field.onTextSelectedRangeChanged = onTextSelectedRangeChanged
         updateFont(field)
         updateHeight(field)
         return field
@@ -102,6 +104,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     var height: Binding<CGFloat>
     var newHeight: CGFloat = 0
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
+    var onTextSelectedRangeChanged: (NSRange) -> Void = { _ in }
     var onFocusChanged: (Bool) -> Void = { focused in }
     
     private let placeholderLabel: UILabel = UILabel()
@@ -232,10 +235,16 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     
     func textViewDidBeginEditing(_ textView: UITextView) {
         onFocusChanged(true)
+        onTextSelectedRangeChanged(textView.selectedRange)
     }
     
     func textViewDidEndEditing(_ textView: UITextView) {
         onFocusChanged(false)
+        onTextSelectedRangeChanged(textView.selectedRange)
+    }
+    
+    func textViewDidChangeSelection(_ textView: UITextView) {
+        onTextSelectedRangeChanged(textView.selectedRange)
     }
 }
 
@@ -247,7 +256,8 @@ struct NativeTextEditor_Previews: PreviewProvider{
             height: Binding.constant(100),
             focused: Binding.constant(false),
             placeholder: Binding.constant("Placeholder"),
-            onImagesAdded: { _ in }
+            onImagesAdded: { _ in },
+            onTextSelectedRangeChanged: { _ in }
         )
         .fixedSize(horizontal: false, vertical: true)
     }

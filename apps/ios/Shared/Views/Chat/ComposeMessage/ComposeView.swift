@@ -96,21 +96,23 @@ struct ComposeState {
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
-        voiceMessageRecordingState: VoiceMessageRecordingState? = nil
+        voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
+        mentions: [MemberMention]? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
             liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
-            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
+            voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState,
+            mentions: mentions ?? self.mentions
         )
     }
     
-    func mentionMemberName(name: String, n: Int = 0) -> String {
+    func mentionMemberName(_ name: String, _ n: Int = 0) -> String {
         let tryName = n == 0 ? name : "\(name)_\(n)"
         let used = mentions.contains { $0.memberName == tryName }
-        return used ? mentionMemberName(name: name, n: n + 1) : tryName
+        return used ? mentionMemberName(name, n + 1) : tryName
     }
     
     var memberMentions: [String: Int64] {
@@ -319,6 +321,7 @@ struct ComposeView: View {
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
+    @Binding var selectedRange: NSRange
 
     @State var linkUrl: URL? = nil
     @State var hasSimplexLink: Bool = false
@@ -402,6 +405,7 @@ struct ComposeView: View {
                 ZStack(alignment: .leading) {
                     SendMessageView(
                         composeState: $composeState,
+                        selectedRange: $selectedRange,
                         sendMessage: { ttl in
                             sendMessage(ttl: ttl)
                             resetLinkPreview()
@@ -1262,18 +1266,21 @@ struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
         @State var composeState = ComposeState(message: "hello")
+        @State var selectedRange = NSRange()
 
         return Group {
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: Binding.constant(true)
+                keyboardVisible: Binding.constant(true),
+                selectedRange: $selectedRange
             )
             .environmentObject(ChatModel())
             ComposeView(
                 chat: chat,
                 composeState: $composeState,
-                keyboardVisible: Binding.constant(true)
+                keyboardVisible: Binding.constant(true),
+                selectedRange: $selectedRange
             )
             .environmentObject(ChatModel())
         }

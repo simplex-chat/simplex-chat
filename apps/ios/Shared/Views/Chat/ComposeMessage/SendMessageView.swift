@@ -13,6 +13,7 @@ private let liveMsgInterval: UInt64 = 3000_000000
 
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
+    @Binding var selectedRange: NSRange
     @EnvironmentObject var theme: AppTheme
     var sendMessage: (Int?) -> Void
     var sendLiveMessage: (() async -> Void)? = nil
@@ -62,7 +63,10 @@ struct SendMessageView: View {
                             height: $teHeight,
                             focused: $keyboardVisible,
                             placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
-                            onImagesAdded: onMediaAdded
+                            onImagesAdded: onMediaAdded,
+                            onTextSelectedRangeChanged: { range in
+                                selectedRange = range
+                            }
                         )
                         .allowsTightening(false)
                         .fixedSize(horizontal: false, vertical: true)
@@ -424,8 +428,10 @@ struct SendMessageView: View {
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
         @State var composeStateNew = ComposeState()
+        @State var selectedRange = NSRange()
         let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
         @State var composeStateEditing = ComposeState(editingItem: ci)
+        @State var selectedRangeEditing = NSRange()
         @State var sendEnabled: Bool = true
 
         return Group {
@@ -434,6 +440,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateNew,
+                    selectedRange: $selectedRange,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
                     keyboardVisible: Binding.constant(true)
@@ -444,6 +451,7 @@ struct SendMessageView_Previews: PreviewProvider {
                 Spacer(minLength: 0)
                 SendMessageView(
                     composeState: $composeStateEditing,
+                    selectedRange: $selectedRangeEditing,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
                     keyboardVisible: Binding.constant(true)

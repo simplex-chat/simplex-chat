@@ -123,9 +123,6 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 }
 
-let MENTION_START = "@"
-let QUOTE = "'"
-
 private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, mentions: [String: CIMention]?, groupMembershipId: String?) -> Text {
     let t = ft.text
     if let f = ft.format {
@@ -150,7 +147,7 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, 
             case .browser: return linkText(t, simplexUri, preview, prefix: "")
             }
         case .mention:
-            if let m = mentions?[String(t.replacingOccurrences(of: QUOTE, with: "").dropFirst())] {
+            if let m = mentions?[String(t.replacingOccurrences(of: "\(QUOTE)", with: "").dropFirst())] {
                 if let ref = m.memberRef {
                     let name = (ref.localAlias?.isEmpty ?? true) ? ref.displayName : "\(ref.localAlias!) (\(ref.displayName))"
                     if m.memberId == groupMembershipId {
