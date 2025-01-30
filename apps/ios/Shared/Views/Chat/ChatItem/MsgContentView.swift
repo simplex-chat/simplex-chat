@@ -32,6 +32,8 @@ struct MsgContentView: View {
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
     var meta: CIMeta? = nil
+    var mentions: [String: CIMention]? = nil
+    var groupMembershipId: String? = nil
     var rightToLeft = false
     var showSecrets: Bool
     var prefix: Text? = nil
@@ -68,7 +70,7 @@ struct MsgContentView: View {
     }
 
     private func msgContentView() -> Text {
-        var v = messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
+        var v = messageText(text, formattedText, sender, mentions: mentions, groupMembershipId: groupMembershipId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
         if let mt = meta {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
@@ -90,15 +92,15 @@ struct MsgContentView: View {
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool, secondaryColor: Color, prefix: Text? = nil) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, mentions: [String: CIMention]?, groupMembershipId: String?, showSecrets: Bool, secondaryColor: Color, prefix: Text? = nil) -> Text {
     let s = text
     var res: Text
     
     if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
-        res = formatText(ft[0], preview, showSecret: showSecrets)
+        res = formatText(ft[0], preview, showSecret: showSecrets, mentions: mentions, groupMembershipId: groupMembershipId)
         var i = 1
         while i < ft.count {
-            res = res + formatText(ft[i], preview, showSecret: showSecrets)
+            res = res + formatText(ft[i], preview, showSecret: showSecrets, mentions: mentions, groupMembershipId: groupMembershipId)
             i = i + 1
         }
     } else {
@@ -121,7 +123,10 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 }
 
-private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool) -> Text {
+let MENTION_START = "@"
+let QUOTE = "'"
+
+private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, mentions: [String: CIMention]?, groupMembershipId: String?) -> Text {
     let t = ft.text
     if let f = ft.format {
         switch (f) {
@@ -144,7 +149,18 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool) 
             case .full: return linkText(t, simplexUri, preview, prefix: "")
             case .browser: return linkText(t, simplexUri, preview, prefix: "")
             }
-        case .mention: return Text(t).fontWeight(.semibold)
+        case .mention:
+            if let m = mentions?[String(t.replacingOccurrences(of: QUOTE, with: "").dropFirst())] {
+                if let ref = m.memberRef {
+                    let name = (ref.localAlias?.isEmpty ?? true) ? ref.displayName : "\(ref.localAlias!) (\(ref.displayName))"
+                    if m.memberId == groupMembershipId {
+                        return Text("@\(name)").fontWeight(.semibold).foregroundColor(.accentColor)
+                    } else {
+                        return Text("@\(name)").fontWeight(.semibold)
+                    }
+                }
+            }
+            return Text(t)
         case .email: return linkText(t, t, preview, prefix: "mailto:")
         case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
         }

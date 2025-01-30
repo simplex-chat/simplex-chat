@@ -2087,6 +2087,16 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
         : name
     }
+    
+    public var localAliasAndFullName: String {
+        get {
+            let p = memberProfile
+            let fullName = p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+            let name = p.localAlias == "" ? fullName : "\(p.localAlias) (\(fullName))"
+
+            return pastMember(name)
+        }
+    }
 
     public var memberActive: Bool {
         switch memberStatus {
@@ -2448,7 +2458,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, quotedItem, reactions, file
+        case chatDir, meta, content, formattedText, mentions, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }

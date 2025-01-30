@@ -229,7 +229,7 @@ struct ChatPreviewView: View {
         let msg = draft.message
         return image("rectangle.and.pencil.and.ellipsis", color: theme.colors.primary)
                 + attachment()
-                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, mentions: nil, groupMembershipId: nil, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
             Text(Image(systemName: s)).foregroundColor(color) + textSpace
@@ -248,7 +248,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary, prefix: prefix())
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, mentions: cItem.mentions, groupMembershipId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: false, secondaryColor: theme.colors.secondary, prefix: prefix())
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type

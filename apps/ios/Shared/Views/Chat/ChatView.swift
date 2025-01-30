@@ -1227,7 +1227,7 @@ struct ChatView: View {
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
-                    ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(ci: ci, chatInfo: chat.chatInfo, chatItemInfo: $chatItemInfo)
                 }
         }
 
