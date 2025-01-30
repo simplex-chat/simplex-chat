@@ -4379,20 +4379,6 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE group_profiles
-      SET preferences = ?, updated_at = ?
-      WHERE group_profile_id IN (
-        SELECT group_profile_id
-        FROM groups
-        WHERE user_id = ? AND group_id = ?
-      )
-    
-Plan:
-SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
-LIST SUBQUERY 1
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
       UPDATE group_snd_item_statuses
       SET group_snd_item_status = ?, updated_at = ?
       WHERE chat_item_id = ? AND group_member_id  = ?
@@ -4948,6 +4934,10 @@ INDEX 2
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=? AND item_ts=? AND rowid>?)
 USE TEMP B-TREE FOR ORDER BY
 
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND msg_content_tag = ?  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_item_ts (user_id=? AND group_id=? AND msg_content_tag=?)
@@ -5468,7 +5458,7 @@ Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
-Query: SELECT COUNT(1), SUM(user_mention)  FROM chat_items WHERE user_id = ? AND group_id = ?  AND item_status = ? 
+Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND item_status = ? 
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
@@ -5917,6 +5907,10 @@ Plan:
 SCAN groups
 
 Query: UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
