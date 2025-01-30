@@ -2530,7 +2530,7 @@ testSetChatItemTTL =
 
 testSetDirectChatTTL :: HasCallStack => TestParams -> IO ()
 testSetDirectChatTTL =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
         connectUsers alice bob
         connectUsers alice cath
