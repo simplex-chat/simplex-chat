@@ -2933,10 +2933,9 @@ processChatCommand' vr = \case
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposeMessageReq -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      ct@Contact {contactUsed} <- withFastStore $ \db -> getContact db vr user contactId
+      ct <- withFastStore $ \db -> getContact db vr user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
       assertVoiceAllowed ct
-      unless contactUsed $ withFastStore' $ \db -> updateContactUsed db user ct
       processComposedMessages ct
       where
         assertVoiceAllowed :: Contact -> CM ()
@@ -3517,41 +3516,16 @@ cleanupManager = do
       forM_ contacts $ \ct ->
         withStore (\db -> deleteContactWithoutGroups db user ct)
           `catchChatError` (toView . CRChatError (Just user))
-    cleanupDeletedGroups user@User {userId} = do
+    cleanupDeletedGroups user = do
       vr <- chatVersionRange
       groups <- withStore' $ \db -> getDeletedGroups db vr user
       forM_ groups $ \g ->
-        cleanupGroup vr g `catchChatError` (toView . CRChatError (Just user))
+        cleanupGroup g `catchChatError` (toView . CRChatError (Just user))
       where
-        cleanupGroup :: VersionRangeChat -> Group -> CM ()
-        cleanupGroup vr Group {groupInfo = gInfo, members} = do
-          let contactIds = mapMaybe memberContactId members
-          (errs1, (errs2, deletedCtIds, connIds)) <- lift $ second unzip3 . partitionEithers <$> withStoreBatch (\db -> map (deleteUnusedContact db) contactIds)
-          let errs = errs1 <> mapMaybe (fmap ChatErrorStore) errs2
-          unless (null errs) $ toView $ CRChatErrors (Just user) errs
-          deleteAgentConnectionsAsync user $ concat connIds
-          let deletedCtIds' = catMaybes deletedCtIds
-              members' = map (updateContactId deletedCtIds') members
-          withFastStore' $ \db -> deleteGroupMembers db user gInfo members'
+        cleanupGroup :: Group -> CM ()
+        cleanupGroup Group {groupInfo = gInfo, members} = do
+          withFastStore' $ \db -> deleteGroupMembers db user gInfo members
           withFastStore' $ \db -> deleteGroup db user gInfo
-          where
-            deleteUnusedContact :: DB.Connection -> ContactId -> IO (Either ChatError (Maybe StoreError, Maybe ContactId, [ConnId]))
-            deleteUnusedContact db contactId = runExceptT . withExceptT ChatErrorStore $ do
-              ct <- getContact db vr user contactId
-              ifM
-                ((directOrUsed ct ||) . isJust <$> liftIO (checkContactHasGroups db user ct gInfo))
-                (pure (Nothing, Nothing, []))
-                (deleteCt ct)
-              where
-                deleteCt :: Contact -> ExceptT StoreError IO (Maybe StoreError, Maybe ContactId, [ConnId])
-                deleteCt ct = do
-                  conns <- liftIO $ getContactConnections db vr userId ct
-                  e_ <- (deleteContactWithoutDeletingProfile db user ct $> Nothing) `catchStoreError` (pure . Just)
-                  pure (e_, Just contactId, map aConnId conns)
-            updateContactId :: [ContactId] -> GroupMember -> GroupMember
-            updateContactId _ m@GroupMember {memberContactId = Nothing} = m
-            updateContactId deletedCtIds m@GroupMember {memberContactId = Just mctId} =
-              m {memberContactId = if mctId `elem` deletedCtIds then Nothing else Just mctId}
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts

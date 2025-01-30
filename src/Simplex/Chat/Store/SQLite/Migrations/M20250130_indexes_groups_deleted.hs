@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20250123_indexes_groups_deleted where
+module Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes_groups_deleted where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20250123_indexes_groups_deleted :: Query
-m20250123_indexes_groups_deleted =
+m20250130_indexes_groups_deleted :: Query
+m20250130_indexes_groups_deleted =
   [sql|
 CREATE INDEX idx_chat_items_group_id ON chat_items(group_id);
 
@@ -18,8 +18,8 @@ CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(group_id, share
 ALTER TABLE groups ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
 |]
 
-down_m20250123_indexes_groups_deleted :: Query
-down_m20250123_indexes_groups_deleted =
+down_m20250130_indexes_groups_deleted :: Query
+down_m20250130_indexes_groups_deleted =
   [sql|
 ALTER TABLE groups DROP COLUMN deleted;
 

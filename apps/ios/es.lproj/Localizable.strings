@@ -242,9 +242,6 @@
 "%lld new interface languages" = "%lld idiomas de interfaz nuevos";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld segundo(s)";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld segundos";
 
 /* No comment provided by engineer. */
@@ -289,7 +286,8 @@
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "un dia";
 
 /* time interval */
@@ -298,10 +296,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 minuto";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "un mes";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "una semana";
 
 /* No comment provided by engineer. */
@@ -332,7 +332,7 @@
 "A separate TCP connection will be used **for each chat profile you have in the app**." = "Se usará una conexión TCP independiente **por cada perfil que tengas en la aplicación**.";
 
 /* No comment provided by engineer. */
-"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Se usará una conexión TCP independiente **por cada contacto y miembro de grupo**.\n**Atención**: si tienes muchas conexiones, tu consumo de batería y tráfico pueden ser sustancialmente mayores y algunas conexiones pueden fallar.";
+"A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "Se usará una conexión TCP independiente **por cada contacto y miembro de grupo**.\n**Atención**: si tienes muchas conexiones, tu consumo de batería y tráfico pueden aumentar bastante y algunas conexiones pueden fallar.";
 
 /* No comment provided by engineer. */
 "Abort" = "Cancelar";
@@ -416,7 +416,7 @@
 "Add welcome message" = "Añadir mensaje de bienvenida";
 
 /* No comment provided by engineer. */
-"Add your team members to the conversations." = "Añade a los miembros de tu equipo a las conversaciones.";
+"Add your team members to the conversations." = "Añade a miembros de tu equipo a las conversaciones.";
 
 /* No comment provided by engineer. */
 "Added media & file servers" = "Servidores de archivos y multimedia añadidos";
@@ -443,7 +443,7 @@
 "Address or 1-time link?" = "¿Dirección o enlace de un uso?";
 
 /* No comment provided by engineer. */
-"Address settings" = "Configuración de dirección";
+"Address settings" = "Configurar dirección";
 
 /* member role */
 "admin" = "administrador";
@@ -626,7 +626,7 @@
 "App passcode is replaced with self-destruct passcode." = "El código de acceso será reemplazado por código de autodestrucción.";
 
 /* No comment provided by engineer. */
-"App session" = "Sesión de aplicación";
+"App session" = "por sesión";
 
 /* No comment provided by engineer. */
 "App version" = "Versión de la aplicación";
@@ -1033,7 +1033,7 @@
 "Clear conversation?" = "¿Vaciar conversación?";
 
 /* No comment provided by engineer. */
-"Clear private notes?" = "¿Borrar notas privadas?";
+"Clear private notes?" = "¿Eliminar notas privadas?";
 
 /* No comment provided by engineer. */
 "Clear verification" = "Eliminar verificación";
@@ -1476,7 +1476,8 @@
 /* No comment provided by engineer. */
 "decryption errors" = "errores de descifrado";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "predeterminado (%@)";
 
 /* No comment provided by engineer. */
@@ -1486,7 +1487,6 @@
 "default (yes)" = "predeterminado (sí)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "Eliminar";
 
@@ -1574,7 +1574,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "¿Eliminar mensaje?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "Eliminar mensaje";
 
 /* No comment provided by engineer. */
@@ -1836,7 +1836,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Activar (conservar anulaciones)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "¿Activar eliminación automática de mensajes?";
 
 /* No comment provided by engineer. */
@@ -1897,7 +1897,7 @@
 "Encrypt database?" = "¿Cifrar base de datos?";
 
 /* No comment provided by engineer. */
-"Encrypt local files" = "Cifra archivos locales";
+"Encrypt local files" = "Cifrar archivos locales";
 
 /* No comment provided by engineer. */
 "Encrypt stored files & media" = "Cifra archivos almacenados y multimedia";
@@ -1981,7 +1981,7 @@
 "Enter password above to show!" = "¡Introduce la contraseña arriba para mostrar!";
 
 /* No comment provided by engineer. */
-"Enter server manually" = "Introduce el servidor manualmente";
+"Enter server manually" = "Añadir manualmente";
 
 /* No comment provided by engineer. */
 "Enter this device name…" = "Nombre de este dispositivo…";
@@ -2259,7 +2259,7 @@
 /* swipe action */
 "Favorite" = "Favoritos";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "File error" = "Error de archivo";
 
 /* alert message */
@@ -2353,7 +2353,7 @@
 "For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Si por ejemplo tu contacto recibe los mensajes a través de un servidor de SimpleX Chat, tu aplicación los entregará a través de un servidor de Flux.";
 
 /* No comment provided by engineer. */
-"For private routing" = "Para el enrutamiento privado";
+"For private routing" = "Para enrutamiento privado";
 
 /* No comment provided by engineer. */
 "For social media" = "Para redes sociales";
@@ -3192,7 +3192,7 @@
 /* No comment provided by engineer. */
 "Network status" = "Estado de la red";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "nunca";
 
 /* No comment provided by engineer. */
@@ -3244,7 +3244,7 @@
 "New SOCKS credentials will be used every time you start the app." = "Se usarán credenciales SOCKS nuevas cada vez que inicies la aplicación.";
 
 /* No comment provided by engineer. */
-"New SOCKS credentials will be used for each server." = "Se usarán credenciales SOCKS nuevas por cada servidor.";
+"New SOCKS credentials will be used for each server." = "Se usarán credenciales SOCKS nuevas para cada servidor.";
 
 /* pref value */
 "no" = "no";
@@ -3286,10 +3286,10 @@
 "No info, try to reload" = "No hay información, intenta recargar";
 
 /* servers error */
-"No media & file servers." = "Ningún servidor de archivos y multimedia.";
+"No media & file servers." = "Sin servidores para archivos y multimedia.";
 
 /* servers error */
-"No message servers." = "Ningún servidor de mensajes.";
+"No message servers." = "Sin servidores para mensajes.";
 
 /* No comment provided by engineer. */
 "No network connection" = "Sin conexión de red";
@@ -3304,22 +3304,22 @@
 "No permission to record voice message" = "Sin permiso para grabar mensajes de voz";
 
 /* No comment provided by engineer. */
-"No push server" = "Ningún servidor push";
+"No push server" = "Sin servidores push";
 
 /* No comment provided by engineer. */
 "No received or sent files" = "Sin archivos recibidos o enviados";
 
 /* servers error */
-"No servers for private message routing." = "Ningún servidor para enrutamiento privado.";
+"No servers for private message routing." = "Sin servidores para enrutamiento privado.";
 
 /* servers error */
-"No servers to receive files." = "Ningún servidor para recibir archivos.";
+"No servers to receive files." = "Sin servidores para recibir archivos.";
 
 /* servers error */
-"No servers to receive messages." = "Ningún servidor para recibir mensajes.";
+"No servers to receive messages." = "Sin servidores para recibir mensajes.";
 
 /* servers error */
-"No servers to send files." = "Ningún servidor para enviar archivos.";
+"No servers to send files." = "Sin servidores para enviar archivos.";
 
 /* copied message info in history */
 "no text" = "sin texto";
@@ -3396,7 +3396,7 @@
 "Only client devices store user profiles, contacts, groups, and messages." = "Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes enviados con **cifrado de extremo a extremo de 2 capas**.";
 
 /* No comment provided by engineer. */
-"Only delete conversation" = "Sólo borrar la conversación";
+"Only delete conversation" = "Eliminar sólo la conversación";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Sólo los propietarios pueden modificar las preferencias del grupo.";
@@ -3483,7 +3483,7 @@
 "Or securely share this file link" = "O comparte de forma segura este enlace al archivo";
 
 /* No comment provided by engineer. */
-"Or show this code" = "O muestra este código QR";
+"Or show this code" = "O muestra el código QR";
 
 /* No comment provided by engineer. */
 "Or to share privately" = "O para compartir en privado";
@@ -3753,7 +3753,7 @@
 "Rate the app" = "Valora la aplicación";
 
 /* No comment provided by engineer. */
-"Reachable chat toolbar" = "Barra de herramientas accesible";
+"Reachable chat toolbar" = "Barra de chat accesible";
 
 /* chat item menu */
 "React…" = "Reacciona…";
@@ -3840,7 +3840,7 @@
 "Reconnect all servers?" = "¿Reconectar todos los servidores?";
 
 /* No comment provided by engineer. */
-"Reconnect server to force message delivery. It uses additional traffic." = "Reconectar el servidor para forzar la entrega de mensajes. Usa tráfico adicional.";
+"Reconnect server to force message delivery. It uses additional traffic." = "Reconectar con el servidor para forzar la entrega de mensajes. Se usa tráfico adicional.";
 
 /* No comment provided by engineer. */
 "Reconnect server?" = "¿Reconectar servidor?";
@@ -4103,7 +4103,7 @@
 "Scan security code from your contact's app." = "Escanea el código de seguridad desde la aplicación de tu contacto.";
 
 /* No comment provided by engineer. */
-"Scan server QR code" = "Escanear código QR del servidor";
+"Scan server QR code" = "Escanear código QR";
 
 /* No comment provided by engineer. */
 "search" = "buscar";
@@ -4407,7 +4407,7 @@
 "Share link" = "Compartir enlace";
 
 /* No comment provided by engineer. */
-"Share profile" = "Comparte perfil";
+"Share profile" = "Perfil a compartir";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "Comparte tu dirección SimpleX en redes sociales.";
@@ -4464,7 +4464,7 @@
 "SimpleX address or 1-time link?" = "¿Dirección SimpleX o enlace de un uso?";
 
 /* No comment provided by engineer. */
-"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "Simplex Chat y Flux han acordado incluir servidores operados por Flux en la aplicación";
+"SimpleX Chat and Flux made an agreement to include Flux-operated servers into the app." = "Simplex Chat y Flux han acordado incluir en la aplicación servidores operados por Flux.";
 
 /* No comment provided by engineer. */
 "SimpleX Chat security was audited by Trail of Bits." = "La seguridad de SimpleX Chat ha sido auditada por Trail of Bits.";
@@ -4578,7 +4578,7 @@
 "Stop chat" = "Parar SimpleX";
 
 /* No comment provided by engineer. */
-"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Para poder exportar, importar o eliminar la base de datos primero debes parar SimpleX. Mientras tanto no podrás recibir ni enviar mensajes.";
+"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Para exportar, importar o eliminar la base de datos debes parar SimpleX. Mientra tanto no podrás enviar ni recibir mensajes.";
 
 /* No comment provided by engineer. */
 "Stop chat?" = "¿Parar Chat?";
@@ -4614,7 +4614,7 @@
 "Submit" = "Enviar";
 
 /* No comment provided by engineer. */
-"Subscribed" = "Suscrito";
+"Subscribed" = "Suscritas";
 
 /* No comment provided by engineer. */
 "Subscription errors" = "Errores de suscripción";
@@ -4682,7 +4682,7 @@
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "Temporary file error" = "Error en archivo temporal";
 
 /* server test failure */
@@ -4779,10 +4779,10 @@
 "The sender will NOT be notified" = "El remitente NO será notificado";
 
 /* No comment provided by engineer. */
-"The servers for new connections of your current chat profile **%@**." = "Lista de servidores para las conexiones nuevas del perfil **%@**.";
+"The servers for new connections of your current chat profile **%@**." = "Servidores para conexiones nuevas en tu perfil **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "Los servidores para archivos nuevos en tu perfil actual **%@**.";
+"The servers for new files of your current chat profile **%@**." = "Servidores para archivos nuevos en tu perfil **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "El texto pegado no es un enlace SimpleX.";
@@ -4896,7 +4896,7 @@
 "To support instant push notifications the chat database has to be migrated." = "Para permitir las notificaciones automáticas instantáneas, la base de datos se debe migrar.";
 
 /* No comment provided by engineer. */
-"To use the servers of **%@**, accept conditions of use." = "Para usar los servidores de **%@**, acepta las condiciones de uso.";
+"To use the servers of **%@**, accept conditions of use." = "Para usar los servidores de **%@**, debes aceptar las condiciones de uso.";
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.";
@@ -5001,7 +5001,7 @@
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "A menos que utilices la interfaz de llamadas de iOS, activa el modo No molestar para evitar interrupciones.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "A menos que tu contacto haya eliminado la conexión o el enlace haya sido usado, podría ser un error. Por favor, notifícalo.\nPara conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.";
+"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "A menos que tu contacto haya eliminado la conexión o el enlace se haya usado, podría ser un error. Por favor, notifícalo.\nPara conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.";
 
 /* No comment provided by engineer. */
 "Unlink" = "Desenlazar";
@@ -5085,13 +5085,13 @@
 "Use current profile" = "Usar perfil actual";
 
 /* No comment provided by engineer. */
-"Use for files" = "Usar para archivos";
+"Use for files" = "Uso para archivos";
 
 /* No comment provided by engineer. */
-"Use for messages" = "Usar para mensajes";
+"Use for messages" = "Uso para mensajes";
 
 /* No comment provided by engineer. */
-"Use for new connections" = "Usar para conexiones nuevas";
+"Use for new connections" = "Para conexiones nuevas";
 
 /* No comment provided by engineer. */
 "Use from desktop" = "Usar desde ordenador";
@@ -5109,7 +5109,7 @@
 "Use private routing with unknown servers when IP address is not protected." = "Usar enrutamiento privado con servidores desconocidos cuando tu dirección IP no está protegida.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Usar enrutamiento privado con servidores de retransmisión desconocidos.";
+"Use private routing with unknown servers." = "Usar enrutamiento privado con servidores de mensaje desconocidos.";
 
 /* No comment provided by engineer. */
 "Use server" = "Usar servidor";
@@ -5391,7 +5391,7 @@
 "You are invited to group" = "Has sido invitado a un grupo";
 
 /* No comment provided by engineer. */
-"You are not connected to these servers. Private routing is used to deliver messages to them." = "No estás conectado a estos servidores. Para enviarles mensajes se usa el enrutamiento privado.";
+"You are not connected to these servers. Private routing is used to deliver messages to them." = "No tienes conexión directa a estos servidores. Los mensajes destinados a estos usan enrutamiento privado.";
 
 /* No comment provided by engineer. */
 "you are observer" = "Tu rol es observador";
@@ -5514,7 +5514,7 @@
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Debes usar la versión más reciente de tu base de datos ÚNICAMENTE en un dispositivo, de lo contrario podrías dejar de recibir mensajes de algunos contactos.";
 
 /* No comment provided by engineer. */
-"You need to allow your contact to call to be able to call them." = "Necesitas permitir que tus contacto llamen para poder llamarles.";
+"You need to allow your contact to call to be able to call them." = "Debes permitir que tus contacto te llamen para poder llamarles.";
 
 /* No comment provided by engineer. */
 "You need to allow your contact to send voice messages to be able to send them." = "Para poder enviar mensajes de voz antes debes permitir que tu contacto pueda enviarlos.";

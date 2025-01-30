@@ -35,6 +35,9 @@
 "(" = "(";
 
 /* No comment provided by engineer. */
+"(this device v%@)" = "(toto zařízení v%@)";
+
+/* No comment provided by engineer. */
 ")" = ")";
 
 /* No comment provided by engineer. */
@@ -109,6 +112,9 @@
 /* No comment provided by engineer. */
 "%@ connected" = "%@ připojen";
 
+/* No comment provided by engineer. */
+"%@ downloaded" = "%@ staženo";
+
 /* notification title */
 "%@ is connected!" = "%@ je připojen!";
 
@@ -118,8 +124,17 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ je ověřený";
 
+/* No comment provided by engineer. */
+"%@ server" = "%@ server";
+
+/* No comment provided by engineer. */
+"%@ servers" = "%@ servery";
+
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
+
+/* format for date separator in chat */
+"%@, %@" = "%1$@, %2$@";
 
 /* No comment provided by engineer. */
 "%@, %@ and %lld other members connected" = "%@, %@ a %lld ostatní členové připojeni";
@@ -164,13 +179,19 @@
 "%lld members" = "%lld členové";
 
 /* No comment provided by engineer. */
+"%lld messages blocked" = "%lld zprávy blokovaný";
+
+/* No comment provided by engineer. */
+"%lld messages blocked by admin" = "%lld zprávy blokovaný adminem";
+
+/* No comment provided by engineer. */
+"%lld messages marked deleted" = "%lld zprávy označeno jako smazáno";
+
+/* No comment provided by engineer. */
 "%lld minutes" = "%lld minut";
 
 /* No comment provided by engineer. */
 "%lld new interface languages" = "%d nové jazyky rozhraní";
-
-/* No comment provided by engineer. */
-"%lld second(s)" = "%lld vteřin";
 
 /* No comment provided by engineer. */
 "%lld seconds" = "%lld vteřin";
@@ -214,7 +235,8 @@
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "1 den";
 
 /* time interval */
@@ -223,10 +245,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 minutu";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "1 měsíc";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "1 týden";
 
 /* No comment provided by engineer. */
@@ -906,7 +930,8 @@
 /* message decrypt error item */
 "Decryption error" = "Chyba dešifrování";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "výchozí (%@)";
 
 /* No comment provided by engineer. */
@@ -916,7 +941,6 @@
 "default (yes)" = "výchozí (ano)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "Smazat";
 
@@ -983,7 +1007,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Smazat zprávu?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "Smazat zprávy";
 
 /* No comment provided by engineer. */
@@ -1142,7 +1166,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Povolit (zachovat přepsání)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "Povolit automatické mazání zpráv?";
 
 /* No comment provided by engineer. */
@@ -2030,7 +2054,7 @@
 /* No comment provided by engineer. */
 "Network status" = "Stav sítě";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "nikdy";
 
 /* notification */

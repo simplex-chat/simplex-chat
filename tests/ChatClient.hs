@@ -254,30 +254,6 @@ prevVersion (Version v) = Version (v - 1)
 nextVersion :: Version v -> Version v
 nextVersion (Version v) = Version (v + 1)
 
-testCfgCreateGroupDirect :: ChatConfig
-testCfgCreateGroupDirect =
-  mkCfgCreateGroupDirect testCfg
-
-mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg =
-  cfg
-    { chatVRange = groupCreateDirectVRange,
-      agentConfig = testAgentCfgSlow
-    }
-
-groupCreateDirectVRange :: VersionRangeChat
-groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
-
-testCfgGroupLinkViaContact :: ChatConfig
-testCfgGroupLinkViaContact =
-  mkCfgGroupLinkViaContact testCfg
-
-mkCfgGroupLinkViaContact :: ChatConfig -> ChatConfig
-mkCfgGroupLinkViaContact cfg = cfg {chatVRange = groupLinkViaContactVRange}
-
-groupLinkViaContactVRange :: VersionRangeChat
-groupLinkViaContactVRange = mkVersionRange (VersionChat 1) (VersionChat 2)
-
 createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix

@@ -46,7 +46,6 @@ module Simplex.Chat.Store.Direct
     updateContactConnectionAlias,
     updatePCCIncognito,
     deletePCCIncognitoProfile,
-    updateContactUsed,
     updateContactUnreadChat,
     setUserChatsRead,
     updateContactStatus,
@@ -240,10 +239,10 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createDirectContact :: DB.Connection -> User -> Connection -> Profile -> Bool -> ExceptT StoreError IO Contact
-createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} contactUsed = do
+createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs contactUsed
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
@@ -255,7 +254,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         profile,
         activeConn = Just conn,
         viaGroup = Nothing,
-        contactUsed,
+        contactUsed = True,
         contactStatus = CSActive,
         chatSettings = defaultChatSettings,
         userPreferences,
@@ -476,11 +475,6 @@ deletePCCIncognitoProfile db User {userId} profileId =
       WHERE user_id = ? AND contact_profile_id = ? AND incognito = 1
     |]
     (userId, profileId)
-
-updateContactUsed :: DB.Connection -> User -> Contact -> IO ()
-updateContactUsed db User {userId} Contact {contactId} = do
-  updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (updatedAt, userId, contactId)
 
 updateContactUnreadChat :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactUnreadChat db User {userId} Contact {contactId} unreadChat = do

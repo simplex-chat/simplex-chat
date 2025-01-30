@@ -221,7 +221,8 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250105_indexes
           Simplex.Chat.Store.SQLite.Migrations.M20250115_chat_ttl
           Simplex.Chat.Store.SQLite.Migrations.M20250122_chat_items_include_in_history
-          Simplex.Chat.Store.SQLite.Migrations.M20250123_indexes_groups_deleted
+          Simplex.Chat.Store.SQLite.Migrations.M20250129_delete_unused_contacts
+          Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes_groups_deleted
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
