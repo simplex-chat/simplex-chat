@@ -52,7 +52,7 @@ public enum ChatCommand {
     case apiReorderChatTags(tagIds: [Int64])
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String)
-    case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
+    case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
@@ -226,7 +226,7 @@ public enum ChatCommand {
                 return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
                 return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
-            case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
+            case let .apiUpdateChatItem(type, id, itemId, um, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(um.cmdString)"
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
@@ -1229,11 +1229,27 @@ public struct ComposedMessage: Encodable {
     public var fileSource: CryptoFile?
     var quotedItemId: Int64?
     public var msgContent: MsgContent
+    public var mentions: [String: Int64]
 
-    public init(fileSource: CryptoFile? = nil, quotedItemId: Int64? = nil, msgContent: MsgContent) {
+    public init(fileSource: CryptoFile? = nil, quotedItemId: Int64? = nil, msgContent: MsgContent, mentions: [String: Int64] = [:]) {
         self.fileSource = fileSource
         self.quotedItemId = quotedItemId
         self.msgContent = msgContent
+        self.mentions = mentions
+    }
+}
+
+public struct UpdatedMessage: Encodable {
+    public var msgContent: MsgContent
+    public var mentions: [String: Int64]
+
+    public init(msgContent: MsgContent, mentions: [String: Int64] = [:]) {
+        self.msgContent = msgContent
+        self.mentions = mentions
+    }
+    
+    var cmdString: String {
+        "json \(encodeJSON(self))"
     }
 }
 

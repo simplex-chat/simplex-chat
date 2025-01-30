@@ -2394,6 +2394,18 @@ public struct AChatItem: Decodable, Hashable {
     }
 }
 
+public struct CIMentionMember: Decodable, Hashable {
+    public var groupMemberId: Int64
+    public var displayName: String
+    public var localAlias: String?
+    public var memberRole: GroupMemberRole
+}
+
+public struct CIMention: Decodable, Hashable {
+    public var memberId: String
+    public var memberRef: CIMentionMember?
+}
+
 public struct ACIReaction: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatReaction: CIReaction
@@ -2412,11 +2424,12 @@ public struct CIReaction: Decodable, Hashable {
 }
 
 public struct ChatItem: Identifiable, Decodable, Hashable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
+        self.mentions = mentions
         self.quotedItem = quotedItem
         self.reactions = reactions
         self.file = file
@@ -2426,6 +2439,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var meta: CIMeta
     public var content: CIContent
     public var formattedText: [FormattedText]?
+    public var mentions: [String: CIMention]?
     public var quotedItem: CIQuote?
     public var reactions: [CIReactionCount]
     public var file: CIFile?
@@ -2745,6 +2759,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2767,6 +2782,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2789,6 +2805,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: true,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2862,6 +2879,7 @@ public struct CIMeta: Decodable, Hashable {
     public var itemEdited: Bool
     public var itemTimed: CITimed?
     public var itemLive: Bool?
+    public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
 
@@ -2886,6 +2904,7 @@ public struct CIMeta: Decodable, Hashable {
             itemDeleted: itemDeleted,
             itemEdited: itemEdited,
             itemLive: itemLive,
+            userMention: false,
             deletable: deletable,
             editable: editable
         )
@@ -2902,6 +2921,7 @@ public struct CIMeta: Decodable, Hashable {
             itemDeleted: nil,
             itemEdited: false,
             itemLive: false,
+            userMention: false,
             deletable: false,
             editable: false
         )
@@ -3937,6 +3957,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case colored(color: FormatColor)
     case uri
     case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case mention(memberName: String)
     case email
     case phone
 

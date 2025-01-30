@@ -11,6 +11,8 @@ import SimpleXChat
 import SwiftyGif
 import PhotosUI
 
+let MAX_NUMBER_OF_MENTIONS = 3
+
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
@@ -39,6 +41,11 @@ struct LiveMessage {
     var sentMsg: String?
 }
 
+struct MemberMention {
+    var memberName: String
+    var member: GroupMember
+}
+
 struct ComposeState {
     var message: String
     var liveMessage: LiveMessage? = nil
@@ -47,19 +54,22 @@ struct ComposeState {
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+    var mentions: [MemberMention] = []
 
     init(
         message: String = "",
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
-        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording
+        voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
+        mentions: [MemberMention] = []
     ) {
         self.message = message
         self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
         self.voiceMessageRecordingState = voiceMessageRecordingState
+        self.mentions = mentions
     }
 
     init(editingItem: ChatItem) {
@@ -95,6 +105,22 @@ struct ComposeState {
             contextItem: contextItem ?? self.contextItem,
             voiceMessageRecordingState: voiceMessageRecordingState ?? self.voiceMessageRecordingState
         )
+    }
+    
+    func mentionMemberName(name: String, n: Int = 0) -> String {
+        let tryName = n == 0 ? name : "\(name)_\(n)"
+        let used = mentions.contains { $0.memberName == tryName }
+        return used ? mentionMemberName(name: name, n: n + 1) : tryName
+    }
+    
+    var memberMentions: [String: Int64] {
+        self.mentions.reduce(into: [String: Int64]()) { result, mention in
+            result[mention.memberName] = mention.member.groupMemberId
+        }
+    }
+    
+    var maxMemberMentionsReached: Bool {
+        self.mentions.count >= MAX_NUMBER_OF_MENTIONS
     }
 
     var editing: Bool {
@@ -793,6 +819,7 @@ struct ComposeView: View {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
+        let mentions = composeState.memberMentions
         if !live {
             if liveMessage != nil { composeState = composeState.copy(liveMessage: nil) }
             await sending()
@@ -803,7 +830,7 @@ struct ComposeView: View {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -819,10 +846,11 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
             case let .mediaPreviews(media):
+                // TODO: CHECK THIS
                 let last = media.count - 1
                 var msgs: [ComposedMessage] = []
                 if last >= 0 {
@@ -847,10 +875,10 @@ struct ComposeView: View {
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions)
                 }
             }
         }
@@ -905,7 +933,7 @@ struct ComposeView: View {
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             itemId: ei.id,
-                            msg: mc,
+                            um: UpdatedMessage(msgContent: mc, mentions: composeState.memberMentions),
                             live: live
                         )
                         await MainActor.run {
@@ -977,9 +1005,9 @@ struct ComposeView: View {
             return nil
         }
                 
-        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64]) async -> ChatItem? {
             await send(
-                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)],
+                [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],
                 live: live,
                 ttl: ttl
             ).first

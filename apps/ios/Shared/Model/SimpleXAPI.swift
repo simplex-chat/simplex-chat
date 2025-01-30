@@ -485,8 +485,8 @@ private func createChatItemsErrorAlert(_ r: ChatResponse) {
     )
 }
 
-func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool = false) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, msg: msg, live: live), bgDelay: msgDelay)
+func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, um: UpdatedMessage, live: Bool = false) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, updatedMessage: um, live: live), bgDelay: msgDelay)
     if case let .chatItemUpdated(_, aChatItem) = r { return aChatItem.chatItem }
     throw r
 }

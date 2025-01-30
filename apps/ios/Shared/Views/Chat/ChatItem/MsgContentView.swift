@@ -144,6 +144,7 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool) 
             case .full: return linkText(t, simplexUri, preview, prefix: "")
             case .browser: return linkText(t, simplexUri, preview, prefix: "")
             }
+        case .mention: return Text(t).fontWeight(.semibold)
         case .email: return linkText(t, t, preview, prefix: "mailto:")
         case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
         }
