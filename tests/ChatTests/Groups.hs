@@ -15,12 +15,17 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
+import Data.Bifunctor (second)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
-import Simplex.Chat.Messages (ChatItemId)
+import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Markdown (parseMaybeMarkdownList)
+import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
+import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
@@ -169,6 +174,12 @@ chatGroupTests = do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
+  describe "group member mentions" $ do
+    it "should send and edit messages with member mentions" testMemberMention
+    it "should forward and quote message updating mentioned member name" testForwardQuoteMention
+    it "should send updated mentions in history" testGroupHistoryWithMentions
+    describe "uniqueMsgMentions" testUniqueMsgMentions
+    describe "updatedMentionNames" testUpdatedMentionNames
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -1009,7 +1020,7 @@ testGroupMessageQuotedReply =
       bob <## "      hello, all good, you?"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hello! how are you?"
+            alice <# "#team bob!> > alice hello! how are you?"
             alice <## "      hello, all good, you?"
         )
         ( do
@@ -1044,7 +1055,7 @@ testGroupMessageQuotedReply =
             alice <## "      hi there!"
         )
         ( do
-            bob <# "#team cath> > bob hello, all good, you?"
+            bob <# "#team cath!> > bob hello, all good, you?"
             bob <## "      hi there!"
         )
       cath #$> ("/_get chat #1 count=1", chat', [((1, "hi there!"), Just (0, "hello, all good, you?"))])
@@ -1055,7 +1066,7 @@ testGroupMessageQuotedReply =
       alice <## "      go on"
       concurrently_
         ( do
-            bob <# "#team alice> > bob will tell more"
+            bob <# "#team alice!> > bob will tell more"
             bob <## "      go on"
         )
         ( do
@@ -1096,7 +1107,7 @@ testGroupMessageUpdate =
       bob <## "      hi alice"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hey 👋"
+            alice <# "#team bob!> > alice hey 👋"
             alice <## "      hi alice"
         )
         ( do
@@ -1123,7 +1134,7 @@ testGroupMessageUpdate =
       cath <## "      greetings!"
       concurrently_
         ( do
-            alice <# "#team cath> > alice greetings 🤝"
+            alice <# "#team cath!> > alice greetings 🤝"
             alice <## "      greetings!"
         )
         ( do
@@ -1237,7 +1248,7 @@ testGroupMessageDelete =
       bob <## "      hi alic"
       concurrently_
         ( do
-            alice <# "#team bob> > alice hello!"
+            alice <# "#team bob!> > alice hello!"
             alice <## "      hi alic"
         )
         ( do
@@ -4699,7 +4710,7 @@ testGroupHistoryQuotes =
       alice `send` "> #team @bob (BOB) 2"
       alice <# "#team > bob BOB"
       alice <## "      2"
-      bob <# "#team alice> > bob BOB"
+      bob <# "#team alice!> > bob BOB"
       bob <## "      2"
 
       threadDelay 1000000
@@ -4707,7 +4718,7 @@ testGroupHistoryQuotes =
       bob `send` "> #team @alice (ALICE) 3"
       bob <# "#team > alice ALICE"
       bob <## "      3"
-      alice <# "#team bob> > alice ALICE"
+      alice <# "#team bob!> > alice ALICE"
       alice <## "      3"
 
       threadDelay 1000000
@@ -5927,3 +5938,182 @@ testGroupMemberReports =
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
+
+testMemberMention :: HasCallStack => TestParams -> IO ()
+testMemberMention =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "#team hello!"
+      concurrentlyN_
+        [ bob <# "#team alice> hello!",
+          cath <# "#team alice> hello!"
+        ]
+      bob #> "#team hello @alice"
+      concurrentlyN_
+        [ alice <# "#team bob!> hello @alice",
+          cath <# "#team bob> hello @alice"
+        ]
+      alice #> "#team hello @bob @bob @cath"
+      concurrentlyN_
+        [ bob <# "#team alice!> hello @bob @bob @cath",
+          cath <# "#team alice!> hello @bob @bob @cath"
+        ]
+      cath #> "#team hello @Alice" -- not a mention
+      concurrentlyN_
+        [ alice <# "#team cath> hello @Alice",
+          bob <# "#team cath> hello @Alice"
+        ]
+      cath ##> "! #team hello @alice @bob"
+      cath <# "#team [edited] hello @alice @bob"
+      concurrentlyN_
+        [ alice <# "#team cath> [edited] hello @alice @bob",
+          bob <# "#team cath> [edited] hello @alice @bob"
+        ]
+
+testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
+testForwardQuoteMention =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      bob #> "#team hello @alice @cath"
+      concurrentlyN_
+        [ alice <# "#team bob!> hello @alice @cath",
+          cath <# "#team bob!> hello @alice @cath"
+        ]
+      -- quote mentions
+      alice `send` "> #team @bob (hello) hi there!"
+      alice <# "#team > bob hello @alice @cath"
+      alice <## "      hi there!"
+      concurrently_
+        ( do
+            bob <# "#team alice!> > bob hello @alice @cath"
+            bob <## "      hi there!"
+        )
+        ( do
+            cath <# "#team alice> > bob hello @alice @cath"
+            cath <## "      hi there!"
+        )
+      -- forward mentions to the same group
+      alice `send` "#team <- #team hello"
+      alice <# "#team <- #team"
+      alice <## "      hello @alice @cath"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> -> forwarded"
+            bob <## "      hello @alice @cath",
+          do
+            cath <# "#team alice!> -> forwarded"
+            cath <## "      hello @alice @cath"          
+        ]
+      -- forward mentions
+      alice `send` "@bob <- #team hello"
+      alice <# "@bob <- #team"
+      alice <## "      hello @alice @cath"
+      bob <# "alice> -> forwarded"
+      bob <## "      hello @alice @cath"
+      -- member renamed to duplicate name
+      cath ##> "/p alice_1"
+      cath <## "user profile is changed to alice_1 (your 1 contacts are notified)"
+      alice <## "contact cath changed to alice_1"
+      alice <## "use @alice_1 <message> to send messages"
+      -- mention changed in quoted mentions
+      alice `send` "> #team @bob (hello) hi there!"
+      alice <# "#team > bob hello @alice @alice_1"
+      alice <## "      hi there!"
+      concurrently_
+        ( do
+            bob <# "#team alice!> > bob hello @alice @alice_1"
+            bob <## "      hi there!"
+        )
+        ( do
+            cath <# "#team alice> > bob hello @alice @alice_1"
+            cath <## "      hi there!"
+        )
+      -- mention changed in forwarded message
+      alice `send` "@bob <- #team hello"
+      alice <# "@bob <- #team"
+      alice <## "      hello @alice @alice_1"
+      bob <# "alice> -> forwarded"
+      bob <## "      hello @alice @alice_1"
+
+testGroupHistoryWithMentions :: HasCallStack => TestParams -> IO ()
+testGroupHistoryWithMentions =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team hello @bob"
+      bob <# "#team alice!> hello @bob"
+
+      bob ##> "/p robert"
+      bob <## "user profile is changed to robert (your 1 contacts are notified)"
+      alice <## "contact bob changed to robert"
+      alice <## "use @robert <message> to send messages"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team alice> hello @robert [>>]",
+                   "#team: member robert is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+testUniqueMsgMentions :: SpecWith TestParams
+testUniqueMsgMentions = do
+  it "1 correct mention" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd")]) ["alice"]
+      `shouldBe` (mm [("alice", "abcd")])
+  it "2 correct mentions" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("bob", "efgh")]) ["alice", "bob"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  it "2 correct mentions with repetition" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("bob", "efgh")]) ["alice", "alice", "alice", "bob", "bob", "bob"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  it "too many mentions - drop extras" $ \_ ->
+    uniqueMsgMentions 3 (mm [("a", "abcd"), ("b", "efgh"), ("c", "1234"), ("d", "5678")]) ["a", "a", "a", "b", "b", "c", "d"]
+      `shouldBe` (mm [("a", "abcd"), ("b", "efgh"), ("c", "1234")])
+  it "repeated-with-different name - drop extras" $ \_ ->
+    uniqueMsgMentions 2 (mm [("alice", "abcd"), ("alice2", "abcd"), ("bob", "efgh"), ("bob2", "efgh")]) ["alice", "alice2", "bob", "bob2"]
+      `shouldBe` (mm [("alice", "abcd"), ("bob", "efgh")])
+  where
+    mm = M.fromList . map (second $ MsgMention . MemberId)
+
+testUpdatedMentionNames :: SpecWith TestParams
+testUpdatedMentionNames = do
+  it "keep mentions" $ \_ -> do
+    test (mm [("alice", Just "alice"), ("bob", Nothing)]) "hello @alice @bob"
+      `shouldBe` "hello @alice @bob"
+    test (mm [("alice_1", Just "alice"), ("alice", Just "alice")]) "hello @alice @alice_1"
+      `shouldBe` "hello @alice @alice_1"
+  it "keep non-mentions" $ \_ -> do
+    test (mm []) "hello @alice @bob"
+      `shouldBe` "hello @alice @bob"
+    test (mm [("alice", Just "alice")]) "hello @alice @bob"
+      `shouldBe` "hello @alice @bob"
+  it "replace changed names" $ \_ -> do
+    test (mm [("alice", Just "Alice Jones"), ("bob", Just "robert")]) "hello @alice @bob"
+      `shouldBe` "hello @'Alice Jones' @robert"
+    test (mm [("alice", Just "alice"), ("cath", Just "alice")]) "hello @alice @cath"
+      `shouldBe` "hello @alice @alice_1"
+  where
+    test mentions t =
+      let (mc', _, _) = updatedMentionNames (MCText t) (parseMaybeMarkdownList t) mentions
+       in msgContentText mc'
+    mm = M.fromList . map (second mentionedMember)
+    mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = ciMentionMember <$> name_}
+      where
+        ciMentionMember name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}
