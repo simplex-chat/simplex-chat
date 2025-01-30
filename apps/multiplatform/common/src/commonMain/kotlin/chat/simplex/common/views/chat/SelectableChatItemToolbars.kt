@@ -48,7 +48,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
 @Composable
 fun SelectedItemsBottomToolbar(
   chatInfo: ChatInfo,
-  reversedChatItems: State<List<ChatItem>>,
+  contentTag: MsgContentTag?,
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   moderateItems: () -> Unit,
@@ -107,8 +107,9 @@ fun SelectedItemsBottomToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  LaunchedEffect(chatInfo, reversedChatItems.value, selectedChatItems.value) {
-    recheckItems(chatInfo, reversedChatItems.value.asReversed(), selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
+  val chatItems = remember { derivedStateOf { chatModel.chatItemsForContent(contentTag).value } }
+  LaunchedEffect(chatInfo, chatItems.value, selectedChatItems.value) {
+    recheckItems(chatInfo, chatItems.value, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
   }
 }
 
