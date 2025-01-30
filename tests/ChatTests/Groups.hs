@@ -2016,7 +2016,7 @@ testGroupAsync ps = do
 
 testGroupLinkDeleteGroupRejoin :: HasCallStack => TestParams -> IO ()
 testGroupLinkDeleteGroupRejoin =
-  testChat2 aliceProfile bobProfile $
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       threadDelay 100000
       alice ##> "/g team"
@@ -2058,6 +2058,8 @@ testGroupLinkDeleteGroupRejoin =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob_1> hi there"
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupLinkIncognitoJoinInvite :: HasCallStack => TestParams -> IO ()
 testGroupLinkIncognitoJoinInvite =
