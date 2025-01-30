@@ -22,11 +22,15 @@ CREATE INDEX idx_chat_item_mentions_group_id ON chat_item_mentions(group_id);
 CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(chat_item_id);
 CREATE UNIQUE INDEX idx_chat_item_mentions_display_name ON chat_item_mentions(chat_item_id, display_name);
 CREATE UNIQUE INDEX idx_chat_item_mentions_member_id ON chat_item_mentions(chat_item_id, member_id);
+
+CREATE INDEX idx_chat_items_groups_user_mention ON chat_items(user_id, group_id, item_status, user_mention);
 |]
 
 down_m20250126_mentions :: Query
 down_m20250126_mentions =
   [sql|
+DROP INDEX idx_chat_items_groups_user_mention;
+
 DROP INDEX idx_chat_item_mentions_group_id;
 DROP INDEX idx_chat_item_mentions_chat_item_id;
 DROP INDEX idx_chat_item_mentions_display_name;

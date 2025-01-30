@@ -191,8 +191,9 @@ chatGroupTests = do
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
   describe "group member mentions" $ do
-    it "should send messages with member mentions" testMemberMention
+    it "should send and edit messages with member mentions" testMemberMention
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
+    it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
   where
@@ -6686,6 +6687,12 @@ testMemberMention =
         [ alice <# "#team cath> hello @Alice",
           bob <# "#team cath> hello @Alice"
         ]
+      cath ##> "! #team hello @alice @bob"
+      cath <# "#team [edited] hello @alice @bob"
+      concurrentlyN_
+        [ alice <# "#team cath> [edited] hello @alice @bob",
+          bob <# "#team cath> [edited] hello @alice @bob"
+        ]
 
 testForwardQuoteMention :: HasCallStack => TestParams -> IO ()
 testForwardQuoteMention =
@@ -6752,6 +6759,41 @@ testForwardQuoteMention =
       alice <## "      hello @alice @alice_1"
       bob <# "alice> -> forwarded"
       bob <## "      hello @alice @alice_1"
+
+testGroupHistoryWithMentions :: HasCallStack => TestParams -> IO ()
+testGroupHistoryWithMentions =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team hello @bob"
+      bob <# "#team alice!> hello @bob"
+
+      bob ##> "/p robert"
+      bob <## "user profile is changed to robert (your 1 contacts are notified)"
+      alice <## "contact bob changed to robert"
+      alice <## "use @robert <message> to send messages"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team alice> hello @robert [>>]",
+                   "#team: member robert is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
 
 testUniqueMsgMentions :: SpecWith TestParams
 testUniqueMsgMentions = do
