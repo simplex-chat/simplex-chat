@@ -19,6 +19,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -99,10 +100,11 @@ fun GroupMentions(
       membersToMention.value = listOf(txtAsMention.member)
       return@LaunchedEffect
     }
-    // TODO - [MENTIONS] replace with real api
-    val gms = chatModel.controller.apiListMembers(rhId, chatInfo.groupInfo.groupId)
-    membersToMention.value = gms.filter { gm ->
-      gm.memberProfile.displayName.contains(search, ignoreCase = true) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
+    if (search == "") {
+      setGroupMembers(rhId, chatInfo.groupInfo, chatModel)
+    }
+    membersToMention.value = chatModel.groupMembers.value.filter { gm ->
+      gm.memberProfile.anyNameContains(search) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
     }
     if (membersToMention.value.isNotEmpty()) {
       showMembersPicker.value = true
