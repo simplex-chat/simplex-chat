@@ -278,7 +278,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Secret -> around '#'
     Colored (FormatColor c) -> color c
     Uri -> t
-    SimplexLink {simplexUri} -> simplexUri
+    SimplexLink {} -> t
     Mention _ -> t
     Email -> t
     Phone -> t
