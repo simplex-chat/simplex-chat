@@ -63,29 +63,33 @@ struct GroupMentionsView: View {
                 Spacer()
                 VStack {
                     Spacer()
-                    List {
-                        ForEach($filteredMembers, id: \.groupMemberId) { m in
-                            let existingMention = composeState.mentions.first { $0.member.memberId == m.wrapped.memberId.wrappedValue }
-                            let disabled = composeState.maxMemberMentionsReached && existingMention == nil
-                            
-                            MemberRowView(
-                                groupInfo: groupInfo,
-                                groupMember: m.wrappedValue,
-                                showInfo: false,
-                                swipesEnabled: false,
-                                showlocalAliasAndFullName: true,
-                                alert: Binding.constant(nil)
-                            )
-                            .contentShape(Rectangle())
-                            .disabled(disabled)
-                            .opacity(disabled ? 0.6 : 1)
-                            .onTapGesture {
-                                onMemberSelected(m.wrappedValue, existingMention)
+                    VStack {
+                        Divider()
+                        List {
+                            ForEach($filteredMembers, id: \.groupMemberId) { m in
+                                let existingMention = composeState.mentions.first { $0.member.memberId == m.wrapped.memberId.wrappedValue }
+                                let disabled = composeState.maxMemberMentionsReached && existingMention == nil
+                                
+                                MemberRowView(
+                                    groupInfo: groupInfo,
+                                    groupMember: m.wrappedValue,
+                                    showInfo: false,
+                                    swipesEnabled: false,
+                                    showlocalAliasAndFullName: true,
+                                    alert: Binding.constant(nil)
+                                )
+                                .contentShape(Rectangle())
+                                .disabled(disabled)
+                                .opacity(disabled ? 0.6 : 1)
+                                .onTapGesture {
+                                    onMemberSelected(m.wrappedValue, existingMention)
+                                }
                             }
                         }
+                        .listStyle(PlainListStyle())
+                        .frame(height: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filteredMembers.count)))
                     }
-                    .listStyle(PlainListStyle())
-                    .frame(height: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filteredMembers.count)))
+                    .background(Color(UIColor.systemBackground))
                 }
                 .frame(maxWidth: .infinity, maxHeight: MEMBER_ROW_SIZE * MAX_VISIBLE_MEMBER_ROWS)
             }
