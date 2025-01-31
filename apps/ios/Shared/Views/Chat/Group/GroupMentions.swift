@@ -95,39 +95,50 @@ struct GroupMentionsView: View {
                 mentionsState = parseMentionRanges(m)
             }
             .onChange(of: activeRangeMention) { r in
-                if r == MentionRange.empty {
-                    filteredMembers = []
-                    isVisible = false
-                } else {
-                    loadMentionMembers(searchText: r.name)
-                }
+                calculateVisibleMembers(searchText: r == MentionRange.empty ? nil : r.name)
             }
             .onAppear {
                 mentionsState = parseMentionRanges(composeState.message)
                 if let range = mentionsState.ranges[selectedRange.location] {
-                    loadMentionMembers(searchText: range.name)
+                    calculateVisibleMembers(searchText: range.name)
                 }
             }
         }
     }
     
-    private func loadMentionMembers(searchText: String) {
-        Task {
-            if searchText.isEmpty {
-                let groupMembers = await apiListMembers(groupInfo.groupId)
-                await MainActor.run {
-                    chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                    chatModel.populateGroupMembersIndexes()
+    private func calculateVisibleMembers(searchText: String?) {
+        if searchText == nil {
+            isVisible = false
+            if filteredMembers.count == 1 && !composeState.maxMemberMentionsReached {
+                let memberToAutoTag = filteredMembers[0].wrapped
+                if !composeState.mentions.contains(where: { $0.member.memberId == memberToAutoTag.memberId }) {
+                    let displayName = composeState.mentionMemberName(memberToAutoTag.memberProfile.displayName)
+                    composeState = composeState.copy(
+                        mentions: composeState.mentions + [MemberMention(memberName: displayName, member: memberToAutoTag)]
+                    )
                 }
             }
-            await MainActor.run {
-                let members = chatModel.groupMembers
-                    .filter { m in let status = m.wrapped.memberStatus; return status != .memLeft && status != .memRemoved }
-                    .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
-                
-                let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
-                isVisible = !filteredMembers.isEmpty
+            filteredMembers = []
+            return;
+        }
+        if let searchText = searchText {
+            Task {
+                if searchText.isEmpty {
+                    let groupMembers = await apiListMembers(groupInfo.groupId)
+                    await MainActor.run {
+                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                        chatModel.populateGroupMembersIndexes()
+                    }
+                }
+                await MainActor.run {
+                    let members = chatModel.groupMembers
+                        .filter { m in let status = m.wrapped.memberStatus; return status != .memLeft && status != .memRemoved }
+                        .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
+                    
+                    let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                    filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
+                    isVisible = !filteredMembers.isEmpty
+                }
             }
         }
     }
