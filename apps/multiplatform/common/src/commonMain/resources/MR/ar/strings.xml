@@ -2318,4 +2318,7 @@
     <string name="text_field_set_chat_placeholder">عيّن اسم الدردشة…</string>
     <string name="change_automatic_chat_deletion_message">لا يمكن التراجع عن هذا الإجراء - سيتم حذف الرسائل المُرسلة والمُستلمة في هذه الدردشة قبل التاريخ المحدّد.</string>
     <string name="change_automatic_deletion_question">تغيير حذف الرسائل التلقائي؟</string>
+    <string name="network_smp_web_port_footer">استخدم منفذ TCP %1$s عندما لا يتم تحديد أي منفذ.</string>
+    <string name="network_smp_web_port_toggle">استخدم منفذ الويب</string>
+    <string name="network_smp_web_port_section_title">منفذ TCP للمُراسلة</string>
 </resources>
