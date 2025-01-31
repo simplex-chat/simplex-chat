@@ -961,12 +961,7 @@ Query:
           LIMIT 1
         
 Plan:
-<<<<<<< HEAD
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
-=======
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
-USE TEMP B-TREE FOR ORDER BY
->>>>>>> master
 
 Query: 
           SELECT chat_item_id, contact_id, group_id, note_folder_id
@@ -1131,14 +1126,8 @@ Query:
           LIMIT 1
         
 Plan:
-<<<<<<< HEAD
 SEARCH i USING INDEX idx_chat_items_group_id (group_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-=======
-SEARCH i USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-USE TEMP B-TREE FOR ORDER BY
->>>>>>> master
 
 Query: 
           SELECT i.chat_item_id, i.contact_id, i.group_id, i.note_folder_id
@@ -2857,12 +2846,7 @@ Query:
         LIMIT 1
       
 Plan:
-<<<<<<< HEAD
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
-=======
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
-USE TEMP B-TREE FOR ORDER BY
->>>>>>> master
 
 Query: 
         SELECT chat_item_id
@@ -5050,11 +5034,7 @@ SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_grou
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group_id (group_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_group_id (fwd_from_group_id=?)
-<<<<<<< HEAD
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_id (group_id=?)
-=======
-SCAN chat_items USING COVERING INDEX idx_chat_items_groups_user_mention
->>>>>>> master
 SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
 SEARCH user_contact_links USING COVERING INDEX idx_user_contact_links_group_id (group_id=?)
 SEARCH files USING COVERING INDEX idx_files_group_id (group_id=?)
@@ -5441,11 +5421,7 @@ Query: SELECT group_id FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-<<<<<<< HEAD
 Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? AND deleted = 0 LIMIT 1
-=======
-Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1
->>>>>>> master
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
 
