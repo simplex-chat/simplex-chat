@@ -60,7 +60,7 @@ chatGroupTests = do
     it "re-add member in status invited" testGroupReAddInvited
     it "re-add member in status invited, change role" testGroupReAddInvitedChangeRole
     it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
-    fit "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
+    it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
@@ -925,13 +925,9 @@ testDeleteGroupMemberProfileKept =
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
       -- group 2 still works
-      print 1
       alice #> "#club checking connection"
-      print 2
       bob <# "#club alice> checking connection"
-      print 3
       bob #> "#club received"
-      print 4
       alice <# "#club bob> received"
 
 testGroupRemoveAdd :: HasCallStack => TestParams -> IO ()

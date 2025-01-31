@@ -656,7 +656,7 @@ getDeletedGroups db vr user@User {userId} = do
   rights <$> mapM (\groupId -> runExceptT $ getGroupInfo_ db vr user groupId False) groupIds
 
 deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> IO ()
-deleteGroupMembers db User {userId} g@GroupInfo {groupId} = do
+deleteGroupMembers db User {userId} GroupInfo {groupId} = do
   ts1 <- getCurrentTime
   print $ "CREATE TEMPORARY TABLE temp_delete_members " <> show ts1
 
@@ -699,6 +699,7 @@ deleteGroupMembers db User {userId} g@GroupInfo {groupId} = do
     [sql|
       DELETE FROM display_names
       WHERE local_display_name IN (SELECT local_display_name FROM temp_delete_members)
+        AND local_display_name NOT IN (SELECT local_display_name FROM group_members)
         AND local_display_name NOT IN (SELECT local_display_name FROM contacts)
         AND local_display_name NOT IN (SELECT local_display_name FROM users)
         AND local_display_name NOT IN (SELECT local_display_name FROM groups)
