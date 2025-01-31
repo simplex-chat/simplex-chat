@@ -662,10 +662,20 @@ getDeletedGroup db vr user groupId = getGroup_ db vr user groupId True
 
 deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupMembers db user@User {userId} g@GroupInfo {groupId} members = do
+  ts1 <- getCurrentTime
+  print $ "cleanupHostGroupLinkConn_ " <> show ts1
   void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
+  ts2 <- getCurrentTime
+  print $ "DELETE FROM group_members " <> show ts2
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  ts3 <- getCurrentTime
+  print $ "forM_ cleanupMemberProfileAndName_ " <> show ts3
   forM_ members $ cleanupMemberProfileAndName_ db user
+  ts4 <- getCurrentTime
+  print $ "deleteUnusedIncognitoProfileById_ " <> show ts4
   forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
+  ts5 <- getCurrentTime
+  print ts5
   where
     cleanupHostGroupLinkConn_ = do
       hostId <- getHostMemberId_ db user groupId
