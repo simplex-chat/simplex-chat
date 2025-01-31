@@ -2403,4 +2403,7 @@
     <string name="chat_item_ttl_year">1 Jahr</string>
     <string name="chat_item_ttl_default">Voreinstellung (%s)</string>
     <string name="disable_automatic_deletion_message">Nachrichten in diesem Chat werden nie gelöscht.</string>
+    <string name="network_smp_web_port_footer">Solange kein Port konfiguriert ist, wird der TCP-Port %1$s genutzt.</string>
+    <string name="network_smp_web_port_toggle">Web-Port nutzen</string>
+    <string name="network_smp_web_port_section_title">TCP-Port für die Nachrichtenübermittlung</string>
 </resources>
