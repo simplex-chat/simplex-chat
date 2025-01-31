@@ -35,7 +35,6 @@ module Simplex.Chat.Store.Direct
     deleteContactFiles,
     deleteContact,
     deleteContactWithoutGroups,
-    deleteContactWithoutDeletingProfile,
     getDeletedContacts,
     getContactByName,
     getContact,
@@ -317,18 +316,6 @@ deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDis
     deleteContactProfile_ db userId contactId
     -- user's local display name already checked in assertNotUser
     DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-    DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-    forM_ activeConn $ \Connection {customUserProfileId} ->
-      forM_ customUserProfileId $ \profileId ->
-        deleteUnusedIncognitoProfileById_ db user profileId
-
--- deletes contact record without deleting local display name and profile - it's used in deleted group cleanup,
--- when members are deleted in next step (including deleting ldn and profile if not used elsewhere)
-deleteContactWithoutDeletingProfile :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-deleteContactWithoutDeletingProfile db user@User {userId} ct@Contact {contactId, activeConn} = do
-  assertNotUser db user ct
-  liftIO $ do
-    DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
     DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
     forM_ activeConn $ \Connection {customUserProfileId} ->
       forM_ customUserProfileId $ \profileId ->
