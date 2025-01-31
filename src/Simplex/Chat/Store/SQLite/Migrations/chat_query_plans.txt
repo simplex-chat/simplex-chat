@@ -606,19 +606,6 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH h USING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
 
 Query: 
-            UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
-            WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
-              SELECT contact_id
-              FROM group_members
-              WHERE user_id = ? AND group_member_id = ?
-            )
-          
-Plan:
-SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
-LIST SUBQUERY 1
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
           DELETE FROM chat_item_reactions
           WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
         
@@ -1191,6 +1178,19 @@ Plan:
 SEARCH r USING INDEX idx_received_probes_user_id (user_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+          UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
+          WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
+            SELECT contact_id
+            FROM group_members
+            WHERE user_id = ? AND group_member_id = ?
+          )
+        
+Plan:
+SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
+LIST SUBQUERY 1
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE contacts
@@ -3359,6 +3359,13 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+      CREATE TEMPORARY TABLE temp_delete_members AS
+      SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
+    
+Plan:
+SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+
+Query: 
       DELETE FROM chat_items
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     
@@ -3472,6 +3479,19 @@ SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_agent_msg_id (conn
 SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
+
+Query: 
+      DELETE FROM contact_profiles
+      WHERE
+        (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)
+          OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members))
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM group_members)
+        AND contact_profile_id NOT IN (SELECT member_profile_id FROM group_members)
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts)
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contact_requests)
+        AND contact_profile_id NOT IN (SELECT custom_user_profile_id FROM connections)
+    
+Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan \n      DELETE FROM contact_profiles\n      WHERE\n        (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)\n          OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members))\n        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM group_members)\n        AND contact_profile_id NOT IN (SELECT member_profile_id FROM group_members)\n        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts)\n        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contact_requests)\n        AND contact_profile_id NOT IN (SELECT custom_user_profile_id FROM connections)\n    ": no such table: temp_delete_members
 
 Query: 
       DELETE FROM contact_profiles
@@ -3629,6 +3649,18 @@ SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (m
 SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (contact_profile_id=?)
 SEARCH groups USING COVERING INDEX idx_groups_host_conn_custom_user_profile_id (host_conn_custom_user_profile_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
+
+Query: 
+      DELETE FROM display_names
+      WHERE local_display_name IN (SELECT local_display_name FROM temp_delete_members)
+        AND local_display_name NOT IN (SELECT local_display_name FROM group_members)
+        AND local_display_name NOT IN (SELECT local_display_name FROM contacts)
+        AND local_display_name NOT IN (SELECT local_display_name FROM users)
+        AND local_display_name NOT IN (SELECT local_display_name FROM groups)
+        AND local_display_name NOT IN (SELECT local_display_name FROM user_contact_links)
+        AND local_display_name NOT IN (SELECT local_display_name FROM contact_requests)
+    
+Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan \n      DELETE FROM display_names\n      WHERE local_display_name IN (SELECT local_display_name FROM temp_delete_members)\n        AND local_display_name NOT IN (SELECT local_display_name FROM group_members)\n        AND local_display_name NOT IN (SELECT local_display_name FROM contacts)\n        AND local_display_name NOT IN (SELECT local_display_name FROM users)\n        AND local_display_name NOT IN (SELECT local_display_name FROM groups)\n        AND local_display_name NOT IN (SELECT local_display_name FROM user_contact_links)\n        AND local_display_name NOT IN (SELECT local_display_name FROM contact_requests)\n    ": no such table: temp_delete_members
 
 Query: 
       DELETE FROM display_names
@@ -4930,16 +4962,6 @@ SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?
 SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
 
-Query: DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?
-Plan:
-SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (member_profile_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (contact_profile_id=?)
-SEARCH groups USING COVERING INDEX idx_groups_host_conn_custom_user_profile_id (host_conn_custom_user_profile_id=?)
-SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
-
 Query: DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
@@ -5162,8 +5184,14 @@ SEARCH contact_profiles USING COVERING INDEX idx_contact_profiles_user_id (user_
 Query: DROP TABLE IF EXISTS temp_conn_ids
 Plan:
 
+Query: DROP TABLE IF EXISTS temp_delete_members
+Plan:
+
 Query: DROP TABLE temp_conn_ids
 Plan:
+
+Query: DROP TABLE temp_delete_members
+Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan DROP TABLE temp_delete_members": no such table: temp_delete_members
 
 Query: INSERT INTO app_settings (app_settings) VALUES (?)
 Plan:
@@ -5444,10 +5472,6 @@ SEARCH groups USING INDEX sqlite_autoindex_groups_1 (user_id=? AND local_display
 Query: SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
-Plan:
-SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?
 Plan:
