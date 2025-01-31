@@ -474,7 +474,7 @@ object ChatModel {
           chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
             increaseUnreadCounter(rhId, currentUser.value!!)
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1)
+            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
           }
           else
             chat.chatStats
@@ -657,7 +657,7 @@ object ChatModel {
     }
 
     fun markChatItemsRead(remoteHostId: Long?, id: ChatId, itemIds: List<Long>? = null) {
-      val markedRead = markItemsReadInCurrentChat(id, itemIds)
+      val (markedRead, mentionsMarkedRead) = markItemsReadInCurrentChat(id, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, id)
       if (chatIdx >= 0) {
@@ -666,17 +666,19 @@ object ChatModel {
         if (lastId != null) {
           val wasUnread = chat.unreadTag
           val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
+          val unreadMentions = if (itemIds != null) chat.chatStats.unreadMentions - mentionsMarkedRead else 0
           decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
-            chatStats = chat.chatStats.copy(unreadCount = unreadCount)
+            chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions)
           )
           updateChatTagReadNoContentTag(chats[chatIdx], wasUnread)
         }
       }
     }
 
-    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): Int {
+    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): Pair<Int, Int> {
       var markedRead = 0
+      var mentionsMarkedRead = 0
       if (chatId.value == id) {
         val items = chatItems.value
         var i = items.lastIndex
@@ -694,6 +696,9 @@ object ChatModel {
             }
             markedReadIds.add(item.id)
             markedRead++
+            if (item.meta.userMention) {
+              mentionsMarkedRead++
+            }
             if (itemIds != null) {
               itemIdsFromRange.remove(item.id)
               // already set all needed items as read, can finish the loop
@@ -704,7 +709,7 @@ object ChatModel {
         }
         chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
       }
-      return markedRead
+      return markedRead to mentionsMarkedRead
     }
 
     private fun decreaseCounterInChatNoContentTag(rhId: Long?, chatId: ChatId) {
@@ -1236,6 +1241,7 @@ data class Chat(
   data class ChatStats(
     val unreadCount: Int = 0,
     // actual only via getChats() and getChat(.initial), otherwise, zero
+    val unreadMentions: Int = 0,
     val reportsCount: Int = 0,
     val minUnreadItemId: Long = 0,
     val unreadChat: Boolean = false
