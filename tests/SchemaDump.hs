@@ -147,7 +147,10 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
       appChatQueryPlans
       chatQueryStats
       (createChatStore (DBOpts testDB "" False True TQOff) MCError)
-      (`DB.execute_` "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)")
+      (\db -> do
+        DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)"
+        DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)"
+      )
   (agentSavedPlans, agentSavedPlans') <-
     updatePlans
       appAgentQueryPlans
