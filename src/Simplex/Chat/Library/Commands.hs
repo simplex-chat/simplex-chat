@@ -3562,8 +3562,8 @@ cleanupManager = do
       where
         cleanupGroup :: Group -> CM ()
         cleanupGroup Group {groupInfo = gInfo, members} = do
-          withFastStore' $ \db -> deleteGroupMembers db user gInfo members
-          withFastStore' $ \db -> deleteGroup db user gInfo
+          withStore' $ \db -> deleteGroupMembers db user gInfo members
+          withStore' $ \db -> deleteGroup db user gInfo
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
