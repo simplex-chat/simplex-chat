@@ -7,35 +7,51 @@ revision: 12.10.2024
 
 | Updated 12.10.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
-### Table of Contents
+## Table of Contents
 
-- [Quick start](#quick-start)
-- [Detailed guide](#detailed-guide)
-  - [Overview](#overview)
-  - [Installation](#installation)
-  - [Configuration](#configuration)
-    - [Interactively](#interactively)
-    - [Via command line options](#via-command-line-options)
-  - [Further configuration](#further-configuration)
-  - [Server security](#server-security)
-    - [Initialization](#initialization)
-    - [Private keys](#private-keys)
-    - [Online certificate rotation](#online-certificate-rotation)
-  - [Tor: installation and configuration](#tor-installation-and-configuration)
-    - [Installation for onion address](#installation-for-onion-address)
-    - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
-  - [Server information page](#server-information-page)
-  - [Documentation](#documentation)
-    - [SMP server address](#smp-server-address)
-    - [Systemd commands](#systemd-commands)
-    - [Control port](#control-port)
-    - [Daily statistics](#daily-statistics)
-  - [Updating your SMP server](#updating-your-smp-server)
-  - [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
+- [Overview](#overview)
+- [Quick start](#quick-start) with systemd service
+- [Installation options](#installation-options)
+   - [systemd service](#systemd-service) with [installation script](#installation-script) or [manually](#manual-deployment)
+   - [docker container](#docker-container)
+   - [Linode marketplace](#linode-marketplace)
+- [Configuration](#configuration)
+   - [Interactively](#interactively)
+   - [Via command line options](#via-command-line-options)
+- [Further configuration](#further-configuration)
+- [Server security](#server-security)
+   - [Initialization](#initialization)
+   - [Private keys](#private-keys)
+   - [Online certificate rotation](#online-certificate-rotation)
+- [Tor: installation and configuration](#tor-installation-and-configuration)
+   - [Installation for onion address](#installation-for-onion-address)
+   - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
+- [Server information page](#server-information-page)
+- [Documentation](#documentation)
+   - [SMP server address](#smp-server-address)
+   - [Systemd commands](#systemd-commands)
+   - [Control port](#control-port)
+   - [Daily statistics](#daily-statistics)
+- [Updating your SMP server](#updating-your-smp-server)
+- [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
+
+## Overview
+
+SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and smp14.simplex.im), but you can easily change app configuration to use other servers.
+
+SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.
+
+To create SMP server, you'll need:
+
+1. VPS or any other server.
+2. Your own domain, pointed at the server (`smp.example.com`)
+3. A basic Linux knowledge.
+
+_Please note_: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated in the future.
 
 ## Quick start
 
-To create SMP server, you'll need:
+To create SMP server as a systemd service, you'll need:
 
 - VPS or any other server.
 - Your server domain, with A and AAAA records specifying server IPv4 and IPv6 addresses (`smp1.example.com`)
@@ -228,30 +244,17 @@ To create SMP server, you'll need:
     echo "$smp,$tor"
     ```
 
-## Detailed guide
+## Installation options
 
-### Overview
+You can install SMP server in one of the following ways:
 
-SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and smp14.simplex.im), but you can easily change app configuration to use other servers.
-
-SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.
-
-To create SMP server, you'll need:
-
-1. VPS or any other server.
-2. Your own domain, pointed at the server (`smp.example.com`)
-3. A basic Linux knowledge.
-
-_Please note_: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated in the future.
-
-### Installation
-
-Here's the overview of installation options:
-
-- [Installation script (native binaries, using systemd services)](#installation-script) **recommended**
-- [Docker](#docker)
+- [systemd service](#systemd-service)
+   - using [installation script](#installation-script) - **recommended**
+   - or [manually](#manual-deployment)
+- [Docker container](#docker-container) from DockerHub - recommended for experiments and quick installation
 - [Linode marketplace](#linode-marketplace)
-- [Manual deployment](#manual-deployment)
+
+### systemd service
 
 #### Installation script
 
@@ -275,7 +278,71 @@ fi
 
 Type `1` and hit enter to install `smp-server`.
 
-#### Docker
+#### Manual deployment
+
+Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.
+
+1. Install binary:
+
+   - Using pre-compiled binaries:
+
+     ```sh
+     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server && chmod +x /usr/local/bin/smp-server
+     ```
+
+   - Compiling from source:
+
+     Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
+
+2. Create user and group for `smp-server`:
+
+   ```sh
+   sudo useradd -m smp
+   ```
+
+3. Create necessary directories and assign permissions:
+
+   ```sh
+   sudo mkdir -p /var/opt/simplex /etc/opt/simplex
+   sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
+   ```
+
+4. Allow `smp-server` port in firewall:
+
+   ```sh
+   # For Ubuntu
+   sudo ufw allow 5223/tcp
+   sudo ufw allow 443/tcp
+   sudo ufw allow 80/tcp
+   # For Fedora
+   sudo firewall-cmd --permanent --add-port=5223/tcp --add-port=443/tcp --add-port=80/tcp && \
+   sudo firewall-cmd --reload
+   ```
+
+5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
+
+   ```sh
+   [Unit]
+   Description=SMP server systemd service
+
+   [Service]
+   User=smp
+   Group=smp
+   Type=simple
+   ExecStart=/usr/local/bin/smp-server start +RTS -N -RTS
+   ExecStopPost=/usr/bin/env sh -c '[ -e "/var/opt/simplex/smp-server-store.log" ] && cp "/var/opt/simplex/smp-server-store.log" "/var/opt/simplex/smp-server-store.log.bak"'
+   LimitNOFILE=65535
+   KillSignal=SIGINT
+   TimeoutStopSec=infinity
+   AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+   And execute `sudo systemctl daemon-reload`.
+
+### Docker container
 
 You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.
 
@@ -283,7 +350,7 @@ This deployment provides two Docker Compose files: the **automatic** one and **m
 
 This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
 
-##### Docker: Automatic setup
+#### Docker: Automatic setup
 
 This configuration provides quick and easy way to setup your SMP server: Caddy will automatically manage Let's Encrypt certificates and redirect HTTP to HTTPS, while smp-server will serve both [server information page](#server-information-page) and SMP Protocol by 443 port. 5223 port is used as fallback.
 
@@ -389,7 +456,7 @@ This configuration provides quick and easy way to setup your SMP server: Caddy w
   docker compose up
   ```
 
-##### Docker: Manual setup
+#### Docker: Manual setup
 
 If you know what you are doing, this configuration provides bare SMP server setup without automatically managed Let's Encrypt certificates by Caddy to serve [server information page](#server-information-page) with 5223 port set as primary.
 
@@ -444,75 +511,11 @@ This configuration allows you to retain the ability to manage 80 and 443 ports y
   docker compose up
   ```
 
-#### Linode marketplace
+### Linode marketplace
 
 You can deploy smp-server upon creating new Linode VM. Please refer to: [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
-   
-#### Manual deployment
 
-Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.
-
-1. Install binary:
-
-   - Using pre-compiled binaries:
-
-     ```sh
-     curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server && chmod +x /usr/local/bin/smp-server
-     ```
-
-   - Compiling from source:
-
-     Please refer to [Build from source: Using your distribution](https://github.com/simplex-chat/simplexmq#using-your-distribution)
-
-2. Create user and group for `smp-server`:
-
-   ```sh
-   sudo useradd -m smp
-   ```
-
-3. Create necessary directories and assign permissions:
-
-   ```sh
-   sudo mkdir -p /var/opt/simplex /etc/opt/simplex
-   sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
-   ```
-
-4. Allow `smp-server` port in firewall:
-
-   ```sh
-   # For Ubuntu
-   sudo ufw allow 5223/tcp
-   sudo ufw allow 443/tcp
-   sudo ufw allow 80/tcp
-   # For Fedora
-   sudo firewall-cmd --permanent --add-port=5223/tcp --add-port=443/tcp --add-port=80/tcp && \
-   sudo firewall-cmd --reload
-   ```
-
-5. **Optional** — If you're using distribution with `systemd`, create `/etc/systemd/system/smp-server.service` file with the following content:
-
-   ```sh
-   [Unit]
-   Description=SMP server systemd service
-
-   [Service]
-   User=smp
-   Group=smp
-   Type=simple
-   ExecStart=/usr/local/bin/smp-server start +RTS -N -RTS
-   ExecStopPost=/usr/bin/env sh -c '[ -e "/var/opt/simplex/smp-server-store.log" ] && cp "/var/opt/simplex/smp-server-store.log" "/var/opt/simplex/smp-server-store.log.bak"'
-   LimitNOFILE=65535
-   KillSignal=SIGINT
-   TimeoutStopSec=infinity
-   AmbientCapabilities=CAP_NET_BIND_SERVICE
-
-   [Install]
-   WantedBy=multi-user.target
-   ```
-
-   And execute `sudo systemctl daemon-reload`.
-
-### Configuration
+## Configuration
 
 To see which options are available, execute `smp-server` without flags:
 
@@ -532,7 +535,7 @@ You can get further help by executing `sudo su smp -c "smp-server <command> -h"`
 
 After that, we need to configure `smp-server`:
 
-#### Interactively
+### Interactively
 
 Execute the following command:
 
@@ -562,7 +565,7 @@ These statistics include daily counts of created, secured and deleted queues, se
 
   Enter your domain or ip address that your smp-server is running on - it will be included in server certificates and also printed as part of server address.
 
-#### Via command line options
+### Via command line options
 
 Execute the following command:
 
@@ -626,7 +629,7 @@ Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZ
 
 The server address above should be used in your client configuration, and if you added server password it should only be shared with the other people who you want to allow using your server to receive the messages (all your contacts will be able to send messages - it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace `<hostnames>` with the actual server hostnames.
 
-### Further configuration
+## Further configuration
 
 All generated configuration, along with a description for each parameter, is available inside configuration file in `/etc/opt/simplex/smp-server.ini` for further customization. Depending on the smp-server version, the configuration file looks something like this:
 
@@ -755,9 +758,9 @@ cert: /etc/opt/simplex/web.crt
 key: /etc/opt/simplex/web.key
 ```
 
-### Server security
+## Server security
 
-#### Initialization
+### Initialization
 
 Although it's convenient to initialize smp-server configuration directly on the server, operators **ARE ADVISED** to initialize smp-server fully offline to protect your SMP server CA private key.
 
@@ -777,7 +780,7 @@ Follow the steps to quickly initialize the server offline:
    rsync -hzasP $HOME/simplex/smp/config/ <server_user>@<server_address>:/etc/opt/simplex/
    ```
 
-#### Private keys
+### Private keys
 
 Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates by comparing its fingerprint with the one included in server address. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators **ARE ADVISED** to move CA private key to a safe place. That could be:
 
@@ -802,7 +805,7 @@ Follow the steps to secure your CA keys:
    rm /etc/opt/simplex/ca.key
    ```
 
-#### Online certificate rotation
+### Online certificate rotation
 
 Operators of smp servers **ARE ADVISED** to rotate online certificate regularly (e.g., every 3 months). In order to do this, follow the steps:
 
@@ -878,9 +881,9 @@ Operators of smp servers **ARE ADVISED** to rotate online certificate regularly 
 
 10. Done!
 
-### Tor: installation and configuration
+## Tor: installation and configuration
 
-#### Installation for onion address
+### Installation for onion address
 
 SMP-server can also be deployed to be available via [Tor](https://www.torproject.org) network. Run the following commands as `root` user.
 
@@ -961,7 +964,7 @@ SMP-server can also be deployed to be available via [Tor](https://www.torproject
    cat /var/lib/tor/simplex-smp/hostname
    ```
 
-#### SOCKS port for SMP PROXY
+### SOCKS port for SMP PROXY
 
 SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp servers available exclusively through [Tor](https://www.torproject.org) network to be accessible to the clients that do not use Tor. Run the following commands as `root` user.
 
@@ -1008,7 +1011,7 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
    ...
    ```
 
-### Server information page
+## Server information page
 
 SMP server **SHOULD** be configured to serve Web page with server information that can include admin info, server info, provider info, etc. It will also serve connection links, generated using the mobile/desktop apps. Run the following commands as `root` user.
 
@@ -1190,13 +1193,13 @@ _Please note:_ this configuration is supported since `v6.1.0-beta.2`.
 
 10. Access the webpage you've deployed from your browser (`https://smp.example.org`). You should see the smp-server information that you've provided in your ini file.
 
-### Documentation
+## Documentation
 
 All necessary files for `smp-server` are located in `/etc/opt/simplex/` folder.
 
 Stored messages, connections, statistics and server log are located in `/var/opt/simplex/` folder.
 
-#### SMP server address
+### SMP server address
 
 SMP server address has the following format:
 
@@ -1216,7 +1219,7 @@ smp://<fingerprint>[:<password>]@<public_hostname>[,<onion_hostname>]
 
   Your configured hostname(s) of `smp-server`. You can check your configured hosts in `/etc/opt/simplex/smp-server.ini`, under `[TRANSPORT]` section in `host:` field.
 
-#### Systemd commands
+### Systemd commands
 
 To start `smp-server` on host boot, run:
 
@@ -1275,7 +1278,7 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
 Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
 ```
 
-#### Control port
+### Control port
 
 Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete queues for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the `admin` and `user` passwords.
 
@@ -1349,7 +1352,7 @@ Here's the full list of commands, their descriptions and who can access them.
 | `help`           | Help menu.                                                                      | -                          |
 | `quit`           | Exit the control port.                                                          | -                          |
 
-#### Daily statistics
+### Daily statistics
 
 You can enable `smp-server` statistics for `Grafana` dashboard by setting value `on` in `/etc/opt/simplex/smp-server.ini`, under `[STORE_LOG]` section in `log_stats:` field.
 
@@ -1475,7 +1478,7 @@ To import `csv` to `Grafana` one should:
 
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
 
-### Updating your SMP server
+## Updating your SMP server
 
 To update your smp-server to latest version, choose your installation method and follow the steps:
 
@@ -1561,7 +1564,7 @@ To update your smp-server to latest version, choose your installation method and
         docker image prune
         ```
 
-### Configuring the app to use the server
+## Configuring the app to use the server
 
 To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.
 
