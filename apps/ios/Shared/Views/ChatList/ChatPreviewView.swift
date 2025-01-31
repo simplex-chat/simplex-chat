@@ -27,72 +27,80 @@ struct ChatPreviewView: View {
     
     var body: some View {
         let cItem = chat.chatItems.last
-        return HStack(spacing: 8) {
-            ZStack(alignment: .bottomTrailing) {
-                ChatInfoImage(chat: chat, size: dynamicSize(userFont).profileImageSize)
-                chatPreviewImageOverlayIcon()
-                    .padding([.bottom, .trailing], 1)
-            }
-            .padding(.leading, 4)
-
-            let chatTs = if let cItem {
-                cItem.meta.itemTs
-            } else {
-                chat.chatInfo.chatTs
-            }
-            VStack(spacing: 0) {
-                HStack(alignment: .top) {
-                    chatPreviewTitle()
-                    Spacer()
-                    (formatTimestampText(chatTs))
-                        .font(.subheadline)
-                        .frame(minWidth: 60, alignment: .trailing)
-                        .foregroundColor(theme.colors.secondary)
-                        .padding(.top, 4)
+        return ZStack {
+            HStack(spacing: 8) {
+                ZStack(alignment: .bottomTrailing) {
+                    ChatInfoImage(chat: chat, size: dynamicSize(userFont).profileImageSize)
+                    chatPreviewImageOverlayIcon()
+                        .padding([.bottom, .trailing], 1)
                 }
-                .padding(.bottom, 4)
-                .padding(.horizontal, 8)
-
-                ZStack(alignment: .topTrailing) {
-                    let chat = activeContentPreview?.chat ?? chat
-                    let ci = activeContentPreview?.ci ?? chat.chatItems.last
-                    let mc = ci?.content.msgContent
-                    HStack(alignment: .top) {
-                        let deleted = ci?.isDeletedContent == true || ci?.meta.itemDeleted != nil
-                        let showContentPreview = (showChatPreviews && chatModel.draftChatId != chat.id && !deleted) || activeContentPreview != nil
-                        if let ci, showContentPreview {
-                            chatItemContentPreview(chat, ci)
-                        }
-                        let mcIsVoice = switch mc { case .voice: true; default: false }
-                        if !mcIsVoice || !showContentPreview || mc?.text != "" || chatModel.draftChatId == chat.id {
-                            let hasFilePreview = if case .file = mc { true } else { false }
-                            chatMessagePreview(cItem, hasFilePreview)
-                        } else {
-                            Spacer()
-                            chatInfoIcon(chat).frame(minWidth: 37, alignment: .trailing)
-                        }
-                    }
-                    .onChange(of: chatModel.stopPreviousRecPlay?.path) { _ in
-                        checkActiveContentPreview(chat, ci, mc)
-                    }
-                    .onChange(of: activeContentPreview) { _ in
-                        checkActiveContentPreview(chat, ci, mc)
-                    }
-                    .onChange(of: showFullscreenGallery) { _ in
-                        checkActiveContentPreview(chat, ci, mc)
-                    }
-                    chatStatusImage()
-                        .padding(.top, dynamicChatInfoSize * 1.44)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 8)
+                .padding(.leading, 4)
                 
-                Spacer()
+                let chatTs = if let cItem {
+                    cItem.meta.itemTs
+                } else {
+                    chat.chatInfo.chatTs
+                }
+                VStack(spacing: 0) {
+                    HStack(alignment: .top) {
+                        chatPreviewTitle()
+                        Spacer()
+                        (formatTimestampText(chatTs))
+                            .font(.subheadline)
+                            .frame(minWidth: 60, alignment: .trailing)
+                            .foregroundColor(theme.colors.secondary)
+                            .padding(.top, 4)
+                    }
+                    .padding(.bottom, 4)
+                    .padding(.horizontal, 8)
+                    
+                    ZStack(alignment: .topTrailing) {
+                        let chat = activeContentPreview?.chat ?? chat
+                        let ci = activeContentPreview?.ci ?? chat.chatItems.last
+                        let mc = ci?.content.msgContent
+                        HStack(alignment: .top) {
+                            let deleted = ci?.isDeletedContent == true || ci?.meta.itemDeleted != nil
+                            let showContentPreview = (showChatPreviews && chatModel.draftChatId != chat.id && !deleted) || activeContentPreview != nil
+                            if let ci, showContentPreview {
+                                chatItemContentPreview(chat, ci)
+                            }
+                            let mcIsVoice = switch mc { case .voice: true; default: false }
+                            if !mcIsVoice || !showContentPreview || mc?.text != "" || chatModel.draftChatId == chat.id {
+                                let hasFilePreview = if case .file = mc { true } else { false }
+                                chatMessagePreview(cItem, hasFilePreview)
+                            } else {
+                                Spacer()
+                                chatInfoIcon(chat).frame(minWidth: 37, alignment: .trailing)
+                            }
+                        }
+                        .onChange(of: chatModel.stopPreviousRecPlay?.path) { _ in
+                            checkActiveContentPreview(chat, ci, mc)
+                        }
+                        .onChange(of: activeContentPreview) { _ in
+                            checkActiveContentPreview(chat, ci, mc)
+                        }
+                        .onChange(of: showFullscreenGallery) { _ in
+                            checkActiveContentPreview(chat, ci, mc)
+                        }
+                        chatStatusImage()
+                            .padding(.top, dynamicChatInfoSize * 1.44)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.trailing, 8)
+                    
+                    Spacer()
+                }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
+            .opacity(deleting ? 0.4 : 1)
+            .padding(.bottom, -8)
+            
+            if deleting {
+                ProgressView()
+                    .scaleEffect(2)
+            }
         }
-        .padding(.bottom, -8)
         .onChange(of: chatModel.deletedChats.contains(chat.chatInfo.id)) { contains in
             deleting = contains
             // Stop voice when deleting the chat

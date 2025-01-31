@@ -35,7 +35,6 @@ module Simplex.Chat.Store.Direct
     deleteContactFiles,
     deleteContact,
     deleteContactWithoutGroups,
-    setContactDeleted,
     getDeletedContacts,
     getContactByName,
     getContact,
@@ -294,7 +293,7 @@ deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, act
   assertNotUser db user ct
   liftIO $ do
     DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE contact_id = ? LIMIT 1" (Only contactId)
     if isNothing ctMember
       then do
         deleteContactProfile_ db userId contactId
@@ -322,13 +321,7 @@ deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDis
       forM_ customUserProfileId $ \profileId ->
         deleteUnusedIncognitoProfileById_ db user profileId
 
-setContactDeleted :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-setContactDeleted db user@User {userId} ct@Contact {contactId} = do
-  assertNotUser db user ct
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
-
+-- TODO remove in future versions: only used for legacy contact cleanup
 getDeletedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getDeletedContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)

@@ -948,6 +948,9 @@
   <string name="update_network_smp_proxy_fallback_question">Message routing fallback</string>
   <string name="private_routing_show_message_status">Show message status</string>
   <string name="private_routing_explanation">To protect your IP address, private routing uses your SMP servers to deliver messages.</string>
+  <string name="network_smp_web_port_section_title">TCP port for messaging</string>
+  <string name="network_smp_web_port_toggle">Use web port</string>
+  <string name="network_smp_web_port_footer">Use TCP port %1$s when no port is specified.</string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
   <string name="theme_colors_section_title">INTERFACE COLORS</string>

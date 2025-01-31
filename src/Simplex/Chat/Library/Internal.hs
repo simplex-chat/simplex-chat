@@ -61,6 +61,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
+import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
@@ -1200,11 +1201,9 @@ deleteMembersConnections user members = deleteMembersConnections' user members F
 
 deleteMembersConnections' :: User -> [GroupMember] -> Bool -> CM ()
 deleteMembersConnections' user members waitDelivery = do
-  let memberConns =
-        filter (\Connection {connStatus} -> connStatus /= ConnDeleted) $
-          mapMaybe (\GroupMember {activeConn} -> activeConn) members
+  let memberConns = mapMaybe (\GroupMember {activeConn} -> activeConn) members
   deleteAgentConnectionsAsync' user (map aConnId memberConns) waitDelivery
-  lift . void . withStoreBatch' $ \db -> map (\conn -> updateConnectionStatus db conn ConnDeleted) memberConns
+  lift . void . withStoreBatch' $ \db -> map (\Connection {connId} -> deleteConnectionRecord db user connId) memberConns
 
 deleteMemberConnection :: User -> GroupMember -> CM ()
 deleteMemberConnection user mem = deleteMemberConnection' user mem False

@@ -40,6 +40,7 @@ let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE = "networkSMPProxyMode"
 let GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK = "networkSMPProxyFallback"
+let GROUP_DEFAULT_NETWORK_SMP_WEB_PORT = "networkSMPWebPort"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
@@ -71,6 +72,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.session.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
         GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allowProtected.rawValue,
+        GROUP_DEFAULT_NETWORK_SMP_WEB_PORT: false,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
@@ -336,6 +338,7 @@ public func getNetCfg() -> NetCfg {
     let sessionMode = networkSessionModeGroupDefault.get()
     let smpProxyMode = networkSMPProxyModeGroupDefault.get()
     let smpProxyFallback = networkSMPProxyFallbackGroupDefault.get()
+    let smpWebPort = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT)
     let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     let tcpTimeoutPerKb = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
@@ -359,7 +362,7 @@ public func getNetCfg() -> NetCfg {
         sessionMode: sessionMode,
         smpProxyMode: smpProxyMode,
         smpProxyFallback: smpProxyFallback,
-        smpWebPort: false,
+        smpWebPort: smpWebPort,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpTimeoutPerKb: tcpTimeoutPerKb,
@@ -378,6 +381,7 @@ public func setNetCfg(_ cfg: NetCfg, networkProxy: NetworkProxy?) {
     networkSMPProxyFallbackGroupDefault.set(cfg.smpProxyFallback)
     let socksProxy = networkProxy?.toProxyString()
     groupDefaults.set(socksProxy, forKey: GROUP_DEFAULT_NETWORK_SOCKS_PROXY)
+    groupDefaults.set(cfg.smpWebPort, forKey: GROUP_DEFAULT_NETWORK_SMP_WEB_PORT)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
