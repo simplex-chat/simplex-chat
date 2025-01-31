@@ -746,6 +746,29 @@ window.addEventListener('scroll',changeHeaderBg);
                         </div>
                     </div>
                     <div><h1 id="hosting-your-own-xftp-server" tabindex="-1">Hosting your own XFTP Server</h1>
+<h2 id="table-of-contents" tabindex="-1">Table of Contents</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#installation-options">Installation options</a>
+<ul>
+<li><a href="#systemd-service">systemd service</a> with <a href="#installation-script">installation script</a> or <a href="#manual-deployment">manually</a></li>
+<li><a href="#docker-%D1%81ontainer">docker container</a></li>
+<li><a href="#linode-marketplace">Linode marketplace</a></li>
+</ul>
+</li>
+<li><a href="#tor-installation">Tor installation</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#documentation">Documentation</a>
+<ul>
+<li><a href="#xftp-server-address">XFTP server address</a></li>
+<li><a href="#systemd-commands">Systemd commands</a></li>
+<li><a href="#control-port">Control port</a></li>
+<li><a href="#daily-statistics">Daily statistics</a></li>
+</ul>
+</li>
+<li><a href="#updating-your-xftp-server">Updating your XFTP server</a></li>
+<li><a href="#configuring-the-app-to-use-the-server">Configuring the app to use the server</a></li>
+</ul>
 <h2 id="overview" tabindex="-1">Overview</h2>
 <p>XFTP is a new file transfer protocol focussed on meta-data protection - it is based on the same principles as SimpleX Messaging Protocol used in SimpleX Chat messenger:</p>
 <ul>
@@ -756,27 +779,37 @@ window.addEventListener('scroll',changeHeaderBg);
 <li>no identifiers or ciphertext in common between sent and received relay traffic, same as for messages delivered by SMP relays.</li>
 <li>protection of sender IP address from the recipients.</li>
 </ul>
-<h2 id="installation" tabindex="-1">Installation</h2>
-<ol start="0">
-<li>
-<p>First, install <code>xftp-server</code>:</p>
+<h2 id="installation-options" tabindex="-1">Installation options</h2>
+<p>You can install XFTP server in one of the following ways:</p>
 <ul>
-<li>
-<p>Manual deployment (see below)</p>
-</li>
-<li>
-<p>Semi-automatic deployment:</p>
+<li><a href="#systemd-service">systemd service</a>
 <ul>
-<li><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></li>
-<li><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></li>
-<li><a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></li>
+<li>using <a href="#installation-script">installation script</a> - <strong>recommended</strong></li>
+<li>or <a href="#manual-deployment">manually</a></li>
 </ul>
 </li>
+<li><a href="#docker-container">Docker container</a> from DockerHub</li>
+<li><a href="#linode-marketplace">Linode marketplace</a></li>
 </ul>
-</li>
-</ol>
-<p>Manual installation requires some preliminary actions:</p>
-<ol start="0">
+<h3 id="systemd-service" tabindex="-1">systemd service</h3>
+<h4 id="installation-script" tabindex="-1">Installation script</h4>
+<p>This installation script will automatically install binaries, systemd services and additional scripts that will manage backups, updates and uninstallation. This is the recommended option due to its flexibility, easy updating, and being battle tested on our servers.</p>
+<p><strong>Please note</strong> that currently only Ubuntu distribution is supported.</p>
+<p>Run the following script on the server:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &amp;&amp;\
+if echo '53fcdb4ceab324316e2c4cda7e84dbbb344f32550a65975a7895425e5a1be757 simplex-server-install.sh' | sha256sum -c; then
+  chmod +x ./simplex-server-install.sh
+  ./simplex-server-install.sh
+  rm ./simplex-server-install.sh
+else
+  echo &quot;SHA-256 checksum is incorrect!&quot;
+  rm ./simplex-server-install.sh
+fi
+</code></pre>
+<p>Type <code>2</code> and hit enter to install <code>xftp-server</code>.</p>
+<h4 id="manual-deployment" tabindex="-1">Manual deployment</h4>
+<p>Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.</p>
+<ol>
 <li>
 <p>Install binary:</p>
 <ul>
@@ -833,6 +866,55 @@ WantedBy=multi-user.target
 <p>And execute <code>sudo systemctl daemon-reload</code>.</p>
 </li>
 </ol>
+<h3 id="docker-sontainer" tabindex="-1">Docker сontainer</h3>
+<p>You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.</p>
+<p>This deployment provides two Docker Compose files: the <strong>automatic</strong> one and <strong>manual</strong>. If you're not sure, choose <strong>automatic</strong>.</p>
+<p>This will download images from <a href="https://hub.docker.com/r/simplexchat">Docker Hub</a>.</p>
+<ol>
+<li>Create <code>xftp-server</code> directory and switch to it:</li>
+</ol>
+<pre><code class="language-sh">mkdir xftp-server &amp;&amp; cd xftp-server
+</code></pre>
+<ol start="2">
+<li>Create <code>docker-compose.yml</code> file with the following content:</li>
+</ol>
+<p>You can also grab it from here - <a href="https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml">docker-compose-xftp.yml</a>. Don't forget to rename it to <code>docker-compose.yml</code>.</p>
+<pre><code class="language-yaml">name: SimpleX Chat - xftp-server
+
+services:
+  xftp-server:
+    image: ${SIMPLEX_XFTP_IMAGE:-simplexchat/xftp-server:latest}
+    environment:
+      ADDR: ${ADDR?&quot;Please specify the domain.&quot;}
+      QUOTA: ${QUOTA?&quot;Please specify disk quota.&quot;}
+      PASS: ${PASS:-}
+    volumes:
+      - ./xftp_configs:/etc/opt/simplex-xftp
+      - ./xftp_state:/var/opt/simplex-xftp
+      - ./xftp_files:/srv/xftp
+    ports:
+      - 443:443
+    restart: unless-stopped
+</code></pre>
+<ol start="3">
+<li>In the same directory, create <code>.env</code> file with the following content:</li>
+</ol>
+<p>You can also grab it from here - <a href="https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml">docker-compose-xftp.env</a>. Don't forget to rename it to <code>.env</code>.</p>
+<p>Change variables according to your preferences.</p>
+<pre><code class="language-env"># Mandatory
+ADDR=your_ip_or_addr
+QUOTA=120gb
+
+# Optional
+#PASS='123123'
+</code></pre>
+<ol start="4">
+<li>Start your containers:</li>
+</ol>
+<pre><code class="language-sh">docker compose up
+</code></pre>
+<h3 id="linode-marketplace" tabindex="-1">Linode marketplace</h3>
+<p>You can deploy xftp-server upon creating new Linode VM. Please refer to: <a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></p>
 <h2 id="tor-installation" tabindex="-1">Tor installation</h2>
 <p>xftp-server can also be deployed to serve from <a href="https://www.torproject.org">tor</a> network. Run the following commands as <code>root</code> user.</p>
 <ol>
@@ -1059,7 +1141,7 @@ Feb 27 19:21:11 localhost xftp-server[2350]: Listening on port 443...
 Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src/Simplex/FileTransfer/Server/Env.hs:85] Total / available storage: 64424509440 / 64424509440
 </code></pre>
 <h3 id="control-port" tabindex="-1">Control port</h3>
-<p>Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the <code>admin</code> and <code>user</code> passwords.</p>
+<p>Enabling control port in the configuration allows administrator to see information about the xftp-server in real-time. Additionally, it allows to delete file chunks for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the <code>admin</code> and <code>user</code> passwords.</p>
 <ol>
 <li>
 <p>Generate two passwords for each user:</p>
@@ -1199,7 +1281,7 @@ allow_local_mode = true
 </li>
 </ol>
 <p>For further documentation, see: <a href="https://grafana.github.io/grafana-csv-datasource/">CSV Data Source for Grafana - Documentation</a></p>
-<h1 id="updating-your-xftp-server" tabindex="-1">Updating your XFTP server</h1>
+<h2 id="updating-your-xftp-server" tabindex="-1">Updating your XFTP server</h2>
 <p>To update your XFTP server to latest version, choose your installation method and follow the steps:</p>
 <ul>
 <li>
@@ -1259,7 +1341,7 @@ allow_local_mode = true
 </ol>
 </li>
 </ul>
-<h3 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h3>
+<h2 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h2>
 <p>Please see: <a href="/docs/server.html#configuring-the-app-to-use-the-server">SMP Server: Configuring the app to use the server</a>.</p>
 </div>
                 </article>
