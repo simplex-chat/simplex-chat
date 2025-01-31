@@ -2295,4 +2295,7 @@
     <string name="chat_ttl_options_footer">Csevegési üzenetek törlése az Ön eszközéről.</string>
     <string name="change_automatic_deletion_question">Automatikus üzenettörlés módosítása?</string>
     <string name="change_automatic_chat_deletion_message">Ez a művelet nem vonható vissza – a kijelölt üzenettől korábban küldött és fogadott üzenetek törölve lesznek a csevegésből.</string>
+    <string name="network_smp_web_port_footer">A(z) %1$s port használata, amikor nincs port megadva.</string>
+    <string name="network_smp_web_port_section_title">TCP-port az üzenetekhez</string>
+    <string name="network_smp_web_port_toggle">Webport használata</string>
 </resources>
