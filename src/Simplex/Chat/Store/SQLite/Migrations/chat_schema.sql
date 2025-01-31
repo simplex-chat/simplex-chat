@@ -1011,3 +1011,9 @@ CREATE UNIQUE INDEX idx_chat_item_mentions_member_id ON chat_item_mentions(
   chat_item_id,
   member_id
 );
+CREATE INDEX idx_chat_items_groups_user_mention ON chat_items(
+  user_id,
+  group_id,
+  item_status,
+  user_mention
+);

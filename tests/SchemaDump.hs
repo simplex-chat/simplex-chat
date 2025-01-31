@@ -103,7 +103,8 @@ testSchemaMigrations = withTmpFiles $ do
       schema <- getSchema testDB testSchema
       Migrations.run st True $ MTRUp [m]
       schema' <- getSchema testDB testSchema
-      schema' `shouldNotBe` schema
+      unless (name m `elem` skipComparisonForUpMigrations) $
+        schema' `shouldNotBe` schema
       Migrations.run st True $ MTRDown [downMigr]
       unless (name m `elem` skipComparisonForDownMigrations) $ do
         schema'' <- getSchema testDB testSchema
@@ -111,6 +112,12 @@ testSchemaMigrations = withTmpFiles $ do
       Migrations.run st True $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
+
+skipComparisonForUpMigrations :: [String]
+skipComparisonForUpMigrations =
+  [ -- schema doesn't change
+    "20250129_delete_unused_contacts"
+  ]
 
 skipComparisonForDownMigrations :: [String]
 skipComparisonForDownMigrations =

@@ -51,10 +51,10 @@ directoryServiceTests = do
     it "should NOT allow approving if roles are incorrect" testNotApprovedBadRoles
   describe "should require re-approval if profile is changed by" $ do
     it "the registration owner" testRegOwnerChangedProfile
-    it "another owner" testAnotherOwnerChangedProfile
+    it "another owner" testAnotherOwnerChangedProfile -- TODO fix - doesn't work if another owner is not connected as contact
   describe "should require profile update if group link is removed by " $ do
     it "the registration owner" testRegOwnerRemovedLink
-    it "another owner" testAnotherOwnerRemovedLink
+    it "another owner" testAnotherOwnerRemovedLink -- TODO fix - doesn't work if another owner is not connected as contact
   describe "duplicate groups (same display name and full name)" $ do
     it "should ask for confirmation if a duplicate group is submitted" testDuplicateAskConfirmation
     it "should prohibit registration if a duplicate group is listed" testDuplicateProhibitRegistration
@@ -230,7 +230,7 @@ testSuspendResume ps =
       bob <# "SimpleX-Directory> The group ID 1 (privacy) is listed in the directory again!"
       groupFound bob "privacy"
       superUser #> "@SimpleX-Directory privacy"
-      groupFoundN_ (Just 1) 2 superUser "privacy"
+      groupFoundN_ "" (Just 1) 2 superUser "privacy"
       superUser #> "@SimpleX-Directory /link 1:privacy"
       superUser <# "SimpleX-Directory> > /link 1:privacy"
       superUser <## "      The link to join the group ID 1 (privacy):"
@@ -284,10 +284,10 @@ testSetRole ps =
 
 testJoinGroup :: HasCallStack => TestParams -> IO ()
 testJoinGroup ps =
-  withDirectoryServiceCfg ps testCfgGroupLinkViaContact $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgGroupLinkViaContact "bob" bobProfile $ \bob -> do
-      withNewTestChatCfg ps testCfgGroupLinkViaContact "cath" cathProfile $ \cath ->
-        withNewTestChatCfg ps testCfgGroupLinkViaContact "dan" danProfile $ \dan -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan -> do
           bob `connectVia` dsLink
           registerGroup superUser bob "privacy" "Privacy"
           cath `connectVia` dsLink
@@ -301,10 +301,10 @@ testJoinGroup ps =
           cath <## "2 members"
           cath ##> ("/c " <> groupLink)
           cath <## "connection request sent!"
-          cath <## "SimpleX-Directory_1: contact is connected"
-          cath <## "contact SimpleX-Directory_1 is merged into SimpleX-Directory"
-          cath <## "use @SimpleX-Directory <message> to send messages"
+          cath <## "#privacy: joining the group..."
           cath <## "#privacy: you joined the group"
+          cath <## "contact and member are merged: SimpleX-Directory, #privacy SimpleX-Directory_1"
+          cath <## "use @SimpleX-Directory <message> to send messages"
           cath <# ("#privacy SimpleX-Directory> " <> welcomeMsg)
           cath <## "#privacy: member bob (Bob) is connected"
           bob <## "#privacy: SimpleX-Directory added cath (Catherine) to the group (connecting...)"
@@ -316,11 +316,9 @@ testJoinGroup ps =
           concurrentlyN_
             [ do
                 bob <## "dan (Daniel): accepting request to join group #privacy..."
-                bob <## "dan (Daniel): contact is connected"
-                bob <## "dan invited to group #privacy via your group link"
                 bob <## "#privacy: dan joined the group",
               do
-                dan <## "bob (Bob): contact is connected"
+                dan <## "#privacy: joining the group..."
                 dan <## "#privacy: you joined the group"
                 dan <# ("#privacy bob> " <> welcomeMsg)
                 dan
@@ -456,9 +454,9 @@ testInviteToOwnersGroup ps =
 
 testDelistedOwnerLeaves :: HasCallStack => TestParams -> IO ()
 testDelistedOwnerLeaves ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -468,13 +466,16 @@ testDelistedOwnerLeaves ps =
         bob <## ""
         bob <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (group owner left)."
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         groupNotFound cath "privacy"
 
 testDelistedOwnerRemoved :: HasCallStack => TestParams -> IO ()
 testDelistedOwnerRemoved ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -483,38 +484,45 @@ testDelistedOwnerRemoved ps =
         bob <## ""
         bob <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (group owner is removed)."
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         groupNotFound cath "privacy"
 
 testNotDelistedMemberLeaves :: HasCallStack => TestParams -> IO ()
 testNotDelistedMemberLeaves ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         leaveGroup "privacy" cath
         bob <## "#privacy: cath left the group"
         (superUser </)
-        groupFound cath "privacy"
+        cath `connectVia` dsLink
+        cath #> "@SimpleX-Directory_1 privacy"
+        groupFoundN_ "_1" Nothing 2 cath "privacy"
 
 testNotDelistedMemberRemoved :: HasCallStack => TestParams -> IO ()
 testNotDelistedMemberRemoved ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         removeMember "privacy" bob cath
         (superUser </)
-        groupFound cath "privacy"
+        cath `connectVia` dsLink
+        cath #> "@SimpleX-Directory_1 privacy"
+        groupFoundN_ "_1" Nothing 2 cath "privacy"
 
 testDelistedServiceRemoved :: HasCallStack => TestParams -> IO ()
 testDelistedServiceRemoved ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -525,7 +533,8 @@ testDelistedServiceRemoved ps =
         bob <## ""
         bob <## "The group is no longer listed in the directory."
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is de-listed (directory service is removed)."
-        groupNotFound cath "privacy"
+        cath `connectVia` dsLink
+        groupNotFound_ "_1" cath "privacy"
 
 testDelistedGroupDeleted :: HasCallStack => TestParams -> IO ()
 testDelistedGroupDeleted ps =
@@ -553,12 +562,15 @@ testDelistedGroupDeleted ps =
 
 testDelistedRoleChanges :: HasCallStack => TestParams -> IO ()
 testDelistedRoleChanges ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         groupFoundN 3 cath "privacy"
         -- de-listed if service role changed
         bob ##> "/mr privacy SimpleX-Directory member"
@@ -599,12 +611,15 @@ testDelistedRoleChanges ps =
 
 testNotDelistedMemberRoleChanged :: HasCallStack => TestParams -> IO ()
 testNotDelistedMemberRoleChanged ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         groupFoundN 3 cath "privacy"
         bob ##> "/mr privacy cath member"
         bob <## "#privacy: you changed the role of cath from owner to member"
@@ -663,9 +678,9 @@ testNotApprovedBadRoles ps =
 
 testRegOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
 testRegOwnerChangedProfile ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -675,6 +690,9 @@ testRegOwnerChangedProfile ps =
         bob <## "It is hidden from the directory until approved."
         cath <## "bob updated group #privacy:"
         cath <## "full name changed to: Privacy and Security"
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         groupNotFound cath "privacy"
         superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated."
         reapproveGroup 3 superUser bob
@@ -682,12 +700,15 @@ testRegOwnerChangedProfile ps =
 
 testAnotherOwnerChangedProfile :: HasCallStack => TestParams -> IO ()
 testAnotherOwnerChangedProfile ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         cath ##> "/gp privacy privacy Privacy and Security"
         cath <## "full name changed to: Privacy and Security"
         bob <## "cath updated group #privacy:"
@@ -701,9 +722,9 @@ testAnotherOwnerChangedProfile ps =
 
 testRegOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
 testRegOwnerRemovedLink ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
@@ -720,6 +741,9 @@ testRegOwnerRemovedLink ps =
         cath <## "description changed to:"
         cath <## "Welcome!"
         superUser <# "SimpleX-Directory> The group link is removed from ID 1 (privacy), de-listed."
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         groupNotFound cath "privacy"
         bob ##> ("/set welcome #privacy " <> welcomeWithLink)
         bob <## "description changed to:"
@@ -734,12 +758,15 @@ testRegOwnerRemovedLink ps =
 
 testAnotherOwnerRemovedLink :: HasCallStack => TestParams -> IO ()
 testAnotherOwnerRemovedLink ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
+        cath `connectVia` dsLink
+        cath <## "contact and member are merged: SimpleX-Directory_1, #privacy SimpleX-Directory"
+        cath <## "use @SimpleX-Directory <message> to send messages"
         bob ##> "/show welcome #privacy"
         bob <## "Welcome message:"
         welcomeWithLink <- getTermLine bob
@@ -883,9 +910,9 @@ testDuplicateProhibitApproval ps =
 
 testListUserGroups :: HasCallStack => TestParams -> IO ()
 testListUserGroups ps =
-  withDirectoryServiceCfg ps testCfgCreateGroupDirect $ \superUser dsLink ->
-    withNewTestChatCfg ps testCfgCreateGroupDirect "bob" bobProfile $ \bob ->
-      withNewTestChatCfg ps testCfgCreateGroupDirect "cath" cathProfile $ \cath -> do
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         cath `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
@@ -893,7 +920,7 @@ testListUserGroups ps =
         fullAddMember "privacy" "Privacy" bob cath GRMember
         joinGroup "privacy" cath bob
         cath <## "#privacy: member SimpleX-Directory_1 is connected"
-        cath <## "contact SimpleX-Directory_1 is merged into SimpleX-Directory"
+        cath <## "contact and member are merged: SimpleX-Directory, #privacy SimpleX-Directory_1"
         cath <## "use @SimpleX-Directory <message> to send messages"
         registerGroupId superUser bob "security" "Security" 2 2
         registerGroupId superUser cath "anonymity" "Anonymity" 3 1
@@ -937,7 +964,6 @@ testRestoreDirectory ps = do
         groupFound bob "security"
         groupFoundN 3 cath "privacy"
         cath #> "@SimpleX-Directory security"
-        cath <## "SimpleX-Directory: quantum resistant end-to-end encryption enabled"
         groupFoundN' 2 cath "security"
 
 listGroups :: HasCallStack => TestCC -> TestCC -> TestCC -> IO ()
@@ -1161,8 +1187,8 @@ connectVia :: TestCC -> String -> IO ()
 u `connectVia` dsLink = do
   u ##> ("/c " <> dsLink)
   u <## "connection request sent!"
-  u <## "SimpleX-Directory: contact is connected"
-  u <# "SimpleX-Directory> Welcome to SimpleX-Directory service!"
+  u .<## ": contact is connected"
+  u .<# "> Welcome to SimpleX-Directory service!"
   u <## "Send a search string to find groups or /help to learn how to add groups to directory."
   u <## ""
   u <## "For example, send privacy to find groups about privacy."
@@ -1206,19 +1232,22 @@ groupFoundN count u name = do
   groupFoundN' count u name
 
 groupFoundN' :: Int -> TestCC -> String -> IO ()
-groupFoundN' = groupFoundN_ Nothing
+groupFoundN' = groupFoundN_ "" Nothing
 
-groupFoundN_ :: Maybe Int -> Int -> TestCC -> String -> IO ()
-groupFoundN_ shownId_ count u name = do
-  u <# ("SimpleX-Directory> > " <> name)
+groupFoundN_ :: String -> Maybe Int -> Int -> TestCC -> String -> IO ()
+groupFoundN_ suffix shownId_ count u name = do
+  u <# ("SimpleX-Directory" <> suffix <> "> > " <> name)
   u <## "      Found 1 group(s)."
-  u <#. ("SimpleX-Directory> " <> maybe "" (\gId -> show gId <> ". ") shownId_ <> name)
+  u <#. ("SimpleX-Directory" <> suffix <> "> " <> maybe "" (\gId -> show gId <> ". ") shownId_ <> name)
   u <## "Welcome message:"
   u <##. "Link to join the group "
   u <## (show count <> " members")
 
 groupNotFound :: TestCC -> String -> IO ()
-groupNotFound u s = do
-  u #> ("@SimpleX-Directory " <> s)
-  u <# ("SimpleX-Directory> > " <> s)
+groupNotFound = groupNotFound_ ""
+
+groupNotFound_ :: String -> TestCC -> String -> IO ()
+groupNotFound_ suffix u s = do
+  u #> ("@SimpleX-Directory" <> suffix <> " " <> s)
+  u <# ("SimpleX-Directory" <> suffix <> "> > " <> s)
   u <## "      No groups found"

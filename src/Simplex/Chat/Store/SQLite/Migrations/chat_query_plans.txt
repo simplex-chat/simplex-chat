@@ -157,7 +157,7 @@ Query:
               WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
             
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_groups (user_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -480,7 +480,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_history (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -491,7 +491,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_history (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -645,30 +645,6 @@ Query:
             VALUES (?,?,?,?,?,?,?,?)
         
 Plan:
-
-Query: 
-          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, created_at, updated_at, chat_ts)
-          SELECT contact_profile_id, group_id, ?, ?, ?, ?, ?
-          FROM group_members
-          WHERE group_member_id = ?
-        
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_contact_id (contact_id=?)
-SEARCH received_probes USING COVERING INDEX idx_received_probes_contact_id (contact_id=?)
-SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_contact_id (contact_id=?)
-SEARCH sent_probes USING COVERING INDEX idx_sent_probes_contact_id (contact_id=?)
-SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_contact_id (contact_id=?)
-SEARCH calls USING COVERING INDEX idx_calls_contact_id (contact_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_contact_id (fwd_from_contact_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contact_id (contact_id=?)
-SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_id (contact_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_contact_id (contact_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_via_contact (via_contact=?)
-SEARCH files USING COVERING INDEX idx_files_contact_id (contact_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_invited_by (invited_by=?)
-SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
           INSERT INTO group_members
@@ -985,7 +961,7 @@ Query:
           LIMIT 1
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1005,7 +981,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_history (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1145,15 +1121,13 @@ Query:
           SELECT i.chat_item_id
           FROM chat_items i
           JOIN group_members m ON m.group_member_id = i.group_member_id
-          JOIN contacts c ON c.contact_id = m.contact_id
-          WHERE i.user_id = ? AND i.group_id = ? AND c.local_display_name = ? AND i.item_text like ?
+          WHERE i.user_id = ? AND i.group_id = ? AND m.local_display_name = ? AND i.item_text like ?
           ORDER BY i.chat_item_id DESC
           LIMIT 1
         
 Plan:
-SEARCH i USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH i USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1226,14 +1200,6 @@ Query:
         
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          UPDATE group_members
-          SET contact_id = ?, updated_at = ?
-          WHERE group_member_id = ?
-        
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE group_members
@@ -1920,12 +1886,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -1949,7 +1916,7 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
@@ -1971,12 +1938,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -1995,7 +1963,7 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
@@ -2016,12 +1984,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2039,7 +2008,7 @@ Query:
                     AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
@@ -2060,12 +2029,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2083,7 +2053,7 @@ Query:
                     AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
@@ -2104,12 +2074,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2127,7 +2098,7 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
@@ -2148,12 +2119,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2171,7 +2143,7 @@ Query:
                     AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
@@ -2192,12 +2164,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2215,7 +2188,7 @@ Query:
                     AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
@@ -2236,12 +2209,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2259,7 +2233,7 @@ Query:
                     ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
@@ -2280,12 +2254,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2300,7 +2275,7 @@ Query:
        WHERE g.user_id = ? AND g.chat_ts < ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts<?)
@@ -2321,12 +2296,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2341,7 +2317,7 @@ Query:
        WHERE g.user_id = ? AND g.chat_ts > ? ORDER BY g.chat_ts ASC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=? AND chat_ts>?)
@@ -2362,12 +2338,13 @@ Query:
             LIMIT 1
           ) AS chat_item_id,
           COALESCE(ChatStats.UnreadCount, 0),
+          COALESCE(ChatStats.UnreadMentions, 0),
           COALESCE(ReportCount.Count, 0),
           COALESCE(ChatStats.MinUnread, 0),
           g.unread_chat
         FROM groups g
         LEFT JOIN (
-          SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
           WHERE user_id = ? AND group_id IS NOT NULL AND item_status = ?
           GROUP BY group_id
@@ -2382,7 +2359,7 @@ Query:
        WHERE g.user_id = ? ORDER BY g.chat_ts DESC LIMIT ?
 Plan:
 MATERIALIZE ChatStats
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id>?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id>?)
 MATERIALIZE ReportCount
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id>?)
 SEARCH g USING INDEX idx_groups_chat_ts (user_id=?)
@@ -2777,66 +2754,6 @@ SEARCH c USING INDEX idx_connections_updated_at (user_id=?)
 SEARCH uc USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT ch.connection_id, c.conn_req_inv
-        FROM group_members m
-        JOIN contacts ct ON ct.contact_id = m.contact_id
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT MAX(cc.connection_id)
-          FROM connections cc
-          WHERE cc.contact_id = ct.contact_id
-        )
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
-        )
-        WHERE m.user_id = ? AND m.group_member_id = ? AND mh.member_category = ? AND ct.deleted = 0
-      
-Plan:
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH cc USING COVERING INDEX idx_connections_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mh USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-SEARCH ch USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 2
-SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
-
-Query: 
-        SELECT ch.connection_id, g.group_id, m.group_member_id, m.member_id, c.conn_req_inv
-        FROM contacts ct
-        JOIN group_members m ON m.contact_id = ct.contact_id
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT MAX(cc.connection_id)
-          FROM connections cc
-          WHERE cc.group_member_id = m.group_member_id
-        )
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
-        )
-        WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = 0 AND mh.member_category = ?
-      
-Plan:
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 1
-SEARCH cc
-SEARCH mh USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-SEARCH ch USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-CORRELATED SCALAR SUBQUERY 2
-SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
-
-Query: 
         SELECT chat_item_id
         FROM chat_item_messages
         WHERE message_id IN (
@@ -2930,7 +2847,7 @@ Query:
         LIMIT 1
       
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -3102,30 +3019,6 @@ SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT ct.contact_id
-        FROM contacts ct
-        JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
-        WHERE ct.user_id = ? AND ct.contact_id != ?
-          AND ct.contact_status = ? AND ct.deleted = 0 AND ct.is_user = 0
-          AND p.display_name = ? AND p.full_name = ?
-       AND p.image = ?
-Plan:
-SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT ct.contact_id
-        FROM contacts ct
-        JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
-        WHERE ct.user_id = ? AND ct.contact_id != ?
-          AND ct.contact_status = ? AND ct.deleted = 0 AND ct.is_user = 0
-          AND p.display_name = ? AND p.full_name = ?
-       AND p.image is NULL
-Plan:
-SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
         SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
         FROM xftp_file_descriptions d
         JOIN rcv_files f ON f.file_descr_id = d.file_descr_id
@@ -3257,18 +3150,6 @@ Query:
 Plan:
 SEARCH m USING INDEX idx_group_members_user_id (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT m.member_role, gp.preferences
-        FROM groups g
-        JOIN group_profiles gp USING (group_profile_id)
-        JOIN group_members m USING (group_id)
-        WHERE g.user_id = ? AND m.contact_id = ?
-      
-Plan:
-SEARCH m USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.chat_msg_event, pgm.group_member_intro_id
@@ -3470,22 +3351,6 @@ Query:
       
 Plan:
 SEARCH group_member_intros USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        UPDATE group_members
-        SET contact_id = ?,
-            local_display_name = (SELECT local_display_name FROM contacts WHERE contact_id = ?),
-            contact_profile_id = (SELECT contact_profile_id FROM contacts WHERE contact_id = ?),
-            updated_at = ?
-        WHERE contact_id = ?
-          AND user_id = ?
-      
-Plan:
-SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
-SCALAR SUBQUERY 1
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-SCALAR SUBQUERY 2
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         UPDATE group_members
@@ -4080,7 +3945,7 @@ Query:
       WHERE user_id = ? AND group_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
     
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
 Query: 
       SELECT group_snd_item_status, COUNT(1)
@@ -4171,7 +4036,7 @@ Query:
       WHERE user_id = ? AND group_id = ? AND item_status = ?
     
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups (user_id=? AND group_id=? AND item_status=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, updated_at = ?
@@ -4666,7 +4531,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_groups_history (user_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -4693,7 +4558,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ? AND i.group_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5013,7 +4878,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ?
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5080,25 +4945,6 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_pr
 Query: DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: DELETE FROM contacts WHERE contact_id = ? AND user_id = ?
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_contact_id (contact_id=?)
-SEARCH received_probes USING COVERING INDEX idx_received_probes_contact_id (contact_id=?)
-SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_contact_id (contact_id=?)
-SEARCH sent_probes USING COVERING INDEX idx_sent_probes_contact_id (contact_id=?)
-SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_contact_id (contact_id=?)
-SEARCH calls USING COVERING INDEX idx_calls_contact_id (contact_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_contact_id (fwd_from_contact_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contact_id (contact_id=?)
-SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_id (contact_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_contact_id (contact_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_via_contact (via_contact=?)
-SEARCH files USING COVERING INDEX idx_files_contact_id (contact_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_invited_by (invited_by=?)
-SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: DELETE FROM contacts WHERE user_id = ? AND contact_id = ?
 Plan:
@@ -5198,7 +5044,7 @@ SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_grou
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group_id (group_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_group_id (fwd_from_group_id=?)
-SCAN chat_items USING COVERING INDEX idx_chat_items_groups_item_ts
+SCAN chat_items USING COVERING INDEX idx_chat_items_groups_user_mention
 SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
 SEARCH user_contact_links USING COVERING INDEX idx_user_contact_links_group_id (group_id=?)
 SEARCH files USING COVERING INDEX idx_files_group_id (group_id=?)
@@ -5310,7 +5156,7 @@ SEARCH protocol_servers USING COVERING INDEX idx_smp_servers_user_id (user_id=?)
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_user_id (user_id=?)
 SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_history (user_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 SEARCH connections USING COVERING INDEX idx_connections_group_member (user_id=?)
@@ -5449,10 +5295,6 @@ Query: SELECT COUNT(1) FROM chat_item_versions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
 
-Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ?  AND item_status = ? 
-Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups (user_id=? AND group_id=? AND item_status=?)
-
 Query: SELECT COUNT(1) FROM chat_items WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=? AND item_sent=?)
@@ -5464,6 +5306,10 @@ SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
 Query: SELECT COUNT(1) FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
+
+Query: SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ?  AND item_status = ? 
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
@@ -5585,10 +5431,6 @@ Query: SELECT group_id FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1
-Plan:
-SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
-
 Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
@@ -5608,10 +5450,6 @@ SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND loca
 Query: SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT group_link_id FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1
-Plan:
-SEARCH user_contact_links USING INDEX idx_user_contact_links_group_id (group_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
 Plan:
@@ -5673,10 +5511,6 @@ Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?
-Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-
 Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -5729,10 +5563,6 @@ Query: UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?
-Plan:
-SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
-
 Query: UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -5744,10 +5574,6 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1
 Plan:
 SEARCH connections USING INDEX idx_connections_to_subscribe (to_subscribe=?)
-
-Query: UPDATE connections SET via_contact = ?, updated_at = ? WHERE via_contact = ? AND user_id = ?
-Plan:
-SEARCH connections USING INDEX idx_connections_via_contact (via_contact=?)
 
 Query: UPDATE contact_requests SET contact_id = ? WHERE user_id = ? AND local_display_name = ?
 Plan:
@@ -5769,15 +5595,7 @@ Query: UPDATE contacts SET contact_grp_inv_sent = ?, updated_at = ? WHERE contac
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -5853,10 +5671,6 @@ Query: UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id 
 Plan:
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
-Query: UPDATE group_members SET invited_by = ?, updated_at = ? WHERE invited_by = ? AND user_id = ?
-Plan:
-SEARCH group_members USING INDEX idx_group_members_invited_by (invited_by=?)
-
 Query: UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
@@ -5870,10 +5684,6 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE group_members SET sent_inv_queue_info = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -5968,10 +5778,6 @@ SEARCH snd_files USING PRIMARY KEY (file_id=? AND connection_id=?)
 Query: UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?
 Plan:
 SEARCH usage_conditions USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE user_contact_links SET group_link_member_role = ? WHERE user_id = ? AND user_contact_link_id = ?
-Plan:
-SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE users SET active_user = 0
 Plan:
