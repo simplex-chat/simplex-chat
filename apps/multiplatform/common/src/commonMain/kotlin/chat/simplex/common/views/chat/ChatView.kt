@@ -658,7 +658,7 @@ fun ChatLayout(
   chatInfo: State<ChatInfo?>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
-  composeView: (@Composable (MutableState<Pair<Int, Int>>) -> Unit),
+  composeView: (@Composable (MutableState<TextRange>, FocusRequester?) -> Unit),
   scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
   attachmentBottomSheetState: ModalBottomSheetState,
@@ -826,21 +826,6 @@ fun ChatLayout(
           }
         } else {
           NavigationBarBackground(true, oneHandUI.value, noAlpha = true)
-        }
-        if (chatInfo is ChatInfo.Group && composeState.value.message.isNotEmpty()) {
-          Column(
-            Modifier
-              .align(Alignment.BottomStart)
-              .padding(bottom = composeViewHeight.value)
-              .heightIn(max = DEFAULT_MIN_SECTION_ITEM_HEIGHT * 5f)
-          ) {
-            GroupMentions(
-              rhId = remoteHostId,
-              composeState = composeState,
-              textSelection = textSelection,
-              chatInfo = chatInfo,
-            )
-          }
         }
         if (contentTag == MsgContentTag.Report) {
           if (oneHandUI.value) {
@@ -2720,8 +2705,7 @@ fun PreviewChatLayout() {
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = {},
-      groupReports = remember { mutableStateOf(GroupReports(0, false)) },
+      composeView = { _,_ -> },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
@@ -2796,8 +2780,7 @@ fun PreviewGroupChatLayout() {
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = {},
-      groupReports = remember { mutableStateOf(GroupReports(0, false)) },
+      composeView = { _,_ -> },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
