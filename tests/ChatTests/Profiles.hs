@@ -104,9 +104,11 @@ chatProfileTests = do
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
-  testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
+  testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      connectUsers alice bob
+      connectUsers alice cath
+      connectUsers bob cath
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <display name> to change it"
@@ -1451,7 +1453,7 @@ testSetResetSetConnectionIncognito = testChat2 aliceProfile bobProfile $
 
 testJoinGroupIncognito :: HasCallStack => TestParams -> IO ()
 testJoinGroupIncognito =
-  testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       -- non incognito connections
       connectUsers alice bob
@@ -1526,13 +1528,13 @@ testJoinGroupIncognito =
             dan
               <### [ ConsoleString $ "#secret_club: member " <> cathIncognito <> " is connected",
                      "#secret_club: member bob_1 (Bob) is connected",
-                     "contact bob_1 is merged into bob",
+                     "contact and member are merged: bob, #secret_club bob_1",
                      "use @bob <message> to send messages"
                    ],
           do
             bob <## "#secret_club: alice added dan_1 (Daniel) to the group (connecting...)"
             bob <## "#secret_club: new member dan_1 is connected"
-            bob <## "contact dan_1 is merged into dan"
+            bob <## "contact and member are merged: dan, #secret_club dan_1"
             bob <## "use @dan <message> to send messages",
           do
             cath <## "#secret_club: alice added dan_1 (Daniel) to the group (connecting...)"
@@ -1563,17 +1565,7 @@ testJoinGroupIncognito =
           bob <# "#secret_club dan> how is it going?",
           cath ?<# "#secret_club dan_1> how is it going?"
         ]
-      -- cath and bob can send messages via new direct connection, cath is incognito
-      bob #> ("@" <> cathIncognito <> " hi, I'm bob")
-      cath ?<# "bob_1> hi, I'm bob"
-      cath ?#> "@bob_1 hey, I'm incognito"
-      bob <# (cathIncognito <> "> hey, I'm incognito")
-      -- cath and dan can send messages via new direct connection, cath is incognito
-      dan #> ("@" <> cathIncognito <> " hi, I'm dan")
-      cath ?<# "dan_1> hi, I'm dan"
-      cath ?#> "@dan_1 hey, I'm incognito"
-      dan <# (cathIncognito <> "> hey, I'm incognito")
-      -- non incognito connections are separate
+      -- non incognito direct connections are separate
       bob <##> cath
       dan <##> cath
       -- list groups
@@ -1632,11 +1624,6 @@ testJoinGroupIncognito =
         ]
       cath ##> "#secret_club hello"
       cath <## "you are no longer a member of the group"
-      -- cath can still message members directly
-      bob #> ("@" <> cathIncognito <> " I removed you from group")
-      cath ?<# "bob_1> I removed you from group"
-      cath ?#> "@bob_1 ok"
-      bob <# (cathIncognito <> "> ok")
 
 testCantInviteContactIncognito :: HasCallStack => TestParams -> IO ()
 testCantInviteContactIncognito = testChat2 aliceProfile bobProfile $
@@ -2205,7 +2192,7 @@ testAllowFullDeletionGroup =
 
 testProhibitDirectMessages :: HasCallStack => TestParams -> IO ()
 testProhibitDirectMessages =
-  testChatCfg4 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile danProfile $
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       createGroup3 "team" alice bob cath
       threadDelay 1000000
@@ -2221,7 +2208,7 @@ testProhibitDirectMessages =
       alice #> "@cath hello again"
       cath <# "alice> hello again"
       bob ##> "@cath hello again"
-      bob <## "direct messages to indirect contact cath are prohibited"
+      bob <## "bad chat command: direct messages not allowed"
       (cath </)
       connectUsers cath dan
       addMember "team" cath dan GRMember
@@ -2242,14 +2229,14 @@ testProhibitDirectMessages =
             bob <## "#team: new member dan is connected"
         ]
       alice ##> "@dan hi"
-      alice <## "direct messages to indirect contact dan are prohibited"
+      alice <## "bad chat command: direct messages not allowed"
       bob ##> "@dan hi"
-      bob <## "direct messages to indirect contact dan are prohibited"
+      bob <## "bad chat command: direct messages not allowed"
       (dan </)
       dan ##> "@alice hi"
-      dan <## "direct messages to indirect contact alice are prohibited"
+      dan <## "bad chat command: direct messages not allowed"
       dan ##> "@bob hi"
-      dan <## "direct messages to indirect contact bob are prohibited"
+      dan <## "bad chat command: direct messages not allowed"
       dan #> "@cath hi"
       cath <# "dan> hi"
       cath #> "@dan hi"
