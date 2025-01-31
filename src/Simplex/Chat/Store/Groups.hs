@@ -399,7 +399,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                 INSERT INTO groups
                   (group_profile_id, local_display_name, inv_queue_info, user_id, enable_ntfs,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
               |]
               ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
@@ -483,7 +483,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
             ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
               user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
               peer_chat_min_version, peer_chat_max_version)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
             :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, createdAt, createdAt)
