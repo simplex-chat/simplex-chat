@@ -65,7 +65,7 @@ struct GroupMentionsView: View {
                     Spacer()
                     VStack {
                         Divider()
-                        List {
+                        let list = List {
                             ForEach($filteredMembers, id: \.groupMemberId) { m in
                                 let existingMention = composeState.mentions.first { $0.member.memberId == m.wrapped.memberId.wrappedValue }
                                 let disabled = composeState.maxMemberMentionsReached && existingMention == nil
@@ -88,6 +88,12 @@ struct GroupMentionsView: View {
                         }
                         .listStyle(PlainListStyle())
                         .frame(height: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filteredMembers.count)))
+                        
+                        if #available(iOS 16.0, *) {
+                            list.scrollDismissesKeyboard(.never)
+                        } else {
+                            list
+                        }
                     }
                     .background(Color(UIColor.systemBackground))
                 }
