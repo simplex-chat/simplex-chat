@@ -45,6 +45,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   val sessionMode = remember { mutableStateOf(currentCfgVal.sessionMode) }
   val smpProxyMode = remember { mutableStateOf(currentCfgVal.smpProxyMode) }
   val smpProxyFallback = remember { mutableStateOf(currentCfgVal.smpProxyFallback) }
+  val smpWebPort = remember { mutableStateOf(currentCfgVal.smpWebPort) }
 
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
@@ -83,6 +84,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       sessionMode = sessionMode.value,
       smpProxyMode = smpProxyMode.value,
       smpProxyFallback = smpProxyFallback.value,
+      smpWebPort = smpWebPort.value,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
       tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
@@ -97,6 +99,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
     sessionMode.value = cfg.sessionMode
     smpProxyMode.value = cfg.smpProxyMode
     smpProxyFallback.value = cfg.smpProxyFallback
+    smpWebPort.value = cfg.smpWebPort
     networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
     networkTCPTimeout.value = cfg.tcpTimeout
     networkTCPTimeoutPerKb.value = cfg.tcpTimeoutPerKb
@@ -151,6 +154,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       sessionMode = sessionMode,
       smpProxyMode = smpProxyMode,
       smpProxyFallback = smpProxyFallback,
+      smpWebPort,
       networkTCPConnectTimeout,
       networkTCPTimeout,
       networkTCPTimeoutPerKb,
@@ -183,6 +187,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   sessionMode: MutableState<TransportSessionMode>,
   smpProxyMode: MutableState<SMPProxyMode>,
   smpProxyFallback: MutableState<SMPProxyFallback>,
+  smpWebPort: MutableState<Boolean>,
   networkTCPConnectTimeout: MutableState<Long>,
   networkTCPTimeout: MutableState<Long>,
   networkTCPTimeoutPerKb: MutableState<Long>,
@@ -221,8 +226,8 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       }
       SectionDividerSpaced()
       SectionView(stringResource(MR.strings.network_smp_web_port_section_title).uppercase()) {
-        PreferenceToggle(stringResource(MR.strings.network_smp_web_port_toggle), checked = remember { controller.appPrefs.networkSMPWebPort.state }.value) {
-          controller.appPrefs.networkSMPWebPort.set(it)
+        PreferenceToggle(stringResource(MR.strings.network_smp_web_port_toggle), checked = smpWebPort.value) {
+          smpWebPort.value = it
         }
       }
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
@@ -543,6 +548,7 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },
       smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },
       smpProxyFallback = remember { mutableStateOf(SMPProxyFallback.Allow) },
+      smpWebPort = remember { mutableStateOf(false) },
       networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeoutPerKb = remember { mutableStateOf(10_000) },
