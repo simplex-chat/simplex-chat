@@ -435,35 +435,47 @@ fun ChatPreviewView(
           if (n > 0 || chat.chatStats.unreadChat) {
             val unreadMentions = chat.chatStats.unreadMentions
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
-              if (unreadMentions > 0 && n > 1) {
-                val color = when {
-                  disabled -> MaterialTheme.colors.secondary
-                  cInfo is ChatInfo.Group -> {
-                    val enableNtfs = cInfo.groupInfo.chatSettings.enableNtfs
-                    if (enableNtfs == MsgFilter.All || enableNtfs == MsgFilter.Mentions) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary
-                  }
-
-                  else -> if (showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant
+              val mentionColor = when {
+                disabled -> MaterialTheme.colors.secondary
+                cInfo is ChatInfo.Group -> {
+                  val enableNtfs = cInfo.groupInfo.chatSettings.enableNtfs
+                  if (enableNtfs == MsgFilter.All || enableNtfs == MsgFilter.Mentions) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary
                 }
+
+                else -> if (showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant
+              }
+              if (unreadMentions > 0 && n > 1) {
                 Text(
                   text = "$MENTION_START",
-                  color = color,
+                  color = mentionColor,
                   fontSize = 12.sp,
                   modifier = Modifier.offset(y = 2.sp.toDp())
                 )
               }
-              Text(
-                if (n == 1 && unreadMentions > 0) "$MENTION_START" else if (n > 0) unreadCountStr(n) else "",
-                color = Color.White,
-                fontSize = 10.sp,
-                style = TextStyle(textAlign = TextAlign.Center),
-                modifier = Modifier
-                  .offset(y = 3.sp.toDp())
-                  .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
-                  .badgeLayout()
-                  .padding(horizontal = 2.sp.toDp())
-                  .padding(vertical = 1.sp.toDp())
-              )
+
+              if (unreadMentions > 0 && n == 1) {
+                Box(modifier = Modifier.offset(y = 3.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
+                  Text(
+                    text = "$MENTION_START",
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                  )
+                }
+              } else {
+                Text(
+                  if (n > 0) unreadCountStr(n) else "",
+                  color = Color.White,
+                  fontSize = 10.sp,
+                  style = TextStyle(textAlign = TextAlign.Center),
+                  modifier = Modifier
+                    .offset(y = 3.sp.toDp())
+                    .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+                    .badgeLayout()
+                    .padding(horizontal = 2.sp.toDp())
+                    .padding(vertical = 1.sp.toDp())
+                )
+              }
             }
           } else if (showNtfsIcon && ntfsMode != null) {
             Icon(
