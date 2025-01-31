@@ -7994,9 +7994,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>¿Actualizar configuración?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
+      <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve" approved="no">
         <source>Updating settings will re-connect the client to all servers.</source>
-        <target>Al actualizar la configuración el cliente se reconectará a todos los servidores.</target>
+        <target state="translated">Para actualizar la configuración el cliente se reconectará a todos los servidores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
