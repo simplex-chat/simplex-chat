@@ -1215,7 +1215,11 @@ data class Chat(
     else -> false
   }
 
-  val unreadTag: Boolean get() = chatInfo.ntfsEnabled && (chatStats.unreadCount > 0 || chatStats.unreadChat)
+  val unreadTag: Boolean get() = when (chatInfo.chatSettings?.enableNtfs) {
+    All -> chatStats.unreadChat || chatStats.unreadCount > 0
+    Mentions -> chatStats.unreadChat || chatStats.unreadMentions > 0
+    else -> chatStats.unreadChat
+  }
 
   val id: String get() = chatInfo.id
 
