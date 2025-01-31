@@ -251,7 +251,7 @@ You can install SMP server in one of the following ways:
 - [systemd service](#systemd-service)
    - using [installation script](#installation-script) - **recommended**
    - or [manually](#manual-deployment)
-- [Docker container](#docker-container) from DockerHub - recommended for experiments and quick installation
+- [Docker container](#docker-container) from DockerHub
 - [Linode marketplace](#linode-marketplace)
 
 ### systemd service

@@ -4,6 +4,23 @@ revision: 31.07.2023
 ---
 # Hosting your own XFTP Server
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Installation options](#installation-options)
+   - [systemd service](#systemd-service) with [installation script](#installation-script) or [manually](#manual-deployment)
+   - [docker container](#docker-сontainer)
+   - [Linode marketplace](#linode-marketplace)
+- [Tor installation](#tor-installation)
+- [Configuration](#configuration)
+- [Documentation](#documentation)
+   - [XFTP server address](#xftp-server-address)
+   - [Systemd commands](#systemd-commands)
+   - [Control port](#control-port)
+   - [Daily statistics](#daily-statistics)
+- [Updating your XFTP server](#updating-your-xftp-server)
+- [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
+
 ## Overview
 
 XFTP is a new file transfer protocol focussed on meta-data protection - it is based on the same principles as SimpleX Messaging Protocol used in SimpleX Chat messenger:
@@ -15,16 +32,19 @@ XFTP is a new file transfer protocol focussed on meta-data protection - it is ba
    - no identifiers or ciphertext in common between sent and received relay traffic, same as for messages delivered by SMP relays.
    - protection of sender IP address from the recipients.
 
-## Installation
+## Installation options
 
-Here's the overview of installation options:
+You can install XFTP server in one of the following ways:
 
-- [Installation script (native binaries, using systemd services)](#installation-script) **recommended**
-- [Docker](#docker)
+- [systemd service](#systemd-service)
+   - using [installation script](#installation-script) - **recommended**
+   - or [manually](#manual-deployment)
+- [Docker container](#docker-container) from DockerHub
 - [Linode marketplace](#linode-marketplace)
-- [Manual deployment](#manual-deployment)
 
-### Installation script
+### systemd service
+
+#### Installation script
 
 This installation script will automatically install binaries, systemd services and additional scripts that will manage backups, updates and uninstallation. This is the recommended option due to its flexibility, easy updating, and being battle tested on our servers.
 
@@ -46,69 +66,7 @@ fi
 
 Type `2` and hit enter to install `xftp-server`.
 
-### Docker
-
-You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.
-
-This deployment provides two Docker Compose files: the **automatic** one and **manual**. If you're not sure, choose **automatic**.
-
-This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
-
-1. Create `xftp-server` directory and switch to it:
-
-  ```sh
-  mkdir xftp-server && cd xftp-server
-  ```
-
-2. Create `docker-compose.yml` file with the following content:
-
-  You can also grab it from here - [docker-compose-xftp.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `docker-compose.yml`.
-
-  ```yaml
-  name: SimpleX Chat - xftp-server
-
-  services:
-    xftp-server:
-      image: ${SIMPLEX_XFTP_IMAGE:-simplexchat/xftp-server:latest}
-      environment:
-        ADDR: ${ADDR?"Please specify the domain."}
-        QUOTA: ${QUOTA?"Please specify disk quota."}
-        PASS: ${PASS:-}
-      volumes:
-        - ./xftp_configs:/etc/opt/simplex-xftp
-        - ./xftp_state:/var/opt/simplex-xftp
-        - ./xftp_files:/srv/xftp
-      ports:
-        - 443:443
-      restart: unless-stopped
-  ```
-
-3. In the same directory, create `.env` file with the following content:
-
-  You can also grab it from here - [docker-compose-xftp.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `.env`.
-
-  Change variables according to your preferences.
-
-  ```env
-  # Mandatory
-  ADDR=your_ip_or_addr
-  QUOTA=120gb
-
-  # Optional
-  #PASS='123123'
-  ```
-
-4. Start your containers:
-
-  ```sh
-  docker compose up
-  ```
-
-### Linode marketplace
-
-You can deploy xftp-server upon creating new Linode VM. Please refer to: [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
-   
-### Manual deployment
+#### Manual deployment
 
 Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.
 
@@ -170,6 +128,68 @@ Manual installation is the most advanced deployment that provides the most flexi
    ```
 
    And execute `sudo systemctl daemon-reload`.
+
+### Docker сontainer
+
+You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.
+
+This deployment provides two Docker Compose files: the **automatic** one and **manual**. If you're not sure, choose **automatic**.
+
+This will download images from [Docker Hub](https://hub.docker.com/r/simplexchat).
+
+1. Create `xftp-server` directory and switch to it:
+
+  ```sh
+  mkdir xftp-server && cd xftp-server
+  ```
+
+2. Create `docker-compose.yml` file with the following content:
+
+  You can also grab it from here - [docker-compose-xftp.yml](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `docker-compose.yml`.
+
+  ```yaml
+  name: SimpleX Chat - xftp-server
+
+  services:
+    xftp-server:
+      image: ${SIMPLEX_XFTP_IMAGE:-simplexchat/xftp-server:latest}
+      environment:
+        ADDR: ${ADDR?"Please specify the domain."}
+        QUOTA: ${QUOTA?"Please specify disk quota."}
+        PASS: ${PASS:-}
+      volumes:
+        - ./xftp_configs:/etc/opt/simplex-xftp
+        - ./xftp_state:/var/opt/simplex-xftp
+        - ./xftp_files:/srv/xftp
+      ports:
+        - 443:443
+      restart: unless-stopped
+  ```
+
+3. In the same directory, create `.env` file with the following content:
+
+  You can also grab it from here - [docker-compose-xftp.env](https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-xftp.yml). Don't forget to rename it to `.env`.
+
+  Change variables according to your preferences.
+
+  ```env
+  # Mandatory
+  ADDR=your_ip_or_addr
+  QUOTA=120gb
+
+  # Optional
+  #PASS='123123'
+  ```
+
+4. Start your containers:
+
+  ```sh
+  docker compose up
+  ```
+
+### Linode marketplace
+
+You can deploy xftp-server upon creating new Linode VM. Please refer to: [Linode Marketplace](https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/)
 
 ## Tor installation
 
@@ -443,7 +463,7 @@ Feb 27 19:21:11 localhost xftp-server[2350]: Store log: /var/opt/simplex-xftp/fi
 Feb 27 19:21:11 localhost xftp-server[2350]: Uploading new files allowed.
 Feb 27 19:21:11 localhost xftp-server[2350]: Listening on port 443...
 Feb 27 19:21:11 localhost xftp-server[2350]: [INFO 2023-02-27 19:21:11 +0000 src/Simplex/FileTransfer/Server/Env.hs:85] Total / available storage: 64424509440 / 64424509440
-````
+```
 
 ### Control port
 
@@ -571,7 +591,7 @@ To import `csv` to `Grafana` one should:
 For further documentation, see: [CSV Data Source for Grafana - Documentation](https://grafana.github.io/grafana-csv-datasource/)
 
 
-# Updating your XFTP server
+## Updating your XFTP server
 
 To update your XFTP server to latest version, choose your installation method and follow the steps:
 
@@ -629,6 +649,6 @@ To update your XFTP server to latest version, choose your installation method an
         docker image prune
         ```
 
-### Configuring the app to use the server
+## Configuring the app to use the server
 
 Please see: [SMP Server: Configuring the app to use the server](./SERVER.md#configuring-the-app-to-use-the-server).
