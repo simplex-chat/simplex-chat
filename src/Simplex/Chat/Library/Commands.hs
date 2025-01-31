@@ -1076,12 +1076,12 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
-      Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user chatId
+      Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user chatId
       let GroupMember {memberRole = membershipMemRole} = membership
       let isOwner = membershipMemRole == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
-      filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
+      filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId . procCmd $ do
         cancelFilesInProgress user filesInfo
         deleteFilesLocally filesInfo
@@ -1090,11 +1090,10 @@ processChatCommand' vr = \case
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
-        -- functions below are called in separate transactions to prevent crashes on android
-        -- (possibly, race condition on integrity check?)
-        withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
-        withStore' $ \db -> deleteGroup db user gInfo
+        withFastStore' $ \db -> deleteGroupChatItems db user gInfo
+        withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
+        withFastStore' $ \db -> deleteGroupMembers db user gInfo
+        withFastStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser user gInfo
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -3541,6 +3540,7 @@ cleanupManager = do
     cleanupUser cleanupInterval stepDelay user = do
       cleanupTimedItems cleanupInterval user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
+      -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do

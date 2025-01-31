@@ -55,16 +55,15 @@ module Simplex.Chat.Store.Groups
     getGroupModerators,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
-    deleteGroupConnectionsAndFiles,
-    deleteGroupItemsAndMembers,
+    deleteGroupChatItems,
+    deleteGroupMembers,
+    cleanupHostGroupLinkConn,
     deleteGroup,
-    getUserGroups,
     getUserGroupsToSubscribe,
     getUserGroupDetails,
     getUserGroupsWithSummary,
     getGroupSummary,
     getContactGroupPreferences,
-    checkContactHasGroups,
     getGroupInvitation,
     createNewContactMember,
     createNewContactMemberAsync,
@@ -275,7 +274,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
           SELECT
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
-            g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -347,7 +346,6 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           businessChat = Nothing,
           fullGroupPreferences,
           membership,
-          hostConnCustomUserProfileId = Nothing,
           chatSettings,
           createdAt = currentTs,
           updatedAt = currentTs,
@@ -362,7 +360,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, business} incognitoProfileId = do
+createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, business} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
@@ -399,11 +397,11 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               db
               [sql|
                 INSERT INTO groups
-                  (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs,
+                  (group_profile_id, local_display_name, inv_queue_info, user_id, enable_ntfs,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ((profileId, localDisplayName, connRequest, customUserProfileId, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
+              ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange vr peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
@@ -418,7 +416,6 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   businessChat = Nothing,
                   fullGroupPreferences,
                   membership,
-                  hostConnCustomUserProfileId = customUserProfileId,
                   chatSettings,
                   createdAt = currentTs,
                   updatedAt = currentTs,
@@ -546,11 +543,11 @@ createGroupInvitedViaLink
               db
               [sql|
                 INSERT INTO groups
-                  (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs,
+                  (group_profile_id, local_display_name, user_id, enable_ntfs,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ((profileId, localDisplayName, customUserProfileId, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
+              ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
       insertHost_ currentTs groupId = do
         let fromMemberProfile = profileFromName fromMemberName
@@ -639,33 +636,75 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
         toShortMember (groupMemberId, localDisplayName, agentConnId) =
           ShortGroupMember groupMemberId groupId localDisplayName agentConnId
 
-deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
-  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
-  DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
-
-deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupItemsAndMembers db user@User {userId} g@GroupInfo {groupId} members = do
+deleteGroupChatItems :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupChatItems db User {userId} GroupInfo {groupId} =
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
+
+deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupMembers db User {userId} GroupInfo {groupId} = do
+  DB.execute_ db "DROP TABLE IF EXISTS temp_delete_members"
+  #if defined(dbPostgres)
+  DB.execute_ db "CREATE TABLE temp_delete_members (contact_profile_id BIGINT, member_profile_id BIGINT, local_display_name TEXT)"
+  #else
+  DB.execute_ db "CREATE TABLE temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)"
+  #endif
+  DB.execute
+    db
+    [sql|
+      INSERT INTO temp_delete_members (contact_profile_id, member_profile_id, local_display_name)
+      SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
+    |]
+    (Only groupId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  forM_ members $ cleanupMemberProfileAndName_ db user
-  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
-  where
-    cleanupHostGroupLinkConn_ = do
-      hostId <- getHostMemberId_ db user groupId
-      liftIO $
-        DB.execute
-          db
-          [sql|
-            UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
-            WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
-              SELECT contact_id
-              FROM group_members
-              WHERE user_id = ? AND group_member_id = ?
-            )
-          |]
-          (userId, userId, hostId)
+  DB.execute
+    db
+    [sql|
+      DELETE FROM contact_profiles
+      WHERE
+        user_id = ?
+        AND (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)
+          OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members WHERE member_profile_id IS NOT NULL))
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM group_members)
+        AND contact_profile_id NOT IN (SELECT member_profile_id FROM group_members)
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts)
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contact_requests)
+        AND contact_profile_id NOT IN (SELECT custom_user_profile_id FROM connections)
+    |]
+    (Only userId)
+  DB.execute
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE
+        user_id = ?
+        AND local_display_name IN (SELECT local_display_name FROM temp_delete_members)
+        AND local_display_name NOT IN (SELECT local_display_name FROM group_members)
+        AND local_display_name NOT IN (SELECT local_display_name FROM contacts)
+        AND local_display_name NOT IN (SELECT local_display_name FROM users)
+        AND local_display_name NOT IN (SELECT local_display_name FROM groups)
+        AND local_display_name NOT IN (SELECT local_display_name FROM user_contact_links)
+        AND local_display_name NOT IN (SELECT local_display_name FROM contact_requests)
+    |]
+    (Only userId)
+  DB.execute_ db "DROP TABLE temp_delete_members"
+
+-- to allow repeat connection via the same group link if one was used
+cleanupHostGroupLinkConn :: DB.Connection -> User -> GroupInfo -> IO ()
+cleanupHostGroupLinkConn db user@User {userId} GroupInfo {groupId} = do
+  runExceptT (getHostMemberId_ db user groupId) >>= \case
+    Left _ -> pure ()
+    Right hostId ->
+      DB.execute
+        db
+        [sql|
+          UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
+          WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
+            SELECT contact_id
+            FROM group_members
+            WHERE user_id = ? AND group_member_id = ?
+          )
+        |]
+        (userId, userId, hostId)
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db user@User {userId} g@GroupInfo {groupId, localDisplayName} = do
@@ -688,11 +727,6 @@ deleteGroupProfile_ db userId groupId =
     |]
     (userId, groupId)
 
-getUserGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
-getUserGroups db vr user@User {userId} = do
-  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-  rights <$> mapM (runExceptT . getGroup db vr user) groupIds
-
 getUserGroupsToSubscribe :: DB.Connection -> User -> IO [ShortGroup]
 getUserGroupsToSubscribe db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
@@ -707,7 +741,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
         [sql|
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
-            g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
@@ -763,10 +797,6 @@ getContactGroupPreferences db User {userId} Contact {contactId} = do
       |]
       (userId, contactId)
 
-checkContactHasGroups :: DB.Connection -> User -> Contact -> IO (Maybe GroupId)
-checkContactHasGroups db User {userId} Contact {contactId} =
-  maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
-
 getGroupInfoByName :: DB.Connection -> VersionRangeChat -> User -> GroupName -> ExceptT StoreError IO GroupInfo
 getGroupInfoByName db vr user gName = do
   gId <- getGroupIdByName db user gName
@@ -801,19 +831,21 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
 
 getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO CIMention
 getMentionedGroupMember db User {userId} groupId gmId =
-  ExceptT $ firstRow toMentionedMember (SEGroupMemberNotFound gmId) $
-    DB.query
-      db
-      (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
-      (groupId, gmId, userId)
+  ExceptT $
+    firstRow toMentionedMember (SEGroupMemberNotFound gmId) $
+      DB.query
+        db
+        (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
+        (groupId, gmId, userId)
 
 getMentionedMemberByMemberId :: DB.Connection -> User -> GroupId -> MsgMention -> IO CIMention
 getMentionedMemberByMemberId db User {userId} groupId MsgMention {memberId} =
-  fmap (fromMaybe mentionedMember) $ maybeFirstRow toMentionedMember $
-    DB.query
-      db
-      (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ? AND m.user_id = ?")
-      (groupId, memberId, userId)
+  fmap (fromMaybe mentionedMember) $
+    maybeFirstRow toMentionedMember $
+      DB.query
+        db
+        (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ? AND m.user_id = ?")
+        (groupId, memberId, userId)
   where
     mentionedMember = CIMention {memberId, memberRef = Nothing}
 
@@ -1470,7 +1502,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
           SELECT
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
-            g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,

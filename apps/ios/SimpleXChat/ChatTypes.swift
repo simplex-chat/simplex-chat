@@ -1938,7 +1938,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
     public var membership: GroupMember
-    public var hostConnCustomUserProfileId: Int64?
     public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
@@ -1974,7 +1973,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         groupProfile: GroupProfile.sampleData,
         fullGroupPreferences: FullGroupPreferences.sampleData,
         membership: GroupMember.sampleData,
-        hostConnCustomUserProfileId: nil,
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
