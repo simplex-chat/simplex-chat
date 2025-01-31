@@ -59,6 +59,7 @@ module Simplex.Chat.Store.Groups
     setGroupDeleted,
     getDeletedGroups,
     deleteGroupMembers,
+    cleanupHostGroupLinkConn,
     deleteGroup,
     getUserGroupsToSubscribe,
     getUserGroupDetails,
@@ -587,14 +588,11 @@ setGroupInvitationChatItemId db User {userId} groupId chatItemId = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET chat_item_id = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (chatItemId, currentTs, userId, groupId)
 
-getGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
-getGroup db vr user groupId = getGroup_ db vr user groupId False
-
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getGroup_ :: DB.Connection -> VersionRangeChat -> User -> GroupId -> Bool -> ExceptT StoreError IO Group
-getGroup_ db vr user groupId deleted = do
-  gInfo <- getGroupInfo_ db vr user groupId deleted
+getGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
+getGroup db vr user groupId = do
+  gInfo <- getGroupInfo_ db vr user groupId False
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
 
@@ -652,81 +650,84 @@ setGroupDeleted db User {userId} GroupInfo {groupId} = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE groups SET deleted = 1, updated_at = ? WHERE user_id = ? AND group_id = ?" (currentTs, userId, groupId)
 
-getDeletedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
+getDeletedGroups :: DB.Connection -> VersionRangeChat -> User -> IO [GroupInfo]
 getDeletedGroups db vr user@User {userId} = do
-  contactIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND deleted = 1" (Only userId)
-  rights <$> mapM (runExceptT . getDeletedGroup db vr user) contactIds
+  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND deleted = 1" (Only userId)
+  rights <$> mapM (\groupId -> runExceptT $ getGroupInfo_ db vr user groupId False) groupIds
 
-getDeletedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO Group
-getDeletedGroup db vr user groupId = getGroup_ db vr user groupId True
-
-deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
-deleteGroupMembers db user@User {userId} g@GroupInfo {groupId} members = do
+deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupMembers db User {userId} g@GroupInfo {groupId} = do
   ts1 <- getCurrentTime
-  print $ "cleanupHostGroupLinkConn_ " <> show ts1
-  void $ runExceptT cleanupHostGroupLinkConn_ -- to allow repeat connection via the same group link if one was used
+  print $ "CREATE TEMPORARY TABLE temp_delete_members " <> show ts1
+
+  DB.execute_ db "DROP TABLE IF EXISTS temp_delete_members"
+  DB.execute
+    db
+    [sql|
+      CREATE TEMPORARY TABLE temp_delete_members AS
+      SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
+    |]
+    (Only groupId)
+
   ts2 <- getCurrentTime
-
-  [sql|
-    DROP TABLE IF EXISTS temp_delete_members
-
-    CREATE TEMPORARY TABLE temp_delete_members AS
-    SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
-  |]
-
-  "DELETE FROM group_members m WHERE user_id = ? AND group_id = ?"
-
-  [sql|
-    DELETE FROM contact_profiles
-    WHERE
-      (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)
-        OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members))
-      AND contact_profile_id NOT IN (SELECT contact_profile_id FROM group_members)
-      AND contact_profile_id NOT IN (SELECT member_profile_id FROM group_members)
-      AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts)
-      AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contact_requests)
-      AND contact_profile_id NOT IN (SELECT custom_user_profile_id FROM connections);
-      -- host_conn_custom_user_profile_id ?
-  |]
-
-  [sql|
-    DELETE FROM display_names
-    WHERE local_display_name IN (SELECT local_display_name FROM temp_delete_members)
-      AND local_display_name NOT IN (SELECT local_display_name FROM contacts)
-      AND local_display_name NOT IN (SELECT local_display_name FROM users)
-      AND local_display_name NOT IN (SELECT local_display_name FROM groups)
-      AND local_display_name NOT IN (SELECT local_display_name FROM user_contact_links)
-      AND local_display_name NOT IN (SELECT local_display_name FROM contact_requests);  
-  |]
-
-  DROP TABLE temp_delete_members
-
-
   print $ "DELETE FROM group_members " <> show ts2
+
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
   ts3 <- getCurrentTime
-  print $ "forM_ cleanupMemberProfileAndName_ " <> show ts3
-  forM_ members $ cleanupMemberProfileAndName_ db user
+  print $ "DELETE FROM contact_profiles " <> show ts3
+
+  DB.execute_
+    db
+    [sql|
+      DELETE FROM contact_profiles
+      WHERE
+        (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)
+          OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members))
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM group_members)
+        AND contact_profile_id NOT IN (SELECT member_profile_id FROM group_members)
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts)
+        AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contact_requests)
+        AND contact_profile_id NOT IN (SELECT custom_user_profile_id FROM connections)
+    |]
+
   ts4 <- getCurrentTime
-  print $ "deleteUnusedIncognitoProfileById_ " <> show ts4
-  forM_ (incognitoMembershipProfile g) $ deleteUnusedIncognitoProfileById_ db user . localProfileId
+  print $ "DELETE FROM display_names " <> show ts4
+
+  DB.execute_
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE local_display_name IN (SELECT local_display_name FROM temp_delete_members)
+        AND local_display_name NOT IN (SELECT local_display_name FROM contacts)
+        AND local_display_name NOT IN (SELECT local_display_name FROM users)
+        AND local_display_name NOT IN (SELECT local_display_name FROM groups)
+        AND local_display_name NOT IN (SELECT local_display_name FROM user_contact_links)
+        AND local_display_name NOT IN (SELECT local_display_name FROM contact_requests)
+    |]
+
   ts5 <- getCurrentTime
   print ts5
-  where
-    cleanupHostGroupLinkConn_ = do
-      hostId <- getHostMemberId_ db user groupId
-      liftIO $
-        DB.execute
-          db
-          [sql|
-            UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
-            WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
-              SELECT contact_id
-              FROM group_members
-              WHERE user_id = ? AND group_member_id = ?
-            )
-          |]
-          (userId, userId, hostId)
+
+  DB.execute_ db "DROP TABLE temp_delete_members"
+
+-- to allow repeat connection via the same group link if one was used
+cleanupHostGroupLinkConn :: DB.Connection -> User -> GroupInfo -> IO ()
+cleanupHostGroupLinkConn db user@User {userId} GroupInfo {groupId} = do
+  runExceptT (getHostMemberId_ db user groupId) >>= \case
+    Left _ -> pure ()
+    Right hostId ->
+      DB.execute
+        db
+        [sql|
+          UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
+          WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
+            SELECT contact_id
+            FROM group_members
+            WHERE user_id = ? AND group_member_id = ?
+          )
+        |]
+        (userId, userId, hostId)
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db user@User {userId} g@GroupInfo {groupId, localDisplayName} = do
@@ -858,19 +859,21 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
 
 getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO CIMention
 getMentionedGroupMember db User {userId} groupId gmId =
-  ExceptT $ firstRow toMentionedMember (SEGroupMemberNotFound gmId) $
-    DB.query
-      db
-      (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
-      (groupId, gmId, userId)
+  ExceptT $
+    firstRow toMentionedMember (SEGroupMemberNotFound gmId) $
+      DB.query
+        db
+        (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
+        (groupId, gmId, userId)
 
 getMentionedMemberByMemberId :: DB.Connection -> User -> GroupId -> MsgMention -> IO CIMention
 getMentionedMemberByMemberId db User {userId} groupId MsgMention {memberId} =
-  fmap (fromMaybe mentionedMember) $ maybeFirstRow toMentionedMember $
-    DB.query
-      db
-      (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ? AND m.user_id = ?")
-      (groupId, memberId, userId)
+  fmap (fromMaybe mentionedMember) $
+    maybeFirstRow toMentionedMember $
+      DB.query
+        db
+        (mentionedMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ? AND m.user_id = ?")
+        (groupId, memberId, userId)
   where
     mentionedMember = CIMention {memberId, memberRef = Nothing}
 

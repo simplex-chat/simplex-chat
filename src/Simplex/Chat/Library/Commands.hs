@@ -1091,8 +1091,10 @@ processChatCommand' vr = \case
         timeItM "deleteMembersConnections'" $ deleteMembersConnections' user members doSendDel
         timeItM "updateCIGroupInvitationStatus" $ updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         timeItM "deleteGroupChatItems" $ withFastStore' $ \db -> deleteGroupChatItems db user gInfo
-        timeItM "deleteGroupMembers" $ withFastStore' $ \db -> deleteGroupMembers db user gInfo members
-        timeItM "deleteGroup" $ withFastStore' $ \db -> deleteGroup db user gInfo
+        timeItM "cleanupHostGroupLinkConn" $ withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
+        withFastStore' $ \db -> setGroupDeleted db user gInfo
+        timeItM "deleteGroupMembers" $ (withFastStore' $ \db -> deleteGroupMembers db user gInfo) `catchChatError` \_ -> pure ()
+        timeItM "deleteGroup" $ (withFastStore' $ \db -> deleteGroup db user gInfo) `catchChatError` \_ -> pure ()
         pure $ CRGroupDeletedUser user gInfo
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -3570,9 +3572,9 @@ cleanupManager = do
       forM_ groups $ \g ->
         cleanupGroup g `catchChatError` (toView . CRChatError (Just user))
       where
-        cleanupGroup :: Group -> CM ()
-        cleanupGroup Group {groupInfo = gInfo, members} = do
-          withStore' $ \db -> deleteGroupMembers db user gInfo members
+        cleanupGroup :: GroupInfo -> CM ()
+        cleanupGroup gInfo = do
+          withStore' $ \db -> deleteGroupMembers db user gInfo
           withStore' $ \db -> deleteGroup db user gInfo
     cleanupMessages = do
       ts <- liftIO getCurrentTime
