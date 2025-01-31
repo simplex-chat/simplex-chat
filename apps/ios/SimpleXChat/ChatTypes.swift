@@ -1447,9 +1447,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             return .other
         }
     }
-
-    public var ntfsEnabled: Bool {
-        self.chatSettings?.enableNtfs == .all
+    
+    public func ntfsEnabled(chatItem: ChatItem) -> Bool {
+        ntfsEnabled(chatItem.meta.userMention)
+    }
+    
+    public func ntfsEnabled(_ userMention: Bool) -> Bool {
+        switch self.chatSettings?.enableNtfs {
+        case .all: true
+        case .mentions: userMention
+        default: false
+        }
     }
 
     public var chatSettings: ChatSettings? {
@@ -1559,14 +1567,16 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
 }
 
 public struct ChatStats: Decodable, Hashable {
-    public init(unreadCount: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
+    public init(unreadCount: Int = 0, unreadMentions: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
+        self.unreadMentions = unreadMentions
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
     }
 
     public var unreadCount: Int = 0
+    public var unreadMentions: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0

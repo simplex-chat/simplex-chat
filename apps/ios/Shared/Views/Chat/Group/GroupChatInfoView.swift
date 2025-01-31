@@ -326,12 +326,14 @@ struct GroupChatInfoView: View {
     }
 
     private func muteButton(width: CGFloat) -> some View {
+        // TODO [mentions] it needs the actual setting here,
+        // the change below is just to compile
         InfoViewButton(
-            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+            image: chat.chatInfo.ntfsEnabled(false) ? "speaker.slash.fill" : "speaker.wave.2.fill",
+            title: chat.chatInfo.ntfsEnabled(false) ? "mute" : "unmute",
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled(false))
         }
         .disabled(!groupInfo.ready)
     }

@@ -2048,11 +2048,12 @@ func maskToCustomShape(_ image: UIImage, size: CGFloat, radius: CGFloat) -> UIIm
 struct ToggleNtfsButton: View {
     @ObservedObject var chat: Chat
 
+    // TODO [mentions]
     var body: some View {
         Button {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled(false))
         } label: {
-            if chat.chatInfo.ntfsEnabled {
+            if chat.chatInfo.ntfsEnabled(false) {
                 Label("Mute", systemImage: "speaker.slash")
             } else {
                 Label("Unmute", systemImage: "speaker.wave.2")
@@ -2061,6 +2062,7 @@ struct ToggleNtfsButton: View {
     }
 }
 
+// TODO [mentions]
 func toggleNotifications(_ chat: Chat, enableNtfs: Bool) {
     var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
     chatSettings.enableNtfs = enableNtfs ? .all : .none

@@ -878,8 +878,20 @@ final class ChatModel: ObservableObject {
     }
 
     func totalUnreadCountForAllUsers() -> Int {
-        chats.filter { $0.chatInfo.ntfsEnabled }.reduce(0, { count, chat in count + chat.chatStats.unreadCount }) +
-            users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
+        var unread: Int = 0
+        for chat in chats {
+            switch chat.chatInfo.chatSettings?.enableNtfs {
+            case .all: unread += chat.chatStats.unreadCount
+            case .mentions: unread += chat.chatStats.unreadMentions
+            default: ()
+            }
+        }
+        for u in users {
+            if !u.user.activeUser {
+                unread += u.unreadCount
+            }
+        }
+        return unread
     }
 
     func increaseGroupReportsCounter(_ chatId: ChatId) {
@@ -1104,7 +1116,12 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     }
 
     var unreadTag: Bool {
-        chatInfo.ntfsEnabled && (chatStats.unreadCount > 0 || chatStats.unreadChat)
+        // TODO [mentions] Android
+        switch chatInfo.chatSettings?.enableNtfs {
+        case .all: chatStats.unreadChat || chatStats.unreadCount > 0
+        case .mentions: chatStats.unreadChat || chatStats.unreadMentions > 0
+        default: chatStats.unreadChat
+        }
     }
     
     var id: ChatId { get { chatInfo.id } }

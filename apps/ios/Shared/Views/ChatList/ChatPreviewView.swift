@@ -205,9 +205,11 @@ struct ChatPreviewView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, dynamicSize(userFont).unreadPadding)
                 .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                // TODO [mentions] this one probably ok
+                .background(chat.chatInfo.ntfsEnabled(true) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                 .cornerRadius(dynamicSize(userFont).unreadCorner)
-        } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
+        // below needs to be refactored to case
+        } else if !chat.chatInfo.ntfsEnabled(false) && chat.chatInfo.chatType != .local {
             Image(systemName: "speaker.slash.fill")
                 .resizable()
                 .scaledToFill()

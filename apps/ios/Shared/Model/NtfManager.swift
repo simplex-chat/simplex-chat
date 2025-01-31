@@ -248,7 +248,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 
     func notifyMessageReceived(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
-        if cInfo.ntfsEnabled {
+        if cInfo.ntfsEnabled(chatItem: cItem) {
             addNotification(createMessageReceivedNtf(user, cInfo, cItem, 0))
         }
     }
