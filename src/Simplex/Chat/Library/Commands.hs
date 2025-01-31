@@ -1091,7 +1091,9 @@ processChatCommand' vr = \case
         deleteMembersConnections' user members doSendDel
         updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
         withFastStore' $ \db -> deleteGroupChatItems db user gInfo
-        withFastStore' $ \db -> setGroupDeleted db user gInfo
+        withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
+        withFastStore' $ \db -> deleteGroupMembers db user gInfo
+        withFastStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser user gInfo
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -3541,8 +3543,6 @@ cleanupManager = do
       -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
-      cleanupDeletedGroups user `catchChatError` (toView . CRChatError (Just user))
-      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
@@ -3554,16 +3554,6 @@ cleanupManager = do
       forM_ contacts $ \ct ->
         withStore (\db -> deleteContactWithoutGroups db user ct)
           `catchChatError` (toView . CRChatError (Just user))
-    cleanupDeletedGroups user = do
-      vr <- chatVersionRange
-      groups <- withStore' $ \db -> getDeletedGroups db vr user
-      forM_ groups $ \g ->
-        cleanupGroup g `catchChatError` (toView . CRChatError (Just user))
-      where
-        cleanupGroup :: Group -> CM ()
-        cleanupGroup Group {groupInfo = gInfo, members} = do
-          withStore' $ \db -> deleteGroupMembers db user gInfo members
-          withStore' $ \db -> deleteGroup db user gInfo
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
