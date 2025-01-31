@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = "_site"
+
+[context.production.environment]
+  NODE_ENV = "production"
+
+[context.deploy-preview]
+  command = "npm run build:eleventy"
+  publish = "_site"
+
+[context.branch-deploy]
+  command = "npm run build:eleventy"
+  publish = "_site"
+
+[context.next.environment]
+  NODE_ENV = "development"
