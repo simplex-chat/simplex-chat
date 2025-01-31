@@ -60,7 +60,7 @@ If you are a group owner or admin, you can create a link that can be used by any
 
 - Open a group conversation.
 - Tap group name.
-- Tap on "Create group link.
+- Tap on "Create group link".
 
 Once the link is created, you can also change the role assigned to members when they join.
 
