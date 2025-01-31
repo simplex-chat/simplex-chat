@@ -143,7 +143,6 @@ CREATE TABLE groups(
   customer_member_id BYTEA NULL,
   chat_item_ttl BIGINT,
   local_alias TEXT DEFAULT '',
-  deleted SMALLINT NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

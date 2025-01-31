@@ -134,8 +134,7 @@ CREATE TABLE groups(
   business_xcontact_id BLOB NULL,
   customer_member_id BLOB NULL,
   chat_item_ttl INTEGER,
-  local_alias TEXT DEFAULT '',
-  deleted INTEGER NOT NULL DEFAULT 0, -- received
+  local_alias TEXT DEFAULT '', -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

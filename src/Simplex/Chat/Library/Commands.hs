@@ -47,7 +47,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock (UTCTime, getCurrentTime, nominalDay)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
@@ -1076,25 +1076,24 @@ processChatCommand' vr = \case
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
-      Group gInfo@GroupInfo {membership} members <- timeItM "getGroup" $ withFastStore $ \db -> getGroup db vr user chatId
+      Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user chatId
       let GroupMember {memberRole = membershipMemRole} = membership
       let isOwner = membershipMemRole == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
-      filesInfo <- timeItM "getGroupFileInfo" $ withFastStore' $ \db -> getGroupFileInfo db user gInfo
+      filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       withGroupLock "deleteChat group" chatId . procCmd $ do
-        timeItM "cancelFilesInProgress" $ cancelFilesInProgress user filesInfo
-        timeItM "deleteFilesLocally" $ deleteFilesLocally filesInfo
+        cancelFilesInProgress user filesInfo
+        deleteFilesLocally filesInfo
         let doSendDel = memberActive membership && isOwner
-        when doSendDel . void $ timeItM "sendGroupMessage' XGrpDel" $ sendGroupMessage' user gInfo members XGrpDel
-        timeItM "deleteGroupLinkIfExists" $ deleteGroupLinkIfExists user gInfo
-        timeItM "deleteMembersConnections'" $ deleteMembersConnections' user members doSendDel
-        timeItM "updateCIGroupInvitationStatus" $ updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
-        timeItM "deleteGroupChatItems" $ withFastStore' $ \db -> deleteGroupChatItems db user gInfo
-        timeItM "cleanupHostGroupLinkConn" $ withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
-        withFastStore' $ \db -> setGroupDeleted db user gInfo
-        timeItM "deleteGroupMembers" $ (withFastStore' $ \db -> deleteGroupMembers db user gInfo) `catchChatError` \_ -> pure ()
-        timeItM "deleteGroup" $ (withFastStore' $ \db -> deleteGroup db user gInfo) `catchChatError` \_ -> pure ()
+        when doSendDel . void $ sendGroupMessage' user gInfo members XGrpDel
+        deleteGroupLinkIfExists user gInfo
+        deleteMembersConnections' user members doSendDel
+        updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
+        withFastStore' $ \db -> deleteGroupChatItems db user gInfo
+        withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
+        withFastStore' $ \db -> deleteGroupMembers db user gInfo
+        withFastStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser user gInfo
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
@@ -3238,15 +3237,6 @@ updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers} =
     disableSrv srv@UserServer {preset} =
       AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
 
-timeItM :: String -> CM a -> CM a
-timeItM s action = do
-  t1 <- liftIO getCurrentTime
-  a <- action
-  t2 <- liftIO getCurrentTime
-  let diff = diffToMilliseconds $ diffUTCTime t2 t1
-  liftIO . print $ show diff <> " ms - " <> s
-  pure a
-
 type ComposedMessageReq = (ComposedMessage, Maybe CIForwardedFrom, (Text, Maybe MarkdownList), Map MemberName CIMention)
 
 composedMessage :: Maybe CryptoFile -> MsgContent -> ComposedMessage
@@ -3553,8 +3543,6 @@ cleanupManager = do
       -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchChatError` (toView . CRChatError (Just user))
       liftIO $ threadDelay' stepDelay
-      cleanupDeletedGroups user `catchChatError` (toView . CRChatError (Just user))
-      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
@@ -3566,16 +3554,6 @@ cleanupManager = do
       forM_ contacts $ \ct ->
         withStore (\db -> deleteContactWithoutGroups db user ct)
           `catchChatError` (toView . CRChatError (Just user))
-    cleanupDeletedGroups user = do
-      vr <- chatVersionRange
-      groups <- withStore' $ \db -> getDeletedGroups db vr user
-      forM_ groups $ \g ->
-        cleanupGroup g `catchChatError` (toView . CRChatError (Just user))
-      where
-        cleanupGroup :: GroupInfo -> CM ()
-        cleanupGroup gInfo = do
-          withStore' $ \db -> deleteGroupMembers db user gInfo
-          withStore' $ \db -> deleteGroup db user gInfo
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
