@@ -366,106 +366,114 @@ fun ChatPreviewView(
     }
   }
 
-  Row {
-    Box(contentAlignment = Alignment.BottomEnd) {
-      ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
-      Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
-        chatPreviewImageOverlayIcon()
+  Box(contentAlignment = Alignment.Center) {
+    Row {
+      Box(contentAlignment = Alignment.BottomEnd) {
+        ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
+        Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
+          chatPreviewImageOverlayIcon()
+        }
+      }
+      Spacer(Modifier.width(8.dp))
+      Column(Modifier.weight(1f)) {
+        Row {
+          Box(Modifier.weight(1f)) {
+            chatPreviewTitle()
+          }
+          Spacer(Modifier.width(8.sp.toDp()))
+          val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
+          ChatListTimestampView(ts)
+        }
+        Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
+          Row(Modifier.padding(top = 3.sp.toDp()).weight(1f)) {
+            val activeVoicePreview: MutableState<(ActiveVoicePreview)?> = remember(chat.id) { mutableStateOf(null) }
+            val chat = activeVoicePreview.value?.chat ?: chat
+            val ci = activeVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
+            val mc = ci?.content?.msgContent
+            val deleted = ci?.isDeletedContent == true || ci?.meta?.itemDeleted != null
+            val showContentPreview = (showChatPreviews && chatModelDraftChatId != chat.id && !deleted) || activeVoicePreview.value != null
+            if (ci != null && showContentPreview) {
+              chatItemContentPreview(chat, ci)
+            }
+            if (mc !is MsgContent.MCVoice || !showContentPreview || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
+              Box(Modifier.offset(x = if (mc is MsgContent.MCFile && ci.meta.itemDeleted == null) -15.sp.toDp() else 0.dp)) {
+                chatPreviewText()
+              }
+            }
+            LaunchedEffect(AudioPlayer.currentlyPlaying.value, activeVoicePreview.value) {
+              val playing = AudioPlayer.currentlyPlaying.value
+              when {
+                playing == null -> activeVoicePreview.value = null
+                activeVoicePreview.value == null -> if (mc is MsgContent.MCVoice && playing.fileSource.filePath == ci.file?.fileSource?.filePath) {
+                  activeVoicePreview.value = ActiveVoicePreview(chat, ci, mc)
+                }
+
+                else -> if (playing.fileSource.filePath != ci?.file?.fileSource?.filePath) {
+                  activeVoicePreview.value = null
+                }
+              }
+            }
+            LaunchedEffect(chatModel.deletedChats.value) {
+              val voicePreview = activeVoicePreview.value
+              // Stop voice when deleting the chat
+              if (chatModel.deletedChats.value.contains(chatModel.remoteHostId() to chat.id) && voicePreview?.ci != null) {
+                AudioPlayer.stop(voicePreview.ci)
+              }
+            }
+          }
+
+          Spacer(Modifier.width(8.sp.toDp()))
+
+          Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
+            val n = chat.chatStats.unreadCount
+            val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
+            if (n > 0 || chat.chatStats.unreadChat) {
+              Text(
+                if (n > 0) unreadCountStr(n) else "",
+                color = Color.White,
+                fontSize = 10.sp,
+                style = TextStyle(textAlign = TextAlign.Center),
+                modifier = Modifier
+                  .offset(y = 3.sp.toDp())
+                  .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+                  .badgeLayout()
+                  .padding(horizontal = 2.sp.toDp())
+                  .padding(vertical = 1.sp.toDp())
+              )
+            } else if (showNtfsIcon) {
+              Icon(
+                painterResource(MR.images.ic_notifications_off_filled),
+                contentDescription = generalGetString(MR.strings.notifications),
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier
+                  .padding(start = 2.sp.toDp())
+                  .size(18.sp.toDp())
+                  .offset(x = 2.5.sp.toDp(), y = 2.sp.toDp())
+              )
+            } else if (chat.chatInfo.chatSettings?.favorite == true) {
+              Icon(
+                painterResource(MR.images.ic_star_filled),
+                contentDescription = generalGetString(MR.strings.favorite_chat),
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier
+                  .size(20.sp.toDp())
+                  .offset(x = 2.5.sp.toDp())
+              )
+            }
+            Box(
+              Modifier.offset(y = 28.sp.toDp()),
+              contentAlignment = Alignment.Center
+            ) {
+              chatStatusImage()
+            }
+          }
+        }
       }
     }
-    Spacer(Modifier.width(8.dp))
-    Column(Modifier.weight(1f)) {
-      Row {
-        Box(Modifier.weight(1f)) {
-          chatPreviewTitle()
-        }
-        Spacer(Modifier.width(8.sp.toDp()))
-        val ts = getTimestampText(chat.chatItems.lastOrNull()?.meta?.itemTs ?: chat.chatInfo.chatTs)
-        ChatListTimestampView(ts)
-      }
-      Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
-        Row(Modifier.padding(top = 3.sp.toDp()).weight(1f)) {
-          val activeVoicePreview: MutableState<(ActiveVoicePreview)?> = remember(chat.id) { mutableStateOf(null) }
-          val chat = activeVoicePreview.value?.chat ?: chat
-          val ci = activeVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
-          val mc = ci?.content?.msgContent
-          val deleted = ci?.isDeletedContent == true || ci?.meta?.itemDeleted != null
-          val showContentPreview = (showChatPreviews && chatModelDraftChatId != chat.id && !deleted) || activeVoicePreview.value != null
-          if (ci != null && showContentPreview) {
-            chatItemContentPreview(chat, ci)
-          }
-          if (mc !is MsgContent.MCVoice || !showContentPreview || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
-            Box(Modifier.offset(x = if (mc is MsgContent.MCFile && ci.meta.itemDeleted == null) -15.sp.toDp() else 0.dp)) {
-              chatPreviewText()
-            }
-          }
-          LaunchedEffect(AudioPlayer.currentlyPlaying.value, activeVoicePreview.value) {
-            val playing = AudioPlayer.currentlyPlaying.value
-            when {
-              playing == null -> activeVoicePreview.value = null
-              activeVoicePreview.value == null -> if (mc is MsgContent.MCVoice && playing.fileSource.filePath == ci.file?.fileSource?.filePath) {
-                activeVoicePreview.value = ActiveVoicePreview(chat, ci, mc)
-              }
-              else -> if (playing.fileSource.filePath != ci?.file?.fileSource?.filePath) {
-                activeVoicePreview.value = null
-              }
-            }
-          }
-          LaunchedEffect(chatModel.deletedChats.value) {
-            val voicePreview = activeVoicePreview.value
-            // Stop voice when deleting the chat
-            if (chatModel.deletedChats.value.contains(chatModel.remoteHostId() to chat.id) && voicePreview?.ci != null) {
-              AudioPlayer.stop(voicePreview.ci)
-            }
-          }
-        }
 
-        Spacer(Modifier.width(8.sp.toDp()))
-
-        Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
-          val n = chat.chatStats.unreadCount
-          val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-          if (n > 0 || chat.chatStats.unreadChat) {
-            Text(
-              if (n > 0) unreadCountStr(n) else "",
-              color = Color.White,
-              fontSize = 10.sp,
-              style = TextStyle(textAlign = TextAlign.Center),
-              modifier = Modifier
-                .offset(y = 3.sp.toDp())
-                .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
-                .badgeLayout()
-                .padding(horizontal = 2.sp.toDp())
-                .padding(vertical = 1.sp.toDp())
-            )
-          } else if (showNtfsIcon) {
-            Icon(
-              painterResource(MR.images.ic_notifications_off_filled),
-              contentDescription = generalGetString(MR.strings.notifications),
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier
-                .padding(start = 2.sp.toDp())
-                .size(18.sp.toDp())
-                .offset(x = 2.5.sp.toDp(), y = 2.sp.toDp())
-            )
-          } else if (chat.chatInfo.chatSettings?.favorite == true) {
-            Icon(
-              painterResource(MR.images.ic_star_filled),
-              contentDescription = generalGetString(MR.strings.favorite_chat),
-              tint = MaterialTheme.colors.secondary,
-              modifier = Modifier
-                .size(20.sp.toDp())
-                .offset(x = 2.5.sp.toDp())
-            )
-          }
-          Box(
-            Modifier.offset(y = 28.sp.toDp()),
-            contentAlignment = Alignment.Center
-          ) {
-            chatStatusImage()
-          }
-        }
-      }
+    val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
+    if (deleting) {
+      DefaultProgressView(description = null)
     }
   }
 }

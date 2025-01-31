@@ -408,7 +408,6 @@ data GroupInfo = GroupInfo
     businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
-    hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
