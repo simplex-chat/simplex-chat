@@ -677,12 +677,13 @@ deleteGroupMembers db User {userId} GroupInfo {groupId} = do
   ts3 <- getCurrentTime
   print $ "DELETE FROM contact_profiles " <> show ts3
 
-  DB.execute_
+  DB.execute
     db
     [sql|
       DELETE FROM contact_profiles
       WHERE
-        (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)
+        user_id = ?
+        AND (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)
           OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members))
         AND contact_profile_id NOT IN (SELECT contact_profile_id FROM group_members)
         AND contact_profile_id NOT IN (SELECT member_profile_id FROM group_members)
@@ -690,15 +691,18 @@ deleteGroupMembers db User {userId} GroupInfo {groupId} = do
         AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contact_requests)
         AND contact_profile_id NOT IN (SELECT custom_user_profile_id FROM connections)
     |]
+    (Only userId)
 
   ts4 <- getCurrentTime
   print $ "DELETE FROM display_names " <> show ts4
 
-  DB.execute_
+  DB.execute
     db
     [sql|
       DELETE FROM display_names
-      WHERE local_display_name IN (SELECT local_display_name FROM temp_delete_members)
+      WHERE
+        user_id = ?
+        AND local_display_name IN (SELECT local_display_name FROM temp_delete_members)
         AND local_display_name NOT IN (SELECT local_display_name FROM group_members)
         AND local_display_name NOT IN (SELECT local_display_name FROM contacts)
         AND local_display_name NOT IN (SELECT local_display_name FROM users)
@@ -706,6 +710,7 @@ deleteGroupMembers db User {userId} GroupInfo {groupId} = do
         AND local_display_name NOT IN (SELECT local_display_name FROM user_contact_links)
         AND local_display_name NOT IN (SELECT local_display_name FROM contact_requests)
     |]
+    (Only userId)
 
   ts5 <- getCurrentTime
   print ts5
