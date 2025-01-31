@@ -1701,7 +1701,7 @@ testCantSeeGlobalPrefsUpdateIncognito = testChat3 aliceProfile bobProfile cathPr
     cath <## "Full deletion: off (you allow: default (no), contact allows: yes)"
 
 testDeleteContactThenGroupDeletesIncognitoProfile :: HasCallStack => TestParams -> IO ()
-testDeleteContactThenGroupDeletesIncognitoProfile = testChatCfg2 cfg aliceProfile bobProfile $
+testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- bob connects incognito to alice
     alice ##> "/c"
@@ -1750,13 +1750,10 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChatCfg2 cfg aliceProfil
       ]
     bob ##> "/d #team"
     bob <## "#team: you deleted the group"
-    threadDelay 1500000
     bob `hasContactProfiles` ["bob"]
-  where
-    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testDeleteGroupThenContactDeletesIncognitoProfile :: HasCallStack => TestParams -> IO ()
-testDeleteGroupThenContactDeletesIncognitoProfile = testChatCfg2 cfg aliceProfile bobProfile $
+testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- bob connects incognito to alice
     alice ##> "/c"
@@ -1805,10 +1802,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChatCfg2 cfg aliceProfil
     alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
-    threadDelay 1500000
     bob `hasContactProfiles` ["bob"]
-  where
-    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testSetAlias :: HasCallStack => TestParams -> IO ()
 testSetAlias = testChat2 aliceProfile bobProfile $

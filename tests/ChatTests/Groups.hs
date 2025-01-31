@@ -712,7 +712,7 @@ testGroupSameName =
 
 testGroupDeleteWhenInvited :: HasCallStack => TestParams -> IO ()
 testGroupDeleteWhenInvited =
-  testChatCfg2 cfg aliceProfile bobProfile $
+  testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice ##> "/g team"
@@ -727,7 +727,6 @@ testGroupDeleteWhenInvited =
         ]
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
-      threadDelay 1500000
       -- alice doesn't receive notification that bob deleted group,
       -- but she can re-add bob
       alice ##> "/a team bob"
@@ -737,8 +736,6 @@ testGroupDeleteWhenInvited =
             bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
-  where
-    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupReAddInvited :: HasCallStack => TestParams -> IO ()
 testGroupReAddInvited =
@@ -2027,7 +2024,7 @@ testGroupAsync ps = do
 
 testGroupLinkDeleteGroupRejoin :: HasCallStack => TestParams -> IO ()
 testGroupLinkDeleteGroupRejoin =
-  testChatCfg2 cfg aliceProfile bobProfile $
+  testChat2 aliceProfile bobProfile $
     \alice bob -> do
       threadDelay 100000
       alice ##> "/g team"
@@ -2053,7 +2050,6 @@ testGroupLinkDeleteGroupRejoin =
         ]
       bob ##> "/d #team"
       bob <## "#team: you deleted the group"
-      threadDelay 1500000
       -- re-join via same link
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
@@ -2069,8 +2065,6 @@ testGroupLinkDeleteGroupRejoin =
       bob <# "#team alice> hello"
       bob #> "#team hi there"
       alice <# "#team bob_1> hi there"
-  where
-    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerInterval = 1, cleanupManagerStepDelay = 0}
 
 testGroupLinkIncognitoJoinInvite :: HasCallStack => TestParams -> IO ()
 testGroupLinkIncognitoJoinInvite =
