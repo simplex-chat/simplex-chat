@@ -302,15 +302,16 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func toggleNtfsButton(chat: Chat) -> some View {
-        Button {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled(false))
-        } label: {
-            // TODO [mentions] three states for groups
-            if chat.chatInfo.ntfsEnabled(false) {
-                SwipeLabel(NSLocalizedString("Mute", comment: "swipe action"), systemImage: "speaker.slash.fill", inverted: oneHandUI)
-            } else {
-                SwipeLabel(NSLocalizedString("Unmute", comment: "swipe action"), systemImage: "speaker.wave.2.fill", inverted: oneHandUI)
+        let nextMode = chat.chatInfo.nextNotificationMode
+        
+        if let nextMode = nextMode {
+            Button {
+                toggleNotifications(chat, enableNtfs: nextMode.mode)
+            } label: {
+                SwipeLabel(nextMode.text, systemImage: nextMode.iconFilled, inverted: oneHandUI)
             }
+        } else {
+            EmptyView()
         }
     }
 

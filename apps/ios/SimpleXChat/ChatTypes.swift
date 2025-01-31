@@ -1509,6 +1509,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
     
+    public var nextNotificationMode: ChatNtfs? {
+        switch self {
+        case let .direct(contact): return contact.nextNotificationMode(contact.chatSettings.enableNtfs)
+        case let .group(groupInfo): return groupInfo.nextNotificationMode(groupInfo.chatSettings.enableNtfs)
+        default: return nil
+        }
+    }
+    
     public func ttl(_ globalTTL: ChatItemTTL) -> ChatTTL {
         switch self {
         case let .direct(contact):
@@ -1524,6 +1532,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 ChatTTL.userDefault(globalTTL)
             }
         default: return ChatTTL.userDefault(globalTTL)
+        }
+    }
+    
+    public func notificationMode() -> ChatNtfs? {
+        switch self {
+        case let .direct(contact): return contact.notificationMode
+        case let .group(groupInfo): return groupInfo.notificationMode
+        default: return nil
         }
     }
 
@@ -1637,6 +1653,16 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var contactConnIncognito: Bool {
         activeConn?.customUserProfileId != nil
     }
+    
+    public var notificationMode: ChatNtfs {
+        var enabled = chatSettings.enableNtfs == .all
+        return ChatNtfs(
+            mode: self.chatSettings.enableNtfs,
+            text: notificationModeText(enabled),
+            icon: notificationModeIcon(enabled, false),
+            iconFilled: notificationModeIcon(enabled, true)
+        )
+    }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {
         switch feature {
@@ -1655,6 +1681,31 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         case .reactions: return mergedPreferences.reactions.userPreference.preference.allow != .no
         case .voice: return mergedPreferences.voice.userPreference.preference.allow != .no
         case .calls: return mergedPreferences.calls.userPreference.preference.allow != .no
+        }
+    }
+    
+    public func nextNotificationMode(_ from: MsgFilter) -> ChatNtfs {
+        var ntfsEnabled = from == .all
+        var nextNtfMode = ntfsEnabled ? MsgFilter.none : MsgFilter.all
+        var nextEnabled = !ntfsEnabled
+        
+        return ChatNtfs(
+            mode: nextNtfMode,
+            text: notificationModeText(nextEnabled),
+            icon: notificationModeIcon(nextEnabled, false),
+            iconFilled: notificationModeIcon(nextEnabled, true)
+        )
+    }
+    
+    private func notificationModeText(_ enabled: Bool) -> String {
+        return enabled ? NSLocalizedString("Unmute", comment: "notification label action"): NSLocalizedString("Mute", comment: "notification label action")
+    }
+
+    private func notificationModeIcon(_ enabled: Bool, _ filled: Bool) -> String {
+        if enabled {
+            return filled ? "speaker.wave.2.fill" : "speaker.wave.2"
+        } else {
+            return filled ? "speaker.slash.fill" : "speaker.slash"
         }
     }
 
@@ -1941,6 +1992,15 @@ public struct Group: Decodable, Hashable {
     }
 }
 
+public struct ChatNtfs {
+    public var mode: MsgFilter
+    public var text: String
+    public var icon: String
+    public var iconFilled: String
+    
+    public static var sampleData = ChatNtfs(mode: MsgFilter.all, text: "", icon: "", iconFilled: "")
+}
+
 public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
@@ -1975,6 +2035,46 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var canAddMembers: Bool {
         return membership.memberRole >= .admin && membership.memberActive
+    }
+    
+    public var notificationMode: ChatNtfs {
+        return ChatNtfs(
+            mode: self.chatSettings.enableNtfs,
+            text: notificationModeText(self.chatSettings.enableNtfs),
+            icon: notificationModeIcon(self.chatSettings.enableNtfs, false),
+            iconFilled: notificationModeIcon(self.chatSettings.enableNtfs, true)
+        )
+    }
+    
+    public func nextNotificationMode(_ from: MsgFilter) -> ChatNtfs {
+        let nextNtfMode: MsgFilter = switch from {
+        case .all: .mentions
+        case .mentions: .none
+        case .none: .all
+        }
+        
+        return ChatNtfs(
+            mode: nextNtfMode,
+            text: notificationModeText(nextNtfMode),
+            icon: notificationModeIcon(nextNtfMode, false),
+            iconFilled: notificationModeIcon(nextNtfMode, true)
+        )
+    }
+    
+    private func notificationModeText(_ m: MsgFilter) -> String {
+        return switch m {
+        case .all: NSLocalizedString("Unmute", comment: "notification label action")
+        case .mentions: NSLocalizedString("Mute", comment: "notification label action")
+        case .none: NSLocalizedString("Mute all", comment: "notification label action")
+        }
+    }
+
+    private func notificationModeIcon(_ m: MsgFilter, _ filled: Bool) -> String {
+        return switch m {
+        case .all: filled ? "speaker.wave.2.fill" : "speaker.wave.2"
+        case .mentions: filled ? "speaker.badge.exclamationmark.fill" : "speaker.badge.exclamationmark"
+        case .none: filled ? "speaker.slash.fill" : "speaker.slash"
+        }
     }
 
     public static let sampleData = GroupInfo(

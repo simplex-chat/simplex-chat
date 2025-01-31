@@ -158,7 +158,9 @@ struct ChatInfoView: View {
                             searchButton(width: buttonWidth)
                             AudioCallButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                             VideoButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                            muteButton(width: buttonWidth)
+                            if let nextNtfMode = chat.chatInfo.nextNotificationMode {
+                                muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)
+                            }
                         }
                     }
                     .padding(.trailing)
@@ -432,14 +434,13 @@ struct ChatInfoView: View {
         .disabled(!contact.ready || chat.chatItems.isEmpty)
     }
 
-    private func muteButton(width: CGFloat) -> some View {
-        // TODO [mentions]
-        InfoViewButton(
-            image: chat.chatInfo.ntfsEnabled(false) ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            title: chat.chatInfo.ntfsEnabled(false) ? "mute" : "unmute",
+    private func muteButton(width: CGFloat, nextNtfMode: ChatNtfs) -> some View {
+        return InfoViewButton(
+            image: nextNtfMode.iconFilled,
+            title: LocalizedStringKey(nextNtfMode.text),
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled(false))
+            toggleNotifications(chat, enableNtfs: nextNtfMode.mode)
         }
         .disabled(!contact.ready || !contact.active)
     }

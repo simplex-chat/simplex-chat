@@ -277,7 +277,12 @@ struct GroupChatInfoView: View {
                 if groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
-                muteButton(width: buttonWidth)
+                if let nextNtfMode = chat.chatInfo.nextNotificationMode {
+                    muteButton(
+                        width: buttonWidth,
+                        nextNtfMode: nextNtfMode
+                    )
+                }
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
@@ -325,15 +330,13 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func muteButton(width: CGFloat) -> some View {
-        // TODO [mentions] it needs the actual setting here,
-        // the change below is just to compile
-        InfoViewButton(
-            image: chat.chatInfo.ntfsEnabled(false) ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            title: chat.chatInfo.ntfsEnabled(false) ? "mute" : "unmute",
+    private func muteButton(width: CGFloat, nextNtfMode: ChatNtfs) -> some View {
+        return InfoViewButton(
+            image: nextNtfMode.iconFilled,
+            title: LocalizedStringKey(nextNtfMode.text),
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled(false))
+            toggleNotifications(chat, enableNtfs: nextNtfMode.mode)
         }
         .disabled(!groupInfo.ready)
     }
