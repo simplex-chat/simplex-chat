@@ -18,6 +18,7 @@ INSERT INTO temp_delete_contacts(contact_id, contact_profile_id, local_display_n
 SELECT contact_id, contact_profile_id, local_display_name
 FROM contacts
 WHERE contact_used = 0 AND is_user = 0
+  AND contact_id NOT IN (SELECT contact_id FROM users)
   AND contact_id NOT IN (SELECT contact_id FROM contact_requests);
 
 CREATE TEMPORARY TABLE temp_delete_profiles (contact_profile_id INTEGER PRIMARY KEY);
@@ -34,8 +35,7 @@ DELETE FROM connections
 WHERE contact_id IN (SELECT contact_id FROM temp_delete_contacts);
 
 DELETE FROM contacts
-WHERE contact_id IN (SELECT contact_id FROM temp_delete_contacts)
-  AND contact_id NOT IN (SELECT contact_id FROM users);
+WHERE contact_id IN (SELECT contact_id FROM temp_delete_contacts);
 
 DELETE FROM contact_profiles
 WHERE

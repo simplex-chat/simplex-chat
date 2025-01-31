@@ -339,7 +339,7 @@ fun AndroidScreen(userPickerState: MutableStateFlow<AnimatedViewState>) {
       .graphicsLayer { translationX = maxWidth.toPx() - minOf(offset.value.dp, maxWidth).toPx() }
     ) Box2@{
       currentChatId.value?.let {
-        ChatView(currentChatId, reportsView = false, onComposed = onComposed)
+        ChatView(currentChatId, contentTag = null, onComposed = onComposed)
       }
     }
   }
@@ -393,7 +393,7 @@ fun CenterPartOfScreen() {
         ModalManager.center.showInView()
       }
     }
-    else -> ChatView(currentChatId, reportsView = false) {}
+    else -> ChatView(currentChatId, contentTag = null) {}
   }
 }
 

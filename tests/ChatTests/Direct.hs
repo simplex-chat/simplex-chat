@@ -1583,7 +1583,7 @@ testMuteGroup =
       cath <## "      hello too!"
       concurrentlyN_
         [ do
-            bob <# "#team cath> > bob hello <muted>"
+            bob <# "#team cath!> > bob hello <muted>"
             bob <## "      hello too! <muted>",
           do
             alice <# "#team cath> > bob hello"
@@ -1596,7 +1596,7 @@ testMuteGroup =
       alice <## "      hey bob!"
       concurrentlyN_
         [ do
-            bob <# "#team alice> > bob hello"
+            bob <# "#team alice!> > bob hello"
             bob <## "      hey bob!",
           do
             cath <# "#team alice> > bob hello"
@@ -1610,7 +1610,7 @@ testMuteGroup =
             bob <# "#team alice> > cath hello too! <muted>"
             bob <## "      hey cath! <muted>",
           do
-            cath <# "#team alice> > cath hello too!"
+            cath <# "#team alice!> > cath hello too!"
             cath <## "      hey cath!"
         ]
       bob ##> "/gs"

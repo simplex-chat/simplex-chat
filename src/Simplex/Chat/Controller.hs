@@ -39,6 +39,7 @@ import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -313,7 +314,7 @@ data ChatCommand
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIReportMessage {groupId :: GroupId, chatItemId :: ChatItemId, reportReason :: ReportReason, reportText :: Text}
   | ReportMessage {groupName :: GroupName, contactName_ :: Maybe ContactName, reportReason :: ReportReason, reportedMessage :: Text}
-  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
+  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, updatedMessage :: UpdatedMessage}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
@@ -346,7 +347,6 @@ data ChatCommand
   | APISetConnectionAlias Int64 LocalAlias
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
-  | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
@@ -1084,22 +1084,16 @@ data UserProfileUpdateSummary = UserProfileUpdateSummary
 data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
-    msgContent :: MsgContent
+    msgContent :: MsgContent,
+    mentions :: Map MemberName GroupMemberId
   }
   deriving (Show)
 
--- This instance is needed for backward compatibility, can be removed in v6.0
-instance FromJSON ComposedMessage where
-  parseJSON (J.Object v) = do
-    fileSource <-
-      (v .:? "fileSource") >>= \case
-        Nothing -> CF.plain <$$> (v .:? "filePath")
-        f -> pure f
-    quotedItemId <- v .:? "quotedItemId"
-    msgContent <- v .: "msgContent"
-    pure ComposedMessage {fileSource, quotedItemId, msgContent}
-  parseJSON invalid =
-    JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+data UpdatedMessage = UpdatedMessage
+  { msgContent :: MsgContent,
+    mentions :: Map MemberName GroupMemberId
+  }
+  deriving (Show)
 
 data ChatTagData = ChatTagData
   { emoji :: Maybe Text,
@@ -1272,7 +1266,6 @@ data ChatErrorType
   | CEFileNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
-  | CEInvalidQuote
   | CEInvalidForward
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
@@ -1633,5 +1626,20 @@ $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
+
+instance FromJSON ComposedMessage where
+  parseJSON (J.Object v) = do
+    fileSource <-
+      (v .:? "fileSource") >>= \case
+        Nothing -> CF.plain <$$> (v .:? "filePath")
+        f -> pure f
+    quotedItemId <- v .:? "quotedItemId"
+    msgContent <- v .: "msgContent"
+    mentions <- fromMaybe M.empty <$> v .:? "mentions"
+    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
+  parseJSON invalid =
+    JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+
+$(JQ.deriveJSON defaultJSON ''UpdatedMessage)
 
 $(JQ.deriveToJSON defaultJSON ''ChatTagData)
