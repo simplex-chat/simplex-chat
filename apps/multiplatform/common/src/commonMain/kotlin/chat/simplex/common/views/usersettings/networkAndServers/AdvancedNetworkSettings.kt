@@ -214,9 +214,11 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       }
       SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
       SectionDividerSpaced(maxTopPadding = true)
-    }
 
-    if (currentRemoteHost == null) {
+      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
+
+      }
+
       SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
         SessionModePicker(sessionMode, showModal, updateSessionMode)
       }
