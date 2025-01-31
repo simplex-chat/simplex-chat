@@ -217,8 +217,9 @@ struct ChatPreviewView: View {
                 .background(chat.chatInfo.ntfsEnabled(true) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                 .cornerRadius(dynamicSize(userFont).unreadCorner)
         // below needs to be refactored to case
-        } else if !chat.chatInfo.ntfsEnabled(false) && chat.chatInfo.chatType != .local {
-            Image(systemName: "speaker.slash.fill")
+        } else if let ntfMode = chat.chatInfo.notificationMode, ntfMode.mode != .all {
+            // TODO [mentions] icon for mentions is too big.
+            Image(systemName: ntfMode.iconFilled)
                 .resizable()
                 .scaledToFill()
                 .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)

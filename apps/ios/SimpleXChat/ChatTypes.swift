@@ -1517,6 +1517,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
     
+    public var notificationMode: ChatNtfs? {
+        switch self {
+        case let .direct(contact): return contact.notificationMode
+        case let .group(groupInfo): return groupInfo.notificationMode
+        default: return nil
+        }
+    }
+    
     public func ttl(_ globalTTL: ChatItemTTL) -> ChatTTL {
         switch self {
         case let .direct(contact):
@@ -1532,14 +1540,6 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                 ChatTTL.userDefault(globalTTL)
             }
         default: return ChatTTL.userDefault(globalTTL)
-        }
-    }
-    
-    public func notificationMode() -> ChatNtfs? {
-        switch self {
-        case let .direct(contact): return contact.notificationMode
-        case let .group(groupInfo): return groupInfo.notificationMode
-        default: return nil
         }
     }
 
