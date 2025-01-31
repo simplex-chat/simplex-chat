@@ -26,6 +26,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import java.text.DecimalFormat
@@ -216,75 +217,78 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       SectionDividerSpaced(maxTopPadding = true)
 
       SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
-
-      }
-
-      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
         SessionModePicker(sessionMode, showModal, updateSessionMode)
       }
       SectionDividerSpaced()
-    }
+      SectionView(stringResource(MR.strings.network_smp_web_port_section_title).uppercase()) {
+        PreferenceToggle(stringResource(MR.strings.network_smp_web_port_toggle), checked = remember { controller.appPrefs.networkSMPWebPort.state }.value) {
+          controller.appPrefs.networkSMPWebPort.set(it)
+        }
+      }
+      SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
+      SectionDividerSpaced(maxTopPadding = true)
 
-    SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {
-      SectionItemView {
-        TimeoutSettingRow(
-          stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
-          listOf(10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000), secondsLabel
-        )
-      }
-      SectionItemView {
-        TimeoutSettingRow(
-          stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
-          listOf(5_000000, 7_000000, 10_000000, 15_000000, 20_000_000, 30_000_000), secondsLabel
-        )
-      }
-      SectionItemView {
-        // can't be higher than 130ms to avoid overflow on 32bit systems
-        TimeoutSettingRow(
-          stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
-          listOf(2_500, 5_000, 10_000, 15_000, 20_000, 30_000), secondsLabel
-        )
-      }
-      // SectionItemView {
-      //   IntSettingRow(
-      //     stringResource(MR.strings.network_option_rcv_concurrency), networkRcvConcurrency,
-      //     listOf(1, 2, 4, 8, 12, 16, 24), ""
-      //   )
-      // }
-      SectionItemView {
-        TimeoutSettingRow(
-          stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,
-          listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
-        )
-      }
-      SectionItemView {
-        IntSettingRow(
-          stringResource(MR.strings.network_option_ping_count), networkSMPPingCount,
-          listOf(1, 2, 3, 5, 8), ""
-        )
-      }
-      SectionItemView {
-        EnableKeepAliveSwitch(networkEnableKeepAlive)
-      }
-      if (networkEnableKeepAlive.value) {
+      SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {
         SectionItemView {
-          IntSettingRow("TCP_KEEPIDLE", networkTCPKeepIdle, listOf(15, 30, 60, 120, 180), secondsLabel)
+          TimeoutSettingRow(
+            stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
+            listOf(10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000), secondsLabel
+          )
         }
         SectionItemView {
-          IntSettingRow("TCP_KEEPINTVL", networkTCPKeepIntvl, listOf(5, 10, 15, 30, 60), secondsLabel)
+          TimeoutSettingRow(
+            stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
+            listOf(5_000000, 7_000000, 10_000000, 15_000000, 20_000_000, 30_000_000), secondsLabel
+          )
         }
         SectionItemView {
-          IntSettingRow("TCP_KEEPCNT", networkTCPKeepCnt, listOf(1, 2, 4, 6, 8), "")
+          // can't be higher than 130ms to avoid overflow on 32bit systems
+          TimeoutSettingRow(
+            stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
+            listOf(2_500, 5_000, 10_000, 15_000, 20_000, 30_000), secondsLabel
+          )
         }
-      } else {
+        // SectionItemView {
+        //   IntSettingRow(
+        //     stringResource(MR.strings.network_option_rcv_concurrency), networkRcvConcurrency,
+        //     listOf(1, 2, 4, 8, 12, 16, 24), ""
+        //   )
+        // }
         SectionItemView {
-          Text("TCP_KEEPIDLE", color = MaterialTheme.colors.secondary)
+          TimeoutSettingRow(
+            stringResource(MR.strings.network_option_ping_interval), networkSMPPingInterval,
+            listOf(120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000), secondsLabel
+          )
         }
         SectionItemView {
-          Text("TCP_KEEPINTVL", color = MaterialTheme.colors.secondary)
+          IntSettingRow(
+            stringResource(MR.strings.network_option_ping_count), networkSMPPingCount,
+            listOf(1, 2, 3, 5, 8), ""
+          )
         }
         SectionItemView {
-          Text("TCP_KEEPCNT", color = MaterialTheme.colors.secondary)
+          EnableKeepAliveSwitch(networkEnableKeepAlive)
+        }
+        if (networkEnableKeepAlive.value) {
+          SectionItemView {
+            IntSettingRow("TCP_KEEPIDLE", networkTCPKeepIdle, listOf(15, 30, 60, 120, 180), secondsLabel)
+          }
+          SectionItemView {
+            IntSettingRow("TCP_KEEPINTVL", networkTCPKeepIntvl, listOf(5, 10, 15, 30, 60), secondsLabel)
+          }
+          SectionItemView {
+            IntSettingRow("TCP_KEEPCNT", networkTCPKeepCnt, listOf(1, 2, 4, 6, 8), "")
+          }
+        } else {
+          SectionItemView {
+            Text("TCP_KEEPIDLE", color = MaterialTheme.colors.secondary)
+          }
+          SectionItemView {
+            Text("TCP_KEEPINTVL", color = MaterialTheme.colors.secondary)
+          }
+          SectionItemView {
+            Text("TCP_KEEPCNT", color = MaterialTheme.colors.secondary)
+          }
         }
       }
     }
