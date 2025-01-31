@@ -432,18 +432,30 @@ fun ChatPreviewView(
           val ntfsMode = chat.chatInfo.notificationMode()
           val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
           if (n > 0 || chat.chatStats.unreadChat) {
-            Text(
-              if (n > 0) unreadCountStr(n) else "",
-              color = Color.White,
-              fontSize = 10.sp,
-              style = TextStyle(textAlign = TextAlign.Center),
-              modifier = Modifier
-                .offset(y = 3.sp.toDp())
-                .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
-                .badgeLayout()
-                .padding(horizontal = 2.sp.toDp())
-                .padding(vertical = 1.sp.toDp())
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              if (chat.chatStats.unreadMentions > 0) {
+                Icon(
+                  painterResource(MR.images.ic_priority_high),
+                  contentDescription = generalGetString(MR.strings.unread_mentions),
+                  tint = MaterialTheme.colors.secondary,
+                  modifier = Modifier
+                    .offset(y = 3.sp.toDp())
+                    .size(14.sp.toDp())
+                )
+              }
+              Text(
+                if (n > 0) unreadCountStr(n) else "",
+                color = Color.White,
+                fontSize = 10.sp,
+                style = TextStyle(textAlign = TextAlign.Center),
+                modifier = Modifier
+                  .offset(y = 3.sp.toDp())
+                  .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+                  .badgeLayout()
+                  .padding(horizontal = 2.sp.toDp())
+                  .padding(vertical = 1.sp.toDp())
+              )
+            }
           } else if (showNtfsIcon && ntfsMode != null) {
             Icon(
               painterResource(ntfsMode.iconFilled),
