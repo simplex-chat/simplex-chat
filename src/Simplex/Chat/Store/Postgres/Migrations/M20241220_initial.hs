@@ -128,7 +128,6 @@ CREATE TABLE groups(
   updated_at TIMESTAMPTZ NOT NULL,
   chat_item_id BIGINT DEFAULT NULL,
   enable_ntfs SMALLINT,
-  host_conn_custom_user_profile_id BIGINT REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat SMALLINT NOT NULL DEFAULT 0,
   chat_ts TIMESTAMPTZ,
   favorite SMALLINT NOT NULL DEFAULT 0,
@@ -764,9 +763,6 @@ CREATE INDEX idx_group_members_contact_profile_id ON group_members(
 CREATE INDEX idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX idx_group_members_invited_by ON group_members(invited_by);
 CREATE INDEX idx_group_profiles_user_id ON group_profiles(user_id);
-CREATE INDEX idx_groups_host_conn_custom_user_profile_id ON groups(
-  host_conn_custom_user_profile_id
-);
 CREATE INDEX idx_groups_chat_item_id ON groups(chat_item_id);
 CREATE INDEX idx_groups_group_profile_id ON groups(group_profile_id);
 CREATE INDEX idx_messages_group_id ON messages(group_id);

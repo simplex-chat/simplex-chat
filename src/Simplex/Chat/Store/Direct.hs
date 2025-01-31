@@ -293,7 +293,7 @@ deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, act
   assertNotUser db user ct
   liftIO $ do
     DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE contact_id = ? LIMIT 1" (Only contactId)
     if isNothing ctMember
       then do
         deleteContactProfile_ db userId contactId

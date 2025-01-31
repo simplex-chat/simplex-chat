@@ -274,7 +274,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId vr = do
           SELECT
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
-            g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
@@ -346,7 +346,6 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           businessChat = Nothing,
           fullGroupPreferences,
           membership,
-          hostConnCustomUserProfileId = Nothing,
           chatSettings,
           createdAt = currentTs,
           updatedAt = currentTs,
@@ -361,7 +360,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> VersionRangeChat -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, business} incognitoProfileId = do
+createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, business} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
@@ -398,11 +397,11 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               db
               [sql|
                 INSERT INTO groups
-                  (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs,
+                  (group_profile_id, local_display_name, inv_queue_info, user_id, enable_ntfs,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ((profileId, localDisplayName, connRequest, customUserProfileId, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
+              ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange vr peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
@@ -417,7 +416,6 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   businessChat = Nothing,
                   fullGroupPreferences,
                   membership,
-                  hostConnCustomUserProfileId = customUserProfileId,
                   chatSettings,
                   createdAt = currentTs,
                   updatedAt = currentTs,
@@ -545,11 +543,11 @@ createGroupInvitedViaLink
               db
               [sql|
                 INSERT INTO groups
-                  (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs,
+                  (group_profile_id, local_display_name, user_id, enable_ntfs,
                    created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ((profileId, localDisplayName, customUserProfileId, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
+              ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
       insertHost_ currentTs groupId = do
         let fromMemberProfile = profileFromName fromMemberName
@@ -743,7 +741,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
         [sql|
           SELECT
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
-            g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
@@ -1504,7 +1502,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
           SELECT
             -- GroupInfo
             g.group_id, g.local_display_name, gp.display_name, gp.full_name, g.local_alias, gp.description, gp.image,
-            g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
+            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.business_chat, g.business_member_id, g.customer_member_id, g.ui_themes, g.custom_data, g.chat_item_ttl,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
