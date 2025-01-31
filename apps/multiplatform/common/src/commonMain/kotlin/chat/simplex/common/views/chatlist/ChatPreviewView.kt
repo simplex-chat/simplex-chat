@@ -449,9 +449,7 @@ fun ChatPreviewView(
                   text = "$MENTION_START",
                   color = color,
                   fontSize = 12.sp,
-                  style = TextStyle(textAlign = TextAlign.Center),
-                  modifier = Modifier
-                    .offset(y = 2.sp.toDp())
+                  modifier = Modifier.offset(y = 2.sp.toDp())
                 )
               }
               Text(
