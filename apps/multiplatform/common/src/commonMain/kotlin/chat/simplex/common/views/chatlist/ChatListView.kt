@@ -1223,9 +1223,9 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
       if (chat.chatStats.unreadChat) {
         true
       } else {
-        when (val cInfo = chat.chatInfo) {
+        when (chat.chatInfo) {
           is ChatInfo.Group -> {
-            val ntfs = cInfo.groupInfo.chatSettings.enableNtfs
+            val ntfs = chat.chatInfo.groupInfo.chatSettings.enableNtfs
             (ntfs == MsgFilter.All && chat.chatStats.unreadCount > 0) || (ntfs == MsgFilter.Mentions && chat.chatStats.unreadMentions > 0)
           }
           else -> chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0

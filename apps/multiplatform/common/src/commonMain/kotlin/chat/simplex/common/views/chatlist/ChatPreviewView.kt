@@ -32,6 +32,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.group.MENTION_START
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -432,19 +433,29 @@ fun ChatPreviewView(
           val ntfsMode = chat.chatInfo.notificationMode()
           val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
           if (n > 0 || chat.chatStats.unreadChat) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              if (chat.chatStats.unreadMentions > 0) {
-                Icon(
-                  painterResource(MR.images.ic_priority_high),
-                  contentDescription = generalGetString(MR.strings.unread_mentions),
-                  tint = MaterialTheme.colors.secondary,
+            val unreadMentions = chat.chatStats.unreadMentions
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
+              if (unreadMentions > 0 && n > 1) {
+                val color = when {
+                  disabled -> MaterialTheme.colors.secondary
+                  cInfo is ChatInfo.Group -> {
+                    val enableNtfs = cInfo.groupInfo.chatSettings.enableNtfs
+                    if (enableNtfs == MsgFilter.All || enableNtfs == MsgFilter.Mentions) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary
+                  }
+
+                  else -> if (showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant
+                }
+                Text(
+                  text = "$MENTION_START",
+                  color = color,
+                  fontSize = 12.sp,
+                  style = TextStyle(textAlign = TextAlign.Center),
                   modifier = Modifier
-                    .offset(y = 3.sp.toDp())
-                    .size(14.sp.toDp())
+                    .offset(y = 2.sp.toDp())
                 )
               }
               Text(
-                if (n > 0) unreadCountStr(n) else "",
+                if (n == 1 && unreadMentions > 0) "$MENTION_START" else if (n > 0) unreadCountStr(n) else "",
                 color = Color.White,
                 fontSize = 10.sp,
                 style = TextStyle(textAlign = TextAlign.Center),
