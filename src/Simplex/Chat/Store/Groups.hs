@@ -661,10 +661,15 @@ deleteGroupMembers db User {userId} GroupInfo {groupId} = do
   print $ "CREATE TEMPORARY TABLE temp_delete_members " <> show ts1
 
   DB.execute_ db "DROP TABLE IF EXISTS temp_delete_members"
+  #if defined(dbPostgres)
+  DB.execute_ db "CREATE TABLE temp_delete_members (contact_profile_id BIGINT, member_profile_id BIGINT, local_display_name TEXT)"
+  #else
+  DB.execute_ db "CREATE TABLE temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)"
+  #endif
   DB.execute
     db
     [sql|
-      CREATE TEMPORARY TABLE temp_delete_members AS
+      INSERT INTO temp_delete_members (contact_profile_id, member_profile_id, local_display_name)
       SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
     |]
     (Only groupId)
@@ -684,7 +689,7 @@ deleteGroupMembers db User {userId} GroupInfo {groupId} = do
       WHERE
         user_id = ?
         AND (contact_profile_id IN (SELECT contact_profile_id FROM temp_delete_members)
-          OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members))
+          OR contact_profile_id IN (SELECT member_profile_id FROM temp_delete_members WHERE member_profile_id IS NOT NULL))
         AND contact_profile_id NOT IN (SELECT contact_profile_id FROM group_members)
         AND contact_profile_id NOT IN (SELECT member_profile_id FROM group_members)
         AND contact_profile_id NOT IN (SELECT contact_profile_id FROM contacts)
