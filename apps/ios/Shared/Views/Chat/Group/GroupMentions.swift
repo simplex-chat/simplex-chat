@@ -107,7 +107,23 @@ struct GroupMentionsView: View {
     }
     
     private func calculateVisibleMembers(searchText: String?) {
-        if searchText == nil {
+        if let s = searchText {
+            let search = s.replacingOccurrences(of: "\(QUOTE)", with: "")
+            let txtAsMention = composeState.mentions.first(where: {
+                if $0.member.memberProfile.displayName == $0.memberName {
+                    mentionsState.mentionMemberOccurrences[search] == 1 && search == $0.memberName
+                } else {
+                    search == $0.memberName
+                }
+            })
+            if let txtAsMention = txtAsMention,
+               let m = chatModel.groupMembers.first(where: { $0.wrapped.memberId == txtAsMention.member.memberId }
+               ) {
+                isVisible = true
+                filteredMembers = [m]
+                return;
+            }
+        } else {
             isVisible = false
             if filteredMembers.count == 1 && !composeState.maxMemberMentionsReached {
                 let memberToAutoTag = filteredMembers[0].wrapped
@@ -121,6 +137,7 @@ struct GroupMentionsView: View {
             filteredMembers = []
             return;
         }
+        
         if let searchText = searchText {
             Task {
                 if searchText.isEmpty {
@@ -135,7 +152,10 @@ struct GroupMentionsView: View {
                         .filter { m in let status = m.wrapped.memberStatus; return status != .memLeft && status != .memRemoved }
                         .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
                     
-                    let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                    let s = searchText
+                        .replacingOccurrences(of: "\(QUOTE)", with: "")
+                        .trimmingCharacters(in: .whitespaces).localizedLowercase
+                    
                     filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
                     isVisible = !filteredMembers.isEmpty
                 }
