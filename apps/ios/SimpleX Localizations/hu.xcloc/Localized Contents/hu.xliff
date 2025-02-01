@@ -5860,10 +5860,10 @@ Hiba: %@</target>
         <target>Alkalmazás képernyőjének védelme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target>Védje IP-címét az ismerősei által kiválasztott üzenet-továbbító-kiszolgálókkal szemben.
+        <target state="translated">Védje IP-címét az ismerősei által kiválasztott üzenetváltó-továbbító-kiszolgálókkal szemben.
 Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6759,9 +6759,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Összes elküldött üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent via proxy" xml:space="preserve">
+      <trans-unit id="Sent via proxy" xml:space="preserve" approved="no">
         <source>Sent via proxy</source>
-        <target>Proxyn keresztül küldve</target>
+        <target state="translated">Proxyn keresztül küldött</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server" xml:space="preserve">
@@ -7510,9 +7510,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The future of messaging" xml:space="preserve">
+      <trans-unit id="The future of messaging" xml:space="preserve" approved="no">
         <source>The future of messaging</source>
-        <target>A privát üzenetküldés következő generációja</target>
+        <target state="translated">Az üzenetváltás jövője</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
