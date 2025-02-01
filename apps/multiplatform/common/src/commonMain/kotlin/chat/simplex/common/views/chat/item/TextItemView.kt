@@ -151,7 +151,7 @@ fun MarkdownText (
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
             }
           } else if (ft.format is Format.Mention) {
-            val mention = mentions?.get(ft.text.replace("$QUOTE", "").removePrefix("$MENTION_START"))
+            val mention = mentions?.get(ft.format.memberName)
             if (mention?.memberRef != null) {
               val displayName = mention.memberRef.displayName
               val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
