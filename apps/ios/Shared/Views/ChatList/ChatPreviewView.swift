@@ -222,11 +222,11 @@ struct ChatPreviewView: View {
                 (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
                     .foregroundColor(.white)
+                    .padding(.horizontal, dynamicSize(userFont).unreadPadding)
                     .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
                     .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
             }
-            .padding(.horizontal, dynamicSize(userFont).unreadPadding)
         } else if let ntfMode = chat.chatInfo.notificationMode, ntfMode.mode != .all {
             let iconSize = ntfMode.mode == .none ? dynamicChatInfoSize : dynamicChatInfoSize * 0.8
             Image(systemName: ntfMode.iconFilled)
