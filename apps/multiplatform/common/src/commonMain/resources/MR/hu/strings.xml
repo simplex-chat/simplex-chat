@@ -913,7 +913,7 @@
     <string name="v4_5_reduced_battery_usage">Csökkentett akkumulátor-használat</string>
     <string name="save_and_notify_contacts">Mentés és az ismerősök értesítése</string>
     <string name="group_welcome_preview">Előnézet</string>
-    <string name="use_chat">Csevegés használata</string>
+    <string name="use_chat">Simplex Chat használata</string>
     <string name="share_verb">Megosztás</string>
     <string name="received_message">Fogadott üzenet</string>
     <string name="button_welcome_message">Üdvözlőüzenet</string>
