@@ -2316,4 +2316,7 @@
     <string name="change_automatic_chat_deletion_message">此操作无法撤销 —— 比此聊天中所选消息更早发出并收到的消息将被删除。</string>
     <string name="disable_automatic_deletion_message">此聊天中的消息永远不会被删除。</string>
     <string name="change_automatic_deletion_question">更改消息自动删除设置？</string>
+    <string name="network_smp_web_port_section_title">用于消息收发的 TCP 端口</string>
+    <string name="network_smp_web_port_footer">未指定端口时，使用 TCP 端口 %1$s。</string>
+    <string name="network_smp_web_port_toggle">使用 web 端口</string>
 </resources>
