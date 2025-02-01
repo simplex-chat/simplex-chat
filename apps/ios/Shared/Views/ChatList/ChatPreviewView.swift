@@ -188,12 +188,14 @@ struct ChatPreviewView: View {
 
     private func chatPreviewLayout(_ text: Text?, draft: Bool = false, _ hasFilePreview: Bool = false) -> some View {
         ZStack(alignment: .topTrailing) {
+            let s = chat.chatStats
+            let mentionWidth: CGFloat = if s.unreadMentions > 0 && s.unreadCount > 1 { dynamicSize(userFont).unreadCorner } else { 0 }
             let t = text
                 .lineLimit(userFont <= .xxxLarge ? 2 : 1)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.leading, hasFilePreview ? 0 : 8)
-                .padding(.trailing, hasFilePreview ? 38 : 36)
+                .padding(.trailing, mentionWidth + (hasFilePreview ? 38 : 36))
                 .offset(x: hasFilePreview ? -2 : 0)
                 .fixedSize(horizontal: false, vertical: true)
             if !showChatPreviews && !draft {
@@ -208,17 +210,16 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatInfoIcon(_ chat: Chat) -> some View {
         let s = chat.chatStats
         if s.unreadCount > 0 || s.unreadChat {
-            let unreadMentions = s.unreadMentions
             let mentionColor = mentionColor(chat)
             HStack(alignment: .center, spacing: 2) {
-                if unreadMentions > 0 && s.unreadCount > 1 {
+                if s.unreadMentions > 0 && s.unreadCount > 1 {
                     Text("\(MENTION_START)")
                         .font(userFont <= .xxxLarge ? .body : .callout)
                         .foregroundColor(mentionColor)
                         .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
                         .cornerRadius(dynamicSize(userFont).unreadCorner)
                 }
-                let singleUnreadIsMention = unreadMentions > 0 && s.unreadCount == 1
+                let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
                 (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
                     .foregroundColor(.white)
