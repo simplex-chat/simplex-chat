@@ -217,24 +217,22 @@ struct ChatPreviewView: View {
                         .foregroundColor(mentionColor)
                         .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
                         .cornerRadius(dynamicSize(userFont).unreadCorner)
-
                 }
-                
                 let singleUnreadIsMention = unreadMentions > 0 && s.unreadCount == 1
                 (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
                     .font(userFont <= .xxxLarge ? .caption : .caption2)
                     .foregroundColor(.white)
                     .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(true) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
             }
             .padding(.horizontal, dynamicSize(userFont).unreadPadding)
         } else if let ntfMode = chat.chatInfo.notificationMode, ntfMode.mode != .all {
-            // TODO [mentions] icon for mentions is too big.
+            let iconSize = ntfMode.mode == .none ? dynamicChatInfoSize : dynamicChatInfoSize * 0.8
             Image(systemName: ntfMode.iconFilled)
                 .resizable()
                 .scaledToFill()
-                .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
+                .frame(width: iconSize, height: iconSize)
                 .foregroundColor(theme.colors.secondary)
         } else if chat.chatInfo.chatSettings?.favorite ?? false {
             Image(systemName: "star.fill")
