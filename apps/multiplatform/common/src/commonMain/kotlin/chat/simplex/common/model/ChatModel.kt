@@ -1833,7 +1833,7 @@ data class GroupInfo (
     return when (m) {
       None -> (if (filled) MR.images.ic_notifications_off_filled else MR.images.ic_notifications_off)
       All -> MR.images.ic_notifications
-      Mentions -> if (filled) MR.images.ic_notifications_mentions_filled else MR.images.ic_notifications_mentions
+      Mentions -> if (filled) MR.images.ic_notification_important_filled else MR.images.ic_notification_important
     }
   }
 

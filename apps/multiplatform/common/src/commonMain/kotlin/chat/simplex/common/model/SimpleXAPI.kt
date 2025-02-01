@@ -20,7 +20,6 @@ import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.model.MsgContent.MCUnknown
-import chat.simplex.common.model.SMPErrorType.BLOCKED
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -1020,13 +1019,13 @@ object ChatController {
     }
   }
 
-  suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, um: UpdatedMessage, live: Boolean = false): AChatItem? {
-    val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, um, live))
+  suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, updatedMessage: UpdatedMessage, live: Boolean = false): AChatItem? {
+    val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, updatedMessage, live))
     when {
       r is CR.ChatItemUpdated -> return r.chatItem
       r is CR.ChatItemNotChanged -> return r.chatItem
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
-        val mc = um.msgContent
+        val mc = updatedMessage.msgContent
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.maximum_message_size_title),
           if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {

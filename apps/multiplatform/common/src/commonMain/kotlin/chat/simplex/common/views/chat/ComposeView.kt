@@ -567,7 +567,7 @@ fun ComposeView(
           type = cInfo.chatType,
           id = cInfo.apiId,
           itemId = ei.meta.itemId,
-          um = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
+          updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
           live = live
         )
         if (updatedItem != null) withChats {
