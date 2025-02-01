@@ -191,9 +191,6 @@ struct ChatView: View {
                 dismiss()
             }
         }
-        .onChange(of: revealedItems) { _ in
-            NotificationCenter.postReverseListNeedsLayout()
-        }
         .onChange(of: im.isLoading) { isLoading in
             if !isLoading,
                im.reversedChatItems.count <= loadItemsPerPage,
@@ -662,7 +659,10 @@ struct ChatView: View {
                                 if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
                                     // scroll to the top unread item
                                     scrollModel.scrollToRow(row: index)
+                                } else {
+                                    logger.debug("LALAL NO UNREAD ITEMS0!  \(model.items.count)")
                                 }
+                                logger.debug("LALAL NO UNREAD ITEMS1!  \(model.items.count)")
                             }
                             .contextMenu {
                                 Button {
@@ -1020,6 +1020,7 @@ struct ChatView: View {
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
+        @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
 
         var reveal: (Bool) -> Void
@@ -1131,6 +1132,10 @@ struct ChatView: View {
                     }
                 }
             }
+            .onDisappear {
+                markReadTask?.cancel()
+                markedRead = false
+            }
             .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
@@ -1147,10 +1152,14 @@ struct ChatView: View {
         }
         
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
-            Task {
-                _ = try? await Task.sleep(nanoseconds: 600_000000)
-                if m.chatId == chat.chatInfo.id {
-                    await op()
+            markReadTask = Task {
+                do {
+                    _ = try await Task.sleep(nanoseconds: 600_000000)
+                    if m.chatId == chat.chatInfo.id {
+                        await op()
+                    }
+                } catch {
+                    // task was cancelled
                 }
             }
         }
