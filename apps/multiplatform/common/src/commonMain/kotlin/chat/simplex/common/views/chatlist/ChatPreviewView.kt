@@ -447,21 +447,21 @@ fun ChatPreviewView(
                   else -> if (showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant
                 }
                 if (unreadMentions > 0 && n > 1) {
-                  Text(
-                    text = "$MENTION_START",
-                    color = mentionColor,
-                    fontSize = 12.sp,
-                    modifier = Modifier.offset(y = 2.sp.toDp())
+                  Icon(
+                    painterResource(MR.images.ic_alternate_email),
+                    contentDescription = generalGetString(MR.strings.notifications),
+                    tint = mentionColor,
+                    modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
                   )
                 }
 
                 if (unreadMentions > 0 && n == 1) {
-                  Box(modifier = Modifier.offset(y = 3.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
-                    Text(
-                      text = "$MENTION_START",
-                      color = Color.White,
-                      fontSize = 9.sp,
-                      modifier = Modifier.align(Alignment.Center)
+                  Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(
+                      painterResource(MR.images.ic_alternate_email),
+                      contentDescription = generalGetString(MR.strings.notifications),
+                      tint = Color.White,
+                      modifier = Modifier.size(9.sp.toDp())
                     )
                   }
                 } else {
