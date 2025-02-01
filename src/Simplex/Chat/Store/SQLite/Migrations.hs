@@ -1,9 +1,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Simplex.Chat.Store.SQLite.Migrations (migrations) where
 
 import Data.List (sortOn)
 import Database.SQLite.Simple (Query (..))
+import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.SQLite.Migrations.M20220101_initial
 import Simplex.Chat.Store.SQLite.Migrations.M20220122_v1_1
 import Simplex.Chat.Store.SQLite.Migrations.M20220205_chat_item_status
@@ -255,7 +257,8 @@ schemaMigrations =
     ("20250122_chat_items_include_in_history", m20250122_chat_items_include_in_history, Just down_m20250122_chat_items_include_in_history),
     ("20250126_mentions", m20250126_mentions, Just down_m20250126_mentions),
     ("20250129_delete_unused_contacts", m20250129_delete_unused_contacts, Just down_m20250129_delete_unused_contacts),
-    ("20250130_indexes", m20250130_indexes, Just down_m20250130_indexes)
+    ("20250130_indexes", m20250130_indexes, Just down_m20250130_indexes),
+    ("20250131_muted_groups_to_mentions", m20250131_muted_groups_to_mentions, Just down_m20250131_muted_groups_to_mentions)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -263,3 +266,15 @@ migrations :: [Migration]
 migrations = sortOn name $ map migration schemaMigrations
   where
     migration (name, up, down) = Migration {name, up = fromQuery up, down = fromQuery <$> down}
+
+m20250131_muted_groups_to_mentions :: Query
+m20250131_muted_groups_to_mentions =
+  [sql|
+UPDATE groups SET enable_ntfs = 2 WHERE enable_ntfs = 0;
+|]
+
+down_m20250131_muted_groups_to_mentions :: Query
+down_m20250131_muted_groups_to_mentions =
+  [sql|
+UPDATE groups SET enable_ntfs = 0 WHERE enable_ntfs = 2;
+|]

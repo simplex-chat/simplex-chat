@@ -103,7 +103,8 @@ testSchemaMigrations = withTmpFiles $ do
 skipComparisonForUpMigrations :: [String]
 skipComparisonForUpMigrations =
   [ -- schema doesn't change
-    "20250129_delete_unused_contacts"
+    "20250129_delete_unused_contacts",
+    "20250131_muted_groups_to_mentions"
   ]
 
 skipComparisonForDownMigrations :: [String]
