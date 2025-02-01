@@ -669,6 +669,7 @@ final class ChatModel: ObservableObject {
         // update preview
         _updateChat(cInfo.id) { chat in
             self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
+            self.changeMentionsCounter(cInfo.id, by: -chat.chatStats.unreadMentions)
             self.updateFloatingButtons(unreadCount: 0)
             ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
