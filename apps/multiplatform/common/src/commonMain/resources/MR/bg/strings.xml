@@ -1202,7 +1202,7 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Ще бъдете свързани, когато устройството на вашия контакт е онлайн, моля, изчакайте или проверете по-късно!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Няма да загубите контактите си, ако по-късно изтриете адреса си.</string>
     <string name="your_settings">Вашите настройки</string>
-    <string name="your_simplex_contact_address">Вашият SimpleX адрес</string>
+    <string name="your_simplex_contact_address">Вашият адрес в SimpleX</string>
     <string name="smp_servers_use_server_for_new_conn">Използвай за нови връзки</string>
     <string name="your_XFTP_servers">Вашите XFTP сървъри</string>
     <string name="use_simplex_chat_servers__question">Използвай сървърите на SimpleX Chat\?</string>
@@ -1443,7 +1443,7 @@
     <string name="not_compatible">Несъвместим!</string>
     <string name="waiting_for_mobile_to_connect">Изчаква се мобилното устройство да се свърже:</string>
     <string name="delete_messages__question">Изтрий %d съобщения?</string>
-    <string name="link_a_mobile">Свържи мобилно устройство</string>
+    <string name="link_a_mobile">Свързване на мобилно устройство</string>
     <string name="connect_with_contact_name_question">Свързване с %1$s?</string>
     <string name="remove_member_button">Премахни член</string>
     <string name="block_member_confirmation">Блокирай</string>
