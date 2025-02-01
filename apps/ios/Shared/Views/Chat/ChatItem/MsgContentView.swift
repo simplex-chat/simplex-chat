@@ -146,15 +146,18 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, 
             case .full: return linkText(t, simplexUri, preview, prefix: "")
             case .browser: return linkText(t, simplexUri, preview, prefix: "")
             }
-        case .mention:
-            if let m = mentions?[String(t.replacingOccurrences(of: "\(QUOTE)", with: "").dropFirst())] {
+        case let .mention(memberName):
+            if let m = mentions?[memberName] {
                 if let ref = m.memberRef {
-                    let name = (ref.localAlias?.isEmpty ?? true) ? ref.displayName : "\(ref.localAlias!) (\(ref.displayName))"
-                    if m.memberId == groupMembershipId {
-                        return Text("@\(name)").fontWeight(.semibold).foregroundColor(.accentColor)
+                    let name: String = if let alias = ref.localAlias, alias != "" {
+                        "\(alias) (\(ref.displayName))"
                     } else {
-                        return Text("@\(name)").fontWeight(.semibold)
+                        ref.displayName
                     }
+                    let tName = Text("@\(name)").fontWeight(.semibold)
+                    return m.memberId == groupMembershipId ? tName.foregroundColor(.accentColor) : tName
+                } else {
+                    return Text("@\(memberName)").fontWeight(.semibold)
                 }
             }
             return Text(t)
