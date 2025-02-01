@@ -8054,9 +8054,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>SimpleX Chat-kiszolgálók használata?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use chat" xml:space="preserve">
+      <trans-unit id="Use chat" xml:space="preserve" approved="no">
         <source>Use chat</source>
-        <target>Csevegés használata</target>
+        <target state="translated">Simplex Chat használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use current profile" xml:space="preserve">
