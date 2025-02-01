@@ -996,34 +996,32 @@ struct ChatView: View {
                     markedRead = true
                 }
                 if let range {
-                    let items = Array(zip(Array(range), im.reversedChatItems[range]))
-
-                    let (itemIds, mentionItemsIds) = unreadItemIds(range)
+                    let (itemIds, unreadMentions) = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemsRead(chat.chatInfo, itemIds, mentionItemsIds.count)
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds, mentionsRead: unreadMentions)
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id], chatItem.meta.userMention ? 1 : 0)
+                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
                     }
                 }
             }
             .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
-        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], [ChatItem.ID]) {
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int) {
             let im = ItemsModel.shared
             var unreadItems: [ChatItem.ID] = []
-            var unreadMentions: [ChatItem.ID] = []
+            var unreadMentions: Int = 0
             
             for i in range {
                 let ci = im.reversedChatItems[i]
                 if ci.isRcvNew {
                     unreadItems.append(ci.id)
                     if ci.meta.userMention {
-                        unreadMentions.append(ci.id)
+                        unreadMentions += 1
                     }
                 }
             }
@@ -2057,9 +2055,9 @@ struct ToggleNtfsButton: View {
     @ObservedObject var chat: Chat
 
     var body: some View {
-        if let nextMode =  chat.chatInfo.nextNotificationMode {
+        if let nextMode = chat.chatInfo.nextNtfMode {
             Button {
-                toggleNotifications(chat, enableNtfs: nextMode.mode)
+                toggleNotifications(chat, enableNtfs: nextMode)
             } label: {
                 Label(nextMode.text, systemImage: nextMode.icon)
             }

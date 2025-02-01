@@ -2043,6 +2043,38 @@ public enum MsgFilter: String, Codable, Hashable {
     case none
     case all
     case mentions
+    
+    public func nextMode(mentions: Bool) -> MsgFilter {
+        switch self {
+        case .all: mentions ? .mentions : .none
+        case .mentions: .none
+        case .none: .all
+        }
+    }
+    
+    public var text: String {
+        switch self {
+        case .all: NSLocalizedString("Unmute", comment: "notification label action")
+        case .mentions: NSLocalizedString("Mute", comment: "notification label action")
+        case .none: NSLocalizedString("Mute all", comment: "notification label action")
+        }
+    }
+    
+    public var icon: String {
+        return switch self {
+        case .all: "speaker.wave.2"
+        case .mentions: "speaker.badge.exclamationmark"
+        case .none: "speaker.slash"
+        }
+    }
+    
+    public var iconFilled: String {
+        return switch self {
+        case .all: "speaker.wave.2.fill"
+        case .mentions: "speaker.badge.exclamationmark.fill"
+        case .none: "speaker.slash.fill"
+        }
+    }
 }
 
 public struct UserMsgReceiptSettings: Codable {

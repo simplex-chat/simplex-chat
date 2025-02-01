@@ -303,7 +303,7 @@ struct FramedItemView: View {
             formattedText: ft,
             meta: ci.meta,
             mentions: ci.mentions,
-            groupMembershipId: chat.chatInfo.groupInfo?.membership.memberId,
+            userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
             showSecrets: showSecrets,
             prefix: txtPrefix

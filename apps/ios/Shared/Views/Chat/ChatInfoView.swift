@@ -158,7 +158,7 @@ struct ChatInfoView: View {
                             searchButton(width: buttonWidth)
                             AudioCallButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
                             VideoButton(chat: chat, contact: contact, connectionStats: $connectionStats, width: buttonWidth) { alert = .someAlert(alert: $0) }
-                            if let nextNtfMode = chat.chatInfo.nextNotificationMode {
+                            if let nextNtfMode = chat.chatInfo.nextNtfMode {
                                 muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)
                             }
                         }
@@ -434,13 +434,13 @@ struct ChatInfoView: View {
         .disabled(!contact.ready || chat.chatItems.isEmpty)
     }
 
-    private func muteButton(width: CGFloat, nextNtfMode: ChatNtfs) -> some View {
+    private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
         return InfoViewButton(
             image: nextNtfMode.iconFilled,
             title: LocalizedStringKey(nextNtfMode.text),
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: nextNtfMode.mode)
+            toggleNotifications(chat, enableNtfs: nextNtfMode)
         }
         .disabled(!contact.ready || !contact.active)
     }

@@ -33,7 +33,7 @@ struct MsgContentView: View {
     var sender: String? = nil
     var meta: CIMeta? = nil
     var mentions: [String: CIMention]? = nil
-    var groupMembershipId: String? = nil
+    var userMemberId: String? = nil
     var rightToLeft = false
     var showSecrets: Bool
     var prefix: Text? = nil
@@ -70,7 +70,7 @@ struct MsgContentView: View {
     }
 
     private func msgContentView() -> Text {
-        var v = messageText(text, formattedText, sender, mentions: mentions, groupMembershipId: groupMembershipId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
+        var v = messageText(text, formattedText, sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary, prefix: prefix)
         if let mt = meta {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
@@ -92,15 +92,15 @@ struct MsgContentView: View {
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, mentions: [String: CIMention]?, groupMembershipId: String?, showSecrets: Bool, secondaryColor: Color, prefix: Text? = nil) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, mentions: [String: CIMention]?, userMemberId: String?, showSecrets: Bool, secondaryColor: Color, prefix: Text? = nil) -> Text {
     let s = text
     var res: Text
     
     if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
-        res = formatText(ft[0], preview, showSecret: showSecrets, mentions: mentions, groupMembershipId: groupMembershipId)
+        res = formatText(ft[0], preview, showSecret: showSecrets, mentions: mentions, userMemberId: userMemberId)
         var i = 1
         while i < ft.count {
-            res = res + formatText(ft[i], preview, showSecret: showSecrets, mentions: mentions, groupMembershipId: groupMembershipId)
+            res = res + formatText(ft[i], preview, showSecret: showSecrets, mentions: mentions, userMemberId: userMemberId)
             i = i + 1
         }
     } else {
@@ -123,7 +123,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 }
 
-private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, mentions: [String: CIMention]?, groupMembershipId: String?) -> Text {
+private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, mentions: [String: CIMention]?, userMemberId: String?) -> Text {
     let t = ft.text
     if let f = ft.format {
         switch (f) {
@@ -155,7 +155,7 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, 
                         ref.displayName
                     }
                     let tName = Text("@\(name)").fontWeight(.semibold)
-                    return m.memberId == groupMembershipId ? tName.foregroundColor(.accentColor) : tName
+                    return m.memberId == userMemberId ? tName.foregroundColor(.accentColor) : tName
                 } else {
                     return Text("@\(memberName)").fontWeight(.semibold)
                 }

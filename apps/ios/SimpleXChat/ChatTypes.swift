@@ -1468,6 +1468,11 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
     
+    public var nextNtfMode: MsgFilter? {
+        let mentions = if case .group = self { true } else { false }
+        return self.chatSettings?.enableNtfs.nextMode(mentions: mentions)
+    }
+    
     public var chatTags: [Int64]? {
         switch self {
         case let .direct(contact): return contact.chatTags
@@ -1506,22 +1511,6 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         case let .contactRequest(contactRequest): return contactRequest.updatedAt
         case let .contactConnection(contactConnection): return contactConnection.updatedAt
         case .invalidJSON: return .now
-        }
-    }
-    
-    public var nextNotificationMode: ChatNtfs? {
-        switch self {
-        case let .direct(contact): return contact.nextNotificationMode(contact.chatSettings.enableNtfs)
-        case let .group(groupInfo): return groupInfo.nextNotificationMode(groupInfo.chatSettings.enableNtfs)
-        default: return nil
-        }
-    }
-    
-    public var notificationMode: ChatNtfs? {
-        switch self {
-        case let .direct(contact): return contact.notificationMode
-        case let .group(groupInfo): return groupInfo.notificationMode
-        default: return nil
         }
     }
     
@@ -1653,16 +1642,6 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var contactConnIncognito: Bool {
         activeConn?.customUserProfileId != nil
     }
-    
-    public var notificationMode: ChatNtfs {
-        var enabled = chatSettings.enableNtfs == .all
-        return ChatNtfs(
-            mode: self.chatSettings.enableNtfs,
-            text: notificationModeText(enabled),
-            icon: notificationModeIcon(enabled, false),
-            iconFilled: notificationModeIcon(enabled, true)
-        )
-    }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {
         switch feature {
@@ -1681,31 +1660,6 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         case .reactions: return mergedPreferences.reactions.userPreference.preference.allow != .no
         case .voice: return mergedPreferences.voice.userPreference.preference.allow != .no
         case .calls: return mergedPreferences.calls.userPreference.preference.allow != .no
-        }
-    }
-    
-    public func nextNotificationMode(_ from: MsgFilter) -> ChatNtfs {
-        var ntfsEnabled = from == .all
-        var nextNtfMode = ntfsEnabled ? MsgFilter.none : MsgFilter.all
-        var nextEnabled = !ntfsEnabled
-        
-        return ChatNtfs(
-            mode: nextNtfMode,
-            text: notificationModeText(nextEnabled),
-            icon: notificationModeIcon(nextEnabled, false),
-            iconFilled: notificationModeIcon(nextEnabled, true)
-        )
-    }
-    
-    private func notificationModeText(_ enabled: Bool) -> String {
-        return enabled ? NSLocalizedString("Unmute", comment: "notification label action"): NSLocalizedString("Mute", comment: "notification label action")
-    }
-
-    private func notificationModeIcon(_ enabled: Bool, _ filled: Bool) -> String {
-        if enabled {
-            return filled ? "speaker.wave.2.fill" : "speaker.wave.2"
-        } else {
-            return filled ? "speaker.slash.fill" : "speaker.slash"
         }
     }
 
@@ -1992,15 +1946,6 @@ public struct Group: Decodable, Hashable {
     }
 }
 
-public struct ChatNtfs {
-    public var mode: MsgFilter
-    public var text: String
-    public var icon: String
-    public var iconFilled: String
-    
-    public static var sampleData = ChatNtfs(mode: MsgFilter.all, text: "", icon: "", iconFilled: "")
-}
-
 public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
@@ -2035,46 +1980,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var canAddMembers: Bool {
         return membership.memberRole >= .admin && membership.memberActive
-    }
-    
-    public var notificationMode: ChatNtfs {
-        return ChatNtfs(
-            mode: self.chatSettings.enableNtfs,
-            text: notificationModeText(self.chatSettings.enableNtfs),
-            icon: notificationModeIcon(self.chatSettings.enableNtfs, false),
-            iconFilled: notificationModeIcon(self.chatSettings.enableNtfs, true)
-        )
-    }
-    
-    public func nextNotificationMode(_ from: MsgFilter) -> ChatNtfs {
-        let nextNtfMode: MsgFilter = switch from {
-        case .all: .mentions
-        case .mentions: .none
-        case .none: .all
-        }
-        
-        return ChatNtfs(
-            mode: nextNtfMode,
-            text: notificationModeText(nextNtfMode),
-            icon: notificationModeIcon(nextNtfMode, false),
-            iconFilled: notificationModeIcon(nextNtfMode, true)
-        )
-    }
-    
-    private func notificationModeText(_ m: MsgFilter) -> String {
-        return switch m {
-        case .all: NSLocalizedString("Unmute", comment: "notification label action")
-        case .mentions: NSLocalizedString("Mute", comment: "notification label action")
-        case .none: NSLocalizedString("Mute all", comment: "notification label action")
-        }
-    }
-
-    private func notificationModeIcon(_ m: MsgFilter, _ filled: Bool) -> String {
-        return switch m {
-        case .all: filled ? "speaker.wave.2.fill" : "speaker.wave.2"
-        case .mentions: filled ? "speaker.badge.exclamationmark.fill" : "speaker.badge.exclamationmark"
-        case .none: filled ? "speaker.slash.fill" : "speaker.slash"
-        }
     }
 
     public static let sampleData = GroupInfo(
@@ -2522,6 +2427,16 @@ public struct CIMentionMember: Decodable, Hashable {
 public struct CIMention: Decodable, Hashable {
     public var memberId: String
     public var memberRef: CIMentionMember?
+    
+    public init(groupMember m: GroupMember) {
+        self.memberId = m.memberId
+        self.memberRef = CIMentionMember(
+            groupMemberId: m.groupMemberId,
+            displayName: m.memberProfile.displayName,
+            localAlias: m.memberProfile.localAlias,
+            memberRole: m.memberRole
+        )
+    }
 }
 
 public struct ACIReaction: Decodable, Hashable {

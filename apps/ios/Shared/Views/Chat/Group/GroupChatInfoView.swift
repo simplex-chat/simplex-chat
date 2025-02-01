@@ -277,11 +277,8 @@ struct GroupChatInfoView: View {
                 if groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
-                if let nextNtfMode = chat.chatInfo.nextNotificationMode {
-                    muteButton(
-                        width: buttonWidth,
-                        nextNtfMode: nextNtfMode
-                    )
+                if let nextNtfMode = chat.chatInfo.nextNtfMode {
+                    muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)
@@ -330,13 +327,13 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func muteButton(width: CGFloat, nextNtfMode: ChatNtfs) -> some View {
+    private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
         return InfoViewButton(
             image: nextNtfMode.iconFilled,
             title: LocalizedStringKey(nextNtfMode.text),
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: nextNtfMode.mode)
+            toggleNotifications(chat, enableNtfs: nextNtfMode)
         }
         .disabled(!groupInfo.ready)
     }

@@ -41,11 +41,6 @@ struct LiveMessage {
     var sentMsg: String?
 }
 
-struct MemberMention {
-    var memberName: String
-    var member: GroupMember
-}
-
 struct ComposeState {
     var message: String
     var liveMessage: LiveMessage? = nil
@@ -54,7 +49,7 @@ struct ComposeState {
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
-    var mentions: [MemberMention] = []
+    var mentions: [String:GMember] = [:]
 
     init(
         message: String = "",
@@ -62,7 +57,7 @@ struct ComposeState {
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
         voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
-        mentions: [MemberMention] = []
+        mentions: [String:GMember] = [:]
     ) {
         self.message = message
         self.liveMessage = liveMessage
@@ -97,7 +92,7 @@ struct ComposeState {
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
         voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
-        mentions: [MemberMention]? = nil
+        mentions: [String:GMember]? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
@@ -109,22 +104,20 @@ struct ComposeState {
         )
     }
     
-    func mentionMemberName(_ name: String, _ n: Int = 0) -> String {
-        let tryName = n == 0 ? name : "\(name)_\(n)"
-        let used = mentions.contains { $0.memberName == tryName }
-        return used ? mentionMemberName(name, n + 1) : tryName
+    func mentionMemberName(_ name: String) -> String {
+        var n = 0
+        var tryName = name
+        while mentions[tryName] != nil {
+            n += 1
+            tryName = "\(name)_\(n)"
+        }
+        return tryName
     }
     
     var memberMentions: [String: Int64] {
-        self.mentions.reduce(into: [String: Int64]()) { result, mention in
-            result[mention.memberName] = mention.member.groupMemberId
-        }
+        self.mentions.mapValues { $0.wrapped.groupMemberId }
     }
     
-    var maxMemberMentionsReached: Bool {
-        self.mentions.count >= MAX_NUMBER_OF_MENTIONS
-    }
-
     var editing: Bool {
         switch contextItem {
         case .editingItem: return true
@@ -937,7 +930,7 @@ struct ComposeView: View {
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             itemId: ei.id,
-                            um: UpdatedMessage(msgContent: mc, mentions: composeState.memberMentions),
+                            updatedMessage: UpdatedMessage(msgContent: mc, mentions: composeState.memberMentions),
                             live: live
                         )
                         await MainActor.run {

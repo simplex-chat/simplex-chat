@@ -67,8 +67,8 @@ struct GroupMentionsView: View {
                         Divider()
                         let list = List {
                             ForEach($filteredMembers, id: \.groupMemberId) { m in
-                                let existingMention = composeState.mentions.first { $0.member.memberId == m.wrapped.memberId.wrappedValue }
-                                let disabled = composeState.maxMemberMentionsReached && existingMention == nil
+                                let mentionedName = composeState.mentions.first(where: { $0.value.wrapped.groupMemberId == m.wrapped.groupMemberId.wrappedValue })?.key
+                                let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && mentionedName == nil
                                 
                                 MemberRowView(
                                     groupInfo: groupInfo,
@@ -82,7 +82,7 @@ struct GroupMentionsView: View {
                                 .disabled(disabled)
                                 .opacity(disabled ? 0.6 : 1)
                                 .onTapGesture {
-                                    onMemberSelected(m.wrappedValue, existingMention)
+                                    onMemberSelected(m.wrappedValue, mentionedName)
                                 }
                             }
                         }
@@ -120,14 +120,14 @@ struct GroupMentionsView: View {
         if let s = searchText {
             let search = s.replacingOccurrences(of: "\(QUOTE)", with: "")
             let txtAsMention = composeState.mentions.first(where: {
-                if $0.member.memberProfile.displayName == $0.memberName {
-                    mentionsState.mentionMemberOccurrences[search] == 1 && search == $0.memberName
+                if $0.value.wrapped.memberProfile.displayName == $0.key {
+                    mentionsState.mentionMemberOccurrences[search] == 1 && search == $0.key
                 } else {
-                    search == $0.memberName
+                    search == $0.key
                 }
             })
-            if let txtAsMention = txtAsMention,
-               let m = chatModel.groupMembers.first(where: { $0.wrapped.memberId == txtAsMention.member.memberId }
+            if let txtAsMention,
+               let m = chatModel.groupMembers.first(where: { $0.wrapped.memberId == txtAsMention.value.wrapped.memberId }
                ) {
                 isVisible = true
                 filteredMembers = [m]
@@ -135,13 +135,13 @@ struct GroupMentionsView: View {
             }
         } else {
             isVisible = false
-            if filteredMembers.count == 1 && !composeState.maxMemberMentionsReached {
-                let memberToAutoTag = filteredMembers[0].wrapped
-                if !composeState.mentions.contains(where: { $0.member.memberId == memberToAutoTag.memberId }) {
-                    let displayName = composeState.mentionMemberName(memberToAutoTag.memberProfile.displayName)
-                    composeState = composeState.copy(
-                        mentions: composeState.mentions + [MemberMention(memberName: displayName, member: memberToAutoTag)]
-                    )
+            if filteredMembers.count == 1 && composeState.mentions.count < MAX_NUMBER_OF_MENTIONS {
+                let memberToAutoTag = filteredMembers[0]
+                if !composeState.mentions.contains(where: { $0.value.wrapped.memberId == memberToAutoTag.wrapped.memberId }) {
+                    let newName = composeState.mentionMemberName(memberToAutoTag.wrapped.memberProfile.displayName)
+                    var mentions = composeState.mentions
+                    mentions[newName] = memberToAutoTag
+                    composeState = composeState.copy(mentions: mentions)
                 }
             }
             filteredMembers = []
@@ -173,25 +173,29 @@ struct GroupMentionsView: View {
         }
     }
     
-    private func onMemberSelected(_ member: GMember, _ existingMention: MemberMention?) {
+    private func onMemberSelected(_ member: GMember, _ mentionedName: String?) {
         if let activeRange = mentionsState.ranges[selectedRange.location] {
             isVisible = false
             let msg = composeState.message
-            let displayName = existingMention?.memberName ?? composeState.mentionMemberName(member.wrapped.memberProfile.displayName)
-            let mentions = existingMention != nil ?
-            composeState.mentions :
-            composeState.mentions + [MemberMention(memberName: displayName, member: member.wrapped)]
+            var newName: String
+            var mentions = composeState.mentions
+            if let mentionedName {
+                newName = mentionedName
+            } else {
+                newName = composeState.mentionMemberName(member.wrapped.memberProfile.displayName)
+                mentions[newName] = member
+            }
             let endIndex = activeRange.start + activeRange.name.count
-            var name = displayName.contains(" ") ? "'\(displayName)'" : displayName
+            newName = newName.contains(" ") ? "'\(newName)'" : newName
             if (endIndex == msg.count) {
-                name += " "
+                newName += " "
             }
             
             let rangeStart = msg.index(msg.startIndex, offsetBy: activeRange.start)
             let rangeEnd = msg.index(msg.startIndex, offsetBy: activeRange.start + activeRange.name.count)
             
             composeState = composeState.copy(
-                message: msg.replacingCharacters(in: rangeStart..<rangeEnd, with: name),
+                message: msg.replacingCharacters(in: rangeStart..<rangeEnd, with: newName),
                 mentions: mentions
             )
             selectedRange = NSRange(location: composeState.message.count, length: 0)

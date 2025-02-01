@@ -714,12 +714,13 @@ final class ChatModel: ObservableObject {
                     }
                     // update preview
                     let markedCount = chat.chatStats.unreadCount - unreadBelow
-                    let mentionMarketCount = chat.chatStats.unreadMentions - unreadMentionsBelow
-                    if markedCount > 0 || mentionMarketCount > 0 {
+                    let markedMentionsCount = chat.chatStats.unreadMentions - unreadMentionsBelow
+                    if markedCount > 0 || markedMentionsCount > 0 {
                         let wasUnread = chat.unreadTag
                         chat.chatStats.unreadCount -= markedCount
-                        chat.chatStats.unreadMentions -= mentionMarketCount
+                        chat.chatStats.unreadMentions -= markedMentionsCount
                         ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
+                        // TODO [mentions]
                         self.decreaseUnreadCounter(user: self.currentUser!, by: markedCount)
                         self.updateFloatingButtons(unreadCount: chat.chatStats.unreadCount)
                     }
@@ -1143,7 +1144,6 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     }
 
     var unreadTag: Bool {
-        // TODO [mentions] Android
         switch chatInfo.chatSettings?.enableNtfs {
         case .all: chatStats.unreadChat || chatStats.unreadCount > 0
         case .mentions: chatStats.unreadChat || chatStats.unreadMentions > 0

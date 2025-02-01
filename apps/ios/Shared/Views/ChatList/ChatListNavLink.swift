@@ -302,11 +302,9 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func toggleNtfsButton(chat: Chat) -> some View {
-        let nextMode = chat.chatInfo.nextNotificationMode
-        
-        if let nextMode = nextMode {
+        if let nextMode = chat.chatInfo.nextNtfMode {
             Button {
-                toggleNotifications(chat, enableNtfs: nextMode.mode)
+                toggleNotifications(chat, enableNtfs: nextMode)
             } label: {
                 SwipeLabel(nextMode.text, systemImage: nextMode.iconFilled, inverted: oneHandUI)
             }

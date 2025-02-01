@@ -485,8 +485,8 @@ private func createChatItemsErrorAlert(_ r: ChatResponse) {
     )
 }
 
-func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, um: UpdatedMessage, live: Bool = false) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, updatedMessage: um, live: live), bgDelay: msgDelay)
+func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool = false) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, updatedMessage: updatedMessage, live: live), bgDelay: msgDelay)
     if case let .chatItemUpdated(_, aChatItem) = r { return aChatItem.chatItem }
     throw r
 }
@@ -1491,11 +1491,11 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     }
 }
 
-func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], _ mentionRead: Int) async {
+func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
     do {
         try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
         DispatchQueue.main.async {
-            ChatModel.shared.markChatItemsRead(cInfo, itemIds, mentionRead)
+            ChatModel.shared.markChatItemsRead(cInfo, itemIds, mentionsRead)
         }
     } catch {
         logger.error("apiChatItemsRead error: \(responseError(error))")
