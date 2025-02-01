@@ -1,11 +1,3 @@
-//
-//  ChatView.swift
-//  SimpleX
-//
-//  Created by Evgeny Poberezkin on 27/01/2022.
-//  Copyright © 2022 SimpleX Chat. All rights reserved.
-//
-
 import SwiftUI
 import SimpleXChat
 import SwiftyGif
@@ -103,6 +95,15 @@ struct ChatView: View {
                         forwardItems: forwardSelectedMessages
                     )
                 }
+                Button(action: {
+                    chatModel.createUser()
+                }) {
+                    Text("Create User")
+                }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
             }
         }
         .safeAreaInset(edge: .top) {
@@ -1466,7 +1467,7 @@ struct ChatView: View {
         private func shareButton(_ ci: ChatItem) -> Button<some View> {
             Button {
                 var shareItems: [Any] = [ci.content.text]
-                if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
+                if case .image(text: _, image: _) = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                     shareItems.append(image)
                 }
                 showShareSheet(items: shareItems)

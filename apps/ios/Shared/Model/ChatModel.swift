@@ -1,11 +1,3 @@
-//
-//  ChatModel.swift
-//  SimpleX
-//
-//  Created by Evgeny Poberezkin on 22/01/2022.
-//  Copyright © 2022 SimpleX Chat. All rights reserved.
-//
-
 import Foundation
 import Combine
 import SwiftUI
@@ -914,6 +906,17 @@ final class ChatModel: ObservableObject {
                 removeWallpaperFilesFromChat($0)
             }
         }
+    }
+
+    func createUser() {
+        // Implementation for creating a user
+    }
+
+    func startChat() {
+        if currentUser == nil {
+            createUser()
+        }
+        // Existing implementation for starting chat
     }
 }
 
