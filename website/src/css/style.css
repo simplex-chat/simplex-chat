@@ -967,3 +967,57 @@ p a{
 .d-none-if-js-disabled{
   display: none !important;
 }
+
+/* Styles for the web app version */
+.web-app-header {
+  background-color: #fbd561;
+  color: #062d56;
+  text-align: center;
+  padding: 1rem;
+}
+
+.web-app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.web-app-button {
+  background-color: #02c0ff;
+  color: #fff;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  margin-top: 1rem;
+}
+
+.web-app-button:hover {
+  filter: saturate(125%);
+}
+
+.web-app-input {
+  background-color: #f1f1f1;
+  color: #062d56;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  margin-top: 1rem;
+  width: 280px;
+}
+
+@media (max-width: 576px) {
+  .web-app-header {
+    font-size: 1.5rem;
+  }
+
+  .web-app-button,
+  .web-app-input {
+    width: 100%;
+  }
+}

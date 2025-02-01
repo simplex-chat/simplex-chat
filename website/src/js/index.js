@@ -379,4 +379,19 @@
   document.querySelector('.table-holder').style.width = `${screenWidth}px`;
   Array.from(document.querySelectorAll('.problem-section')).forEach(ele => ele.style.width = `${screenWidth}px`);
 
+  // JavaScript functionality for the web app version
+  const webAppContainer = document.querySelector('.web-app-container');
+  const webAppButton = document.querySelector('.web-app-button');
+  const webAppInput = document.querySelector('.web-app-input');
+
+  webAppButton.addEventListener('click', () => {
+    const userInput = webAppInput.value;
+    if (userInput) {
+      const userMessage = document.createElement('p');
+      userMessage.textContent = userInput;
+      webAppContainer.appendChild(userMessage);
+      webAppInput.value = '';
+    }
+  });
+
 })();
