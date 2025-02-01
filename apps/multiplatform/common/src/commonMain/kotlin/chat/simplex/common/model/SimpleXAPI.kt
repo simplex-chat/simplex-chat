@@ -2526,7 +2526,7 @@ object ChatController {
                 addChatItem(rhId, cInfo, cItem)
               }
             }
-          } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
+          } else if (cItem.isRcvNew && cInfo.itemNtfEnabled(cItem)) {
             withChats {
               increaseUnreadCounter(rhId, r.user)
             }
