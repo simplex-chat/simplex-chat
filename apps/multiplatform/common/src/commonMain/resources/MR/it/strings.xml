@@ -2332,4 +2332,7 @@
     <string name="chat_ttl_options_footer">Elimina i messaggi di chat dal tuo dispositivo.</string>
     <string name="disable_automatic_deletion_message">I messaggi in questa chat non verranno mai eliminati.</string>
     <string name="chat_item_ttl_default">predefinito (%s)</string>
+    <string name="network_smp_web_port_footer">Usa la porta TCP %1$s quando nessuna porta è specificata.</string>
+    <string name="network_smp_web_port_section_title">Porta TCP per i messaggi</string>
+    <string name="network_smp_web_port_toggle">Usa porta web</string>
 </resources>
