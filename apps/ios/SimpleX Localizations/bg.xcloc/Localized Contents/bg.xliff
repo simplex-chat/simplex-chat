@@ -1991,33 +1991,34 @@ This is your own one-time link!</source>
         <target>Поправи име на %@?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create" xml:space="preserve">
+      <trans-unit id="Create" xml:space="preserve" approved="no">
         <source>Create</source>
-        <target>Създай</target>
+        <target state="translated">Създаване</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create 1-time link" xml:space="preserve">
+      <trans-unit id="Create 1-time link" xml:space="preserve" approved="no">
         <source>Create 1-time link</source>
+        <target state="translated">Създаване на еднократна препратка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create SimpleX address" xml:space="preserve">
+      <trans-unit id="Create SimpleX address" xml:space="preserve" approved="no">
         <source>Create SimpleX address</source>
-        <target>Създай SimpleX адрес</target>
+        <target state="translated">Създаване на адрес в SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create a group using a random profile." xml:space="preserve">
+      <trans-unit id="Create a group using a random profile." xml:space="preserve" approved="no">
         <source>Create a group using a random profile.</source>
-        <target>Създай група с автоматично генериран профилл.</target>
+        <target state="translated">Създаване група с автоматично създаден профил.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create file" xml:space="preserve">
+      <trans-unit id="Create file" xml:space="preserve" approved="no">
         <source>Create file</source>
-        <target>Създай файл</target>
+        <target state="translated">Създаване на файл</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create group" xml:space="preserve">
+      <trans-unit id="Create group" xml:space="preserve" approved="no">
         <source>Create group</source>
-        <target>Създай група</target>
+        <target state="translated">Създаване на група</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve">
@@ -8308,9 +8309,9 @@ Repeat connection request?</source>
         <target>Вашите SMP сървъри</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX address" xml:space="preserve">
+      <trans-unit id="Your SimpleX address" xml:space="preserve" approved="no">
         <source>Your SimpleX address</source>
-        <target>Вашият SimpleX адрес</target>
+        <target state="translated">Вашият адрес в SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
