@@ -996,31 +996,39 @@ struct ChatView: View {
                     markedRead = true
                 }
                 if let range {
-                    let itemIds = unreadItemIds(range)
+                    let items = Array(zip(Array(range), im.reversedChatItems[range]))
+
+                    let (itemIds, mentionItemsIds) = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds, mentionItemsIds.count)
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id])
+                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id], chatItem.meta.userMention ? 1 : 0)
                     }
                 }
             }
             .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
-        private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], [ChatItem.ID]) {
             let im = ItemsModel.shared
-            return range.compactMap { i in
-                if i >= 0 && i < im.reversedChatItems.count {
-                    let ci = im.reversedChatItems[i]
-                    return if ci.isRcvNew { ci.id } else { nil }
-                } else {
-                    return nil
+            var unreadItems: [ChatItem.ID] = []
+            var unreadMentions: [ChatItem.ID] = []
+            
+            for i in range {
+                let ci = im.reversedChatItems[i]
+                if ci.isRcvNew {
+                    unreadItems.append(ci.id)
+                    if ci.meta.userMention {
+                        unreadMentions.append(ci.id)
+                    }
                 }
             }
+            
+            return (unreadItems, unreadMentions)
         }
         
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {

@@ -208,15 +208,27 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatInfoIcon(_ chat: Chat) -> some View {
         let s = chat.chatStats
         if s.unreadCount > 0 || s.unreadChat {
-            unreadCountText(s.unreadCount)
-                .font(userFont <= .xxxLarge ? .caption  : .caption2)
-                .foregroundColor(.white)
-                .padding(.horizontal, dynamicSize(userFont).unreadPadding)
-                .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                // TODO [mentions] this one probably ok
-                .background(chat.chatInfo.ntfsEnabled(true) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
-                .cornerRadius(dynamicSize(userFont).unreadCorner)
-        // below needs to be refactored to case
+            let unreadMentions = s.unreadMentions
+            let mentionColor = mentionColor(chat)
+            HStack(alignment: .center, spacing: 2) {
+                if unreadMentions > 0 && s.unreadCount > 1 {
+                    Text("\(MENTION_START)")
+                        .font(userFont <= .xxxLarge ? .body : .callout)
+                        .foregroundColor(mentionColor)
+                        .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
+                        .cornerRadius(dynamicSize(userFont).unreadCorner)
+
+                }
+                
+                let singleUnreadIsMention = unreadMentions > 0 && s.unreadCount == 1
+                (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
+                    .font(userFont <= .xxxLarge ? .caption : .caption2)
+                    .foregroundColor(.white)
+                    .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
+                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(true) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                    .cornerRadius(dynamicSize(userFont).unreadCorner)
+            }
+            .padding(.horizontal, dynamicSize(userFont).unreadPadding)
         } else if let ntfMode = chat.chatInfo.notificationMode, ntfMode.mode != .all {
             // TODO [mentions] icon for mentions is too big.
             Image(systemName: ntfMode.iconFilled)
@@ -233,6 +245,21 @@ struct ChatPreviewView: View {
                 .foregroundColor(theme.colors.secondary.opacity(0.65))
         } else {
             Color.clear.frame(width: 0)
+        }
+    }
+    
+    private func mentionColor(_ chat: Chat) -> Color {
+        let mentionColor: Color
+        switch chat.chatInfo {
+        case .group(let groupInfo):
+            let enableNtfs = groupInfo.chatSettings.enableNtfs
+            if enableNtfs == .all || enableNtfs == .mentions {
+                return theme.colors.primary
+            } else {
+                return theme.colors.secondary
+            }
+        default:
+           return chat.chatInfo.ntfsEnabled(true) ? theme.colors.primary : theme.colors.secondary
         }
     }
 
