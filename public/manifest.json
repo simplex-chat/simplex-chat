@@ -1,0 +1,21 @@
+{
+  "name": "Simplex Chat",
+  "short_name": "Simplex",
+  "description": "SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0053D0",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
