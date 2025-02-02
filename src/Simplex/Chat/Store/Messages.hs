@@ -1335,8 +1335,8 @@ getGroupChatAround_ db user g contentFilter aroundId count search = do
   getGroupChatAround' db user g contentFilter aroundId count search stats
 
 getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatAround' db user g@GroupInfo {groupId} contentFilter aroundId count search stats = do
-  aroundCI <- getGroupChatItem db user groupId aroundId
+getGroupChatAround' db user g contentFilter aroundId count search stats = do
+  aroundCI <- getGroupCIWithReactions db user g aroundId
   let beforeRange = GRBefore (chatItemTs aroundCI) (cChatItemId aroundCI)
       afterRange = GRAfter (chatItemTs aroundCI) (cChatItemId aroundCI)
   beforeIds <- liftIO $ getGroupChatItemIDs db user g contentFilter beforeRange count search
