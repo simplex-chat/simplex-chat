@@ -41,7 +41,7 @@ struct LiveMessage {
     var sentMsg: String?
 }
 
-typealias MentionedMembers = [String: (member: GMember, count: Int)]
+typealias MentionedMembers = [String: GMember]
 
 struct ComposeState {
     var message: String
@@ -125,7 +125,7 @@ struct ComposeState {
     }
     
     var memberMentions: [String: Int64] {
-        self.mentions.mapValues { $0.member.wrapped.groupMemberId }
+        self.mentions.mapValues { $0.wrapped.groupMemberId }
     }
     
     var editing: Bool {

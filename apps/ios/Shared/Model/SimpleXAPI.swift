@@ -1576,6 +1576,7 @@ func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
     throw r
 }
 
+// use ChatModel's loadGroupMembers from views
 func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     let r = await chatSendCmd(.apiListMembers(groupId: groupId))
     if case let .groupMembers(_, group) = r { return group.members }

@@ -24,8 +24,8 @@ struct GroupMentionsView: View {
     @State private var isVisible = false
     @State private var currentMessage: String = ""
     @State private var mentionName: String = ""
-    @State private var mentionRange: Range<String.Index>?
-    @State private var mentionMember: (name: String, member: GMember)?
+    @State private var mentionRange: NSRange?
+    @State private var mentionMember: GMember?
 
     var body: some View {
         ZStack {
@@ -43,16 +43,17 @@ struct GroupMentionsView: View {
                     VStack {
                         Divider()
                         let list = List {
-                            let mentionedMemberId = mentionMember?.member.wrapped.groupMemberId ?? -1
+                            let mentionedMemberId = mentionMember?.wrapped.groupMemberId ?? -1
                             ForEach(filteredMembers, id: \.wrapped.groupMemberId) { m in
-                                let notMentioned = mentionedMemberId != m.wrapped.groupMemberId
-                                let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && notMentioned
+                                let mentioned = mentionedMemberId == m.wrapped.groupMemberId
+                                let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
                                 MemberRowView(
                                     groupInfo: groupInfo,
                                     groupMember: m,
                                     showInfo: false,
                                     swipesEnabled: false,
                                     showlocalAliasAndFullName: true,
+                                    selectedMember: mentioned,
                                     alert: Binding.constant(nil)
                                 )
                                 .contentShape(Rectangle())
@@ -103,24 +104,24 @@ struct GroupMentionsView: View {
                 return status != .memLeft && status != .memRemoved && status != .memInvited
             }
             .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
-        return mentionName.isEmpty
+        let s = mentionName.lowercased()
+        return s.isEmpty
         ? members
-        : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(mentionName) }
+        : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
     }
     
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {
+        removeUnusedMentions(parsedMsg)
         if let (ft, r) = selectedMarkdown(parsedMsg, range) {
             switch ft.format {
-            case let .mention(name): //
+            case let .mention(name):
                 isVisible = true
                 mentionName = name
-                mentionRange = Range(r, in: msg)
-                mentionMember = if let mm = composeState.mentions[name] {
-                    (name, mm.member)
-                } else {
-                    nil
+                mentionRange = r
+                mentionMember = composeState.mentions[name]
+                if !m.membersLoaded {
+                    Task { await m.loadGroupMembers(groupInfo) }
                 }
-                //   - trigger loading member list if empty
                 return
             case .none: () //
                 let pos = range.location
@@ -138,15 +139,23 @@ struct GroupMentionsView: View {
             default: ()
             }
         }
-        isVisible = false
-        mentionName = ""
-        mentionRange = nil
-        mentionMember = nil
+        closeMemberList()
     }
     
-    private func getCharacter(_ s: String, _ pos: Int) -> (char: String.SubSequence, range: Range<String.Index>)? {
-        if pos >= 0 && pos < s.count, let range = Range(NSRange(location: pos, length: 1), in: s) {
-            (s[range], range)
+    private func removeUnusedMentions(_ parsedMsg: [FormattedText]) {
+        let usedMentions: Set<String> = Set(parsedMsg.compactMap { ft in
+            if case let .mention(name) = ft.format { name } else { nil }
+        })
+        if usedMentions.count < composeState.mentions.count  {
+            composeState = composeState.copy(mentions: composeState.mentions.filter({ usedMentions.contains($0.key) }))
+        }
+    }
+    
+    private func getCharacter(_ s: String, _ pos: Int) -> (char: String.SubSequence, range: NSRange)? {
+        if pos < 0 || pos >= s.count { return nil }
+        let r = NSRange(location: pos, length: 1)
+        return if let range = Range(r, in: s) {
+            (s[range], r)
         } else {
             nil
         }
@@ -168,36 +177,48 @@ struct GroupMentionsView: View {
     
     private func memberSelected(_ member: GMember) {
         if let range = mentionRange {
-            var mentions = composeState.mentions
-            if let (name, mem) = mentionMember {
-                if mem.wrapped.groupMemberId != member.wrapped.groupMemberId {
-                    if let mm = mentions[name], mm.count > 1 {
-                        mentions[name] = (mm.member, mm.count - 1)
-                    } else {
-                        mentions.removeValue(forKey: name)
-                    }
-                    addMemberMention(mentions, member, range)
+            if let mentionMember {
+                if mentionMember.wrapped.groupMemberId != member.wrapped.groupMemberId {
+                    addMemberMention(member, range)
                 }
             } else {
-                addMemberMention(mentions, member, range)
+                addMemberMention(member, range)
             }
         }
     }
     
-    private func addMemberMention(_ mentions: MentionedMembers, _ member: GMember, _ range: Range<String.Index>) {
-        let (newName, nameCount) = if let mm = mentions.first(where: { $0.value.member.wrapped.groupMemberId == member.wrapped.groupMemberId }) {
-            (mm.key, mm.value.count + 1)
+    private func addMemberMention(_ member: GMember, _ r: NSRange) {
+        guard let range = Range(r, in: composeState.message) else { return }
+        var mentions = composeState.mentions
+        var newName: String
+        if let mm = mentions.first(where: { $0.value.wrapped.groupMemberId == member.wrapped.groupMemberId }) {
+            newName = mm.key
         } else {
-            (composeState.mentionMemberName(member.wrapped.memberProfile.displayName), 1)
+            newName = composeState.mentionMemberName(member.wrapped.memberProfile.displayName)
         }
-        var newMentions = mentions
-        newMentions[newName] = (member, nameCount)
-        let msgMention = "@" + (newName.contains(" ") ? "'\(newName)'" : newName)
+        mentions[newName] = member
+        var msgMention = "@" + (newName.contains(" ") ? "'\(newName)'" : newName)
+        var newPos = r.location + msgMention.count
+        let newMsgLength = composeState.message.count + msgMention.count - r.length
+        print(newPos)
+        print(newMsgLength)
+        if newPos == newMsgLength {
+            msgMention += " "
+            newPos += 1
+        }
         composeState = composeState.copy(
             message: composeState.message.replacingCharacters(in: range, with: msgMention),
-            mentions: newMentions
+            mentions: mentions
         )
-        // TODO update caret position correctly
-        selectedRange = NSRange(location: composeState.message.count, length: 0)
+        selectedRange = NSRange(location: newPos, length: 0)
+        closeMemberList()
+        keyboardVisible = true
+    }
+    
+    private func closeMemberList() {
+        isVisible = false
+        mentionName = ""
+        mentionRange = nil
+        mentionMember = nil
     }
 }

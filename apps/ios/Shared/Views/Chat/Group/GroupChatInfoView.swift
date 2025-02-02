@@ -356,11 +356,7 @@ struct GroupChatInfoView: View {
             .onAppear {
                 searchFocussed = false
                 Task {
-                    let groupMembers = await apiListMembers(groupInfo.groupId)
-                    await MainActor.run {
-                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                        chatModel.populateGroupMembersIndexes()
-                    }
+                    await chatModel.loadGroupMembers(groupInfo)
                 }
             }
     }
@@ -589,6 +585,7 @@ struct MemberRowView: View {
     var showInfo: Bool = true
     var swipesEnabled: Bool = true
     var showlocalAliasAndFullName: Bool = false
+    var selectedMember: Bool = false
     @Binding var alert: GroupChatInfoViewAlert?
 
     var body: some View {

@@ -63,10 +63,8 @@ struct SendMessageView: View {
                             height: $teHeight,
                             focused: $keyboardVisible,
                             placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
-                            onImagesAdded: onMediaAdded,
-                            onTextSelectedRangeChanged: { range in
-                                selectedRange = range
-                            }
+                            selectedRange: $selectedRange,
+                            onImagesAdded: onMediaAdded
                         )
                         .allowsTightening(false)
                         .fixedSize(horizontal: false, vertical: true)

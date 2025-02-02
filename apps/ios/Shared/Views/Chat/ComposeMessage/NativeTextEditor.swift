@@ -17,19 +17,19 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var height: CGFloat
     @Binding var focused: Bool
     @Binding var placeholder: String?
+    @Binding var selectedRange: NSRange
     let onImagesAdded: ([UploadContent]) -> Void
-    let onTextSelectedRangeChanged: (NSRange) -> Void
     
     private let minHeight: CGFloat = 37
 
     private let defaultHeight: CGFloat = {
-        let field = CustomUITextField(height: Binding.constant(0))
+        let field = CustomUITextField(parent: nil, height: Binding.constant(0))
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
         return min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, 37), 360).rounded(.down)
     }()
     
     func makeUIView(context: Context) -> UITextView {
-        let field = CustomUITextField(height: _height)
+        let field = CustomUITextField(parent: self, height: _height)
         field.backgroundColor = .clear
         field.text = text
         field.textAlignment = alignment(text)
@@ -53,7 +53,6 @@ struct NativeTextEditor: UIViewRepresentable {
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
         field.setPlaceholderView()
-        field.onTextSelectedRangeChanged = onTextSelectedRangeChanged
         updateFont(field)
         updateHeight(field)
         return field
@@ -70,6 +69,10 @@ struct NativeTextEditor: UIViewRepresentable {
         let castedField = field as! CustomUITextField
         if castedField.placeholder != placeholder {
             castedField.placeholder = placeholder
+        }
+        
+        if field.selectedRange != selectedRange {
+            field.selectedRange = selectedRange
         }
     }
 
@@ -101,15 +104,16 @@ private func alignment(_ text: String) -> NSTextAlignment {
 }
 
 private class CustomUITextField: UITextView, UITextViewDelegate {
+    var parent: NativeTextEditor?
     var height: Binding<CGFloat>
     var newHeight: CGFloat = 0
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
-    var onTextSelectedRangeChanged: (NSRange) -> Void = { _ in }
     var onFocusChanged: (Bool) -> Void = { focused in }
     
     private let placeholderLabel: UILabel = UILabel()
 
-    init(height: Binding<CGFloat>) {
+    init(parent: NativeTextEditor?, height: Binding<CGFloat>) {
+        self.parent = parent
         self.height = height
         super.init(frame: .zero, textContainer: nil)
     }
@@ -235,16 +239,22 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     
     func textViewDidBeginEditing(_ textView: UITextView) {
         onFocusChanged(true)
-        onTextSelectedRangeChanged(textView.selectedRange)
+        updateSelectedRange(textView)
     }
     
     func textViewDidEndEditing(_ textView: UITextView) {
         onFocusChanged(false)
-        onTextSelectedRangeChanged(textView.selectedRange)
+        updateSelectedRange(textView)
     }
     
     func textViewDidChangeSelection(_ textView: UITextView) {
-        onTextSelectedRangeChanged(textView.selectedRange)
+        updateSelectedRange(textView)
+    }
+    
+    private func updateSelectedRange(_ textView: UITextView) {
+        if parent?.selectedRange != textView.selectedRange {
+            parent?.selectedRange = textView.selectedRange
+        }
     }
 }
 
@@ -256,8 +266,8 @@ struct NativeTextEditor_Previews: PreviewProvider{
             height: Binding.constant(100),
             focused: Binding.constant(false),
             placeholder: Binding.constant("Placeholder"),
-            onImagesAdded: { _ in },
-            onTextSelectedRangeChanged: { _ in }
+            selectedRange: Binding.constant(NSRange(location: 0, length: 0)),
+            onImagesAdded: { _ in }
         )
         .fixedSize(horizontal: false, vertical: true)
     }

@@ -263,7 +263,7 @@ struct ChatPreviewView: View {
 
     private func messageDraft(_ draft: ComposeState) -> Text {
         let msg = draft.message
-        let mentions = draft.mentions.mapValues { CIMention(groupMember: $0.member.wrapped) }
+        let mentions = draft.mentions.mapValues { CIMention(groupMember: $0.wrapped) }
         return image("rectangle.and.pencil.and.ellipsis", color: theme.colors.primary)
                 + attachment()
                 + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, mentions: mentions, userMemberId: nil, showSecrets: false, secondaryColor: theme.colors.secondary)
