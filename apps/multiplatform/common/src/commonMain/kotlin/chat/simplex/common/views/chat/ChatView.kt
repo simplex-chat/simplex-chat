@@ -248,6 +248,7 @@ fun ChatView(
               chatModel.chatId.value = null
               chatModel.groupMembers.value = emptyList()
               chatModel.groupMembersIndexes.value = emptyMap()
+              chatModel.membersLoaded.value = false
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {

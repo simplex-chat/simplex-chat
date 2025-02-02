@@ -73,6 +73,7 @@ object ChatModel {
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
   val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
+  val membersLoaded = mutableStateOf(false)
 
   // Chat Tags
   val userTags = mutableStateOf(emptyList<ChatTag>())
@@ -3882,6 +3883,10 @@ class FormattedText(val text: String, val format: Format? = null) {
 
   fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
     "${linkType.description} (${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
+
+  companion object {
+    fun plain(text: String): List<FormattedText> = if (text.isEmpty()) emptyList() else listOf(FormattedText(text))
+  }
 }
 
 @Serializable

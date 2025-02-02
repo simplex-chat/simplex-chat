@@ -65,18 +65,22 @@ data class LiveMessage(
   val sent: Boolean
 )
 
+typealias MentionedMembers = Map<String, GroupMember>
+
 @Serializable
 data class ComposeState(
   val message: String = "",
+  val parsedMessage: List<FormattedText> = emptyList(),
   val liveMessage: LiveMessage? = null,
   val preview: ComposePreview = ComposePreview.NoPreview,
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: Map<String, GroupMember> = emptyMap()
+  val mentions: MentionedMembers = emptyMap()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: Map<String, GroupMember> = emptyMap()): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: MentionedMembers = emptyMap()): this(
     editingItem.content.text,
+    editingItem.formattedText ?: FormattedText.plain(editingItem.content.text),
     liveMessage,
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),
@@ -316,9 +320,8 @@ fun ComposeView(
   fun isSimplexLink(link: String): Boolean =
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
 
-  fun parseMessage(msg: String): Pair<String?, Boolean> {
-    if (msg.isBlank()) return null to false
-    val parsedMsg = parseToMarkdown(msg) ?: return null to false
+  fun getSimplexLink(parsedMsg: List<FormattedText>?): Pair<String?, Boolean> {
+    if (parsedMsg == null) return null to false
     val link = parsedMsg.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
     val simplexLink = parsedMsg.any { ft -> ft.format is Format.SimplexLink }
     return link?.text to simplexLink
@@ -326,7 +329,7 @@ fun ComposeView(
 
   val linkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   // default value parsed because of draft
-  val hasSimplexLink = rememberSaveable { mutableStateOf(parseMessage(composeState.value.message).second) }
+  val hasSimplexLink = rememberSaveable { mutableStateOf(getSimplexLink(parseToMarkdown(composeState.value.message)).second) }
   val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
@@ -353,11 +356,11 @@ fun ComposeView(
     }
   }
 
-  fun showLinkPreview(s: String) {
+  fun showLinkPreview(parsedMessage: List<FormattedText>?) {
     prevLinkUrl.value = linkUrl.value
-    val parsed = parseMessage(s)
-    linkUrl.value = parsed.first
-    hasSimplexLink.value = parsed.second
+    val linkParsed = getSimplexLink(parsedMessage)
+    linkUrl.value = linkParsed.first
+    hasSimplexLink.value = linkParsed.second
     val url = linkUrl.value
     if (url != null) {
       if (url != composeState.value.linkPreview?.uri && url != pendingLinkUrl.value) {
@@ -496,7 +499,8 @@ fun ComposeView(
     fun checkLinkPreview(): MsgContent {
       return when (val composePreview = cs.preview) {
         is ComposePreview.CLinkPreview -> {
-          val url = parseMessage(msgText).first
+          val parsedMsg = parseToMarkdown(msgText)
+          val url = getSimplexLink(parsedMsg).first
           val lp = composePreview.linkPreview
           if (lp != null && url == lp.uri) {
             MsgContent.MCLink(msgText, preview = lp)
@@ -744,20 +748,21 @@ fun ComposeView(
   }
 
   fun onMessageChange(s: String) {
-    composeState.value = composeState.value.copy(message = s)
+    val parsedMessage = parseToMarkdown(s)
+    composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage ?: FormattedText.plain(s))
     if (isShortEmoji(s)) {
       textStyle.value = if (s.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
     } else {
       textStyle.value = smallFont
       if (composeState.value.linkPreviewAllowed) {
         if (s.isNotEmpty()) {
-          showLinkPreview(s)
+          showLinkPreview(parsedMessage)
         } else {
           resetLinkPreview()
           hasSimplexLink.value = false
         }
       } else if (s.isNotEmpty() && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)) {
-        hasSimplexLink.value = parseMessage(s).second
+        hasSimplexLink.value = getSimplexLink(parsedMessage).second
       } else {
         hasSimplexLink.value = false
       }

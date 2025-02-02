@@ -244,6 +244,7 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
   }
   chatModel.groupMembersIndexes.value = emptyMap()
   chatModel.groupMembers.value = newMembers
+  chatModel.membersLoaded.value = true
   chatModel.populateGroupMembersIndexes()
 }
 

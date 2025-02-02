@@ -22,20 +22,10 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
-const val MENTION_START = '@'
-const val QUOTE = '\''
 private val PICKER_ROW_SIZE = MEMBER_ROW_AVATAR_SIZE + (MEMBER_ROW_VERTICAL_PADDING * 2f)
 private val MAX_PICKER_HEIGHT = (PICKER_ROW_SIZE * 4) + (MEMBER_ROW_AVATAR_SIZE + MEMBER_ROW_VERTICAL_PADDING - 4.dp)
-
-private data class MentionRange(val start: Int, var name: String)
-private data class MentionsState(
-  val ranges: Map<Int, MentionRange>,
-  val activeRange: MentionRange?,
-  val mentionMemberOccurrences: Map<String, Int>
-)
 
 @Composable
 fun GroupMentions(
@@ -46,14 +36,33 @@ fun GroupMentions(
   chatInfo: ChatInfo.Group
 ) {
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
-  val membersToMention = remember { mutableStateOf<List<GroupMember>>(emptyList()) }
-  val showMembersPicker = remember { mutableStateOf(false) }
+  val isVisible = remember { mutableStateOf(false) }
   val offsetY = remember { Animatable(maxHeightInPx) }
-  val mentionsState by remember { derivedStateOf { parseMentionRanges(composeState.value.message, textSelection.value.start) } }
+
+  val currentMessage = remember { mutableStateOf(composeState.value.message) }
+  val mentionName = remember { mutableStateOf("") }
+  val mentionRange = remember { mutableStateOf<TextRange?>(null) }
+  val mentionMember = remember { mutableStateOf<GroupMember?>(null) }
+  val filteredMembers = remember {
+    derivedStateOf {
+      val members = chatModel.groupMembers.value
+        .filter {
+          val status = it.memberStatus
+          status != GroupMemberStatus.MemLeft && status != GroupMemberStatus.MemRemoved && status != GroupMemberStatus.MemInvited
+        }
+        .sortedByDescending { it.memberRole }
+
+      if (mentionName.value.isEmpty()) {
+        members
+      } else {
+        members.filter { it.memberProfile.anyNameContains(mentionName.value) }
+      }
+    }
+  }
   val scope = rememberCoroutineScope()
 
   suspend fun closeMembersPicker() {
-    showMembersPicker.value = false
+    isVisible.value = false
     if (offsetY.value != 0f) {
       return
     }
@@ -62,58 +71,99 @@ fun GroupMentions(
       targetValue = maxHeightInPx,
       animationSpec = mentionPickerAnimSpec()
     )
+    mentionName.value = ""
+    mentionRange.value = null
+    mentionMember.value = null
   }
 
-  LaunchedEffect(mentionsState.activeRange) {
-    val activeMentionRange = mentionsState.activeRange
-    val search = activeMentionRange?.name?.trim(QUOTE)
+  fun messageChanged(msg: String, parsedMsg: List<FormattedText>, range: TextRange) {
+    removeUnusedMentions(composeState, parsedMsg)
+    val selected = selectedMarkdown(parsedMsg, range)
 
-    if (search == null) {
-      // If we don't call it sync in here the panel will close due to no results before showMembersPicker animation.
-      closeMembersPicker()
-      if (membersToMention.value.size == 1 && !composeState.value.maxMemberMentionsReached) {
-        val member = membersToMention.value.first()
+    if (selected != null) {
+      val (ft, r) = selected
 
-        if (composeState.value.mentions.none { it.value.memberId == member.memberId }) {
-          val displayName = composeState.value.mentionMemberName(member.memberProfile.displayName)
-          val mentions = composeState.value.mentions.toMutableMap()
-          mentions[displayName] = member
-          composeState.value = composeState.value.copy(
-            mentions = mentions
-          )
+      when (ft.format) {
+        is Format.Mention -> {
+          isVisible.value = true
+          mentionName.value = ft.format.memberName
+          mentionRange.value = r
+          mentionMember.value = composeState.value.mentions[mentionName.value]
+          if (!chatModel.membersLoaded.value) {
+            scope.launch {
+              setGroupMembers(rhId, chatInfo.groupInfo, chatModel)
+            }
+          }
+          return
         }
+        null -> {
+          val pos = range.start
+          if (range.length == 0 && getCharacter(msg, pos - 1)?.first == "@") {
+            val prevChar = getCharacter(msg, pos - 2)?.first
+            if (prevChar == null || prevChar == " " || prevChar == "\n") {
+              isVisible.value = true
+              mentionName.value = ""
+              mentionRange.value = TextRange(pos - 1, pos)
+              mentionMember.value = null
+              scope.launch {
+                setGroupMembers(rhId, chatInfo.groupInfo, chatModel)
+              }
+              return
+            }
+          }
+        }
+        else -> {}
       }
-      if (membersToMention.value.isNotEmpty()) {
-        membersToMention.value = emptyList()
-      }
-      return@LaunchedEffect
     }
-    // TODO [mentions]: Review after parser
-    val txtAsMention = composeState.value.mentions.entries.firstOrNull {
-      if (it.value.memberProfile.displayName == it.key) {
-        mentionsState.mentionMemberOccurrences[search] == 1 && search == it.key
-      } else {
-        search == it.key
-      }
-    }?.value
-    if (txtAsMention != null) {
-      showMembersPicker.value = true
-      membersToMention.value = listOf(txtAsMention)
-      return@LaunchedEffect
-    }
-    if (search == "") {
-      setGroupMembers(rhId, chatInfo.groupInfo, chatModel)
-    }
-    membersToMention.value = chatModel.groupMembers.value.filter { gm ->
-      gm.memberProfile.anyNameContains(search) && gm.memberStatus != GroupMemberStatus.MemLeft && gm.memberStatus != GroupMemberStatus.MemRemoved
-    }
-    if (membersToMention.value.isNotEmpty()) {
-      showMembersPicker.value = true
+    scope.launch {
+      closeMembersPicker()
     }
   }
 
-  LaunchedEffect(showMembersPicker.value) {
-    if (showMembersPicker.value) {
+  fun addMemberMention(member: GroupMember, range: TextRange) {
+    val mentions = composeState.value.mentions.toMutableMap()
+    val existingMention = mentions.entries.firstOrNull {
+      it.value.groupMemberId == member.groupMemberId
+    }
+    val newName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
+    mentions[newName] = member
+    var msgMention = "@" + if (newName.contains(" ")) "'$newName'" else newName
+    var newPos = range.start + msgMention.length
+    val newMsgLength = composeState.value.message.length + msgMention.length - range.length
+    if (newPos == newMsgLength) {
+      msgMention += " "
+      newPos += 1
+    }
+
+    composeState.value = composeState.value.copy(
+      message = composeState.value.message.replaceRange(
+        range.start,
+        range.end,
+        msgMention
+      ),
+      mentions = mentions
+    )
+    scope.launch {
+      closeMembersPicker()
+    }
+  }
+
+  LaunchedEffect(composeState.value.parsedMessage) {
+    currentMessage.value = composeState.value.message
+    messageChanged(currentMessage.value, composeState.value.parsedMessage, textSelection.value)
+  }
+
+  KeyChangeEffect(textSelection.value) {
+    // This condition is needed to prevent messageChanged called twice,
+    // because composeState.formattedText triggers later when message changes.
+    // The condition is only true if position changed without text change
+    if (currentMessage.value == composeState.value.message) {
+      messageChanged(currentMessage.value, composeState.value.parsedMessage, textSelection.value)
+    }
+  }
+
+  LaunchedEffect(isVisible.value) {
+    if (isVisible.value) {
       offsetY.animateTo(
         targetValue = 0f,
         animationSpec = mentionPickerAnimSpec()
@@ -131,8 +181,9 @@ fun GroupMentions(
   ) {
     val mentionsLookup = composeState.value.mentions.values.associateBy { it.memberId }
     val showMaxReachedBox = composeState.value.maxMemberMentionsReached &&
-        showMembersPicker.value &&
-        membersToMention.value.any { it.memberId !in mentionsLookup }
+        isVisible.value &&
+        filteredMembers.value.any { it.memberId !in mentionsLookup }
+    val mentionedMemberId = mentionMember.value?.groupMemberId ?: -1
 
     LazyColumnWithScrollBarNoAppBar(
       Modifier
@@ -146,40 +197,29 @@ fun GroupMentions(
           MaxMentionsReached()
         }
       }
-      itemsIndexed(membersToMention.value, key = { _, item -> item.groupMemberId }) { i, member ->
+      itemsIndexed(filteredMembers.value, key = { _, item -> item.groupMemberId }) { i, member ->
         if (i != 0 || !showMaxReachedBox) {
           Divider()
         }
-        val existingMention = composeState.value.mentions.entries.find { it.value.memberId == member.memberId }
-        val enabled = !composeState.value.maxMemberMentionsReached || existingMention != null
+        val mentioned = mentionedMemberId == member.groupMemberId
+        val disabled = composeState.value.mentions.size >= MAX_NUMBER_OF_MENTIONS && !mentioned
         Row(
           Modifier
             .fillMaxWidth()
-            .alpha(if (enabled) 1f else 0.6f)
-            .clickable(enabled = enabled) {
-              val selection = mentionsState.activeRange ?: return@clickable
-              showMembersPicker.value = false
-              val msg = composeState.value.message
-              val displayName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
-              val mentions = if (existingMention != null) composeState.value.mentions else {
-                val mentions = composeState.value.mentions.toMutableMap()
-                mentions[displayName] = member
-                mentions
-              }
-              val endIndex = selection.start + selection.name.length
-              var name = if (displayName.contains(" ")) "'$displayName'" else displayName
-              if (endIndex == msg.length) {
-                name += " "
-              }
+            .alpha(if (disabled) 0.6f else 1f)
+            .clickable(enabled = !disabled) {
+              val range = mentionRange.value ?: return@clickable
+              val mentionMemberValue = mentionMember.value
 
-              composeState.value = composeState.value.copy(
-                message = msg.replaceRange(
-                  selection.start,
-                  endIndex,
-                  name
-                ),
-                mentions = mentions
-              )
+              if (mentionMemberValue != null) {
+                if (mentionMemberValue.groupMemberId != member.groupMemberId) {
+                  addMemberMention(member, range)
+                } else {
+                  return@clickable
+                }
+              } else {
+                addMemberMention(member, range)
+              }
 
               if (appPlatform.isDesktop) {
                 // Desktop doesn't auto focus after click, we need to do it manually in here.
@@ -218,56 +258,47 @@ private fun MaxMentionsReached() {
   }
 }
 
-private fun parseMentionRanges(message: String, activeSelection: Int): MentionsState {
-  val mentionByRange = mutableMapOf<Int, MentionRange>()
-  val parsedMentions = mutableMapOf<String, Int>()
-  var currentRange: MentionRange? = null
+private fun getCharacter(s: String, pos: Int): Pair<CharSequence, IntRange>? {
+  return if (pos in s.indices) {
+    val char = s.subSequence(pos, pos + 1)
+    char to (pos until pos + 1)
+  } else {
+    null
+  }
+}
 
-  val addToParseMentions = { n: String ->
-    val name = n.trim(QUOTE)
-    if (name.isNotEmpty()) {
-      val existing = parsedMentions[name]
-      if (existing != null) {
-        parsedMentions[name] = existing + 1
-      } else {
-        parsedMentions[name] = 1
-      }
-    }
+private fun selectedMarkdown(
+  parsedMsg: List<FormattedText>,
+  range: TextRange
+): Pair<FormattedText, TextRange>? {
+  if (parsedMsg.isEmpty()) return null
+
+  var i = 0
+  var pos = 0
+
+  while (i < parsedMsg.size && pos + parsedMsg[i].text.length < range.start) {
+    pos += parsedMsg[i].text.length
+    i++
   }
 
-  for (i in message.indices) {
-    val char = message[i]
-    val isInsideQuote = currentRange?.name?.count { it == QUOTE } == 1
-
-    if (isInsideQuote && char == QUOTE && currentRange != null) {
-      currentRange.name += char
-      mentionByRange[i + 1] = currentRange
-      addToParseMentions(currentRange.name)
-      currentRange = null
-      continue
-    }
-
-    if (!isInsideQuote && (char == ' ' || char == '\n')) {
-      if (currentRange != null) {
-        addToParseMentions(currentRange.name)
-        currentRange = null
-      }
-      continue
-    }
-
-    if (currentRange == null && char == MENTION_START) {
-      currentRange = MentionRange(i + 1,"")
-      mentionByRange[i + 1] = currentRange
-    } else if (currentRange != null) {
-      currentRange.name += char
-      mentionByRange[i + 1] = currentRange
-    }
+  return if (i >= parsedMsg.size || range.end > pos + parsedMsg[i].text.length) {
+    null
+  } else {
+    parsedMsg[i] to TextRange(pos, pos + parsedMsg[i].text.length)
   }
+}
 
-  if (currentRange != null) {
-    mentionByRange[message.length] = currentRange
-    addToParseMentions(currentRange.name)
+private fun removeUnusedMentions(composeState: MutableState<ComposeState>, parsedMsg: List<FormattedText>) {
+  val usedMentions = parsedMsg.mapNotNull { ft ->
+    when (ft.format) {
+      is Format.Mention -> ft.format.memberName
+      else -> null
+    }
+  }.toSet()
+
+  if (usedMentions.size < composeState.value.mentions.size) {
+    composeState.value = composeState.value.copy(
+      mentions = composeState.value.mentions.filterKeys { it in usedMentions }
+    )
   }
-
-  return MentionsState(mentionByRange, mentionByRange[activeSelection], parsedMentions)
 }
