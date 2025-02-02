@@ -2329,7 +2329,7 @@
     <string name="chat_ttl_options_footer">Verwijder chatberichten van uw apparaat.</string>
     <string name="disable_automatic_deletion">Berichten verwijderen uitschakelen</string>
     <string name="chat_item_ttl_default">standaard (%s)</string>
-    <string name="network_smp_web_port_section_title">TCP-poort voor berichten</string>
+    <string name="network_smp_web_port_section_title">TCP-poort voor berichtenuitwisseling</string>
     <string name="network_smp_web_port_toggle">Gebruik een webpoort</string>
     <string name="network_smp_web_port_footer">Gebruik TCP-poort %1$s wanneer er geen poort is opgegeven.</string>
 </resources>
