@@ -248,16 +248,10 @@ struct ChatPreviewView: View {
     }
     
     private func mentionColor(_ chat: Chat) -> Color {
-        switch chat.chatInfo {
-        case .group(let groupInfo):
-            let enableNtfs = groupInfo.chatSettings.enableNtfs
-            if enableNtfs == .all || enableNtfs == .mentions {
-                return theme.colors.primary
-            } else {
-                return theme.colors.secondary
-            }
-        default:
-           return chat.chatInfo.ntfsEnabled(true) ? theme.colors.primary : theme.colors.secondary
+        switch chat.chatInfo.chatSettings?.enableNtfs {
+        case .all: theme.colors.primary
+        case .mentions: theme.colors.primary
+        default: theme.colors.secondary
         }
     }
 
