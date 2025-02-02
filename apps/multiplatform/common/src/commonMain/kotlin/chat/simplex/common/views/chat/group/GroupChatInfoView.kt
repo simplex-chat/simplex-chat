@@ -601,7 +601,7 @@ private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialThem
 }
 
 @Composable
-fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false) {
+fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false, selected: Boolean = false) {
   @Composable
   fun MemberInfo() {
     if (member.blocked) {
@@ -662,6 +662,16 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
     }
     if (infoPage) {
       MemberInfo()
+    }
+    if (selected) {
+      Icon(
+        painterResource(
+          MR.images.ic_check
+        ),
+        null,
+        Modifier.size(20.dp),
+        tint = MaterialTheme.colors.primary,
+      )
     }
   }
 }

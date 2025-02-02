@@ -65,7 +65,7 @@ data class LiveMessage(
   val sent: Boolean
 )
 
-typealias MentionedMembers = Map<String, GroupMember>
+typealias MentionedMembers = Map<String, Long>
 
 @Serializable
 data class ComposeState(
@@ -78,21 +78,18 @@ data class ComposeState(
   val useLinkPreviews: Boolean,
   val mentions: MentionedMembers = emptyMap()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: MentionedMembers = emptyMap()): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     editingItem.content.text,
     editingItem.formattedText ?: FormattedText.plain(editingItem.content.text),
     liveMessage,
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),
     useLinkPreviews = useLinkPreviews,
-    mentions = mentions
+    mentions = editingItem.mentions?.entries?.mapNotNull {
+      val memberRef = it.value.memberRef
+      if (memberRef != null) it.key to memberRef.groupMemberId else null
+    }?.toMap() ?: emptyMap()
   )
-
-  val memberMentions: Map<String, Long>
-    get() = this.mentions.mapValues { it.value.groupMemberId }
-
-  val maxMemberMentionsReached: Boolean
-    get() = this.mentions.size >= MAX_NUMBER_OF_MENTIONS
 
   val editing: Boolean
     get() =
@@ -571,7 +568,7 @@ fun ComposeView(
           type = cInfo.chatType,
           id = cInfo.apiId,
           itemId = ei.meta.itemId,
-          updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
+          updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.mentions),
           live = live
         )
         if (updatedItem != null) withChats {
@@ -602,7 +599,7 @@ fun ComposeView(
       if (cs.message.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.mentions)
           } else {
             message
           }
@@ -714,7 +711,7 @@ fun ComposeView(
         val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl,
-          mentions = cs.memberMentions
+          mentions = cs.mentions
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {

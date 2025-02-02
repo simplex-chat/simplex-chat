@@ -42,7 +42,7 @@ fun GroupMentions(
   val currentMessage = remember { mutableStateOf(composeState.value.message) }
   val mentionName = remember { mutableStateOf("") }
   val mentionRange = remember { mutableStateOf<TextRange?>(null) }
-  val mentionMember = remember { mutableStateOf<GroupMember?>(null) }
+  val mentionMember = remember { mutableStateOf<Long?>(null) }
   val filteredMembers = remember {
     derivedStateOf {
       val members = chatModel.groupMembers.value
@@ -123,10 +123,10 @@ fun GroupMentions(
   fun addMemberMention(member: GroupMember, range: TextRange) {
     val mentions = composeState.value.mentions.toMutableMap()
     val existingMention = mentions.entries.firstOrNull {
-      it.value.groupMemberId == member.groupMemberId
+      it.value == member.groupMemberId
     }
     val newName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
-    mentions[newName] = member
+    mentions[newName] = member.groupMemberId
     var msgMention = "@" + if (newName.contains(" ")) "'$newName'" else newName
     var newPos = range.start + msgMention.length
     val newMsgLength = composeState.value.message.length + msgMention.length - range.length
@@ -185,11 +185,8 @@ fun GroupMentions(
       },
     contentAlignment = Alignment.BottomStart
   ) {
-    val mentionsLookup = composeState.value.mentions.values.associateBy { it.memberId }
-    val showMaxReachedBox = composeState.value.maxMemberMentionsReached &&
-        isVisible.value &&
-        filteredMembers.value.any { it.memberId !in mentionsLookup }
-    val mentionedMemberId = mentionMember.value?.groupMemberId ?: -1
+    val showMaxReachedBox = composeState.value.mentions.size >= MAX_NUMBER_OF_MENTIONS && isVisible.value && composeState.value.mentions[mentionName.value] == null
+    val mentionedMemberId = mentionMember.value ?: -1
 
     LazyColumnWithScrollBarNoAppBar(
       Modifier
@@ -218,7 +215,7 @@ fun GroupMentions(
               val mentionMemberValue = mentionMember.value
 
               if (mentionMemberValue != null) {
-                if (mentionMemberValue.groupMemberId != member.groupMemberId) {
+                if (mentionMemberValue != member.groupMemberId) {
                   addMemberMention(member, range)
                 } else {
                   return@clickable
@@ -233,7 +230,8 @@ fun GroupMentions(
           MemberRow(
             member,
             infoPage = false,
-            showlocalAliasAndFullName = true
+            showlocalAliasAndFullName = true,
+            selected = mentioned
           )
         }
       }
