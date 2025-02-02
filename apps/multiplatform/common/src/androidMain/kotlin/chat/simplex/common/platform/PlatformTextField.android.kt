@@ -15,10 +15,12 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.LayoutDirection
@@ -58,6 +60,8 @@ actual fun PlatformTextField(
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  textSelection: MutableState<TextRange>,
+  focusRequester: FocusRequester?,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value
@@ -116,6 +120,13 @@ actual fun PlatformTextField(
           true
         }
         return InputConnectionCompat.createWrapper(connection, editorInfo, onCommit)
+      }
+
+      override fun onSelectionChanged(selStart: Int, selEnd: Int) {
+        val start = minOf(selStart, selEnd)
+        val end = maxOf(selStart, selEnd)
+        textSelection.value = TextRange(start, end)
+        super.onSelectionChanged(selStart, selEnd)
       }
     }
     editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)

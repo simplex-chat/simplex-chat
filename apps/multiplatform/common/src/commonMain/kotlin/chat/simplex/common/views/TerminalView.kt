@@ -10,8 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -111,7 +113,9 @@ fun TerminalLayout(
             editPrevMessage = {},
             onMessageChange = ::onMessageChange,
             onFilesPasted = {},
-            textStyle = textStyle
+            textStyle = textStyle,
+            textSelection = remember { mutableStateOf(TextRange.Zero) },
+            focusRequester = remember { FocusRequester() }
           )
         }
       }

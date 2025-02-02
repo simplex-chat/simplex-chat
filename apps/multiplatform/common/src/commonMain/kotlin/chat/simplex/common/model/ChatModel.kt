@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import chat.simplex.common.model.MsgFilter.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -72,6 +73,7 @@ object ChatModel {
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val groupMembers = mutableStateOf<List<GroupMember>>(emptyList())
   val groupMembersIndexes = mutableStateOf<Map<Long, Int>>(emptyMap())
+  val membersLoaded = mutableStateOf(false)
 
   // Chat Tags
   val userTags = mutableStateOf(emptyList<ChatTag>())
@@ -473,7 +475,7 @@ object ChatModel {
           chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
             increaseUnreadCounter(rhId, currentUser.value!!)
-            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1)
+            chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, unreadMentions = if (cItem.meta.userMention) chat.chatStats.unreadMentions + 1 else chat.chatStats.unreadMentions)
           }
           else
             chat.chatStats
@@ -595,8 +597,9 @@ object ChatModel {
       val i = getChatIndex(rhId, cInfo.id)
       if (i >= 0) {
         decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount)
+        val chatBefore = chats[i]
         chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
-        markChatTagRead(chats[i])
+        markChatTagRead(chatBefore)
       }
       // clear current chat
       if (chatId.value == cInfo.id) {
@@ -656,7 +659,7 @@ object ChatModel {
     }
 
     fun markChatItemsRead(remoteHostId: Long?, id: ChatId, itemIds: List<Long>? = null) {
-      val markedRead = markItemsReadInCurrentChat(id, itemIds)
+      val (markedRead, mentionsMarkedRead) = markItemsReadInCurrentChat(id, itemIds)
       // update preview
       val chatIdx = getChatIndex(remoteHostId, id)
       if (chatIdx >= 0) {
@@ -665,17 +668,19 @@ object ChatModel {
         if (lastId != null) {
           val wasUnread = chat.unreadTag
           val unreadCount = if (itemIds != null) chat.chatStats.unreadCount - markedRead else 0
+          val unreadMentions = if (itemIds != null) chat.chatStats.unreadMentions - mentionsMarkedRead else 0
           decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
-            chatStats = chat.chatStats.copy(unreadCount = unreadCount)
+            chatStats = chat.chatStats.copy(unreadCount = unreadCount, unreadMentions = unreadMentions)
           )
           updateChatTagReadNoContentTag(chats[chatIdx], wasUnread)
         }
       }
     }
 
-    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): Int {
+    private fun markItemsReadInCurrentChat(id: ChatId, itemIds: List<Long>? = null): Pair<Int, Int> {
       var markedRead = 0
+      var mentionsMarkedRead = 0
       if (chatId.value == id) {
         val items = chatItems.value
         var i = items.lastIndex
@@ -693,6 +698,9 @@ object ChatModel {
             }
             markedReadIds.add(item.id)
             markedRead++
+            if (item.meta.userMention) {
+              mentionsMarkedRead++
+            }
             if (itemIds != null) {
               itemIdsFromRange.remove(item.id)
               // already set all needed items as read, can finish the loop
@@ -703,7 +711,7 @@ object ChatModel {
         }
         chatItemsChangesListener?.read(if (itemIds != null) markedReadIds else null, items)
       }
-      return markedRead
+      return markedRead to mentionsMarkedRead
     }
 
     private fun decreaseCounterInChatNoContentTag(rhId: Long?, chatId: ChatId) {
@@ -1179,6 +1187,7 @@ interface SomeChat {
   val ntfsEnabled: Boolean
   val incognito: Boolean
   fun featureEnabled(feature: ChatFeature): Boolean
+  fun itemNtfEnabled(cItem: ChatItem): Boolean
   val timedMessagesTTL: Int?
   val createdAt: Instant
   val updatedAt: Instant
@@ -1208,7 +1217,11 @@ data class Chat(
     else -> false
   }
 
-  val unreadTag: Boolean get() = chatInfo.ntfsEnabled && (chatStats.unreadCount > 0 || chatStats.unreadChat)
+  val unreadTag: Boolean get() = when (chatInfo.chatSettings?.enableNtfs) {
+    All -> chatStats.unreadChat || chatStats.unreadCount > 0
+    Mentions -> chatStats.unreadChat || chatStats.unreadMentions > 0
+    else -> chatStats.unreadChat
+  }
 
   val id: String get() = chatInfo.id
 
@@ -1234,6 +1247,7 @@ data class Chat(
   data class ChatStats(
     val unreadCount: Int = 0,
     // actual only via getChats() and getChat(.initial), otherwise, zero
+    val unreadMentions: Int = 0,
     val reportsCount: Int = 0,
     val minUnreadItemId: Long = 0,
     val unreadChat: Boolean = false
@@ -1263,6 +1277,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = contact.ntfsEnabled
     override val incognito get() = contact.incognito
     override fun featureEnabled(feature: ChatFeature) = contact.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = contact.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = contact.timedMessagesTTL
     override val createdAt get() = contact.createdAt
     override val updatedAt get() = contact.updatedAt
@@ -1289,6 +1304,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = groupInfo.ntfsEnabled
     override val incognito get() = groupInfo.incognito
     override fun featureEnabled(feature: ChatFeature) = groupInfo.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = groupInfo.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = groupInfo.timedMessagesTTL
     override val createdAt get() = groupInfo.createdAt
     override val updatedAt get() = groupInfo.updatedAt
@@ -1314,6 +1330,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = noteFolder.ntfsEnabled
     override val incognito get() = noteFolder.incognito
     override fun featureEnabled(feature: ChatFeature) = noteFolder.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = noteFolder.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = noteFolder.timedMessagesTTL
     override val createdAt get() = noteFolder.createdAt
     override val updatedAt get() = noteFolder.updatedAt
@@ -1339,6 +1356,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = contactRequest.ntfsEnabled
     override val incognito get() = contactRequest.incognito
     override fun featureEnabled(feature: ChatFeature) = contactRequest.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = contactRequest.itemNtfEnabled(cItem)
     override val timedMessagesTTL: Int? get() = contactRequest.timedMessagesTTL
     override val createdAt get() = contactRequest.createdAt
     override val updatedAt get() = contactRequest.updatedAt
@@ -1364,6 +1382,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = false
     override val incognito get() = contactConnection.incognito
     override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
+    override fun itemNtfEnabled(cItem: ChatItem) = false
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
     override val createdAt get() = contactConnection.createdAt
     override val updatedAt get() = contactConnection.updatedAt
@@ -1390,6 +1409,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val ntfsEnabled get() = false
     override val incognito get() = false
     override fun featureEnabled(feature: ChatFeature) = false
+    override fun itemNtfEnabled(cItem: ChatItem) = false
     override val timedMessagesTTL: Int? get() = null
     override val createdAt get() = Clock.System.now()
     override val updatedAt get() = Clock.System.now()
@@ -1434,6 +1454,10 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is Group -> groupInfo.chatTags
       else -> null
     }
+
+  val nextNtfMode: MsgFilter? get() = this.chatSettings?.enableNtfs?.nextMode(mentions = this.hasMentions)
+
+  val hasMentions: Boolean get() = this is Group
 
   val contactCard: Boolean
     get() = when (this) {
@@ -1511,6 +1535,7 @@ data class Contact(
     ChatFeature.Voice -> mergedPreferences.voice.enabled.forUser
     ChatFeature.Calls -> mergedPreferences.calls.enabled.forUser
   }
+  override fun itemNtfEnabled(cItem: ChatItem) = ntfsEnabled
   override val timedMessagesTTL: Int? get() = with(mergedPreferences.timedMessages) { if (enabled.forUser) userPreference.pref.ttl else null }
   override val displayName get() = localAlias.ifEmpty { profile.displayName }
   override val fullName get() = profile.fullName
@@ -1745,6 +1770,7 @@ data class GroupInfo (
     ChatFeature.Voice -> fullGroupPreferences.voice.on(membership)
     ChatFeature.Calls -> false
   }
+  override fun itemNtfEnabled(cItem: ChatItem) = if (ntfsEnabled) true else cItem.meta.userMention && chatSettings.enableNtfs == MsgFilter.Mentions
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
   override val displayName get() = localAlias.ifEmpty { groupProfile.displayName }
   override val fullName get() = groupProfile.fullName
@@ -1866,6 +1892,19 @@ data class GroupMember (
     else
       name
   }
+
+  val localAliasAndFullName: String
+    get() {
+      val p = memberProfile
+      val fullName = p.displayName + (if (p.fullName == "" || p.fullName == p.displayName) "" else " / ${p.fullName}")
+
+      val name = if (p.localAlias.isNotEmpty()) {
+        "${p.localAlias} ($fullName)"
+      } else {
+        fullName
+      }
+      return pastMember(name)
+    }
 
   val memberActive: Boolean get() = when (this.memberStatus) {
     GroupMemberStatus.MemRemoved -> false
@@ -2078,6 +2117,7 @@ class NoteFolder(
   override val ntfsEnabled get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = feature == ChatFeature.Voice
+  override fun itemNtfEnabled(cItem: ChatItem) = false
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = generalGetString(MR.strings.note_folder_local_display_name)
   override val fullName get() = ""
@@ -2115,6 +2155,7 @@ class UserContactRequest (
   override val ntfsEnabled get() = false
   override val incognito get() = false
   override fun featureEnabled(feature: ChatFeature) = false
+  override fun itemNtfEnabled(cItem: ChatItem) = false
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
@@ -2155,6 +2196,7 @@ class PendingContactConnection(
   override val ntfsEnabled get() = false
   override val incognito get() = customUserProfileId != null
   override fun featureEnabled(feature: ChatFeature) = false
+  override fun itemNtfEnabled(cItem: ChatItem) = false
   override val timedMessagesTTL: Int? get() = null
   override val localDisplayName get() = String.format(generalGetString(MR.strings.connection_local_display_name), pccConnId)
   override val displayName: String get() {
@@ -2254,6 +2296,30 @@ data class MemberReaction(
 )
 
 @Serializable
+data class CIMentionMember(
+  val groupMemberId: Long,
+  val displayName: String,
+  val localAlias: String?,
+  val memberRole: GroupMemberRole
+)
+
+@Serializable
+data class CIMention(
+  val memberId: String,
+  val memberRef: CIMentionMember?
+) {
+  constructor(groupMember: GroupMember): this(
+    groupMember.memberId,
+    CIMentionMember(
+      groupMember.groupMemberId,
+      groupMember.memberProfile.displayName,
+      groupMember.memberProfile.localAlias,
+      groupMember.memberRole
+    )
+  )
+}
+
+@Serializable
 class CIReaction(
   val chatDir: CIDirection,
   val chatItem: ChatItem,
@@ -2267,6 +2333,7 @@ data class ChatItem (
   val meta: CIMeta,
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
+  val mentions: Map<String, CIMention>? = null,
   val quotedItem: CIQuote? = null,
   val reactions: List<CIReactionCount>,
   val file: CIFile? = null
@@ -2566,7 +2633,8 @@ data class ChatItem (
           itemTimed = null,
           itemLive = false,
           deletable = false,
-          editable = false
+          editable = false,
+          userMention = false,
         ),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
         quotedItem = null,
@@ -2590,7 +2658,8 @@ data class ChatItem (
           itemTimed = null,
           itemLive = true,
           deletable = false,
-          editable = false
+          editable = false,
+          userMention = false,
         ),
         content = CIContent.SndMsgContent(MsgContent.MCText("")),
         quotedItem = null,
@@ -2747,6 +2816,7 @@ data class CIMeta (
   val itemEdited: Boolean,
   val itemTimed: CITimed?,
   val itemLive: Boolean?,
+  val userMention: Boolean,
   val deletable: Boolean,
   val editable: Boolean
 ) {
@@ -2785,7 +2855,8 @@ data class CIMeta (
         itemTimed = itemTimed,
         itemLive = itemLive,
         deletable = deletable,
-        editable = editable
+        editable = editable,
+        userMention = false,
       )
 
     fun invalidJSON(): CIMeta =
@@ -2804,7 +2875,8 @@ data class CIMeta (
         itemTimed = null,
         itemLive = false,
         deletable = false,
-        editable = false
+        editable = false,
+        userMention = false
       )
   }
 }
@@ -3821,6 +3893,10 @@ class FormattedText(val text: String, val format: Format? = null) {
 
   fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
     "${linkType.description} (${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
+
+  companion object {
+    fun plain(text: String): List<FormattedText> = if (text.isEmpty()) emptyList() else listOf(FormattedText(text))
+  }
 }
 
 @Serializable
@@ -3833,6 +3909,7 @@ sealed class Format {
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
+  @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 
@@ -3845,6 +3922,7 @@ sealed class Format {
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is SimplexLink -> linkStyle
+    is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
     is Phone -> linkStyle
   }

@@ -12,10 +12,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -57,10 +59,11 @@ fun SendMsgView(
   editPrevMessage: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
   onMessageChange: (String) -> Unit,
-  textStyle: MutableState<TextStyle>
-) {
+  textStyle: MutableState<TextStyle>,
+  textSelection: MutableState<TextRange>,
+  focusRequester: FocusRequester? = null,
+  ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
-
   val padding = if (appPlatform.isAndroid) PaddingValues(vertical = 8.dp) else PaddingValues(top = 3.dp, bottom = 4.dp)
   Box(Modifier.padding(padding)) {
     val cs = composeState.value
@@ -92,7 +95,9 @@ fun SendMsgView(
       showVoiceButton,
       onMessageChange,
       editPrevMessage,
-      onFilesPasted
+      onFilesPasted,
+      textSelection,
+      focusRequester
     ) {
       if (!cs.inProgress) {
         sendMessage(null)
@@ -586,7 +591,8 @@ fun PreviewSendMsgView() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
+      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }
@@ -622,7 +628,8 @@ fun PreviewSendMsgViewEditing() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
+      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }
@@ -658,7 +665,8 @@ fun PreviewSendMsgViewInProgress() {
       editPrevMessage = {},
       onMessageChange = { _ -> },
       onFilesPasted = {},
-      textStyle = textStyle
+      textStyle = textStyle,
+      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }
