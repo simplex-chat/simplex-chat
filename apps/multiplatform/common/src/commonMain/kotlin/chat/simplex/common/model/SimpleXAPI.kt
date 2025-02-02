@@ -4560,7 +4560,37 @@ data class ChatSettings(
 enum class MsgFilter {
   @SerialName("all") All,
   @SerialName("none") None,
-  @SerialName("mentions") Mentions,
+  @SerialName("mentions") Mentions;
+
+  fun nextMode(mentions: Boolean): MsgFilter {
+    return when (this) {
+      All -> if (mentions) Mentions else None
+      Mentions -> None
+      None -> All
+    }
+  }
+
+  fun text(mentions: Boolean): StringResource {
+    return when (this) {
+      All -> MR.strings.unmute_chat
+      Mentions -> MR.strings.mute_chat
+      None -> if (mentions) MR.strings.mute_all_chat else MR.strings.mute_chat
+    }
+  }
+
+  val icon: ImageResource
+    get() = when (this) {
+      All -> MR.images.ic_notifications
+      Mentions -> MR.images.ic_notification_important
+      None -> MR.images.ic_notifications_off
+    }
+
+  val iconFilled: ImageResource
+    get() = when (this) {
+      All -> MR.images.ic_notifications
+      Mentions -> MR.images.ic_notification_important_filled
+      None -> MR.images.ic_notifications_off_filled
+    }
 }
 
 @Serializable
@@ -7472,15 +7502,4 @@ enum class MsgType {
   MESSAGE,
   @SerialName("quota")
   QUOTA
-}
-
-data class ChatNtfs(
-  val mode: MsgFilter,
-  val text: StringResource,
-  val icon: ImageResource,
-  val iconFilled: ImageResource
-) {
-  companion object {
-    val sampleData = ChatNtfs(MsgFilter.All, MR.strings.unmute_chat, MR.images.ic_notifications, MR.images.ic_notifications)
-  }
 }

@@ -66,12 +66,6 @@ data class LiveMessage(
 )
 
 @Serializable
-data class MemberMention(
-  val memberName: String,
-  val member: GroupMember
-)
-
-@Serializable
 data class ComposeState(
   val message: String = "",
   val liveMessage: LiveMessage? = null,
@@ -79,9 +73,9 @@ data class ComposeState(
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
   val inProgress: Boolean = false,
   val useLinkPreviews: Boolean,
-  val mentions: List<MemberMention> = emptyList()
+  val mentions: Map<String, GroupMember> = emptyMap()
 ) {
-  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: List<MemberMention> = emptyList()): this(
+  constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean, mentions: Map<String, GroupMember> = emptyMap()): this(
     editingItem.content.text,
     liveMessage,
     chatItemPreview(editingItem),
@@ -91,7 +85,7 @@ data class ComposeState(
   )
 
   val memberMentions: Map<String, Long>
-    get() = this.mentions.associate { it.memberName to it.member.groupMemberId }
+    get() = this.mentions.mapValues { it.value.groupMemberId }
 
   val maxMemberMentionsReached: Boolean
     get() = this.mentions.size >= MAX_NUMBER_OF_MENTIONS
@@ -187,10 +181,16 @@ data class ComposeState(
     )
   }
 
-  fun mentionMemberName(name: String, n: Int = 0): String {
-    val tryName = if (n == 0) name else "${name}_$n"
-    val used = mentions.any { it.memberName == tryName }
-    return if (used) mentionMemberName(name, n + 1) else tryName
+  fun mentionMemberName(name: String): String {
+    var n = 0
+    var tryName = name
+
+    while (mentions.containsKey(tryName)) {
+      n++
+      tryName = "${name}_$n"
+    }
+
+    return tryName
   }
 }
 

@@ -74,12 +74,12 @@ fun GroupMentions(
       if (membersToMention.value.size == 1 && !composeState.value.maxMemberMentionsReached) {
         val member = membersToMention.value.first()
 
-        if (composeState.value.mentions.none { it.member.memberId == member.memberId }) {
+        if (composeState.value.mentions.none { it.value.memberId == member.memberId }) {
           val displayName = composeState.value.mentionMemberName(member.memberProfile.displayName)
+          val mentions = composeState.value.mentions.toMutableMap()
+          mentions[displayName] = member
           composeState.value = composeState.value.copy(
-            mentions = composeState.value.mentions.toMutableList().apply {
-              add(MemberMention(displayName, member))
-            }
+            mentions = mentions
           )
         }
       }
@@ -88,16 +88,17 @@ fun GroupMentions(
       }
       return@LaunchedEffect
     }
-    val txtAsMention = composeState.value.mentions.firstOrNull {
-      if (it.member.memberProfile.displayName == it.memberName) {
-        mentionsState.mentionMemberOccurrences[search] == 1 && search == it.memberName
+    // TODO [mentions]: Review after parser
+    val txtAsMention = composeState.value.mentions.entries.firstOrNull {
+      if (it.value.memberProfile.displayName == it.key) {
+        mentionsState.mentionMemberOccurrences[search] == 1 && search == it.key
       } else {
-        search == it.memberName
+        search == it.key
       }
-    }
+    }?.value
     if (txtAsMention != null) {
       showMembersPicker.value = true
-      membersToMention.value = listOf(txtAsMention.member)
+      membersToMention.value = listOf(txtAsMention)
       return@LaunchedEffect
     }
     if (search == "") {
@@ -109,18 +110,6 @@ fun GroupMentions(
     if (membersToMention.value.isNotEmpty()) {
       showMembersPicker.value = true
     }
-  }
-
-  LaunchedEffect(Unit) {
-    snapshotFlow { mentionsState.mentionMemberOccurrences }
-      .distinctUntilChanged()
-      .collect { mmo ->
-        val filteredMentions = composeState.value.mentions.filter { mmo.contains(it.memberName) }
-
-        if (filteredMentions.size != composeState.value.mentions.size) {
-          composeState.value = composeState.value.copy(mentions = filteredMentions)
-        }
-      }
   }
 
   LaunchedEffect(showMembersPicker.value) {
@@ -140,7 +129,7 @@ fun GroupMentions(
       },
     contentAlignment = Alignment.BottomStart
   ) {
-    val mentionsLookup = composeState.value.mentions.associateBy { it.member.memberId }
+    val mentionsLookup = composeState.value.mentions.values.associateBy { it.memberId }
     val showMaxReachedBox = composeState.value.maxMemberMentionsReached &&
         showMembersPicker.value &&
         membersToMention.value.any { it.memberId !in mentionsLookup }
@@ -161,7 +150,7 @@ fun GroupMentions(
         if (i != 0 || !showMaxReachedBox) {
           Divider()
         }
-        val existingMention = composeState.value.mentions.find { it.member.memberId == member.memberId }
+        val existingMention = composeState.value.mentions.entries.find { it.value.memberId == member.memberId }
         val enabled = !composeState.value.maxMemberMentionsReached || existingMention != null
         Row(
           Modifier
@@ -171,9 +160,11 @@ fun GroupMentions(
               val selection = mentionsState.activeRange ?: return@clickable
               showMembersPicker.value = false
               val msg = composeState.value.message
-              val displayName = existingMention?.memberName ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
-              val mentions = if (existingMention != null) composeState.value.mentions else composeState.value.mentions.toMutableList().apply {
-                add(MemberMention(displayName, member))
+              val displayName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
+              val mentions = if (existingMention != null) composeState.value.mentions else {
+                val mentions = composeState.value.mentions.toMutableMap()
+                mentions[displayName] = member
+                mentions
               }
               val endIndex = selection.start + selection.name.length
               var name = if (displayName.contains(" ")) "'$displayName'" else displayName

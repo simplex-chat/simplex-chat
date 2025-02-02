@@ -256,7 +256,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
       MarkUnreadChatAction(chat, chatModel, showMenu)
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-    ToggleNotificationsChatAction(chat, chatModel, contact.nextNotificationMode(contact.notificationMode.mode), showMenu)
+    ToggleNotificationsChatAction(chat, chatModel, contact.chatSettings.enableNtfs.nextMode(false), showMenu)
     TagListAction(chat, showMenu)
     ClearChatAction(chat, showMenu)
   }
@@ -296,7 +296,7 @@ fun GroupMenuItems(
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-      ToggleNotificationsChatAction(chat, chatModel, groupInfo.nextNotificationMode(groupInfo.notificationMode.mode) , showMenu)
+      ToggleNotificationsChatAction(chat, chatModel, groupInfo.chatSettings.enableNtfs.nextMode(true), showMenu)
       TagListAction(chat, showMenu)
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
@@ -379,12 +379,12 @@ fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolea
 }
 
 @Composable
-fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, nextMsgFilter: ChatNtfs, showMenu: MutableState<Boolean>) {
+fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, nextMsgFilter: MsgFilter, showMenu: MutableState<Boolean>) {
   ItemAction(
-    generalGetString(nextMsgFilter.text),
+    generalGetString(nextMsgFilter.text(chat.chatInfo.hasMentions)),
     painterResource(nextMsgFilter.icon),
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextMsgFilter.mode, chatModel)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextMsgFilter, chatModel)
       showMenu.value = false
     }
   )
@@ -830,7 +830,7 @@ fun groupInvitationAcceptedAlert(rhId: Long?) {
   )
 }
 
-fun toggleNotifications(remoteHostId: Long?, chatInfo: ChatInfo, filter: MsgFilter, chatModel: ChatModel, currentState: MutableState<ChatNtfs>? = null) {
+fun toggleNotifications(remoteHostId: Long?, chatInfo: ChatInfo, filter: MsgFilter, chatModel: ChatModel, currentState: MutableState<MsgFilter>? = null) {
   val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = filter)
   updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel, currentState)
 }
@@ -840,7 +840,7 @@ fun toggleChatFavorite(remoteHostId: Long?, chatInfo: ChatInfo, favorite: Boolea
   updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel)
 }
 
-fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<ChatNtfs>? = null) {
+fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<MsgFilter>? = null) {
   val newChatInfo = when(chatInfo) {
     is ChatInfo.Direct -> with (chatInfo) {
       ChatInfo.Direct(contact.copy(chatSettings = chatSettings))
@@ -879,7 +879,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       }
       val current = currentState?.value
       if (current != null) {
-        currentState.value = currentState.value.copy(mode = chatSettings.enableNtfs)
+        currentState.value = chatSettings.enableNtfs
       }
     }
   }

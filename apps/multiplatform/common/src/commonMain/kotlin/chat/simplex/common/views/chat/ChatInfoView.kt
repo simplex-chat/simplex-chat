@@ -837,18 +837,18 @@ fun MuteButton(
   chat: Chat,
   contact: Contact
 ) {
-  val enableNtfs = remember { mutableStateOf(contact.notificationMode ) }
-  val nextNtfMode by remember { derivedStateOf { contact.nextNotificationMode(enableNtfs.value.mode) } }
+  val enableNtfs = remember { mutableStateOf(contact.chatSettings.enableNtfs ) }
+  val nextNtfMode by remember { derivedStateOf { enableNtfs.value.nextMode(false) } }
   val disabled = !contact.ready || !contact.active
 
   InfoViewActionButton(
     modifier = modifier,
     icon =  painterResource(nextNtfMode.icon),
-    title = stringResource(nextNtfMode.text),
+    title = stringResource(nextNtfMode.text(false)),
     disabled = disabled,
     disabledLook = disabled,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNtfMode.mode, chatModel, enableNtfs)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNtfMode, chatModel, enableNtfs)
     }
   )
 }

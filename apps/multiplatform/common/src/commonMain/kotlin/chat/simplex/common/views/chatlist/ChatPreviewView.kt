@@ -432,7 +432,7 @@ fun ChatPreviewView(
 
           Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
             val n = chat.chatStats.unreadCount
-            val ntfsMode = chat.chatInfo.notificationMode()
+            val ntfsMode = chat.chatInfo.chatSettings?.enableNtfs
             val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
             if (n > 0 || chat.chatStats.unreadChat) {
               val unreadMentions = chat.chatStats.unreadMentions

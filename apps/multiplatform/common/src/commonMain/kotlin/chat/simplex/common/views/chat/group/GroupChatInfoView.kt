@@ -259,17 +259,17 @@ fun MuteButton(
   chat: Chat,
   groupInfo: GroupInfo
 ) {
-  val notificationMode = remember { mutableStateOf(groupInfo.notificationMode) }
-  val nextNotificationMode by remember { derivedStateOf { groupInfo.nextNotificationMode(notificationMode.value.mode) } }
+  val notificationMode = remember { mutableStateOf(groupInfo.chatSettings.enableNtfs) }
+  val nextNotificationMode by remember { derivedStateOf { notificationMode.value.nextMode(true) } }
 
   InfoViewActionButton(
     modifier = modifier,
     icon =  painterResource(nextNotificationMode.icon),
-    title = generalGetString(nextNotificationMode.text),
+    title = generalGetString(nextNotificationMode.text(true)),
     disabled = !groupInfo.ready,
     disabledLook = !groupInfo.ready,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNotificationMode.mode, chatModel, notificationMode)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNotificationMode, chatModel, notificationMode)
     }
   )
 }
