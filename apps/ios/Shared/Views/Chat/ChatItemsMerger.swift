@@ -9,12 +9,20 @@
 import SwiftUI
 import SimpleXChat
 
-struct MergedItems {
+struct MergedItems: Hashable, Equatable {
     let items: [MergedItem]
     let splits: [SplitRange]
     // chat item id, index in list
     let indexInParentItems: Dictionary<Int64, Int>
     let snapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.hashValue == rhs.hashValue
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine("\(items.hashValue)")
+    }
 
     static func create(_ items: [ChatItem], _ unreadCount: Int, _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
         if items.isEmpty {
@@ -110,24 +118,26 @@ struct MergedItems {
             index += 1
         }
         logger.debug("LALAL STEP 7")
-        var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
-        snapshot.appendSections([ReverseListSection.main])
-        snapshot.appendItems(mergedItems)
+        //var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
+        //snapshot.appendSections([ReverseListSection.main])
+        //snapshot.appendItems(mergedItems)
         return MergedItems(
             items: mergedItems,
             splits: splitRanges,
             indexInParentItems: indexInParentItems,
-            snapshot: snapshot
+            snapshot: NSDiffableDataSourceSnapshot()
         )
     }
 }
 
 
-enum MergedItem: Hashable, Equatable {
+enum MergedItem: Identifiable, Hashable, Equatable {
     // equatable and hashable implementations allows to NSDiffableDataSourceSnapshot to see the difference and correcrly scroll items we want. Without any of it, the scroll position will be random in ReverseList
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.hash == rhs.hash
     }
+
+    var id: Int64 { newest().item.id }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(hash)

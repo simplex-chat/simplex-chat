@@ -16,7 +16,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
-    @State var mergedItems: MergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, 0, [], ItemsModel.shared.chatState)
+    @State var mergedItems: BoxedValue<MergedItems> = BoxedValue(MergedItems.create(ItemsModel.shared.reversedChatItems, 0, [], ItemsModel.shared.chatState))
     @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
@@ -49,6 +49,8 @@ struct ChatView: View {
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var updateMergedItemsTask: Task<Void, Never>? = nil
+
+    @State var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -170,6 +172,12 @@ struct ChatView: View {
             }
         }
         .onAppear {
+            scrollView.listState.onUpdateListener = {
+                ChatView.FloatingButtonModel.shared.updateOnListChange()
+            }
+            scrollModel.scrollView = scrollView
+            scrollModel.mergedItems = mergedItems
+            FloatingButtonModel.shared.listState = scrollView.listState
             selectedChatItems = nil
             revealedItems = Set()
             initChatView()
@@ -444,7 +452,8 @@ struct ChatView: View {
         return GeometryReader { g in
             let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
             // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
-            ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant(nil)) { index, mergedItem in
+            //ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant(nil)) { index, mergedItem in
+            ScrollRepresentable(scrollView: scrollView) { (index: Int, mergedItem: MergedItem) in
                 let ci = switch mergedItem {
                 case let .single(item, _, _): item.item
                 case let .grouped(items, _, _, _, _, _, _, _): items.boxedValue.last!.item
@@ -460,7 +469,7 @@ struct ChatView: View {
                 return ChatItemWithMenu(
                     chat: $chat,
                     index: index,
-                    isLastItem: index == mergedItems.items.count - 1,
+                    isLastItem: index == mergedItems.boxedValue.items.count - 1,
                     chatItem: ci,
                     merged: mergedItem,
                     maxWidth: maxWidth,
@@ -473,20 +482,32 @@ struct ChatView: View {
                     reveal: { reveal in
                         mergedItem.reveal(reveal, $revealedItems)
                         updateMergedItemsTask?.cancel()
-                        mergedItems = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                        mergedItems.boxedValue = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                        scrollView.updateItems(mergedItems.boxedValue.items)
                     }
                 )
+                // crashes on Cell size calculation without this line
+                .environmentObject(ChatModel.shared)
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in ReverseList
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
-            } loadItems: { unchecked, pagination, visibleItemIndexesNonReversed in
-                if unchecked {
-                    await loadChatItemsUnchecked(cInfo, pagination, visibleItemIndexesNonReversed)
-                } else {
-                    await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
-                }
             }
+//        loadItems: { unchecked, pagination, visibleItemIndexesNonReversed in
+//                if unchecked {
+//                    await loadChatItemsUnchecked(cInfo, pagination, visibleItemIndexesNonReversed)
+//                } else {
+//                    await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
+//                }
+//            }
             .onAppear {
-                mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                scrollView.updateItems(mergedItems.boxedValue.items)
+                Task {
+                    // LALAL
+                    //try? await Task.sleep(nanoseconds: 2000_000000)
+                    if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
+                        await scrollView.scrollToItem(unreadIndex, animated: false)
+                    }
+                }
                 loadLastItems($loadingMoreItems, chat.chatInfo)
                 allowLoadMoreItems = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -501,17 +522,20 @@ struct ChatView: View {
                         return
                     }
                     await MainActor.run {
-                        mergedItems = items
+                        mergedItems.boxedValue = items
+                        scrollView.updateItems(mergedItems.boxedValue.items)
                     }
                 }
             }
             .onChange(of: revealedItems) { revealed in
                 updateMergedItemsTask?.cancel()
-                mergedItems = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealed, ItemsModel.shared.chatState)
+                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealed, ItemsModel.shared.chatState)
+                scrollView.updateItems(mergedItems.boxedValue.items)
             }
             .onChange(of: chat.chatStats.unreadCount) { unreadCount in
                 updateMergedItemsTask?.cancel()
-                mergedItems = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
+                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
+                scrollView.updateItems(mergedItems.boxedValue.items)
             }
             .onChange(of: chat.id) { _ in
                 loadLastItems($loadingMoreItems, chat.chatInfo)
@@ -557,22 +581,22 @@ struct ChatView: View {
         @Published var isNearBottom: Bool = true
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
-        var items: [MergedItem] = []
+        var listState: EndlessScrollView<MergedItem>.ListState!
         var totalUnread: Int = 0
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
-        func updateOnListChange(_ items: [MergedItem], _ listState: ListState) {
+        func updateOnListChange() {
             let im = ItemsModel.shared
-            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(items, listState)
+            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(listState.items, listState)
             let unreadBelow = if let lastVisibleItem {
                     max(0, totalUnread - lastVisibleItem.unreadBefore)
             } else {
              0
             }
             let date: Date? =
-                if let topItemDate = listState.topItemDate {
-                    Calendar.current.startOfDay(for: topItemDate)
+            if let lastVisible = listState.visibleItems.last {
+                Calendar.current.startOfDay(for: lastVisible.item.oldest().item.meta.itemTs)
                 } else {
                     nil
                 }
@@ -583,12 +607,13 @@ struct ChatView: View {
                 it.setDate(visibility: true)
                 it.unreadBelow = unreadBelow
                 it.date = date
-                it.isReallyNearBottom = listState.scrollOffset > 0 && listState.scrollOffset < 500
-                it.items = items
+                // LALAL
+                it.isReallyNearBottom = (self?.listState.firstVisibleItemIndex ?? 0) < 2//listState.scrollOffset > 0 && listState.scrollOffset < 500
             }
             
             // set floating button indication mode
-            let nearBottom = listState.scrollOffset < 800
+            // LALAL
+            let nearBottom = listState.firstVisibleItemIndex < 4 //listState.scrollOffset < 800
             if nearBottom != self.isNearBottom {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
                     self?.isNearBottom = nearBottom
@@ -656,13 +681,13 @@ struct ChatView: View {
                                     .foregroundColor(theme.colors.primary)
                             }
                             .onTapGesture {
-                                if let index = model.items.lastIndex(where: { $0.hasUnread() }) {
+                                if let index = model.listState.items.lastIndex(where: { $0.hasUnread() }) {
                                     // scroll to the top unread item
-                                    scrollModel.scrollToRow(row: index)
+                                    scrollModel.scrollToItem(index: index)
                                 } else {
-                                    logger.debug("LALAL NO UNREAD ITEMS0!  \(model.items.count)")
+                                    logger.debug("LALAL NO UNREAD ITEMS0!  \(model.listState.items.count)")
                                 }
-                                logger.debug("LALAL NO UNREAD ITEMS1!  \(model.items.count)")
+                                logger.debug("LALAL NO UNREAD ITEMS1!  \(model.listState.items.count)")
                             }
                             .contextMenu {
                                 Button {
@@ -1133,6 +1158,7 @@ struct ChatView: View {
                 }
             }
             .onDisappear {
+                logger.debug("LALAL DISAPPEAR")
                 markReadTask?.cancel()
                 markedRead = false
             }

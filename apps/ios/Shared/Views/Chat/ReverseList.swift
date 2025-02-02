@@ -193,7 +193,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     if !self.scrollToItemInProgress {
                         let items = representer.$mergedItems.wrappedValue.items
                         let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) ?? ListState()
-                        ChatView.FloatingButtonModel.shared.updateOnListChange(items, listState)
+                        //ChatView.FloatingButtonModel.shared.updateOnListChange(items, listState)
                         logger.debug("LALAL UPDATE FLOATING WITH ITEMS \(items.count)")
                     }
                 }
@@ -642,42 +642,42 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
     /// `UIHostingConfiguration` back-port for iOS14 and iOS15
     /// Implemented as a `UITableViewCell` that wraps and manages a generic `UIHostingController`
-    private final class HostingCell<Hosted: View>: UITableViewCell {
-        private let hostingController = UIHostingController<Hosted?>(rootView: nil)
-
-        /// Updates content of the cell
-        /// For reference: https://noahgilmore.com/blog/swiftui-self-sizing-cells/
-        func set(content: Hosted, parent: UIViewController) {
-            hostingController.view.backgroundColor = .clear
-            hostingController.rootView = content
-            if let hostingView = hostingController.view {
-                hostingView.invalidateIntrinsicContentSize()
-                if hostingController.parent != parent { parent.addChild(hostingController) }
-                if !contentView.subviews.contains(hostingController.view) {
-                    contentView.addSubview(hostingController.view)
-                    hostingView.translatesAutoresizingMaskIntoConstraints = false
-                    NSLayoutConstraint.activate([
-                        hostingView.leadingAnchor
-                            .constraint(equalTo: contentView.leadingAnchor),
-                        hostingView.trailingAnchor
-                            .constraint(equalTo: contentView.trailingAnchor),
-                        hostingView.topAnchor
-                            .constraint(equalTo: contentView.topAnchor),
-                        hostingView.bottomAnchor
-                            .constraint(equalTo: contentView.bottomAnchor)
-                    ])
-                }
-                if hostingController.parent != parent { hostingController.didMove(toParent: parent) }
-            } else {
-                fatalError("Hosting View not loaded \(hostingController)")
-            }
-        }
-
-        override func prepareForReuse() {
-            super.prepareForReuse()
-            hostingController.rootView = nil
-        }
-    }
+//    private final class HostingCell<Hosted: View>: UITableViewCell {
+//        private let hostingController = UIHostingController<Hosted?>(rootView: nil)
+//
+//        /// Updates content of the cell
+//        /// For reference: https://noahgilmore.com/blog/swiftui-self-sizing-cells/
+//        func set(content: Hosted, parent: UIViewController) {
+//            hostingController.view.backgroundColor = .clear
+//            hostingController.rootView = content
+//            if let hostingView = hostingController.view {
+//                hostingView.invalidateIntrinsicContentSize()
+//                if hostingController.parent != parent { parent.addChild(hostingController) }
+//                if !contentView.subviews.contains(hostingController.view) {
+//                    contentView.addSubview(hostingController.view)
+//                    hostingView.translatesAutoresizingMaskIntoConstraints = false
+//                    NSLayoutConstraint.activate([
+//                        hostingView.leadingAnchor
+//                            .constraint(equalTo: contentView.leadingAnchor),
+//                        hostingView.trailingAnchor
+//                            .constraint(equalTo: contentView.trailingAnchor),
+//                        hostingView.topAnchor
+//                            .constraint(equalTo: contentView.topAnchor),
+//                        hostingView.bottomAnchor
+//                            .constraint(equalTo: contentView.bottomAnchor)
+//                    ])
+//                }
+//                if hostingController.parent != parent { hostingController.didMove(toParent: parent) }
+//            } else {
+//                fatalError("Hosting View not loaded \(hostingController)")
+//            }
+//        }
+//
+//        override func prepareForReuse() {
+//            super.prepareForReuse()
+//            hostingController.rootView = nil
+//        }
+//    }
 }
 
 class ListState {
@@ -698,9 +698,10 @@ class ListState {
     }
 }
 
-/// Manages ``ReverseList`` scrolling
 class ReverseListScrollModel: ObservableObject {
-    /// Represents Scroll State of ``ReverseList``
+    var scrollView: EndlessScrollView<MergedItem>!
+    var mergedItems: BoxedValue<MergedItems>!
+
     enum State: Equatable {
         enum Destination: Equatable {
             case item(ChatItem.ID)
@@ -715,15 +716,41 @@ class ReverseListScrollModel: ObservableObject {
     @Published var state: State = .atDestination
 
     func scrollToBottom() {
-        state = .scrollingTo(.bottom)
+        Task {
+            logger.log("LALAL SCROLL TO BOTTOM START")
+            //controller.scrollToItemInProgress = true
+            await scrollView.scrollToItem(0, animated: true)
+            //DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            //  controller.setScrollEndedListener()
+            //controller.scrollToItemInProgress = false
+            //logger.log("LALAL SCROLL TO BOTTOM END \(controller.tableView.contentOffset.y)")
+            //}
+        }
     }
 
     func scrollToItem(id: ChatItem.ID) {
-        state = .scrollingTo(.item(id))
+        logger.debug("LALAL SCROLL TO ID called \(id)")
+        if let index = mergedItems.boxedValue.indexInParentItems[id] {
+            Task {
+                logger.debug("LALAL SCROLLING TO \(index)")
+                await scrollView.scrollToItem(index, animated: true)
+                //controller.setScrollEndedListener()
+                logger.debug("LALAL SCROLLING ENDED TO \(index)")
+            }
+        } else {
+            loadAndScrollToItem(id: id)
+        }
     }
 
-    func scrollToRow(row: Int) {
-        state = .scrollingTo(.row(row))
+    func loadAndScrollToItem(id: Int64) {
+
+    }
+
+    func scrollToItem(index: Int) {
+        Task {
+            await scrollView.scrollToItem(index, animated: true)
+        }
+        //controller.setScrollEndedListener()
     }
 }
 

@@ -86,7 +86,7 @@ func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ list
     }
 }
 
-func oldestPartiallyVisibleListItemInListStateOrNull(_ items: [MergedItem], _ listState: ListState) -> ListItem? {
+func oldestPartiallyVisibleListItemInListStateOrNull(_ items: [MergedItem], _ listState: EndlessScrollView<MergedItem>.ListState) -> ListItem? {
     if listState.lastVisibleItemIndex < items.count {
         return items[listState.lastVisibleItemIndex].oldest()
     } else {
