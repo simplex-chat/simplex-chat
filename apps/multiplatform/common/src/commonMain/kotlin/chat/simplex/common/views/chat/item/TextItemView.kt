@@ -150,16 +150,21 @@ fun MarkdownText (
             }
           } else if (ft.format is Format.Mention) {
             val mention = mentions?.get(ft.format.memberName)
-            if (mention?.memberRef != null) {
-              val displayName = mention.memberRef.displayName
-              val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
-                displayName
-              } else {
-                "${mention.memberRef.localAlias} ($displayName)"
-              }
-              val mentionStyle = if (mention.memberId == userMemberId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
 
-              withStyle(mentionStyle) { append("@$name") }
+            if (mention != null) {
+              if (mention.memberRef != null) {
+                val displayName = mention.memberRef.displayName
+                val name = if (mention.memberRef.localAlias.isNullOrEmpty()) {
+                  displayName
+                } else {
+                  "${mention.memberRef.localAlias} ($displayName)"
+                }
+                val mentionStyle = if (mention.memberId == userMemberId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
+
+                withStyle(mentionStyle) { append(mentionText(name)) }
+              } else {
+                withStyle( ft.format.style) { append(mentionText(ft.format.memberName)) }
+              }
             } else {
               append(ft.text)
             }
@@ -306,3 +311,5 @@ private fun isRtl(s: CharSequence): Boolean {
   }
   return false
 }
+
+private fun mentionText(name: String): String = if (name.contains(" @"))  "@'$name'" else "@$name"
