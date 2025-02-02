@@ -49,13 +49,13 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
   @Composable
-  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, groupMembershipId: String? = null, ) {
+  fun TextBubble(text: String, formattedText: List<FormattedText>?, sender: String?, showMenu: MutableState<Boolean>, mentions: Map<String, CIMention>? = null, userMemberId: String? = null, ) {
     if (text != "") {
       MarkdownText(
         text, if (text.isEmpty()) emptyList() else formattedText,
         sender = sender,
         mentions = mentions,
-        groupMembershipId = groupMembershipId,
+        userMemberId = userMemberId,
         senderBold = true,
         toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
@@ -83,7 +83,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       ) {
         Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
           TextBubble(text, ciVersion.formattedText, sender = null, showMenu = showMenu, mentions = ci.mentions,
-            groupMembershipId = when {
+            userMemberId = when {
               chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
               else -> null
             }

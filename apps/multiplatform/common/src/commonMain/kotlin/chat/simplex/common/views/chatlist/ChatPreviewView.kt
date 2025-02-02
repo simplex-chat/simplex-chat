@@ -19,7 +19,6 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
@@ -32,7 +31,6 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.chat.group.MENTION_START
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -205,7 +203,7 @@ fun ChatPreviewView(
             else -> null
           },
           mentions = ci.mentions,
-          groupMembershipId = when {
+          userMemberId = when {
             cInfo is ChatInfo.Group -> cInfo.groupInfo.membership.memberId
             else -> null
           },

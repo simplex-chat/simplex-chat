@@ -65,7 +65,7 @@ fun ContextItemView(
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
       mentions = contextItem.mentions,
-      groupMembershipId = when {
+      userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       }

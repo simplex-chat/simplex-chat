@@ -19,8 +19,6 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.views.chat.group.MENTION_START
-import chat.simplex.common.views.chat.group.QUOTE
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 
@@ -61,7 +59,7 @@ fun MarkdownText (
   meta: CIMeta? = null,
   chatTTL: Int? = null,
   mentions: Map<String, CIMention>? = null,
-  groupMembershipId: String? = null,
+  userMemberId: String? = null,
   toggleSecrets: Boolean,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
@@ -159,7 +157,7 @@ fun MarkdownText (
               } else {
                 "${mention.memberRef.localAlias} ($displayName)"
               }
-              val mentionStyle = if (mention.memberId == groupMembershipId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
+              val mentionStyle = if (mention.memberId == userMemberId) ft.format.style.copy(color = MaterialTheme.colors.primary) else ft.format.style
 
               withStyle(mentionStyle) { append("@$name") }
             } else {

@@ -358,7 +358,7 @@ fun CIMarkdownText(
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-      mentions = ci.mentions, groupMembershipId = when {
+      mentions = ci.mentions, userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
         else -> null
       },
