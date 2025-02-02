@@ -139,12 +139,12 @@ struct GroupChatInfoView: View {
                                 addMembersButton()
                             }
                         }
-                        if members.count > 8 {
-                            searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
-                                .padding(.leading, 8)
-                        }
+                        searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
+                            .padding(.leading, 8)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                        let filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
+                        let filteredMembers = s == ""
+                            ? members
+                            : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
                         MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
                         ForEach(filteredMembers) { member in
                             ZStack {
@@ -330,7 +330,7 @@ struct GroupChatInfoView: View {
     private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
         return InfoViewButton(
             image: nextNtfMode.iconFilled,
-            title: LocalizedStringKey(nextNtfMode.text),
+            title: "\(nextNtfMode.text(mentions: true))",
             width: width
         ) {
             toggleNotifications(chat, enableNtfs: nextNtfMode)

@@ -41,25 +41,30 @@ struct LiveMessage {
     var sentMsg: String?
 }
 
+typealias MentionedMembers = [String: (member: GMember, count: Int)]
+
 struct ComposeState {
     var message: String
+    var parsedMessage: [FormattedText]
     var liveMessage: LiveMessage? = nil
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
-    var mentions: [String:GMember] = [:]
+    var mentions: MentionedMembers = [:]
 
     init(
         message: String = "",
+        parsedMessage: [FormattedText] = [],
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview = .noPreview,
         contextItem: ComposeContextItem = .noContextItem,
         voiceMessageRecordingState: VoiceMessageRecordingState = .noRecording,
-        mentions: [String:GMember] = [:]
+        mentions: MentionedMembers = [:]
     ) {
         self.message = message
+        self.parsedMessage = parsedMessage
         self.liveMessage = liveMessage
         self.preview = preview
         self.contextItem = contextItem
@@ -68,7 +73,9 @@ struct ComposeState {
     }
 
     init(editingItem: ChatItem) {
-        self.message = editingItem.content.text
+        let text = editingItem.content.text
+        self.message = text
+        self.parsedMessage = editingItem.formattedText ?? FormattedText.plain(text)
         self.preview = chatItemPreview(chatItem: editingItem)
         self.contextItem = .editingItem(chatItem: editingItem)
         if let emc = editingItem.content.msgContent,
@@ -81,6 +88,7 @@ struct ComposeState {
 
     init(forwardingItems: [ChatItem], fromChatInfo: ChatInfo) {
         self.message = ""
+        self.parsedMessage = []
         self.preview = .noPreview
         self.contextItem = .forwardingItems(chatItems: forwardingItems, fromChatInfo: fromChatInfo)
         self.voiceMessageRecordingState = .noRecording
@@ -88,14 +96,16 @@ struct ComposeState {
 
     func copy(
         message: String? = nil,
+        parsedMessage: [FormattedText]? = nil,
         liveMessage: LiveMessage? = nil,
         preview: ComposePreview? = nil,
         contextItem: ComposeContextItem? = nil,
         voiceMessageRecordingState: VoiceMessageRecordingState? = nil,
-        mentions: [String:GMember]? = nil
+        mentions: MentionedMembers? = nil
     ) -> ComposeState {
         ComposeState(
             message: message ?? self.message,
+            parsedMessage: parsedMessage ?? self.parsedMessage,
             liveMessage: liveMessage ?? self.liveMessage,
             preview: preview ?? self.preview,
             contextItem: contextItem ?? self.contextItem,
@@ -115,7 +125,7 @@ struct ComposeState {
     }
     
     var memberMentions: [String: Int64] {
-        self.mentions.mapValues { $0.wrapped.groupMemberId }
+        self.mentions.mapValues { $0.member.wrapped.groupMemberId }
     }
     
     var editing: Bool {
@@ -451,15 +461,17 @@ struct ComposeView: View {
                 .ignoresSafeArea(.all, edges: .bottom)
         }
         .onChange(of: composeState.message) { msg in
+            let parsedMsg = parseSimpleXMarkdown(msg)
+            composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
-                    showLinkPreview(msg)
+                    showLinkPreview(parsedMsg)
                 } else {
                     resetLinkPreview()
                     hasSimplexLink = false
                 }
             } else if msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) {
-                (_, hasSimplexLink) = parseMessage(msg)
+                (_, hasSimplexLink) = getSimplexLink(parsedMsg)
             } else {
                 hasSimplexLink = false
             }
@@ -1068,7 +1080,8 @@ struct ComposeView: View {
         func checkLinkPreview() -> MsgContent {
             switch (composeState.preview) {
             case let .linkPreview(linkPreview: linkPreview):
-                if let url = parseMessage(msgText).url,
+                if let parsedMsg = parseSimpleXMarkdown(msgText),
+                   let url = getSimplexLink(parsedMsg).url,
                    let linkPreview = linkPreview,
                    url == linkPreview.uri {
                     return .link(text: msgText, preview: linkPreview)
@@ -1187,9 +1200,9 @@ struct ComposeView: View {
         }
     }
 
-    private func showLinkPreview(_ s: String) {
+    private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
         prevLinkUrl = linkUrl
-        (linkUrl, hasSimplexLink) = parseMessage(s)
+        (linkUrl, hasSimplexLink) = getSimplexLink(parsedMsg)
         if let url = linkUrl {
             if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
@@ -1206,8 +1219,8 @@ struct ComposeView: View {
         }
     }
 
-    private func parseMessage(_ msg: String) -> (url: URL?, hasSimplexLink: Bool) {
-        guard let parsedMsg = parseSimpleXMarkdown(msg) else { return (nil, false) }
+    private func getSimplexLink(_ parsedMsg: [FormattedText]?) -> (url: URL?, hasSimplexLink: Bool) {
+        guard let parsedMsg else { return (nil, false) }
         let url: URL? = if let uri = parsedMsg.first(where: { ft in
             ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
         }) {

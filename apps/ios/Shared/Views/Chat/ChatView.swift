@@ -2059,7 +2059,7 @@ struct ToggleNtfsButton: View {
             Button {
                 toggleNotifications(chat, enableNtfs: nextMode)
             } label: {
-                Label(nextMode.text, systemImage: nextMode.icon)
+                Label(nextMode.text(mentions: chat.chatInfo.hasMentions), systemImage: nextMode.icon)
             }
         }
     }

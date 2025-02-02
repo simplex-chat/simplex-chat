@@ -437,7 +437,7 @@ struct ChatInfoView: View {
     private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
         return InfoViewButton(
             image: nextNtfMode.iconFilled,
-            title: LocalizedStringKey(nextNtfMode.text),
+            title: "\(nextNtfMode.text(mentions: false))",
             width: width
         ) {
             toggleNotifications(chat, enableNtfs: nextNtfMode)

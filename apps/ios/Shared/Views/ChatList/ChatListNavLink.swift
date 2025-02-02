@@ -306,7 +306,7 @@ struct ChatListNavLink: View {
             Button {
                 toggleNotifications(chat, enableNtfs: nextMode)
             } label: {
-                SwipeLabel(nextMode.text, systemImage: nextMode.iconFilled, inverted: oneHandUI)
+                SwipeLabel(nextMode.text(mentions: chat.chatInfo.hasMentions), systemImage: nextMode.iconFilled, inverted: oneHandUI)
             }
         } else {
             EmptyView()

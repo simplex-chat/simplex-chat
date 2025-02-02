@@ -1469,10 +1469,13 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     }
     
     public var nextNtfMode: MsgFilter? {
-        let mentions = if case .group = self { true } else { false }
-        return self.chatSettings?.enableNtfs.nextMode(mentions: mentions)
+        self.chatSettings?.enableNtfs.nextMode(mentions: hasMentions)
     }
-    
+
+    public var hasMentions: Bool {
+        if case .group = self { true } else { false }
+    }
+
     public var chatTags: [Int64]? {
         switch self {
         case let .direct(contact): return contact.chatTags
@@ -3975,6 +3978,12 @@ extension MsgContent: Encodable {
 public struct FormattedText: Decodable, Hashable {
     public var text: String
     public var format: Format?
+
+    public static func plain(_ text: String) -> [FormattedText] {
+        text.isEmpty
+        ? []
+        : [FormattedText(text: text, format: nil)]
+    }
 
     public var isSecret: Bool {
         if case .secret = format { true } else { false }

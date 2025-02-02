@@ -2052,11 +2052,14 @@ public enum MsgFilter: String, Codable, Hashable {
         }
     }
     
-    public var text: String {
+    public func text(mentions: Bool) -> String {
         switch self {
         case .all: NSLocalizedString("Unmute", comment: "notification label action")
         case .mentions: NSLocalizedString("Mute", comment: "notification label action")
-        case .none: NSLocalizedString("Mute all", comment: "notification label action")
+        case .none:
+            mentions
+            ? NSLocalizedString("Mute all", comment: "notification label action")
+            : NSLocalizedString("Mute", comment: "notification label action")
         }
     }
     
