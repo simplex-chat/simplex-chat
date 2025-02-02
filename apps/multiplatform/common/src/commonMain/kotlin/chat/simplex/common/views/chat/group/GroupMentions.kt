@@ -42,7 +42,7 @@ fun GroupMentions(
   val currentMessage = remember { mutableStateOf(composeState.value.message) }
   val mentionName = remember { mutableStateOf("") }
   val mentionRange = remember { mutableStateOf<TextRange?>(null) }
-  val mentionMember = remember { mutableStateOf<Long?>(null) }
+  val mentionMemberId = remember { mutableStateOf<String?>(null) }
   val filteredMembers = remember {
     derivedStateOf {
       val members = chatModel.groupMembers.value
@@ -73,7 +73,7 @@ fun GroupMentions(
     )
     mentionName.value = ""
     mentionRange.value = null
-    mentionMember.value = null
+    mentionMemberId.value = null
   }
 
   fun messageChanged(msg: String, parsedMsg: List<FormattedText>, range: TextRange) {
@@ -88,7 +88,7 @@ fun GroupMentions(
           isVisible.value = true
           mentionName.value = ft.format.memberName
           mentionRange.value = r
-          mentionMember.value = composeState.value.mentions[mentionName.value]
+          mentionMemberId.value = composeState.value.mentions[mentionName.value]?.memberId
           if (!chatModel.membersLoaded.value) {
             scope.launch {
               setGroupMembers(rhId, chatInfo.groupInfo, chatModel)
@@ -104,7 +104,7 @@ fun GroupMentions(
               isVisible.value = true
               mentionName.value = ""
               mentionRange.value = TextRange(pos - 1, pos)
-              mentionMember.value = null
+              mentionMemberId.value = null
               scope.launch {
                 setGroupMembers(rhId, chatInfo.groupInfo, chatModel)
               }
@@ -123,10 +123,10 @@ fun GroupMentions(
   fun addMemberMention(member: GroupMember, range: TextRange) {
     val mentions = composeState.value.mentions.toMutableMap()
     val existingMention = mentions.entries.firstOrNull {
-      it.value == member.groupMemberId
+      it.value.memberId == member.memberId
     }
     val newName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
-    mentions[newName] = member.groupMemberId
+    mentions[newName] = CIMention(member)
     var msgMention = "@" + if (newName.contains(" ")) "'$newName'" else newName
     var newPos = range.start + msgMention.length
     val newMsgLength = composeState.value.message.length + msgMention.length - range.length
@@ -186,8 +186,6 @@ fun GroupMentions(
     contentAlignment = Alignment.BottomStart
   ) {
     val showMaxReachedBox = composeState.value.mentions.size >= MAX_NUMBER_OF_MENTIONS && isVisible.value && composeState.value.mentions[mentionName.value] == null
-    val mentionedMemberId = mentionMember.value ?: -1
-
     LazyColumnWithScrollBarNoAppBar(
       Modifier
         .heightIn(max = MAX_PICKER_HEIGHT)
@@ -200,11 +198,11 @@ fun GroupMentions(
           MaxMentionsReached()
         }
       }
-      itemsIndexed(filteredMembers.value, key = { _, item -> item.groupMemberId }) { i, member ->
+      itemsIndexed(filteredMembers.value, key = { _, item -> item.memberId }) { i, member ->
         if (i != 0 || !showMaxReachedBox) {
           Divider()
         }
-        val mentioned = mentionedMemberId == member.groupMemberId
+        val mentioned = mentionMemberId.value == member.memberId
         val disabled = composeState.value.mentions.size >= MAX_NUMBER_OF_MENTIONS && !mentioned
         Row(
           Modifier
@@ -212,10 +210,10 @@ fun GroupMentions(
             .alpha(if (disabled) 0.6f else 1f)
             .clickable(enabled = !disabled) {
               val range = mentionRange.value ?: return@clickable
-              val mentionMemberValue = mentionMember.value
+              val mentionMemberValue = mentionMemberId.value
 
               if (mentionMemberValue != null) {
-                if (mentionMemberValue != member.groupMemberId) {
+                if (mentionMemberValue != member.memberId) {
                   addMemberMention(member, range)
                 } else {
                   return@clickable

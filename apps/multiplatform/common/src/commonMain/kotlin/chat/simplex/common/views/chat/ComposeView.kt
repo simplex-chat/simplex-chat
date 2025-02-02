@@ -65,7 +65,7 @@ data class LiveMessage(
   val sent: Boolean
 )
 
-typealias MentionedMembers = Map<String, Long>
+typealias MentionedMembers = Map<String, CIMention>
 
 @Serializable
 data class ComposeState(
@@ -85,11 +85,19 @@ data class ComposeState(
     chatItemPreview(editingItem),
     ComposeContextItem.EditingItem(editingItem),
     useLinkPreviews = useLinkPreviews,
-    mentions = editingItem.mentions?.entries?.mapNotNull {
-      val memberRef = it.value.memberRef
-      if (memberRef != null) it.key to memberRef.groupMemberId else null
-    }?.toMap() ?: emptyMap()
+    mentions = editingItem.mentions ?: emptyMap()
   )
+
+  val memberMentions: Map<String, Long>
+    get() = this.mentions.mapNotNull {
+      val memberRef = it.value.memberRef
+
+      if (memberRef != null) {
+        it.key to memberRef.groupMemberId
+      } else {
+        null
+      }
+    }.toMap()
 
   val editing: Boolean
     get() =
@@ -568,7 +576,7 @@ fun ComposeView(
           type = cInfo.chatType,
           id = cInfo.apiId,
           itemId = ei.meta.itemId,
-          updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.mentions),
+          updatedMessage = UpdatedMessage(updateMsgContent(oldMsgContent), cs.memberMentions),
           live = live
         )
         if (updatedItem != null) withChats {
@@ -599,7 +607,7 @@ fun ComposeView(
       if (cs.message.isNotEmpty()) {
         sent?.mapIndexed { index, message ->
           if (index == sent!!.lastIndex) {
-            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.mentions)
+            send(chat, checkLinkPreview(), quoted = message.id, live = false, ttl = ttl, mentions = cs.memberMentions)
           } else {
             message
           }
@@ -711,7 +719,7 @@ fun ComposeView(
         val sendResult = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl,
-          mentions = cs.mentions
+          mentions = cs.memberMentions
         )
         sent = if (sendResult != null) listOf(sendResult) else null
         if (sent == null && index == msgs.lastIndex && cs.liveMessage == null) {

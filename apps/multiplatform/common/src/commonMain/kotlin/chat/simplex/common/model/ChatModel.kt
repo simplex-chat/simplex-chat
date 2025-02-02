@@ -2307,7 +2307,17 @@ data class CIMentionMember(
 data class CIMention(
   val memberId: String,
   val memberRef: CIMentionMember?
-)
+) {
+  constructor(groupMember: GroupMember): this(
+    groupMember.memberId,
+    CIMentionMember(
+      groupMember.groupMemberId,
+      groupMember.memberProfile.displayName,
+      groupMember.memberProfile.localAlias,
+      groupMember.memberRole
+    )
+  )
+}
 
 @Serializable
 class CIReaction(
