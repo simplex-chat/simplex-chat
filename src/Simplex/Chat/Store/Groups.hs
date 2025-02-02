@@ -643,11 +643,11 @@ deleteGroupChatItems db User {userId} GroupInfo {groupId} =
 deleteGroupMembers :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupMembers db User {userId} GroupInfo {groupId} = do
   DB.execute_ db "DROP TABLE IF EXISTS temp_delete_members"
-  #if defined(dbPostgres)
+#if defined(dbPostgres)
   DB.execute_ db "CREATE TABLE temp_delete_members (contact_profile_id BIGINT, member_profile_id BIGINT, local_display_name TEXT)"
-  #else
+#else
   DB.execute_ db "CREATE TABLE temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)"
-  #endif
+#endif
   DB.execute
     db
     [sql|
