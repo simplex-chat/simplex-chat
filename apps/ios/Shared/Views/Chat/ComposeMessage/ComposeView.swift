@@ -21,7 +21,7 @@ enum ComposePreview {
     case filePreview(fileName: String, file: URL)
 }
 
-enum ComposeContextItem {
+enum ComposeContextItem: Equatable {
     case noContextItem
     case quotedItem(chatItem: ChatItem)
     case editingItem(chatItem: ChatItem)

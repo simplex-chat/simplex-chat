@@ -11,37 +11,6 @@ import SimpleXChat
 
 let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
-enum GroupChatInfoViewAlert: Identifiable {
-    case deleteGroupAlert
-    case clearChatAlert
-    case leaveGroupAlert
-    case cantInviteIncognitoAlert
-    case largeGroupReceiptsDisabled
-    case blockMemberAlert(mem: GroupMember)
-    case unblockMemberAlert(mem: GroupMember)
-    case blockForAllAlert(mem: GroupMember)
-    case unblockForAllAlert(mem: GroupMember)
-    case removeMemberAlert(mem: GroupMember)
-    case error(title: LocalizedStringKey, error: LocalizedStringKey?)
-
-    var id: String {
-        switch self {
-        case .deleteGroupAlert: return "deleteGroupAlert"
-        case .clearChatAlert: return "clearChatAlert"
-        case .leaveGroupAlert: return "leaveGroupAlert"
-        case .cantInviteIncognitoAlert: return "cantInviteIncognitoAlert"
-        case .largeGroupReceiptsDisabled: return "largeGroupReceiptsDisabled"
-        case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
-        case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
-        case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
-        case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
-        case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
-        case let .error(title, _): return "error \(title)"
-        }
-    }
-}
-
-
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -64,6 +33,36 @@ struct GroupChatInfoView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
+
+    enum GroupChatInfoViewAlert: Identifiable {
+        case deleteGroupAlert
+        case clearChatAlert
+        case leaveGroupAlert
+        case cantInviteIncognitoAlert
+        case largeGroupReceiptsDisabled
+        case blockMemberAlert(mem: GroupMember)
+        case unblockMemberAlert(mem: GroupMember)
+        case blockForAllAlert(mem: GroupMember)
+        case unblockForAllAlert(mem: GroupMember)
+        case removeMemberAlert(mem: GroupMember)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
+
+        var id: String {
+            switch self {
+            case .deleteGroupAlert: return "deleteGroupAlert"
+            case .clearChatAlert: return "clearChatAlert"
+            case .leaveGroupAlert: return "leaveGroupAlert"
+            case .cantInviteIncognitoAlert: return "cantInviteIncognitoAlert"
+            case .largeGroupReceiptsDisabled: return "largeGroupReceiptsDisabled"
+            case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
+            case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
+            case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
+            case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
+            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
+            case let .error(title, _): return "error \(title)"
+            }
+        }
+    }
 
     var body: some View {
         NavigationView {
@@ -361,6 +360,135 @@ struct GroupChatInfoView: View {
             }
     }
 
+    private struct MemberRowView: View {
+        var groupInfo: GroupInfo
+        @ObservedObject var groupMember: GMember
+        @EnvironmentObject var theme: AppTheme
+        var user: Bool = false
+        @Binding var alert: GroupChatInfoViewAlert?
+
+        var body: some View {
+            let member = groupMember.wrapped
+            let v = HStack{
+                MemberProfileImage(member, size: 38)
+                    .padding(.trailing, 2)
+                // TODO server connection status
+                VStack(alignment: .leading) {
+                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
+                    (member.verified ? memberVerifiedShield + t : t)
+                        .lineLimit(1)
+                    (user ? Text ("you: ") + Text(member.memberStatus.shortText) : Text(memberConnStatus(member)))
+                        .lineLimit(1)
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                }
+                Spacer()
+                memberInfo(member)
+            }
+
+            if user {
+                v
+            } else if groupInfo.membership.memberRole >= .admin {
+                // TODO if there are more actions, refactor with lists of swipeActions
+                let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
+                let canRemove = member.canBeRemoved(groupInfo: groupInfo)
+                if canBlockForAll && canRemove {
+                    removeSwipe(member, blockForAllSwipe(member, v))
+                } else if canBlockForAll {
+                    blockForAllSwipe(member, v)
+                } else if canRemove {
+                    removeSwipe(member, v)
+                } else {
+                    v
+                }
+            } else {
+                if !member.blockedByAdmin {
+                    blockSwipe(member, v)
+                } else {
+                    v
+                }
+            }
+        }
+
+        private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
+            if member.activeConn?.connDisabled ?? false {
+                return "disabled"
+            } else if member.activeConn?.connInactive ?? false {
+                return "inactive"
+            } else {
+                return member.memberStatus.shortText
+            }
+        }
+
+        @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
+            if member.blocked {
+                Text("blocked")
+                    .foregroundColor(theme.colors.secondary)
+            } else {
+                let role = member.memberRole
+                if [.owner, .admin, .observer].contains(role) {
+                    Text(member.memberRole.text)
+                        .foregroundColor(theme.colors.secondary)
+                }
+            }
+        }
+
+        private func blockSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .leading) {
+                if member.memberSettings.showMessages {
+                    Button {
+                        alert = .blockMemberAlert(mem: member)
+                    } label: {
+                        Label("Block member", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
+                    }
+                } else {
+                    Button {
+                        alert = .unblockMemberAlert(mem: member)
+                    } label: {
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
+                    }
+                }
+            }
+        }
+
+        private func blockForAllSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .leading) {
+                if member.blockedByAdmin {
+                    Button {
+                        alert = .unblockForAllAlert(mem: member)
+                    } label: {
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
+                    }
+                } else {
+                    Button {
+                        alert = .blockForAllAlert(mem: member)
+                    } label: {
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
+                    }
+                }
+            }
+        }
+
+        private func removeSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .trailing) {
+                Button(role: .destructive) {
+                    alert = .removeMemberAlert(mem: member)
+                } label: {
+                    Label("Remove member", systemImage: "trash")
+                        .foregroundColor(Color.red)
+                }
+            }
+        }
+
+        private var memberVerifiedShield: Text {
+            (Text(Image(systemName: "checkmark.shield")) + textSpace)
+                .font(.caption)
+                .baselineOffset(2)
+                .kerning(-2)
+                .foregroundColor(theme.colors.secondary)
+        }
+    }
+    
     private func memberInfoView(_ groupMember: GMember) -> some View {
         GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
             .navigationBarHidden(false)
@@ -576,144 +704,6 @@ func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
         groupInfo.membership.memberCurrent ? Text("Chat will be deleted for all members - this cannot be undone!") : Text("Chat will be deleted for you - this cannot be undone!")
     )
 }
-
-struct MemberRowView: View {
-    var groupInfo: GroupInfo
-    @ObservedObject var groupMember: GMember
-    @EnvironmentObject var theme: AppTheme
-    var user: Bool = false
-    var showInfo: Bool = true
-    var swipesEnabled: Bool = true
-    var showlocalAliasAndFullName: Bool = false
-    var selectedMember: Bool = false
-    @Binding var alert: GroupChatInfoViewAlert?
-
-    var body: some View {
-        let member = groupMember.wrapped
-        let v = HStack{
-            MemberProfileImage(member, size: 38)
-                .padding(.trailing, 2)
-            // TODO server connection status
-            VStack(alignment: .leading) {
-                let t = Text(showlocalAliasAndFullName ? member.localAliasAndFullName : member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
-                (member.verified ? memberVerifiedShield + t : t)
-                    .lineLimit(1)
-                if showInfo {
-                    (user ? Text ("you: ") + Text(member.memberStatus.shortText) : Text(memberConnStatus(member)))
-                        .lineLimit(1)
-                        .font(.caption)
-                        .foregroundColor(theme.colors.secondary)
-                }
-            }
-            Spacer()
-            if showInfo {
-                memberInfo(member)
-            }
-        }
-        
-        if user || !swipesEnabled {
-            v
-        } else if groupInfo.membership.memberRole >= .admin {
-            // TODO if there are more actions, refactor with lists of swipeActions
-            let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
-            let canRemove = member.canBeRemoved(groupInfo: groupInfo)
-            if canBlockForAll && canRemove {
-                removeSwipe(member, blockForAllSwipe(member, v))
-            } else if canBlockForAll {
-                blockForAllSwipe(member, v)
-            } else if canRemove {
-                removeSwipe(member, v)
-            } else {
-                v
-            }
-        } else {
-            if !member.blockedByAdmin {
-                blockSwipe(member, v)
-            } else {
-                v
-            }
-        }
-    }
-
-    private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
-        if member.activeConn?.connDisabled ?? false {
-            return "disabled"
-        } else if member.activeConn?.connInactive ?? false {
-            return "inactive"
-        } else {
-            return member.memberStatus.shortText
-        }
-    }
-
-    @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
-        if member.blocked {
-            Text("blocked")
-                .foregroundColor(theme.colors.secondary)
-        } else {
-            let role = member.memberRole
-            if [.owner, .admin, .observer].contains(role) {
-                Text(member.memberRole.text)
-                    .foregroundColor(theme.colors.secondary)
-            }
-        }
-    }
-
-    private func blockSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
-        v.swipeActions(edge: .leading) {
-            if member.memberSettings.showMessages {
-                Button {
-                    alert = .blockMemberAlert(mem: member)
-                } label: {
-                    Label("Block member", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
-                }
-            } else {
-                Button {
-                    alert = .unblockMemberAlert(mem: member)
-                } label: {
-                    Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
-                }
-            }
-        }
-    }
-
-    private func blockForAllSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
-        v.swipeActions(edge: .leading) {
-            if member.blockedByAdmin {
-                Button {
-                    alert = .unblockForAllAlert(mem: member)
-                } label: {
-                    Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
-                }
-            } else {
-                Button {
-                    alert = .blockForAllAlert(mem: member)
-                } label: {
-                    Label("Block for all", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
-                }
-            }
-        }
-    }
-
-    private func removeSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
-        v.swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                alert = .removeMemberAlert(mem: member)
-            } label: {
-                Label("Remove member", systemImage: "trash")
-                    .foregroundColor(Color.red)
-            }
-        }
-    }
-
-    private var memberVerifiedShield: Text {
-        (Text(Image(systemName: "checkmark.shield")) + textSpace)
-            .font(.caption)
-            .baselineOffset(2)
-            .kerning(-2)
-            .foregroundColor(theme.colors.secondary)
-    }
-}
-
 
 struct GroupPreferencesButton: View {
     @Binding var groupInfo: GroupInfo

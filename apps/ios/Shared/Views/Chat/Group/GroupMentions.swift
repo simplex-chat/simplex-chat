@@ -16,6 +16,7 @@ let MAX_VISIBLE_MEMBER_ROWS: CGFloat = 4.8
 
 struct GroupMentionsView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     var groupInfo: GroupInfo
     @Binding var composeState: ComposeState
     @Binding var selectedRange: NSRange
@@ -44,23 +45,15 @@ struct GroupMentionsView: View {
                         Divider()
                         let list = List {
                             let mentionedMemberId = mentionMember?.wrapped.groupMemberId ?? -1
-                            ForEach(filteredMembers, id: \.wrapped.groupMemberId) { m in
-                                let mentioned = mentionedMemberId == m.wrapped.groupMemberId
+                            ForEach(filteredMembers, id: \.wrapped.groupMemberId) { member in
+                                let mentioned = mentionedMemberId == member.wrapped.groupMemberId
                                 let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
-                                MemberRowView(
-                                    groupInfo: groupInfo,
-                                    groupMember: m,
-                                    showInfo: false,
-                                    swipesEnabled: false,
-                                    showlocalAliasAndFullName: true,
-                                    selectedMember: mentioned,
-                                    alert: Binding.constant(nil)
-                                )
+                                memberRowView(member.wrapped, mentioned)
                                 .contentShape(Rectangle())
                                 .disabled(disabled)
                                 .opacity(disabled ? 0.6 : 1)
                                 .onTapGesture {
-                                    memberSelected(m)
+                                    memberSelected(member)
                                 }
                             }
                         }
@@ -91,12 +84,52 @@ struct GroupMentionsView: View {
                     messageChanged(currentMessage, composeState.parsedMessage, r)
                 }
             }
+            .onChange(of: composeState.contextItem) { cxt in
+                setEditedItemMentions(cxt)
+            }
             .onAppear {
                 currentMessage = composeState.message
+                setEditedItemMentions(composeState.contextItem)
             }
         }
     }
     
+    private func setEditedItemMentions(_ cxt: ComposeContextItem) {
+        if case let .editingItem(ci) = cxt {
+            if m.membersLoaded {
+                composeState = composeState.copy(mentions: itemMentions(ci))
+            } else {
+                Task {
+                    await m.loadGroupMembers(groupInfo) {
+                        let mentions = if composeState.mentions.isEmpty {
+                            itemMentions(ci)
+                        } else {
+                            composeState.mentions.merging(itemMentions(ci), uniquingKeysWith: { curr, new in curr })
+                        }
+                        composeState = composeState.copy(mentions: mentions)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func itemMentions(_ ci: ChatItem) -> [String:GMember] {
+        let m = ChatModel.shared
+        return if let mentions = ci.mentions {
+            mentions.compactMapValues { ciMention in
+                if let memberRef = ciMention.memberRef,
+                   let gmIndex = m.groupMembersIndexes[memberRef.groupMemberId],
+                   gmIndex < m.groupMembers.count {
+                    m.groupMembers[gmIndex]
+                } else {
+                    nil
+                }
+            }
+        } else {
+            [:]
+        }
+    }
+
     private var filteredMembers: [GMember] {
         let members = m.groupMembers
             .filter { m in
@@ -109,7 +142,7 @@ struct GroupMentionsView: View {
         ? members
         : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
     }
-    
+
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {
         removeUnusedMentions(parsedMsg)
         if let (ft, r) = selectedMarkdown(parsedMsg, range) {
@@ -141,7 +174,7 @@ struct GroupMentionsView: View {
         }
         closeMemberList()
     }
-    
+
     private func removeUnusedMentions(_ parsedMsg: [FormattedText]) {
         let usedMentions: Set<String> = Set(parsedMsg.compactMap { ft in
             if case let .mention(name) = ft.format { name } else { nil }
@@ -150,7 +183,7 @@ struct GroupMentionsView: View {
             composeState = composeState.copy(mentions: composeState.mentions.filter({ usedMentions.contains($0.key) }))
         }
     }
-    
+
     private func getCharacter(_ s: String, _ pos: Int) -> (char: String.SubSequence, range: NSRange)? {
         if pos < 0 || pos >= s.count { return nil }
         let r = NSRange(location: pos, length: 1)
@@ -220,5 +253,29 @@ struct GroupMentionsView: View {
         mentionName = ""
         mentionRange = nil
         mentionMember = nil
+    }
+    
+    private func memberRowView(_ member: GroupMember, _ mentioned: Bool) -> some View {
+        return HStack{
+            MemberProfileImage(member, size: 38)
+                .padding(.trailing, 2)
+            VStack(alignment: .leading) {
+                let t = Text(member.localAliasAndFullName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
+                (member.verified ? memberVerifiedShield() + t : t)
+                    .lineLimit(1)
+            }
+            Spacer()
+            if mentioned {
+                Image(systemName: "checkmark")
+            }
+        }
+
+        func memberVerifiedShield() -> Text {
+            (Text(Image(systemName: "checkmark.shield")) + textSpace)
+                .font(.caption)
+                .baselineOffset(2)
+                .kerning(-2)
+                .foregroundColor(theme.colors.secondary)
+        }
     }
 }
