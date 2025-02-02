@@ -1693,12 +1693,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Live message!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Live messages" xml:space="preserve">
+      <trans-unit id="Live messages" xml:space="preserve" approved="no">
         <source>Live messages</source>
+        <target state="translated">Žive poruke</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local name" xml:space="preserve">
+      <trans-unit id="Local name" xml:space="preserve" approved="no">
         <source>Local name</source>
+        <target state="translated">Lokalno ime</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local profile data only" xml:space="preserve">
@@ -3714,6 +3716,14 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="Immediately" xml:space="preserve" approved="no">
         <source>Immediately</source>
         <target state="translated">Odmah</target>
+      </trans-unit>
+      <trans-unit id="Address settings" xml:space="preserve" approved="no">
+        <source>Address settings</source>
+        <target state="translated">Podešavanje adrese</target>
+      </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
+        <source>Admins can block a member for all.</source>
+        <target state="needs-translation">Administratori mogu da blokiraju</target>
       </trans-unit>
     </body>
   </file>
