@@ -173,7 +173,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '`' -> formattedP '`' Snippet
           '#' -> A.char '#' *> secretP
           '!' -> coloredP <|> wordP
-          '@' -> mentionP
+          '@' -> mentionP <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP

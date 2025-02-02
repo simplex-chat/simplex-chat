@@ -4887,6 +4887,10 @@ Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
 
+Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
+Plan:
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
+
 Query: DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
 Plan:
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group (group_id=? AND item_member_id=? AND shared_msg_id=?)

@@ -43,23 +43,26 @@ s <<== ft = T.concat (map markdownText ft) `shouldBe` s
 (<<==>>) :: Text -> MarkdownList -> Expectation
 s <<==>> ft = (s ==>> ft) >> (s <<== ft)
 
+bold :: Text -> Markdown
+bold = markdown Bold
+
 textFormat :: Spec
 textFormat = describe "text format (bold)" do
   it "correct markdown" do
     "this is *bold formatted* text"
-      <==> "this is " <> markdown Bold "bold formatted" <> " text"
+      <==> "this is " <> bold "bold formatted" <> " text"
     "*bold formatted* text"
-      <==> markdown Bold "bold formatted" <> " text"
+      <==> bold "bold formatted" <> " text"
     "this is *bold*"
-      <==> "this is " <> markdown Bold "bold"
+      <==> "this is " <> bold "bold"
     " *bold* text"
-      <==> " " <> markdown Bold "bold" <> " text"
+      <==> " " <> bold "bold" <> " text"
     "   *bold* text"
-      <==> "   " <> markdown Bold "bold" <> " text"
+      <==> "   " <> bold "bold" <> " text"
     "this is *bold* "
-      <==> "this is " <> markdown Bold "bold" <> " "
+      <==> "this is " <> bold "bold" <> " "
     "this is *bold*   "
-      <==> "this is " <> markdown Bold "bold" <> "   "
+      <==> "this is " <> bold "bold" <> "   "
   it "ignored as markdown" do
     "this is * unformatted * text"
       <==> "this is * unformatted * text"
@@ -73,9 +76,11 @@ textFormat = describe "text format (bold)" do
       <==> "this is*unformatted* text"
     "this is *unformatted text"
       <==> "this is *unformatted text"
+    "*this* is *unformatted text"
+      <==> bold "this" <> " is *unformatted text"
   it "ignored internal markdown" do
     "this is *long _bold_ (not italic)* text"
-      <==> "this is " <> markdown Bold "long _bold_ (not italic)" <> " text"
+      <==> "this is " <> bold "long _bold_ (not italic)" <> " text"
     "snippet: `this is *bold text*`"
       <==> "snippet: " <> markdown Snippet "this is *bold text*"
 
@@ -113,6 +118,8 @@ secretText = describe "secret text" do
       <==> "this is#unformatted# text"
     "this is #unformatted text"
       <==> "this is #unformatted text"
+    "*this* is #unformatted text"
+      <==> bold "this" <> " is #unformatted text"
   it "ignored internal markdown" do
     "snippet: `this is #secret_text#`"
       <==> "snippet: " <> markdown Snippet "this is #secret_text#"
@@ -150,6 +157,8 @@ textColor = describe "text color (red)" do
       <==> "this is!1 unformatted! text"
     "this is !1 unformatted text"
       <==> "this is !1 unformatted text"
+    "*this* is !1 unformatted text"
+      <==> bold "this" <> " is !1 unformatted text"
   it "ignored internal markdown" do
     "this is !1 long *red* (not bold)! text"
       <==> "this is " <> red "long *red* (not bold)" <> " text"
@@ -179,6 +188,7 @@ textWithUri = describe "text with Uri" do
   it "ignored as markdown" do
     "_https://simplex.chat" <==> "_https://simplex.chat"
     "this is _https://simplex.chat" <==> "this is _https://simplex.chat"
+    "this is https://" <==> "this is https://"
   it "SimpleX links" do
     let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
     ("https://simplex.chat" <> inv) <==> simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("https://simplex.chat" <> inv)
@@ -208,6 +218,7 @@ textWithEmail = describe "text with Email" do
     "this is chat @simplex.chat" <==> "this is chat " <> mention "simplex.chat" "@simplex.chat"
     "this is chat@ simplex.chat" <==> "this is chat@ simplex.chat"
     "this is chat @ simplex.chat" <==> "this is chat @ simplex.chat"
+    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ simplex.chat"
 
 phone :: Text -> Markdown
 phone = Markdown $ Just Phone
@@ -227,8 +238,9 @@ textWithPhone = describe "text with Phone" do
       <==> "test " <> phone "+44 (0) 7777.777.777" <> " " <> uri "https://simplex.chat" <> " test"
   it "ignored as markdown (too short)" $
     "test 077777 test" <==> "test 077777 test"
-  it "ignored as markdown (double spaces)" $
+  it "ignored as markdown (double spaces)" $ do
     "test 07777  777  777 test" <==> "test 07777  777  777 test"
+    "*test* 07777  777  777 test" <==> bold "test" <> " 07777  777  777 test"
 
 mention :: Text -> Text -> Markdown
 mention = Markdown . Just . Mention
@@ -243,7 +255,10 @@ textWithMentions = describe "text with mentions" do
     "hello @'alice jones'!" <==> "hello " <> mention "alice jones" "@'alice jones'" <> "!"
   it "ignored as markdown" $ do
     "hello @'alice jones!" <==> "hello @'alice jones!"
+    "hello @bob @'alice jones!" <==> "hello " <> mention "bob" "@bob" <> " @'alice jones!"
     "hello @ alice!" <==> "hello @ alice!"
+    "hello @bob @ alice!" <==> "hello " <> mention "bob" "@bob" <> " @ alice!"
+    "hello @bob @" <==> "hello " <> mention "bob" "@bob" <> " @"
 
 uri' :: Text -> FormattedText
 uri' = FormattedText $ Just Uri
