@@ -229,12 +229,13 @@ struct ChatPreviewView: View {
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
             }
         } else if let ntfMode = chat.chatInfo.chatSettings?.enableNtfs, ntfMode != .all {
-            let iconSize = ntfMode == .none ? dynamicChatInfoSize : dynamicChatInfoSize * 0.8
+            let iconSize = ntfMode == .mentions ? dynamicChatInfoSize * 0.8 : dynamicChatInfoSize
+            let iconColor = ntfMode == .mentions ? theme.colors.secondary.opacity(0.7) : theme.colors.secondary
             Image(systemName: ntfMode.iconFilled)
                 .resizable()
                 .scaledToFill()
                 .frame(width: iconSize, height: iconSize)
-                .foregroundColor(theme.colors.secondary)
+                .foregroundColor(iconColor)
         } else if chat.chatInfo.chatSettings?.favorite ?? false {
             Image(systemName: "star.fill")
                 .resizable()
