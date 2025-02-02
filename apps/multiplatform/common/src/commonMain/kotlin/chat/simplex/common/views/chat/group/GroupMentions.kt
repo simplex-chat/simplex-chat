@@ -146,10 +146,11 @@ fun GroupMentions(
       mentions = mentions
     )
 
+    composeViewFocusRequester?.requestFocus()
+    textSelection.value = TextRange(newPos)
+    
     scope.launch {
       closeMembersPicker()
-      composeViewFocusRequester?.requestFocus()
-      textSelection.value = TextRange(newPos)
     }
   }
 
