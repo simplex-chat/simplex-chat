@@ -154,10 +154,10 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, 
                     } else {
                         ref.displayName
                     }
-                    let tName = Text("@\(name)").fontWeight(.semibold)
+                    let tName = mentionText(name)
                     return m.memberId == userMemberId ? tName.foregroundColor(.accentColor) : tName
                 } else {
-                    return Text("@\(memberName)").fontWeight(.semibold)
+                    return mentionText(memberName)
                 }
             }
             return Text(t)
@@ -167,6 +167,10 @@ private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool, 
     } else {
         return Text(t)
     }
+}
+
+private func mentionText(_ name: String) -> Text {
+    Text(name.contains(" @") ? "@'\(name)'" : "@\(name)").fontWeight(.semibold)
 }
 
 private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: String, color: Color = Color(uiColor: uiLinkColor), uiColor: UIColor = uiLinkColor) -> Text {
