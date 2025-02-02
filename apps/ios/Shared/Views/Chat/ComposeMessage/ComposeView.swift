@@ -41,7 +41,7 @@ struct LiveMessage {
     var sentMsg: String?
 }
 
-typealias MentionedMembers = [String: GMember]
+typealias MentionedMembers = [String: CIMention]
 
 struct ComposeState {
     var message: String
@@ -84,6 +84,7 @@ struct ComposeState {
         } else {
             self.voiceMessageRecordingState = .noRecording
         }
+        self.mentions = editingItem.mentions ?? [:]
     }
 
     init(forwardingItems: [ChatItem], fromChatInfo: ChatInfo) {
@@ -125,7 +126,7 @@ struct ComposeState {
     }
     
     var memberMentions: [String: Int64] {
-        self.mentions.mapValues { $0.wrapped.groupMemberId }
+        self.mentions.compactMapValues { $0.memberRef?.groupMemberId }
     }
     
     var editing: Bool {

@@ -26,7 +26,7 @@ struct GroupMentionsView: View {
     @State private var currentMessage: String = ""
     @State private var mentionName: String = ""
     @State private var mentionRange: NSRange?
-    @State private var mentionMember: GMember?
+    @State private var mentionMemberId: String?
 
     var body: some View {
         ZStack {
@@ -44,9 +44,8 @@ struct GroupMentionsView: View {
                     VStack {
                         Divider()
                         let list = List {
-                            let mentionedMemberId = mentionMember?.wrapped.groupMemberId ?? -1
                             ForEach(filteredMembers, id: \.wrapped.groupMemberId) { member in
-                                let mentioned = mentionedMemberId == member.wrapped.groupMemberId
+                                let mentioned = mentionMemberId == member.wrapped.memberId
                                 let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
                                 memberRowView(member.wrapped, mentioned)
                                 .contentShape(Rectangle())
@@ -84,52 +83,12 @@ struct GroupMentionsView: View {
                     messageChanged(currentMessage, composeState.parsedMessage, r)
                 }
             }
-            .onChange(of: composeState.contextItem) { cxt in
-                setEditedItemMentions(cxt)
-            }
             .onAppear {
                 currentMessage = composeState.message
-                setEditedItemMentions(composeState.contextItem)
             }
         }
     }
     
-    private func setEditedItemMentions(_ cxt: ComposeContextItem) {
-        if case let .editingItem(ci) = cxt {
-            if m.membersLoaded {
-                composeState = composeState.copy(mentions: itemMentions(ci))
-            } else {
-                Task {
-                    await m.loadGroupMembers(groupInfo) {
-                        let mentions = if composeState.mentions.isEmpty {
-                            itemMentions(ci)
-                        } else {
-                            composeState.mentions.merging(itemMentions(ci), uniquingKeysWith: { curr, new in curr })
-                        }
-                        composeState = composeState.copy(mentions: mentions)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func itemMentions(_ ci: ChatItem) -> [String:GMember] {
-        let m = ChatModel.shared
-        return if let mentions = ci.mentions {
-            mentions.compactMapValues { ciMention in
-                if let memberRef = ciMention.memberRef,
-                   let gmIndex = m.groupMembersIndexes[memberRef.groupMemberId],
-                   gmIndex < m.groupMembers.count {
-                    m.groupMembers[gmIndex]
-                } else {
-                    nil
-                }
-            }
-        } else {
-            [:]
-        }
-    }
-
     private var filteredMembers: [GMember] {
         let members = m.groupMembers
             .filter { m in
@@ -151,7 +110,7 @@ struct GroupMentionsView: View {
                 isVisible = true
                 mentionName = name
                 mentionRange = r
-                mentionMember = composeState.mentions[name]
+                mentionMemberId = composeState.mentions[name]?.memberId
                 if !m.membersLoaded {
                     Task { await m.loadGroupMembers(groupInfo) }
                 }
@@ -164,7 +123,7 @@ struct GroupMentionsView: View {
                         isVisible = true
                         mentionName = ""
                         mentionRange = atRange
-                        mentionMember = nil
+                        mentionMemberId = nil
                         Task { await m.loadGroupMembers(groupInfo) }
                         return
                     }
@@ -209,14 +168,8 @@ struct GroupMentionsView: View {
     }
     
     private func memberSelected(_ member: GMember) {
-        if let range = mentionRange {
-            if let mentionMember {
-                if mentionMember.wrapped.groupMemberId != member.wrapped.groupMemberId {
-                    addMemberMention(member, range)
-                }
-            } else {
-                addMemberMention(member, range)
-            }
+        if let range = mentionRange, mentionMemberId == nil || mentionMemberId != member.wrapped.memberId {
+            addMemberMention(member, range)
         }
     }
     
@@ -224,12 +177,12 @@ struct GroupMentionsView: View {
         guard let range = Range(r, in: composeState.message) else { return }
         var mentions = composeState.mentions
         var newName: String
-        if let mm = mentions.first(where: { $0.value.wrapped.groupMemberId == member.wrapped.groupMemberId }) {
+        if let mm = mentions.first(where: { $0.value.memberId == member.wrapped.memberId }) {
             newName = mm.key
         } else {
             newName = composeState.mentionMemberName(member.wrapped.memberProfile.displayName)
         }
-        mentions[newName] = member
+        mentions[newName] = CIMention(groupMember: member.wrapped)
         var msgMention = "@" + (newName.contains(" ") ? "'\(newName)'" : newName)
         var newPos = r.location + msgMention.count
         let newMsgLength = composeState.message.count + msgMention.count - r.length
@@ -252,7 +205,7 @@ struct GroupMentionsView: View {
         isVisible = false
         mentionName = ""
         mentionRange = nil
-        mentionMember = nil
+        mentionMemberId = nil
     }
     
     private func memberRowView(_ member: GroupMember, _ mentioned: Bool) -> some View {
