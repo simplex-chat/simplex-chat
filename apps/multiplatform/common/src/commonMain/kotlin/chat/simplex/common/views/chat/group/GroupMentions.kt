@@ -135,16 +135,21 @@ fun GroupMentions(
       newPos += 1
     }
 
+    val msg = composeState.value.message.replaceRange(
+      range.start,
+      range.end,
+      msgMention
+    )
     composeState.value = composeState.value.copy(
-      message = composeState.value.message.replaceRange(
-        range.start,
-        range.end,
-        msgMention
-      ),
+      message = msg,
+      parsedMessage = parseToMarkdown(msg) ?: FormattedText.plain(msg),
       mentions = mentions
     )
+
     scope.launch {
       closeMembersPicker()
+      composeViewFocusRequester?.requestFocus()
+      textSelection.value = TextRange(newPos)
     }
   }
 
@@ -219,12 +224,6 @@ fun GroupMentions(
                 }
               } else {
                 addMemberMention(member, range)
-              }
-
-              if (appPlatform.isDesktop) {
-                // Desktop doesn't auto focus after click, we need to do it manually in here.
-                composeViewFocusRequester?.requestFocus()
-                textSelection.value = TextRange(composeState.value.message.length)
               }
             }
             .padding(horizontal = DEFAULT_PADDING_HALF),
