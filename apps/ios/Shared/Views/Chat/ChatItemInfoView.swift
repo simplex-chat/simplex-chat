@@ -14,6 +14,7 @@ struct ChatItemInfoView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     var ci: ChatItem
+    var userMemberId: String?
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
     @State private var alert: CIInfoViewAlert? = nil
@@ -258,7 +259,7 @@ struct ChatItemInfoView: View {
 
     @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil) -> some View {
         if text != "" {
-            TextBubble(text: text, formattedText: formattedText, sender: sender)
+            TextBubble(text: text, formattedText: formattedText, sender: sender, mentions: ci.mentions, userMemberId: userMemberId)
         } else {
             Text("no text")
                 .italic()
@@ -271,10 +272,12 @@ struct ChatItemInfoView: View {
         var text: String
         var formattedText: [FormattedText]?
         var sender: String? = nil
+        var mentions: [String: CIMention]?
+        var userMemberId: String?
         @State private var showSecrets = false
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
         }
     }
 
@@ -548,6 +551,6 @@ func localTimestamp(_ date: Date) -> String {
 
 struct ChatItemInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatItemInfoView(ci: ChatItem.getSample(1, .directSnd, .now, "hello"), chatItemInfo: Binding.constant(nil))
+        ChatItemInfoView(ci: ChatItem.getSample(1, .directSnd, .now, "hello"), userMemberId: Chat.sampleData.chatInfo.groupInfo?.membership.memberId, chatItemInfo: Binding.constant(nil))
     }
 }

@@ -40,7 +40,7 @@ public struct ErrorAlert: Error {
         self = if let chatResponse = error as? ChatResponse {
             ErrorAlert(chatResponse)
         } else {
-            ErrorAlert(LocalizedStringKey(error.localizedDescription))
+            ErrorAlert("\(error.localizedDescription)")
         }
     }
 

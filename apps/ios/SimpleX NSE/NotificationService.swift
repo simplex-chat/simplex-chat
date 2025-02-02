@@ -789,7 +789,7 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotificationData)?
             if let file = cItem.autoReceiveFile() {
                 cItem = autoReceiveFile(file) ?? cItem
             }
-            let ntf: NSENotificationData = (cInfo.ntfsEnabled && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
+            let ntf: NSENotificationData = (cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
             return (chatItem.chatId, ntf)
         } else {
             return nil

@@ -150,6 +150,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
+-- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
   where

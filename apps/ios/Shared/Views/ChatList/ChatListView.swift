@@ -480,7 +480,7 @@ struct ChatListView: View {
             switch chatTagsModel.activeFilter {
             case let .presetTag(tag): presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats)
             case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
-            case .unread: chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
+            case .unread: chat.unreadTag
             case .none: true
             }
         }

@@ -26,6 +26,7 @@ struct ChatView: View {
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
+    @State private var selectedRange = NSRange()
     @State private var keyboardVisible = false
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
@@ -76,6 +77,9 @@ struct ChatView: View {
             VStack(spacing: 0) {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
+                    if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
+                        GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
+                    }
                     FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat)
                 }
                 connectingText()
@@ -83,7 +87,8 @@ struct ChatView: View {
                     ComposeView(
                         chat: chat,
                         composeState: $composeState,
-                        keyboardVisible: $keyboardVisible
+                        keyboardVisible: $keyboardVisible,
+                        selectedRange: $selectedRange
                     )
                     .disabled(!cInfo.sendMsgEnabled)
                 } else {
@@ -991,31 +996,37 @@ struct ChatView: View {
                     markedRead = true
                 }
                 if let range {
-                    let itemIds = unreadItemIds(range)
+                    let (itemIds, unreadMentions) = unreadItemIds(range)
                     if !itemIds.isEmpty {
                         waitToMarkRead {
-                            await apiMarkChatItemsRead(chat.chatInfo, itemIds)
+                            await apiMarkChatItemsRead(chat.chatInfo, itemIds, mentionsRead: unreadMentions)
                         }
                     }
                 } else if chatItem.isRcvNew  {
                     waitToMarkRead {
-                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id])
+                        await apiMarkChatItemsRead(chat.chatInfo, [chatItem.id], mentionsRead: chatItem.meta.userMention ? 1 : 0)
                     }
                 }
             }
             .actionSheet(item: $actionSheet) { $0.actionSheet }
         }
 
-        private func unreadItemIds(_ range: ClosedRange<Int>) -> [ChatItem.ID] {
+        private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int) {
             let im = ItemsModel.shared
-            return range.compactMap { i in
-                if i >= 0 && i < im.reversedChatItems.count {
-                    let ci = im.reversedChatItems[i]
-                    return if ci.isRcvNew { ci.id } else { nil }
-                } else {
-                    return nil
+            var unreadItems: [ChatItem.ID] = []
+            var unreadMentions: Int = 0
+            
+            for i in range {
+                let ci = im.reversedChatItems[i]
+                if ci.isRcvNew {
+                    unreadItems.append(ci.id)
+                    if ci.meta.userMention {
+                        unreadMentions += 1
+                    }
                 }
             }
+            
+            return (unreadItems, unreadMentions)
         }
         
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
@@ -1227,7 +1238,7 @@ struct ChatView: View {
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {
-                    ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(ci: ci, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, chatItemInfo: $chatItemInfo)
                 }
         }
 
@@ -2044,21 +2055,19 @@ struct ToggleNtfsButton: View {
     @ObservedObject var chat: Chat
 
     var body: some View {
-        Button {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
-        } label: {
-            if chat.chatInfo.ntfsEnabled {
-                Label("Mute", systemImage: "speaker.slash")
-            } else {
-                Label("Unmute", systemImage: "speaker.wave.2")
+        if let nextMode = chat.chatInfo.nextNtfMode {
+            Button {
+                toggleNotifications(chat, enableNtfs: nextMode)
+            } label: {
+                Label(nextMode.text(mentions: chat.chatInfo.hasMentions), systemImage: nextMode.icon)
             }
         }
     }
 }
 
-func toggleNotifications(_ chat: Chat, enableNtfs: Bool) {
+func toggleNotifications(_ chat: Chat, enableNtfs: MsgFilter) {
     var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
-    chatSettings.enableNtfs = enableNtfs ? .all : .none
+    chatSettings.enableNtfs = enableNtfs
     updateChatSettings(chat, chatSettings: chatSettings)
 }
 

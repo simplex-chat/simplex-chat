@@ -205,6 +205,7 @@
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		8CE848A32C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */; };
 		B70A39732D24090D00E80A5F /* TagListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70A39722D24090D00E80A5F /* TagListView.swift */; };
+		B70CE9E62D4BE5930080F36D /* GroupMentions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70CE9E52D4BE5930080F36D /* GroupMentions.swift */; };
 		B728945B2D0C62BF00F7A19A /* ElegantEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = B728945A2D0C62BF00F7A19A /* ElegantEmojiPicker */; };
 		B73EFE532CE5FA3500C778EA /* CreateSimpleXAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73EFE522CE5FA3500C778EA /* CreateSimpleXAddress.swift */; };
 		B76E6C312C5C41D900EC11AA /* ContactListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76E6C302C5C41D900EC11AA /* ContactListNavLink.swift */; };
@@ -556,6 +557,7 @@
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableChatItemToolbars.swift; sourceTree = "<group>"; };
 		B70A39722D24090D00E80A5F /* TagListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagListView.swift; sourceTree = "<group>"; };
+		B70CE9E52D4BE5930080F36D /* GroupMentions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupMentions.swift; sourceTree = "<group>"; };
 		B73EFE522CE5FA3500C778EA /* CreateSimpleXAddress.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CreateSimpleXAddress.swift; sourceTree = "<group>"; };
 		B76E6C302C5C41D900EC11AA /* ContactListNavLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactListNavLink.swift; sourceTree = "<group>"; };
 		B79ADAFE2CE4EF930083DFFD /* AddressCreationCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressCreationCard.swift; sourceTree = "<group>"; };
@@ -1096,6 +1098,7 @@
 				5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */,
 				6448BBB528FA9D56000D2AB9 /* GroupLinkView.swift */,
 				1841516F0CE5992B0EDFB377 /* GroupWelcomeView.swift */,
+				B70CE9E52D4BE5930080F36D /* GroupMentions.swift */,
 			);
 			path = Group;
 			sourceTree = "<group>";
@@ -1452,6 +1455,7 @@
 				B76E6C312C5C41D900EC11AA /* ContactListNavLink.swift in Sources */,
 				5C10D88A28F187F300E58BF0 /* FullScreenMediaView.swift in Sources */,
 				D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */,
+				B70CE9E62D4BE5930080F36D /* GroupMentions.swift in Sources */,
 				CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */,
 				64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,

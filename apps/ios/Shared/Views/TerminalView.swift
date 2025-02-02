@@ -18,6 +18,7 @@ struct TerminalView: View {
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var composeState: ComposeState = ComposeState()
+    @State var selectedRange = NSRange()
     @State private var keyboardVisible = false
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
@@ -96,6 +97,7 @@ struct TerminalView: View {
 
                 SendMessageView(
                     composeState: $composeState,
+                    selectedRange: $selectedRange,
                     sendMessage: { _ in consoleSendMessage() },
                     showVoiceMessageButton: false,
                     onMediaAdded: { _ in },

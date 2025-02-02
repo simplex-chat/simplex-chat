@@ -485,8 +485,8 @@ private func createChatItemsErrorAlert(_ r: ChatResponse) {
     )
 }
 
-func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool = false) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, msg: msg, live: live), bgDelay: msgDelay)
+func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool = false) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, updatedMessage: updatedMessage, live: live), bgDelay: msgDelay)
     if case let .chatItemUpdated(_, aChatItem) = r { return aChatItem.chatItem }
     throw r
 }
@@ -1491,11 +1491,11 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     }
 }
 
-func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID]) async {
+func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
     do {
         try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
         DispatchQueue.main.async {
-            ChatModel.shared.markChatItemsRead(cInfo, itemIds)
+            ChatModel.shared.markChatItemsRead(cInfo, itemIds, mentionsRead)
         }
     } catch {
         logger.error("apiChatItemsRead error: \(responseError(error))")
@@ -1576,6 +1576,7 @@ func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
     throw r
 }
 
+// use ChatModel's loadGroupMembers from views
 func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     let r = await chatSendCmd(.apiListMembers(groupId: groupId))
     if case let .groupMembers(_, group) = r { return group.members }
@@ -2027,7 +2028,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled {
+                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
                     m.increaseUnreadCounter(user: user)
                 }
             }
@@ -2072,7 +2073,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .chatItemsDeleted(user, items, _):
         if !active(user) {
             for item in items {
-                if item.toChatItem == nil && item.deletedChatItem.chatItem.isRcvNew && item.deletedChatItem.chatInfo.ntfsEnabled {
+                let d = item.deletedChatItem
+                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) {
                     await MainActor.run {
                         m.decreaseUnreadCounter(user: user)
                     }

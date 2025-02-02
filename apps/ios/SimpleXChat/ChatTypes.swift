@@ -1447,9 +1447,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             return .other
         }
     }
-
-    public var ntfsEnabled: Bool {
-        self.chatSettings?.enableNtfs == .all
+    
+    public func ntfsEnabled(chatItem: ChatItem) -> Bool {
+        ntfsEnabled(chatItem.meta.userMention)
+    }
+    
+    public func ntfsEnabled(_ userMention: Bool) -> Bool {
+        switch self.chatSettings?.enableNtfs {
+        case .all: true
+        case .mentions: userMention
+        default: false
+        }
     }
 
     public var chatSettings: ChatSettings? {
@@ -1460,6 +1468,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
     
+    public var nextNtfMode: MsgFilter? {
+        self.chatSettings?.enableNtfs.nextMode(mentions: hasMentions)
+    }
+
+    public var hasMentions: Bool {
+        if case .group = self { true } else { false }
+    }
+
     public var chatTags: [Int64]? {
         switch self {
         case let .direct(contact): return contact.chatTags
@@ -1559,14 +1575,16 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
 }
 
 public struct ChatStats: Decodable, Hashable {
-    public init(unreadCount: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
+    public init(unreadCount: Int = 0, unreadMentions: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
+        self.unreadMentions = unreadMentions
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
     }
 
     public var unreadCount: Int = 0
+    public var unreadMentions: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
@@ -2085,6 +2103,16 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
         : name
     }
+    
+    public var localAliasAndFullName: String {
+        get {
+            let p = memberProfile
+            let fullName = p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+            let name = p.localAlias == "" ? fullName : "\(p.localAlias) (\(fullName))"
+
+            return pastMember(name)
+        }
+    }
 
     public var memberActive: Bool {
         switch memberStatus {
@@ -2392,6 +2420,28 @@ public struct AChatItem: Decodable, Hashable {
     }
 }
 
+public struct CIMentionMember: Decodable, Hashable {
+    public var groupMemberId: Int64
+    public var displayName: String
+    public var localAlias: String?
+    public var memberRole: GroupMemberRole
+}
+
+public struct CIMention: Decodable, Hashable {
+    public var memberId: String
+    public var memberRef: CIMentionMember?
+    
+    public init(groupMember m: GroupMember) {
+        self.memberId = m.memberId
+        self.memberRef = CIMentionMember(
+            groupMemberId: m.groupMemberId,
+            displayName: m.memberProfile.displayName,
+            localAlias: m.memberProfile.localAlias,
+            memberRole: m.memberRole
+        )
+    }
+}
+
 public struct ACIReaction: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatReaction: CIReaction
@@ -2410,11 +2460,12 @@ public struct CIReaction: Decodable, Hashable {
 }
 
 public struct ChatItem: Identifiable, Decodable, Hashable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
+        self.mentions = mentions
         self.quotedItem = quotedItem
         self.reactions = reactions
         self.file = file
@@ -2424,6 +2475,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var meta: CIMeta
     public var content: CIContent
     public var formattedText: [FormattedText]?
+    public var mentions: [String: CIMention]?
     public var quotedItem: CIQuote?
     public var reactions: [CIReactionCount]
     public var file: CIFile?
@@ -2432,7 +2484,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, quotedItem, reactions, file
+        case chatDir, meta, content, formattedText, mentions, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -2743,6 +2795,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2765,6 +2818,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2787,6 +2841,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: true,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2860,6 +2915,7 @@ public struct CIMeta: Decodable, Hashable {
     public var itemEdited: Bool
     public var itemTimed: CITimed?
     public var itemLive: Bool?
+    public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
 
@@ -2884,6 +2940,7 @@ public struct CIMeta: Decodable, Hashable {
             itemDeleted: itemDeleted,
             itemEdited: itemEdited,
             itemLive: itemLive,
+            userMention: false,
             deletable: deletable,
             editable: editable
         )
@@ -2900,6 +2957,7 @@ public struct CIMeta: Decodable, Hashable {
             itemDeleted: nil,
             itemEdited: false,
             itemLive: false,
+            userMention: false,
             deletable: false,
             editable: false
         )
@@ -3921,6 +3979,12 @@ public struct FormattedText: Decodable, Hashable {
     public var text: String
     public var format: Format?
 
+    public static func plain(_ text: String) -> [FormattedText] {
+        text.isEmpty
+        ? []
+        : [FormattedText(text: text, format: nil)]
+    }
+
     public var isSecret: Bool {
         if case .secret = format { true } else { false }
     }
@@ -3935,6 +3999,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case colored(color: FormatColor)
     case uri
     case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case mention(memberName: String)
     case email
     case phone
 
