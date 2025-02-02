@@ -258,6 +258,7 @@ textWithMentions = describe "text with mentions" do
     "hello @bob @'alice jones!" <==> "hello " <> mention "bob" "@bob" <> " @'alice jones!"
     "hello @ alice!" <==> "hello @ alice!"
     "hello @bob @ alice!" <==> "hello " <> mention "bob" "@bob" <> " @ alice!"
+    "hello @bob @" <==> "hello " <> mention "bob" "@bob" <> " @"
 
 uri' :: Text -> FormattedText
 uri' = FormattedText $ Just Uri
