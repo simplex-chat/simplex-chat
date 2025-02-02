@@ -591,7 +591,7 @@ public enum ChatResponse: Decodable, Error {
     case chatStopped
     case chatSuspended
     case apiChats(user: UserRef, chats: [ChatData])
-    case apiChat(user: UserRef, chat: ChatData)
+    case apiChat(user: UserRef, chat: ChatData, navInfo: NavigationInfo?)
     case chatTags(user: UserRef, userTags: [ChatTag])
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
@@ -949,7 +949,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatStopped: return noDetails
             case .chatSuspended: return noDetails
             case let .apiChats(u, chats): return withUser(u, String(describing: chats))
-            case let .apiChat(u, chat): return withUser(u, String(describing: chat))
+            case let .apiChat(u, chat, navInfo): return withUser(u, "chat: \(String(describing: chat))\nnavInfo: \(String(describing: navInfo))")
             case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
             case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
             case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
@@ -1200,10 +1200,15 @@ struct NewUser: Encodable {
 }
 
 public enum ChatPagination {
+    public static let INITIAL_COUNT = 75
+    public static let PRELOAD_COUNT = 100
+    public static let UNTIL_PRELOAD_COUNT = 50
+
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
     case before(chatItemId: Int64, count: Int)
     case around(chatItemId: Int64, count: Int)
+    case initial(count: Int)
 
     var cmdString: String {
         switch self {
@@ -1211,6 +1216,7 @@ public enum ChatPagination {
         case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
         case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
         case let .around(chatItemId, count): return "around=\(chatItemId) count=\(count)"
+        case let .initial(count): return "initial=\(count)"
         }
     }
 }
@@ -1218,7 +1224,7 @@ public enum ChatPagination {
 public struct ChatTagData: Encodable {
     public var emoji: String?
     public var text: String
-    
+
     public init(emoji: String?, text: String) {
         self.emoji = emoji
         self.text = text
@@ -1458,7 +1464,7 @@ public struct UserOperatorServers: Identifiable, Equatable, Codable {
         }
         set { `operator` = newValue }
     }
-    
+
     public static var sampleData1 = UserOperatorServers(
         operator: ServerOperator.sampleData1,
         smpServers: [UserServer.sampleData.preset],
@@ -1769,7 +1775,7 @@ public struct NetCfg: Codable, Equatable {
         rcvConcurrency: 8,
         smpPingInterval: 1200_000_000
     )
-    
+
     public var withProxyTimeouts: NetCfg {
         var cfg = self
         cfg.tcpConnectTimeout = NetCfg.proxyDefaults.tcpConnectTimeout
@@ -1779,7 +1785,7 @@ public struct NetCfg: Codable, Equatable {
         cfg.smpPingInterval = NetCfg.proxyDefaults.smpPingInterval
         return cfg
     }
-    
+
     public var hasProxyTimeouts: Bool {
         tcpConnectTimeout == NetCfg.proxyDefaults.tcpConnectTimeout &&
         tcpTimeout == NetCfg.proxyDefaults.tcpTimeout &&
@@ -1912,7 +1918,7 @@ public struct NetworkProxy: Equatable, Codable {
     public static var def: NetworkProxy {
         NetworkProxy()
     }
-    
+
     public var valid: Bool {
         let hostOk = switch NWEndpoint.Host(host) {
         case .ipv4: true
@@ -1923,7 +1929,7 @@ public struct NetworkProxy: Equatable, Codable {
                 port > 0 && port <= 65535 &&
                 NetworkProxy.validCredential(username) && NetworkProxy.validCredential(password)
     }
-    
+
     public static func validCredential(_ s: String) -> Bool {
         !s.contains(":") && !s.contains("@")
     }
@@ -2021,6 +2027,16 @@ public struct ChatSettings: Codable, Hashable {
     }
 
     public static let defaults: ChatSettings = ChatSettings(enableNtfs: .all, sendRcpts: nil, favorite: false)
+}
+
+public struct NavigationInfo: Decodable {
+    public var afterUnread: Int = 0
+    public var afterTotal: Int = 0
+
+    public init(afterUnread: Int = 0, afterTotal: Int = 0) {
+        self.afterUnread = afterUnread
+        self.afterTotal = afterTotal
+    }
 }
 
 public enum MsgFilter: String, Codable, Hashable {
@@ -2194,7 +2210,7 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
         case .instant: "Instant"
         }
     }
-    
+
     public var icon: String {
         switch self {
         case .off: return "arrow.clockwise"
@@ -2709,7 +2725,7 @@ public struct AppSettings: Codable, Equatable {
     public var uiThemes: [ThemeOverrides]? = nil
     public var oneHandUI: Bool? = nil
     public var chatBottomBar: Bool? = nil
-    
+
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
         let def = AppSettings.defaults
