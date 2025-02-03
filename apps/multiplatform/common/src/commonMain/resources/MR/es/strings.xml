@@ -2331,4 +2331,7 @@
     <string name="change_automatic_chat_deletion_message">Todos los mensajes previos a la selección serán eliminados del chat. ¡No podrá deshacerse!</string>
     <string name="chat_item_ttl_year">Un año</string>
     <string name="chat_item_ttl_default">predefinido (%s)</string>
+    <string name="network_smp_web_port_section_title">Puerto TCP para mensajes</string>
+    <string name="network_smp_web_port_footer">Usar puerto TCP %1$s cuando no se especifica.</string>
+    <string name="network_smp_web_port_toggle">Usar puerto web</string>
 </resources>
