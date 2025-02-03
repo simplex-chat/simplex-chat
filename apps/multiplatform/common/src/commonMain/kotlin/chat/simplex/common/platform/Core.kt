@@ -63,7 +63,8 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+//    var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    var migrated: Array<Any> = chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", MigrationConfirmation.Error.value)
     var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
