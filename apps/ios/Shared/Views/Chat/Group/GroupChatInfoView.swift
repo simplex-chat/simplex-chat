@@ -138,12 +138,12 @@ struct GroupChatInfoView: View {
                                 addMembersButton()
                             }
                         }
-                        if members.count > 8 {
-                            searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
-                                .padding(.leading, 8)
-                        }
+                        searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
+                            .padding(.leading, 8)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                        let filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
+                        let filteredMembers = s == ""
+                            ? members
+                            : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
                         MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
                         ForEach(filteredMembers) { member in
                             ZStack {
@@ -276,7 +276,9 @@ struct GroupChatInfoView: View {
                 if groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
-                muteButton(width: buttonWidth)
+                if let nextNtfMode = chat.chatInfo.nextNtfMode {
+                    muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
@@ -324,13 +326,13 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func muteButton(width: CGFloat) -> some View {
-        InfoViewButton(
-            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+    private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
+        return InfoViewButton(
+            image: nextNtfMode.iconFilled,
+            title: "\(nextNtfMode.text(mentions: true))",
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+            toggleNotifications(chat, enableNtfs: nextNtfMode)
         }
         .disabled(!groupInfo.ready)
     }
@@ -353,11 +355,7 @@ struct GroupChatInfoView: View {
             .onAppear {
                 searchFocussed = false
                 Task {
-                    let groupMembers = await apiListMembers(groupInfo.groupId)
-                    await MainActor.run {
-                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                        chatModel.populateGroupMembersIndexes()
-                    }
+                    await chatModel.loadGroupMembers(groupInfo)
                 }
             }
     }
@@ -387,7 +385,7 @@ struct GroupChatInfoView: View {
                 Spacer()
                 memberInfo(member)
             }
-            
+
             if user {
                 v
             } else if groupInfo.membership.memberRole >= .admin {
@@ -490,7 +488,7 @@ struct GroupChatInfoView: View {
                 .foregroundColor(theme.colors.secondary)
         }
     }
-
+    
     private func memberInfoView(_ groupMember: GMember) -> some View {
         GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
             .navigationBarHidden(false)
