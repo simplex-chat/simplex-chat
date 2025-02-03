@@ -6,6 +6,7 @@ OS=mac
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
 COMPOSE_ARCH=$ARCH
 GHC_VERSION=9.6.3
+DATABASE_BACKEND="${2:-sqlite}"
 
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
@@ -24,7 +25,14 @@ for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc
 for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
 
 rm -rf $BUILD_DIR
-cabal build -f client_postgres lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library'
+
+if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
+    echo "Building with postgres backend..."
+    cabal build -f client_postgres lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library'
+else
+    echo "Building with sqlite backend..."
+    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library'
+fi
 
 cd $BUILD_DIR/build
 mkdir deps 2> /dev/null || true

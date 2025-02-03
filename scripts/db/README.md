@@ -19,7 +19,7 @@
 
    - Create Postgres database. In shell:
 
-      ```
+      ```sh
       createdb -O simplex simplex_v1
       ```
 
@@ -69,7 +69,7 @@
 
    Repeat for `simplex_v1_chat_schema`.
 
-5. Compare number of rows between Postgres and SQLite tables.
+5. \* Compare number of rows between Postgres and SQLite tables.
 
    To check number of rows for all tables in Postgres database schema run:
 
@@ -91,3 +91,12 @@
    ```
 
    Repeat for `simplex_v1_chat_schema`.
+
+6. Build and run desktop app with Postgres backend.
+
+   Run in shell (paths are from project root):
+
+   ```sh
+   ./scripts/desktop/build-lib-mac.sh arm64 postgres
+   ./gradlew runDistributable -Pdatabase.backend=postgres
+   ```
