@@ -7,7 +7,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,7 +50,7 @@ fun BoxScope.SelectedItemsTopToolbar(selectedChatItems: MutableState<Set<Long>?>
 @Composable
 fun SelectedItemsBottomToolbar(
   chatInfo: ChatInfo,
-  reversedChatItems: State<List<ChatItem>>,
+  contentTag: MsgContentTag?,
   selectedChatItems: MutableState<Set<Long>?>,
   deleteItems: (Boolean) -> Unit, // Boolean - delete for everyone is possible
   moderateItems: () -> Unit,
@@ -63,7 +65,7 @@ fun SelectedItemsBottomToolbar(
   val forwardCountProhibited = remember { mutableStateOf(false) }
   Box {
     // It's hard to measure exact height of ComposeView with different fontSizes. Better to depend on actual ComposeView, even empty
-    ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {})
+    ComposeView(chatModel = chatModel, Chat.sampleData, remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }, remember { mutableStateOf(null) }, {}, remember { FocusRequester() })
     Row(
       Modifier
         .matchParentSize()
@@ -107,8 +109,9 @@ fun SelectedItemsBottomToolbar(
     }
     Divider(Modifier.align(Alignment.TopStart))
   }
-  LaunchedEffect(chatInfo, reversedChatItems.value, selectedChatItems.value) {
-    recheckItems(chatInfo, reversedChatItems.value.asReversed(), selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
+  val chatItems = remember { derivedStateOf { chatModel.chatItemsForContent(contentTag).value } }
+  LaunchedEffect(chatInfo, chatItems.value, selectedChatItems.value) {
+    recheckItems(chatInfo, chatItems.value, selectedChatItems, deleteEnabled, deleteForEveryoneEnabled, canModerate, moderateEnabled, forwardEnabled, deleteCountProhibited, forwardCountProhibited)
   }
 }
 

@@ -242,9 +242,6 @@
 "%lld new interface languages" = "%lld nieuwe interface-talen";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld seconde(n)";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld seconden";
 
 /* No comment provided by engineer. */
@@ -289,7 +286,8 @@
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 day" = "1 dag";
 
 /* time interval */
@@ -298,10 +296,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 minuut";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 month" = "1 maand";
 
-/* time interval */
+/* delete after time
+   time interval */
 "1 week" = "1 week";
 
 /* No comment provided by engineer. */
@@ -773,7 +773,7 @@
 "blocked" = "geblokkeerd";
 
 /* rcv group event chat item */
-"blocked %@" = "geblokkeerd %@";
+"blocked %@" = "blokkeerde %@";
 
 /* marked deleted chat item preview text */
 "blocked by admin" = "geblokkeerd door beheerder";
@@ -1476,7 +1476,8 @@
 /* No comment provided by engineer. */
 "decryption errors" = "decoderingsfouten";
 
-/* pref value */
+/* delete after time
+   pref value */
 "default (%@)" = "standaard (%@)";
 
 /* No comment provided by engineer. */
@@ -1486,7 +1487,6 @@
 "default (yes)" = "standaard (ja)";
 
 /* alert action
-   chat item action
    swipe action */
 "Delete" = "Verwijderen";
 
@@ -1574,7 +1574,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "Verwijder bericht?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "Verwijder berichten";
 
 /* No comment provided by engineer. */
@@ -1836,7 +1836,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "Inschakelen (overschrijvingen behouden)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "Automatisch verwijderen van berichten aanzetten?";
 
 /* No comment provided by engineer. */
@@ -2259,7 +2259,7 @@
 /* swipe action */
 "Favorite" = "Favoriet";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "File error" = "Bestandsfout";
 
 /* alert message */
@@ -2800,7 +2800,7 @@
 "Japanese interface" = "Japanse interface";
 
 /* swipe action */
-"Join" = "Word lid van";
+"Join" = "Word lid";
 
 /* No comment provided by engineer. */
 "join as %@" = "deelnemen als %@";
@@ -3192,7 +3192,7 @@
 /* No comment provided by engineer. */
 "Network status" = "Netwerk status";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "nooit";
 
 /* No comment provided by engineer. */
@@ -3937,7 +3937,7 @@
 "Reply" = "Antwoord";
 
 /* chat list item title */
-"requested to connect" = "gevraagd om verbinding te maken";
+"requested to connect" = "verzocht om verbinding te maken";
 
 /* No comment provided by engineer. */
 "Required" = "Vereist";
@@ -4040,7 +4040,7 @@
 "Save group profile" = "Groep profiel opslaan";
 
 /* No comment provided by engineer. */
-"Save passphrase and open chat" = "Bewaar het wachtwoord en open je chats";
+"Save passphrase and open chat" = "Wachtwoord opslaan en open je chats";
 
 /* No comment provided by engineer. */
 "Save passphrase in Keychain" = "Sla het wachtwoord op in de Keychain";
@@ -4611,7 +4611,7 @@
 "Strong" = "Krachtig";
 
 /* No comment provided by engineer. */
-"Submit" = "Indienen";
+"Submit" = "Bevestigen";
 
 /* No comment provided by engineer. */
 "Subscribed" = "Subscribed";
@@ -4682,7 +4682,7 @@
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
-/* No comment provided by engineer. */
+/* file error alert title */
 "Temporary file error" = "Tijdelijke bestandsfout";
 
 /* server test failure */
@@ -4821,7 +4821,7 @@
 "this contact" = "dit contact";
 
 /* No comment provided by engineer. */
-"This device name" = "Deze apparaatnaam";
+"This device name" = "Naam van dit apparaat";
 
 /* No comment provided by engineer. */
 "This display name is invalid. Please choose another name." = "Deze weergavenaam is ongeldig. Kies een andere naam.";
@@ -5136,7 +5136,7 @@
 "Username" = "Gebruikersnaam";
 
 /* No comment provided by engineer. */
-"Using SimpleX Chat servers." = "SimpleX Chat servers gebruiken.";
+"Using SimpleX Chat servers." = "Gebruik SimpleX Chat servers.";
 
 /* No comment provided by engineer. */
 "v%@" = "v%@";

@@ -188,6 +188,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     chatTags :: [ChatTagId],
+    chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
     customData :: Maybe CustomData
@@ -365,12 +366,34 @@ type UserName = Text
 
 type ContactName = Text
 
+type MemberName = Text
+
 type GroupName = Text
 
 optionalFullName :: ContactName -> Text -> Text
 optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""
   | otherwise = " (" <> fullName <> ")"
+
+data ShortGroup = ShortGroup
+  { shortInfo :: ShortGroupInfo,
+    members :: [ShortGroupMember]
+  }
+
+data ShortGroupInfo = ShortGroupInfo
+  { groupId :: GroupId,
+    groupName :: GroupName,
+    membershipStatus :: GroupMemberStatus
+  }
+  deriving (Eq, Show)
+
+data ShortGroupMember = ShortGroupMember
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
+    memberName :: ContactName,
+    connId :: AgentConnId
+  }
+  deriving (Show)
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
@@ -381,16 +404,17 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
+    localAlias :: Text,
     businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
-    hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
     chatTags :: [ChatTagId],
+    chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
   }
@@ -777,6 +801,9 @@ memberConn GroupMember {activeConn} = activeConn
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
+sameMemberId :: MemberId -> GroupMember -> Bool
+sameMemberId memId GroupMember {memberId} = memId == memberId
+
 memberChatVRange' :: GroupMember -> VersionRangeChat
 memberChatVRange' GroupMember {activeConn, memberChatVRange} = case activeConn of
   Just Connection {peerChatVRange} -> peerChatVRange
@@ -816,7 +843,7 @@ data NewGroupMember = NewGroupMember
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
   deriving newtype (FromField)
 
 instance ToField MemberId where toField (MemberId m) = toField $ Binary m
@@ -1809,3 +1836,7 @@ $(JQ.deriveJSON defaultJSON ''ContactRef)
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupInfo)
+
+$(JQ.deriveJSON defaultJSON ''ShortGroupMember)

@@ -19,7 +19,7 @@ import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
-import chat.simplex.common.model.SMPErrorType.BLOCKED
+import chat.simplex.common.model.MsgContent.MCUnknown
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -36,6 +36,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -172,6 +173,7 @@ class AppPreferences {
   val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, NetCfg.defaults.smpProxyFallback.name)
   val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
+  val networkSMPWebPort = mkBoolPreference(SHARED_PREFS_NETWORK_SMP_WEB_PORT, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
   val networkTCPTimeoutPerKb = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB, NetCfg.defaults.tcpTimeoutPerKb, NetCfg.proxyDefaults.tcpTimeoutPerKb)
@@ -410,6 +412,7 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK = "NetworkSMPProxyFallback"
     private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
     private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
+    private const val SHARED_PREFS_NETWORK_SMP_WEB_PORT = "NetworkSMPWebPort"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
@@ -1016,12 +1019,13 @@ object ChatController {
     }
   }
 
-  suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mc: MsgContent, live: Boolean = false): AChatItem? {
-    val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, mc, live))
+  suspend fun apiUpdateChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, updatedMessage: UpdatedMessage, live: Boolean = false): AChatItem? {
+    val r = sendCmd(rh, CC.ApiUpdateChatItem(type, id, itemId, updatedMessage, live))
     when {
       r is CR.ChatItemUpdated -> return r.chatItem
       r is CR.ChatItemNotChanged -> return r.chatItem
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.LargeMsg -> {
+        val mc = updatedMessage.msgContent
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.maximum_message_size_title),
           if (mc is MsgContent.MCImage || mc is MsgContent.MCVideo || mc is MsgContent.MCLink) {
@@ -1182,7 +1186,13 @@ object ChatController {
   suspend fun getChatItemTTL(rh: Long?): ChatItemTTL {
     val userId = currentUserId("getChatItemTTL")
     val r = sendCmd(rh, CC.APIGetChatItemTTL(userId))
-    if (r is CR.ChatItemTTL) return ChatItemTTL.fromSeconds(r.chatItemTTL)
+    if (r is CR.ChatItemTTL) {
+      return if (r.chatItemTTL != null) {
+        ChatItemTTL.fromSeconds(r.chatItemTTL)
+      } else {
+        ChatItemTTL.None
+      }
+    }
     throw Exception("failed to get chat item TTL: ${r.responseType} ${r.details}")
   }
 
@@ -1191,6 +1201,13 @@ object ChatController {
     val r = sendCmd(rh, CC.APISetChatItemTTL(userId, chatItemTTL.seconds))
     if (r is CR.CmdOk) return
     throw Exception("failed to set chat item TTL: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun setChatTTL(rh: Long?, chatType: ChatType, id: Long, chatItemTTL: ChatItemTTL?) {
+    val userId = currentUserId("setChatTTL")
+    val r = sendCmd(rh, CC.APISetChatTTL(userId, chatType, id, chatItemTTL?.seconds))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to set chat TTL: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetNetworkConfig(cfg: NetCfg, showAlertOnError: Boolean = true, ctrl: ChatCtrl? = null): Boolean {
@@ -1559,6 +1576,13 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiSetContactAlias(contactId, localAlias))
     if (r is CR.ContactAliasUpdated) return r.toContact
     Log.e(TAG, "apiSetContactAlias bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiSetGroupAlias(rh: Long?, groupId: Long, localAlias: String): GroupInfo? {
+    val r = sendCmd(rh, CC.ApiSetGroupAlias(groupId, localAlias))
+    if (r is CR.GroupAliasUpdated) return r.toGroup
+    Log.e(TAG, "apiSetGroupAlias bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -2501,7 +2525,7 @@ object ChatController {
                 addChatItem(rhId, cInfo, cItem)
               }
             }
-          } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
+          } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
             withChats {
               increaseUnreadCounter(rhId, r.user)
             }
@@ -2551,7 +2575,7 @@ object ChatController {
       is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
           r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
-            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled) {
+            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled(deletedChatItem.chatItem)) {
               withChats {
                 decreaseUnreadCounter(rhId, r.user)
               }
@@ -3229,6 +3253,7 @@ object ChatController {
     val sessionMode = appPrefs.networkSessionMode.get()
     val smpProxyMode = SMPProxyMode.valueOf(appPrefs.networkSMPProxyMode.get()!!)
     val smpProxyFallback = SMPProxyFallback.valueOf(appPrefs.networkSMPProxyFallback.get()!!)
+    val smpWebPort = appPrefs.networkSMPWebPort.get()
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
     val tcpTimeoutPerKb = appPrefs.networkTCPTimeoutPerKb.get()
@@ -3251,6 +3276,7 @@ object ChatController {
       sessionMode = sessionMode,
       smpProxyMode = smpProxyMode,
       smpProxyFallback = smpProxyFallback,
+      smpWebPort = smpWebPort,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
       tcpTimeoutPerKb = tcpTimeoutPerKb,
@@ -3271,6 +3297,7 @@ object ChatController {
     appPrefs.networkSessionMode.set(cfg.sessionMode)
     appPrefs.networkSMPProxyMode.set(cfg.smpProxyMode.name)
     appPrefs.networkSMPProxyFallback.set(cfg.smpProxyFallback.name)
+    appPrefs.networkSMPWebPort.set(cfg.smpWebPort)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkTCPTimeoutPerKb.set(cfg.tcpTimeoutPerKb)
@@ -3345,7 +3372,7 @@ sealed class CC {
   class ApiReorderChatTags(val tagIds: List<Long>): CC()
   class ApiCreateChatItems(val noteFolderId: Long, val composedMessages: List<ComposedMessage>): CC()
   class ApiReportMessage(val groupId: Long, val chatItemId: Long, val reportReason: ReportReason, val reportText: String): CC()
-  class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
+  class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val updatedMessage: UpdatedMessage, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
@@ -3376,8 +3403,9 @@ sealed class CC {
   class ApiGetUsageConditions(): CC()
   class ApiSetConditionsNotified(val conditionsId: Long): CC()
   class ApiAcceptConditions(val conditionsId: Long, val operatorIds: List<Long>): CC()
-  class APISetChatItemTTL(val userId: Long, val seconds: Long?): CC()
+  class APISetChatItemTTL(val userId: Long, val seconds: Long): CC()
   class APIGetChatItemTTL(val userId: Long): CC()
+  class APISetChatTTL(val userId: Long, val chatType: ChatType, val id: Long, val seconds: Long?): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
   class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
@@ -3411,6 +3439,7 @@ sealed class CC {
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
+  class ApiSetGroupAlias(val groupId: Long, val localAlias: String): CC()
   class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class ApiSetUserUIThemes(val userId: Long, val themes: ThemeModeOverrides?): CC()
   class ApiSetChatUIThemes(val chatId: String, val themes: ThemeModeOverrides?): CC()
@@ -3521,7 +3550,7 @@ sealed class CC {
       "/_create *$noteFolderId json $msgs"
     }
     is ApiReportMessage -> "/_report #$groupId $chatItemId reason=${json.encodeToString(reportReason).trim('"')} $reportText"
-    is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
+    is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${updatedMessage.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
@@ -3559,6 +3588,7 @@ sealed class CC {
     is ApiAcceptConditions -> "/_accept_conditions ${conditionsId} ${operatorIds.joinToString(",")}"
     is APISetChatItemTTL -> "/_ttl $userId ${chatItemTTLStr(seconds)}"
     is APIGetChatItemTTL -> "/_ttl $userId"
+    is APISetChatTTL -> "/_ttl $userId ${chatRef(chatType, id)} ${chatItemTTLStr(seconds)}"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
@@ -3592,6 +3622,7 @@ sealed class CC {
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
+    is ApiSetGroupAlias -> "/_set alias #$groupId ${localAlias.trim()}"
     is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
     is ApiSetUserUIThemes -> "/_set theme user $userId ${if (themes != null) json.encodeToString(themes) else ""}"
     is ApiSetChatUIThemes -> "/_set theme $chatId ${if (themes != null) json.encodeToString(themes) else ""}"
@@ -3718,6 +3749,7 @@ sealed class CC {
     is ApiAcceptConditions -> "apiAcceptConditions"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
+    is APISetChatTTL -> "apiSetChatTTL"
     is APISetNetworkConfig -> "apiSetNetworkConfig"
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
     is APISetNetworkInfo -> "apiSetNetworkInfo"
@@ -3751,6 +3783,7 @@ sealed class CC {
     is ApiUpdateProfile -> "apiUpdateProfile"
     is ApiSetContactPrefs -> "apiSetContactPrefs"
     is ApiSetContactAlias -> "apiSetContactAlias"
+    is ApiSetGroupAlias -> "apiSetGroupAlias"
     is ApiSetConnectionAlias -> "apiSetConnectionAlias"
     is ApiSetUserUIThemes -> "apiSetUserUIThemes"
     is ApiSetChatUIThemes -> "apiSetChatUIThemes"
@@ -3802,7 +3835,7 @@ sealed class CC {
   data class ItemRange(val from: Long, val to: Long)
 
   fun chatItemTTLStr(seconds: Long?): String {
-    if (seconds == null) return "none"
+    if (seconds == null) return "default"
     return seconds.toString()
   }
 
@@ -3864,7 +3897,13 @@ sealed class ChatPagination {
 }
 
 @Serializable
-class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent)
+class ComposedMessage(val fileSource: CryptoFile?, val quotedItemId: Long?, val msgContent: MsgContent, val mentions: Map<String, Long>)
+
+@Serializable
+class UpdatedMessage(val msgContent: MsgContent, val mentions: Map<String, Long>) {
+  val cmdString: String get() =
+    if (msgContent is MCUnknown) "json $json" else "json ${json.encodeToString(this)}"
+}
 
 @Serializable
 class ChatTagData(val emoji: String?, val text: String)
@@ -4521,7 +4560,37 @@ data class ChatSettings(
 enum class MsgFilter {
   @SerialName("all") All,
   @SerialName("none") None,
-  @SerialName("mentions") Mentions,
+  @SerialName("mentions") Mentions;
+
+  fun nextMode(mentions: Boolean): MsgFilter {
+    return when (this) {
+      All -> if (mentions) Mentions else None
+      Mentions -> None
+      None -> All
+    }
+  }
+
+  fun text(mentions: Boolean): StringResource {
+    return when (this) {
+      All -> MR.strings.unmute_chat
+      Mentions -> MR.strings.mute_chat
+      None -> if (mentions) MR.strings.mute_all_chat else MR.strings.mute_chat
+    }
+  }
+
+  val icon: ImageResource
+    get() = when (this) {
+      All -> MR.images.ic_notifications
+      Mentions -> MR.images.ic_notification_important
+      None -> MR.images.ic_notifications_off
+    }
+
+  val iconFilled: ImageResource
+    get() = when (this) {
+      All -> MR.images.ic_notifications
+      Mentions -> MR.images.ic_notification_important_filled
+      None -> MR.images.ic_notifications_off_filled
+    }
 }
 
 @Serializable
@@ -5645,6 +5714,7 @@ sealed class CR {
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val user: User, val fromProfile: Profile, val toProfile: Profile, val updateSummary: UserProfileUpdateSummary): CR()
   @Serializable @SerialName("userPrivacy") class UserPrivacy(val user: User, val updatedUser: User): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val user: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("groupAliasUpdated") class GroupAliasUpdated(val user: UserRef, val toGroup: GroupInfo): CR()
   @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("contactPrefsUpdated") class ContactPrefsUpdated(val user: UserRef, val fromContact: Contact, val toContact: Contact): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val user: User, val contactLink: UserContactLinkRec): CR()
@@ -5832,6 +5902,7 @@ sealed class CR {
     is UserProfileUpdated -> "userProfileUpdated"
     is UserPrivacy -> "userPrivacy"
     is ContactAliasUpdated -> "contactAliasUpdated"
+    is GroupAliasUpdated -> "groupAliasUpdated"
     is ConnectionAliasUpdated -> "connectionAliasUpdated"
     is ContactPrefsUpdated -> "contactPrefsUpdated"
     is UserContactLink -> "userContactLink"
@@ -6009,6 +6080,7 @@ sealed class CR {
     is UserProfileUpdated -> withUser(user, json.encodeToString(toProfile))
     is UserPrivacy -> withUser(user, json.encodeToString(updatedUser))
     is ContactAliasUpdated -> withUser(user, json.encodeToString(toContact))
+    is GroupAliasUpdated -> withUser(user, json.encodeToString(toGroup))
     is ConnectionAliasUpdated -> withUser(user, json.encodeToString(toConnection))
     is ContactPrefsUpdated -> withUser(user, "fromContact: $fromContact\ntoContact: \n${json.encodeToString(toContact)}")
     is UserContactLink -> withUser(user, contactLink.responseDetails)

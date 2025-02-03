@@ -45,6 +45,8 @@ expect fun LazyColumnWithScrollBarNoAppBar(
   additionalBarOffset: State<Dp>? = null,
   additionalTopBar: State<Boolean> = remember { mutableStateOf(false) },
   chatBottomBar: State<Boolean> = remember { mutableStateOf(true) },
+  maxHeight: State<Dp>? = null,
+  containerAlignment: Alignment = Alignment.TopStart,
   content: LazyListScope.() -> Unit
 )
 

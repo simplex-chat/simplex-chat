@@ -340,7 +340,7 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true, replaceChat: Bool = false) async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
@@ -353,6 +353,9 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
             m.updateChatInfo(chat.chatInfo)
+            if (replaceChat) {
+                m.replaceChat(chat.chatInfo.id, chat)
+            }
         }
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
@@ -482,8 +485,8 @@ private func createChatItemsErrorAlert(_ r: ChatResponse) {
     )
 }
 
-func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool = false) async throws -> ChatItem {
-    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, msg: msg, live: live), bgDelay: msgDelay)
+func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool = false) async throws -> ChatItem {
+    let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, updatedMessage: updatedMessage, live: live), bgDelay: msgDelay)
     if case let .chatItemUpdated(_, aChatItem) = r { return aChatItem.chatItem }
     throw r
 }
@@ -644,13 +647,24 @@ func getChatItemTTLAsync() async throws -> ChatItemTTL {
 }
 
 private func chatItemTTLResponse(_ r: ChatResponse) throws -> ChatItemTTL {
-    if case let .chatItemTTL(_, chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    if case let .chatItemTTL(_, chatItemTTL) = r {
+        if let ttl = chatItemTTL {
+            return ChatItemTTL(ttl)
+        } else {
+            throw RuntimeError("chatItemTTLResponse: invalid ttl")
+        }
+    }
     throw r
 }
 
 func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
     let userId = try currentUserId("setChatItemTTL")
     try await sendCommandOkResp(.apiSetChatItemTTL(userId: userId, seconds: chatItemTTL.seconds))
+}
+
+func setChatTTL(chatType: ChatType, id: Int64, _ chatItemTTL: ChatTTL) async throws {
+    let userId = try currentUserId("setChatItemTTL")
+    try await sendCommandOkResp(.apiSetChatTTL(userId: userId, type: chatType, id: id, seconds: chatItemTTL.value))
 }
 
 func getNetworkConfig() async throws -> NetCfg? {
@@ -1041,6 +1055,12 @@ func apiSetContactPrefs(contactId: Int64, preferences: Preferences) async throws
 func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
     let r = await chatSendCmd(.apiSetContactAlias(contactId: contactId, localAlias: localAlias))
     if case let .contactAliasUpdated(_, toContact) = r { return toContact }
+    throw r
+}
+
+func apiSetGroupAlias(groupId: Int64, localAlias: String) async throws -> GroupInfo? {
+    let r = await chatSendCmd(.apiSetGroupAlias(groupId: groupId, localAlias: localAlias))
+    if case let .groupAliasUpdated(_, toGroup) = r { return toGroup }
     throw r
 }
 
@@ -1471,11 +1491,11 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     }
 }
 
-func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID]) async {
+func apiMarkChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
     do {
         try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, itemIds: itemIds)
         DispatchQueue.main.async {
-            ChatModel.shared.markChatItemsRead(cInfo, itemIds)
+            ChatModel.shared.markChatItemsRead(cInfo, itemIds, mentionsRead)
         }
     } catch {
         logger.error("apiChatItemsRead error: \(responseError(error))")
@@ -1556,6 +1576,7 @@ func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
     throw r
 }
 
+// use ChatModel's loadGroupMembers from views
 func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     let r = await chatSendCmd(.apiListMembers(groupId: groupId))
     if case let .groupMembers(_, group) = r { return group.members }
@@ -2007,7 +2028,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
-                } else if cItem.isRcvNew && cInfo.ntfsEnabled {
+                } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
                     m.increaseUnreadCounter(user: user)
                 }
             }
@@ -2052,7 +2073,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .chatItemsDeleted(user, items, _):
         if !active(user) {
             for item in items {
-                if item.toChatItem == nil && item.deletedChatItem.chatItem.isRcvNew && item.deletedChatItem.chatInfo.ntfsEnabled {
+                let d = item.deletedChatItem
+                if item.toChatItem == nil && d.chatItem.isRcvNew && d.chatInfo.ntfsEnabled(chatItem: d.chatItem) {
                     await MainActor.run {
                         m.decreaseUnreadCounter(user: user)
                     }

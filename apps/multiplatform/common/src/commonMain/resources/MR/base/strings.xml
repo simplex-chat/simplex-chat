@@ -540,6 +540,12 @@
 
   <!-- Chat Info Settings - ChatInfoView.kt -->
   <string name="notifications">Notifications</string>
+  <string name="disable_automatic_deletion_question">Disable automatic message deletion?</string>
+  <string name="change_automatic_deletion_question">Change automatic message deletion?</string>
+  <string name="disable_automatic_deletion_message">Messages in this chat will never be deleted.</string>
+  <string name="change_automatic_chat_deletion_message">This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</string>
+  <string name="disable_automatic_deletion">Disable delete messages</string>
+  <string name="chat_ttl_options_footer">Delete chat messages from your device.</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="info_view_connect_button">connect</string>
@@ -562,6 +568,7 @@
   <string name="contact_deleted">Contact deleted!</string>
   <string name="you_can_still_view_conversation_with_contact">You can still view conversation with %1$s in the list of chats.</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
+  <string name="text_field_set_chat_placeholder">Set chat name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
@@ -672,9 +679,11 @@
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>
+  <string name="mute_all_chat">Mute all</string>
   <string name="unmute_chat">Unmute</string>
   <string name="favorite_chat">Favorite</string>
   <string name="unfavorite_chat">Unfavorite</string>
+  <string name="unread_mentions">Unread mentions</string>
 
   <!-- Tags - ChatListNavLinkView.kt -->
   <string name="create_list">Create list</string>
@@ -939,6 +948,9 @@
   <string name="update_network_smp_proxy_fallback_question">Message routing fallback</string>
   <string name="private_routing_show_message_status">Show message status</string>
   <string name="private_routing_explanation">To protect your IP address, private routing uses your SMP servers to deliver messages.</string>
+  <string name="network_smp_web_port_section_title">TCP port for messaging</string>
+  <string name="network_smp_web_port_toggle">Use web port</string>
+  <string name="network_smp_web_port_footer">Use TCP port %1$s when no port is specified.</string>
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
   <string name="theme_colors_section_title">INTERFACE COLORS</string>
@@ -1395,7 +1407,9 @@
   <string name="chat_item_ttl_day">1 day</string>
   <string name="chat_item_ttl_week">1 week</string>
   <string name="chat_item_ttl_month">1 month</string>
+  <string name="chat_item_ttl_year">1 year</string>
   <string name="chat_item_ttl_seconds">%s second(s)</string>
+  <string name="chat_item_ttl_default">default (%s)</string>
   <string name="messages_section_title">Messages</string>
   <string name="messages_section_description">This setting applies to messages in your current chat profile</string>
   <string name="delete_messages_after">Delete messages after</string>
@@ -1821,7 +1835,6 @@
   <string name="operator_website">Website</string>
   <string name="operator_conditions_accepted_on">Conditions accepted on: %s.</string>
   <string name="operator_conditions_will_be_accepted_on">Conditions will be accepted on: %s.</string>
-  <string name="operator">Operator</string>
   <string name="operator_use_operator_toggle_description">Use servers</string>
   <string name="use_servers_of_operator_x">Use %s</string>
   <string name="operator_conditions_failed_to_load">Current conditions text couldn\'t be loaded, you can review conditions via this link:</string>
@@ -2479,7 +2492,7 @@
   <string name="servers_info_messages_sent">Messages sent</string>
   <string name="servers_info_messages_received">Messages received</string>
   <string name="servers_info_details">Details</string>
-  <string name="servers_info_private_data_disclaimer">Starting from %s.\nAll data is kept private on your device..</string>
+  <string name="servers_info_private_data_disclaimer">Starting from %s.\nAll data is kept private on your device.</string>
   <string name="servers_info_subscriptions_section_header">Message reception</string>
   <string name="servers_info_subscriptions_connections_subscribed">Active connections</string>
   <string name="servers_info_subscriptions_connections_pending">Pending</string>
@@ -2544,4 +2557,7 @@
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
   <string name="open_server_settings_button">Open server settings</string>
+
+  <!-- GroupMentions.kt -->
+  <string name="max_group_mentions_per_message_reached">You can mention up to %1$s members per message!</string>
 </resources>

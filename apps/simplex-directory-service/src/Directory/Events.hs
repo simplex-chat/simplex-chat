@@ -30,6 +30,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Directory.Store
 import Simplex.Chat.Controller
+import Simplex.Chat.Markdown (displayNameTextP)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
@@ -116,6 +117,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCListPendingGroups_ :: DirectoryCmdTag 'DRAdmin
   DCShowGroupLink_ :: DirectoryCmdTag 'DRAdmin
   DCSendToGroupOwner_ :: DirectoryCmdTag 'DRAdmin
+  DCInviteOwnerToGroup_ :: DirectoryCmdTag 'DRAdmin
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -141,6 +143,7 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCListPendingGroups :: Int -> DirectoryCmd 'DRAdmin
   DCShowGroupLink :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSendToGroupOwner :: GroupId -> GroupName -> Text -> DirectoryCmd 'DRAdmin
+  DCInviteOwnerToGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -181,6 +184,7 @@ directoryCmdP =
         "pending" -> au DCListPendingGroups_
         "link" -> au DCShowGroupLink_
         "owner" -> au DCSendToGroupOwner_
+        "invite" -> au DCInviteOwnerToGroup_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
@@ -216,18 +220,13 @@ directoryCmdP =
         (groupId, displayName) <- gc (,)
         msg <- A.space *> A.takeText
         pure $ DCSendToGroupOwner groupId displayName msg
+      DCInviteOwnerToGroup_ -> gc DCInviteOwnerToGroup
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
       where
-        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameP
-        displayNameP = quoted '\'' <|> takeNameTill (== ' ')
-        takeNameTill p =
-          A.peekChar' >>= \c ->
-            if refChar c then A.takeTill p else fail "invalid first character in display name"
-        quoted c = A.char c *> takeNameTill (== c) <* A.char c
-        refChar c = c > ' ' && c /= '#' && c /= '@'
+        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameTextP
 
 viewName :: Text -> Text
-viewName n = if any (== ' ') (T.unpack n) then "'" <> n <> "'" else n
+viewName n = if T.any (== ' ') n then "'" <> n <> "'" else n
 
 directoryCmdTag :: DirectoryCmd r -> Text
 directoryCmdTag = \case
@@ -249,6 +248,7 @@ directoryCmdTag = \case
   DCListPendingGroups _ -> "pending"
   DCShowGroupLink {} -> "link"
   DCSendToGroupOwner {} -> "owner"
+  DCInviteOwnerToGroup {} -> "invite"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"

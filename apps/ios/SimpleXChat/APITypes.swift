@@ -52,7 +52,7 @@ public enum ChatCommand {
     case apiReorderChatTags(tagIds: [Int64])
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiReportMessage(groupId: Int64, chatItemId: Int64, reportReason: ReportReason, reportText: String)
-    case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
+    case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, updatedMessage: UpdatedMessage, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
@@ -89,8 +89,9 @@ public enum ChatCommand {
     case apiGetUsageConditions
     case apiSetConditionsNotified(conditionsId: Int64)
     case apiAcceptConditions(conditionsId: Int64, operatorIds: [Int64])
-    case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
+    case apiSetChatItemTTL(userId: Int64, seconds: Int64)
     case apiGetChatItemTTL(userId: Int64)
+    case apiSetChatTTL(userId: Int64, type: ChatType, id: Int64, seconds: Int64?)
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
     case apiSetNetworkInfo(networkInfo: UserNetworkInfo)
@@ -124,6 +125,7 @@ public enum ChatCommand {
     case apiUpdateProfile(userId: Int64, profile: Profile)
     case apiSetContactPrefs(contactId: Int64, preferences: Preferences)
     case apiSetContactAlias(contactId: Int64, localAlias: String)
+    case apiSetGroupAlias(groupId: Int64, localAlias: String)
     case apiSetConnectionAlias(connId: Int64, localAlias: String)
     case apiSetUserUIThemes(userId: Int64, themes: ThemeModeOverrides?)
     case apiSetChatUIThemes(chatId: String, themes: ThemeModeOverrides?)
@@ -224,7 +226,7 @@ public enum ChatCommand {
                 return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
                 return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
-            case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
+            case let .apiUpdateChatItem(type, id, itemId, um, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(um.cmdString)"
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
@@ -265,6 +267,7 @@ public enum ChatCommand {
             case let .apiAcceptConditions(conditionsId, operatorIds): return "/_accept_conditions \(conditionsId) \(joinedIds(operatorIds))"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
+            case let .apiSetChatTTL(userId, type, id, seconds): return "/_ttl \(userId) \(ref(type, id)) \(chatItemTTLStr(seconds: seconds))"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
             case let .apiSetNetworkInfo(networkInfo): return "/_network info \(encodeJSON(networkInfo))"
@@ -308,6 +311,7 @@ public enum ChatCommand {
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
             case let .apiSetContactPrefs(contactId, preferences): return "/_set prefs @\(contactId) \(encodeJSON(preferences))"
             case let .apiSetContactAlias(contactId, localAlias): return "/_set alias @\(contactId) \(localAlias.trimmingCharacters(in: .whitespaces))"
+            case let .apiSetGroupAlias(groupId, localAlias): return "/_set alias #\(groupId) \(localAlias.trimmingCharacters(in: .whitespaces))"
             case let .apiSetConnectionAlias(connId, localAlias): return "/_set alias :\(connId) \(localAlias.trimmingCharacters(in: .whitespaces))"
             case let .apiSetUserUIThemes(userId, themes): return "/_set theme user \(userId) \(themes != nil ? encodeJSON(themes) : "")"
             case let .apiSetChatUIThemes(chatId, themes): return "/_set theme \(chatId) \(themes != nil ? encodeJSON(themes) : "")"
@@ -434,6 +438,7 @@ public enum ChatCommand {
             case .apiAcceptConditions: return "apiAcceptConditions"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
+            case .apiSetChatTTL: return "apiSetChatTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
             case .apiSetNetworkInfo: return "apiSetNetworkInfo"
@@ -466,6 +471,7 @@ public enum ChatCommand {
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .apiSetContactPrefs: return "apiSetContactPrefs"
             case .apiSetContactAlias: return "apiSetContactAlias"
+            case .apiSetGroupAlias: return "apiSetGroupAlias"
             case .apiSetConnectionAlias: return "apiSetConnectionAlias"
             case .apiSetUserUIThemes: return "apiSetUserUIThemes"
             case .apiSetChatUIThemes: return "apiSetChatUIThemes"
@@ -523,7 +529,7 @@ public enum ChatCommand {
         if let seconds = seconds {
             return String(seconds)
         } else {
-            return "none"
+            return "default"
         }
     }
 
@@ -629,6 +635,7 @@ public enum ChatResponse: Decodable, Error {
     case userProfileUpdated(user: User, fromProfile: Profile, toProfile: Profile, updateSummary: UserProfileUpdateSummary)
     case userPrivacy(user: User, updatedUser: User)
     case contactAliasUpdated(user: UserRef, toContact: Contact)
+    case groupAliasUpdated(user: UserRef, toGroup: GroupInfo)
     case connectionAliasUpdated(user: UserRef, toConnection: PendingContactConnection)
     case contactPrefsUpdated(user: User, fromContact: Contact, toContact: Contact)
     case userContactLink(user: User, contactLink: UserContactLink)
@@ -809,6 +816,7 @@ public enum ChatResponse: Decodable, Error {
             case .userProfileUpdated: return "userProfileUpdated"
             case .userPrivacy: return "userPrivacy"
             case .contactAliasUpdated: return "contactAliasUpdated"
+            case .groupAliasUpdated: return "groupAliasUpdated"
             case .connectionAliasUpdated: return "connectionAliasUpdated"
             case .contactPrefsUpdated: return "contactPrefsUpdated"
             case .userContactLink: return "userContactLink"
@@ -987,6 +995,7 @@ public enum ChatResponse: Decodable, Error {
             case let .userProfileUpdated(u, _, toProfile, _): return withUser(u, String(describing: toProfile))
             case let .userPrivacy(u, updatedUser): return withUser(u, String(describing: updatedUser))
             case let .contactAliasUpdated(u, toContact): return withUser(u, String(describing: toContact))
+            case let .groupAliasUpdated(u, toGroup): return withUser(u, String(describing: toGroup))
             case let .connectionAliasUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .contactPrefsUpdated(u, fromContact, toContact): return withUser(u, "fromContact: \(String(describing: fromContact))\ntoContact: \(String(describing: toContact))")
             case let .userContactLink(u, contactLink): return withUser(u, contactLink.responseDetails)
@@ -1220,11 +1229,27 @@ public struct ComposedMessage: Encodable {
     public var fileSource: CryptoFile?
     var quotedItemId: Int64?
     public var msgContent: MsgContent
+    public var mentions: [String: Int64]
 
-    public init(fileSource: CryptoFile? = nil, quotedItemId: Int64? = nil, msgContent: MsgContent) {
+    public init(fileSource: CryptoFile? = nil, quotedItemId: Int64? = nil, msgContent: MsgContent, mentions: [String: Int64] = [:]) {
         self.fileSource = fileSource
         self.quotedItemId = quotedItemId
         self.msgContent = msgContent
+        self.mentions = mentions
+    }
+}
+
+public struct UpdatedMessage: Encodable {
+    public var msgContent: MsgContent
+    public var mentions: [String: Int64]
+
+    public init(msgContent: MsgContent, mentions: [String: Int64] = [:]) {
+        self.msgContent = msgContent
+        self.mentions = mentions
+    }
+    
+    var cmdString: String {
+        "json \(encodeJSON(self))"
     }
 }
 
@@ -2018,6 +2043,41 @@ public enum MsgFilter: String, Codable, Hashable {
     case none
     case all
     case mentions
+    
+    public func nextMode(mentions: Bool) -> MsgFilter {
+        switch self {
+        case .all: mentions ? .mentions : .none
+        case .mentions: .none
+        case .none: .all
+        }
+    }
+    
+    public func text(mentions: Bool) -> String {
+        switch self {
+        case .all: NSLocalizedString("Unmute", comment: "notification label action")
+        case .mentions: NSLocalizedString("Mute", comment: "notification label action")
+        case .none:
+            mentions
+            ? NSLocalizedString("Mute all", comment: "notification label action")
+            : NSLocalizedString("Mute", comment: "notification label action")
+        }
+    }
+    
+    public var icon: String {
+        return switch self {
+        case .all: "speaker.wave.2"
+        case .mentions: "speaker.badge.exclamationmark"
+        case .none: "speaker.slash"
+        }
+    }
+    
+    public var iconFilled: String {
+        return switch self {
+        case .all: "speaker.wave.2.fill"
+        case .mentions: "speaker.badge.exclamationmark.fill"
+        case .none: "speaker.slash.fill"
+        }
+    }
 }
 
 public struct UserMsgReceiptSettings: Codable {

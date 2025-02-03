@@ -15,7 +15,7 @@ public let CREATE_MEMBER_CONTACT_VERSION = 2
 // version to receive reports (MCReport)
 public let REPORTS_VERSION = 12
 
-public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-privacy-preserving-content-moderation.html")!
+public let contentModerationPostLink = URL(string: "https://simplex.chat/blog/20250114-simplex-network-large-groups-privacy-preserving-content-moderation.html#preventing-server-abuse-without-compromising-e2e-encryption")!
 
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
@@ -1447,9 +1447,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             return .other
         }
     }
-
-    public var ntfsEnabled: Bool {
-        self.chatSettings?.enableNtfs == .all
+    
+    public func ntfsEnabled(chatItem: ChatItem) -> Bool {
+        ntfsEnabled(chatItem.meta.userMention)
+    }
+    
+    public func ntfsEnabled(_ userMention: Bool) -> Bool {
+        switch self.chatSettings?.enableNtfs {
+        case .all: true
+        case .mentions: userMention
+        default: false
+        }
     }
 
     public var chatSettings: ChatSettings? {
@@ -1460,6 +1468,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
     
+    public var nextNtfMode: MsgFilter? {
+        self.chatSettings?.enableNtfs.nextMode(mentions: hasMentions)
+    }
+
+    public var hasMentions: Bool {
+        if case .group = self { true } else { false }
+    }
+
     public var chatTags: [Int64]? {
         switch self {
         case let .direct(contact): return contact.chatTags
@@ -1498,6 +1514,24 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         case let .contactRequest(contactRequest): return contactRequest.updatedAt
         case let .contactConnection(contactConnection): return contactConnection.updatedAt
         case .invalidJSON: return .now
+        }
+    }
+    
+    public func ttl(_ globalTTL: ChatItemTTL) -> ChatTTL {
+        switch self {
+        case let .direct(contact):
+            return if let ciTTL = contact.chatItemTTL {
+                ChatTTL.chat(ChatItemTTL(ciTTL))
+            } else {
+                ChatTTL.userDefault(globalTTL)
+            }
+        case let .group(groupInfo):
+            return if let ciTTL = groupInfo.chatItemTTL {
+                ChatTTL.chat(ChatItemTTL(ciTTL))
+            } else {
+                ChatTTL.userDefault(globalTTL)
+            }
+        default: return ChatTTL.userDefault(globalTTL)
         }
     }
 
@@ -1541,14 +1575,16 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
 }
 
 public struct ChatStats: Decodable, Hashable {
-    public init(unreadCount: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
+    public init(unreadCount: Int = 0, unreadMentions: Int = 0, reportsCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
+        self.unreadMentions = unreadMentions
         self.reportsCount = reportsCount
         self.minUnreadItemId = minUnreadItemId
         self.unreadChat = unreadChat
     }
 
     public var unreadCount: Int = 0
+    public var unreadMentions: Int = 0
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
@@ -1572,6 +1608,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var chatTags: [Int64]
+    public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
     public var chatDeleted: Bool
     
@@ -1919,7 +1956,6 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var businessChat: BusinessChatInfo?
     public var fullGroupPreferences: FullGroupPreferences
     public var membership: GroupMember
-    public var hostConnCustomUserProfileId: Int64?
     public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
@@ -1930,11 +1966,12 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var sendMsgEnabled: Bool { get { membership.memberActive } }
-    public var displayName: String { get { groupProfile.displayName } }
+    public var displayName: String { localAlias == "" ? groupProfile.displayName : localAlias }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
-    public var localAlias: String { "" }
     public var chatTags: [Int64]
+    public var chatItemTTL: Int64?
+    public var localAlias: String
 
     public var isOwner: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -1954,11 +1991,11 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
         groupProfile: GroupProfile.sampleData,
         fullGroupPreferences: FullGroupPreferences.sampleData,
         membership: GroupMember.sampleData,
-        hostConnCustomUserProfileId: nil,
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now,
-        chatTags: []
+        chatTags: [],
+        localAlias: ""
     )
 }
 
@@ -2065,6 +2102,16 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         memberStatus == .memUnknown
         ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
         : name
+    }
+    
+    public var localAliasAndFullName: String {
+        get {
+            let p = memberProfile
+            let fullName = p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+            let name = p.localAlias == "" ? fullName : "\(p.localAlias) (\(fullName))"
+
+            return pastMember(name)
+        }
     }
 
     public var memberActive: Bool {
@@ -2373,6 +2420,28 @@ public struct AChatItem: Decodable, Hashable {
     }
 }
 
+public struct CIMentionMember: Decodable, Hashable {
+    public var groupMemberId: Int64
+    public var displayName: String
+    public var localAlias: String?
+    public var memberRole: GroupMemberRole
+}
+
+public struct CIMention: Decodable, Hashable {
+    public var memberId: String
+    public var memberRef: CIMentionMember?
+    
+    public init(groupMember m: GroupMember) {
+        self.memberId = m.memberId
+        self.memberRef = CIMentionMember(
+            groupMemberId: m.groupMemberId,
+            displayName: m.memberProfile.displayName,
+            localAlias: m.memberProfile.localAlias,
+            memberRole: m.memberRole
+        )
+    }
+}
+
 public struct ACIReaction: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatReaction: CIReaction
@@ -2391,11 +2460,12 @@ public struct CIReaction: Decodable, Hashable {
 }
 
 public struct ChatItem: Identifiable, Decodable, Hashable {
-    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, mentions: [String: CIMention]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
         self.content = content
         self.formattedText = formattedText
+        self.mentions = mentions
         self.quotedItem = quotedItem
         self.reactions = reactions
         self.file = file
@@ -2405,6 +2475,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var meta: CIMeta
     public var content: CIContent
     public var formattedText: [FormattedText]?
+    public var mentions: [String: CIMention]?
     public var quotedItem: CIQuote?
     public var reactions: [CIReactionCount]
     public var file: CIFile?
@@ -2413,7 +2484,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     public var isLiveDummy: Bool = false
 
     private enum CodingKeys: String, CodingKey {
-        case chatDir, meta, content, formattedText, quotedItem, reactions, file
+        case chatDir, meta, content, formattedText, mentions, quotedItem, reactions, file
     }
 
     public var id: Int64 { meta.itemId }
@@ -2724,6 +2795,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2746,6 +2818,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: false,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2768,6 +2841,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                 itemDeleted: nil,
                 itemEdited: false,
                 itemLive: true,
+                userMention: false,
                 deletable: false,
                 editable: false
             ),
@@ -2841,6 +2915,7 @@ public struct CIMeta: Decodable, Hashable {
     public var itemEdited: Bool
     public var itemTimed: CITimed?
     public var itemLive: Bool?
+    public var userMention: Bool
     public var deletable: Bool
     public var editable: Bool
 
@@ -2865,6 +2940,7 @@ public struct CIMeta: Decodable, Hashable {
             itemDeleted: itemDeleted,
             itemEdited: itemEdited,
             itemLive: itemLive,
+            userMention: false,
             deletable: deletable,
             editable: editable
         )
@@ -2881,6 +2957,7 @@ public struct CIMeta: Decodable, Hashable {
             itemDeleted: nil,
             itemEdited: false,
             itemLive: false,
+            userMention: false,
             deletable: false,
             editable: false
         )
@@ -3902,6 +3979,12 @@ public struct FormattedText: Decodable, Hashable {
     public var text: String
     public var format: Format?
 
+    public static func plain(_ text: String) -> [FormattedText] {
+        text.isEmpty
+        ? []
+        : [FormattedText(text: text, format: nil)]
+    }
+
     public var isSecret: Bool {
         if case .secret = format { true } else { false }
     }
@@ -3916,6 +3999,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case colored(color: FormatColor)
     case uri
     case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case mention(memberName: String)
     case email
     case phone
 
@@ -4334,49 +4418,94 @@ public enum ChatItemTTL: Identifiable, Comparable, Hashable {
     case day
     case week
     case month
+    case year
     case seconds(_ seconds: Int64)
     case none
 
-    public static var values: [ChatItemTTL] { [.none, .month, .week, .day] }
+    public static var values: [ChatItemTTL] { [.none, .year, .month, .week, .day] }
 
     public var id: Self { self }
 
-    public init(_ seconds: Int64?) {
+    public init(_ seconds: Int64) {
         switch seconds {
+        case 0: self = .none
         case 86400: self = .day
         case 7 * 86400: self = .week
         case 30 * 86400: self = .month
-        case let .some(n): self = .seconds(n)
-        case .none: self = .none
+        case 365 * 86400: self = .year
+        default: self = .seconds(seconds)
         }
     }
 
-    public var deleteAfterText: LocalizedStringKey {
+    public var deleteAfterText: String {
         switch self {
-        case .day: return "1 day"
-        case .week: return "1 week"
-        case .month: return "1 month"
-        case let .seconds(seconds): return "\(seconds) second(s)"
-        case .none: return "never"
+        case .day: return NSLocalizedString("1 day", comment: "delete after time")
+        case .week: return NSLocalizedString("1 week", comment: "delete after time")
+        case .month: return NSLocalizedString("1 month", comment: "delete after time")
+        case .year: return NSLocalizedString("1 year", comment: "delete after time")
+        case let .seconds(seconds): return String.localizedStringWithFormat(NSLocalizedString("%d seconds(s)", comment: "delete after time"), seconds)
+        case .none: return NSLocalizedString("never", comment: "delete after time")
         }
     }
 
-    public var seconds: Int64? {
+    public var seconds: Int64 {
         switch self {
         case .day: return 86400
         case .week: return 7 * 86400
         case .month: return 30 * 86400
+        case .year: return 365 * 86400
         case let .seconds(seconds): return seconds
-        case .none: return nil
+        case .none: return 0
         }
     }
 
     private var comparisonValue: Int64 {
-        self.seconds ?? Int64.max
+        if self.seconds == 0 {
+            return Int64.max
+        } else {
+            return self.seconds
+        }
     }
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
         return lhs.comparisonValue < rhs.comparisonValue
+    }
+}
+
+public enum ChatTTL: Identifiable, Hashable {
+    case userDefault(ChatItemTTL)
+    case chat(ChatItemTTL)
+    
+    public var id: Self { self }
+    
+    public var text: String {
+        switch self {
+        case let .chat(ttl): return ttl.deleteAfterText
+        case let .userDefault(ttl): return String.localizedStringWithFormat(
+            NSLocalizedString("default (%@)", comment: "delete after time"),
+            ttl.deleteAfterText)
+        }
+    }
+    
+    public var neverExpires: Bool {
+        switch self {
+        case let .chat(ttl): return ttl.seconds == 0
+        case let .userDefault(ttl): return ttl.seconds == 0
+        }
+    }
+        
+    public var value: Int64? {
+        switch self {
+        case let .chat(ttl): return ttl.seconds
+        case .userDefault: return nil
+        }
+    }
+    
+    public var usingDefault: Bool {
+        switch self {
+        case .userDefault: return true
+        case .chat: return false
+        }
     }
 }
 

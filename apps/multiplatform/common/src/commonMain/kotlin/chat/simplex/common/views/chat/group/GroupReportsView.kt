@@ -16,28 +16,14 @@ import kotlinx.coroutines.flow.*
 
 val LocalContentTag: ProvidableCompositionLocal<MsgContentTag?> = staticCompositionLocalOf { null }
 
-data class GroupReports(
-  val reportsCount: Int,
-  val reportsView: Boolean,
-) {
-  val showBar: Boolean = reportsCount > 0 && !reportsView
-
-  fun toContentTag(): MsgContentTag? {
-    if (!reportsView) return null
-    return MsgContentTag.Report
-  }
-
-  val contentTag: MsgContentTag? = if (!reportsView) null else MsgContentTag.Report
-}
-
 @Composable
 private fun GroupReportsView(staleChatId: State<String?>, scrollToItemId: MutableState<Long?>) {
-  ChatView(staleChatId, reportsView = true, scrollToItemId, onComposed = {})
+  ChatView(staleChatId, contentTag = MsgContentTag.Report, scrollToItemId, onComposed = {})
 }
 
 @Composable
 fun GroupReportsAppBar(
-  groupReports: State<GroupReports>,
+  contentTag: MsgContentTag?,
   close: () -> Unit,
   onSearchValueChanged: (String) -> Unit
 ) {
@@ -65,11 +51,11 @@ fun GroupReportsAppBar(
       }
     }
   )
-  ItemsReload(groupReports)
+  ItemsReload(contentTag)
 }
 
 @Composable
-private fun ItemsReload(groupReports: State<GroupReports>) {
+private fun ItemsReload(contentTag: MsgContentTag?) {
   LaunchedEffect(Unit) {
     snapshotFlow { chatModel.chatId.value }
       .distinctUntilChanged()
@@ -79,7 +65,7 @@ private fun ItemsReload(groupReports: State<GroupReports>) {
       .filterNotNull()
       .filter { it.chatInfo is ChatInfo.Group }
       .collect { chat ->
-        reloadItems(chat, groupReports)
+        reloadItems(chat, contentTag)
       }
   }
 }
@@ -100,7 +86,6 @@ suspend fun showGroupReportsView(staleChatId: State<String?>, scrollToItemId: Mu
   }
 }
 
-private suspend fun reloadItems(chat: Chat, groupReports: State<GroupReports>) {
-  val contentFilter = groupReports.value.toContentTag()
-  apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, contentFilter, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
+private suspend fun reloadItems(chat: Chat, contentTag: MsgContentTag?) {
+  apiLoadMessages(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId, contentTag, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
 }

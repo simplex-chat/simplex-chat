@@ -35,7 +35,6 @@ module Simplex.Chat.Store.Direct
     deleteContactFiles,
     deleteContact,
     deleteContactWithoutGroups,
-    setContactDeleted,
     getDeletedContacts,
     getContactByName,
     getContact,
@@ -46,7 +45,6 @@ module Simplex.Chat.Store.Direct
     updateContactConnectionAlias,
     updatePCCIncognito,
     deletePCCIncognitoProfile,
-    updateContactUsed,
     updateContactUnreadChat,
     setUserChatsRead,
     updateContactStatus,
@@ -82,6 +80,9 @@ module Simplex.Chat.Store.Direct
     setContactChatDeleted,
     getDirectChatTags,
     updateDirectChatTags,
+    setDirectChatTTL,
+    getDirectChatTTL,
+    getUserContactsToExpire
   )
 where
 
@@ -198,7 +199,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash = do
           SELECT
             -- Contact
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
+            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
             c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -237,10 +238,10 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createDirectContact :: DB.Connection -> User -> Connection -> Profile -> Bool -> ExceptT StoreError IO Contact
-createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} contactUsed = do
+createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs contactUsed
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
@@ -252,7 +253,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         profile,
         activeConn = Just conn,
         viaGroup = Nothing,
-        contactUsed,
+        contactUsed = True,
         contactStatus = CSActive,
         chatSettings = defaultChatSettings,
         userPreferences,
@@ -263,6 +264,7 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
         chatTags = [],
+        chatItemTTL = Nothing,
         uiThemes = Nothing,
         chatDeleted = False,
         customData = Nothing
@@ -291,7 +293,7 @@ deleteContact db user@User {userId} ct@Contact {contactId, localDisplayName, act
   assertNotUser db user ct
   liftIO $ do
     DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+    ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE contact_id = ? LIMIT 1" (Only contactId)
     if isNothing ctMember
       then do
         deleteContactProfile_ db userId contactId
@@ -319,13 +321,7 @@ deleteContactWithoutGroups db user@User {userId} ct@Contact {contactId, localDis
       forM_ customUserProfileId $ \profileId ->
         deleteUnusedIncognitoProfileById_ db user profileId
 
-setContactDeleted :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
-setContactDeleted db user@User {userId} ct@Contact {contactId} = do
-  assertNotUser db user ct
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute db "UPDATE contacts SET deleted = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
-
+-- TODO remove in future versions: only used for legacy contact cleanup
 getDeletedContacts :: DB.Connection -> VersionRangeChat -> User -> IO [Contact]
 getDeletedContacts db vr user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 1" (Only userId)
@@ -466,11 +462,6 @@ deletePCCIncognitoProfile db User {userId} profileId =
       WHERE user_id = ? AND contact_profile_id = ? AND incognito = 1
     |]
     (userId, profileId)
-
-updateContactUsed :: DB.Connection -> User -> Contact -> IO ()
-updateContactUsed db User {userId} Contact {contactId} = do
-  updatedAt <- getCurrentTime
-  DB.execute db "UPDATE contacts SET contact_used = 1, updated_at = ? WHERE user_id = ? AND contact_id = ?" (updatedAt, userId, contactId)
 
 updateContactUnreadChat :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactUnreadChat db User {userId} Contact {contactId} unreadChat = do
@@ -659,7 +650,7 @@ createOrUpdateContactRequest db vr user@User {userId, userContactId} userContact
               SELECT
                 -- Contact
                 ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
+                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
                 c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -838,6 +829,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
             contactGroupMemberId = Nothing,
             contactGrpInvSent = False,
             chatTags = [],
+            chatItemTTL = Nothing,
             uiThemes = Nothing,
             chatDeleted = False,
             customData = Nothing
@@ -873,7 +865,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -1078,3 +1070,19 @@ addDirectChatTags :: DB.Connection -> Contact -> IO Contact
 addDirectChatTags db ct = do
   chatTags <- getDirectChatTags db $ contactId' ct
   pure (ct :: Contact) {chatTags}
+
+setDirectChatTTL :: DB.Connection -> ContactId -> Maybe Int64 -> IO ()
+setDirectChatTTL db ctId ttl = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?" (ttl, updatedAt, ctId)
+
+getDirectChatTTL :: DB.Connection -> ContactId -> IO (Maybe Int64)
+getDirectChatTTL db ctId =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1" (Only ctId)
+
+getUserContactsToExpire :: DB.Connection -> User -> Int64 -> IO [ContactId]
+getUserContactsToExpire db User {userId} globalTTL =
+  map fromOnly <$> DB.query db ("SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
+  where
+    cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"

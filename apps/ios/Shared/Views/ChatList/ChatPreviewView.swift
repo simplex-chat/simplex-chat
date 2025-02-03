@@ -27,72 +27,80 @@ struct ChatPreviewView: View {
     
     var body: some View {
         let cItem = chat.chatItems.last
-        return HStack(spacing: 8) {
-            ZStack(alignment: .bottomTrailing) {
-                ChatInfoImage(chat: chat, size: dynamicSize(userFont).profileImageSize)
-                chatPreviewImageOverlayIcon()
-                    .padding([.bottom, .trailing], 1)
-            }
-            .padding(.leading, 4)
-
-            let chatTs = if let cItem {
-                cItem.meta.itemTs
-            } else {
-                chat.chatInfo.chatTs
-            }
-            VStack(spacing: 0) {
-                HStack(alignment: .top) {
-                    chatPreviewTitle()
-                    Spacer()
-                    (formatTimestampText(chatTs))
-                        .font(.subheadline)
-                        .frame(minWidth: 60, alignment: .trailing)
-                        .foregroundColor(theme.colors.secondary)
-                        .padding(.top, 4)
+        return ZStack {
+            HStack(spacing: 8) {
+                ZStack(alignment: .bottomTrailing) {
+                    ChatInfoImage(chat: chat, size: dynamicSize(userFont).profileImageSize)
+                    chatPreviewImageOverlayIcon()
+                        .padding([.bottom, .trailing], 1)
                 }
-                .padding(.bottom, 4)
-                .padding(.horizontal, 8)
-
-                ZStack(alignment: .topTrailing) {
-                    let chat = activeContentPreview?.chat ?? chat
-                    let ci = activeContentPreview?.ci ?? chat.chatItems.last
-                    let mc = ci?.content.msgContent
-                    HStack(alignment: .top) {
-                        let deleted = ci?.isDeletedContent == true || ci?.meta.itemDeleted != nil
-                        let showContentPreview = (showChatPreviews && chatModel.draftChatId != chat.id && !deleted) || activeContentPreview != nil
-                        if let ci, showContentPreview {
-                            chatItemContentPreview(chat, ci)
-                        }
-                        let mcIsVoice = switch mc { case .voice: true; default: false }
-                        if !mcIsVoice || !showContentPreview || mc?.text != "" || chatModel.draftChatId == chat.id {
-                            let hasFilePreview = if case .file = mc { true } else { false }
-                            chatMessagePreview(cItem, hasFilePreview)
-                        } else {
-                            Spacer()
-                            chatInfoIcon(chat).frame(minWidth: 37, alignment: .trailing)
-                        }
-                    }
-                    .onChange(of: chatModel.stopPreviousRecPlay?.path) { _ in
-                        checkActiveContentPreview(chat, ci, mc)
-                    }
-                    .onChange(of: activeContentPreview) { _ in
-                        checkActiveContentPreview(chat, ci, mc)
-                    }
-                    .onChange(of: showFullscreenGallery) { _ in
-                        checkActiveContentPreview(chat, ci, mc)
-                    }
-                    chatStatusImage()
-                        .padding(.top, dynamicChatInfoSize * 1.44)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 8)
+                .padding(.leading, 4)
                 
-                Spacer()
+                let chatTs = if let cItem {
+                    cItem.meta.itemTs
+                } else {
+                    chat.chatInfo.chatTs
+                }
+                VStack(spacing: 0) {
+                    HStack(alignment: .top) {
+                        chatPreviewTitle()
+                        Spacer()
+                        (formatTimestampText(chatTs))
+                            .font(.subheadline)
+                            .frame(minWidth: 60, alignment: .trailing)
+                            .foregroundColor(theme.colors.secondary)
+                            .padding(.top, 4)
+                    }
+                    .padding(.bottom, 4)
+                    .padding(.horizontal, 8)
+                    
+                    ZStack(alignment: .topTrailing) {
+                        let chat = activeContentPreview?.chat ?? chat
+                        let ci = activeContentPreview?.ci ?? chat.chatItems.last
+                        let mc = ci?.content.msgContent
+                        HStack(alignment: .top) {
+                            let deleted = ci?.isDeletedContent == true || ci?.meta.itemDeleted != nil
+                            let showContentPreview = (showChatPreviews && chatModel.draftChatId != chat.id && !deleted) || activeContentPreview != nil
+                            if let ci, showContentPreview {
+                                chatItemContentPreview(chat, ci)
+                            }
+                            let mcIsVoice = switch mc { case .voice: true; default: false }
+                            if !mcIsVoice || !showContentPreview || mc?.text != "" || chatModel.draftChatId == chat.id {
+                                let hasFilePreview = if case .file = mc { true } else { false }
+                                chatMessagePreview(cItem, hasFilePreview)
+                            } else {
+                                Spacer()
+                                chatInfoIcon(chat).frame(minWidth: 37, alignment: .trailing)
+                            }
+                        }
+                        .onChange(of: chatModel.stopPreviousRecPlay?.path) { _ in
+                            checkActiveContentPreview(chat, ci, mc)
+                        }
+                        .onChange(of: activeContentPreview) { _ in
+                            checkActiveContentPreview(chat, ci, mc)
+                        }
+                        .onChange(of: showFullscreenGallery) { _ in
+                            checkActiveContentPreview(chat, ci, mc)
+                        }
+                        chatStatusImage()
+                            .padding(.top, dynamicChatInfoSize * 1.44)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.trailing, 8)
+                    
+                    Spacer()
+                }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: .infinity)
+            .opacity(deleting ? 0.4 : 1)
+            .padding(.bottom, -8)
+            
+            if deleting {
+                ProgressView()
+                    .scaleEffect(2)
+            }
         }
-        .padding(.bottom, -8)
         .onChange(of: chatModel.deletedChats.contains(chat.chatInfo.id)) { contains in
             deleting = contains
             // Stop voice when deleting the chat
@@ -180,12 +188,14 @@ struct ChatPreviewView: View {
 
     private func chatPreviewLayout(_ text: Text?, draft: Bool = false, _ hasFilePreview: Bool = false) -> some View {
         ZStack(alignment: .topTrailing) {
+            let s = chat.chatStats
+            let mentionWidth: CGFloat = if s.unreadMentions > 0 && s.unreadCount > 1 { dynamicSize(userFont).unreadCorner } else { 0 }
             let t = text
                 .lineLimit(userFont <= .xxxLarge ? 2 : 1)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.leading, hasFilePreview ? 0 : 8)
-                .padding(.trailing, hasFilePreview ? 38 : 36)
+                .padding(.trailing, mentionWidth + (hasFilePreview ? 38 : 36))
                 .offset(x: hasFilePreview ? -2 : 0)
                 .fixedSize(horizontal: false, vertical: true)
             if !showChatPreviews && !draft {
@@ -200,19 +210,34 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatInfoIcon(_ chat: Chat) -> some View {
         let s = chat.chatStats
         if s.unreadCount > 0 || s.unreadChat {
-            unreadCountText(s.unreadCount)
-                .font(userFont <= .xxxLarge ? .caption  : .caption2)
-                .foregroundColor(.white)
-                .padding(.horizontal, dynamicSize(userFont).unreadPadding)
-                .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
-                .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
-                .cornerRadius(dynamicSize(userFont).unreadCorner)
-        } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
-            Image(systemName: "speaker.slash.fill")
+            let mentionColor = mentionColor(chat)
+            HStack(alignment: .center, spacing: 2) {
+                if s.unreadMentions > 0 && s.unreadCount > 1 {
+                    Text("\(MENTION_START)")
+                        .font(userFont <= .xxxLarge ? .body : .callout)
+                        .foregroundColor(mentionColor)
+                        .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
+                        .cornerRadius(dynamicSize(userFont).unreadCorner)
+                        .padding(.bottom, 1)
+                }
+                let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
+                (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
+                    .font(userFont <= .xxxLarge ? .caption : .caption2)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, dynamicSize(userFont).unreadPadding)
+                    .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
+                    .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
+                    .cornerRadius(dynamicSize(userFont).unreadCorner)
+            }
+            .frame(height: dynamicChatInfoSize)
+        } else if let ntfMode = chat.chatInfo.chatSettings?.enableNtfs, ntfMode != .all {
+            let iconSize = ntfMode == .mentions ? dynamicChatInfoSize * 0.8 : dynamicChatInfoSize
+            let iconColor = ntfMode == .mentions ? theme.colors.secondary.opacity(0.7) : theme.colors.secondary
+            Image(systemName: ntfMode.iconFilled)
                 .resizable()
                 .scaledToFill()
-                .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
-                .foregroundColor(theme.colors.secondary)
+                .frame(width: iconSize, height: iconSize)
+                .foregroundColor(iconColor)
         } else if chat.chatInfo.chatSettings?.favorite ?? false {
             Image(systemName: "star.fill")
                 .resizable()
@@ -224,12 +249,20 @@ struct ChatPreviewView: View {
             Color.clear.frame(width: 0)
         }
     }
+    
+    private func mentionColor(_ chat: Chat) -> Color {
+        switch chat.chatInfo.chatSettings?.enableNtfs {
+        case .all: theme.colors.primary
+        case .mentions: theme.colors.primary
+        default: theme.colors.secondary
+        }
+    }
 
     private func messageDraft(_ draft: ComposeState) -> Text {
         let msg = draft.message
         return image("rectangle.and.pencil.and.ellipsis", color: theme.colors.primary)
                 + attachment()
-                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, mentions: draft.mentions, userMemberId: nil, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
             Text(Image(systemName: s)).foregroundColor(color) + textSpace
@@ -248,7 +281,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary, prefix: prefix())
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: false, secondaryColor: theme.colors.secondary, prefix: prefix())
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -31,17 +30,11 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Records.Compat
+import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
-#if defined(dbPostgres)
-import Database.PostgreSQL.Simple.FromField (FromField (..))
-import Database.PostgreSQL.Simple.ToField (ToField (..))
-#else
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
-#endif
 
 data ChatFeature
   = CFTimedMessages
@@ -384,7 +377,7 @@ defaultGroupPrefs =
   FullGroupPreferences
     { timedMessages = TimedMessagesGroupPreference {enable = FEOff, ttl = Just 86400},
       directMessages = DirectMessagesGroupPreference {enable = FEOff, role = Nothing},
-      fullDelete = FullDeleteGroupPreference {enable = FEOff},
+      fullDelete = FullDeleteGroupPreference {enable = FEOn, role = Just GRModerator},
       reactions = ReactionsGroupPreference {enable = FEOn},
       voice = VoiceGroupPreference {enable = FEOn, role = Nothing},
       files = FilesGroupPreference {enable = FEOn, role = Nothing},
@@ -399,7 +392,7 @@ businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice} =
   defaultBusinessGroupPrefs
     { timedMessages = Just TimedMessagesGroupPreference {enable = maybe FEOff enableFeature timedMessages, ttl = maybe Nothing prefParam timedMessages},
-      fullDelete = Just FullDeleteGroupPreference {enable = maybe FEOff enableFeature fullDelete},
+      fullDelete = Just FullDeleteGroupPreference {enable = maybe FEOff enableFeature fullDelete, role = Just GRModerator},
       reactions = Just ReactionsGroupPreference {enable = maybe FEOn enableFeature reactions},
       voice = Just VoiceGroupPreference {enable = maybe FEOff enableFeature voice, role = Nothing}
     }
@@ -414,7 +407,7 @@ defaultBusinessGroupPrefs =
   GroupPreferences
     { timedMessages = Just $ TimedMessagesGroupPreference FEOff Nothing,
       directMessages = Just $ DirectMessagesGroupPreference FEOff Nothing,
-      fullDelete = Just $ FullDeleteGroupPreference FEOff,
+      fullDelete = Just $ FullDeleteGroupPreference FEOn (Just GRModerator),
       reactions = Just $ ReactionsGroupPreference FEOn,
       voice = Just $ VoiceGroupPreference FEOff Nothing,
       files = Just $ FilesGroupPreference FEOn Nothing,
@@ -500,7 +493,7 @@ data DirectMessagesGroupPreference = DirectMessagesGroupPreference
   deriving (Eq, Show)
 
 data FullDeleteGroupPreference = FullDeleteGroupPreference
-  {enable :: GroupFeatureEnabled}
+  {enable :: GroupFeatureEnabled, role :: Maybe GroupMemberRole}
   deriving (Eq, Show)
 
 data ReactionsGroupPreference = ReactionsGroupPreference
@@ -576,7 +569,7 @@ instance GroupFeatureI 'GFFullDelete where
   type GroupFeaturePreference 'GFFullDelete = FullDeleteGroupPreference
   sGroupFeature = SGFFullDelete
   groupPrefParam _ = Nothing
-  groupPrefRole _ = Nothing
+  groupPrefRole FullDeleteGroupPreference {role} = role
 
 instance GroupFeatureI 'GFReactions where
   type GroupFeaturePreference 'GFReactions = ReactionsGroupPreference
@@ -619,6 +612,9 @@ instance GroupFeatureNoRoleI 'GFHistory
 instance HasField "role" DirectMessagesGroupPreference (Maybe GroupMemberRole) where
   hasField p@DirectMessagesGroupPreference {role} = (\r -> p {role = r}, role)
 
+instance HasField "role" FullDeleteGroupPreference (Maybe GroupMemberRole) where
+  hasField p@FullDeleteGroupPreference {role} = (\r -> p {role = r}, role)
+
 instance HasField "role" VoiceGroupPreference (Maybe GroupMemberRole) where
   hasField p@VoiceGroupPreference {role} = (\r -> p {role = r}, role)
 
@@ -629,6 +625,8 @@ instance HasField "role" SimplexLinksGroupPreference (Maybe GroupMemberRole) whe
   hasField p@SimplexLinksGroupPreference {role} = (\r -> p {role = r}, role)
 
 instance GroupFeatureRoleI 'GFDirectMessages
+
+instance GroupFeatureRoleI 'GFFullDelete
 
 instance GroupFeatureRoleI 'GFVoice
 

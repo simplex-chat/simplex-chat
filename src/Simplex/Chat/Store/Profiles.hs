@@ -150,6 +150,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
 
+-- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
   where
@@ -174,7 +175,8 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
               SELECT COUNT(1)
               FROM chat_items i
               JOIN groups g USING (group_id)
-              WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+              WHERE i.user_id = ? AND i.item_status = ?
+                AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             |]
             (userId, CISRcvNew)
       pure UserInfo {user, unreadCount = fromMaybe 0 ctCount + fromMaybe 0 gCount}

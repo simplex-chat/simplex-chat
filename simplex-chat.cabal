@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.3.0.1
+version:        6.3.0.2
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -48,8 +48,10 @@ library
       Simplex.Chat.Messages.Batch
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Messages.CIContent.Events
+      Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
+      Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
       Simplex.Chat.Options
@@ -96,8 +98,6 @@ library
   else
       exposed-modules:
           Simplex.Chat.Archive
-          Simplex.Chat.Mobile
-          Simplex.Chat.Mobile.WebRTC
           Simplex.Chat.Options.SQLite
           Simplex.Chat.Store.SQLite.Migrations
           Simplex.Chat.Store.SQLite.Migrations.M20220101_initial
@@ -219,6 +219,11 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20241223_chat_tags
           Simplex.Chat.Store.SQLite.Migrations.M20241230_reports
           Simplex.Chat.Store.SQLite.Migrations.M20250105_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20250115_chat_ttl
+          Simplex.Chat.Store.SQLite.Migrations.M20250122_chat_items_include_in_history
+          Simplex.Chat.Store.SQLite.Migrations.M20250126_mentions
+          Simplex.Chat.Store.SQLite.Migrations.M20250129_delete_unused_contacts
+          Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -444,6 +449,7 @@ test-suite simplex-chat-test
       ChatTests
       ChatTests.ChatList
       ChatTests.Direct
+      ChatTests.DBUtils
       ChatTests.Files
       ChatTests.Forward
       ChatTests.Groups
@@ -468,8 +474,12 @@ test-suite simplex-chat-test
       Directory.Service
       Directory.Store
       Paths_simplex_chat
-  if !flag(client_postgres)
+  if flag(client_postgres)
       other-modules:
+          ChatTests.DBUtils.Postgres
+  else
+      other-modules:
+          ChatTests.DBUtils.SQLite
           MobileTests
           SchemaDump
           WebRTCTests
