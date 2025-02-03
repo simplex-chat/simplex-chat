@@ -449,11 +449,11 @@
 - és még sok más!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
-        <target>- 5 perc hosszúságú hangüzenetek.
+        <target state="translated">- legfeljebb 5 perc hosszúságú hangüzenetek.
 - egyedi üzenet-eltűnési időkorlát.
 - előzmények szerkesztése.</target>
         <note>No comment provided by engineer.</note>
@@ -6659,9 +6659,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Küldje el őket galériából vagy egyedi billentyűzetekről.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve" approved="no">
         <source>Send up to 100 last messages to new members.</source>
-        <target>Az utolsó 100 üzenet elküldése az új tagoknak.</target>
+        <target state="translated">Legfeljebb az utolsó 100 üzenet elküldése az új tagok számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -8204,9 +8204,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>A videó akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
+      <trans-unit id="Videos and files up to 1gb" xml:space="preserve" approved="no">
         <source>Videos and files up to 1gb</source>
-        <target>Videók és fájlok 1Gb méretig</target>
+        <target state="translated">Videók és fájlok legfeljebb 1GB méretig</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="View conditions" xml:space="preserve">
