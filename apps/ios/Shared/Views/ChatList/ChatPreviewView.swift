@@ -218,6 +218,7 @@ struct ChatPreviewView: View {
                         .foregroundColor(mentionColor)
                         .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
                         .cornerRadius(dynamicSize(userFont).unreadCorner)
+                        .padding(.bottom, 1)
                 }
                 let singleUnreadIsMention = s.unreadMentions > 0 && s.unreadCount == 1
                 (singleUnreadIsMention ? Text("\(MENTION_START)") : unreadCountText(s.unreadCount))
@@ -228,6 +229,7 @@ struct ChatPreviewView: View {
                     .background(singleUnreadIsMention ? mentionColor : chat.chatInfo.ntfsEnabled(false) || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(dynamicSize(userFont).unreadCorner)
             }
+            .frame(height: dynamicChatInfoSize)
         } else if let ntfMode = chat.chatInfo.chatSettings?.enableNtfs, ntfMode != .all {
             let iconSize = ntfMode == .mentions ? dynamicChatInfoSize * 0.8 : dynamicChatInfoSize
             let iconColor = ntfMode == .mentions ? theme.colors.secondary.opacity(0.7) : theme.colors.secondary
