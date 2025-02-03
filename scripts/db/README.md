@@ -17,9 +17,17 @@
 
 2. Prepare Postgres database.
 
-   Build `simplex-chat` executable with `client_postgres` flag and run it to initialize new Postgres chat database.
+   - Create Postgres database. In shell:
 
-   This should create `simplex_v1` database with `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas, and `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
+      ```
+      createdb -O simplex simplex_v1
+      ```
+
+      Or via query.
+
+   - Build `simplex-chat` executable with `client_postgres` flag and run it to initialize new chat database.
+
+      This should create `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas in `simplex_v1` database, with `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
 
 3. Load data from decrypted SQLite databases to Postgres database via pgloader.
 
