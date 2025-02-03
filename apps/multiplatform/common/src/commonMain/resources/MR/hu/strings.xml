@@ -233,7 +233,7 @@
     <string name="receipts_section_contacts">Ismerősök</string>
     <string name="connection_error">Kapcsolódási hiba</string>
     <string name="alert_title_contact_connection_pending">Az ismerős még nem kapcsolódott!</string>
-    <string name="v5_3_discover_join_groups_descr">- kapcsolódás könyvtár szolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (20 tagig).\n- gyorsabb és stabilabb.</string>
+    <string name="v5_3_discover_join_groups_descr">- kapcsolódás könyvtár szolgáltatáshoz (BÉTA)!\n- kézbesítési jelentések (legfeljebb 20 tagig).\n- gyorsabb és stabilabb.</string>
     <string name="contribute">Hozzájárulás</string>
     <string name="group_member_status_intro_invitation">kapcsolódás (bemutatkozó meghívó)</string>
     <string name="create_simplex_address">SimpleX-cím létrehozása</string>
@@ -1261,7 +1261,7 @@
     <string name="using_simplex_chat_servers">SimpleX Chat-kiszolgálók használatban.</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat-kiszolgálók használata?</string>
     <string name="unhide_chat_profile">Csevegési profil felfedése</string>
-    <string name="v5_0_large_files_support">Videók és fájlok 1Gb méretig</string>
+    <string name="v5_0_large_files_support">Videók és fájlok legfeljebb 1GB méretig</string>
     <string name="network_option_tcp_connection_timeout">TCP kapcsolat időtúllépése</string>
     <string name="connect__your_profile_will_be_shared">A(z) %1$s nevű profiljának SimpleX-címe meg lesz osztva.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Ön már kapcsolódott a következőhöz: %1$s.</string>
@@ -1350,7 +1350,7 @@
     <string name="voice_messages_are_prohibited">A hangüzenetek küldése le van tiltva.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[A háttérben való hívásokhoz válassza ki az <b>Alkalmazás akkumulátor-használata</b> / <b>Korlátlan</b> módot az alkalmazás beállításaiban.]]></string>
     <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantumálló-protokollon keresztül.</string>
-    <string name="v5_1_better_messages_descr">- 5 perc hosszúságú hangüzenetek.\n- egyéni üzenet-eltűnési időkorlát.\n- előzmények szerkesztése.</string>
+    <string name="v5_1_better_messages_descr">- legfeljebb 5 perc hosszúságú hangüzenetek.\n- egyéni üzenet-eltűnési időkorlát.\n- előzmények szerkesztése.</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Társítás számítógéppel</i> menüt a hordozható eszköz alkalmazásban és olvassa be a QR-kódot.]]></string>
     <string name="sender_at_ts">%s ekkor: %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor az ismerősének eszköze online lesz, várjon, vagy ellenőrizze később!</string>
@@ -1498,7 +1498,7 @@
     <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem lesznek elküldve az új tagok számára.</string>
     <string name="retry_verb">Újrapróbálkozás</string>
     <string name="camera_not_available">A kamera nem elérhető</string>
-    <string name="enable_sending_recent_history">Az utolsó 100 üzenet elküldése az új tagok számára.</string>
+    <string name="enable_sending_recent_history">Legfeljebb az utolsó 100 üzenet elküldése az új tagok számára.</string>
     <string name="disable_sending_recent_history">Az előzmények ne legyenek elküldve az új tagok számára.</string>
     <string name="or_show_this_qr_code">Vagy mutassa meg ezt a kódot</string>
     <string name="enable_camera_access">Kamera hozzáférés engedélyezése</string>
@@ -2298,4 +2298,7 @@
     <string name="network_smp_web_port_footer">A(z) %1$s port használata, amikor nincs port megadva.</string>
     <string name="network_smp_web_port_section_title">TCP-port az üzenetváltáshoz</string>
     <string name="network_smp_web_port_toggle">Webport használata</string>
+    <string name="unread_mentions">Olvasatlan megemlítések</string>
+    <string name="mute_all_chat">Összes némítása</string>
+    <string name="max_group_mentions_per_message_reached">Legfeljebb %1$s tagot említhet meg egy üzenetben!</string>
 </resources>
