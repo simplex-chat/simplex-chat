@@ -1207,7 +1207,7 @@
     <string name="video_will_be_received_when_contact_is_online">سيتم استلام الفيديو عندما تكون جهة اتصالك متصلة بالإنترنت، يُرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="you_can_share_this_address_with_your_contacts">يمكنك مشاركة هذا العنوان مع جهات اتصالك للسماح لهم بالاتصال بـ%s.</string>
     <string name="snd_group_event_member_deleted">أُزيلت %1$s</string>
-    <string name="update_database">تحديث</string>
+    <string name="update_database">حدّث</string>
     <string name="database_is_not_encrypted">قاعدة بيانات الدردشة الخاصة بك غير مُعمّاة - عيّن عبارة مرور لحمايتها.</string>
     <string name="wrong_passphrase">عبارة مرور قاعدة بيانات خاطئة</string>
     <string name="group_main_profile_sent">سيتم إرسال ملف تعريف الدردشة الخاص بك إلى أعضاء المجموعة</string>
@@ -2321,4 +2321,7 @@
     <string name="network_smp_web_port_footer">استخدم منفذ TCP %1$s عندما لا يتم تحديد أي منفذ.</string>
     <string name="network_smp_web_port_toggle">استخدم منفذ الويب</string>
     <string name="network_smp_web_port_section_title">منفذ TCP للمُراسلة</string>
+    <string name="mute_all_chat">اكتم الكل</string>
+    <string name="unread_mentions">ذّكورات غير مقروءة</string>
+    <string name="max_group_mentions_per_message_reached">يمكنك ذكر ما يصل إلى %1$s من الأعضاء في الرسالة الواحدة!</string>
 </resources>
