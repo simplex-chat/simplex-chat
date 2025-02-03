@@ -39,6 +39,7 @@ import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -313,7 +314,7 @@ data ChatCommand
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
   | APIReportMessage {groupId :: GroupId, chatItemId :: ChatItemId, reportReason :: ReportReason, reportText :: Text}
   | ReportMessage {groupName :: GroupName, contactName_ :: Maybe ContactName, reportReason :: ReportReason, reportedMessage :: Text}
-  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
+  | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, updatedMessage :: UpdatedMessage}
   | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
   | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
@@ -346,7 +347,6 @@ data ChatCommand
   | APISetConnectionAlias Int64 LocalAlias
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
-  | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
@@ -765,7 +765,6 @@ data ChatResponse
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
-  | CRAcceptingGroupJoinRequest {user :: User, groupInfo :: GroupInfo, contact :: Contact}
   | CRAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
@@ -824,8 +823,8 @@ data ChatResponse
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
   | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
-  | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
-  | CRAgentConnDeleted {agentConnId :: AgentConnId}
+  | CRAgentRcvQueuesDeleted {deletedRcvQueues :: NonEmpty DeletedRcvQueue}
+  | CRAgentConnsDeleted {agentConnIds :: NonEmpty AgentConnId}
   | CRAgentUserDeleted {agentUserId :: Int64}
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
@@ -834,6 +833,14 @@ data ChatResponse
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
+  deriving (Show)
+
+data DeletedRcvQueue = DeletedRcvQueue
+  { agentConnId :: AgentConnId,
+    server :: SMPServer,
+    agentQueueId :: AgentQueueId,
+    agentError_ :: Maybe AgentErrorType
+  }
   deriving (Show)
 
 -- some of these can only be used as command responses
@@ -874,8 +881,8 @@ logResponseToFile = \case
   CRHostConnected {} -> True
   CRHostDisconnected {} -> True
   CRConnectionDisabled {} -> True
-  CRAgentRcvQueueDeleted {} -> True
-  CRAgentConnDeleted {} -> True
+  CRAgentRcvQueuesDeleted {} -> True
+  CRAgentConnsDeleted {} -> True
   CRAgentUserDeleted {} -> True
   CRChatCmdError {} -> True
   CRChatError {} -> True
@@ -1077,22 +1084,16 @@ data UserProfileUpdateSummary = UserProfileUpdateSummary
 data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
-    msgContent :: MsgContent
+    msgContent :: MsgContent,
+    mentions :: Map MemberName GroupMemberId
   }
   deriving (Show)
 
--- This instance is needed for backward compatibility, can be removed in v6.0
-instance FromJSON ComposedMessage where
-  parseJSON (J.Object v) = do
-    fileSource <-
-      (v .:? "fileSource") >>= \case
-        Nothing -> CF.plain <$$> (v .:? "filePath")
-        f -> pure f
-    quotedItemId <- v .:? "quotedItemId"
-    msgContent <- v .: "msgContent"
-    pure ComposedMessage {fileSource, quotedItemId, msgContent}
-  parseJSON invalid =
-    JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+data UpdatedMessage = UpdatedMessage
+  { msgContent :: MsgContent,
+    mentions :: Map MemberName GroupMemberId
+  }
+  deriving (Show)
 
 data ChatTagData = ChatTagData
   { emoji :: Maybe Text,
@@ -1265,7 +1266,6 @@ data ChatErrorType
   | CEFileNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
-  | CEInvalidQuote
   | CEInvalidForward
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
@@ -1597,6 +1597,8 @@ $(JQ.deriveJSON defaultJSON ''SwitchProgress)
 
 $(JQ.deriveJSON defaultJSON ''RatchetSyncProgress)
 
+$(JQ.deriveJSON defaultJSON ''DeletedRcvQueue)
+
 $(JQ.deriveJSON defaultJSON ''ServerAddress)
 
 $(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
@@ -1608,29 +1610,6 @@ $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 #if !defined(dbPostgres)
 $(JQ.deriveJSON defaultJSON ''SlowSQLQuery)
 #endif
-
--- instance ProtocolTypeI p => FromJSON (ProtoServersConfig p) where
---   parseJSON = $(JQ.mkParseJSON defaultJSON ''ProtoServersConfig)
-
--- instance ProtocolTypeI p => FromJSON (UserProtoServers p) where
---   parseJSON = $(JQ.mkParseJSON defaultJSON ''UserProtoServers)
-
--- instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
---   toJSON = $(JQ.mkToJSON defaultJSON ''UserProtoServers)
---   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserProtoServers)
-
--- instance FromJSON AUserProtoServers where
---   parseJSON v = J.withObject "AUserProtoServers" parse v
---     where
---       parse o = do
---         AProtocolType (p :: SProtocolType p) <- o .: "serverProtocol"
---         case userProtocol p of
---           Just Dict -> AUPS <$> J.parseJSON @(UserProtoServers p) v
---           Nothing -> fail $ "AUserProtoServers: unsupported protocol " <> show p
-
--- instance ToJSON AUserProtoServers where
---   toJSON (AUPS s) = $(JQ.mkToJSON defaultJSON ''UserProtoServers) s
---   toEncoding (AUPS s) = $(JQ.mkToEncoding defaultJSON ''UserProtoServers) s
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RemoteCtrlSessionState)
 
@@ -1647,5 +1626,20 @@ $(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
 $(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
 
 $(JQ.deriveToJSON defaultJSON ''ComposedMessage)
+
+instance FromJSON ComposedMessage where
+  parseJSON (J.Object v) = do
+    fileSource <-
+      (v .:? "fileSource") >>= \case
+        Nothing -> CF.plain <$$> (v .:? "filePath")
+        f -> pure f
+    quotedItemId <- v .:? "quotedItemId"
+    msgContent <- v .: "msgContent"
+    mentions <- fromMaybe M.empty <$> v .:? "mentions"
+    pure ComposedMessage {fileSource, quotedItemId, msgContent, mentions}
+  parseJSON invalid =
+    JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
+
+$(JQ.deriveJSON defaultJSON ''UpdatedMessage)
 
 $(JQ.deriveToJSON defaultJSON ''ChatTagData)

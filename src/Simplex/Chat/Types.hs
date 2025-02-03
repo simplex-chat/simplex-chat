@@ -366,6 +366,8 @@ type UserName = Text
 
 type ContactName = Text
 
+type MemberName = Text
+
 type GroupName = Text
 
 optionalFullName :: ContactName -> Text -> Text
@@ -406,7 +408,6 @@ data GroupInfo = GroupInfo
     businessChat :: Maybe BusinessChatInfo,
     fullGroupPreferences :: FullGroupPreferences,
     membership :: GroupMember,
-    hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
@@ -800,6 +801,9 @@ memberConn GroupMember {activeConn} = activeConn
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
+sameMemberId :: MemberId -> GroupMember -> Bool
+sameMemberId memId GroupMember {memberId} = memId == memberId
+
 memberChatVRange' :: GroupMember -> VersionRangeChat
 memberChatVRange' GroupMember {activeConn, memberChatVRange} = case activeConn of
   Just Connection {peerChatVRange} -> peerChatVRange
@@ -839,7 +843,7 @@ data NewGroupMember = NewGroupMember
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
   deriving newtype (FromField)
 
 instance ToField MemberId where toField (MemberId m) = toField $ Binary m

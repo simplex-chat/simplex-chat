@@ -208,6 +208,14 @@ struct AdvancedNetworkSettings: View {
                     }
                 }
 
+                Section {
+                    Toggle("Use web port", isOn: $netCfg.smpWebPort)
+                } header: {
+                    Text("TCP port for messaging")
+                } footer: {
+                    Text("Use TCP port \(netCfg.smpWebPort ? "443" : "5223") when no port is specified.")
+                }
+                
                 Section("TCP connection") {
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)

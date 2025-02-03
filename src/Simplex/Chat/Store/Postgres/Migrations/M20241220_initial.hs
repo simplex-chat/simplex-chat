@@ -128,7 +128,6 @@ CREATE TABLE groups(
   updated_at TIMESTAMPTZ NOT NULL,
   chat_item_id BIGINT DEFAULT NULL,
   enable_ntfs SMALLINT,
-  host_conn_custom_user_profile_id BIGINT REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat SMALLINT NOT NULL DEFAULT 0,
   chat_ts TIMESTAMPTZ,
   favorite SMALLINT NOT NULL DEFAULT 0,
@@ -426,7 +425,8 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id BIGINT REFERENCES chat_items ON DELETE SET NULL,
   via_proxy SMALLINT,
   msg_content_tag TEXT,
-  include_in_history SMALLINT NOT NULL DEFAULT 0
+  include_in_history SMALLINT NOT NULL DEFAULT 0,
+  user_mention SMALLINT NOT NULL DEFAULT 0
 );
 ALTER TABLE groups
 ADD CONSTRAINT fk_groups_chat_items
@@ -676,6 +676,13 @@ CREATE TABLE chat_tags_chats(
   group_id BIGINT REFERENCES groups ON DELETE CASCADE,
   chat_tag_id BIGINT NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
+CREATE TABLE chat_item_mentions (
+  chat_item_mention_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  chat_item_id BIGINT NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  group_id BIGINT NOT NULL REFERENCES groups ON DELETE CASCADE,
+  member_id BYTEA NOT NULL,
+  display_name TEXT NOT NULL
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -684,7 +691,6 @@ CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
-CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
   user_id,
   contact_id,
@@ -757,9 +763,6 @@ CREATE INDEX idx_group_members_contact_profile_id ON group_members(
 CREATE INDEX idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX idx_group_members_invited_by ON group_members(invited_by);
 CREATE INDEX idx_group_profiles_user_id ON group_profiles(user_id);
-CREATE INDEX idx_groups_host_conn_custom_user_profile_id ON groups(
-  host_conn_custom_user_profile_id
-);
 CREATE INDEX idx_groups_chat_item_id ON groups(chat_item_id);
 CREATE INDEX idx_groups_group_profile_id ON groups(group_profile_id);
 CREATE INDEX idx_messages_group_id ON messages(group_id);
@@ -1024,5 +1027,29 @@ CREATE INDEX idx_chat_items_groups_history ON chat_items(
 CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_snd_item_statuses(
   chat_item_id,
   group_member_id
+);
+CREATE INDEX idx_chat_item_mentions_group_id ON chat_item_mentions(group_id);
+CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(
+  chat_item_id
+);
+CREATE UNIQUE INDEX idx_chat_item_mentions_display_name ON chat_item_mentions(
+  chat_item_id,
+  display_name
+);
+CREATE UNIQUE INDEX idx_chat_item_mentions_member_id ON chat_item_mentions(
+  chat_item_id,
+  member_id
+);
+CREATE INDEX idx_chat_items_groups_user_mention ON chat_items(
+  user_id,
+  group_id,
+  item_status,
+  user_mention
+);
+CREATE INDEX idx_chat_items_group_id ON chat_items(group_id);
+CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
+CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
+  group_id,
+  shared_msg_id
 );
 |]
