@@ -127,6 +127,7 @@ module Simplex.Chat.Store.Messages
   )
 where
 
+import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -1335,8 +1336,8 @@ getGroupChatAround_ db user g contentFilter aroundId count search = do
   getGroupChatAround' db user g contentFilter aroundId count search stats
 
 getGroupChatAround' :: DB.Connection -> User -> GroupInfo -> Maybe MsgContentTag -> ChatItemId -> Int -> String -> ChatStats -> ExceptT StoreError IO (Chat 'CTGroup, Maybe NavigationInfo)
-getGroupChatAround' db user g@GroupInfo {groupId} contentFilter aroundId count search stats = do
-  aroundCI <- getGroupChatItem db user groupId aroundId
+getGroupChatAround' db user g contentFilter aroundId count search stats = do
+  aroundCI <- getGroupCIWithReactions db user g aroundId
   let beforeRange = GRBefore (chatItemTs aroundCI) (cChatItemId aroundCI)
       afterRange = GRAfter (chatItemTs aroundCI) (cChatItemId aroundCI)
   beforeIds <- liftIO $ getGroupChatItemIDs db user g contentFilter beforeRange count search
@@ -2316,9 +2317,12 @@ updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
       unless (null mentions) $ deleteMentions
       if null mentions'
         then pure ci
-        else createGroupCIMentions db g ci mentions'
+        -- This is a fallback for the error that should not happen in practice.
+        -- In theory, it may happen in item mentions in database are different from item record.
+        else createMentions `E.catch` \e -> if constraintError e then deleteMentions >> createMentions else E.throwIO e
   where
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
+    createMentions = createGroupCIMentions db g ci mentions'
 
 deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
@@ -2439,8 +2443,8 @@ markMessageReportsDeleted db User {userId} GroupInfo {groupId} ChatItem {meta = 
       |]
       (DBCIDeleted, deletedTs, groupMemberId, currentTs, userId, groupId, MCReport_, itemSharedMsgId)
 
-getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do
+getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupInfo -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupMemberId sharedMsgId = do
   itemId <-
     ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
       DB.query
@@ -2453,7 +2457,7 @@ getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId shared
           LIMIT 1
         |]
         (userId, groupId, groupMemberId, sharedMsgId)
-  getGroupChatItem db user groupId itemId
+  getGroupCIWithReactions db user g itemId
 
 getGroupMemberCIBySharedMsgId :: DB.Connection -> User -> GroupId -> MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupMemberCIBySharedMsgId db user@User {userId} groupId memberId sharedMsgId = do
@@ -2739,8 +2743,8 @@ getAChatItemBySharedMsgId db user cd sharedMsgId = case cd of
   CDDirectRcv ct@Contact {contactId} -> do
     (CChatItem msgDir ci) <- getDirectChatItemBySharedMsgId db user contactId sharedMsgId
     pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
-  CDGroupRcv g@GroupInfo {groupId} GroupMember {groupMemberId} -> do
-    (CChatItem msgDir ci) <- getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
+  CDGroupRcv g GroupMember {groupMemberId} -> do
+    (CChatItem msgDir ci) <- getGroupChatItemBySharedMsgId db user g groupMemberId sharedMsgId
     pure $ AChatItem SCTGroup msgDir (GroupChat g) ci
 
 getChatItemVersions :: DB.Connection -> ChatItemId -> IO [ChatItemVersion]

@@ -5964,7 +5964,13 @@ testMemberMention =
         [ alice <# "#team cath> hello @Alice",
           bob <# "#team cath> hello @Alice"
         ]
-      cath ##> "! #team hello @alice @bob"
+      cath ##> "! #team hello @alice" -- make it a mention
+      cath <# "#team [edited] hello @alice"
+      concurrentlyN_
+        [ alice <# "#team cath> [edited] hello @alice",
+          bob <# "#team cath> [edited] hello @alice"
+        ]
+      cath ##> "! #team hello @alice @bob" -- add a mention
       cath <# "#team [edited] hello @alice @bob"
       concurrentlyN_
         [ alice <# "#team cath> [edited] hello @alice @bob",
