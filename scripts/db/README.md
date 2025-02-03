@@ -31,7 +31,7 @@
 
 3. Load data from decrypted SQLite databases to Postgres database via pgloader.
 
-   Install pgloader and add it to PATH.
+   Install pgloader and add it to PATH. Run in shell (substitute paths):
 
    ```sh
    SQLITE_DBPATH='simplex_v1_agent.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='simplex_v1_agent_schema' pgloader --on-error-stop sqlite.load
