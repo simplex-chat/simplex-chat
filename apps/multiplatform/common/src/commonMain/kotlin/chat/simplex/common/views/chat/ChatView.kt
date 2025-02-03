@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.layout.layoutId
@@ -129,6 +130,7 @@ fun ChatView(
         val perChatTheme = remember(chatInfo, CurrentColors.value.base) { if (chatInfo is ChatInfo.Direct) chatInfo.contact.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.uiThemes?.preferredMode(!CurrentColors.value.colors.isLight) else null }
         val overrides = if (perChatTheme != null) ThemeManager.currentColors(null, perChatTheme, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get()) else null
         val fullDeleteAllowed = remember(chatInfo) { chatInfo.featureEnabled(ChatFeature.FullDelete) }
+
         SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
           val onSearchValueChanged: (String) -> Unit = onSearchValueChanged@{ value ->
             if (searchText.value == value) return@onSearchValueChanged
@@ -144,7 +146,7 @@ fun ChatView(
             chatInfo = activeChatInfo,
             unreadCount,
             composeState,
-            composeView = {
+            composeView = { focusRequester ->
               if (selectedChatItems.value == null) {
                 Column(
                   Modifier.fillMaxWidth(),
@@ -165,7 +167,8 @@ fun ChatView(
                   }
                   ComposeView(
                     chatModel, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
-                    showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+                    showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } },
+                    focusRequester = focusRequester
                   )
                 }
               } else {
@@ -244,6 +247,7 @@ fun ChatView(
               chatModel.chatId.value = null
               chatModel.groupMembers.value = emptyList()
               chatModel.groupMembersIndexes.value = emptyMap()
+              chatModel.membersLoaded.value = false
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -532,7 +536,7 @@ fun ChatView(
                   }
                 }) { close ->
                   var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
-                  ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get())
+                  ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
                   LaunchedEffect(cItem.id) {
                     withContext(Dispatchers.Default) {
                       for (apiResp in controller.messagesChannel) {
@@ -654,7 +658,7 @@ fun ChatLayout(
   chatInfo: State<ChatInfo?>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
-  composeView: (@Composable () -> Unit),
+  composeView: (@Composable (FocusRequester?) -> Unit),
   scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
   attachmentBottomSheetState: ModalBottomSheetState,
@@ -690,7 +694,7 @@ fun ChatLayout(
   openGroupLink: (GroupInfo) -> Unit,
   markItemsRead: (List<Long>) -> Unit,
   markChatRead: () -> Unit,
-  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
+  changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
@@ -731,9 +735,10 @@ fun ChatLayout(
         val chatInfo = remember { chatInfo }.value
         val oneHandUI = remember { appPrefs.oneHandUI.state }
         val chatBottomBar = remember { appPrefs.chatBottomBar.state }
+        val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chatInfo != null) {
-            Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
               // disables scrolling to top of chat item on click inside the bubble
               CompositionLocalProvider(LocalBringIntoViewSpec provides object : BringIntoViewSpec {
                 override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
@@ -745,6 +750,20 @@ fun ChatLayout(
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
                   setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
                 )
+              }
+              if (chatInfo is ChatInfo.Group && composeState.value.message.text.isNotEmpty()) {
+                Column(
+                  Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = composeViewHeight.value)
+                ) {
+                  GroupMentions(
+                    rhId = remoteHostId,
+                    composeState = composeState,
+                    composeViewFocusRequester = composeViewFocusRequester,
+                    chatInfo = chatInfo,
+                  )
+                }
               }
             }
           }
@@ -792,7 +811,7 @@ fun ChatLayout(
                 .navigationBarsPadding()
                 .then(if (oneHandUI.value && chatBottomBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
             ) {
-              composeView()
+              composeView(composeViewFocusRequester)
             }
           }
         }
@@ -850,7 +869,7 @@ fun BoxScope.ChatInfoToolbar(
   endCall: () -> Unit,
   addMembers: (GroupInfo) -> Unit,
   openGroupLink: (GroupInfo) -> Unit,
-  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
+  changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
   showSearch: MutableState<Boolean>
 ) {
@@ -969,18 +988,20 @@ fun BoxScope.ChatInfoToolbar(
     }
   }
 
-  if ((chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) || chatInfo is ChatInfo.Group) {
-    val ntfsEnabled = remember { mutableStateOf(chatInfo.ntfsEnabled) }
+  val enableNtfs = chatInfo.chatSettings?.enableNtfs
+  if (((chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) || chatInfo is ChatInfo.Group) && enableNtfs != null) {
+    val ntfMode = remember { mutableStateOf(enableNtfs) }
+    val nextNtfMode by remember { derivedStateOf { ntfMode.value.nextMode(chatInfo.hasMentions) } }
     menuItems.add {
       ItemAction(
-        if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-        if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+        stringResource(nextNtfMode.text(chatInfo.hasMentions)),
+        painterResource(nextNtfMode.icon),
         onClick = {
           showMenu.value = false
           // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
           scope.launch {
             delay(200)
-            changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
+            changeNtfsState(nextNtfMode, ntfMode)
           }
         }
       )
@@ -2680,7 +2701,7 @@ fun PreviewChatLayout() {
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = {},
+      composeView = { _ -> },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
@@ -2755,7 +2776,7 @@ fun PreviewGroupChatLayout() {
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = {},
+      composeView = { _ -> },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
