@@ -90,14 +90,14 @@ struct MergedItems: Hashable, Equatable {
                         mergeCategory: item.mergeCategory,
                         unreadIds: BoxedValue(item.isRcvNew ? Set(arrayLiteral: item.id) : Set()),
                         startIndexInReversedItems: index,
-                        hash: listItem.genHash()
+                        hash: listItem.genHash(revealedItems.contains(prev?.id ?? -1), revealedItems.contains(next?.id ?? -1))
                     )
                 } else {
                     lastRangeInReversedForMergedItems = nil
                     recent = MergedItem.single(
                         item: listItem,
                         startIndexInReversedItems: index,
-                        hash: listItem.genHash()
+                        hash: listItem.genHash(revealedItems.contains(prev?.id ?? -1), revealedItems.contains(next?.id ?? -1))
                     )
                 }
                 mergedItems.append(recent!)
@@ -264,8 +264,8 @@ struct ListItem: Hashable {
 
     // using meta.hashValue instead of parts of it gives 120ms vs 90ms for MergedItems list generation for 1800 items (+ snapshot time generation for UITableView in MergedItems).
     // so better to use partial meta here
-    func genHash() -> String {
-        "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.meta.itemEdited) \(item.meta.itemDeleted?.hashValue ?? 0) \(item.meta.itemTimed?.hashValue ?? 0) \(item.meta.itemStatus.hashValue) \(item.meta.sentViaProxy ?? false) \(item.mergeCategory?.hashValue ?? 0) \(chatDirHash(item.chatDir)) \(item.reactions.hashValue) \(item.meta.isRcvNew) \(item.text.hash) \(item.file?.hashValue ?? 0) \(item.quotedItem?.itemId ?? 0) \(unreadBefore) \(prevItem?.id ?? 0) \(chatDirHash(prevItem?.chatDir)) \(prevItem?.mergeCategory?.hashValue ?? 0) \(nextItem?.id ?? 0) \(chatDirHash(nextItem?.chatDir)) \(nextItem?.mergeCategory?.hashValue ?? 0)"
+    func genHash(_ prevRevealed: Bool, _ nextRevealed: Bool) -> String {
+        "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.meta.itemEdited) \(item.meta.itemDeleted?.hashValue ?? 0) \(item.meta.itemTimed?.hashValue ?? 0) \(item.meta.itemStatus.hashValue) \(item.meta.sentViaProxy ?? false) \(item.mergeCategory?.hashValue ?? 0) \(chatDirHash(item.chatDir)) \(item.reactions.hashValue) \(item.meta.isRcvNew) \(item.text.hash) \(item.file?.hashValue ?? 0) \(item.quotedItem?.itemId ?? 0) \(unreadBefore) \(prevItem?.id ?? 0) \(chatDirHash(prevItem?.chatDir)) \(prevItem?.mergeCategory?.hashValue ?? 0) \(prevRevealed) \(nextItem?.id ?? 0) \(chatDirHash(nextItem?.chatDir)) \(nextItem?.mergeCategory?.hashValue ?? 0) \(nextRevealed)"
     }
 }
 
@@ -330,30 +330,26 @@ class BoxedValue<T: Hashable>: Equatable, Hashable {
     }
 }
 
-extension ReverseList.Controller {
-    @MainActor
-    func visibleItemIndexesNonReversed(_ prevMergedItems: MergedItems) -> ClosedRange<Int> {
-        let zero = 0 ... 0
-        let items = prevMergedItems.items
-        let indexInParentItems = prevMergedItems.indexInParentItems
-        if items.isEmpty {
-            return zero
-        }
-        let listState = getListState() ?? ListState()
-        let newest = items.count > listState.firstVisibleItemIndex ? items[listState.firstVisibleItemIndex].startIndexInReversedItems : nil
-        let oldest = items.count > listState.firstVisibleItemIndex ? items[listState.lastVisibleItemIndex].lastIndexInReversed() : nil
-        guard let newest, let oldest else {
-            return zero
-        }
-        let size = ItemsModel.shared.reversedChatItems.count
-        let range = size - oldest ... size - newest
-        if range.lowerBound < 0 || range.upperBound < 0 {
-            return zero
-        }
-
-        // visible items mapped to their underlying data structure which is chatModel.chatItems
-        return range
+@MainActor
+func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.ListState, _ mergedItems: MergedItems) -> ClosedRange<Int> {
+    let zero = 0 ... 0
+    let items = mergedItems.items
+    if items.isEmpty {
+        return zero
     }
+    let newest = items.count > listState.firstVisibleItemIndex ? items[listState.firstVisibleItemIndex].startIndexInReversedItems : nil
+    let oldest = items.count > listState.lastVisibleItemIndex ? items[listState.lastVisibleItemIndex].lastIndexInReversed() : nil
+    guard let newest, let oldest else {
+        return zero
+    }
+    let size = ItemsModel.shared.reversedChatItems.count
+    let range = size - oldest ... size - newest
+    if range.lowerBound < 0 || range.upperBound < 0 {
+        return zero
+    }
+
+    // visible items mapped to their underlying data structure which is chatModel.chatItems
+    return range
 }
 
 func recalculateChatStatePositions(_ chatState: ActiveChatState) -> ChatItemsChangesListener {

@@ -28,8 +28,85 @@ func loadLastItems(_ loadingMoreItems: Binding<Bool>, _ chatInfo: ChatInfo) {
         }
     }
 }
+//
+//func trackListState(
+//    _ allowLoadMoreItems: Binding<Bool>,
+//    _ ignoreLoadingRequests: Binding<Bool>,
+//    _ listState: EndlessScrollView<MergedItem>.ListState,
+//    _ mergedItemsBox: BoxedValue<MergedItems>,
+//    _ loadItems: (Bool, ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
+//) {
+//    let mergedItems = mergedItemsBox.boxedValue
+//    ChatView.FloatingButtonModel.shared.updateFloatingButtons.send()
+//    
+//    if !listState.isScrolling {
+//        //if nearSplit(remaining: 30, ignoreTopOfTopSplit: true, listState, mergedItems) {
+//            //logger.debug("LALAL IN SPLIT OR NO YESSSSSS  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+//          //  stopScrolling(disable: false)
+//        //}
+//        //logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, self.prevMergedItems))  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+//        //if nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, prevMergedItems) {
+////            if !updatingInProgress {
+////                runBlockOnEndDecelerating = nil
+////                // it's important to have it in DispatchQueue.main. Otherwise, it will be deadlock and jumping scroll
+////                // without any visible reason
+////                DispatchQueue.main.async {
+////                    block()
+////                }
+////            }
+////        } else {
+//            preloadIfNeeded(allowLoadMoreItems, ignoreLoadingRequests, listState, mergedItems, loaditems)
+//        //}
+//    }
+//}
 
-func preloadItems(_ mergedItems: MergedItems, _ allowLoadMoreItems: Bool, _ listState: ListState, _ ignoreLoadingRequests: Binding<Int64?>, _ loadItems: @escaping (ChatPagination) async -> Bool) async {
+class PreloadState {
+    static let shared = PreloadState()
+    var prevFirstVisible: Int64 = Int64.min
+    var prevItemsCount: Int = 0
+    var preloading: Bool = false
+}
+
+func preloadIfNeeded(
+    _ allowLoadMoreItems: Binding<Bool>,
+    _ ignoreLoadingRequests: Binding<Int64?>,
+    _ listState: EndlessScrollView<MergedItem>.ListState,
+    _ mergedItems: BoxedValue<MergedItems>,
+    loadItems: @escaping (Bool, ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
+) {
+    let state = PreloadState.shared
+    guard !listState.isScrolling,
+          state.prevFirstVisible != listState.firstVisibleItemIndex || state.prevItemsCount != mergedItems.boxedValue.indexInParentItems.count,
+          !state.preloading,
+          listState.totalItemsCount > 0
+    else {
+        return
+    }
+    //logger.debug("LALAL LOADING BEFORE ANYTHING \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(self.representer.$mergedItems.wrappedValue.items[state.firstVisibleItemIndex].newest().item.id)")
+    state.prevFirstVisible = listState.firstVisibleItemId as! Int64
+    state.prevItemsCount = mergedItems.boxedValue.indexInParentItems.count
+    state.preloading = true
+    let allowLoadMore = allowLoadMoreItems.wrappedValue
+    Task {
+        defer {
+            state.preloading = false
+        }
+        //logger.debug("LALAL LOADING BEFORE INSIDE \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits)")
+        await preloadItems(mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
+            let triedToLoad = await loadItems(false, pagination, { visibleItemIndexesNonReversed(listState, mergedItems.boxedValue) })
+            //logger.debug("LALAL LOADING INSIDE \(mergedItems.items[listState.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits), triedToLoad: \(triedToLoad)")
+            return triedToLoad
+        }
+    }
+}
+
+func preloadItems(
+    _ mergedItems: MergedItems,
+    _ allowLoadMoreItems: Bool,
+    _ listState: EndlessScrollView<MergedItem>.ListState,
+    _ ignoreLoadingRequests: Binding<Int64?>,
+    _ loadItems: @escaping (ChatPagination) async -> Bool) 
+async {
     let allowLoad = allowLoadMoreItems || mergedItems.items.count == listState.lastVisibleItemIndex + 1
     let remaining = ChatPagination.UNTIL_PRELOAD_COUNT
     let firstVisibleIndex = listState.firstVisibleItemIndex

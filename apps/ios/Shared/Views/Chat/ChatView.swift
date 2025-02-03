@@ -174,6 +174,20 @@ struct ChatView: View {
         .onAppear {
             scrollView.listState.onUpdateListener = {
                 ChatView.FloatingButtonModel.shared.updateOnListChange()
+                //ChatView.FloatingButtonModel.shared.updateFloatingButtons.send()
+                preloadIfNeeded(
+                    $allowLoadMoreItems,
+                    $ignoreLoadingRequests,
+                    scrollView.listState,
+                    mergedItems,
+                    loadItems: { unchecked, pagination, visibleItemIndexesNonReversed in
+                        if unchecked {
+                            await loadChatItemsUnchecked(cInfo, pagination, visibleItemIndexesNonReversed)
+                        } else {
+                            await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
+                        }
+                    }
+                )
             }
             scrollModel.scrollView = scrollView
             scrollModel.mergedItems = mergedItems
@@ -481,9 +495,9 @@ struct ChatView: View {
                     forwardedChatItems: $forwardedChatItems,
                     reveal: { reveal in
                         mergedItem.reveal(reveal, $revealedItems)
-                        updateMergedItemsTask?.cancel()
-                        mergedItems.boxedValue = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
-                        scrollView.updateItems(mergedItems.boxedValue.items)
+                        //updateMergedItemsTask?.cancel()
+                        //mergedItems.boxedValue = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                        //scrollView.updateItems(mergedItems.boxedValue.items)
                     }
                 )
                 // crashes on Cell size calculation without this line
@@ -491,13 +505,6 @@ struct ChatView: View {
                 .environmentObject(theme) // crashes without this line when scrolling to the first unread in ReverseList
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             }
-//        loadItems: { unchecked, pagination, visibleItemIndexesNonReversed in
-//                if unchecked {
-//                    await loadChatItemsUnchecked(cInfo, pagination, visibleItemIndexesNonReversed)
-//                } else {
-//                    await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
-//                }
-//            }
             .onAppear {
                 mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
                 scrollView.updateItems(mergedItems.boxedValue.items)
@@ -585,6 +592,21 @@ struct ChatView: View {
         var totalUnread: Int = 0
         var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
+
+        let updateFloatingButtons = PassthroughSubject<Void, Never>()
+        private var bag = Set<AnyCancellable>()
+
+        init() {
+            updateFloatingButtons
+                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
+                .sink {
+                    // LALAL
+                    //if !listState.isScrolling.scrollToItemInProgress {
+                        ChatView.FloatingButtonModel.shared.updateOnListChange()
+                    //}
+                }
+                .store(in: &bag)
+        }
 
         func updateOnListChange() {
             let im = ItemsModel.shared
@@ -1138,7 +1160,7 @@ struct ChatView: View {
             .onAppear {
                 // LALAL
                 //return ()
-                
+
                 if markedRead {
                     return
                 } else {

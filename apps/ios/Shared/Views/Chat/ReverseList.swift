@@ -48,7 +48,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         controller.setScrollEndedListener()
                         logger.debug("LALAL SCROLLING ENDED TO \(row)")
                     } else {
-                        controller.scrollToItem(id)
+                        //controller.scrollToItem(id)
                     }
                 case let .row(row):
                     controller.scroll(to: row, position: .bottom)
@@ -79,7 +79,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         if mergedItems.items == prevSnapshot.itemIdentifiers {
                             logger.debug("LALAL SAME ITEMS, not rebuilding the tableview1")
                             // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
-                            controller.updateFloatingButtons.send()
+                            //controller.updateFloatingButtons.send()
                             return
                         }
                         logger.debug("LALAL SNAPSHOT SIZE0 \(prevSnapshot.numberOfItems)")
@@ -99,7 +99,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         if mergedItems.items == controller.prevSnapshot.itemIdentifiers {
                             logger.debug("LALAL SAME ITEMS, not rebuilding the tableview3")
                             // update counters because they are static, unbound to specific chat and will become outdated if a new empty chat was open after non-empty one with unread messages
-                            controller.updateFloatingButtons.send()
+                            //controller.updateFloatingButtons.send()
                             return
                         }
                         await MainActor.run {
@@ -121,8 +121,8 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
         //
         var prevSnapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem> = NSDiffableDataSourceSnapshot()
         var prevMergedItems: MergedItems = MergedItems(items: [], splits: [], indexInParentItems: [:], snapshot: NSDiffableDataSourceSnapshot())
-        let updateFloatingButtons = PassthroughSubject<Void, Never>()
-        private var bag = Set<AnyCancellable>()
+        //let updateFloatingButtons = PassthroughSubject<Void, Never>()
+        //private var bag = Set<AnyCancellable>()
 
         var runBlockOnEndDecelerating: (() -> Void)? = nil
 
@@ -187,17 +187,17 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 return cell
             }
 
-            updateFloatingButtons
-                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
-                .sink {
-                    if !self.scrollToItemInProgress {
-                        let items = representer.$mergedItems.wrappedValue.items
-                        let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) ?? ListState()
-                        //ChatView.FloatingButtonModel.shared.updateOnListChange(items, listState)
-                        logger.debug("LALAL UPDATE FLOATING WITH ITEMS \(items.count)")
-                    }
-                }
-                .store(in: &bag)
+//            updateFloatingButtons
+//                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
+//                .sink {
+//                    if !self.scrollToItemInProgress {
+//                        let items = representer.$mergedItems.wrappedValue.items
+//                        let listState = DispatchQueue.main.sync(execute: { [weak self] in self?.getListState() }) ?? ListState()
+//                        //ChatView.FloatingButtonModel.shared.updateOnListChange(items, listState)
+//                        logger.debug("LALAL UPDATE FLOATING WITH ITEMS \(items.count)")
+//                    }
+//                }
+//                .store(in: &bag)
         }
 
         @available(*, unavailable)
@@ -280,7 +280,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                     // in case of listener will not be called
                     await MainActor.run {
                         representer.scrollState = .atDestination
-                        self.preloadIfNeeded()
+                        //self.preloadIfNeeded()
                     }
                 } catch {}
             }
@@ -288,7 +288,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 task.cancel()
                 self.representer.scrollState = .atDestination
                 self.runBlockOnEndScrolling = nil
-                self.preloadIfNeeded()
+                //self.preloadIfNeeded()
             }
         }
 
@@ -445,33 +445,33 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                 tableView.panGestureRecognizer.isEnabled = true
             }
             // covered edge case when you open a chat with a lot of groupped items which smaller than screen size
-            self.preloadIfNeeded()
-            updateFloatingButtons.send()
+            //self.preloadIfNeeded()
+            //updateFloatingButtons.send()
             logger.debug("LALAL STEP 6")
         }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            updateFloatingButtons.send()
-
-            if representer.scrollState == .atDestination, let listState = self.getListState() {
-                if nearSplit(remaining: 30, ignoreTopOfTopSplit: true, listState, prevMergedItems) {
-                    //logger.debug("LALAL IN SPLIT OR NO YESSSSSS  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
-                    stopScrolling(disable: false)
-                }
-                //logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, self.prevMergedItems))  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
-                if let block = runBlockOnEndDecelerating, nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, prevMergedItems) {
-                    if !updatingInProgress {
-                        runBlockOnEndDecelerating = nil
-                        // it's important to have it in DispatchQueue.main. Otherwise, it will be deadlock and jumping scroll
-                        // without any visible reason
-                        DispatchQueue.main.async {
-                            block()
-                        }
-                    }
-                } else {
-                    preloadIfNeeded()
-                }
-            }
+//            updateFloatingButtons.send()
+//
+//            if representer.scrollState == .atDestination, let listState = self.getListState() {
+//                if nearSplit(remaining: 30, ignoreTopOfTopSplit: true, listState, prevMergedItems) {
+//                    //logger.debug("LALAL IN SPLIT OR NO YESSSSSS  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+//                    stopScrolling(disable: false)
+//                }
+//                //logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, self.prevMergedItems))  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
+//                if let block = runBlockOnEndDecelerating, nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, prevMergedItems) {
+//                    if !updatingInProgress {
+//                        runBlockOnEndDecelerating = nil
+//                        // it's important to have it in DispatchQueue.main. Otherwise, it will be deadlock and jumping scroll
+//                        // without any visible reason
+//                        DispatchQueue.main.async {
+//                            block()
+//                        }
+//                    }
+//                } else {
+//                    preloadIfNeeded()
+//                }
+//            }
         }
 
         override public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
@@ -567,77 +567,77 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             } else { false }
         }
 
-        func scrollToItem(_ itemId: Int64) {
-            if scrollToItemInProgress {
-                logger.debug("LALAL SCROLLING IN PROGRESS")
-                return
-            }
-            scrollToItemInProgress = true
-            Task {
-                logger.debug("LALAL SCROLL TO ITEM \(itemId)  \(ItemsModel.shared.reversedChatItems.count)")
-                do {
-                    var index = representer.mergedItems.indexInParentItems[itemId]
-                    // setting it to 'loading' even if the item is loaded because in rare cases when the resulting item is near the top, scrolling to
-                    // it will trigger loading more items and will scroll to incorrect position (because of trimming)
-                    await MainActor.run {
-                        representer.loadingMoreItems = true
-                    }
-                    logger.debug("LALAL SCROLL TO ITEM \(index ?? -2)")
-                    if index == nil {
-                        let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
-                        let oldSize = ItemsModel.shared.reversedChatItems.count
-                        _ = await self.representer.loadItems(true, pagination, { self.visibleItemIndexesNonReversed(self.prevMergedItems)})
-                        var repeatsLeft = 50
-                        while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
-                            try await Task.sleep(nanoseconds: 20_000000)
-                            repeatsLeft -= 1
-                            logger.debug("LALAL SCROLL REPEATS \(repeatsLeft)")
-                        }
-                        index = representer.mergedItems.indexInParentItems[itemId]
-                    }
-                    logger.debug("LALAL SCROLL TO ITEM2 \(index ?? -3) \(ItemsModel.shared.reversedChatItems.count)")
-                    if let index {
-                        scroll(to: min(ItemsModel.shared.reversedChatItems.count - 1, index), position: .bottom)
-                    } else {
-                        await MainActor.run {
-                            representer.scrollState = .atDestination
-                        }
-                    }
-                } catch {
-                    logger.error("Error scrolling to item: \(error)")
-                }
-                await MainActor.run {
-                    representer.loadingMoreItems = false
-                    scrollToItemInProgress = false
-                }
-            }
-        }
+//        func scrollToItem(_ itemId: Int64) {
+//            if scrollToItemInProgress {
+//                logger.debug("LALAL SCROLLING IN PROGRESS")
+//                return
+//            }
+//            scrollToItemInProgress = true
+//            Task {
+//                logger.debug("LALAL SCROLL TO ITEM \(itemId)  \(ItemsModel.shared.reversedChatItems.count)")
+//                do {
+//                    var index = representer.mergedItems.indexInParentItems[itemId]
+//                    // setting it to 'loading' even if the item is loaded because in rare cases when the resulting item is near the top, scrolling to
+//                    // it will trigger loading more items and will scroll to incorrect position (because of trimming)
+//                    await MainActor.run {
+//                        representer.loadingMoreItems = true
+//                    }
+//                    logger.debug("LALAL SCROLL TO ITEM \(index ?? -2)")
+//                    if index == nil {
+//                        let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
+//                        let oldSize = ItemsModel.shared.reversedChatItems.count
+//                        _ = await self.representer.loadItems(true, pagination, { self.visibleItemIndexesNonReversed(self.prevMergedItems)})
+//                        var repeatsLeft = 50
+//                        while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
+//                            try await Task.sleep(nanoseconds: 20_000000)
+//                            repeatsLeft -= 1
+//                            logger.debug("LALAL SCROLL REPEATS \(repeatsLeft)")
+//                        }
+//                        index = representer.mergedItems.indexInParentItems[itemId]
+//                    }
+//                    logger.debug("LALAL SCROLL TO ITEM2 \(index ?? -3) \(ItemsModel.shared.reversedChatItems.count)")
+//                    if let index {
+//                        scroll(to: min(ItemsModel.shared.reversedChatItems.count - 1, index), position: .bottom)
+//                    } else {
+//                        await MainActor.run {
+//                            representer.scrollState = .atDestination
+//                        }
+//                    }
+//                } catch {
+//                    logger.error("Error scrolling to item: \(error)")
+//                }
+//                await MainActor.run {
+//                    representer.loadingMoreItems = false
+//                    scrollToItemInProgress = false
+//                }
+//            }
+//        }
 
-        func preloadIfNeeded() {
-            let mergedItems = self.representer.mergedItems
-            guard let state = self.getListState(),
-                  representer.scrollState == .atDestination,
-                  prevFirstVisible != state.firstVisibleItemIndex || prevItemsCount != mergedItems.indexInParentItems.count,
-                  !preloading
-            else {
-                return
-            }
-            //logger.debug("LALAL LOADING BEFORE ANYTHING \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(self.representer.$mergedItems.wrappedValue.items[state.firstVisibleItemIndex].newest().item.id)")
-            prevFirstVisible = state.firstVisibleItemIndex
-            prevItemsCount = mergedItems.indexInParentItems.count
-            preloading = true
-            Task {
-                defer {
-                    preloading = false
-                }
-                //logger.debug("LALAL LOADING BEFORE INSIDE \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits)")
-                await preloadItems(mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
-                    let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(self.prevMergedItems) })
-                    logger.debug("LALAL LOADING INSIDE \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits), triedToLoad: \(triedToLoad)")
-                    return triedToLoad
-                }
-            }
-        }
+//        func preloadIfNeeded() {
+//            let mergedItems = self.representer.mergedItems
+//            guard let state = self.getListState(),
+//                  representer.scrollState == .atDestination,
+//                  prevFirstVisible != state.firstVisibleItemIndex || prevItemsCount != mergedItems.indexInParentItems.count,
+//                  !preloading
+//            else {
+//                return
+//            }
+//            //logger.debug("LALAL LOADING BEFORE ANYTHING \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(self.representer.$mergedItems.wrappedValue.items[state.firstVisibleItemIndex].newest().item.id)")
+//            prevFirstVisible = state.firstVisibleItemIndex
+//            prevItemsCount = mergedItems.indexInParentItems.count
+//            preloading = true
+//            Task {
+//                defer {
+//                    preloading = false
+//                }
+//                //logger.debug("LALAL LOADING BEFORE INSIDE \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits)")
+//                await preloadItems(mergedItems, self.representer.allowLoadMoreItems, state, self.representer.$ignoreLoadingRequests) { pagination in
+//                    let triedToLoad = await self.representer.loadItems(false, pagination, { self.visibleItemIndexesNonReversed(self.prevMergedItems) })
+//                    logger.debug("LALAL LOADING INSIDE \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits), triedToLoad: \(triedToLoad)")
+//                    return triedToLoad
+//                }
+//            }
+//        }
     }
 
     /// `UIHostingConfiguration` back-port for iOS14 and iOS15
