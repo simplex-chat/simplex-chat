@@ -679,9 +679,11 @@
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>
+  <string name="mute_all_chat">Mute all</string>
   <string name="unmute_chat">Unmute</string>
   <string name="favorite_chat">Favorite</string>
   <string name="unfavorite_chat">Unfavorite</string>
+  <string name="unread_mentions">Unread mentions</string>
 
   <!-- Tags - ChatListNavLinkView.kt -->
   <string name="create_list">Create list</string>
@@ -2555,4 +2557,7 @@
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
   <string name="open_server_settings_button">Open server settings</string>
+
+  <!-- GroupMentions.kt -->
+  <string name="max_group_mentions_per_message_reached">You can mention up to %1$s members per message!</string>
 </resources>

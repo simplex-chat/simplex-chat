@@ -111,7 +111,9 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   additionalBarOffset: State<Dp>?,
   additionalTopBar: State<Boolean>,
   chatBottomBar: State<Boolean>,
-  content: LazyListScope.() -> Unit
+  maxHeight: State<Dp>?,
+  containerAlignment: Alignment,
+  content: LazyListScope.() -> Unit,
 ) {
   val scope = rememberCoroutineScope()
   val scrollBarAlpha = remember { Animatable(0f) }
@@ -135,9 +137,11 @@ actual fun LazyColumnWithScrollBarNoAppBar(
   // When scroll bar is dragging, there is no scroll event in nested scroll modifier. So, listen for changes on lazy column state
   // (only first visible row is useful because LazyColumn doesn't have absolute scroll position, only relative to row)
   val scrollBarDraggingState = remember { mutableStateOf(false) }
-  Box {
+  Box(contentAlignment = containerAlignment) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    ScrollBar(reverseLayout, state, scrollBarAlpha, scrollJob, scrollBarDraggingState, additionalBarOffset, additionalTopBar, chatBottomBar)
+    Box(if (maxHeight?.value != null) Modifier.height(maxHeight.value).fillMaxWidth() else Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
+    }
   }
 }
 

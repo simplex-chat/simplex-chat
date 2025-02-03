@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -46,6 +45,8 @@ import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
+val MEMBER_ROW_AVATAR_SIZE = 42.dp
+val MEMBER_ROW_VERTICAL_PADDING = 8.dp
 
 @Composable
 fun ModalData.GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, scrollToItemId: MutableState<Long?>, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
@@ -258,16 +259,17 @@ fun MuteButton(
   chat: Chat,
   groupInfo: GroupInfo
 ) {
-  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+  val notificationMode = remember { mutableStateOf(groupInfo.chatSettings.enableNtfs) }
+  val nextNotificationMode by remember { derivedStateOf { notificationMode.value.nextMode(true) } }
 
   InfoViewActionButton(
     modifier = modifier,
-    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
-    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    icon =  painterResource(nextNotificationMode.icon),
+    title = generalGetString(nextNotificationMode.text(true)),
     disabled = !groupInfo.ready,
     disabledLook = !groupInfo.ready,
     onClick = {
-      toggleNotifications(chat.remoteHostId, chat.chatInfo, !ntfsEnabled.value, chatModel, ntfsEnabled)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, nextNotificationMode, chatModel, notificationMode)
     }
   )
 }
@@ -451,7 +453,7 @@ fun ModalData.GroupChatInfoLayout(
       val showMenu = remember { mutableStateOf(false) }
       SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         DropDownMenuForMember(chat.remoteHostId, member, groupInfo, showMenu)
-        MemberRow(member, onClick = { showMemberInfo(member) })
+        MemberRow(member)
       }
     }
     item {
@@ -599,7 +601,7 @@ private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialThem
 }
 
 @Composable
-private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -> Unit)? = null) {
+fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false, selected: Boolean = false) {
   @Composable
   fun MemberInfo() {
     if (member.blocked) {
@@ -628,11 +630,11 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.weight(1f).padding(top = 8.dp, end = DEFAULT_PADDING, bottom = 8.dp),
+      Modifier.weight(1f).padding(top = MEMBER_ROW_VERTICAL_PADDING, end = DEFAULT_PADDING, bottom = MEMBER_ROW_VERTICAL_PADDING),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      MemberProfileImage(size = 42.dp, member)
+      MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -640,22 +642,37 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
             MemberVerifiedShield()
           }
           Text(
-            member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            if (showlocalAliasAndFullName) member.localAliasAndFullName else member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }
-        val statusDescr =
-          if (user) String.format(generalGetString(MR.strings.group_info_member_you), member.memberStatus.shortText) else memberConnStatus()
-        Text(
-          statusDescr,
-          color = MaterialTheme.colors.secondary,
-          fontSize = 12.sp,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
+
+        if (infoPage) {
+          val statusDescr =
+            if (user) String.format(generalGetString(MR.strings.group_info_member_you), member.memberStatus.shortText) else memberConnStatus()
+          Text(
+            statusDescr,
+            color = MaterialTheme.colors.secondary,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+          )
+        }
       }
     }
-    MemberInfo()
+    if (infoPage) {
+      MemberInfo()
+    }
+    if (selected) {
+      Icon(
+        painterResource(
+          MR.images.ic_check
+        ),
+        null,
+        Modifier.size(20.dp),
+        tint = MaterialTheme.colors.primary,
+      )
+    }
   }
 }
 

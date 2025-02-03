@@ -1793,7 +1793,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ts@(_, ft_) = msgContentTexts mc
         live = fromMaybe False live_
         updateRcvChatItem = do
-          cci <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
+          cci <- withStore $ \db -> getGroupChatItemBySharedMsgId db user gInfo groupMemberId sharedMsgId
           case cci of
             CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv m', meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC} ->
               if sameMemberId memberId m'
@@ -1992,9 +1992,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       receiveFileChunk ft Nothing meta chunk
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> CM ()
-    xFileCancelGroup GroupInfo {groupId} GroupMember {groupMemberId, memberId} sharedMsgId = do
+    xFileCancelGroup g@GroupInfo {groupId} GroupMember {groupMemberId, memberId} sharedMsgId = do
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      CChatItem msgDir ChatItem {chatDir} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
+      CChatItem msgDir ChatItem {chatDir} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user g groupMemberId sharedMsgId
       case (msgDir, chatDir) of
         (SMDRcv, CIGroupRcv m) -> do
           if sameMemberId memberId m

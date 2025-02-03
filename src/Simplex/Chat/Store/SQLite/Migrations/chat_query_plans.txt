@@ -154,7 +154,8 @@ Query:
               SELECT COUNT(1)
               FROM chat_items i
               JOIN groups g USING (group_id)
-              WHERE i.user_id = ? AND i.item_status = ? AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL)
+              WHERE i.user_id = ? AND i.item_status = ?
+                AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             
 Plan:
 SEARCH i USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=?)
@@ -4885,6 +4886,10 @@ Plan:
 Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
+
+Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
+Plan:
+SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
 Plan:
