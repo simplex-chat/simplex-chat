@@ -499,10 +499,7 @@ final class ChatModel: ObservableObject {
                 [cItem]
             }
             if case .rcvNew = cItem.meta.itemStatus {
-                if cItem.meta.userMention {
-                    changeMentionsCounter(cInfo.id, by: 1)
-                }
-                unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
+                unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
             }
             popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
@@ -582,10 +579,7 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if cItem.isRcvNew {
-            if cItem.meta.userMention {
-                changeMentionsCounter(cInfo.id, by: -1)
-            }
-            unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
+            unreadCollector.changeUnreadCounter(cInfo.id, by: -1, unreadMentions: cItem.meta.userMention ? -1 : 0)
         }
         // update previews
         if let chat = getChat(cInfo.id) {
@@ -668,8 +662,7 @@ final class ChatModel: ObservableObject {
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
         _updateChat(cInfo.id) { chat in
-            self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
-            self.changeMentionsCounter(cInfo.id, by: -chat.chatStats.unreadMentions)
+            self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
             self.updateFloatingButtons(unreadCount: 0)
             ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
@@ -720,8 +713,8 @@ final class ChatModel: ObservableObject {
                         chat.chatStats.unreadCount -= markedCount
                         chat.chatStats.unreadMentions -= markedMentionsCount
                         ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
-                        // TODO [mentions]
-                        self.decreaseUnreadCounter(user: self.currentUser!, by: markedCount)
+                        let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions ? markedMentionsCount : markedCount
+                        self.decreaseUnreadCounter(user: self.currentUser!, by: by)
                         self.updateFloatingButtons(unreadCount: chat.chatStats.unreadCount)
                     }
                 }
@@ -742,7 +735,7 @@ final class ChatModel: ObservableObject {
     func clearChat(_ cInfo: ChatInfo) {
         // clear preview
         if let chat = getChat(cInfo.id) {
-            self.decreaseUnreadCounter(user: self.currentUser!, by: chat.chatStats.unreadCount)
+            self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
             chat.chatItems = []
             ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
@@ -763,8 +756,7 @@ final class ChatModel: ObservableObject {
                 }
             }
         }
-        changeMentionsCounter(cInfo.id, by: -mentionsRead)
-        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count)
+        self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
     }
 
     private let unreadCollector = UnreadCollector()
@@ -772,16 +764,16 @@ final class ChatModel: ObservableObject {
     class UnreadCollector {
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-        private var unreadCounts: [ChatId: Int] = [:]
+        private var unreadCounts: [ChatId: (unread: Int, mentions: Int)] = [:]
 
         init() {
             subject
                 .debounce(for: 1, scheduler: DispatchQueue.main)
                 .sink {
                     let m = ChatModel.shared
-                    for (chatId, count) in self.unreadCounts {
-                        if let i = m.getChatIndex(chatId) {
-                            m.changeUnreadCounter(i, by: count)
+                    for (chatId, (unread, mentions)) in self.unreadCounts {
+                        if unread != 0 || mentions != 0, let i = m.getChatIndex(chatId) {
+                            m.changeUnreadCounter(i, by: unread, unreadMentions: mentions)
                         }
                     }
                     self.unreadCounts = [:]
@@ -789,11 +781,12 @@ final class ChatModel: ObservableObject {
                 .store(in: &bag)
         }
 
-        func changeUnreadCounter(_ chatId: ChatId, by count: Int) {
+        func changeUnreadCounter(_ chatId: ChatId, by count: Int, unreadMentions: Int) {
             if chatId == ChatModel.shared.chatId {
                 ChatView.FloatingButtonModel.shared.totalUnread += count
             }
-            self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
+            let (unread, mentions) = self.unreadCounts[chatId] ?? (0, 0)
+            self.unreadCounts[chatId] = (unread + count, mentions + unreadMentions)
             subject.send()
         }
     }
@@ -871,15 +864,24 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func changeUnreadCounter(_ chatIndex: Int, by count: Int) {
+    func changeUnreadCounter(_ chatIndex: Int, by count: Int, unreadMentions: Int) {
         let wasUnread = chats[chatIndex].unreadTag
-        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount + count
+        let stats = chats[chatIndex].chatStats
+        chats[chatIndex].chatStats.unreadCount = stats.unreadCount + count
+        chats[chatIndex].chatStats.unreadMentions = stats.unreadMentions + unreadMentions
         ChatTagsModel.shared.updateChatTagRead(chats[chatIndex], wasUnread: wasUnread)
         changeUnreadCounter(user: currentUser!, by: count)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
         changeUnreadCounter(user: user, by: 1)
+    }
+
+    func decreaseUnreadCounter(user: any UserLike, chat: Chat) {
+        let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions
+                ? chat.chatStats.unreadMentions
+                : chat.chatStats.unreadCount
+        decreaseUnreadCounter(user: user, by: by)
     }
 
     func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
@@ -930,18 +932,6 @@ final class ChatModel: ObservableObject {
             ChatTagsModel.shared.changeGroupReportsTag(by)
         }
     }
-    
-    private func changeMentionsCounter(_ chatId: ChatId, by: Int = 1) {
-        if by == 0 { return }
-
-        if let i = getChatIndex(chatId) {
-            let chat = chats[i]
-            let wasUnread = chat.unreadTag
-            chat.chatStats.unreadMentions = chat.chatStats.unreadMentions + by
-            ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
-        }
-    }
-
 
     // this function analyses "connected" events and assumes that each member will be there only once
     func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String]) {
