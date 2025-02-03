@@ -39,7 +39,7 @@ abstract class NtfManager {
   fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
     if (
       cItem.showNotification &&
-      cInfo.ntfsEnabled &&
+      cInfo.ntfsEnabled(cItem) &&
       (
           allowedToShowNotification() ||
               chatModel.chatId.value != cInfo.id ||

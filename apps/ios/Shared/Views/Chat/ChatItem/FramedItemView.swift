@@ -258,7 +258,7 @@ struct FramedItemView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(sender)
                         .font(.caption)
-                        .foregroundColor(theme.colors.secondary)
+                        .foregroundColor(qi.chatDir == .groupSnd ? .accentColor : theme.colors.secondary)
                         .lineLimit(1)
                     ciQuotedMsgTextView(qi, lines: 2)
                 }
@@ -306,6 +306,8 @@ struct FramedItemView: View {
             text: text,
             formattedText: ft,
             meta: ci.meta,
+            mentions: ci.mentions,
+            userMemberId: chat.chatInfo.groupInfo?.membership.memberId,
             rightToLeft: rtl,
             showSecrets: showSecrets,
             prefix: txtPrefix
