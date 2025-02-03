@@ -58,9 +58,8 @@ fun SendMsgView(
   cancelLiveMessage: (() -> Unit)? = null,
   editPrevMessage: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
-  onMessageChange: (String) -> Unit,
+  onMessageChange: (ComposeMessage) -> Unit,
   textStyle: MutableState<TextStyle>,
-  textSelection: MutableState<TextRange>,
   focusRequester: FocusRequester? = null,
   ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
@@ -76,7 +75,7 @@ fun SendMsgView(
         false
       }
     }
-    val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
+    val showVoiceButton = !nextSendGrpInv && cs.message.text.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         !composeState.value.forwarding && cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started) && (cs.contextItem !is ComposeContextItem.ReportedItem)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
     val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
@@ -96,7 +95,6 @@ fun SendMsgView(
       onMessageChange,
       editPrevMessage,
       onFilesPasted,
-      textSelection,
       focusRequester
     ) {
       if (!cs.inProgress) {
@@ -165,7 +163,7 @@ fun SendMsgView(
             }
           }
         }
-        cs.liveMessage?.sent == false && cs.message.isEmpty() -> {
+        cs.liveMessage?.sent == false && cs.message.text.isEmpty() -> {
           CancelLiveMessageButton {
             cancelLiveMessage?.invoke()
           }
@@ -285,7 +283,7 @@ private fun CustomDisappearingMessageDialog(
 @Composable
 private fun BoxScope.DeleteTextButton(composeState: MutableState<ComposeState>) {
   IconButton(
-    { composeState.value = composeState.value.copy(message = "") },
+    { composeState.value = composeState.value.copy(message = ComposeMessage()) },
     Modifier.align(Alignment.TopEnd).size(36.dp)
   ) {
     Icon(painterResource(MR.images.ic_close), null, Modifier.padding(7.dp).size(36.dp), tint = MaterialTheme.colors.secondary)
@@ -592,7 +590,6 @@ fun PreviewSendMsgView() {
       onMessageChange = { _ -> },
       onFilesPasted = {},
       textStyle = textStyle,
-      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }
@@ -629,7 +626,6 @@ fun PreviewSendMsgViewEditing() {
       onMessageChange = { _ -> },
       onFilesPasted = {},
       textStyle = textStyle,
-      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }
@@ -666,7 +662,6 @@ fun PreviewSendMsgViewInProgress() {
       onMessageChange = { _ -> },
       onFilesPasted = {},
       textStyle = textStyle,
-      textSelection = remember { mutableStateOf(TextRange.Zero) }
     )
   }
 }

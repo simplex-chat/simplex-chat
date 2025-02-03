@@ -31,7 +31,6 @@ private val MAX_PICKER_HEIGHT = (PICKER_ROW_SIZE * 4) + (MEMBER_ROW_AVATAR_SIZE 
 fun GroupMentions(
   rhId: Long?,
   composeState: MutableState<ComposeState>,
-  textSelection: MutableState<TextRange>,
   composeViewFocusRequester: FocusRequester?,
   chatInfo: ChatInfo.Group
 ) {
@@ -76,9 +75,9 @@ fun GroupMentions(
     mentionMemberId.value = null
   }
 
-  fun messageChanged(msg: String, parsedMsg: List<FormattedText>, range: TextRange) {
+  fun messageChanged(msg: ComposeMessage, parsedMsg: List<FormattedText>) {
     removeUnusedMentions(composeState, parsedMsg)
-    val selected = selectedMarkdown(parsedMsg, range)
+    val selected = selectedMarkdown(parsedMsg, msg.selection)
 
     if (selected != null) {
       val (ft, r) = selected
@@ -97,9 +96,9 @@ fun GroupMentions(
           return
         }
         null -> {
-          val pos = range.start
-          if (range.length == 0 && getCharacter(msg, pos - 1)?.first == "@") {
-            val prevChar = getCharacter(msg, pos - 2)?.first
+          val pos = msg.selection.start
+          if (msg.selection.length == 0 && getCharacter(msg.text, pos - 1)?.first == "@") {
+            val prevChar = getCharacter(msg.text, pos - 2)?.first
             if (prevChar == null || prevChar == " " || prevChar == "\n") {
               isVisible.value = true
               mentionName.value = ""
@@ -129,26 +128,25 @@ fun GroupMentions(
     mentions[newName] = CIMention(member)
     var msgMention = "@" + if (newName.contains(" ")) "'$newName'" else newName
     var newPos = range.start + msgMention.length
-    val newMsgLength = composeState.value.message.length + msgMention.length - range.length
+    val newMsgLength = composeState.value.message.text.length + msgMention.length - range.length
     if (newPos == newMsgLength) {
       msgMention += " "
       newPos += 1
     }
 
-    val msg = composeState.value.message.replaceRange(
+    val msg = composeState.value.message.text.replaceRange(
       range.start,
       range.end,
       msgMention
     )
     composeState.value = composeState.value.copy(
-      message = msg,
+      message = ComposeMessage(msg, TextRange(newPos)),
       parsedMessage = parseToMarkdown(msg) ?: FormattedText.plain(msg),
       mentions = mentions
     )
 
     composeViewFocusRequester?.requestFocus()
-    textSelection.value = TextRange(newPos)
-    
+
     scope.launch {
       closeMembersPicker()
     }
@@ -156,17 +154,17 @@ fun GroupMentions(
 
   LaunchedEffect(composeState.value.parsedMessage) {
     currentMessage.value = composeState.value.message
-    messageChanged(currentMessage.value, composeState.value.parsedMessage, textSelection.value)
+    messageChanged(currentMessage.value, composeState.value.parsedMessage)
   }
 
-  KeyChangeEffect(textSelection.value) {
-    // This condition is needed to prevent messageChanged called twice,
-    // because composeState.formattedText triggers later when message changes.
-    // The condition is only true if position changed without text change
-    if (currentMessage.value == composeState.value.message) {
-      messageChanged(currentMessage.value, composeState.value.parsedMessage, textSelection.value)
-    }
-  }
+//  KeyChangeEffect(composeState.value.message.selection) {
+//    // This condition is needed to prevent messageChanged called twice,
+//    // because composeState.formattedText triggers later when message changes.
+//    // The condition is only true if position changed without text change
+//    if (currentMessage.value.text == composeState.value.message.text) {
+//      messageChanged(currentMessage.value, composeState.value.parsedMessage)
+//    }
+//  }
 
   LaunchedEffect(isVisible.value) {
     if (isVisible.value) {

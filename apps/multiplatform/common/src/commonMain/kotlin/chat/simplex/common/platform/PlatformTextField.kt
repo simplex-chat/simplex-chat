@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import chat.simplex.common.views.chat.ComposeMessage
 import chat.simplex.common.views.chat.ComposeState
 import java.net.URI
 
@@ -17,10 +18,9 @@ expect fun PlatformTextField(
   userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
-  onMessageChange: (String) -> Unit,
+  onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
-  textSelection: MutableState<TextRange>,
   focusRequester: FocusRequester? = null,
   onDone: () -> Unit,
 )

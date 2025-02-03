@@ -57,10 +57,9 @@ actual fun PlatformTextField(
   userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
-  onMessageChange: (String) -> Unit,
+  onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
-  textSelection: MutableState<TextRange>,
   focusRequester: FocusRequester?,
   onDone: () -> Unit,
 ) {
@@ -123,9 +122,7 @@ actual fun PlatformTextField(
       }
 
       override fun onSelectionChanged(selStart: Int, selEnd: Int) {
-        val start = minOf(selStart, selEnd)
-        val end = maxOf(selStart, selEnd)
-        textSelection.value = TextRange(start, end)
+        onMessageChange(ComposeMessage(text.toString(), TextRange(minOf(selStart, selEnd), maxOf(selStart, selEnd))))
         super.onSelectionChanged(selStart, selEnd)
       }
     }
@@ -137,7 +134,8 @@ actual fun PlatformTextField(
     editText.background = ColorDrawable(Color.Transparent.toArgb())
     editText.textDirection = if (isRtl) EditText.TEXT_DIRECTION_LOCALE else EditText.TEXT_DIRECTION_ANY_RTL
     editText.setPaddingRelative(paddingStart, paddingTop, paddingEnd, paddingBottom)
-    editText.setText(cs.message)
+    editText.setText(cs.message.text)
+    editText.setSelection(cs.message.selection.start, cs.message.selection.end)
     editText.hint = placeholder
     editText.setHintTextColor(hintColor.toArgb())
     if (Build.VERSION.SDK_INT >= 29) {
@@ -160,9 +158,10 @@ actual fun PlatformTextField(
     }
     editText.doOnTextChanged { text, _, _, _ ->
       if (!composeState.value.inProgress) {
-        onMessageChange(text.toString())
-      } else if (text.toString() != composeState.value.message) {
-        editText.setText(composeState.value.message)
+        onMessageChange(ComposeMessage(text.toString(), TextRange(minOf(editText.selectionStart, editText.selectionEnd), maxOf(editText.selectionStart, editText.selectionEnd))))
+      } else if (text.toString() != composeState.value.message.text) {
+        editText.setText(composeState.value.message.text)
+        editText.setSelection(composeState.value.message.selection.start, composeState.value.message.selection.end)
       }
     }
     editText.doAfterTextChanged { text -> if (composeState.value.preview is ComposePreview.VoicePreview && text.toString() != "") editText.setText("") }
@@ -178,10 +177,9 @@ actual fun PlatformTextField(
     it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
-    if (cs.message != it.text.toString()) {
-      it.setText(cs.message)
-      // Set cursor to the end of the text
-      it.setSelection(it.text.length)
+    if (cs.message.text != it.text.toString() || cs.message.selection.start != it.selectionStart || cs.message.selection.end != it.selectionEnd) {
+      it.setText(cs.message.text)
+      it.setSelection(cs.message.selection.start, cs.message.selection.end)
     }
     if (showKeyboard) {
       it.requestFocus()

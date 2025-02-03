@@ -146,7 +146,7 @@ fun ChatView(
             chatInfo = activeChatInfo,
             unreadCount,
             composeState,
-            composeView = { textSelection, focusRequester ->
+            composeView = { focusRequester ->
               if (selectedChatItems.value == null) {
                 Column(
                   Modifier.fillMaxWidth(),
@@ -168,7 +168,6 @@ fun ChatView(
                   ComposeView(
                     chatModel, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
                     showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } },
-                    textSelection = textSelection,
                     focusRequester = focusRequester
                   )
                 }
@@ -659,7 +658,7 @@ fun ChatLayout(
   chatInfo: State<ChatInfo?>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
-  composeView: (@Composable (MutableState<TextRange>, FocusRequester?) -> Unit),
+  composeView: (@Composable (FocusRequester?) -> Unit),
   scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
   attachmentBottomSheetState: ModalBottomSheetState,
@@ -736,7 +735,6 @@ fun ChatLayout(
         val chatInfo = remember { chatInfo }.value
         val oneHandUI = remember { appPrefs.oneHandUI.state }
         val chatBottomBar = remember { appPrefs.chatBottomBar.state }
-        val textSelection = remember { mutableStateOf(TextRange(composeState.value.message.length)) }
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
           if (chatInfo != null) {
@@ -753,7 +751,7 @@ fun ChatLayout(
                   setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
                 )
               }
-              if (chatInfo is ChatInfo.Group && composeState.value.message.isNotEmpty()) {
+              if (chatInfo is ChatInfo.Group && composeState.value.message.text.isNotEmpty()) {
                 Column(
                   Modifier
                     .align(Alignment.BottomStart)
@@ -762,7 +760,6 @@ fun ChatLayout(
                   GroupMentions(
                     rhId = remoteHostId,
                     composeState = composeState,
-                    textSelection = textSelection,
                     composeViewFocusRequester = composeViewFocusRequester,
                     chatInfo = chatInfo,
                   )
@@ -814,7 +811,7 @@ fun ChatLayout(
                 .navigationBarsPadding()
                 .then(if (oneHandUI.value && chatBottomBar.value) Modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier) else Modifier)
             ) {
-              composeView(textSelection, composeViewFocusRequester)
+              composeView(composeViewFocusRequester)
             }
           }
         }
@@ -2704,7 +2701,7 @@ fun PreviewChatLayout() {
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = { _,_ -> },
+      composeView = { _ -> },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
@@ -2779,7 +2776,7 @@ fun PreviewGroupChatLayout() {
       chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      composeView = { _,_ -> },
+      composeView = { _ -> },
       scrollToItemId = remember { mutableStateOf(null) },
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),

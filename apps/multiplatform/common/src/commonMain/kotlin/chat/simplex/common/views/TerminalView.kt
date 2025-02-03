@@ -47,16 +47,16 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
   val s = composeState.value.message
-  if (s.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
+  if (s.text.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
     val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.CommandError("Failed reading: empty")))
-    chatModel.addTerminalItem(TerminalItem.cmd(null, CC.Console(s)))
+    chatModel.addTerminalItem(TerminalItem.cmd(null, CC.Console(s.text)))
     chatModel.addTerminalItem(TerminalItem.resp(null, resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
     withBGApi {
       // show "in progress"
       // TODO show active remote host in chat console?
-      chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))
+      chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s.text))
       composeState.value = ComposeState(useLinkPreviews = false)
       // hide "in progress"
     }
@@ -72,7 +72,7 @@ fun TerminalLayout(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
 
-  fun onMessageChange(s: String) {
+  fun onMessageChange(s: ComposeMessage) {
     composeState.value = composeState.value.copy(message = s)
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -114,7 +114,6 @@ fun TerminalLayout(
             onMessageChange = ::onMessageChange,
             onFilesPasted = {},
             textStyle = textStyle,
-            textSelection = remember { mutableStateOf(TextRange.Zero) },
             focusRequester = remember { FocusRequester() }
           )
         }

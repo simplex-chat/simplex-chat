@@ -50,10 +50,9 @@ actual fun PlatformTextField(
   userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
-  onMessageChange: (String) -> Unit,
+  onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
-  textSelection: MutableState<TextRange>,
   focusRequester: FocusRequester?,
   onDone: () -> Unit,
 ) {
@@ -76,9 +75,9 @@ actual fun PlatformTextField(
       keyboard?.hide()
     }
   }
-  val lastTimeWasRtlByCharacters = remember { mutableStateOf(isRtl(cs.message.subSequence(0, min(50, cs.message.length)))) }
+  val lastTimeWasRtlByCharacters = remember { mutableStateOf(isRtl(cs.message.text.subSequence(0, min(50, cs.message.text.length)))) }
   val isRtlByCharacters = remember(cs.message) {
-    if (cs.message.isNotEmpty()) isRtl(cs.message.subSequence(0, min(50, cs.message.length))) else lastTimeWasRtlByCharacters.value
+    if (cs.message.text.isNotEmpty()) isRtl(cs.message.text.subSequence(0, min(50, cs.message.text.length))) else lastTimeWasRtlByCharacters.value
   }
   LaunchedEffect(isRtlByCharacters) {
     lastTimeWasRtlByCharacters.value = isRtlByCharacters
@@ -86,12 +85,12 @@ actual fun PlatformTextField(
   val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
   // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
   // In this case padding from right side should be bigger
-  val startEndPadding = if (cs.message.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
+  val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
   val startPadding = if (isRtlByCharacters && isLtrGlobally) startEndPadding else 0.dp
   val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
   val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
-  var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
-  val textFieldValue = textFieldValueState.copy(text = cs.message, selection = textSelection.value)
+  var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
+  val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)
   val clipboard = LocalClipboardManager.current
   BasicTextField(
     value = textFieldValue,
@@ -107,8 +106,7 @@ actual fun PlatformTextField(
           }
         }
         textFieldValueState = it
-        textSelection.value = it.selection
-        onMessageChange(it.text)
+        onMessageChange(ComposeMessage(it.text, it.selection))
       }
     },
     textStyle = textStyle.value,
@@ -128,17 +126,16 @@ actual fun PlatformTextField(
             val start = if (minOf(textFieldValue.selection.min) == 0) "" else textFieldValue.text.substring(0 until textFieldValue.selection.min)
             val newText = start + "\n" +
                   textFieldValue.text.substring(textFieldValue.selection.max, textFieldValue.text.length)
-            textSelection.value = TextRange(textFieldValue.selection.min + 1)
             textFieldValueState = textFieldValue.copy(
               text = newText,
-              selection = textSelection.value
+              selection = TextRange(textFieldValue.selection.min + 1)
             )
-            onMessageChange(newText)
+            onMessageChange(ComposeMessage(newText, textFieldValueState.selection))
           } else if (!sendMsgButtonDisabled) {
             onDone()
           }
           true
-        } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.isEmpty()) {
+        } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.text.isEmpty()) {
           onUpArrow()
           true
         } else if (it.key == Key.V &&
@@ -170,7 +167,7 @@ actual fun PlatformTextField(
                     chatModel.filesToDelete.add(tempFile)
 
                     tempFile.writeBytes(bytes)
-                    composeState.processPickedMedia(listOf(tempFile.toURI()), composeState.value.message)
+                    composeState.processPickedMedia(listOf(tempFile.toURI()), composeState.value.message.text)
                   }
                 } catch (e: Exception) {
                   Log.e(TAG, "Pasting image exception: ${e.stackTraceToString()}")
@@ -204,7 +201,7 @@ actual fun PlatformTextField(
         }
     }
   )
-  showDeleteTextButton.value = cs.message.split("\n").size >= 4 && !cs.inProgress
+  showDeleteTextButton.value = cs.message.text.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {
     ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
   } else if (userIsObserver) {

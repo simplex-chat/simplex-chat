@@ -175,7 +175,7 @@ fun ChatPreviewView(
       if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
         val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
         val (text: CharSequence, inlineTextContent) = when {
-          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message to messageDraft(chatModelDraft, sp20) }
+          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message.text to messageDraft(chatModelDraft, sp20) }
           ci.meta.itemDeleted == null -> ci.text to null
           else -> markedDeletedText(ci, chat.chatInfo) to null
         }
