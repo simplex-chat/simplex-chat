@@ -220,7 +220,7 @@
     <string name="connection_timeout">Időtúllépés kapcsolódáskor</string>
     <string name="connect_with_contact_name_question">Kapcsolódás a következővel: %1$s?</string>
     <string name="create_profile_button">Létrehozás</string>
-    <string name="contact_preferences">Ismerős beállításai</string>
+    <string name="contact_preferences">Ismerősbeállítások</string>
     <string name="info_row_connection">Kapcsolat</string>
     <string name="desktop_connection_terminated">Kapcsolat megszakítva</string>
     <string name="display_name_connection_established">kapcsolat létrehozva</string>
@@ -874,7 +874,7 @@
     <string name="connect_plan_repeat_connection_request">Kapcsolatkérés megismétlése?</string>
     <string name="only_you_can_delete_messages">Véglegesen csak Ön törölhet üzeneteket (ismerőse csak törlésre jelölheti őket ). (24 óra)</string>
     <string name="role_in_group">Szerepkör</string>
-    <string name="simplex_link_contact">SimpleX-kapcsolattartási-cím</string>
+    <string name="simplex_link_contact">SimpleX kapcsolattartási cím</string>
     <string name="stop_file__confirm">Megállítás</string>
     <string name="smp_servers_preset_server">Előre beállított kiszolgáló</string>
     <string name="add_contact_or_create_group">Új csevegés indítása</string>
@@ -1284,7 +1284,7 @@
     <string name="smp_servers_use_server_for_new_conn">Alkalmazás új kapcsolatokhoz</string>
     <string name="periodic_notifications_desc">Az új üzeneteket az alkalmazás rendszeresen lekéri – naponta néhány százalékot használ az akkumulátorból. Az alkalmazás nem használ push-értesítéseket – az eszközről származó adatok nem lesznek elküldve a kiszolgálóknak.</string>
     <string name="paste_desktop_address">Számítógép címének beillesztése</string>
-    <string name="description_via_contact_address_link">a kapcsolattartási cím-hivatkozáson keresztül</string>
+    <string name="description_via_contact_address_link">a kapcsolattartási címhivatkozáson keresztül</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem növelése érdekében <b> a SimpleX a háttérben fut</b> a push értesítések használata helyett.]]></string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt az ismerőskérelmet és eltávolíthatja az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelszó nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonságimentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
