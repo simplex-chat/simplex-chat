@@ -601,9 +601,9 @@
     <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
     <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
     <string name="chat_item_ttl_none">nie</string>
-    <string name="chat_item_ttl_day">täglich</string>
-    <string name="chat_item_ttl_week">wöchentlich</string>
-    <string name="chat_item_ttl_month">monatlich</string>
+    <string name="chat_item_ttl_day">Älter als ein Tag</string>
+    <string name="chat_item_ttl_week">Älter als eine Woche</string>
+    <string name="chat_item_ttl_month">Älter als einen Monat</string>
     <string name="chat_item_ttl_seconds">%s Sekunde(n)</string>
     <string name="delete_messages_after">Löschen der Nachrichten</string>
     <string name="enable_automatic_deletion_question">Automatisches Löschen von Nachrichten aktivieren?</string>
@@ -2400,10 +2400,13 @@
     <string name="chat_ttl_options_footer">Chat-Nachrichten von Ihrem Gerät löschen</string>
     <string name="disable_automatic_deletion_question">Automatisches Löschen von Nachrichten deaktivieren?</string>
     <string name="disable_automatic_deletion">Löschen von Nachrichten deaktivieren</string>
-    <string name="chat_item_ttl_year">1 Jahr</string>
+    <string name="chat_item_ttl_year">Älter als ein Jahr</string>
     <string name="chat_item_ttl_default">Voreinstellung (%s)</string>
     <string name="disable_automatic_deletion_message">Nachrichten in diesem Chat werden nie gelöscht.</string>
     <string name="network_smp_web_port_footer">Solange kein Port konfiguriert ist, wird der TCP-Port %1$s genutzt.</string>
     <string name="network_smp_web_port_toggle">Web-Port nutzen</string>
     <string name="network_smp_web_port_section_title">TCP-Port für die Nachrichtenübermittlung</string>
+    <string name="max_group_mentions_per_message_reached">Sie können bis zu %1$s Mitglieder pro Nachricht erwähnen!</string>
+    <string name="mute_all_chat">Alle stummschalten</string>
+    <string name="unread_mentions">Ungelesene Erwähnungen</string>
 </resources>
