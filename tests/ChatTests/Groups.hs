@@ -132,7 +132,7 @@ chatGroupTests = do
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
   describe "group message forwarding" $ do
-    it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "forward messages between invitee and introduced, except reports (x.msg.new)" testGroupMsgForward
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
@@ -3979,6 +3979,16 @@ testGroupMsgForward =
       cath ##> "/tail #team 2"
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
+
+      cath ##> "/report #team content hi there"
+      cath <# "#team > bob hi there"
+      cath <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#team cath> > bob hi there"
+            alice <## "      report content",
+          (bob </)
+        ]
 
 setupGroupForwarding3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding3 gName alice bob cath = do
