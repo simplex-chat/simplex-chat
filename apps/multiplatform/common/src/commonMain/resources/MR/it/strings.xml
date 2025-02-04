@@ -2335,4 +2335,7 @@
     <string name="network_smp_web_port_footer">Usa la porta TCP %1$s quando nessuna porta è specificata.</string>
     <string name="network_smp_web_port_section_title">Porta TCP per i messaggi</string>
     <string name="network_smp_web_port_toggle">Usa porta web</string>
+    <string name="mute_all_chat">Silenzia tutto</string>
+    <string name="unread_mentions">Menzioni non lette</string>
+    <string name="max_group_mentions_per_message_reached">Puoi menzionare fino a %1$s membri per messaggio!</string>
 </resources>
