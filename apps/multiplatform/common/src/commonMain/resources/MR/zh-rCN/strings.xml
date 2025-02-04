@@ -2319,4 +2319,7 @@
     <string name="network_smp_web_port_section_title">用于消息收发的 TCP 端口</string>
     <string name="network_smp_web_port_footer">未指定端口时，使用 TCP 端口 %1$s。</string>
     <string name="network_smp_web_port_toggle">使用 web 端口</string>
+    <string name="mute_all_chat">全部静音</string>
+    <string name="unread_mentions">取消提及的已读状态</string>
+    <string name="max_group_mentions_per_message_reached">每条消息最多提及 %1$s 名成员！</string>
 </resources>
