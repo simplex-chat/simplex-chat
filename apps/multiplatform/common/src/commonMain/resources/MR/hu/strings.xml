@@ -63,7 +63,7 @@
     <string name="connect_plan_already_connecting">Kapcsolódás folyamatban!</string>
     <string name="cannot_receive_file">Nem lehet fogadni a fájlt</string>
     <string name="auth_unavailable">Hitelesítés elérhetetlen</string>
-    <string name="app_version_title">Alkalmazás verzió</string>
+    <string name="app_version_title">Az alkalmazás verziója</string>
     <string name="button_add_welcome_message">Üdvözlőüzenet hozzáadása</string>
     <string name="snd_conn_event_ratchet_sync_started">titkosítás elfogadása %s számára…</string>
     <string name="available_in_v51">\nElérhető az v5.1-es kiadásban</string>
@@ -161,7 +161,7 @@
     <string name="both_you_and_your_contact_can_make_calls">Mindkét fél tud hívásokat kezdeményezni.</string>
     <string name="la_auth_failed">Sikertelen hitelesítés</string>
     <string name="block_member_desc">Az összes %s által írt új üzenet el lesz rejtve!</string>
-    <string name="app_version_name">Alkalmazás verzió: v%s</string>
+    <string name="app_version_name">Az alkalmazás verziója: v%s</string>
     <string name="allow_calls_only_if">A hívások kezdeményezése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="smp_servers_add">Kiszolgáló hozzáadása</string>
     <string name="icon_descr_audio_on">Hang bekapcsolva</string>
@@ -425,7 +425,7 @@
     <string name="database_will_be_encrypted_and_passphrase_stored">Az adatbázis titkosítva lesz, a jelmondat pedig a Keystore-ban lesz tárolva.</string>
     <string name="enable_automatic_deletion_question">Automatikus üzenet törlés engedélyezése?</string>
     <string name="delete_contact_menu_action">Törlés</string>
-    <string name="mtr_error_no_down_migration">az adatbázis verziója újabb, mint az alkalmazásé, visszafelé átköltöztetés nem lehetséges a következőhöz: %s</string>
+    <string name="mtr_error_no_down_migration">az adatbázis verziója újabb, mint az alkalmazásé, de a visszafelé történő átköltöztetés viszont nem lehetséges a következőhöz: %s</string>
     <string name="simplex_link_mode_description">Leírás</string>
     <string name="ttl_hour">%d óra</string>
     <string name="ttl_m">%dp</string>
