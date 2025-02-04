@@ -473,9 +473,9 @@
         <target>0s</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="1 day" xml:space="preserve">
+      <trans-unit id="1 day" xml:space="preserve" approved="no">
         <source>1 day</source>
-        <target>täglich</target>
+        <target state="translated">Älter als ein Tag</target>
         <note>delete after time
    time interval</note>
       </trans-unit>
@@ -489,21 +489,21 @@
         <target>1 Minute</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="1 month" xml:space="preserve">
+      <trans-unit id="1 month" xml:space="preserve" approved="no">
         <source>1 month</source>
-        <target>monatlich</target>
+        <target state="translated">Älter als einen Monat</target>
         <note>delete after time
    time interval</note>
       </trans-unit>
-      <trans-unit id="1 week" xml:space="preserve">
+      <trans-unit id="1 week" xml:space="preserve" approved="no">
         <source>1 week</source>
-        <target>wöchentlich</target>
+        <target state="translated">Älter als eine Woche</target>
         <note>delete after time
    time interval</note>
       </trans-unit>
       <trans-unit id="1 year" xml:space="preserve" approved="no">
         <source>1 year</source>
-        <target state="translated">1 Jahr</target>
+        <target state="translated">Älter als ein Jahr</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve">
