@@ -2011,9 +2011,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target>Csak név</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact preferences" xml:space="preserve">
+      <trans-unit id="Contact preferences" xml:space="preserve" approved="no">
         <source>Contact preferences</source>
-        <target>Ismerős beállításai</target>
+        <target state="translated">Ismerősbeállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -3914,9 +3914,9 @@ Hiba: %2$@</target>
         <target>Csoport moderáció</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group preferences" xml:space="preserve">
+      <trans-unit id="Group preferences" xml:space="preserve" approved="no">
         <source>Group preferences</source>
-        <target>Csoportbeállítások</target>
+        <target state="translated">Csoportbeállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve">
@@ -5324,9 +5324,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak a beszélgetés törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
+      <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target>Csak a csoporttulajdonosok változtathatják meg a csoportbeállításokat.</target>
+        <target state="translated">Csak a csoporttulajdonosok változtathatják meg a csoportbeállításokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
@@ -6874,9 +6874,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Alapértelmezett téma beállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set group preferences" xml:space="preserve">
+      <trans-unit id="Set group preferences" xml:space="preserve" approved="no">
         <source>Set group preferences</source>
-        <target>Csoportbeállítások megadása</target>
+        <target state="translated">Csoportbeállítások megadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set it instead of system authentication." xml:space="preserve">
@@ -7615,9 +7615,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Ezek a beállítások csak a jelenlegi **%@** nevű csevegő-profiljára vonatkoznak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve">
+      <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve" approved="no">
         <source>They can be overridden in contact and group settings.</source>
-        <target>Ezek felülbírálhatók az ismerős- és csoportbeállításokban.</target>
+        <target state="translated">Ezek felülbírálhatók az ismerős- és csoportbeállításokban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
@@ -9740,9 +9740,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>v%@ (%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="via contact address link" xml:space="preserve">
+      <trans-unit id="via contact address link" xml:space="preserve" approved="no">
         <source>via contact address link</source>
-        <target>a kapcsolattartási cím-hivatkozáson keresztül</target>
+        <target state="translated">a kapcsolattartási címhivatkozáson keresztül</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via group link" xml:space="preserve">
