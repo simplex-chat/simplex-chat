@@ -367,6 +367,7 @@ isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
   XMsgNew mc -> case mcExtMsgContent mc of
     ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> False
+    ExtMsgContent {content = MCReport {}} -> False
     _ -> True
   XMsgFileDescr _ _ -> True
   XMsgUpdate {} -> True
