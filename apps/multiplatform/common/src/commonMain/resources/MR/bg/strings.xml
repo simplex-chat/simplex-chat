@@ -2269,4 +2269,5 @@
     <string name="how_it_helps_privacy">Как помага за поверителността</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Ще спрете да получавате съобщения от този чат. Историята на чата ще бъде запазена.</string>
     <string name="button_add_team_members">Добави членове на екипа</string>
+    <string name="mute_all_chat">Заглушаване на всички</string>
 </resources>
