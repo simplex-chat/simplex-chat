@@ -1038,14 +1038,14 @@
         <target>Alkalmazás munkamenete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version" xml:space="preserve">
+      <trans-unit id="App version" xml:space="preserve" approved="no">
         <source>App version</source>
-        <target>Alkalmazás verzió</target>
+        <target state="translated">Az alkalmazás verziója</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version: v%@" xml:space="preserve">
+      <trans-unit id="App version: v%@" xml:space="preserve" approved="no">
         <source>App version: v%@</source>
-        <target>Alkalmazás verzió: v%@</target>
+        <target state="translated">Az alkalmazás verziója: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -9143,9 +9143,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>egyedi</target>
         <note>dropdown time picker choice</note>
       </trans-unit>
-      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve">
+      <trans-unit id="database version is newer than the app, but no down migration for: %@" xml:space="preserve" approved="no">
         <source>database version is newer than the app, but no down migration for: %@</source>
-        <target>az adatbázis verziója újabb, mint az alkalmazásé, de nincs visszafelé átköltöztetés a következőhöz: %@</target>
+        <target state="translated">az adatbázis verziója újabb, mint az alkalmazásé, de a visszafelé történő átköltöztetés viszont nem lehetséges a következőhöz: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="days" xml:space="preserve">
