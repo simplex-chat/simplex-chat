@@ -891,7 +891,7 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
   map (toContactMember vr user)
     <$> DB.query
       db
-      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND member_role IN (?,?,?)")
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
       (userId, userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
 
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]

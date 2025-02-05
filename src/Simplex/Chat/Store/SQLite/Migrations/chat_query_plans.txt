@@ -4577,7 +4577,7 @@ Query:
       FROM connections cc
       WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
     )
-   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND member_role IN (?,?,?)
+   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
 Plan:
 SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
