@@ -58,7 +58,7 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id_contact_id (group_id=? AND contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -180,7 +180,7 @@ Query:
           
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id_contact_id (group_id=? AND contact_id=?)
 
 Query: 
               SELECT m.group_member_id, m.local_display_name, c.agent_conn_id
@@ -815,9 +815,9 @@ Plan:
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INDEX idx_group_members_group_id (group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_contact_id (group_id=? AND contact_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id_contact_id (group_id=? AND contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
@@ -4436,7 +4436,7 @@ Query:
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id_contact_id (group_id=? AND contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 

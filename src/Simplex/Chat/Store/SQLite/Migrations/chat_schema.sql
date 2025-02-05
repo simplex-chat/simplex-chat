@@ -1018,3 +1018,7 @@ CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   shared_msg_id
 );
 CREATE INDEX idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX idx_group_members_group_id_contact_id ON group_members(
+  group_id,
+  contact_id
+);
