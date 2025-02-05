@@ -2300,4 +2300,10 @@
     <string name="privacy_chat_list_open_links_yes">Ya</string>
     <string name="chat_item_ttl_year">1 tahun</string>
     <string name="chat_item_ttl_default">bawaan (%s)</string>
+    <string name="mute_all_chat">Bisukan semua</string>
+    <string name="unread_mentions">Sebutan belum terbaca</string>
+    <string name="network_smp_web_port_section_title">Port TCP untuk pesan</string>
+    <string name="network_smp_web_port_footer">Gunakan port TCP %1$s jika tidak ada port yang ditentukan.</string>
+    <string name="network_smp_web_port_toggle">Gunakan port peramban</string>
+    <string name="max_group_mentions_per_message_reached">Anda dapat menyebut hingga %1$s anggota per pesan!</string>
 </resources>
