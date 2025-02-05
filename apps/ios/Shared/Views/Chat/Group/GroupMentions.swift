@@ -32,7 +32,7 @@ struct GroupMentionsView: View {
     var body: some View {
         ZStack {
             if isVisible {
-                let filtered = filteredMembers
+                let filtered = filteredMembers()
                 if filtered.count > 0 {
                     Color.white.opacity(0.01)
                         .edgesIgnoringSafeArea(.all)
@@ -92,7 +92,7 @@ struct GroupMentionsView: View {
         }
     }
     
-    private var filteredMembers: [GMember] {
+    private func filteredMembers() -> [GMember] {
         let s = mentionName.lowercased()
         if s.isEmpty {
             return sortedMembers
