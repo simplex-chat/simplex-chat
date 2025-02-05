@@ -30,7 +30,7 @@ struct GroupMentionsView: View {
     @State private var sortedMembers: [GMember] = []
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             if isVisible {
                 let filtered = filteredMembers()
                 if filtered.count > 0 {
@@ -39,16 +39,15 @@ struct GroupMentionsView: View {
                         .onTapGesture {
                             isVisible = false
                         }
-                    VStack {
+                    VStack(spacing: 0) {
                         Spacer()
-                        VStack {
-                            Spacer()
-                            VStack {
-                                Divider()
-                                let list = List {
-                                    ForEach(filtered, id: \.wrapped.groupMemberId) { member in
-                                        let mentioned = mentionMemberId == member.wrapped.memberId
-                                        let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
+                        Divider()
+                        let scroll = ScrollView {
+                            LazyVStack(spacing: 0) {
+                                ForEach(Array(filtered.enumerated()), id: \.element.wrapped.groupMemberId) { index, member in
+                                    let mentioned = mentionMemberId == member.wrapped.memberId
+                                    let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
+                                    ZStack(alignment: .bottom) {
                                         memberRowView(member.wrapped, mentioned)
                                             .contentShape(Rectangle())
                                             .disabled(disabled)
@@ -56,22 +55,25 @@ struct GroupMentionsView: View {
                                             .onTapGesture {
                                                 memberSelected(member)
                                             }
+                                            .padding(.horizontal)
+                                            .frame(height: MEMBER_ROW_SIZE)
+
+                                        Divider()
+                                            .padding(.leading)
+                                            .padding(.leading, 48)
                                     }
                                 }
-                                .listStyle(PlainListStyle())
-                                .frame(maxHeight: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filtered.count)))
-
-                                if #available(iOS 16.0, *) {
-                                    list.scrollDismissesKeyboard(.never)
-                                } else {
-                                    list
-                                }
                             }
-                            .background(Color(UIColor.systemBackground))
                         }
-                        .frame(maxWidth: .infinity, maxHeight: MEMBER_ROW_SIZE * MAX_VISIBLE_MEMBER_ROWS)
+                            .frame(maxHeight: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filtered.count)))
+                            .background(Color(UIColor.systemBackground))
+
+                        if #available(iOS 16.0, *) {
+                            scroll.scrollDismissesKeyboard(.never)
+                        } else {
+                            scroll
+                        }
                     }
-                    .animation(.spring(), value: isVisible)
                 }
             }
         }
