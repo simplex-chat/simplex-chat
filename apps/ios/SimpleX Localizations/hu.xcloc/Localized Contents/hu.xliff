@@ -2013,7 +2013,7 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Contact preferences" xml:space="preserve" approved="no">
         <source>Contact preferences</source>
-        <target state="translated">Ismerősbeállítások</target>
+        <target state="translated">Ismerős-beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -3916,7 +3916,7 @@ Hiba: %2$@</target>
       </trans-unit>
       <trans-unit id="Group preferences" xml:space="preserve" approved="no">
         <source>Group preferences</source>
-        <target state="translated">Csoportbeállítások</target>
+        <target state="translated">Csoport-beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve">
@@ -5326,17 +5326,17 @@ VPN engedélyezése szükséges.</target>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target state="translated">Csak a csoporttulajdonosok változtathatják meg a csoportbeállításokat.</target>
+        <target state="translated">Csak a csoport-tulajdonosok változtathatják meg a csoport-beállításokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
+      <trans-unit id="Only group owners can enable files and media." xml:space="preserve" approved="no">
         <source>Only group owners can enable files and media.</source>
-        <target>Csak a csoporttulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</target>
+        <target state="translated">Csak a csoport-tulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
+      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve" approved="no">
         <source>Only group owners can enable voice messages.</source>
-        <target>Csak a csoporttulajdonosok engedélyezhetik a hangüzenetek küldését.</target>
+        <target state="translated">Csak a csoport-tulajdonosok engedélyezhetik a hangüzenetek küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only sender and moderators see it" xml:space="preserve" approved="no">
@@ -6876,7 +6876,7 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
       </trans-unit>
       <trans-unit id="Set group preferences" xml:space="preserve" approved="no">
         <source>Set group preferences</source>
-        <target state="translated">Csoportbeállítások megadása</target>
+        <target state="translated">Csoport-beállítások megadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set it instead of system authentication." xml:space="preserve">
@@ -7617,7 +7617,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve" approved="no">
         <source>They can be overridden in contact and group settings.</source>
-        <target state="translated">Ezek felülbírálhatók az ismerős- és csoportbeállításokban.</target>
+        <target state="translated">Ezek felülbírálhatók az ismerős- és csoport-beállításokban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
