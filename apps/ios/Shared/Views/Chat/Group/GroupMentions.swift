@@ -27,79 +27,76 @@ struct GroupMentionsView: View {
     @State private var mentionName: String = ""
     @State private var mentionRange: NSRange?
     @State private var mentionMemberId: String?
+    @State private var sortedMembers: [GMember] = []
 
     var body: some View {
         ZStack {
             if isVisible {
-                Color.white.opacity(0.01)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        isVisible = false
-                    }
-            }
-            VStack {
-                Spacer()
-                VStack {
-                    Spacer()
+                let filtered = filteredMembers()
+                if filtered.count > 0 {
+                    Color.white.opacity(0.01)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            isVisible = false
+                        }
                     VStack {
-                        Divider()
-                        let list = List {
-                            ForEach(filteredMembers, id: \.wrapped.groupMemberId) { member in
-                                let mentioned = mentionMemberId == member.wrapped.memberId
-                                let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
-                                memberRowView(member.wrapped, mentioned)
-                                .contentShape(Rectangle())
-                                .disabled(disabled)
-                                .opacity(disabled ? 0.6 : 1)
-                                .onTapGesture {
-                                    memberSelected(member)
+                        Spacer()
+                        VStack {
+                            Spacer()
+                            VStack {
+                                Divider()
+                                let list = List {
+                                    ForEach(filtered, id: \.wrapped.groupMemberId) { member in
+                                        let mentioned = mentionMemberId == member.wrapped.memberId
+                                        let disabled = composeState.mentions.count >= MAX_NUMBER_OF_MENTIONS && !mentioned
+                                        memberRowView(member.wrapped, mentioned)
+                                            .contentShape(Rectangle())
+                                            .disabled(disabled)
+                                            .opacity(disabled ? 0.6 : 1)
+                                            .onTapGesture {
+                                                memberSelected(member)
+                                            }
+                                    }
+                                }
+                                .listStyle(PlainListStyle())
+                                .frame(maxHeight: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filtered.count)))
+
+                                if #available(iOS 16.0, *) {
+                                    list.scrollDismissesKeyboard(.never)
+                                } else {
+                                    list
                                 }
                             }
+                            .background(Color(UIColor.systemBackground))
                         }
-                        .listStyle(PlainListStyle())
-                        .frame(height: MEMBER_ROW_SIZE * min(MAX_VISIBLE_MEMBER_ROWS, CGFloat(filteredMembers.count)))
- 
-                        if #available(iOS 16.0, *) {
-                            list.scrollDismissesKeyboard(.never)
-                        } else {
-                            list
-                        }
+                        .frame(maxWidth: .infinity, maxHeight: MEMBER_ROW_SIZE * MAX_VISIBLE_MEMBER_ROWS)
                     }
-                    .background(Color(UIColor.systemBackground))
-                }
-                .frame(maxWidth: .infinity, maxHeight: MEMBER_ROW_SIZE * MAX_VISIBLE_MEMBER_ROWS)
-            }
-            .offset(y: isVisible ? 0 : 300)
-            .animation(.spring(), value: isVisible)
-            .onChange(of: composeState.parsedMessage) { parsedMsg in
-                currentMessage = composeState.message
-                messageChanged(currentMessage, parsedMsg, selectedRange)
-            }
-            .onChange(of: selectedRange) { r in
-                // This condition is needed to prevent messageChanged called twice,
-                // because composeState.formattedText triggers later when message changes.
-                // The condition is only true if position changed without text change
-                if currentMessage == composeState.message {
-                    messageChanged(currentMessage, composeState.parsedMessage, r)
+                    .animation(.spring(), value: isVisible)
                 }
             }
-            .onAppear {
-                currentMessage = composeState.message
+        }
+        .onChange(of: composeState.parsedMessage) { parsedMsg in
+            currentMessage = composeState.message
+            messageChanged(currentMessage, parsedMsg, selectedRange)
+        }
+        .onChange(of: selectedRange) { r in
+            // This condition is needed to prevent messageChanged called twice,
+            // because composeState.formattedText triggers later when message changes.
+            // The condition is only true if position changed without text change
+            if currentMessage == composeState.message {
+                messageChanged(currentMessage, composeState.parsedMessage, r)
             }
+        }
+        .onAppear {
+            currentMessage = composeState.message
         }
     }
     
-    private var filteredMembers: [GMember] {
-        let members = m.groupMembers
-            .filter { m in
-                let status = m.wrapped.memberStatus
-                return status != .memLeft && status != .memRemoved && status != .memInvited
-            }
-            .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
+    private func filteredMembers() -> [GMember] {
         let s = mentionName.lowercased()
         return s.isEmpty
-        ? members
-        : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
+        ? sortedMembers
+        : sortedMembers.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
     }
 
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {
@@ -112,7 +109,10 @@ struct GroupMentionsView: View {
                 mentionRange = r
                 mentionMemberId = composeState.mentions[name]?.memberId
                 if !m.membersLoaded {
-                    Task { await m.loadGroupMembers(groupInfo) }
+                    Task {
+                        await m.loadGroupMembers(groupInfo)
+                        sortMembers()
+                    }
                 }
                 return
             case .none: () //
@@ -124,7 +124,10 @@ struct GroupMentionsView: View {
                         mentionName = ""
                         mentionRange = atRange
                         mentionMemberId = nil
-                        Task { await m.loadGroupMembers(groupInfo) }
+                        Task {
+                            await m.loadGroupMembers(groupInfo)
+                            sortMembers()
+                        }
                         return
                     }
                 }
@@ -132,6 +135,14 @@ struct GroupMentionsView: View {
             }
         }
         closeMemberList()
+    }
+
+    private func sortMembers() {
+        sortedMembers = m.groupMembers.filter({ m in
+            let status = m.wrapped.memberStatus
+            return status != .memLeft && status != .memRemoved && status != .memInvited
+        })
+        .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
     }
 
     private func removeUnusedMentions(_ parsedMsg: [FormattedText]) {
