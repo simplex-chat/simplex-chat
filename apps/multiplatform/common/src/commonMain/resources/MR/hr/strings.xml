@@ -1198,4 +1198,13 @@
     <string name="settings_section_title_use_from_desktop">Koristiti sa računara</string>
     <string name="connect_to_desktop">Povezati sa računarom</string>
     <string name="connected_to_desktop">Povezano sa računarom</string>
+    <string name="allow_voice_messages_question">Dozvoliti glasovne poruke?</string>
+    <string name="switch_receiving_address_question">Promeniti prijemnu adresu?</string>
+    <string name="message_reactions">Reakcije na poruku</string>
+    <string name="allow_message_reactions">Dozvoliti reakcije na poruku.</string>
+    <string name="v5_1_message_reactions">Reakcije na poruku</string>
+    <string name="switch_receiving_address">Promeniti prijemnu adresu</string>
+    <string name="message_deleted_or_not_received_error_title">Nema poruka</string>
+    <string name="no_history">Nema istorije</string>
+    <string name="message_reactions_are_prohibited">Reakcije na poruku su zabranjene.</string>
 </resources>
