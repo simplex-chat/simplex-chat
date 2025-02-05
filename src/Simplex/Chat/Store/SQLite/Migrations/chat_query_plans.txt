@@ -58,7 +58,7 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -180,7 +180,7 @@ Query:
           
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
 
 Query: 
               SELECT m.group_member_id, m.local_display_name, c.agent_conn_id
@@ -194,7 +194,7 @@ Query:
                 AND m.member_status NOT IN (?,?,?)
           
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
 CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
@@ -815,9 +815,9 @@ Plan:
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
@@ -1007,7 +1007,7 @@ Query:
         
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id (group_id=?)
 
 Query: 
           SELECT ct.contact_id
@@ -1133,7 +1133,7 @@ Query:
           WHERE group_id = ? AND user_id = ?
         
 Plan:
-SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id (group_id=?)
 
 Query: 
           SELECT r.file_id
@@ -3989,7 +3989,7 @@ Query:
       SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
     
 Plan:
-SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id (group_id=?)
 
 Query: 
       SELECT chat_item_id, timed_ttl
@@ -4436,7 +4436,7 @@ Query:
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH mu USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -4462,7 +4462,7 @@ Query:
                   )
               
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id (group_id=?)
 LIST SUBQUERY 2
 SCAN chat_items USING COVERING INDEX idx_chat_items_group_member_id
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
@@ -4556,7 +4556,7 @@ Query:
     )
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
@@ -4579,7 +4579,7 @@ Query:
     )
    WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
@@ -5041,7 +5041,7 @@ SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?
 
 Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
-SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id (group_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
@@ -5097,7 +5097,7 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_group_id (group_id=?)
 SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
 SEARCH user_contact_links USING COVERING INDEX idx_user_contact_links_group_id (group_id=?)
 SEARCH files USING COVERING INDEX idx_files_group_id (group_id=?)
-SEARCH group_members USING COVERING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_group_id (group_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_via_group (via_group=?)
 
 Query: DELETE FROM messages WHERE connection_id = ?
@@ -5508,11 +5508,11 @@ SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?
 Plan:
-SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id (group_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND member_category = ?
 Plan:
-SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id (group_id=?)
 
 Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:

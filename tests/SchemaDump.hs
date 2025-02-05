@@ -125,7 +125,9 @@ skipComparisonForDownMigrations =
     -- indexes move down to the end of the file
     "20241125_indexes",
     -- indexes move down to the end of the file
-    "20250130_indexes"
+    "20250130_indexes",
+    -- indexes move down to the end of the file
+    "20250205_indexes"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
