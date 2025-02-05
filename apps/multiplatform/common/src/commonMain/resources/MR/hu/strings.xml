@@ -220,7 +220,7 @@
     <string name="connection_timeout">Időtúllépés kapcsolódáskor</string>
     <string name="connect_with_contact_name_question">Kapcsolódás a következővel: %1$s?</string>
     <string name="create_profile_button">Létrehozás</string>
-    <string name="contact_preferences">Ismerősbeállítások</string>
+    <string name="contact_preferences">Ismerős-beállítások</string>
     <string name="info_row_connection">Kapcsolat</string>
     <string name="desktop_connection_terminated">Kapcsolat megszakítva</string>
     <string name="display_name_connection_established">kapcsolat létrehozva</string>
@@ -600,7 +600,7 @@
     <string name="simplex_link_mode_full">Teljes hivatkozás</string>
     <string name="error_changing_address">Hiba a cím megváltoztatásakor</string>
     <string name="group_members_can_send_voice">A tagok küldhetnek hangüzeneteket.</string>
-    <string name="group_preferences">Csoportbeállítások</string>
+    <string name="group_preferences">Csoport-beállítások</string>
     <string name="error_with_info">Hiba: %s</string>
     <string name="v4_4_disappearing_messages">Eltűnő üzenetek</string>
     <string name="auth_enable_simplex_lock">SimpleX-zár bekapcsolása</string>
@@ -774,7 +774,7 @@
     <string name="no_filtered_chats">Nincsenek szűrt csevegések</string>
     <string name="invalid_data">érvénytelen adat</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a WebRTC ICE-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
-    <string name="only_owners_can_enable_files_and_media">Csak a csoporttulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
+    <string name="only_owners_can_enable_files_and_media">Csak a csoport-tulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
     <string name="loading_remote_file_title">A fájl betöltése…</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
@@ -791,10 +791,10 @@
     <string name="user_mute">Némítás</string>
     <string name="link_a_mobile">Hordozható eszköz társítása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
-    <string name="only_group_owners_can_enable_voice">Csak a csoporttulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
+    <string name="only_group_owners_can_enable_voice">Csak a csoport-tulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">A felhasználói profilok, ismerősök, csoportok és üzenetek csak az eszközön vannak tárolva a kliensen belül.</string>
     <string name="invalid_migration_confirmation">Érvénytelen átköltöztetési visszaigazolás</string>
-    <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok változtathatják meg a csoportbeállításokat.</string>
+    <string name="only_group_owners_can_change_prefs">Csak a csoport-tulajdonosok változtathatják meg a csoport-beállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
     <string name="invalid_QR_code">Érvénytelen QR-kód</string>
     <string name="mark_read">Megjelölés olvasottként</string>
@@ -1102,7 +1102,7 @@
     <string name="send_receipts_disabled_alert_title">A kézbesítési jelentések le vannak tiltva</string>
     <string name="open_database_folder">Adatbázismappa megnyitása</string>
     <string name="description_via_one_time_link">egy egyszer használható meghívó-hivatkozáson keresztül</string>
-    <string name="set_group_preferences">Csoportbeállítások megadása</string>
+    <string name="set_group_preferences">Csoport-beállítások megadása</string>
     <string name="simplex_link_connection">a következőn keresztül: %1$s</string>
     <string name="chat_preferences_yes">igen</string>
     <string name="voice_message">Hangüzenet</string>
@@ -1427,7 +1427,7 @@
     <string name="in_developing_desc">Ez a funkció még nem támogatott. Próbálja meg a következő kiadásban.</string>
     <string name="share_text_updated_at">A bejegyzés frissítve: %s</string>
     <string name="skip_inviting_button">Tagok meghívásának kihagyása</string>
-    <string name="receipts_section_description_1">Ezek felülbírálhatók az ismerős- és csoportbeállításokban.</string>
+    <string name="receipts_section_description_1">Ezek felülbírálhatók az ismerős- és csoport-beállításokban.</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Az ismerőse, akivel megosztotta ezt a hivatkozást, NEM fog tudni kapcsolódni!</string>
     <string name="you_can_change_it_later">A véletlenszerű jelmondat egyszerű szövegként van tárolva a beállításokban.\nEzt később megváltoztathatja.</string>
     <string name="group_invitation_tap_to_join_incognito">Koppintson ide az inkognitóban való kapcsolódáshoz</string>
