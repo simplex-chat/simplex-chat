@@ -94,19 +94,9 @@ struct GroupMentionsView: View {
     
     private func filteredMembers() -> [GMember] {
         let s = mentionName.lowercased()
-        if s.isEmpty {
-            return sortedMembers
-        }
-        var members: [GMember] = []
-        var i = 0
-        while i < sortedMembers.count {
-            let m = sortedMembers[i]
-            if m.wrapped.localAliasAndFullName.localizedLowercase.contains(s) {
-                members.append(m)
-            }
-            i += 1
-        }
-        return members
+        return s.isEmpty
+        ? sortedMembers
+        : sortedMembers.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
     }
 
     private func messageChanged(_ msg: String, _ parsedMsg: [FormattedText], _ range: NSRange) {
