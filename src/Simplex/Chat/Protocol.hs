@@ -399,9 +399,9 @@ forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
 -- members with role less than moderator when forwarding
 forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> NonEmpty (ChatMessage e) -> [GroupMember]
 forwardedToGroupMembers ms forwardedMsgs =
-  filter filterMember ms
+  filter forwardToMember ms
   where
-    filterMember GroupMember {memberId, memberRole} =
+    forwardToMember GroupMember {memberId, memberRole} =
       (memberId `notElem` restrictMemberIds)
         && (not hasReport || memberRole >= GRModerator)
     restrictMemberIds = mapMaybe restrictMemberId $ L.toList forwardedMsgs
