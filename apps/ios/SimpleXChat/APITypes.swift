@@ -62,6 +62,7 @@ public enum ChatCommand {
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
+    case apiCheckToken(token: DeviceToken)
     case apiDeleteToken(token: DeviceToken)
     case apiGetNtfConns(nonce: String, encNtfInfo: String)
     case apiGetConnNtfMessages(connIds: [String])
@@ -238,6 +239,7 @@ public enum ChatCommand {
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
+            case let .apiCheckToken(token): return "/_ntf check \(token.cmdString)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfConns(nonce, encNtfInfo): return "/_ntf conns \(nonce) \(encNtfInfo)"
             case let .apiGetConnNtfMessages(connIds): return "/_ntf conn messages \(connIds.joined(separator: ","))"
@@ -409,6 +411,7 @@ public enum ChatCommand {
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
+            case .apiCheckToken: return "apiCheckToken"
             case .apiDeleteToken: return "apiDeleteToken"
             case .apiGetNtfConns: return "apiGetNtfConns"
             case .apiGetConnNtfMessages: return "apiGetConnNtfMessages"

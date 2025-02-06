@@ -554,6 +554,12 @@ func apiVerifyToken(token: DeviceToken, nonce: String, code: String) async throw
     try await sendCommandOkResp(.apiVerifyToken(token: token, nonce: nonce, code: code))
 }
 
+func apiCheckToken(token: DeviceToken) async throws -> NtfTknStatus {
+    let r = await chatSendCmd(.apiCheckToken(token: token))
+    if case let .ntfTokenStatus(status) = r { return status }
+    throw r
+}
+
 func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }

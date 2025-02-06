@@ -13,7 +13,7 @@ struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State private var notificationMode: NotificationsMode = ChatModel.shared.notificationMode
-    @State private var showAlert: NotificationAlert?
+    @State private var ntfAlert: NotificationAlert?
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
     @State private var testing = false
     @State private var testedSuccess: Bool? = nil
@@ -25,7 +25,7 @@ struct NotificationsView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .alert(item: $showAlert) { alert in
+        .alert(item: $ntfAlert) { alert in
             if let token = m.deviceToken {
                 return notificationAlert(alert, token)
             } else {
@@ -41,7 +41,7 @@ struct NotificationsView: View {
                     List {
                         Section {
                             SelectionListView(list: NotificationsMode.values, selection: $notificationMode) { mode in
-                                showAlert = .setMode(mode: mode)
+                                ntfAlert = .setMode(mode: mode)
                             }
                         } footer: {
                             VStack(alignment: .leading) {
@@ -163,7 +163,7 @@ struct NotificationsView: View {
                     await MainActor.run {
                         let err = responseError(error)
                         logger.error("apiDeleteToken error: \(err)")
-                        showAlert = .error(title: "Error deleting token", error: err)
+                        ntfAlert = .error(title: "Error deleting token", error: err)
                     }
                 }
             default:
@@ -181,7 +181,7 @@ struct NotificationsView: View {
                     await MainActor.run {
                         let err = responseError(error)
                         logger.error("apiRegisterToken error: \(err)")
-                        showAlert = .error(title: "Error enabling notifications", error: err)
+                        ntfAlert = .error(title: "Error enabling notifications", error: err)
                     }
                 }
             }
@@ -193,7 +193,7 @@ struct NotificationsView: View {
             Button("Test server") {
                 testing = true
                 Task {
-                    await testServer(server)
+                    await testServerAndToken(server)
                     await MainActor.run { testing = false }
                 }
             }
@@ -215,17 +215,39 @@ struct NotificationsView: View {
         }
     }
 
-    private func testServer(_ server: String) async {
+    private func testServerAndToken(_ server: String) async {
         do {
             let r = try await testProtoServer(server: server)
             switch r {
             case .success:
-                await MainActor.run {
-                    testedSuccess = true
+                if let token = m.deviceToken {
+                    do {
+                        let status = try await apiCheckToken(token: token)
+                        await MainActor.run {
+                            m.tokenStatus = status
+                            if [.invalid, .expired].contains(status) {
+                                testedSuccess = false
+                            } else {
+                                testedSuccess = true
+                            }
+                            showAlert(
+                                NSLocalizedString("Token status", comment: "alert title"),
+                                message: status.rawValue
+                            )
+                        }
+                    } catch let error {
+                        logger.error("apiCheckToken \(responseError(error))")
+                    }
+                } else {
+                    await MainActor.run {
+                        showAlert(
+                            NSLocalizedString("No token!", comment: "alert title")
+                        )
+                    }
                 }
             case let .failure(f):
                 await MainActor.run {
-                    showAlert = .testFailure(testFailure: f)
+                    ntfAlert = .testFailure(testFailure: f)
                     testedSuccess = false
                 }
             }
