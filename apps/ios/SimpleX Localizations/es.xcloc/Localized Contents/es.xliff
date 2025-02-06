@@ -2377,7 +2377,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete chat messages from your device." xml:space="preserve" approved="no">
         <source>Delete chat messages from your device.</source>
-        <target state="translated">Eliminar todos los mensajes del dispositivo.</target>
+        <target state="translated">Elimina los mensajes del dispositivo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2485,9 +2485,9 @@ This is your own one-time link!</source>
         <target>¿Eliminar mensaje?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete messages" xml:space="preserve">
+      <trans-unit id="Delete messages" xml:space="preserve" approved="no">
         <source>Delete messages</source>
-        <target>Eliminar mensaje</target>
+        <target state="translated">Eliminar mensajes</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Delete messages after" xml:space="preserve">
@@ -2697,7 +2697,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Disable delete messages" xml:space="preserve" approved="no">
         <source>Disable delete messages</source>
-        <target state="translated">Desactivar la eliminación de mensajes</target>
+        <target state="translated">Desactivar</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
@@ -5441,7 +5441,7 @@ Requiere activación de la VPN.</target>
       </trans-unit>
       <trans-unit id="Open links from chat list" xml:space="preserve" approved="no">
         <source>Open links from chat list</source>
-        <target state="translated">Abrir enlace desde lista chats</target>
+        <target state="translated">Abrir enlaces desde listado de chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
@@ -5855,9 +5855,9 @@ Error: %@</target>
         <target>Proteger dirección IP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect app screen" xml:space="preserve">
+      <trans-unit id="Protect app screen" xml:space="preserve" approved="no">
         <source>Protect app screen</source>
-        <target>Proteger la pantalla de la aplicación</target>
+        <target state="translated">Proteger la pantalla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
@@ -7150,9 +7150,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Mensajes omitidos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Small groups (max 20)" xml:space="preserve">
+      <trans-unit id="Small groups (max 20)" xml:space="preserve" approved="no">
         <source>Small groups (max 20)</source>
-        <target>Grupos pequeños (máx. 20)</target>
+        <target state="translated">Grupos pequeños (max. 20)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Soft" xml:space="preserve">
@@ -7585,9 +7585,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Servidores para conexiones nuevas en tu perfil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="The servers for new files of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new files of your current chat profile **%@**.</source>
-        <target>Servidores para archivos nuevos en tu perfil **%@**.</target>
+        <target state="translated">Servidores para enviar archivos en tu perfil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
