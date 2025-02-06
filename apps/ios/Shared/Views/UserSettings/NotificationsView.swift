@@ -232,7 +232,11 @@ struct NotificationsView: View {
                             )
                         }
                     } catch let error {
-                        logger.error("apiCheckToken \(responseError(error))")
+                        await MainActor.run {
+                            let err = responseError(error)
+                            logger.error("apiCheckToken \(err)")
+                            ntfAlert = .error(title: "Error checking token status", error: err)
+                        }
                     }
                 } else {
                     await MainActor.run {
@@ -248,7 +252,11 @@ struct NotificationsView: View {
                 }
             }
         } catch let error {
-            logger.error("testServerConnection \(responseError(error))")
+            await MainActor.run {
+                let err = responseError(error)
+                logger.error("testServerConnection \(err)")
+                ntfAlert = .error(title: "Error testing server connection", error: err)
+            }
         }
     }
 }
