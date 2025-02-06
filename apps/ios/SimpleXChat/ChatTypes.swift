@@ -4141,7 +4141,7 @@ public enum NtfTknStatus: String, Decodable, Hashable {
 
     public var text: String {
         switch self {
-        case .new: return NSLocalizedString("New token.", comment: "token status text")
+        case .new: return NSLocalizedString("New token. Please wait for token to be registered.", comment: "token status text")
         case .registered: return NSLocalizedString("Token registered, please wait for token verification to complete.", comment: "token status text")
         case .invalid: return NSLocalizedString("Invalid token! Please try to disable and re-enable notfications.", comment: "token status text")
         case .confirmed: return NSLocalizedString("Token confirmed, please wait for token activation to complete.", comment: "token status text")
