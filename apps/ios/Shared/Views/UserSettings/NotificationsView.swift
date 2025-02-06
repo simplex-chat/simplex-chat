@@ -231,7 +231,10 @@ struct NotificationsView: View {
                                     title: NSLocalizedString("Notifications token error", comment: "alert title"),
                                     message: NSLocalizedString("Re-register token?", comment: "alert message"),
                                     buttonTitle: "Re-register",
-                                    buttonAction: { reRegisterToken(token: token) },
+                                    buttonAction: {
+                                        reRegisterToken(token: token)
+                                        testedSuccess = nil
+                                    },
                                     cancelButton: true
                                 )
                             } else {
