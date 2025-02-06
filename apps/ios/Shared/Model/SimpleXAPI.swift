@@ -542,9 +542,14 @@ func registerToken(token: DeviceToken) {
         Task {
             do {
                 let status = try await apiRegisterToken(token: token, notificationMode: mode)
-                await MainActor.run { m.tokenStatus = status }
+                if status == .active {
+                    let checkedStatus = try await apiCheckToken(token: token)
+                    await MainActor.run { m.tokenStatus = checkedStatus }
+                } else {
+                    await MainActor.run { m.tokenStatus = status }
+                }
             } catch let error {
-                logger.error("registerToken apiRegisterToken error: \(responseError(error))")
+                logger.error("registerToken apiRegisterToken or apiCheckToken error: \(responseError(error))")
             }
         }
     }
