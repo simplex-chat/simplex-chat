@@ -535,37 +535,56 @@ func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) a
 
 func registerToken(token: DeviceToken) {
     let m = ChatModel.shared
-    if m.notificationMode != .off && !m.tokenRegistered {
+    let mode = m.notificationMode
+    if mode != .off && !m.tokenRegistered {
         m.tokenRegistered = true
-        registerToken_(token: token, offerReRegister: true)
+        logger.debug("registerToken \(mode.rawValue)")
+        Task {
+            do {
+                let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                await MainActor.run {
+                    m.tokenStatus = status
+                    if !status.workingToken {
+                        showAlert(
+                            title: NSLocalizedString("Notifications token error", comment: "alert title"),
+                            message: NSLocalizedString("Re-register token?", comment: "alert message"),
+                            buttonTitle: "Re-register",
+                            buttonAction: { reRegisterToken(token: token) },
+                            cancelButton: true
+                        )
+                    }
+                }
+            } catch let error {
+                logger.error("registerToken apiRegisterToken error: \(responseError(error))")
+            }
+        }
     }
 }
 
-func registerToken_(token: DeviceToken, offerReRegister: Bool) {
+func reRegisterToken(token: DeviceToken) {
     let m = ChatModel.shared
     let mode = m.notificationMode
-    logger.debug("registerToken \(mode.rawValue)")
+    logger.debug("reRegisterToken \(mode.rawValue)")
     Task {
         do {
             let status = try await apiRegisterToken(token: token, notificationMode: mode)
             await MainActor.run {
                 m.tokenStatus = status
-                if !status.workingToken && offerReRegister {
+                if !status.workingToken {
                     showAlert(
-                        title: NSLocalizedString("Notifications token error", comment: "alert title"),
-                        message: NSLocalizedString("Re-register token?", comment: "alert message"),
-                        buttonTitle: "Re-register",
-                        buttonAction: { registerToken_(token: token, offerReRegister: false) },
-                        cancelButton: true
+                        NSLocalizedString("Token error", comment: "alert title"),
+                        message: status.text
                     )
                 }
             }
         } catch let error {
-            logger.error("registerToken apiRegisterToken error: \(responseError(error))")
-            showAlert(
-                NSLocalizedString("Error registering notifications token", comment: "alert title"),
-                message: responseError(error)
-            )
+            logger.error("reRegisterToken apiRegisterToken error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error registering notifications token", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
         }
     }
 }
