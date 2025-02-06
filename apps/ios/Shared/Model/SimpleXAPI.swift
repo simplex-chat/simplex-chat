@@ -572,7 +572,7 @@ func reRegisterToken(token: DeviceToken) {
                 m.tokenStatus = status
                 if !status.workingToken {
                     showAlert(
-                        NSLocalizedString("Token error", comment: "alert title"),
+                        NSLocalizedString("Notifications token error", comment: "alert title"),
                         message: status.text
                     )
                 }
