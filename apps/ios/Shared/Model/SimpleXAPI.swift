@@ -535,17 +535,37 @@ func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) a
 
 func registerToken(token: DeviceToken) {
     let m = ChatModel.shared
-    let mode = m.notificationMode
-    if mode != .off && !m.tokenRegistered {
+    if m.notificationMode != .off && !m.tokenRegistered {
         m.tokenRegistered = true
-        logger.debug("registerToken \(mode.rawValue)")
-        Task {
-            do {
-                let status = try await apiRegisterToken(token: token, notificationMode: mode)
-                await MainActor.run { m.tokenStatus = status }
-            } catch let error {
-                logger.error("registerToken apiRegisterToken error: \(responseError(error))")
+        registerToken_(token: token, offerReRegister: true)
+    }
+}
+
+func registerToken_(token: DeviceToken, offerReRegister: Bool) {
+    let m = ChatModel.shared
+    let mode = m.notificationMode
+    logger.debug("registerToken \(mode.rawValue)")
+    Task {
+        do {
+            let status = try await apiRegisterToken(token: token, notificationMode: mode)
+            await MainActor.run {
+                m.tokenStatus = status
+                if !status.testSuccess && offerReRegister {
+                    showAlert(
+                        title: NSLocalizedString("Error registering notifications token", comment: "alert title"),
+                        message: NSLocalizedString("Re-register token?", comment: "alert message"),
+                        buttonTitle: "Re-register",
+                        buttonAction: { registerToken_(token: token, offerReRegister: false) },
+                        cancelButton: true
+                    )
+                }
             }
+        } catch let error {
+            logger.error("registerToken apiRegisterToken error: \(responseError(error))")
+            showAlert(
+                NSLocalizedString("Error registering notifications token", comment: "alert title"),
+                message: responseError(error)
+            )
         }
     }
 }
