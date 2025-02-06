@@ -4128,7 +4128,7 @@ public enum NtfTknStatus: String, Decodable, Hashable {
     case active = "ACTIVE"
     case expired = "EXPIRED"
 
-    public var testSuccess: Bool {
+    public var workingToken: Bool {
         switch self {
         case .new: true
         case .registered: true

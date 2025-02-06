@@ -550,7 +550,7 @@ func registerToken_(token: DeviceToken, offerReRegister: Bool) {
             let status = try await apiRegisterToken(token: token, notificationMode: mode)
             await MainActor.run {
                 m.tokenStatus = status
-                if !status.testSuccess && offerReRegister {
+                if !status.workingToken && offerReRegister {
                     showAlert(
                         title: NSLocalizedString("Notifications token error", comment: "alert title"),
                         message: NSLocalizedString("Re-register token?", comment: "alert message"),

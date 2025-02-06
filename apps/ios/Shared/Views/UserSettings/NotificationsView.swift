@@ -225,11 +225,21 @@ struct NotificationsView: View {
                         let status = try await apiCheckToken(token: token)
                         await MainActor.run {
                             m.tokenStatus = status
-                            testedSuccess = status.testSuccess
-                            showAlert(
-                                NSLocalizedString("Token status", comment: "alert title"),
-                                message: status.text
-                            )
+                            testedSuccess = status.workingToken
+                            if !status.workingToken {
+                                showAlert(
+                                    title: NSLocalizedString("Notifications token error", comment: "alert title"),
+                                    message: NSLocalizedString("Re-register token?", comment: "alert message"),
+                                    buttonTitle: "Re-register",
+                                    buttonAction: { registerToken_(token: token, offerReRegister: false) },
+                                    cancelButton: true
+                                )
+                            } else {
+                                showAlert(
+                                    NSLocalizedString("Token status", comment: "alert title"),
+                                    message: status.text
+                                )
+                            }
                         }
                     } catch let error {
                         await MainActor.run {
