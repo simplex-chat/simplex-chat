@@ -62,6 +62,10 @@ struct FramedItemView: View {
                                 withAnimation {
                                     scrollModel.scrollToItem(id: ci.id)
                                 }
+                            } else if let id = qi.itemId {
+                                scrollModel.scrollToItem(id: id)
+                            } else {
+                                showQuotedItemDoesNotExistAlert()
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
@@ -337,6 +341,13 @@ struct FramedItemView: View {
         } else {
             return videoWidth
         }
+    }
+
+    private func showQuotedItemDoesNotExistAlert() {
+        AlertManager.shared.showAlertMsg(
+            title: "No message",
+            message: "This message was deleted or not received yet."
+        )
     }
 }
 
