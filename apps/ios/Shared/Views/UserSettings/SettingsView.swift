@@ -479,7 +479,7 @@ struct SettingsView: View {
             color = theme.colors.secondary
         case .invalid:
             icon = "bolt.slash"
-            color = .red
+            color = theme.colors.secondary
         case .confirmed:
             icon = "bolt.fill"
             color = .yellow
@@ -488,7 +488,7 @@ struct SettingsView: View {
             color = .green
         case .expired:
             icon = "bolt.slash.fill"
-            color = .red
+            color = theme.colors.secondary
         case .none:
             icon = "bolt"
             color = theme.colors.secondary
