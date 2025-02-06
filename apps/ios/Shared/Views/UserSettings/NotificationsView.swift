@@ -225,11 +225,7 @@ struct NotificationsView: View {
                         let status = try await apiCheckToken(token: token)
                         await MainActor.run {
                             m.tokenStatus = status
-                            if [.invalid, .expired].contains(status) {
-                                testedSuccess = false
-                            } else {
-                                testedSuccess = true
-                            }
+                            testedSuccess = status.testSuccess
                             showAlert(
                                 NSLocalizedString("Token status", comment: "alert title"),
                                 message: status.rawValue

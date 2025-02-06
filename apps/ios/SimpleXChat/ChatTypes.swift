@@ -4127,6 +4127,17 @@ public enum NtfTknStatus: String, Decodable, Hashable {
     case confirmed = "CONFIRMED"
     case active = "ACTIVE"
     case expired = "EXPIRED"
+
+    public var testSuccess: Bool {
+        switch self {
+        case .new: true
+        case .registered: true
+        case .invalid: false
+        case .confirmed: true
+        case .active: true
+        case .expired: false
+        }
+    }
 }
 
 public struct SndFileTransfer: Decodable, Hashable {
