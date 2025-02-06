@@ -795,7 +795,6 @@ CREATE INDEX idx_chat_items_timed_delete_at ON chat_items(
   user_id,
   timed_delete_at
 );
-CREATE INDEX idx_group_members_group_id ON group_members(user_id, group_id);
 CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(
   group_id
 );
@@ -1017,4 +1016,9 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX idx_group_members_group_id_contact_id ON group_members(
+  group_id,
+  contact_id
 );
