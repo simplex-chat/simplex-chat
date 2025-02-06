@@ -552,7 +552,7 @@ func registerToken_(token: DeviceToken, offerReRegister: Bool) {
                 m.tokenStatus = status
                 if !status.testSuccess && offerReRegister {
                     showAlert(
-                        title: NSLocalizedString("Error registering notifications token", comment: "alert title"),
+                        title: NSLocalizedString("Notifications token error", comment: "alert title"),
                         message: NSLocalizedString("Re-register token?", comment: "alert message"),
                         buttonTitle: "Re-register",
                         buttonAction: { registerToken_(token: token, offerReRegister: false) },
