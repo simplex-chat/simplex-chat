@@ -4124,6 +4124,9 @@ public enum NtfTknStatus: String, Decodable, Hashable {
     case new = "NEW"
     case registered = "REGISTERED"
     case invalid = "INVALID"
+    case invalidBad = "INVALID,BAD"
+    case invalidTopic = "INVALID,TOPIC"
+    case invalidGone = "INVALID,GONE"
     case confirmed = "CONFIRMED"
     case active = "ACTIVE"
     case expired = "EXPIRED"
@@ -4133,6 +4136,9 @@ public enum NtfTknStatus: String, Decodable, Hashable {
         case .new: true
         case .registered: true
         case .invalid: false
+        case .invalidBad: false
+        case .invalidTopic: false
+        case .invalidGone: false
         case .confirmed: true
         case .active: true
         case .expired: false
@@ -4141,12 +4147,32 @@ public enum NtfTknStatus: String, Decodable, Hashable {
 
     public var text: String {
         switch self {
-        case .new: return NSLocalizedString("New token. Please wait for token to be registered.", comment: "token status text")
-        case .registered: return NSLocalizedString("Token registered, please wait for token verification to complete.", comment: "token status text")
-        case .invalid: return NSLocalizedString("Invalid token! Please try to disable and re-enable notfications.", comment: "token status text")
-        case .confirmed: return NSLocalizedString("Token confirmed, please wait for token activation to complete.", comment: "token status text")
-        case .active: return NSLocalizedString("Token is active, you should receive notifications.", comment: "token status text")
-        case .expired: return NSLocalizedString("Token expired! Please try to disable and re-enable notfications.", comment: "token status text")
+        case .new: NSLocalizedString("New", comment: "token status text")
+        case .registered: NSLocalizedString("Registered", comment: "token status text")
+        case .invalid: NSLocalizedString("Invalid", comment: "token status text")
+        case .invalidBad: NSLocalizedString("Invalid (bad token)", comment: "token status text")
+        case .invalidTopic: NSLocalizedString("Invalid (wrong topic)", comment: "token status text")
+        case .invalidGone: NSLocalizedString("Invalid (gone)", comment: "token status text")
+        case .confirmed: NSLocalizedString("Confirmed", comment: "token status text")
+        case .active: NSLocalizedString("Active", comment: "token status text")
+        case .expired: NSLocalizedString("Expired", comment: "token status text")
+        }
+    }
+    
+    public func info(register: Bool) -> String {
+        switch self {
+        case .new: return NSLocalizedString("Please wait for token to be registered.", comment: "token info")
+        case .registered: fallthrough
+        case .confirmed: return NSLocalizedString("Please wait for token activation to complete.", comment: "token info")
+        case .active: return NSLocalizedString("You should receive notifications.", comment: "token info")
+        case .invalid: fallthrough
+        case .invalidBad: fallthrough
+        case .invalidTopic: fallthrough
+        case .invalidGone: fallthrough
+        case .expired:
+            return register
+            ? NSLocalizedString("Register notification token?", comment: "token info")
+            : NSLocalizedString("Please try to disable and re-enable notfications.", comment: "token info")
         }
     }
 }

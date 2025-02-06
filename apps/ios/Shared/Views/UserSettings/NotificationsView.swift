@@ -190,7 +190,7 @@ struct NotificationsView: View {
 
     private func testTokenButton(_ server: String) -> some View {
         HStack {
-            Button("Test token") {
+            Button("Test notifications") {
                 testing = true
                 Task {
                     await testServerAndToken(server)
@@ -226,21 +226,21 @@ struct NotificationsView: View {
                         await MainActor.run {
                             m.tokenStatus = status
                             testedSuccess = status.workingToken
-                            if !status.workingToken {
+                            if status.workingToken {
                                 showAlert(
-                                    title: NSLocalizedString("Notifications token error", comment: "alert title"),
-                                    message: NSLocalizedString("Re-register token?", comment: "alert message"),
-                                    buttonTitle: "Re-register",
+                                    NSLocalizedString("Notifications status", comment: "alert title"),
+                                    message: tokenStatusInfo(status, register: false)
+                                )
+                            } else {
+                                showAlert(
+                                    title: NSLocalizedString("Notifications error", comment: "alert title"),
+                                    message: tokenStatusInfo(status, register: true),
+                                    buttonTitle: "Register",
                                     buttonAction: {
                                         reRegisterToken(token: token)
                                         testedSuccess = nil
                                     },
                                     cancelButton: true
-                                )
-                            } else {
-                                showAlert(
-                                    NSLocalizedString("Token status", comment: "alert title"),
-                                    message: status.text
                                 )
                             }
                         }

@@ -546,9 +546,9 @@ func registerToken(token: DeviceToken) {
                     m.tokenStatus = status
                     if !status.workingToken {
                         showAlert(
-                            title: NSLocalizedString("Notifications token error", comment: "alert title"),
-                            message: NSLocalizedString("Re-register token?", comment: "alert message"),
-                            buttonTitle: "Re-register",
+                            title: NSLocalizedString("Notifications error", comment: "alert title"),
+                            message: tokenStatusInfo(status, register: true),
+                            buttonTitle: "Register",
                             buttonAction: { reRegisterToken(token: token) },
                             cancelButton: true
                         )
@@ -561,6 +561,11 @@ func registerToken(token: DeviceToken) {
     }
 }
 
+func tokenStatusInfo(_ status: NtfTknStatus, register: Bool) -> String {
+    String.localizedStringWithFormat(NSLocalizedString("Token status: %@.", comment: "token status"), status.text)
+    + "\n" + status.info(register: register)
+}
+
 func reRegisterToken(token: DeviceToken) {
     let m = ChatModel.shared
     let mode = m.notificationMode
@@ -570,18 +575,18 @@ func reRegisterToken(token: DeviceToken) {
             let status = try await apiRegisterToken(token: token, notificationMode: mode)
             await MainActor.run {
                 m.tokenStatus = status
-                if !status.workingToken {
-                    showAlert(
-                        NSLocalizedString("Notifications token error", comment: "alert title"),
-                        message: status.text
-                    )
-                }
+                showAlert(
+                    status.workingToken
+                    ? NSLocalizedString("Notifications status", comment: "alert title")
+                    : NSLocalizedString("Notifications error", comment: "alert title"),
+                    message: tokenStatusInfo(status, register: false)
+                )
             }
         } catch let error {
             logger.error("reRegisterToken apiRegisterToken error: \(responseError(error))")
             await MainActor.run {
                 showAlert(
-                    NSLocalizedString("Error registering notifications token", comment: "alert title"),
+                    NSLocalizedString("Error registering for notifications", comment: "alert title"),
                     message: responseError(error)
                 )
             }
