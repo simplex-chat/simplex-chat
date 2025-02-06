@@ -1288,6 +1288,8 @@ processChatCommand' vr = \case
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
+  APICheckToken token -> withUser $ \_ ->
+    CRNtfTokenStatus <$> withAgent (`checkNtfToken` token)
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
   APIGetNtfConns nonce encNtfInfo -> withUser $ \user -> do
     ntfInfos <- withAgent $ \a -> getNotificationConns a nonce encNtfInfo
@@ -3746,6 +3748,7 @@ chatCommandP =
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
+      "/_ntf check " *> (APICheckToken <$> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
       "/_ntf conn messages " *> (ApiGetConnNtfMessages <$> strP),
