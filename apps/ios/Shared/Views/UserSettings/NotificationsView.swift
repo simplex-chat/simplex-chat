@@ -95,7 +95,7 @@ struct NotificationsView: View {
 
                 if let server = m.notificationServer {
                     smpServers("Push server", [server], theme.colors.secondary)
-                    testServerButton(server)
+                    testTokenButton(server)
                 }
             } header: {
                 Text("Push notifications")
@@ -188,9 +188,9 @@ struct NotificationsView: View {
         }
     }
 
-    private func testServerButton(_ server: String) -> some View {
+    private func testTokenButton(_ server: String) -> some View {
         HStack {
-            Button("Test server") {
+            Button("Test token") {
                 testing = true
                 Task {
                     await testServerAndToken(server)
@@ -228,7 +228,7 @@ struct NotificationsView: View {
                             testedSuccess = status.testSuccess
                             showAlert(
                                 NSLocalizedString("Token status", comment: "alert title"),
-                                message: status.rawValue
+                                message: status.text
                             )
                         }
                     } catch let error {
