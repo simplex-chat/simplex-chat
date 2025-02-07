@@ -19,7 +19,6 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
@@ -176,7 +175,7 @@ fun ChatPreviewView(
       if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
         val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
         val (text: CharSequence, inlineTextContent) = when {
-          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message to messageDraft(chatModelDraft, sp20) }
+          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message.text to messageDraft(chatModelDraft, sp20) }
           ci.meta.itemDeleted == null -> ci.text to null
           else -> markedDeletedText(ci, chat.chatInfo) to null
         }
@@ -201,6 +200,11 @@ fun ChatPreviewView(
           sender = when {
             chatModelDraftChatId == chat.id && chatModelDraft != null -> null
             cInfo is ChatInfo.Group && !ci.chatDir.sent -> ci.memberDisplayName
+            else -> null
+          },
+          mentions = ci.mentions,
+          userMemberId = when {
+            cInfo is ChatInfo.Group -> cInfo.groupInfo.membership.memberId
             else -> null
           },
           toggleSecrets = false,
@@ -426,23 +430,56 @@ fun ChatPreviewView(
 
           Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
             val n = chat.chatStats.unreadCount
-            val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
+            val ntfsMode = chat.chatInfo.chatSettings?.enableNtfs
+            val showNtfsIcon = !chat.chatInfo.ntfsEnabled(false) && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
             if (n > 0 || chat.chatStats.unreadChat) {
-              Text(
-                if (n > 0) unreadCountStr(n) else "",
-                color = Color.White,
-                fontSize = 10.sp,
-                style = TextStyle(textAlign = TextAlign.Center),
-                modifier = Modifier
-                  .offset(y = 3.sp.toDp())
-                  .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
-                  .badgeLayout()
-                  .padding(horizontal = 2.sp.toDp())
-                  .padding(vertical = 1.sp.toDp())
-              )
-            } else if (showNtfsIcon) {
+              val unreadMentions = chat.chatStats.unreadMentions
+              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.sp.toDp())) {
+                val mentionColor = when {
+                  disabled -> MaterialTheme.colors.secondary
+                  cInfo is ChatInfo.Group -> {
+                    val enableNtfs = cInfo.groupInfo.chatSettings.enableNtfs
+                    if (enableNtfs == MsgFilter.All || enableNtfs == MsgFilter.Mentions) MaterialTheme.colors.primaryVariant else MaterialTheme.colors.secondary
+                  }
+
+                  else -> if (showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant
+                }
+                if (unreadMentions > 0 && n > 1) {
+                  Icon(
+                    painterResource(MR.images.ic_alternate_email),
+                    contentDescription = generalGetString(MR.strings.notifications),
+                    tint = mentionColor,
+                    modifier = Modifier.size(12.sp.toDp()).offset(y = 3.sp.toDp())
+                  )
+                }
+
+                if (unreadMentions > 0 && n == 1) {
+                  Box(modifier = Modifier.offset(y = 2.sp.toDp()).size(15.sp.toDp()).background(mentionColor, shape = CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(
+                      painterResource(MR.images.ic_alternate_email),
+                      contentDescription = generalGetString(MR.strings.notifications),
+                      tint = Color.White,
+                      modifier = Modifier.size(9.sp.toDp())
+                    )
+                  }
+                } else {
+                  Text(
+                    if (n > 0) unreadCountStr(n) else "",
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    style = TextStyle(textAlign = TextAlign.Center),
+                    modifier = Modifier
+                      .offset(y = 3.sp.toDp())
+                      .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+                      .badgeLayout()
+                      .padding(horizontal = 2.sp.toDp())
+                      .padding(vertical = 1.sp.toDp())
+                  )
+                }
+              }
+            } else if (showNtfsIcon && ntfsMode != null) {
               Icon(
-                painterResource(MR.images.ic_notifications_off_filled),
+                painterResource(ntfsMode.iconFilled),
                 contentDescription = generalGetString(MR.strings.notifications),
                 tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
@@ -469,11 +506,6 @@ fun ChatPreviewView(
           }
         }
       }
-    }
-
-    val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
-    if (deleting) {
-      DefaultProgressView(description = null)
     }
   }
 }

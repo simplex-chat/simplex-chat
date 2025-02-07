@@ -31,7 +31,7 @@ fun ContextItemView(
   contextItems: List<ChatItem>,
   contextIcon: Painter,
   showSender: Boolean = true,
-  chatType: ChatType,
+  chatInfo: ChatInfo,
   contextIconColor: Color = MaterialTheme.colors.secondary,
   cancelContextItem: () -> Unit,
 ) {
@@ -64,6 +64,11 @@ fun ContextItemView(
       inlineContent = inlineContent,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
+      mentions = contextItem.mentions,
+      userMemberId = when {
+        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+        else -> null
+      }
     )
   }
 
@@ -126,7 +131,7 @@ fun ContextItemView(
           ContextMsgPreview(contextItem, lines = 3)
         }
       } else if (contextItems.isNotEmpty()) {
-        Text(String.format(generalGetString(if (chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n), contextItems.count()), fontStyle = FontStyle.Italic)
+        Text(String.format(generalGetString(if (chatInfo.chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n), contextItems.count()), fontStyle = FontStyle.Italic)
       }
     }
     IconButton(onClick = cancelContextItem) {
@@ -147,7 +152,7 @@ fun PreviewContextItemView() {
     ContextItemView(
       contextItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello")),
       contextIcon = painterResource(MR.images.ic_edit_filled),
-      chatType = ChatType.Direct
+      chatInfo = Chat.sampleData.chatInfo
     ) {}
   }
 }

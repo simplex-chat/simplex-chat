@@ -133,6 +133,7 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
@@ -3979,6 +3980,58 @@ testGroupMsgForward =
       cath ##> "/tail #team 2"
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
+
+testGroupMsgForwardReport :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardReport =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      alice ##> "/mr team bob moderator"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob from admin to moderator",
+          bob <## "#team: alice changed your role from admin to moderator",
+          cath <## "#team: alice changed the role of bob from admin to moderator"
+        ]
+
+      cath ##> "/report #team content hi there"
+      cath <# "#team > bob hi there"
+      cath <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#team cath> > bob hi there"
+            alice <## "      report content",
+          do
+            bob <# "#team cath!> > bob hi there [>>]"
+            bob <## "      report content [>>]"
+        ]
+
+      alice ##> "/mr team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob from moderator to member",
+          bob <## "#team: alice changed your role from moderator to member",
+          cath <## "#team: alice changed the role of bob from moderator to member"
+        ]
+
+      cath ##> "/report #team content hi there"
+      cath <# "#team > bob hi there"
+      cath <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#team cath> > bob hi there"
+            alice <## "      report content",
+          (bob </)
+        ]
+
+      -- regular messages are still forwarded
+
+      cath #> "#team hey team"
+      alice <# "#team cath> hey team"
+      bob <# "#team cath> hey team [>>]"
 
 setupGroupForwarding3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding3 gName alice bob cath = do
