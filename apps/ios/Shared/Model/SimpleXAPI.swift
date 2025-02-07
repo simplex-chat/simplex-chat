@@ -545,13 +545,7 @@ func registerToken(token: DeviceToken) {
                 await MainActor.run {
                     m.tokenStatus = status
                     if !status.workingToken {
-                        showAlert(
-                            title: NSLocalizedString("Notifications error", comment: "alert title"),
-                            message: tokenStatusInfo(status, register: true),
-                            buttonTitle: "Register",
-                            buttonAction: { reRegisterToken(token: token) },
-                            cancelButton: true
-                        )
+                        m.reRegisterTknStatus = status
                     }
                 }
             } catch let error {
