@@ -108,10 +108,13 @@ cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform
 cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
 LIBCRYPTO_PATH=$(otool -l libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSdrct-*.$LIB_EXT
-cp $LIBCRYPTO_PATH libcrypto.3.0.$LIB_EXT
-chmod 755 libcrypto.3.0.$LIB_EXT
-install_name_tool -id "libcrypto.3.0.$LIB_EXT" libcrypto.3.0.$LIB_EXT
+if [ -n "$LIBCRYPTO_PATH" ]; then
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSdrct-*.$LIB_EXT
+    cp $LIBCRYPTO_PATH libcrypto.3.0.$LIB_EXT
+    chmod 755 libcrypto.3.0.$LIB_EXT
+    install_name_tool -id "libcrypto.3.0.$LIB_EXT" libcrypto.3.0.$LIB_EXT
+fi
+
 install_name_tool -id "libffi.8.$LIB_EXT" libffi.$LIB_EXT
 
 LIBCRYPTO_PATH=$(otool -l $LIB | grep libcrypto | cut -d' ' -f11)
@@ -140,7 +143,10 @@ LOCAL_DIRS=`for lib in $(find . -type f -name "*.$LIB_EXT"); do otool -l $lib | 
 if [ -n "$LOCAL_DIRS" ]; then
     echo These libs still point to local directories:
     echo $LOCAL_DIRS
-    exit 1
+    # libpq and libHSpstgrsql are not included in the build for postgres
+    if [[ "$DATABASE_BACKEND" == "sqlite" ]]; then
+        exit 1
+    fi
 fi
 
 cd -
