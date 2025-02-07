@@ -98,5 +98,8 @@
 
    ```sh
    ./scripts/desktop/build-lib-mac.sh arm64 postgres
+
    ./gradlew runDistributable -Pdatabase.backend=postgres
+   # or
+   ./gradlew packageDmg -Pdatabase.backend=postgres
    ```

@@ -107,14 +107,11 @@ cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform
 
 cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
-LIBCRYPTO_PATH=$(otool -l libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSdrct-*.$LIB_EXT
-    cp $LIBCRYPTO_PATH libcrypto.3.0.$LIB_EXT
-    chmod 755 libcrypto.3.0.$LIB_EXT
-    install_name_tool -id "libcrypto.3.0.$LIB_EXT" libcrypto.3.0.$LIB_EXT
-fi
-
+LIBCRYPTO_PATH=$(otool -l libHSsmplxmq-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsmplxmq-*.$LIB_EXT
+cp $LIBCRYPTO_PATH libcrypto.3.0.$LIB_EXT
+chmod 755 libcrypto.3.0.$LIB_EXT
+install_name_tool -id "libcrypto.3.0.$LIB_EXT" libcrypto.3.0.$LIB_EXT
 install_name_tool -id "libffi.8.$LIB_EXT" libffi.$LIB_EXT
 
 LIBCRYPTO_PATH=$(otool -l $LIB | grep libcrypto | cut -d' ' -f11)
@@ -122,14 +119,18 @@ if [ -n "$LIBCRYPTO_PATH" ]; then
     install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT $LIB
 fi
 
-LIBCRYPTO_PATH=$(otool -l libHSsmplxmq*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsmplxmq*.$LIB_EXT
-fi
+# We could change libpq and libHSpstgrsql for postgres (?), remove sqlite condition for exit below.
+# Unnecessary for now as app with postgres backend is not for distribution.
+if [[ "$DATABASE_BACKEND" == "sqlite" ]]; then
+    LIBCRYPTO_PATH=$(otool -l libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+    if [ -n "$LIBCRYPTO_PATH" ]; then
+        install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSdrct-*.$LIB_EXT
+    fi
 
-LIBCRYPTO_PATH=$(otool -l libHSsqlcphr-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsqlcphr-*.$LIB_EXT
+    LIBCRYPTO_PATH=$(otool -l libHSsqlcphr-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+    if [ -n "$LIBCRYPTO_PATH" ]; then
+        install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsqlcphr-*.$LIB_EXT
+    fi
 fi
 
 for lib in $(find . -type f -name "*.$LIB_EXT"); do
@@ -143,7 +144,6 @@ LOCAL_DIRS=`for lib in $(find . -type f -name "*.$LIB_EXT"); do otool -l $lib | 
 if [ -n "$LOCAL_DIRS" ]; then
     echo These libs still point to local directories:
     echo $LOCAL_DIRS
-    # libpq and libHSpstgrsql are not included in the build for postgres
     if [[ "$DATABASE_BACKEND" == "sqlite" ]]; then
         exit 1
     fi
