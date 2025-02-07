@@ -22,9 +22,9 @@
         },
         "contactLink": {"ref": "connReqUri"},
         "preferences": {
-          "type": "string",
+          "additionalProperties": true,
           "metadata": {
-            "format": "JSON encoded user preferences"
+            "format": "an object with user or contact preferences"
           }
         }
       },
@@ -48,13 +48,30 @@
           }
         },
         "groupPreferences": {
-          "type": "string",
+          "additionalProperties": "true",
           "metadata": {
-            "format": "JSON encoded user preferences"
+            "format": "an object with group preferences"
           }
         }
       },
       "additionalProperties": true
+    },
+    "commands": {
+      "metadata": {"comment": "an object used in group or contact profile preferences for bot commands"},
+      "elements": {
+        "properties": {
+          "text": {"type": "string", "metadata": {"comment": "button text, should not include '/'"}}
+        },
+        "optionalProperties": {
+          "allow": {"type": "boolean", "metadata": {"comment": "for contacts"}},
+          "enabled": {"type": "boolean", "metadata": {"comment": "for groups"}},
+          "info": {"type": "string", "metadata": {"comment": "information for the user"}},
+          "template": {"type": "string", "metadata": {"comment": "command message template, '/' + text will be used if absent"}},
+          "send": {"type": "boolean", "metadata": {"comment": "whether to send template on selection", "default": false}},
+          "menu": {"ref": "commands"}
+        },
+        "metadata": {"comment": "menu and template+send are mutually exclusive"}
+      }
     },
     "msgContainer": {
       "properties": {
@@ -70,7 +87,66 @@
             "content": {"ref": "msgContent"}
           }
         },
-        "forward": {"type": "boolean"}
+        "forward": {"type": "boolean"},
+        "dialog": {
+          "optionalProperties": {
+            "persistent": {
+              "enum": {
+                "type": "boolean",
+                "metadata": {
+                  "comment": "the choices will remain without bot sending additional message",
+                  "default": false
+                }
+              }
+            },
+            "layout": {
+              "enum": ["column", "row"],
+              "metadata": {"default": "column"}
+            },
+            "allow": {
+              "optionalProperties": {
+                "text": {
+                  "type": "boolean",
+                  "metadata": {"default": false}
+                }
+              }
+            },
+            "choices": {
+              "elements": {
+                "properties": {
+                  "text": {"type": "string"}
+                },
+                "optionalProperties": {
+                  "tag": {
+                    "type": "string",
+                    "metadata": {"comment": "unique tag that will be sent in choiceTag property of response"}
+                  },
+                  "role": {
+                    "enum": ["primary", "destructive", "default"],
+                    "metadata": {"comment": "color name or hex code for the button", "default": "default"}
+                  },
+                  "info": {
+                    "type": "string",
+                    "metadata": {"comment": "additional information for the user about the choice"}
+                  },
+                  "icon": {
+                    "type": "string",
+                    "metadata": {"comment": "emoji or name of the icon"}
+                  },
+                  "disabled": {
+                    "type": "boolean",
+                    "metadata": {"default": false}
+                  }
+                }
+              },
+              "metadata": {"comment": "each key must be one of the choices in the text"}
+            }
+          }
+        },
+        "dialogTag": {
+          "type": "string",
+          "metadata": {"comment": "sent inside the response to `dialog`, mutually exclusive with `dialog`"}
+        }
       },
       "metadata": {
         "comment": "optional properties `quote` and `forward` are mutually exclusive"
@@ -654,6 +730,16 @@
         "params": {
           "properties": {
             "groupProfile": {"ref": "groupProfile"}
+          }
+        }
+      }
+    },
+    "x.grp.prefs": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupPreferences": {"ref": "groupPreferences"}
           }
         }
       }
