@@ -288,8 +288,10 @@ struct ContentView: View {
                 }
                 prefShowLANotice = true
                 connectViaUrl()
+                showReRegisterTokenAlert()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
+            .onChange(of: chatModel.reRegisterTknStatus) { _ in showReRegisterTokenAlert() }
             .sheet(item: $noticesSheetItem) { item in
                 switch item {
                 case let .whatsNew(updatedConditions):
@@ -464,6 +466,21 @@ struct ContentView: View {
                 } else {
                     AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
                 }
+            }
+        }
+    }
+
+    func showReRegisterTokenAlert() {
+        dismissAllSheets() {
+            let m = ChatModel.shared
+            if let errorTknStatus = m.reRegisterTknStatus, let token = chatModel.deviceToken {
+                chatModel.reRegisterTknStatus = nil
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Notifications error"),
+                    message: Text(tokenStatusInfo(errorTknStatus, register: true)),
+                    primaryButton: .default(Text("Register")) { reRegisterToken(token: token) },
+                    secondaryButton: .cancel()
+                ))
             }
         }
     }
