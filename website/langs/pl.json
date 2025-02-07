@@ -244,15 +244,17 @@
     "stable-versions-built-by-f-droid-org": "Wersje stabilne zbudowane przez F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "Wydania na tym repo są kilka dni później",
     "comparison-section-list-point-4a": "Przekaźniki SimpleX nie mogą skompromitować szyfrowania e2e. Zweryfikuj kody bezpieczeństwa aby złagodzić atak na kanał pozapasmowy",
-    "hero-overlay-3-title": "Ocena bezpieczeństwa",
+    "hero-overlay-3-title": "Oceny bezpieczeństwa",
     "hero-overlay-card-3-p-2": "Trail of Bits przejrzał komponenty kryptograficzne i sieciowe platformy SimpleX w listopadzie 2022. Przeczytaj więcej w <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">ogłoszeniach</a>.",
     "jobs": "Dołącz do zespołu",
-    "hero-overlay-3-textlink": "Ocena bezpieczeństwa",
+    "hero-overlay-3-textlink": "Analizy bezpieczeństwa",
     "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> jest wiodącą firmą konsultingową w zakresie bezpieczeństwa i technologii, której klientami są duże firmy technologiczne, agencje rządowe i główne projekty blockchain.",
     "docs-dropdown-9": "Pliki do pobrania",
     "please-enable-javascript": "Prosimy o włączenie JavaScript w celu wyświetlenia kodu QR.",
     "please-use-link-in-mobile-app": "Prosimy o skorzystanie z linku w aplikacji mobilnej",
     "docs-dropdown-10": "Przezroczystość",
     "docs-dropdown-12": "Bezpieczeństwo",
-    "docs-dropdown-11": "Często zadawane pytania"
+    "docs-dropdown-11": "Często zadawane pytania",
+    "hero-overlay-card-3-p-3": "Firma Trail of Bits dokonała analizy projektu kryptograficznego protokołów sieciowych SimpleX w lipcu 2024 roku. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Dowiedz się więcej</a>.",
+    "docs-dropdown-14": "SimpleX dla firm"
 }
