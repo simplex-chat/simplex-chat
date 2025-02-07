@@ -74,7 +74,7 @@
     <string name="allow_to_send_disappearing">Cho phép gửi tin nhắn tự xóa.</string>
     <string name="allow_to_send_voice">Cho phép gửi tin nhắn thoại.</string>
     <string name="allow_message_reactions">Cho phép thả biểu tượng cảm xúc.</string>
-    <string name="allow_to_send_files">Cho phép gửi các tập tin, ảnh và video.</string>
+    <string name="allow_to_send_files">Cho phép gửi các tệp và đa phương tiện.</string>
     <string name="notifications_mode_service">Luôn luôn bật</string>
     <string name="all_your_contacts_will_remain_connected">Tất cả liên hệ của bạn vẫn sẽ được giữ kết nối.</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Tất cả liên hệ của bạn vẫn sẽ được giữ kết nối. Bản cập nhật hồ sơ sẽ được gửi tới các liên hệ của bạn.</string>
@@ -540,7 +540,7 @@
     <string name="info_view_connect_button">kết nối</string>
     <string name="delete_contact_cannot_undo_warning">Liên hệ sẽ bị xóa - điều này không thể hoàn tác!</string>
     <string name="conversation_deleted">Cuộc trò chuyện đã bị xóa!</string>
-    <string name="privacy_media_blur_radius">Làm mờ phương tiện truyền thông</string>
+    <string name="privacy_media_blur_radius">Làm mờ đa phương tiện</string>
     <string name="cant_call_contact_alert_title">Không thể gọi liên hệ</string>
     <string name="allow_calls_question">Cho phép thực hiện cuộc gọi?</string>
     <string name="calls_prohibited_alert_title">Cuộc gọi bị cấm!</string>
@@ -597,7 +597,7 @@
     <string name="dont_enable_receipts">Không bật</string>
     <string name="servers_info_downloaded">Đã tải về</string>
     <string name="app_check_for_updates_download_started">Đang tải về bản cập nhật ứng dụng, đừng đóng ứng dụng</string>
-    <string name="downloaded_files">Các tập tin đã tải về</string>
+    <string name="downloaded_files">Các tệp đã tải về</string>
     <string name="download_errors">Lỗi tải về</string>
     <string name="status_e2e_encrypted">mã hóa đầu cuối</string>
     <string name="v6_0_upgrade_app_descr">Tải xuống các phiên bản mới từ GitHub.</string>
@@ -637,7 +637,7 @@
     <string name="snd_conn_event_ratchet_sync_allowed">cho phép tái đàm phán mã hóa với %s</string>
     <string name="snd_conn_event_ratchet_sync_required">cần tái đàm phán mã hóa cho %s</string>
     <string name="receipts_contacts_title_enable">Bật chỉ báo đã nhận?</string>
-    <string name="v5_3_encrypt_local_files">Mã hóa các tệp và phương tiện được lưu trữ</string>
+    <string name="v5_3_encrypt_local_files">Mã hóa các tệp và đa phương tiện được lưu trữ</string>
     <string name="error_alert_title">Lỗi</string>
     <string name="call_service_notification_end_call">Kết thúc cuộc gọi</string>
     <string name="v5_6_quantum_resistant_encryption_descr">Bật trong cuộc trò chuyện trực tiếp (BETA)!</string>
@@ -750,13 +750,13 @@
     <string name="migrate_from_device_exported_file_doesnt_exist">Tập tin đã xuất không tồn tại</string>
     <string name="settings_section_title_files">TẬP TIN</string>
     <string name="failed_to_parse_chats_title">Không thể tải tin nhắn</string>
-    <string name="file_error_no_file">Không tìm thấy tập tin - có thể tập tin đã bị xóa và hủy bỏ.</string>
-    <string name="file_error">Lỗi tập tin</string>
+    <string name="file_error_no_file">Không tìm thấy tệp - có thể tập tin đã bị xóa và hủy bỏ.</string>
+    <string name="file_error">Lỗi tệp</string>
     <string name="export_theme">Xuất chủ đề</string>
     <string name="failed_to_parse_chat_title">Không thể tải tin nhắn</string>
     <string name="choose_file">Tập tin</string>
     <string name="v5_0_large_files_support_descr">Nhanh chóng và không cần phải đợi người gửi hoạt động!</string>
-    <string name="file_not_found">Không tìm thấy tập tin</string>
+    <string name="file_not_found">Không tìm thấy tệp</string>
     <string name="file_with_path">Tập tin: %s</string>
     <string name="v5_4_better_groups_descr">Tham gia nhanh chóng hơn và xử lý tin nhắn ổn định hơn.</string>
     <string name="servers_info_files_tab">Tập tin</string>
@@ -764,13 +764,13 @@
     <string name="icon_descr_file">Tập tin</string>
     <string name="file_error_relay">Lỗi máy chủ tệp: %1$s</string>
     <string name="info_row_file_status">Trạng thái tệp</string>
-    <string name="files_and_media_not_allowed">Tệp và phương tiện truyền thông không được cho phép</string>
-    <string name="files_are_prohibited_in_group">Tệp và nội dung đa phương tiện bị cấm.</string>
+    <string name="files_and_media_not_allowed">Tệp và đa phương tiện không được cho phép</string>
+    <string name="files_are_prohibited_in_group">Tệp và đa phương tiện bị cấm.</string>
     <string name="revoke_file__message">Tệp sẽ bị xóa khỏi máy chủ.</string>
-    <string name="files_and_media_section">Tệp &amp; phương tiện truyền thông</string>
-    <string name="files_and_media_prohibited">Tệp và phương tiện truyền thông bị cấm!</string>
+    <string name="files_and_media_section">Tệp &amp; đa phương tiện</string>
+    <string name="files_and_media_prohibited">Tệp và đa phương tiện bị cấm!</string>
     <string name="file_will_be_received_when_contact_completes_uploading">Tệp sẽ được nhận khi liên hệ của bạn hoàn tất quá trình tải lên.</string>
-    <string name="files_and_media">Tệp và phương tiện truyền thông</string>
+    <string name="files_and_media">Tệp và đa phương tiện</string>
     <string name="migrate_to_device_file_delete_or_link_invalid">Tệp đã bị xóa hoặc đường dẫn không hợp lệ</string>
     <string name="file_saved">Tệp đã được lưu</string>
     <string name="file_will_be_received_when_contact_is_online">Tệp sẽ được nhận khi liên hệ của bạn hoạt động, vui lòng chờ hoặc kiểm tra lại sau!</string>
@@ -842,7 +842,7 @@
     <string name="info_row_group">Nhóm</string>
     <string name="group_full_name_field">Tên đầy đủ nhóm:</string>
     <string name="group_members_can_send_disappearing">Các thành viên có thể gửi tin nhắn tự xóa.</string>
-    <string name="group_members_can_send_files">Các thành viên có thể gửi tệp và nội dung đa phương tiện.</string>
+    <string name="group_members_can_send_files">Các thành viên có thể gửi tệp và đa phương tiện.</string>
     <string name="group_members_can_send_simplex_links">Các thành viên có thể gửi đường dẫn SimpleX.</string>
     <string name="icon_descr_group_inactive">Nhóm không hoạt động</string>
     <string name="connect_plan_group_already_exists">Nhóm đã tồn tại rồi!</string>
@@ -1081,7 +1081,7 @@
     <string name="v4_3_irreversible_message_deletion">Xóa tin nhắn mà không thể phục hồi</string>
     <string name="compose_message_placeholder">Tin nhắn</string>
     <string name="message_servers">Máy chủ tin nhắn</string>
-    <string name="media_and_file_servers">Máy chủ tệp và phương tiện</string>
+    <string name="media_and_file_servers">Máy chủ tệp và đa phương tiện</string>
     <string name="notification_preview_mode_message">Nội dung tin nhắn</string>
     <string name="forward_files_messages_deleted_after_selection_desc">Tin nhắn đã bị xóa sau khi bạn chọn chúng.</string>
     <string name="unblock_member_desc">Tin nhắn từ %s sẽ được hiển thị!</string>
@@ -1147,7 +1147,7 @@
     <string name="new_member_role">Chức vụ thành viên mới</string>
     <string name="v4_6_reduced_battery_usage_descr">Nhiều cải tiến hơn nữa sắp ra mắt!</string>
     <string name="remote_host_error_bad_version"><![CDATA[Thiết bị di động <b>%s</b> có một phiên bản không được hỗ trợ. Xin vui lòng đảm bảo rằng bạn dùng cùng một phiên bản trên cả hai thiết bị.]]></string>
-    <string name="v6_0_new_media_options">Các tùy chọn phương tiện mới</string>
+    <string name="v6_0_new_media_options">Các tùy chọn đa phương tiện mới</string>
     <string name="icon_descr_call_missed">Cuộc gọi nhỡ</string>
     <string name="v4_5_reduced_battery_usage_descr">Nhiều cải tiến hơn nữa sắp ra mắt!</string>
     <string name="v5_6_app_data_migration_descr">Di chuyển sang một thiết bị khác qua mã QR.</string>
@@ -1192,7 +1192,7 @@
     <string name="no_received_app_files">Không có tệp nào được gửi hay được nhận</string>
     <string name="group_member_role_observer">quan sát viên</string>
     <string name="network_type_no_network_connection">Không có kết nối mạng</string>
-    <string name="only_owners_can_enable_files_and_media">Chỉ chủ nhóm mới có thể bật tính năng cho phép gửi tệp và phương tiện.</string>
+    <string name="only_owners_can_enable_files_and_media">Chỉ chủ nhóm mới có thể bật tính năng cho phép gửi tệp và đa phương tiện.</string>
     <string name="images_limit_desc">Chỉ có thể gửi 10 hình ảnh cùng một lúc</string>
     <string name="only_one_device_can_work_at_the_same_time">Chỉ một thiết bị mới có thể hoạt động cùng một lúc</string>
     <string name="not_compatible">Không tương thích!</string>
@@ -1345,7 +1345,7 @@
     <string name="network_option_protocol_timeout">Thời gian chờ giao thức</string>
     <string name="prohibit_sending_disappearing">Cấm gửi tin nhắn tự xóa.</string>
     <string name="protect_app_screen">Bảo vệ màn hình ứng dụng</string>
-    <string name="prohibit_sending_files">Cấm gửi tệp và phương tiện truyền thông.</string>
+    <string name="prohibit_sending_files">Cấm gửi tệp và đa phương tiện.</string>
     <string name="prohibit_sending_voice">Cấm gửi tin nhắn thoại.</string>
     <string name="prohibit_sending_disappearing_messages">Cấm gửi tin nhắn tự xóa.</string>
     <string name="prohibit_sending_simplex_links">Cấm gửi đường dẫn SimpleX</string>
@@ -1360,7 +1360,7 @@
     <string name="appearance_app_toolbars">Thanh công cụ ứng dụng</string>
     <string name="appearance_bars_blur_radius">Làm mờ</string>
     <string name="accept_conditions">Chấp nhận điều kiện</string>
-    <string name="operator_added_xftp_servers">Đã thêm các máy chủ truyền tệp &amp; phương tiện</string>
+    <string name="operator_added_xftp_servers">Đã thêm các máy chủ truyền tệp &amp; đa phương tiện</string>
     <string name="operator_conditions_accepted">Đã chấp nhận điều kiện</string>
     <string name="address_settings">Cài đặt địa chỉ</string>
     <string name="operators_conditions_accepted_for"><![CDATA[Các điều kiện được chấp nhận với (các) nhà cung cấp: <b>%s</b>.]]></string>
@@ -1476,7 +1476,7 @@
     <string name="no_media_servers_configured_for_sending">Không có máy chủ để gửi tệp.</string>
     <string name="onboarding_notifications_mode_off_desc_short">Không có dịch vụ nền</string>
     <string name="smp_servers_new_server">Máy chủ mới</string>
-    <string name="no_media_servers_configured">Không có máy chủ tệp và phương tiện.</string>
+    <string name="no_media_servers_configured">Không có máy chủ tệp và đa phương tiện.</string>
     <string name="v6_0_reachable_chat_toolbar">Thanh công cụ trò chuyện trong tầm</string>
     <string name="random_port">Ngẫu nhiên</string>
     <string name="network_preset_servers_title">Các máy chủ cài sẵn</string>
@@ -1488,7 +1488,7 @@
     <string name="v5_6_quantum_resistant_encryption">Mã hóa kháng lượng tử</string>
     <string name="v6_2_business_chats_descr">Sự riêng tư cho các khách hàng của bạn.</string>
     <string name="maximum_message_size_reached_text">Xin vui lòng giảm kích thước tin nhắn và gửi lại.</string>
-    <string name="maximum_message_size_reached_non_text">Xin vui lòng giảm kích thước tin nhắn hoặc xóa phương tiện và gửi lại.</string>
+    <string name="maximum_message_size_reached_non_text">Xin vui lòng giảm kích thước tin nhắn hoặc xóa đa phương tiện và gửi lại.</string>
     <string name="network_proxy_auth">Xác thực proxy</string>
     <string name="image_descr_qr_code">Mã QR</string>
     <string name="open_with_app">Mở bằng %s</string>
@@ -1758,7 +1758,7 @@
     <string name="share_with_contacts">Chia sẻ với các liên hệ</string>
     <string name="share_file">Chia sẻ tệp…</string>
     <string name="share_address">Chia sẻ địa chỉ</string>
-    <string name="share_image">Chia sẻ nội dung đa phương tiện…</string>
+    <string name="share_image">Chia sẻ đa phương tiện…</string>
     <string name="new_chat_share_profile">Chia sẻ hồ sơ</string>
     <string name="show_developer_options">Hiển thị tùy chọn cho nhà phát triển</string>
     <string name="v5_7_shape_profile_images">Tạo khuôn ảnh đại diện</string>
@@ -1958,7 +1958,7 @@
     <string name="video_decoding_exception_desc">Video không thể được giải mã. Xin vui lòng thử với một video khác hoặc liên lạc với các nhà phát triển.</string>
     <string name="moderate_message_will_be_marked_warning">Tin nhắn sẽ bị đánh dấu là đã được kiểm duyệt cho tất cả các thành viên.</string>
     <string name="moderate_message_will_be_deleted_warning">Tin nhắn sẽ bị xóa cho tất cả các thành viên.</string>
-    <string name="delete_files_and_media_desc">Việc này không thể được hoàn tác - tất cả các nội dung đa phương tiện và tệp đã được gửi và nhận sẽ bị xóa. Những hình ảnh chất lượng thấp sẽ được giữ lại.</string>
+    <string name="delete_files_and_media_desc">Việc này không thể được hoàn tác - tất cả các đa phương tiện và tệp đã được gửi và nhận sẽ bị xóa. Những hình ảnh chất lượng thấp sẽ được giữ lại.</string>
     <string name="enable_automatic_deletion_message">Việc này không thể được hoàn tác - các tin nhắn đã được gửi và nhận sớm hơn so với thời gian được chọn sẽ bị xóa. Có thể mất vài phút để hoàn thành.</string>
     <string name="alert_message_no_group">Nhóm này không còn tồn tại.</string>
     <string name="send_receipts_disabled_alert_msg">Nhóm này có trên %1$d thành viên, chỉ báo đã nhận không được gửi.</string>
@@ -2185,7 +2185,7 @@
     <string name="file_not_approved_descr">Không có Tor hoặc VPN, địa chỉ IP của bạn sẽ bị lộ ra cho các relay XFTP sau đây:\n%1$s.</string>
     <string name="xftp_servers">Các máy chủ XFTP</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Khi có nhiều hơn một bên vận hành được kích hoạt, không ai trong số họ có siêu dữ liệu để biết được ai trò chuyện với ai.</string>
-    <string name="v5_5_private_notes_descr">Với các tệp và nội dung đa phương tiện được mã hóa.</string>
+    <string name="v5_5_private_notes_descr">Với các tệp và đa phương tiện được mã hóa.</string>
     <string name="v5_5_message_delivery_descr">Mức sử dụng pin đã được giảm xuống.</string>
     <string name="v5_8_message_delivery_descr">Mức sử dụng pin đã được giảm xuống.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Với lời chào tùy chọn.</string>
@@ -2306,4 +2306,7 @@
     <string name="network_smp_web_port_section_title">Cổng TCP để nhắn tin</string>
     <string name="network_smp_web_port_footer">Sử dụng cổng TCP %1$s khi không có cổng nào được chỉ định.</string>
     <string name="network_smp_web_port_toggle">Sử dụng cổng web</string>
+    <string name="max_group_mentions_per_message_reached">Bạn có thể nhắc đến tối đa là %1$s thành viên trong một tin nhắn!</string>
+    <string name="mute_all_chat">Tắt thông báo tất cả</string>
+    <string name="unread_mentions">Những lời nhắc chưa đọc</string>
 </resources>
