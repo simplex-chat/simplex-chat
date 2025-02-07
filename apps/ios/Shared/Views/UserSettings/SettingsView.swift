@@ -480,7 +480,8 @@ struct SettingsView: View {
         case .invalid: fallthrough
         case .invalidBad: fallthrough
         case .invalidTopic: fallthrough
-        case .invalidGone:
+        case .invalidExpired: fallthrough
+        case .invalidUnregistered:
             icon = "bolt.slash"
             color = theme.colors.secondary
         case .confirmed:
