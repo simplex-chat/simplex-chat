@@ -4124,9 +4124,61 @@ public enum NtfTknStatus: String, Decodable, Hashable {
     case new = "NEW"
     case registered = "REGISTERED"
     case invalid = "INVALID"
+    case invalidBad = "INVALID,BAD"
+    case invalidTopic = "INVALID,TOPIC"
+    case invalidExpired = "INVALID,EXPIRED"
+    case invalidUnregistered = "INVALID,UNREGISTERED"
     case confirmed = "CONFIRMED"
     case active = "ACTIVE"
     case expired = "EXPIRED"
+
+    public var workingToken: Bool {
+        switch self {
+        case .new: true
+        case .registered: true
+        case .invalid: false
+        case .invalidBad: false
+        case .invalidTopic: false
+        case .invalidExpired: false
+        case .invalidUnregistered: false
+        case .confirmed: true
+        case .active: true
+        case .expired: false
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .new: NSLocalizedString("New", comment: "token status text")
+        case .registered: NSLocalizedString("Registered", comment: "token status text")
+        case .invalid: NSLocalizedString("Invalid", comment: "token status text")
+        case .invalidBad: NSLocalizedString("Invalid (bad token)", comment: "token status text")
+        case .invalidTopic: NSLocalizedString("Invalid (wrong topic)", comment: "token status text")
+        case .invalidExpired: NSLocalizedString("Invalid (expired)", comment: "token status text")
+        case .invalidUnregistered: NSLocalizedString("Invalid (unregistered)", comment: "token status text")
+        case .confirmed: NSLocalizedString("Confirmed", comment: "token status text")
+        case .active: NSLocalizedString("Active", comment: "token status text")
+        case .expired: NSLocalizedString("Expired", comment: "token status text")
+        }
+    }
+    
+    public func info(register: Bool) -> String {
+        switch self {
+        case .new: return NSLocalizedString("Please wait for token to be registered.", comment: "token info")
+        case .registered: fallthrough
+        case .confirmed: return NSLocalizedString("Please wait for token activation to complete.", comment: "token info")
+        case .active: return NSLocalizedString("You should receive notifications.", comment: "token info")
+        case .invalid: fallthrough
+        case .invalidBad: fallthrough
+        case .invalidTopic: fallthrough
+        case .invalidExpired: fallthrough
+        case .invalidUnregistered: fallthrough
+        case .expired:
+            return register
+            ? NSLocalizedString("Register notification token?", comment: "token info")
+            : NSLocalizedString("Please try to disable and re-enable notfications.", comment: "token info")
+        }
+    }
 }
 
 public struct SndFileTransfer: Decodable, Hashable {
