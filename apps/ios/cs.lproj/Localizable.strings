@@ -2036,7 +2036,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Více chatovacích profilů";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "Ztlumit";
 
 /* No comment provided by engineer. */
@@ -3124,7 +3124,7 @@
 /* authentication reason */
 "Unlock app" = "Odemknout aplikaci";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "Zrušit ztlumení";
 
 /* swipe action */

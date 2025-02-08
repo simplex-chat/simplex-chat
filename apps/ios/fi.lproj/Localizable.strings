@@ -1988,7 +1988,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Useita keskusteluprofiileja";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "Mykistä";
 
 /* No comment provided by engineer. */
@@ -3058,7 +3058,7 @@
 /* authentication reason */
 "Unlock app" = "Avaa sovellus";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "Poista mykistys";
 
 /* swipe action */

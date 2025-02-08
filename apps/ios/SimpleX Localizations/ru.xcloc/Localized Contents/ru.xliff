@@ -206,9 +206,9 @@
         <target>%d сек</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
+      <trans-unit id="%d seconds(s)" xml:space="preserve">
         <source>%d seconds(s)</source>
-        <target state="translated">%d секунд</target>
+        <target>%d секунд</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -500,9 +500,9 @@
         <note>delete after time
    time interval</note>
       </trans-unit>
-      <trans-unit id="1 year" xml:space="preserve" approved="no">
+      <trans-unit id="1 year" xml:space="preserve">
         <source>1 year</source>
-        <target state="translated">1 год</target>
+        <target>1 год</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve">
@@ -541,6 +541,14 @@
         <target>&lt;p&gt;Привет!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Соединитесь со мной в SimpleX Chat.&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
+      </trans-unit>
+      <trans-unit id="@%@" xml:space="preserve">
+        <source>@%@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="@'%@'" xml:space="preserve">
+        <source>@'%@'</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
         <source>A few more things</source>
@@ -642,6 +650,10 @@
         <target>Ошибки подтверждения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Active" xml:space="preserve">
+        <source>Active</source>
+        <note>token status text</note>
+      </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve">
         <source>Active connections</source>
         <target>Активные соединения</target>
@@ -657,9 +669,9 @@
         <target>Добавить друзей</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add list" xml:space="preserve" approved="no">
+      <trans-unit id="Add list" xml:space="preserve">
         <source>Add list</source>
-        <target state="translated">Добавить список</target>
+        <target>Добавить список</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -687,9 +699,9 @@
         <target>Добавить на другое устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add to list" xml:space="preserve" approved="no">
+      <trans-unit id="Add to list" xml:space="preserve">
         <source>Add to list</source>
-        <target state="translated">Добавить в список</target>
+        <target>Добавить в список</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve">
@@ -767,9 +779,9 @@
         <target>Настройки сети</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All" xml:space="preserve" approved="no">
+      <trans-unit id="All" xml:space="preserve">
         <source>All</source>
-        <target state="translated">Все</target>
+        <target>Все</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
@@ -981,9 +993,9 @@
         <target>Будет создан пустой профиль чата с указанным именем, и приложение откроется в обычном режиме.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Another reason" xml:space="preserve" approved="no">
+      <trans-unit id="Another reason" xml:space="preserve">
         <source>Another reason</source>
-        <target state="translated">Другая причина</target>
+        <target>Другая причина</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
@@ -1060,9 +1072,9 @@
         <target>Применить к</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive" xml:space="preserve" approved="no">
+      <trans-unit id="Archive" xml:space="preserve">
         <source>Archive</source>
-        <target state="translated">Архивировать</target>
+        <target>Архивировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive and upload" xml:space="preserve">
@@ -1075,14 +1087,14 @@
         <target>Архивируйте контакты чтобы продолжить переписку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report" xml:space="preserve" approved="no">
+      <trans-unit id="Archive report" xml:space="preserve">
         <source>Archive report</source>
-        <target state="translated">Архивировать отчет</target>
+        <target>Архивировать отчет</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report?" xml:space="preserve" approved="no">
+      <trans-unit id="Archive report?" xml:space="preserve">
         <source>Archive report?</source>
-        <target state="translated">Архивировать отчет?</target>
+        <target>Архивировать отчет?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -1781,6 +1793,10 @@
         <source>Confirm upload</source>
         <target>Подтвердить загрузку</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirmed" xml:space="preserve">
+        <source>Confirmed</source>
+        <note>token status text</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
         <source>Connect</source>
@@ -3138,6 +3154,10 @@ This is your own one-time link!</source>
         <target>Ошибка при смене на Инкогнито!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error checking token status" xml:space="preserve">
+        <source>Error checking token status</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
         <source>Error connecting to forwarding server %@. Please try later.</source>
         <target>Ошибка подключения к пересылающему серверу %@. Попробуйте позже.</target>
@@ -3291,6 +3311,10 @@ This is your own one-time link!</source>
         <target>Ошибка переподключения к серверам</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error registering for notifications" xml:space="preserve">
+        <source>Error registering for notifications</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
         <source>Error removing member</source>
         <target>Ошибка при удалении члена группы</target>
@@ -3394,6 +3418,10 @@ This is your own one-time link!</source>
         <target>Ошибка синхронизации соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error testing server connection" xml:space="preserve">
+        <source>Error testing server connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
         <source>Error updating group link</source>
         <target>Ошибка обновления ссылки группы</target>
@@ -3473,6 +3501,10 @@ This is your own one-time link!</source>
         <source>Expand</source>
         <target>Раскрыть</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Expired" xml:space="preserve">
+        <source>Expired</source>
+        <note>token status text</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
         <source>Export database</source>
@@ -4228,6 +4260,26 @@ More improvements are coming soon!</source>
         <target>Цвета интерфейса</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid" xml:space="preserve">
+        <source>Invalid</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (bad token)" xml:space="preserve">
+        <source>Invalid (bad token)</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (expired)" xml:space="preserve">
+        <source>Invalid (expired)</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (unregistered)" xml:space="preserve">
+        <source>Invalid (unregistered)</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (wrong topic)" xml:space="preserve">
+        <source>Invalid (wrong topic)</source>
+        <note>token status text</note>
+      </trans-unit>
       <trans-unit id="Invalid QR code" xml:space="preserve">
         <source>Invalid QR code</source>
         <target>Неверный QR код</target>
@@ -4909,7 +4961,11 @@ This is your link for group %@!</source>
       <trans-unit id="Mute" xml:space="preserve">
         <source>Mute</source>
         <target>Без звука</target>
-        <note>swipe action</note>
+        <note>notification label action</note>
+      </trans-unit>
+      <trans-unit id="Mute all" xml:space="preserve">
+        <source>Mute all</source>
+        <note>notification label action</note>
       </trans-unit>
       <trans-unit id="Muted when inactive!" xml:space="preserve">
         <source>Muted when inactive!</source>
@@ -4960,6 +5016,10 @@ This is your link for group %@!</source>
         <source>Network status</source>
         <target>Состояние сети</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New" xml:space="preserve">
+        <source>New</source>
+        <note>token status text</note>
       </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
@@ -5168,6 +5228,10 @@ This is your link for group %@!</source>
         <target>Нет серверов для отправки файлов.</target>
         <note>servers error</note>
       </trans-unit>
+      <trans-unit id="No token!" xml:space="preserve">
+        <source>No token!</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="No unread chats" xml:space="preserve">
         <source>No unread chats</source>
         <note>No comment provided by engineer.</note>
@@ -5206,10 +5270,18 @@ This is your link for group %@!</source>
         <target>Уведомления выключены</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Notifications error" xml:space="preserve">
+        <source>Notifications error</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Notifications privacy" xml:space="preserve">
         <source>Notifications privacy</source>
         <target>Конфиденциальность уведомлений</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Notifications status" xml:space="preserve">
+        <source>Notifications status</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
         <source>Now admins can:
@@ -5640,6 +5712,18 @@ Error: %@</source>
         <target>Пожалуйста, надежно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please try to disable and re-enable notfications." xml:space="preserve">
+        <source>Please try to disable and re-enable notfications.</source>
+        <note>token info</note>
+      </trans-unit>
+      <trans-unit id="Please wait for token activation to complete." xml:space="preserve">
+        <source>Please wait for token activation to complete.</source>
+        <note>token info</note>
+      </trans-unit>
+      <trans-unit id="Please wait for token to be registered." xml:space="preserve">
+        <source>Please wait for token to be registered.</source>
+        <note>token info</note>
+      </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
         <target>Польский интерфейс</target>
@@ -6031,6 +6115,18 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Reduced battery usage</source>
         <target>Уменьшенное потребление батареи</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Register" xml:space="preserve">
+        <source>Register</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Register notification token?" xml:space="preserve">
+        <source>Register notification token?</source>
+        <note>token info</note>
+      </trans-unit>
+      <trans-unit id="Registered" xml:space="preserve">
+        <source>Registered</source>
+        <note>token status text</note>
       </trans-unit>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
@@ -7286,6 +7382,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Таймаут TCP соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="TCP port for messaging" xml:space="preserve">
+        <source>TCP port for messaging</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="TCP_KEEPCNT" xml:space="preserve">
         <source>TCP_KEEPCNT</source>
         <target>TCP_KEEPCNT</target>
@@ -7360,6 +7460,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Test failed at step %@.</source>
         <target>Ошибка теста на шаге %@.</target>
         <note>server test failure</note>
+      </trans-unit>
+      <trans-unit id="Test notifications" xml:space="preserve">
+        <source>Test notifications</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve">
         <source>Test server</source>
@@ -7733,6 +7837,10 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Установите режим Инкогнито при соединении.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Token status: %@." xml:space="preserve">
+        <source>Token status: %@.</source>
+        <note>token status</note>
+      </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
         <target>Прозрачность тулбара</target>
@@ -7898,7 +8006,7 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Unmute" xml:space="preserve">
         <source>Unmute</source>
         <target>Уведомлять</target>
-        <note>swipe action</note>
+        <note>notification label action</note>
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
         <source>Unread</source>
@@ -7990,6 +8098,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать серверы предосталенные SimpleX Chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port %@ when no port is specified." xml:space="preserve">
+        <source>Use TCP port %@ when no port is specified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Использовать чат</target>
@@ -8063,6 +8175,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
         <target>Используйте приложение одной рукой.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use web port" xml:space="preserve">
+        <source>Use web port</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
@@ -8617,6 +8733,10 @@ Repeat connection request?</source>
         <source>You sent group invitation</source>
         <target>Вы отправили приглашение в группу</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You should receive notifications." xml:space="preserve">
+        <source>You should receive notifications.</source>
+        <note>token info</note>
       </trans-unit>
       <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
@@ -9412,11 +9532,6 @@ Repeat connection request?</source>
         <target>месяцев</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="mute" xml:space="preserve">
-        <source>mute</source>
-        <target>без звука</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>
         <target>никогда</target>
@@ -9641,11 +9756,6 @@ last received msg: %2$@</source>
       <trans-unit id="unknown status" xml:space="preserve">
         <source>unknown status</source>
         <target>неизвестный статус</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="unmute" xml:space="preserve">
-        <source>unmute</source>
-        <target>уведомлять</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unprotected" xml:space="preserve">

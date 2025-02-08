@@ -2201,7 +2201,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "複数チャットのプロフィール";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "ミュート";
 
 /* No comment provided by engineer. */
@@ -3256,7 +3256,7 @@
 /* authentication reason */
 "Unlock app" = "アプリのロック解除";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "ミュート解除";
 
 /* swipe action */

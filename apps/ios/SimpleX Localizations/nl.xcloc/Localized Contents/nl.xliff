@@ -12,9 +12,9 @@
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="   " xml:space="preserve" approved="no">
+      <trans-unit id="   " xml:space="preserve">
         <source>   </source>
-        <target state="translated">   </target>
+        <target>   </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" (" xml:space="preserve">
@@ -207,9 +207,9 @@
         <target>%d sec</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
+      <trans-unit id="%d seconds(s)" xml:space="preserve">
         <source>%d seconds(s)</source>
-        <target state="translated">%d seconden</target>
+        <target>%d seconden</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -501,9 +501,9 @@
         <note>delete after time
    time interval</note>
       </trans-unit>
-      <trans-unit id="1 year" xml:space="preserve" approved="no">
+      <trans-unit id="1 year" xml:space="preserve">
         <source>1 year</source>
-        <target state="translated">1 jaar</target>
+        <target>1 jaar</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve">
@@ -542,6 +542,14 @@
         <target>&lt;p&gt;Hoi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Maak verbinding met mij via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
+      </trans-unit>
+      <trans-unit id="@%@" xml:space="preserve">
+        <source>@%@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="@'%@'" xml:space="preserve">
+        <source>@'%@'</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
         <source>A few more things</source>
@@ -643,6 +651,10 @@
         <target>Bevestigingsfouten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Active" xml:space="preserve">
+        <source>Active</source>
+        <note>token status text</note>
+      </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve">
         <source>Active connections</source>
         <target>Actieve verbindingen</target>
@@ -658,9 +670,9 @@
         <target>Vrienden toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add list" xml:space="preserve" approved="no">
+      <trans-unit id="Add list" xml:space="preserve">
         <source>Add list</source>
-        <target state="translated">Lijst toevoegen</target>
+        <target>Lijst toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add profile" xml:space="preserve">
@@ -688,9 +700,9 @@
         <target>Toevoegen aan een ander apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add to list" xml:space="preserve" approved="no">
+      <trans-unit id="Add to list" xml:space="preserve">
         <source>Add to list</source>
-        <target state="translated">Toevoegen aan lijst</target>
+        <target>Toevoegen aan lijst</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add welcome message" xml:space="preserve">
@@ -768,9 +780,9 @@
         <target>Geavanceerde instellingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All" xml:space="preserve" approved="no">
+      <trans-unit id="All" xml:space="preserve">
         <source>All</source>
-        <target state="translated">alle</target>
+        <target>alle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
@@ -783,9 +795,9 @@
         <target>Alle chats en berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats will be removed from the list (text), and the list deleted." xml:space="preserve" approved="no">
+      <trans-unit id="All chats will be removed from the list (text), and the list deleted." xml:space="preserve">
         <source>All chats will be removed from the list (text), and the list deleted.</source>
-        <target state="translated">Alle chats worden uit de lijst (tekst) verwijderd en de lijst wordt verwijderd.</target>
+        <target>Alle chats worden uit de lijst (tekst) verwijderd en de lijst wordt verwijderd.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -983,9 +995,9 @@
         <target>Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Another reason" xml:space="preserve" approved="no">
+      <trans-unit id="Another reason" xml:space="preserve">
         <source>Another reason</source>
-        <target state="translated">Een andere reden</target>
+        <target>Een andere reden</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Answer call" xml:space="preserve">
@@ -1013,9 +1025,9 @@
         <target>App versleutelt nieuwe lokale bestanden (behalve video's).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App group:" xml:space="preserve" approved="no">
+      <trans-unit id="App group:" xml:space="preserve">
         <source>App group:</source>
-        <target state="translated">App-groep:</target>
+        <target>App-groep:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App icon" xml:space="preserve">
@@ -1063,9 +1075,9 @@
         <target>Toepassen op</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive" xml:space="preserve" approved="no">
+      <trans-unit id="Archive" xml:space="preserve">
         <source>Archive</source>
-        <target state="translated">Archief</target>
+        <target>Archief</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive and upload" xml:space="preserve">
@@ -1078,14 +1090,14 @@
         <target>Archiveer contacten om later te chatten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report" xml:space="preserve" approved="no">
+      <trans-unit id="Archive report" xml:space="preserve">
         <source>Archive report</source>
-        <target state="translated">Rapport archiveren</target>
+        <target>Rapport archiveren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive report?" xml:space="preserve" approved="no">
+      <trans-unit id="Archive report?" xml:space="preserve">
         <source>Archive report?</source>
-        <target state="translated">Rapport archiveren?</target>
+        <target>Rapport archiveren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -1098,9 +1110,9 @@
         <target>Database archiveren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ask" xml:space="preserve" approved="no">
+      <trans-unit id="Ask" xml:space="preserve">
         <source>Ask</source>
-        <target state="translated">Vragen</target>
+        <target>Vragen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -1323,9 +1335,9 @@
         <target>Zakelijke chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Businesses" xml:space="preserve" approved="no">
+      <trans-unit id="Businesses" xml:space="preserve">
         <source>Businesses</source>
-        <target state="translated">bedrijven</target>
+        <target>bedrijven</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." xml:space="preserve">
@@ -1419,9 +1431,9 @@
         <target>Veranderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change automatic message deletion?" xml:space="preserve" approved="no">
+      <trans-unit id="Change automatic message deletion?" xml:space="preserve">
         <source>Change automatic message deletion?</source>
-        <target state="translated">Automatisch verwijderen van berichten wijzigen?</target>
+        <target>Automatisch verwijderen van berichten wijzigen?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Change chat profiles" xml:space="preserve">
@@ -1645,9 +1657,9 @@
         <target>Gesprek wissen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear or delete group?" xml:space="preserve" approved="no">
+      <trans-unit id="Clear or delete group?" xml:space="preserve">
         <source>Clear or delete group?</source>
-        <target state="translated">Groep wissen of verwijderen?</target>
+        <target>Groep wissen of verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear private notes?" xml:space="preserve">
@@ -1670,9 +1682,9 @@
         <target>Kleur mode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Community guidelines violation" xml:space="preserve" approved="no">
+      <trans-unit id="Community guidelines violation" xml:space="preserve">
         <source>Community guidelines violation</source>
-        <target state="translated">Schending van de communityrichtlijnen</target>
+        <target>Schending van de communityrichtlijnen</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Compare file" xml:space="preserve">
@@ -1789,6 +1801,10 @@
         <source>Confirm upload</source>
         <target>Bevestig het uploaden</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirmed" xml:space="preserve">
+        <source>Confirmed</source>
+        <note>token status text</note>
       </trans-unit>
       <trans-unit id="Connect" xml:space="preserve">
         <source>Connect</source>
@@ -1909,9 +1925,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbindings- en serverstatus.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection blocked" xml:space="preserve" approved="no">
+      <trans-unit id="Connection blocked" xml:space="preserve">
         <source>Connection blocked</source>
-        <target state="translated">Verbinding geblokkeerd</target>
+        <target>Verbinding geblokkeerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -1924,16 +1940,16 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbindingsfout (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve" approved="no">
+      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
         <source>Connection is blocked by server operator:
 %@</source>
-        <target state="translated">Verbinding is geblokkeerd door serveroperator:
+        <target>Verbinding is geblokkeerd door serveroperator:
 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection not ready." xml:space="preserve" approved="no">
+      <trans-unit id="Connection not ready." xml:space="preserve">
         <source>Connection not ready.</source>
-        <target state="translated">Verbinding nog niet klaar.</target>
+        <target>Verbinding nog niet klaar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection notifications" xml:space="preserve">
@@ -1946,9 +1962,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbindingsverzoek verzonden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve" approved="no">
+      <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve">
         <source>Connection requires encryption renegotiation.</source>
-        <target state="translated">Verbinding vereist heronderhandeling over encryptie.</target>
+        <target>Verbinding vereist heronderhandeling over encryptie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection security" xml:space="preserve">
@@ -2031,9 +2047,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Contact personen kunnen berichten markeren voor verwijdering; u kunt ze wel bekijken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Content violates conditions of use" xml:space="preserve" approved="no">
+      <trans-unit id="Content violates conditions of use" xml:space="preserve">
         <source>Content violates conditions of use</source>
-        <target state="translated">Inhoud schendt de gebruiksvoorwaarden</target>
+        <target>Inhoud schendt de gebruiksvoorwaarden</target>
         <note>blocking reason</note>
       </trans-unit>
       <trans-unit id="Continue" xml:space="preserve">
@@ -2111,9 +2127,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Maak link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create list" xml:space="preserve" approved="no">
+      <trans-unit id="Create list" xml:space="preserve">
         <source>Create list</source>
-        <target state="translated">Maak een lijst</target>
+        <target>Maak een lijst</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
@@ -2375,9 +2391,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Chat verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat messages from your device." xml:space="preserve" approved="no">
+      <trans-unit id="Delete chat messages from your device." xml:space="preserve">
         <source>Delete chat messages from your device.</source>
-        <target state="translated">Verwijder chatberichten van uw apparaat.</target>
+        <target>Verwijder chatberichten van uw apparaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete chat profile" xml:space="preserve">
@@ -2470,9 +2486,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Link verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete list?" xml:space="preserve" approved="no">
+      <trans-unit id="Delete list?" xml:space="preserve">
         <source>Delete list?</source>
-        <target state="translated">Lijst verwijderen?</target>
+        <target>Lijst verwijderen?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete member message?" xml:space="preserve">
@@ -2525,9 +2541,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Wachtrij verwijderen</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete report" xml:space="preserve" approved="no">
+      <trans-unit id="Delete report" xml:space="preserve">
         <source>Delete report</source>
-        <target state="translated">Rapport verwijderen</target>
+        <target>Rapport verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
@@ -2690,14 +2706,14 @@ Dit is uw eigen eenmalige link!</target>
         <target>SimpleX Vergrendelen uitschakelen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Disable automatic message deletion?" xml:space="preserve" approved="no">
+      <trans-unit id="Disable automatic message deletion?" xml:space="preserve">
         <source>Disable automatic message deletion?</source>
-        <target state="translated">Automatisch verwijderen van berichten uitschakelen?</target>
+        <target>Automatisch verwijderen van berichten uitschakelen?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Disable delete messages" xml:space="preserve" approved="no">
+      <trans-unit id="Disable delete messages" xml:space="preserve">
         <source>Disable delete messages</source>
-        <target state="translated">Berichten verwijderen uitschakelen</target>
+        <target>Berichten verwijderen uitschakelen</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
@@ -2790,9 +2806,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Gebruik geen inloggegevens met proxy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Documents:" xml:space="preserve" approved="no">
+      <trans-unit id="Documents:" xml:space="preserve">
         <source>Documents:</source>
-        <target state="translated">Documenten:</target>
+        <target>Documenten:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2810,9 +2826,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Niet meer weergeven</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Done" xml:space="preserve" approved="no">
+      <trans-unit id="Done" xml:space="preserve">
         <source>Done</source>
-        <target state="translated">Klaar</target>
+        <target>Klaar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Downgrade and open chat" xml:space="preserve">
@@ -3046,9 +3062,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Opnieuw onderhandelen over de codering is mislukt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encryption renegotiation in progress." xml:space="preserve" approved="no">
+      <trans-unit id="Encryption renegotiation in progress." xml:space="preserve">
         <source>Encryption renegotiation in progress.</source>
-        <target state="translated">Er wordt opnieuw onderhandeld over de encryptie.</target>
+        <target>Er wordt opnieuw onderhandeld over de encryptie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
@@ -3161,6 +3177,10 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij het overschakelen naar incognito!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error checking token status" xml:space="preserve">
+        <source>Error checking token status</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
         <source>Error connecting to forwarding server %@. Please try later.</source>
         <target>Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.</target>
@@ -3181,9 +3201,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij maken van groep link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating list" xml:space="preserve" approved="no">
+      <trans-unit id="Error creating list" xml:space="preserve">
         <source>Error creating list</source>
-        <target state="translated">Fout bij het aanmaken van de lijst</target>
+        <target>Fout bij het aanmaken van de lijst</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error creating member contact" xml:space="preserve">
@@ -3201,9 +3221,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij aanmaken van profiel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating report" xml:space="preserve" approved="no">
+      <trans-unit id="Error creating report" xml:space="preserve">
         <source>Error creating report</source>
-        <target state="translated">Fout bij maken van rapport</target>
+        <target>Fout bij maken van rapport</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error decrypting file" xml:space="preserve">
@@ -3316,14 +3336,18 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij opnieuw verbinden van servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error registering for notifications" xml:space="preserve">
+        <source>Error registering for notifications</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
         <source>Error removing member</source>
         <target>Fout bij verwijderen van lid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error reordering lists" xml:space="preserve" approved="no">
+      <trans-unit id="Error reordering lists" xml:space="preserve">
         <source>Error reordering lists</source>
-        <target state="translated">Fout bij het opnieuw ordenen van lijsten</target>
+        <target>Fout bij het opnieuw ordenen van lijsten</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error resetting statistics" xml:space="preserve">
@@ -3336,9 +3360,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij opslaan van ICE servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving chat list" xml:space="preserve" approved="no">
+      <trans-unit id="Error saving chat list" xml:space="preserve">
         <source>Error saving chat list</source>
-        <target state="translated">Fout bij het opslaan van chatlijst</target>
+        <target>Fout bij het opslaan van chatlijst</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error saving group profile" xml:space="preserve">
@@ -3421,6 +3445,10 @@ Dit is uw eigen eenmalige link!</target>
         <target>Fout bij het synchroniseren van de verbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error testing server connection" xml:space="preserve">
+        <source>Error testing server connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
         <source>Error updating group link</source>
         <target>Fout bij bijwerken van groep link</target>
@@ -3501,6 +3529,10 @@ Dit is uw eigen eenmalige link!</target>
         <target>Uitklappen</target>
         <note>chat item action</note>
       </trans-unit>
+      <trans-unit id="Expired" xml:space="preserve">
+        <source>Expired</source>
+        <note>token status text</note>
+      </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
         <source>Export database</source>
         <target>Database exporteren</target>
@@ -3551,9 +3583,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Favoriet</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Favorites" xml:space="preserve" approved="no">
+      <trans-unit id="Favorites" xml:space="preserve">
         <source>Favorites</source>
-        <target state="translated">Favorieten</target>
+        <target>Favorieten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
@@ -3568,10 +3600,10 @@ Dit is uw eigen eenmalige link!</target>
 %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="File is blocked by server operator:&#10;(info.reason.text)." xml:space="preserve" approved="no">
+      <trans-unit id="File is blocked by server operator:&#10;(info.reason.text)." xml:space="preserve">
         <source>File is blocked by server operator:
 (info.reason.text).</source>
-        <target state="translated">Bestand is geblokkeerd door serveroperator:
+        <target>Bestand is geblokkeerd door serveroperator:
 (info.reason.text).</target>
         <note>file error text</note>
       </trans-unit>
@@ -3944,9 +3976,9 @@ Fout: %2$@</target>
         <target>De groep wordt voor u verwijderd, dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Groups" xml:space="preserve" approved="no">
+      <trans-unit id="Groups" xml:space="preserve">
         <source>Groups</source>
-        <target state="translated">Groepen</target>
+        <target>Groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve">
@@ -4014,9 +4046,9 @@ Fout: %2$@</target>
         <target>Hoe het de privacy helpt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How it works" xml:space="preserve" approved="no">
+      <trans-unit id="How it works" xml:space="preserve">
         <source>How it works</source>
-        <target state="translated">Hoe het werkt</target>
+        <target>Hoe het werkt</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="How to" xml:space="preserve">
@@ -4161,14 +4193,14 @@ Binnenkort meer verbeteringen!</target>
         <target>Geluiden tijdens het bellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Inappropriate content" xml:space="preserve" approved="no">
+      <trans-unit id="Inappropriate content" xml:space="preserve">
         <source>Inappropriate content</source>
-        <target state="translated">Ongepaste inhoud</target>
+        <target>Ongepaste inhoud</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Inappropriate profile" xml:space="preserve" approved="no">
+      <trans-unit id="Inappropriate profile" xml:space="preserve">
         <source>Inappropriate profile</source>
-        <target state="translated">Ongepast profiel</target>
+        <target>Ongepast profiel</target>
         <note>report reason</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -4262,6 +4294,26 @@ Binnenkort meer verbeteringen!</target>
         <source>Interface colors</source>
         <target>Interface kleuren</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invalid" xml:space="preserve">
+        <source>Invalid</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (bad token)" xml:space="preserve">
+        <source>Invalid (bad token)</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (expired)" xml:space="preserve">
+        <source>Invalid (expired)</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (unregistered)" xml:space="preserve">
+        <source>Invalid (unregistered)</source>
+        <note>token status text</note>
+      </trans-unit>
+      <trans-unit id="Invalid (wrong topic)" xml:space="preserve">
+        <source>Invalid (wrong topic)</source>
+        <note>token status text</note>
       </trans-unit>
       <trans-unit id="Invalid QR code" xml:space="preserve">
         <source>Invalid QR code</source>
@@ -4536,19 +4588,19 @@ Dit is jouw link voor groep %@!</target>
         <target>Gelinkte desktops</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="List" xml:space="preserve" approved="no">
+      <trans-unit id="List" xml:space="preserve">
         <source>List</source>
-        <target state="translated">Lijst</target>
+        <target>Lijst</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="List name and emoji should be different for all lists." xml:space="preserve" approved="no">
+      <trans-unit id="List name and emoji should be different for all lists." xml:space="preserve">
         <source>List name and emoji should be different for all lists.</source>
-        <target state="translated">De naam en emoji van de lijst moeten voor alle lijsten verschillend zijn.</target>
+        <target>De naam en emoji van de lijst moeten voor alle lijsten verschillend zijn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="List name..." xml:space="preserve" approved="no">
+      <trans-unit id="List name..." xml:space="preserve">
         <source>List name...</source>
-        <target state="translated">Naam van lijst...</target>
+        <target>Naam van lijst...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Live message!" xml:space="preserve">
@@ -4811,9 +4863,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Berichten van %@ worden getoond!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve" approved="no">
+      <trans-unit id="Messages in this chat will never be deleted." xml:space="preserve">
         <source>Messages in this chat will never be deleted.</source>
-        <target state="translated">Berichten in deze chat zullen nooit worden verwijderd.</target>
+        <target>Berichten in deze chat zullen nooit worden verwijderd.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Messages received" xml:space="preserve">
@@ -4916,9 +4968,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Gemodereerd op: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="More" xml:space="preserve" approved="no">
+      <trans-unit id="More" xml:space="preserve">
         <source>More</source>
-        <target state="translated">Meer</target>
+        <target>Meer</target>
         <note>swipe action</note>
       </trans-unit>
       <trans-unit id="More improvements are coming soon!" xml:space="preserve">
@@ -4949,7 +5001,11 @@ Dit is jouw link voor groep %@!</target>
       <trans-unit id="Mute" xml:space="preserve">
         <source>Mute</source>
         <target>Dempen</target>
-        <note>swipe action</note>
+        <note>notification label action</note>
+      </trans-unit>
+      <trans-unit id="Mute all" xml:space="preserve">
+        <source>Mute all</source>
+        <note>notification label action</note>
       </trans-unit>
       <trans-unit id="Muted when inactive!" xml:space="preserve">
         <source>Muted when inactive!</source>
@@ -5000,6 +5056,10 @@ Dit is jouw link voor groep %@!</target>
         <source>Network status</source>
         <target>Netwerk status</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="New" xml:space="preserve">
+        <source>New</source>
+        <note>token status text</note>
       </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
@@ -5091,19 +5151,19 @@ Dit is jouw link voor groep %@!</target>
         <target>Geen app wachtwoord</target>
         <note>Authentication unavailable</note>
       </trans-unit>
-      <trans-unit id="No chats" xml:space="preserve" approved="no">
+      <trans-unit id="No chats" xml:space="preserve">
         <source>No chats</source>
-        <target state="translated">Geen chats</target>
+        <target>Geen chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No chats found" xml:space="preserve" approved="no">
+      <trans-unit id="No chats found" xml:space="preserve">
         <source>No chats found</source>
-        <target state="translated">Geen chats gevonden</target>
+        <target>Geen chats gevonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No chats in list %@" xml:space="preserve" approved="no">
+      <trans-unit id="No chats in list %@" xml:space="preserve">
         <source>No chats in list %@</source>
-        <target state="translated">Geen chats in lijst %@</target>
+        <target>Geen chats in lijst %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No contacts selected" xml:space="preserve">
@@ -5211,9 +5271,13 @@ Dit is jouw link voor groep %@!</target>
         <target>Geen servers om bestanden te verzenden.</target>
         <note>servers error</note>
       </trans-unit>
-      <trans-unit id="No unread chats" xml:space="preserve" approved="no">
+      <trans-unit id="No token!" xml:space="preserve">
+        <source>No token!</source>
+        <note>alert title</note>
+      </trans-unit>
+      <trans-unit id="No unread chats" xml:space="preserve">
         <source>No unread chats</source>
-        <target state="translated">Geen ongelezen chats</target>
+        <target>Geen ongelezen chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No user identifiers." xml:space="preserve">
@@ -5226,9 +5290,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Niet compatibel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Notes" xml:space="preserve" approved="no">
+      <trans-unit id="Notes" xml:space="preserve">
         <source>Notes</source>
-        <target state="translated">Notities</target>
+        <target>Notities</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Nothing selected" xml:space="preserve">
@@ -5251,10 +5315,18 @@ Dit is jouw link voor groep %@!</target>
         <target>Meldingen zijn uitgeschakeld!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Notifications error" xml:space="preserve">
+        <source>Notifications error</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Notifications privacy" xml:space="preserve">
         <source>Notifications privacy</source>
         <target>Privacy van meldingen</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Notifications status" xml:space="preserve">
+        <source>Notifications status</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
         <source>Now admins can:
@@ -5339,14 +5411,14 @@ Vereist het inschakelen van VPN.</target>
         <target>Alleen groep eigenaren kunnen spraak berichten inschakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only sender and moderators see it" xml:space="preserve" approved="no">
+      <trans-unit id="Only sender and moderators see it" xml:space="preserve">
         <source>Only sender and moderators see it</source>
-        <target state="translated">Alleen de verzender en moderators zien het</target>
+        <target>Alleen de verzender en moderators zien het</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you and moderators see it" xml:space="preserve" approved="no">
+      <trans-unit id="Only you and moderators see it" xml:space="preserve">
         <source>Only you and moderators see it</source>
-        <target state="translated">Alleen jij en moderators zien het</target>
+        <target>Alleen jij en moderators zien het</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can add message reactions." xml:space="preserve">
@@ -5434,14 +5506,14 @@ Vereist het inschakelen van VPN.</target>
         <target>Open groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open link" xml:space="preserve" approved="no">
+      <trans-unit id="Open link" xml:space="preserve">
         <source>Open link</source>
-        <target state="translated">Link openen</target>
+        <target>Link openen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open links from chat list" xml:space="preserve" approved="no">
+      <trans-unit id="Open links from chat list" xml:space="preserve">
         <source>Open links from chat list</source>
-        <target state="translated">Open links van chatlijst</target>
+        <target>Open links van chatlijst</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open migration to another device" xml:space="preserve">
@@ -5449,9 +5521,9 @@ Vereist het inschakelen van VPN.</target>
         <target>Open de migratie naar een ander apparaat</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open web link?" xml:space="preserve" approved="no">
+      <trans-unit id="Open web link?" xml:space="preserve">
         <source>Open web link?</source>
-        <target state="translated">Weblink openen?</target>
+        <target>Weblink openen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
@@ -5689,6 +5761,18 @@ Fout: %@</target>
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
         <target>Bewaar het wachtwoord veilig, u kunt deze NIET wijzigen als u het kwijtraakt.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please try to disable and re-enable notfications." xml:space="preserve">
+        <source>Please try to disable and re-enable notfications.</source>
+        <note>token info</note>
+      </trans-unit>
+      <trans-unit id="Please wait for token activation to complete." xml:space="preserve">
+        <source>Please wait for token activation to complete.</source>
+        <note>token info</note>
+      </trans-unit>
+      <trans-unit id="Please wait for token to be registered." xml:space="preserve">
+        <source>Please wait for token to be registered.</source>
+        <note>token info</note>
       </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
@@ -6082,6 +6166,18 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Verminderd batterijgebruik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Register" xml:space="preserve">
+        <source>Register</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Register notification token?" xml:space="preserve">
+        <source>Register notification token?</source>
+        <note>token info</note>
+      </trans-unit>
+      <trans-unit id="Registered" xml:space="preserve">
+        <source>Registered</source>
+        <note>token status text</note>
+      </trans-unit>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
         <target>Afwijzen</target>
@@ -6183,44 +6279,44 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Antwoord</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Report" xml:space="preserve" approved="no">
+      <trans-unit id="Report" xml:space="preserve">
         <source>Report</source>
-        <target state="translated">Rapport</target>
+        <target>Rapport</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Report content: only group moderators will see it." xml:space="preserve" approved="no">
+      <trans-unit id="Report content: only group moderators will see it." xml:space="preserve">
         <source>Report content: only group moderators will see it.</source>
-        <target state="translated">Inhoud melden: alleen groepsmoderators kunnen dit zien.</target>
+        <target>Inhoud melden: alleen groepsmoderators kunnen dit zien.</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Report member profile: only group moderators will see it." xml:space="preserve" approved="no">
+      <trans-unit id="Report member profile: only group moderators will see it." xml:space="preserve">
         <source>Report member profile: only group moderators will see it.</source>
-        <target state="translated">Rapporteer ledenprofiel: alleen groepsmoderators kunnen dit zien.</target>
+        <target>Rapporteer ledenprofiel: alleen groepsmoderators kunnen dit zien.</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Report other: only group moderators will see it." xml:space="preserve" approved="no">
+      <trans-unit id="Report other: only group moderators will see it." xml:space="preserve">
         <source>Report other: only group moderators will see it.</source>
-        <target state="translated">Anders melden: alleen groepsmoderators kunnen het zien.</target>
+        <target>Anders melden: alleen groepsmoderators kunnen het zien.</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Report reason?" xml:space="preserve" approved="no">
+      <trans-unit id="Report reason?" xml:space="preserve">
         <source>Report reason?</source>
-        <target state="translated">Reden melding?</target>
+        <target>Reden melding?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Report spam: only group moderators will see it." xml:space="preserve" approved="no">
+      <trans-unit id="Report spam: only group moderators will see it." xml:space="preserve">
         <source>Report spam: only group moderators will see it.</source>
-        <target state="translated">Spam melden: alleen groepsmoderators kunnen het zien.</target>
+        <target>Spam melden: alleen groepsmoderators kunnen het zien.</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Report violation: only group moderators will see it." xml:space="preserve" approved="no">
+      <trans-unit id="Report violation: only group moderators will see it." xml:space="preserve">
         <source>Report violation: only group moderators will see it.</source>
-        <target state="translated">Rapporteer overtreding: alleen groepsmoderators kunnen dit zien.</target>
+        <target>Rapporteer overtreding: alleen groepsmoderators kunnen dit zien.</target>
         <note>report reason</note>
       </trans-unit>
-      <trans-unit id="Reports" xml:space="preserve" approved="no">
+      <trans-unit id="Reports" xml:space="preserve">
         <source>Reports</source>
-        <target state="translated">Rapporten</target>
+        <target>Rapporten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Required" xml:space="preserve">
@@ -6399,9 +6495,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Groep profiel opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save list" xml:space="preserve" approved="no">
+      <trans-unit id="Save list" xml:space="preserve">
         <source>Save list</source>
-        <target state="translated">Lijst opslaan</target>
+        <target>Lijst opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save passphrase and open chat" xml:space="preserve">
@@ -6859,9 +6955,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Stel 1 dag in</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set chat name…" xml:space="preserve" approved="no">
+      <trans-unit id="Set chat name…" xml:space="preserve">
         <source>Set chat name…</source>
-        <target state="translated">Stel chatnaam in…</target>
+        <target>Stel chatnaam in…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set contact name…" xml:space="preserve">
@@ -7192,9 +7288,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Iemand</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Spam" xml:space="preserve" approved="no">
+      <trans-unit id="Spam" xml:space="preserve">
         <source>Spam</source>
-        <target state="translated">Spam</target>
+        <target>Spam</target>
         <note>blocking reason
    report reason</note>
       </trans-unit>
@@ -7283,9 +7379,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Chat stoppen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Storage" xml:space="preserve" approved="no">
+      <trans-unit id="Storage" xml:space="preserve">
         <source>Storage</source>
-        <target state="translated">Opslag</target>
+        <target>Opslag</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Strong" xml:space="preserve">
@@ -7346,6 +7442,10 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
         <source>TCP connection timeout</source>
         <target>Timeout van TCP-verbinding</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP port for messaging" xml:space="preserve">
+        <source>TCP port for messaging</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP_KEEPCNT" xml:space="preserve">
@@ -7422,6 +7522,10 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <source>Test failed at step %@.</source>
         <target>Test mislukt bij stap %@.</target>
         <note>server test failure</note>
+      </trans-unit>
+      <trans-unit id="Test notifications" xml:space="preserve">
+        <source>Test notifications</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test server" xml:space="preserve">
         <source>Test server</source>
@@ -7550,9 +7654,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Het profiel wordt alleen gedeeld met uw contacten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The report will be archived for you." xml:space="preserve" approved="no">
+      <trans-unit id="The report will be archived for you." xml:space="preserve">
         <source>The report will be archived for you.</source>
-        <target state="translated">Het rapport wordt voor u gearchiveerd.</target>
+        <target>Het rapport wordt voor u gearchiveerd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
@@ -7630,9 +7734,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze actie kan niet ongedaan worden gemaakt, de berichten die eerder zijn verzonden en ontvangen dan geselecteerd, worden verwijderd. Het kan enkele minuten duren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target state="translated">Deze actie kan niet ongedaan worden gemaakt. De berichten die eerder in deze chat zijn verzonden en ontvangen dan geselecteerd, worden verwijderd.</target>
+        <target>Deze actie kan niet ongedaan worden gemaakt. De berichten die eerder in deze chat zijn verzonden en ontvangen dan geselecteerd, worden verwijderd.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -7796,6 +7900,10 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <source>Toggle incognito when connecting.</source>
         <target>Schakel incognito in tijdens het verbinden.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Token status: %@." xml:space="preserve">
+        <source>Token status: %@.</source>
+        <note>token status</note>
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
@@ -7962,7 +8070,7 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="Unmute" xml:space="preserve">
         <source>Unmute</source>
         <target>Dempen opheffen</target>
-        <note>swipe action</note>
+        <note>notification label action</note>
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
         <source>Unread</source>
@@ -8054,6 +8162,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>SimpleX Chat servers gebruiken?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use TCP port %@ when no port is specified." xml:space="preserve">
+        <source>Use TCP port %@ when no port is specified.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use chat" xml:space="preserve">
         <source>Use chat</source>
         <target>Gebruik chat</target>
@@ -8127,6 +8239,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="Use the app with one hand." xml:space="preserve">
         <source>Use the app with one hand.</source>
         <target>Gebruik de app met één hand.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use web port" xml:space="preserve">
+        <source>Use web port</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
@@ -8409,9 +8525,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>XFTP server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Yes" xml:space="preserve" approved="no">
+      <trans-unit id="Yes" xml:space="preserve">
         <source>Yes</source>
-        <target state="translated">Ja</target>
+        <target>Ja</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You **must not** use the same database on two devices." xml:space="preserve">
@@ -8683,6 +8799,10 @@ Verbindingsverzoek herhalen?</target>
         <target>Je hebt een groep uitnodiging verzonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You should receive notifications." xml:space="preserve">
+        <source>You should receive notifications.</source>
+        <note>token info</note>
+      </trans-unit>
       <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
         <target>Je wordt verbonden met de groep wanneer het apparaat van de groep host online is, even geduld a.u.b. of controleer het later!</target>
@@ -8948,9 +9068,9 @@ Verbindingsverzoek herhalen?</target>
         <target>en %lld andere gebeurtenissen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="archived report" xml:space="preserve" approved="no">
+      <trans-unit id="archived report" xml:space="preserve">
         <source>archived report</source>
-        <target state="translated">gearchiveerd rapport</target>
+        <target>gearchiveerd rapport</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="attempts" xml:space="preserve">
@@ -9469,20 +9589,15 @@ Verbindingsverzoek herhalen?</target>
         <target>gemodereerd door %@</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
-      <trans-unit id="moderator" xml:space="preserve" approved="no">
+      <trans-unit id="moderator" xml:space="preserve">
         <source>moderator</source>
-        <target state="translated">moderator</target>
+        <target>moderator</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="months" xml:space="preserve">
         <source>months</source>
         <target>maanden</target>
         <note>time unit</note>
-      </trans-unit>
-      <trans-unit id="mute" xml:space="preserve">
-        <source>mute</source>
-        <target>dempen</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>
@@ -9708,11 +9823,6 @@ laatst ontvangen bericht: %2$@</target>
       <trans-unit id="unknown status" xml:space="preserve">
         <source>unknown status</source>
         <target>onbekende status</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="unmute" xml:space="preserve">
-        <source>unmute</source>
-        <target>dempen opheffen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unprotected" xml:space="preserve">
