@@ -90,6 +90,7 @@ struct GroupPreferencesView: View {
                 settingsRow(icon, color: color) {
                     Toggle(feature.text, isOn: enable)
                 }
+                .disabled(feature == .reports) // remove in 6.4
                 if timedOn {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
