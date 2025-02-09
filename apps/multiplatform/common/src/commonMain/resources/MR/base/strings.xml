@@ -312,7 +312,12 @@
   <string name="message_deleted_or_not_received_error_desc">This message was deleted or not received yet.</string>
   <string name="report_reason_alert_title">Report reason?</string>
   <string name="report_archive_alert_title">Archive report?</string>
+  <string name="report_archive_alert_title_nth">Archive %d reports?</string>
+  <string name="report_archive_alert_title_all">Archive all reports?</string>
   <string name="report_archive_alert_desc">The report will be archived for you.</string>
+  <string name="report_archive_alert_desc_all">All reports will be archived for you.</string>
+  <string name="report_archive_for_me">For me</string>
+  <string name="report_archive_for_all_moderators">For all moderators</string>
 
   <!-- CIStatus errors -->
   <string name="ci_status_other_error">Error: %1$s</string>
@@ -341,6 +346,7 @@
   <string name="search_verb">Search</string>
   <string name="archive_verb">Archive</string>
   <string name="archive_report">Archive report</string>
+  <string name="archive_reports">Archive reports</string>
   <string name="delete_report">Delete report</string>
   <string name="sent_message">Sent message</string>
   <string name="received_message">Received message</string>

@@ -1071,6 +1071,20 @@ object ChatController {
     return null
   }
 
+  suspend fun apiArchiveReceivedReports(rh: Long?, groupId: Long): CR.GroupChatItemsDeleted? {
+    val r = sendCmd(rh, CC.ApiArchiveReceivedReports(groupId))
+    if (r is CR.GroupChatItemsDeleted) return r
+    Log.e(TAG, "apiArchiveReceivedReports bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiDeleteReceivedReports(rh: Long?, groupId: Long, itemIds: List<Long>, mode: CIDeleteMode): List<ChatItemDeletion>? {
+    val r = sendCmd(rh, CC.ApiDeleteReceivedReports(groupId, itemIds, mode))
+    if (r is CR.ChatItemsDeleted) return r.chatItemDeletions
+    Log.e(TAG, "apiDeleteReceivedReports bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun testProtoServer(rh: Long?, server: String): ProtocolTestFailure? {
     val userId = currentUserId("testProtoServer")
     val r = sendCmd(rh, CC.APITestProtoServer(userId, server))
@@ -2619,54 +2633,7 @@ object ChatController {
         }
       }
       is CR.GroupChatItemsDeleted -> {
-        if (!active(r.user)) {
-          val users = chatController.listUsers(rhId)
-          chatModel.users.clear()
-          chatModel.users.addAll(users)
-          return
-        }
-        val cInfo = ChatInfo.Group(r.groupInfo)
-        withChats {
-          r.chatItemIDs.forEach { itemId ->
-            decreaseGroupReportsCounter(rhId, cInfo.id)
-            val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
-            if (chatModel.chatId.value != null) {
-              // Stop voice playback only inside a chat, allow to play in a chat list
-              AudioPlayer.stop(cItem)
-            }
-            val isLastChatItem = getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
-            if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
-              ntfManager.cancelNotificationsForChat(cInfo.id)
-              ntfManager.displayNotification(
-                r.user,
-                cInfo.id,
-                cInfo.displayName,
-                generalGetString(MR.strings.marked_deleted_description)
-              )
-            }
-            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
-              CIDeleted.Moderated(Clock.System.now(), r.member_)
-            } else {
-              CIDeleted.Deleted(Clock.System.now())
-            }
-            upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
-          }
-        }
-        withReportsChatsIfOpen {
-          r.chatItemIDs.forEach { itemId ->
-            val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
-            if (chatModel.chatId.value != null) {
-              // Stop voice playback only inside a chat, allow to play in a chat list
-              AudioPlayer.stop(cItem)
-            }
-            val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
-              CIDeleted.Moderated(Clock.System.now(), r.member_)
-            } else {
-              CIDeleted.Deleted(Clock.System.now())
-            }
-            upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
-          }
-        }
+        groupChatItemsDeleted(rhId, r)
       }
       is CR.ReceivedGroupInvitation -> {
         if (active(r.user)) {
@@ -3150,6 +3117,57 @@ object ChatController {
     }
   }
 
+  suspend fun groupChatItemsDeleted(rhId: Long?, r: CR.GroupChatItemsDeleted) {
+    if (!activeUser(rhId, r.user)) {
+      val users = chatController.listUsers(rhId)
+      chatModel.users.clear()
+      chatModel.users.addAll(users)
+      return
+    }
+    val cInfo = ChatInfo.Group(r.groupInfo)
+    withChats {
+      r.chatItemIDs.forEach { itemId ->
+        decreaseGroupReportsCounter(rhId, cInfo.id)
+        val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
+        if (chatModel.chatId.value != null) {
+          // Stop voice playback only inside a chat, allow to play in a chat list
+          AudioPlayer.stop(cItem)
+        }
+        val isLastChatItem = getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
+        if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
+          ntfManager.cancelNotificationsForChat(cInfo.id)
+          ntfManager.displayNotification(
+            r.user,
+            cInfo.id,
+            cInfo.displayName,
+            generalGetString(MR.strings.marked_deleted_description)
+          )
+        }
+        val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+          CIDeleted.Moderated(Clock.System.now(), r.member_)
+        } else {
+          CIDeleted.Deleted(Clock.System.now())
+        }
+        upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+      }
+    }
+    withReportsChatsIfOpen {
+      r.chatItemIDs.forEach { itemId ->
+        val cItem = chatItems.value.lastOrNull { it.id == itemId } ?: return@forEach
+        if (chatModel.chatId.value != null) {
+          // Stop voice playback only inside a chat, allow to play in a chat list
+          AudioPlayer.stop(cItem)
+        }
+        val deleted = if (r.member_ != null && (cItem.chatDir as CIDirection.GroupRcv?)?.groupMember?.groupMemberId != r.member_.groupMemberId) {
+          CIDeleted.Moderated(Clock.System.now(), r.member_)
+        } else {
+          CIDeleted.Deleted(Clock.System.now())
+        }
+        upsertChatItem(rhId, cInfo, cItem.copy(meta = cItem.meta.copy(itemDeleted = deleted)))
+      }
+    }
+  }
+
   private suspend fun chatItemUpdateNotify(rh: Long?, user: UserLike, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
@@ -3375,6 +3393,8 @@ sealed class CC {
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val updatedMessage: UpdatedMessage, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
+  class ApiArchiveReceivedReports(val groupId: Long): CC()
+  class ApiDeleteReceivedReports(val groupId: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
   class ApiGetReactionMembers(val userId: Long, val groupId: Long, val itemId: Long, val reaction: MsgReaction): CC()
   class ApiPlanForwardChatItems(val fromChatType: ChatType, val fromChatId: Long, val chatItemIds: List<Long>): CC()
@@ -3553,6 +3573,8 @@ sealed class CC {
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${updatedMessage.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
+    is ApiArchiveReceivedReports -> "/_archive reports $groupId"
+    is ApiDeleteReceivedReports -> "/_delete reports $groupId ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
     is ApiGetReactionMembers -> "/_reaction members $userId #$groupId $itemId ${json.encodeToString(reaction)}"
     is ApiForwardChatItems -> {
@@ -3719,6 +3741,8 @@ sealed class CC {
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"
+    is ApiArchiveReceivedReports -> "apiArchiveReceivedReports"
+    is ApiDeleteReceivedReports -> "apiDeleteReceivedReports"
     is ApiChatItemReaction -> "apiChatItemReaction"
     is ApiGetReactionMembers -> "apiGetReactionMembers"
     is ApiForwardChatItems -> "apiForwardChatItems"

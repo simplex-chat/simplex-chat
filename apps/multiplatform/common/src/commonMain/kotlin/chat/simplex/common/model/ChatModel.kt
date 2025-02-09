@@ -851,8 +851,8 @@ object ChatModel {
       changeGroupReportsCounter(rhId, chatId, 1)
     }
 
-    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId) {
-      changeGroupReportsCounter(rhId, chatId, -1)
+    fun decreaseGroupReportsCounter(rhId: Long?, chatId: ChatId, by: Int = 1) {
+      changeGroupReportsCounter(rhId, chatId, -by)
     }
 
     private fun changeGroupReportsCounter(rhId: Long?, chatId: ChatId, by: Int = 0) {

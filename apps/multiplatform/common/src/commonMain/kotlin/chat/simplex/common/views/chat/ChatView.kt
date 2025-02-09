@@ -196,6 +196,7 @@ fun ChatView(
                       )
                     }
                   },
+                  archiveItems = { archiveItems(chatRh, chatInfo, selectedChatItems) },
                   moderateItems = {
                     if (chatInfo is ChatInfo.Group) {
                       val itemIds = selectedChatItems.value
@@ -397,6 +398,7 @@ fun ChatView(
               }
             },
             deleteMessages = { itemIds -> deleteMessages(chatRh, chatInfo, itemIds, false, moderate = false) },
+            archiveReports = { itemIds, forAll -> archiveReports(chatRh, chatInfo, itemIds, forAll) },
             receiveFile = { fileId ->
               withBGApi { chatModel.controller.receiveFile(chatRh, user, fileId) }
             },
@@ -673,6 +675,7 @@ fun ChatLayout(
   loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
+  archiveReports: (List<Long>, Boolean) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
@@ -745,7 +748,7 @@ fun ChatLayout(
               }) {
                 ChatItemsList(
                   remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
-                  useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages,
+                  useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
                   receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
                   setReaction, showItemDetails, markItemsRead, markChatRead, remember { { onComposed(it) } }, developerTools, showViaProxy,
@@ -792,6 +795,7 @@ fun ChatLayout(
                         })
                       }
                     },
+                    archiveItems = { archiveItems(remoteHostId, chatInfo, selectedChatItems) },
                     moderateItems = {},
                     forwardItems = {}
                   )
@@ -1138,6 +1142,7 @@ fun BoxScope.ChatItemsList(
   loadMessages: suspend (ChatId, ChatPagination, visibleItemIndexesNonReversed: () -> IntRange) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
+  archiveReports: (List<Long>, Boolean) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
@@ -1291,7 +1296,7 @@ fun BoxScope.ChatItemsList(
                   highlightedItems.value = setOf()
                 }
             }
-            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+            ChatItemView(remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, range = range, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
           }
         }
 
@@ -2368,6 +2373,59 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
   }
 }
 
+private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long>, forAll: Boolean, onSuccess: () -> Unit = {}) {
+  if (itemIds.isNotEmpty()) {
+    withBGApi {
+      val deleted = chatModel.controller.apiDeleteReceivedReports(
+        chatRh,
+        groupId = chatInfo.apiId,
+        itemIds = itemIds,
+        mode = if (forAll) CIDeleteMode.cidmBroadcast else CIDeleteMode.cidmInternalMark
+      )
+      if (deleted != null) {
+        withChats {
+          for (di in deleted) {
+            val toChatItem = di.toChatItem?.chatItem
+            if (toChatItem != null) {
+              upsertChatItem(chatRh, chatInfo, toChatItem)
+            } else {
+              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+            }
+            val deletedItem = di.deletedChatItem.chatItem
+            if (deletedItem.isActiveReport) {
+              decreaseGroupReportsCounter(chatRh, chatInfo.id)
+            }
+          }
+        }
+        withReportsChatsIfOpen {
+          for (di in deleted) {
+            if (di.deletedChatItem.chatItem.isReport) {
+              val toChatItem = di.toChatItem?.chatItem
+              if (toChatItem != null) {
+                upsertChatItem(chatRh, chatInfo, toChatItem)
+              } else {
+                removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+              }
+            }
+          }
+        }
+        onSuccess()
+      }
+    }
+  }
+}
+
+private fun archiveItems(rhId: Long?, chatInfo: ChatInfo, selectedChatItems: MutableState<Set<Long>?>) {
+  val itemIds = selectedChatItems.value
+  if (itemIds != null) {
+    showArchiveReportsAlert(itemIds.sorted(), archiveReports = { ids, forAll ->
+      archiveReports(rhId, chatInfo, ids, forAll) {
+        selectedChatItems.value = null
+      }
+    })
+  }
+}
+
 private fun markUnreadChatAsRead(chatId: String) {
   val chat = chatModel.chats.value.firstOrNull { it.id == chatId }
   if (chat?.chatStats?.unreadChat != true) return
@@ -2716,6 +2774,7 @@ fun PreviewChatLayout() {
       loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
+      archiveReports = { _, _ -> },
       receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
@@ -2791,6 +2850,7 @@ fun PreviewGroupChatLayout() {
       loadMessages = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       deleteMessages = {},
+      archiveReports = { _, _ -> },
       receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
