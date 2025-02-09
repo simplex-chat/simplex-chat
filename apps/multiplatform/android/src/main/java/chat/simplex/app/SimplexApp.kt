@@ -71,6 +71,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initHaskell(packageName)
     initMultiplatform()
+    reconfigureBroadcastReceivers()
     runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
@@ -216,6 +217,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           appPrefs.backgroundServiceNoticeShown.set(false)
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+        SimplexService.AppUpdateReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
         CoroutineScope(Dispatchers.Default).launch {
           if (mode == NotificationsMode.SERVICE) {
             SimplexService.start()
@@ -371,4 +373,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
   }
+
+  // Make sure that receivers enabled state is in actual state (same as in prefs)
+  private fun reconfigureBroadcastReceivers() {
+    val mode = appPrefs.notificationsMode.get()
+    SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+    SimplexService.AppUpdateReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)}
 }
