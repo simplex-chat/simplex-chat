@@ -173,6 +173,7 @@ private fun FeatureSection(
         feature.text,
         icon,
         iconTint,
+        disabled = feature == GroupFeature.Reports, // remove in 6.4
         checked = enableFeature.value == GroupFeatureEnabled.ON,
       ) { checked ->
         onSelected(if (checked) GroupFeatureEnabled.ON else GroupFeatureEnabled.OFF, enableForRole?.value)
