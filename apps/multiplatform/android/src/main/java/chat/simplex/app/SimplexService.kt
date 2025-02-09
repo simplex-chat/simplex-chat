@@ -249,6 +249,29 @@ class SimplexService: Service() {
     }
   }
 
+  // restart on app update
+  class AppUpdateReceiver: BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      // If notification service is enabled and battery optimization is disabled, restart the service on app update
+      if (SimplexApp.context.allowToStartServiceAfterAppExit()) {
+        Log.d(TAG, "AppUpdateReceiver: onReceive called")
+        scheduleStart(context)
+      }
+    }
+
+    companion object {
+      fun toggleReceiver(enable: Boolean) {
+        Log.d(TAG, "AppUpdateReceiver: toggleReceiver enabled: $enable")
+        val component = ComponentName(BuildConfig.APPLICATION_ID, AppUpdateReceiver::class.java.name)
+        SimplexApp.context.packageManager.setComponentEnabledSetting(
+          component,
+          if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+          PackageManager.DONT_KILL_APP
+        )
+      }
+    }
+  }
+
   class ServiceStartWorker(private val context: Context, params: WorkerParameters): CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
       val id = this.id
@@ -694,6 +717,7 @@ class SimplexService: Service() {
       }
       ChatController.appPrefs.notificationsMode.set(NotificationsMode.OFF)
       StartReceiver.toggleReceiver(false)
+      AppUpdateReceiver.toggleReceiver(false)
       androidAppContext.getWorkManagerInstance().cancelUniqueWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
       MessagesFetcherWorker.cancelAll()
       safeStopService()
