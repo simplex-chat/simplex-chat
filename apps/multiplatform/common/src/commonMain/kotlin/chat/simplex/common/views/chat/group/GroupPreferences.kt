@@ -137,6 +137,10 @@ private fun GroupPreferencesLayout(
     FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
+    val enableReports = remember(preferences) { mutableStateOf(preferences.reports.enable) }
+    FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(reports = GroupPreference(enable = enable)))
+    }
     if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       ResetSaveButtons(

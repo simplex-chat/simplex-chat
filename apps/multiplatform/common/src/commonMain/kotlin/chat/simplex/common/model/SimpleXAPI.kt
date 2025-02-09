@@ -5160,7 +5160,8 @@ enum class GroupFeature: Feature {
   @SerialName("voice") Voice,
   @SerialName("files") Files,
   @SerialName("simplexLinks") SimplexLinks,
-  @SerialName("history") History;
+  @SerialName("history") History,
+  @SerialName("reports") Reports;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -5177,6 +5178,7 @@ enum class GroupFeature: Feature {
       Files -> true
       SimplexLinks -> true
       History -> false
+      Reports -> false
     }
 
   override val text: String
@@ -5189,6 +5191,7 @@ enum class GroupFeature: Feature {
       Files -> generalGetString(MR.strings.files_and_media)
       SimplexLinks -> generalGetString(MR.strings.simplex_links)
       History -> generalGetString(MR.strings.recent_history)
+      Reports -> generalGetString(MR.strings.group_reports_member_reports)
     }
 
   val icon: Painter
@@ -5201,6 +5204,7 @@ enum class GroupFeature: Feature {
       Files -> painterResource(MR.images.ic_draft)
       SimplexLinks -> painterResource(MR.images.ic_link)
       History -> painterResource(MR.images.ic_schedule)
+      Reports -> painterResource(MR.images.ic_flag)
     }
 
   @Composable
@@ -5213,6 +5217,7 @@ enum class GroupFeature: Feature {
     Files -> painterResource(MR.images.ic_draft_filled)
     SimplexLinks -> painterResource(MR.images.ic_link)
     History -> painterResource(MR.images.ic_schedule_filled)
+    Reports -> painterResource(MR.images.ic_flag_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
@@ -5250,6 +5255,10 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_recent_history)
         }
+        Reports -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_member_reports)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_member_reports)
+        }
       }
     } else {
       when(this) {
@@ -5284,6 +5293,10 @@ enum class GroupFeature: Feature {
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.recent_history_is_not_sent_to_new_members)
+        }
+        Reports -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_reports)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.member_reports_are_prohibited)
         }
       }
     }
@@ -5401,6 +5414,7 @@ data class FullGroupPreferences(
   val files: RoleGroupPreference,
   val simplexLinks: RoleGroupPreference,
   val history: GroupPreference,
+  val reports: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
     GroupPreferences(
@@ -5411,7 +5425,8 @@ data class FullGroupPreferences(
       voice = voice,
       files = files,
       simplexLinks = simplexLinks,
-      history = history
+      history = history,
+      reports = reports,
     )
 
   companion object {
@@ -5424,6 +5439,7 @@ data class FullGroupPreferences(
       files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       history = GroupPreference(GroupFeatureEnabled.ON),
+      reports = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }
@@ -5438,6 +5454,7 @@ data class GroupPreferences(
   val files: RoleGroupPreference? = null,
   val simplexLinks: RoleGroupPreference? = null,
   val history: GroupPreference? = null,
+  val reports: GroupPreference? = null,
 ) {
   companion object {
     val sampleData = GroupPreferences(
@@ -5449,6 +5466,7 @@ data class GroupPreferences(
       files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       history = GroupPreference(GroupFeatureEnabled.ON),
+      reports = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }

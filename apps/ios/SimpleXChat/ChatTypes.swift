@@ -712,6 +712,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
     case files
     case simplexLinks
     case history
+    case reports
 
     public var id: Self { self }
 
@@ -732,6 +733,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .files: true
         case .simplexLinks: true
         case .history: false
+        case .reports: false
         }
     }
 
@@ -745,6 +747,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .files: return NSLocalizedString("Files and media", comment: "chat feature")
         case .simplexLinks: return NSLocalizedString("SimpleX links", comment: "chat feature")
         case .history: return NSLocalizedString("Visible history", comment: "chat feature")
+        case .reports: return NSLocalizedString("Member reports", comment: "chat feature")
         }
     }
 
@@ -758,6 +761,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .files: return "doc"
         case .simplexLinks: return "link.circle"
         case .history: return "clock"
+        case .reports: return "flag"
         }
     }
 
@@ -771,6 +775,7 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
         case .files: return "doc.fill"
         case .simplexLinks: return "link.circle.fill"
         case .history: return "clock.fill"
+        case .reports: return "flag.fill"
         }
     }
 
@@ -824,6 +829,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 case .on: return "Send up to 100 last messages to new members."
                 case .off: return "Do not send history to new members."
                 }
+            case .reports:
+                switch enabled {
+                case .on: return "Allow to report messsages to moderators."
+                case .off: return "Prohibit reporting messages to moderators."
+                }
             }
         } else {
             switch self {
@@ -866,6 +876,11 @@ public enum GroupFeature: String, Decodable, Feature, Hashable {
                 switch enabled {
                 case .on: return "Up to 100 last messages are sent to new members."
                 case .off: return "History is not sent to new members."
+                }
+            case .reports:
+                switch enabled {
+                case .on: return "Members can report messsages to moderators."
+                case .off: return "Reporting messages to moderators is prohibited."
                 }
             }
         }
@@ -1008,6 +1023,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var files: RoleGroupPreference
     public var simplexLinks: RoleGroupPreference
     public var history: GroupPreference
+    public var reports: GroupPreference
 
     public init(
         timedMessages: TimedMessagesGroupPreference,
@@ -1017,7 +1033,8 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         voice: RoleGroupPreference,
         files: RoleGroupPreference,
         simplexLinks: RoleGroupPreference,
-        history: GroupPreference
+        history: GroupPreference,
+        reports: GroupPreference
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
@@ -1027,6 +1044,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.files = files
         self.simplexLinks = simplexLinks
         self.history = history
+        self.reports = reports
     }
 
     public static let sampleData = FullGroupPreferences(
@@ -1037,7 +1055,8 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         voice: RoleGroupPreference(enable: .on, role: nil),
         files: RoleGroupPreference(enable: .on, role: nil),
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
-        history: GroupPreference(enable: .on)
+        history: GroupPreference(enable: .on),
+        reports: GroupPreference(enable: .on)
     )
 }
 
@@ -1050,6 +1069,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var files: RoleGroupPreference?
     public var simplexLinks: RoleGroupPreference?
     public var history: GroupPreference?
+    public var reports: GroupPreference?
 
     public init(
         timedMessages: TimedMessagesGroupPreference? = nil,
@@ -1059,7 +1079,8 @@ public struct GroupPreferences: Codable, Hashable {
         voice: RoleGroupPreference? = nil,
         files: RoleGroupPreference? = nil,
         simplexLinks: RoleGroupPreference? = nil,
-        history: GroupPreference? = nil
+        history: GroupPreference? = nil,
+        reports: GroupPreference? = nil
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
@@ -1069,6 +1090,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.files = files
         self.simplexLinks = simplexLinks
         self.history = history
+        self.reports = reports
     }
 
     public static let sampleData = GroupPreferences(
@@ -1079,7 +1101,8 @@ public struct GroupPreferences: Codable, Hashable {
         voice: RoleGroupPreference(enable: .on, role: nil),
         files: RoleGroupPreference(enable: .on, role: nil),
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
-        history: GroupPreference(enable: .on)
+        history: GroupPreference(enable: .on),
+        reports: GroupPreference(enable: .on)
     )
 }
 
@@ -1092,7 +1115,8 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         voice: fullPreferences.voice,
         files: fullPreferences.files,
         simplexLinks: fullPreferences.simplexLinks,
-        history: fullPreferences.history
+        history: fullPreferences.history,
+        reports: fullPreferences.reports
     )
 }
 

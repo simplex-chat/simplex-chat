@@ -1729,7 +1729,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
               Nothing -> createContentItem
       where
-        rejected f = void $ newChatItem (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
+        rejected f = newChatItem (ciContentNoParse $ CIRcvGroupFeatureRejected f) Nothing Nothing False
         timed' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
         live' = fromMaybe False live_
         ExtMsgContent content mentions fInv_ itemTTL live_ = mcExtMsgContent mc
