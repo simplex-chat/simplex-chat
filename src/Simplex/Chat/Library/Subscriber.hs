@@ -1720,7 +1720,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> CM ()
     newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded
       | blockedByAdmin m = createBlockedByAdmin
-      | otherwise = case prohibitedGroupContent gInfo m content ft_ fInv_ of
+      | otherwise = case prohibitedGroupContent gInfo m content ft_ fInv_ False of
           Just f -> rejected f
           Nothing ->
             withStore' (\db -> getCIModeration db vr user gInfo memberId sharedMsgId_) >>= \case

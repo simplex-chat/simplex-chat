@@ -1235,6 +1235,7 @@ data class Chat(
         GroupFeature.Voice -> p.voice.on(groupInfo.membership)
         GroupFeature.Files -> p.files.on(groupInfo.membership)
         GroupFeature.SimplexLinks -> p.simplexLinks.on(groupInfo.membership)
+        GroupFeature.Reports -> p.reports.on
         GroupFeature.History -> p.history.on
       }
     } else {

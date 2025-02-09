@@ -37,8 +37,8 @@ struct GroupPreferencesView: View {
                 featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
                 featureSection(.files, $preferences.files.enable, $preferences.files.role)
                 featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
-                featureSection(.history, $preferences.history.enable)
                 featureSection(.reports, $preferences.reports.enable)
+                featureSection(.history, $preferences.history.enable)
 
                 if groupInfo.isOwner {
                     Section {

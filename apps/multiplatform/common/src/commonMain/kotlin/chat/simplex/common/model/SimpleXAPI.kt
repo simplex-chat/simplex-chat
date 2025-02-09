@@ -5160,8 +5160,8 @@ enum class GroupFeature: Feature {
   @SerialName("voice") Voice,
   @SerialName("files") Files,
   @SerialName("simplexLinks") SimplexLinks,
-  @SerialName("history") History,
-  @SerialName("reports") Reports;
+  @SerialName("reports") Reports,
+  @SerialName("history") History;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -5177,8 +5177,8 @@ enum class GroupFeature: Feature {
       Voice -> true
       Files -> true
       SimplexLinks -> true
-      History -> false
       Reports -> false
+      History -> false
     }
 
   override val text: String
@@ -5190,8 +5190,8 @@ enum class GroupFeature: Feature {
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
       SimplexLinks -> generalGetString(MR.strings.simplex_links)
-      History -> generalGetString(MR.strings.recent_history)
       Reports -> generalGetString(MR.strings.group_reports_member_reports)
+      History -> generalGetString(MR.strings.recent_history)
     }
 
   val icon: Painter
@@ -5203,8 +5203,8 @@ enum class GroupFeature: Feature {
       Voice -> painterResource(MR.images.ic_keyboard_voice)
       Files -> painterResource(MR.images.ic_draft)
       SimplexLinks -> painterResource(MR.images.ic_link)
-      History -> painterResource(MR.images.ic_schedule)
       Reports -> painterResource(MR.images.ic_flag)
+      History -> painterResource(MR.images.ic_schedule)
     }
 
   @Composable
@@ -5216,8 +5216,8 @@ enum class GroupFeature: Feature {
     Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
     Files -> painterResource(MR.images.ic_draft_filled)
     SimplexLinks -> painterResource(MR.images.ic_link)
-    History -> painterResource(MR.images.ic_schedule_filled)
     Reports -> painterResource(MR.images.ic_flag_filled)
+    History -> painterResource(MR.images.ic_schedule_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
@@ -5251,13 +5251,13 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_simplex_links)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_simplex_links)
         }
-        History -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_recent_history)
-        }
         Reports -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_member_reports)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_member_reports)
+        }
+        History -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_recent_history)
         }
       }
     } else {
@@ -5290,13 +5290,13 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_simplex_links)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.simplex_links_are_prohibited_in_group)
         }
-        History -> when(enabled) {
-          GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
-          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.recent_history_is_not_sent_to_new_members)
-        }
         Reports -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_reports)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.member_reports_are_prohibited)
+        }
+        History -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.recent_history_is_not_sent_to_new_members)
         }
       }
     }
@@ -5413,8 +5413,8 @@ data class FullGroupPreferences(
   val voice: RoleGroupPreference,
   val files: RoleGroupPreference,
   val simplexLinks: RoleGroupPreference,
-  val history: GroupPreference,
   val reports: GroupPreference,
+  val history: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
     GroupPreferences(
@@ -5425,8 +5425,8 @@ data class FullGroupPreferences(
       voice = voice,
       files = files,
       simplexLinks = simplexLinks,
-      history = history,
       reports = reports,
+      history = history,
     )
 
   companion object {
@@ -5438,8 +5438,8 @@ data class FullGroupPreferences(
       voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
-      history = GroupPreference(GroupFeatureEnabled.ON),
       reports = GroupPreference(GroupFeatureEnabled.ON),
+      history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }
@@ -5453,8 +5453,8 @@ data class GroupPreferences(
   val voice: RoleGroupPreference? = null,
   val files: RoleGroupPreference? = null,
   val simplexLinks: RoleGroupPreference? = null,
-  val history: GroupPreference? = null,
   val reports: GroupPreference? = null,
+  val history: GroupPreference? = null,
 ) {
   companion object {
     val sampleData = GroupPreferences(
@@ -5465,8 +5465,8 @@ data class GroupPreferences(
       voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
-      history = GroupPreference(GroupFeatureEnabled.ON),
       reports = GroupPreference(GroupFeatureEnabled.ON),
+      history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }

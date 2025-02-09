@@ -133,13 +133,13 @@ private fun GroupPreferencesLayout(
     }
 
     SectionDividerSpaced(true, maxBottomPadding = false)
-    val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
-    FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
-      applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
-    }
     val enableReports = remember(preferences) { mutableStateOf(preferences.reports.enable) }
     FeatureSection(GroupFeature.Reports, enableReports, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
       applyPrefs(preferences.copy(reports = GroupPreference(enable = enable)))
+    }
+    val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
+    FeatureSection(GroupFeature.History, enableHistory, null, groupInfo, preferences, onTTLUpdated) { enable, _ ->
+      applyPrefs(preferences.copy(history = GroupPreference(enable = enable)))
     }
     if (groupInfo.isOwner) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
