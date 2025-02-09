@@ -5978,7 +5978,7 @@ testGroupMemberReports =
       alice ##> "\\\\ #jokes cath inappropriate joke"
       concurrentlyN_
         [ do
-            alice <## "#jokes: 1 messages deleted by member alice"
+            alice <## "#jokes: 1 messages deleted by user"
             alice <## "message marked deleted by you",
           do
             bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
@@ -5991,6 +5991,77 @@ testGroupMemberReports =
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
+      -- delete all reports locally
+      alice #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      bob #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      dan #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      cath #> "#jokes ok joke"
+      concurrentlyN_
+        [ alice <# "#jokes cath> ok joke",
+          bob <# "#jokes cath> ok joke",
+          dan <# "#jokes cath> ok joke"
+        ]
+      dan ##> "/report #jokes content ok joke"
+      dan <# "#jokes > cath ok joke"
+      dan <## "      report content"
+      dan ##> "/report #jokes spam ok joke"
+      dan <# "#jokes > cath ok joke"
+      dan <## "      report spam"
+      concurrentlyN_
+        [ do
+            alice <# "#jokes dan> > cath ok joke"
+            alice <## "      report content"
+            alice <# "#jokes dan> > cath ok joke"
+            alice <## "      report spam",
+          do
+            bob <# "#jokes dan> > cath ok joke"
+            bob <## "      report content"
+            bob <# "#jokes dan> > cath ok joke"
+            bob <## "      report spam",
+          (cath </)
+        ]
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
+      cath #$> ("/_get chat #1 content=report count=100", chat, [])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content"), (1, "report spam")])
+      alice ##> "/_archive reports 1"
+      alice <## "#jokes: 2 messages deleted by user"
+      (bob </)
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]"), (0, "report spam [marked deleted by you]")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
+      bob ##> "/_archive reports 1"
+      bob <## "#jokes: 2 messages deleted by user"
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]"), (0, "report spam [marked deleted by you]")])
+      -- delete reports for all admins
+      alice #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      bob #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      dan #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      cath #> "#jokes ok joke 2"
+      concurrentlyN_
+        [ alice <# "#jokes cath> ok joke 2",
+          bob <# "#jokes cath> ok joke 2",
+          dan <# "#jokes cath> ok joke 2"
+        ]
+      dan ##> "/report #jokes content ok joke 2"
+      dan <# "#jokes > cath ok joke 2"
+      dan <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#jokes dan> > cath ok joke 2"
+            alice <## "      report content",
+          do
+            bob <# "#jokes dan> > cath ok joke 2"
+            bob <## "      report content",
+          (cath </)
+        ]
+      alice ##> "/last_item_id"
+      i :: ChatItemId <- read <$> getTermLine alice
+      alice ##> ("/_delete reports 1 " <> show i <> " broadcast")
+      alice <## "message marked deleted by you"
+      bob <# "#jokes dan> [marked deleted by alice] report content"
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
 
 testMemberMention :: HasCallStack => TestParams -> IO ()
 testMemberMention =
