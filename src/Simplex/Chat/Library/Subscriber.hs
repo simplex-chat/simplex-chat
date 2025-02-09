@@ -1688,7 +1688,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           mapM_ toView cr_
 
     groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM ()
-    groupMsgReaction g@GroupInfo {groupId} m sharedMsgId itemMemberId reaction add RcvMessage {msgId} brokerTs = do
+    groupMsgReaction g m sharedMsgId itemMemberId reaction add RcvMessage {msgId} brokerTs = do
       when (groupFeatureAllowed SGFReactions g) $ do
         rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId sharedMsgId False
         when (reactionAllowed add reaction rs) $ do
@@ -1697,7 +1697,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         updateChatItemReaction = do
           cr_ <- withStore $ \db -> do
-            CChatItem md ci <- getGroupMemberCIBySharedMsgId db user groupId itemMemberId sharedMsgId
+            CChatItem md ci <- getGroupMemberCIBySharedMsgId db user g itemMemberId sharedMsgId
             if ciReactionAllowed ci
               then liftIO $ do
                 setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
@@ -1816,9 +1816,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             _ -> messageError "x.msg.update: group member attempted invalid message update"
 
     groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe MemberId -> RcvMessage -> UTCTime -> CM ()
-    groupMessageDelete gInfo@GroupInfo {groupId, membership} m@GroupMember {memberId, memberRole = senderRole} sharedMsgId sndMemberId_ RcvMessage {msgId} brokerTs = do
+    groupMessageDelete gInfo@GroupInfo {membership} m@GroupMember {memberId, memberRole = senderRole} sharedMsgId sndMemberId_ RcvMessage {msgId} brokerTs = do
       let msgMemberId = fromMaybe memberId sndMemberId_
-      withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user groupId msgMemberId sharedMsgId) >>= \case
+      withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user gInfo msgMemberId sharedMsgId) >>= \case
         Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> case chatDir of
           CIGroupRcv mem -> case sndMemberId_ of
             -- regular deletion

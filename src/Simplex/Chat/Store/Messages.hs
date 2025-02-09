@@ -2459,8 +2459,8 @@ getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupM
         (userId, groupId, groupMemberId, sharedMsgId)
   getGroupCIWithReactions db user g itemId
 
-getGroupMemberCIBySharedMsgId :: DB.Connection -> User -> GroupId -> MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupMemberCIBySharedMsgId db user@User {userId} groupId memberId sharedMsgId = do
+getGroupMemberCIBySharedMsgId :: DB.Connection -> User -> GroupInfo -> MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupMemberCIBySharedMsgId db user@User {userId} g@GroupInfo {groupId} memberId sharedMsgId = do
   itemId <-
     ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
       DB.query
@@ -2476,7 +2476,7 @@ getGroupMemberCIBySharedMsgId db user@User {userId} groupId memberId sharedMsgId
           LIMIT 1
         |]
         (GCUserMember, userId, groupId, memberId, sharedMsgId)
-  getGroupChatItem db user groupId itemId
+  getGroupCIWithReactions db user g itemId
 
 getGroupChatItemsByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO [CChatItem 'CTGroup]
 getGroupChatItemsByAgentMsgId db user groupId connId msgId = do

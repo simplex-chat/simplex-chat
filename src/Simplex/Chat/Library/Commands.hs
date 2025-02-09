@@ -756,9 +756,12 @@ processChatCommand' vr = \case
             pure $ CRChatItemReaction user add r
           _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
-      withGroupLock "chatItemReaction" chatId $
-        withFastStore (\db -> (,) <$> getGroup db vr user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
-          (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+      withGroupLock "chatItemReaction" chatId $ do
+        (Group g@GroupInfo {membership} ms, CChatItem md ci) <- withFastStore $ \db -> do
+          gr@(Group g _) <- getGroup db vr user chatId
+          (gr,) <$> getGroupCIWithReactions db user g itemId
+        case ci of
+          ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> do
             unless (groupFeatureAllowed SGFReactions g) $
               throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
             unless (ciReactionAllowed ci) $
