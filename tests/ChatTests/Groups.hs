@@ -5984,11 +5984,13 @@ testGroupMemberReports =
             bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
             bob <## "#jokes: 1 messages deleted by member alice",
           cath <# "#jokes cath> [marked deleted by alice] inappropriate joke",
-          dan <# "#jokes cath> [marked deleted by alice] inappropriate joke"
+          do
+            dan <# "#jokes cath> [marked deleted by alice] inappropriate joke"
+            dan <## "#jokes: 1 messages deleted by member alice"
         ]
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
-      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
       -- delete all reports locally
       alice #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
       bob #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
