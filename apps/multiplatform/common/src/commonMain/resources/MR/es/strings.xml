@@ -87,7 +87,7 @@
     <string name="delete_contact_question">¿Eliminar contacto\?</string>
     <string name="delete_message__question">¿Eliminar mensaje\?</string>
     <string name="delete_chat_profile_question">¿Eliminar perfil?</string>
-    <string name="rcv_group_event_group_deleted">grupo eliminado</string>
+    <string name="rcv_group_event_group_deleted">ha eliminado el grupo</string>
     <string name="delete_group_question">¿Eliminar grupo\?</string>
     <string name="delete_messages_after">Eliminar en</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Autenticación de dispositivo desactivada. Puedes habilitar Bloqueo SimpleX en Configuración, después de activar la autenticación de dispositivo.</string>
@@ -169,7 +169,7 @@
     <string name="callstatus_connecting">conectando llamada…</string>
     <string name="allow_accepting_calls_from_lock_screen">Activar llamadas desde la pantalla de bloqueo en Configuración</string>
     <string name="database_encryption_will_be_updated">La contraseña de cifrado de la base de datos será actualizada y almacenada en Keystore.</string>
-    <string name="group_member_status_connecting">conectando</string>
+    <string name="group_member_status_connecting">conectando...</string>
     <string name="group_member_status_creator">creador</string>
     <string name="ttl_min">%d min</string>
     <string name="connection_timeout">Tiempo de conexión agotado</string>
@@ -2332,9 +2332,20 @@
     <string name="chat_item_ttl_year">Un año</string>
     <string name="chat_item_ttl_default">predefinido (%s)</string>
     <string name="network_smp_web_port_section_title">Puerto TCP para mensajes</string>
-    <string name="network_smp_web_port_footer">Usar puerto TCP %1$s cuando no se especifica.</string>
+    <string name="network_smp_web_port_footer">Se usa el puerto TCP %1$s cuando no se ha especificado otro.</string>
     <string name="network_smp_web_port_toggle">Usar puerto web</string>
     <string name="mute_all_chat">Silenciar todo</string>
     <string name="unread_mentions">Menciones sin leer</string>
     <string name="max_group_mentions_per_message_reached">¡Puedes mencionar hasta %1$s miembros por mensaje!</string>
+    <string name="group_members_can_send_reports">Los miembros pueden informar de mensajes a los moderadores.</string>
+    <string name="disable_sending_member_reports">No permitir informar de mensajes a los moderadores.</string>
+    <string name="enable_sending_member_reports">Permitir informar de mensajes a los moderadores.</string>
+    <string name="notification_group_report">Informe: %s</string>
+    <string name="report_archive_alert_title_nth">¿Archivar %d informes?</string>
+    <string name="archive_reports">Archivar informes</string>
+    <string name="report_archive_for_all_moderators">Para todos los moderadores</string>
+    <string name="report_archive_for_me">para mí</string>
+    <string name="member_reports_are_prohibited">No se permite informar de mensajes en este grupo.</string>
+    <string name="report_archive_alert_desc_all">Todos los informes serán archivados para ti.</string>
+    <string name="report_archive_alert_title_all">¿Archivar todos los informes?</string>
 </resources>
