@@ -2453,10 +2453,10 @@ markReceivedGroupReportsDeleted db User {userId} GroupInfo {groupId, membership}
       [sql|
         UPDATE chat_items
         SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = ?
+        WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
         RETURNING chat_item_id
       |]
-      (DBCIDeleted, deletedTs, groupMemberId' membership, currentTs, userId, groupId, MCReport_, DBCINotDeleted, False)
+      (DBCIDeleted, deletedTs, groupMemberId' membership, currentTs, userId, groupId, MCReport_, DBCINotDeleted)
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupInfo -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupMemberId sharedMsgId = do

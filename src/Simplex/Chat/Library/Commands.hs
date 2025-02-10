@@ -3066,7 +3066,7 @@ processChatCommand' vr = \case
             findProhibited :: [ComposedMessageReq] -> Maybe GroupFeature
             findProhibited =
               foldr'
-                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership mc ft fileSource <|> acc)
+                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership mc ft fileSource True <|> acc)
                 Nothing
         processComposedMessages :: CM ChatResponse
         processComposedMessages = do
@@ -3974,6 +3974,7 @@ chatCommandP =
       "/set disappear #" *> (SetGroupTimedMessages <$> displayNameP <*> (A.space *> timedTTLOnOffP)),
       "/set disappear @" *> (SetContactTimedMessages <$> displayNameP <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
+      "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       "/set device name " *> (SetLocalDeviceName <$> textP),
