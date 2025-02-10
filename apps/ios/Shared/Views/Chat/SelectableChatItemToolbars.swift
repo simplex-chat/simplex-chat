@@ -129,7 +129,7 @@ struct SelectedItemsBottomToolbar: View {
                     var (de, dee, ar, me, onlyOwnGroupItems, fe, sel) = r
                     de = de && ci.canBeDeletedForSelf
                     dee = dee && ci.meta.deletable && !ci.localNote && !ci.isReport
-                    ar = ar && ci.isReport && ci.meta.itemDeleted == nil && ci.chatDir != .groupSnd && groupInfo != nil && groupInfo!.membership.memberRole >= .moderator
+                    ar = ar && ci.isActiveReport && ci.chatDir != .groupSnd && groupInfo != nil && groupInfo!.membership.memberRole >= .moderator
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd && !ci.isReport
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil && !ci.isReport
                     fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy && !ci.isReport
