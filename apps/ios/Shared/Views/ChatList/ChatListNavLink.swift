@@ -232,7 +232,7 @@ struct ChatListNavLink: View {
 
                 if showDeleteGroup && totalNumberOfButtons <= 3 {
                     deleteGroupChatButton(groupInfo)
-                } else {
+                } else if totalNumberOfButtons > 3 {
                     moreOptionsButton(!showClearAdjusted, chat, groupInfo)
                 }
             }
