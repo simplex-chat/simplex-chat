@@ -300,11 +300,12 @@ groupFeatures'' dir =
   [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
     ((dir, "Disappearing messages: off"), Nothing, Nothing),
     ((dir, "Direct messages: on"), Nothing, Nothing),
-    ((dir, "Full deletion: on for moderators"), Nothing, Nothing),
+    ((dir, "Full deletion: off"), Nothing, Nothing),
     ((dir, "Message reactions: on"), Nothing, Nothing),
     ((dir, "Voice messages: on"), Nothing, Nothing),
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
+    ((dir, "Member reports: on"), Nothing, Nothing),
     ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 

@@ -2329,4 +2329,7 @@
     <string name="chat_item_ttl_default">типово (%s)</string>
     <string name="change_automatic_deletion_question">Змінити автоматичне видалення повідомлень?</string>
     <string name="change_automatic_chat_deletion_message">Цю дію не можна скасувати — повідомлення, надіслані та отримані в цьому чаті раніше за обраний час, будуть видалені.</string>
+    <string name="network_smp_web_port_section_title">TCP-порт для повідомлень</string>
+    <string name="network_smp_web_port_footer">Використовувати TCP-порт %1$s, якщо порт не вказано.</string>
+    <string name="network_smp_web_port_toggle">Використовувати веб-порт</string>
 </resources>

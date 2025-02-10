@@ -267,6 +267,7 @@ final class ChatModel: ObservableObject {
     @Published var deviceToken: DeviceToken?
     @Published var savedToken: DeviceToken?
     @Published var tokenRegistered = false
+    @Published var reRegisterTknStatus: NtfTknStatus? = nil
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationServer: String?
@@ -917,7 +918,7 @@ final class ChatModel: ObservableObject {
     }
 
     func decreaseGroupReportsCounter(_ chatId: ChatId, by: Int = 1) {
-        changeGroupReportsCounter(chatId, -1)
+        changeGroupReportsCounter(chatId, -by)
     }
 
     private func changeGroupReportsCounter(_ chatId: ChatId, _ by: Int = 0) {

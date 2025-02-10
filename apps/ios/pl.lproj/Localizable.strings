@@ -199,6 +199,9 @@
 /* time interval */
 "%d sec" = "%d sek";
 
+/* delete after time */
+"%d seconds(s)" = "%d sekundach";
+
 /* integrity error chat item */
 "%d skipped message(s)" = "%d pominięte wiadomość(i)";
 
@@ -304,6 +307,9 @@
    time interval */
 "1 week" = "1 tydzień";
 
+/* delete after time */
+"1 year" = "1 roku";
+
 /* No comment provided by engineer. */
 "1-time link" = "link jednorazowy";
 
@@ -395,6 +401,9 @@
 "Add friends" = "Dodaj znajomych";
 
 /* No comment provided by engineer. */
+"Add list" = "Dodaj listę";
+
+/* No comment provided by engineer. */
 "Add profile" = "Dodaj profil";
 
 /* No comment provided by engineer. */
@@ -408,6 +417,9 @@
 
 /* No comment provided by engineer. */
 "Add to another device" = "Dodaj do innego urządzenia";
+
+/* No comment provided by engineer. */
+"Add to list" = "Dodaj do listy";
 
 /* No comment provided by engineer. */
 "Add welcome message" = "Dodaj wiadomość powitalną";
@@ -467,10 +479,16 @@
 "agreeing encryption…" = "uzgadnianie szyfrowania…";
 
 /* No comment provided by engineer. */
+"All" = "Wszystko";
+
+/* No comment provided by engineer. */
 "All app data is deleted." = "Wszystkie dane aplikacji są usunięte.";
 
 /* No comment provided by engineer. */
 "All chats and messages will be deleted - this cannot be undone!" = "Wszystkie czaty i wiadomości zostaną usunięte - nie można tego cofnąć!";
+
+/* alert message */
+"All chats will be removed from the list (text), and the list deleted." = "Wszystkie rozmowy zostaną usunięte z listy (text), a lista usunięta.";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Wszystkie dane są usuwane po jego wprowadzeniu.";
@@ -807,6 +825,9 @@
 
 /* No comment provided by engineer. */
 "Business chats" = "Czaty biznesowe";
+
+/* No comment provided by engineer. */
+"Businesses" = "Firmy";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Według profilu czatu (domyślnie) lub [według połączenia](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -3042,10 +3063,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Wiele profili czatu";
 
-/* No comment provided by engineer. */
-"mute" = "wycisz";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "Wycisz";
 
 /* No comment provided by engineer. */
@@ -4751,10 +4769,7 @@
 /* authentication reason */
 "Unlock app" = "Odblokuj aplikację";
 
-/* No comment provided by engineer. */
-"unmute" = "wyłącz wyciszenie";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "Wyłącz wyciszenie";
 
 /* No comment provided by engineer. */

@@ -2294,4 +2294,7 @@
     <string name="disable_automatic_deletion_question">Desactivar la supressió automàtica de missatges?</string>
     <string name="change_automatic_chat_deletion_message">Aquesta acció no es pot desfer; els missatges enviats i rebuts en aquest xat abans del seleccionat se suprimiran.</string>
     <string name="disable_automatic_deletion_message">Els missatges d\'aquest xat no se suprimiran mai.</string>
+    <string name="network_smp_web_port_section_title">Port TCP per a missatgeria</string>
+    <string name="network_smp_web_port_toggle">Emprar port web</string>
+    <string name="network_smp_web_port_footer">Emprar el port TCP %1$s quan no se n\'especifica cap.</string>
 </resources>

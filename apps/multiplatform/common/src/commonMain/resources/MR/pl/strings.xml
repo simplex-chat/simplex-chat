@@ -418,7 +418,7 @@
     <string name="callstatus_rejected">odrzucone połączenie</string>
     <string name="secret_text">sekret</string>
     <string name="callstate_starting">uruchamianie…</string>
-    <string name="strikethrough_text">strajk</string>
+    <string name="strikethrough_text">przekreślenie</string>
     <string name="first_platform_without_user_ids">Brak identyfikatorów użytkownika.</string>
     <string name="next_generation_of_private_messaging">Następna generacja \nprywatnych wiadomości</string>
     <string name="callstate_waiting_for_answer">oczekiwanie na odpowiedź…</string>

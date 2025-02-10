@@ -110,7 +110,7 @@
     <string name="integrity_msg_duplicate">mensaje duplicado</string>
     <string name="settings_developer_tools">Herramientas desarrollo</string>
     <string name="delete_files_and_media_for_all_users">Eliminar los archivos de todos los perfiles</string>
-    <string name="delete_messages">Eliminar mensaje</string>
+    <string name="delete_messages">Eliminar mensajes</string>
     <string name="database_encrypted">¡Base de datos cifrada!</string>
     <string name="encrypted_with_random_passphrase">La base de datos está cifrada con una contraseña aleatoria, puedes cambiarla.</string>
     <string name="database_error">Error en base de datos</string>
@@ -605,7 +605,7 @@
     <string name="onboarding_notifications_mode_title">Notificaciones privadas</string>
     <string name="image_descr_profile_image">imagen del perfil</string>
     <string name="prohibit_sending_voice_messages">No se permiten mensajes de voz.</string>
-    <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
+    <string name="protect_app_screen">Proteger la pantalla</string>
     <string name="read_more_in_github_with_link"><![CDATA[Conoce más en nuestro <font color="#0088ff">repositorio GitHub</font> .]]></string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">ha expulsado a %1$s</string>
@@ -748,7 +748,7 @@
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger tu privacidad, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa el Bloqueo SimpleX.
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
-    <string name="updating_settings_will_reconnect_client_to_all_servers">Al actualizar la configuración el cliente se reconectará a todos los servidores.</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">Para actualizar la configuración el cliente se reconectará a todos los servidores.</string>
     <string name="use_simplex_chat_servers__question">¿Usar servidores SimpleX Chat\?</string>
     <string name="simplex_link_group">Enlace de grupo SimpleX</string>
     <string name="simplex_link_invitation">Invitación única SimpleX</string>
@@ -1319,7 +1319,7 @@
     <string name="receipts_groups_title_enable">¿Permitir confirmaciones para grupos\?</string>
     <string name="receipts_groups_override_disabled">Las confirmaciones están deshabilitadas para los grupos %d</string>
     <string name="receipts_groups_override_enabled">Las confirmaciones están activadas para %d grupos</string>
-    <string name="receipts_section_groups">Grupos pequeños (máx. 20)</string>
+    <string name="receipts_section_groups">Grupos pequeños (max. 20)</string>
     <string name="receipts_groups_enable_for_all">Activar para todos los grupos</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled">desactivado</string>
@@ -2196,7 +2196,7 @@
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Las condiciones serán aceptadas para el/los operador(es): <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Estas condiciones también se aplican para: <b>%s</b>.]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Para usar los servidores de <b>%s</b>, debes aceptar las condiciones de uso.]]></string>
-    <string name="xftp_servers_per_user">Servidores para archivos nuevos en tu perfil</string>
+    <string name="xftp_servers_per_user">Servidores para enviar archivos en tu perfil</string>
     <string name="v6_2_network_decentralization_descr">¡Segundo operador predefinido!</string>
     <string name="onboarding_network_operators_configure_via_settings">Puedes configurar los servidores a través de su configuración.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Para protegerte contra una sustitución del enlace, puedes comparar los códigos de seguridad con tu contacto.</string>
@@ -2272,10 +2272,10 @@
     <string name="delete_chat_list_warning">Todos los chats serán quitados de la lista %s y esta será eliminada</string>
     <string name="create_list">Crear lista</string>
     <string name="delete_chat_list_menu_action">Eliminar</string>
-    <string name="delete_chat_list_question">Eliminar lista?</string>
+    <string name="delete_chat_list_question">¿Eliminar lista?</string>
     <string name="edit_chat_list_menu_action">Editar</string>
-    <string name="list_name_field_placeholder">Nombre de lista...</string>
-    <string name="duplicated_list_error">El nombre de lista y el emoji deben ser differentes en todas las listas.</string>
+    <string name="list_name_field_placeholder">Nombre de la lista...</string>
+    <string name="duplicated_list_error">El nombre y el emoji deben ser diferentes en todas las listas.</string>
     <string name="save_list">Guardar lista</string>
     <string name="no_unread_chats">Ningún chat sin leer</string>
     <string name="error_creating_chat_tags">Error al crear lista de chat</string>
@@ -2314,9 +2314,9 @@
     <string name="report_reason_illegal">Contenido inapropiado</string>
     <string name="report_reason_profile">Perfil inapropiado</string>
     <string name="report_item_visibility_moderators">Solo el remitente y el moderador pueden verlo</string>
-    <string name="report_item_visibility_submitter">Solo tú y el moderador podéis verlo</string>
+    <string name="report_item_visibility_submitter">Solo tú y los moderadores podéis verlo</string>
     <string name="report_reason_spam">Spam</string>
-    <string name="privacy_chat_list_open_links">Abrir enlace desde la lista de chat</string>
+    <string name="privacy_chat_list_open_links">Abrir enlaces desde listado de chats</string>
     <string name="privacy_chat_list_open_links_yes">Si</string>
     <string name="privacy_chat_list_open_links_no">No</string>
     <string name="privacy_chat_list_open_web_link_question">¿Abrir enlace web?</string>
@@ -2324,11 +2324,17 @@
     <string name="privacy_chat_list_open_web_link">Abrir enlace</string>
     <string name="text_field_set_chat_placeholder">Nombre para el chat…</string>
     <string name="disable_automatic_deletion_question">¿Desactivar la eliminación automática de mensajes?</string>
-    <string name="disable_automatic_deletion">Desactivar la eliminación de mensajes</string>
+    <string name="disable_automatic_deletion">Desactivar</string>
     <string name="change_automatic_deletion_question">¿Modificar la eliminación automática de mensajes?</string>
-    <string name="chat_ttl_options_footer">Eliminar todos los mensajes del dispositivo</string>
-    <string name="disable_automatic_deletion_message">Los mensajes nunca se borran en esta conversación</string>
-    <string name="change_automatic_chat_deletion_message">Todos los mensajes previos a la selección serán eliminados de este chat. ¡No podrá deshacerse!</string>
+    <string name="chat_ttl_options_footer">Elimina los mensajes del dispositivo</string>
+    <string name="disable_automatic_deletion_message">Los mensajes de esta conversación nunca se borran.</string>
+    <string name="change_automatic_chat_deletion_message">Todos los mensajes previos a la selección serán eliminados del chat. ¡No podrá deshacerse!</string>
     <string name="chat_item_ttl_year">Un año</string>
     <string name="chat_item_ttl_default">predefinido (%s)</string>
+    <string name="network_smp_web_port_section_title">Puerto TCP para mensajes</string>
+    <string name="network_smp_web_port_footer">Usar puerto TCP %1$s cuando no se especifica.</string>
+    <string name="network_smp_web_port_toggle">Usar puerto web</string>
+    <string name="mute_all_chat">Silenciar todo</string>
+    <string name="unread_mentions">Menciones sin leer</string>
+    <string name="max_group_mentions_per_message_reached">¡Puedes mencionar hasta %1$s miembros por mensaje!</string>
 </resources>

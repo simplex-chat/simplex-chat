@@ -199,6 +199,9 @@
 /* time interval */
 "%d sec" = "%d сек";
 
+/* delete after time */
+"%d seconds(s)" = "%d секунд";
+
 /* integrity error chat item */
 "%d skipped message(s)" = "%d пропущенных сообщение(й)";
 
@@ -304,6 +307,9 @@
    time interval */
 "1 week" = "1 неделю";
 
+/* delete after time */
+"1 year" = "1 год";
+
 /* No comment provided by engineer. */
 "1-time link" = "Одноразовая ссылка";
 
@@ -398,6 +404,9 @@
 "Add friends" = "Добавить друзей";
 
 /* No comment provided by engineer. */
+"Add list" = "Добавить список";
+
+/* No comment provided by engineer. */
 "Add profile" = "Добавить профиль";
 
 /* No comment provided by engineer. */
@@ -411,6 +420,9 @@
 
 /* No comment provided by engineer. */
 "Add to another device" = "Добавить на другое устройство";
+
+/* No comment provided by engineer. */
+"Add to list" = "Добавить в список";
 
 /* No comment provided by engineer. */
 "Add welcome message" = "Добавить приветственное сообщение";
@@ -468,6 +480,9 @@
 
 /* chat item text */
 "agreeing encryption…" = "шифрование согласовывается…";
+
+/* No comment provided by engineer. */
+"All" = "Все";
 
 /* No comment provided by engineer. */
 "All app data is deleted." = "Все данные приложения будут удалены.";
@@ -601,6 +616,9 @@
 /* No comment provided by engineer. */
 "and %lld other events" = "и %lld других событий";
 
+/* report reason */
+"Another reason" = "Другая причина";
+
 /* No comment provided by engineer. */
 "Answer call" = "Принять звонок";
 
@@ -644,10 +662,19 @@
 "Apply to" = "Применить к";
 
 /* No comment provided by engineer. */
+"Archive" = "Архивировать";
+
+/* No comment provided by engineer. */
 "Archive and upload" = "Архивировать и загрузить";
 
 /* No comment provided by engineer. */
 "Archive contacts to chat later." = "Архивируйте контакты чтобы продолжить переписку.";
+
+/* No comment provided by engineer. */
+"Archive report" = "Архивировать отчет";
+
+/* No comment provided by engineer. */
+"Archive report?" = "Архивировать отчет?";
 
 /* No comment provided by engineer. */
 "Archived contacts" = "Архивированные контакты";
@@ -3156,10 +3183,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Много профилей чата";
 
-/* No comment provided by engineer. */
-"mute" = "без звука";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "Без звука";
 
 /* No comment provided by engineer. */
@@ -5015,10 +5039,7 @@
 /* authentication reason */
 "Unlock app" = "Разблокировать";
 
-/* No comment provided by engineer. */
-"unmute" = "уведомлять";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "Уведомлять";
 
 /* No comment provided by engineer. */

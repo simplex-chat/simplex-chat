@@ -516,6 +516,18 @@ func apiDeleteMemberChatItems(groupId: Int64, itemIds: [Int64]) async throws -> 
     throw r
 }
 
+func apiArchiveReceivedReports(groupId: Int64) async throws -> ChatResponse {
+    let r = await chatSendCmd(.apiArchiveReceivedReports(groupId: groupId), bgDelay: msgDelay)
+    if case .groupChatItemsDeleted = r { return r }
+    throw r
+}
+
+func apiDeleteReceivedReports(groupId: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
+    let r = await chatSendCmd(.apiDeleteReceivedReports(groupId: groupId, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
+    if case let .chatItemsDeleted(_, chatItemDeletions, _) = r { return chatItemDeletions }
+    throw r
+}
+
 func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode, String?) {
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
@@ -542,7 +554,12 @@ func registerToken(token: DeviceToken) {
         Task {
             do {
                 let status = try await apiRegisterToken(token: token, notificationMode: mode)
-                await MainActor.run { m.tokenStatus = status }
+                await MainActor.run {
+                    m.tokenStatus = status
+                    if !status.workingToken {
+                        m.reRegisterTknStatus = status
+                    }
+                }
             } catch let error {
                 logger.error("registerToken apiRegisterToken error: \(responseError(error))")
             }
@@ -550,8 +567,47 @@ func registerToken(token: DeviceToken) {
     }
 }
 
+func tokenStatusInfo(_ status: NtfTknStatus, register: Bool) -> String {
+    String.localizedStringWithFormat(NSLocalizedString("Token status: %@.", comment: "token status"), status.text)
+    + "\n" + status.info(register: register)
+}
+
+func reRegisterToken(token: DeviceToken) {
+    let m = ChatModel.shared
+    let mode = m.notificationMode
+    logger.debug("reRegisterToken \(mode.rawValue)")
+    Task {
+        do {
+            let status = try await apiRegisterToken(token: token, notificationMode: mode)
+            await MainActor.run {
+                m.tokenStatus = status
+                showAlert(
+                    status.workingToken
+                    ? NSLocalizedString("Notifications status", comment: "alert title")
+                    : NSLocalizedString("Notifications error", comment: "alert title"),
+                    message: tokenStatusInfo(status, register: false)
+                )
+            }
+        } catch let error {
+            logger.error("reRegisterToken apiRegisterToken error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error registering for notifications", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
+    }
+}
+
 func apiVerifyToken(token: DeviceToken, nonce: String, code: String) async throws {
     try await sendCommandOkResp(.apiVerifyToken(token: token, nonce: nonce, code: code))
+}
+
+func apiCheckToken(token: DeviceToken) async throws -> NtfTknStatus {
+    let r = await chatSendCmd(.apiCheckToken(token: token))
+    if case let .ntfTokenStatus(status) = r { return status }
+    throw r
 }
 
 func apiDeleteToken(token: DeviceToken) async throws {
@@ -2090,42 +2146,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
                 }
+                if item.deletedChatItem.chatItem.isActiveReport {
+                    m.decreaseGroupReportsCounter(item.deletedChatItem.chatInfo.id)
+                }
             }
         }
     case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member_):
-        if !active(user) {
-            do {
-                let users = try listUsers()
-                await MainActor.run {
-                    m.users = users
-                }
-            } catch {
-                logger.error("Error loading users: \(error)")
-            }
-            return
-        }
-        let im = ItemsModel.shared
-        let cInfo = ChatInfo.group(groupInfo: groupInfo)
-        await MainActor.run {
-            m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
-        }
-        var notFound = chatItemIDs.count
-        for ci in im.reversedChatItems {
-            if chatItemIDs.contains(ci.id) {
-                let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
-                    CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
-                } else {
-                    CIDeleted.deleted(deletedTs: Date.now)
-                }
-                await MainActor.run {
-                    var newItem = ci
-                    newItem.meta.itemDeleted = deleted
-                    _ = m.upsertChatItem(cInfo, newItem)
-                }
-                notFound -= 1
-                if notFound == 0 { break }
-            }
-        }
+        await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member_)
     case let .receivedGroupInvitation(user, groupInfo, _, _):
         if active(user) {
             await MainActor.run {
@@ -2464,6 +2491,43 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
             if cItem.showNotification {
                 NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
             }
+        }
+    }
+}
+
+func groupChatItemsDeleted(_ user: UserRef, _ groupInfo: GroupInfo, _ chatItemIDs: Set<Int64>, _ member_: GroupMember?) async {
+    let m = ChatModel.shared
+    if !active(user) {
+        do {
+            let users = try listUsers()
+            await MainActor.run {
+                m.users = users
+            }
+        } catch {
+            logger.error("Error loading users: \(error)")
+        }
+        return
+    }
+    let im = ItemsModel.shared
+    let cInfo = ChatInfo.group(groupInfo: groupInfo)
+    await MainActor.run {
+        m.decreaseGroupReportsCounter(cInfo.id, by: chatItemIDs.count)
+    }
+    var notFound = chatItemIDs.count
+    for ci in im.reversedChatItems {
+        if chatItemIDs.contains(ci.id) {
+            let deleted = if case let .groupRcv(groupMember) = ci.chatDir, let member_, groupMember.groupMemberId != member_.groupMemberId {
+                CIDeleted.moderated(deletedTs: Date.now, byGroupMember: member_)
+            } else {
+                CIDeleted.deleted(deletedTs: Date.now)
+            }
+            await MainActor.run {
+                var newItem = ci
+                newItem.meta.itemDeleted = deleted
+                _ = m.upsertChatItem(cInfo, newItem)
+            }
+            notFound -= 1
+            if notFound == 0 { break }
         }
     }
 }

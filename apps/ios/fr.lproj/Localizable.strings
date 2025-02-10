@@ -3156,10 +3156,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Différents profils de chat";
 
-/* No comment provided by engineer. */
-"mute" = "muet";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "Muet";
 
 /* No comment provided by engineer. */
@@ -5015,10 +5012,7 @@
 /* authentication reason */
 "Unlock app" = "Déverrouiller l'app";
 
-/* No comment provided by engineer. */
-"unmute" = "démuter";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "Démute";
 
 /* No comment provided by engineer. */

@@ -17,13 +17,21 @@
 
 2. Prepare Postgres database.
 
-   Build `simplex-chat` executable with `client_postgres` flag and run it to initialize new Postgres chat database.
+   - Create Postgres database. In shell:
 
-   This should create `simplex_v1` database with `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas, and `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
+      ```sh
+      createdb -O simplex simplex_v1
+      ```
+
+      Or via query.
+
+   - Build `simplex-chat` executable with `client_postgres` flag and run it to initialize new chat database.
+
+      This should create `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas in `simplex_v1` database, with `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
 
 3. Load data from decrypted SQLite databases to Postgres database via pgloader.
 
-   Install pgloader and add it to PATH.
+   Install pgloader and add it to PATH. Run in shell (substitute paths):
 
    ```sh
    SQLITE_DBPATH='simplex_v1_agent.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='simplex_v1_agent_schema' pgloader --on-error-stop sqlite.load
@@ -61,7 +69,7 @@
 
    Repeat for `simplex_v1_chat_schema`.
 
-5. Compare number of rows between Postgres and SQLite tables.
+5. \* Compare number of rows between Postgres and SQLite tables.
 
    To check number of rows for all tables in Postgres database schema run:
 
@@ -83,3 +91,15 @@
    ```
 
    Repeat for `simplex_v1_chat_schema`.
+
+6. Build and run desktop app with Postgres backend.
+
+   Run in shell (paths are from project root):
+
+   ```sh
+   ./scripts/desktop/build-lib-mac.sh arm64 postgres
+
+   ./gradlew runDistributable -Pdatabase.backend=postgres
+   # or
+   ./gradlew packageDmg -Pdatabase.backend=postgres
+   ```
