@@ -232,7 +232,12 @@ struct ChatListNavLink: View {
                 if showDeleteGroup && totalNumberOfButtons <= 3 {
                     deleteGroupChatButton(groupInfo)
                 } else if totalNumberOfButtons > 3 {
-                    moreOptionsButton(chat, groupInfo)
+                    if showDeleteGroup && !groupInfo.membership.memberActive {
+                        deleteGroupChatButton(groupInfo)
+                        moreOptionsButton(false, chat, groupInfo)
+                    } else {
+                        moreOptionsButton(true, chat, groupInfo)
+                    }
                 }
             }
         }
@@ -366,7 +371,7 @@ struct ChatListNavLink: View {
         )
     }
     
-    private func moreOptionsButton(_ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
+    private func moreOptionsButton(_ canShowGroupDelete: Bool, _ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
         Button {
             var buttons: [Alert.Button] = []
             buttons.append(.default(Text("Clear")) {
@@ -379,7 +384,7 @@ struct ChatListNavLink: View {
                 })
             }
 
-            if let gi = groupInfo, gi.canDelete {
+            if canShowGroupDelete, let gi = groupInfo, gi.canDelete {
                 buttons.append(.destructive(Text("Delete")) {
                     AlertManager.shared.showAlert(deleteGroupAlert(gi))
                 })
