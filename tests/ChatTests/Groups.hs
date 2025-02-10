@@ -133,6 +133,7 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
@@ -558,7 +559,7 @@ testGroup2 =
         ]
       dan <##> alice
       -- show last messages
-      alice ##> "/t #club 17"
+      alice ##> "/t #club 18"
       alice -- these strings are expected in any order because of sorting by time and rounding of time for sent
         <##?
           ( map (ConsoleString . ("#club " <> )) groupFeatureStrs
@@ -1225,7 +1226,7 @@ testGroupMessageDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
       threadDelay 1000000
       -- alice, bob: msg id 5, cath: msg id 4 (after group invitations & group events)
       alice #> "#team hello!"
@@ -1237,7 +1238,7 @@ testGroupMessageDelete =
       msgItemId1 <- lastItemId alice
       alice #$> ("/_delete item #1 " <> msgItemId1 <> " internal", id, "message deleted")
 
-      alice #$> ("/_get chat #1 count=2", chat, [(0, "connected"), (1, "Full deletion: off")])
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "connected"), (0, "connected")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
       cath #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
 
@@ -1263,7 +1264,7 @@ testGroupMessageDelete =
       msgItemId2 <- lastItemId alice
       alice #$> ("/_delete item #1 " <> msgItemId2 <> " internal", id, "message deleted")
 
-      alice #$> ("/_get chat #1 count=2", chat', [((0, "connected"), Nothing), ((1, "Full deletion: off"), Nothing)])
+      alice #$> ("/_get chat #1 count=2", chat', [((0, "connected"), Nothing), ((0, "connected"), Nothing)])
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
@@ -1310,7 +1311,7 @@ testGroupMessageDeleteMultiple =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       threadDelay 1000000
       alice #> "#team hello"
@@ -1347,7 +1348,7 @@ testGroupMessageDeleteMultipleManyBatches =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       bob ##> "/set receipts all off"
       bob <## "ok"
@@ -1498,9 +1499,9 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
   alice ##> "/g team"
   alice <## "group #team is created"
   alice <## "to add members use /a team <name> or /create link #team"
-  alice ##> "/set delete #team off"
-  alice <## "updated group preferences:"
-  alice <## "Full deletion: off"
+  -- alice ##> "/set delete #team off"
+  -- alice <## "updated group preferences:"
+  -- alice <## "Full deletion: off"
   addMember "team" alice bob GRAdmin
   bob ##> "/j team"
   concurrentlyN_
@@ -1560,6 +1561,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Voice messages: on"
       alice <## "Files and media: on"
       alice <## "SimpleX links: on"
+      alice <## "Member reports: on"
       alice <## "Recent history: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
@@ -1571,7 +1573,7 @@ testGroupModerate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
         [ alice <## "#team: you changed the role of cath from admin to member",
@@ -1603,7 +1605,7 @@ testGroupModerateOwn =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
-      disableFullDeletion2 "team" alice bob
+      -- disableFullDeletion2 "team" alice bob
       threadDelay 1000000
       alice #> "#team hello"
       bob <# "#team alice> hello"
@@ -1618,7 +1620,7 @@ testGroupModerateMultiple =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       threadDelay 1000000
       alice #> "#team hello"
@@ -1654,7 +1656,7 @@ testGroupModerateFullDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
         [ alice <## "#team: you changed the role of cath from admin to member",
@@ -1693,7 +1695,7 @@ testGroupDelayedModeration ps = do
   withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-      disableFullDeletion2 "team" alice bob
+      -- disableFullDeletion2 "team" alice bob
     withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
@@ -1741,7 +1743,7 @@ testGroupDelayedModerationFullDelete ps = do
   withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
     withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
-      disableFullDeletion2 "team" alice bob
+      -- disableFullDeletion2 "team" alice bob
     withNewTestChatCfg ps cfg "cath" cathProfile $ \cath -> do
       connectUsers alice cath
       addMember "team" alice cath GRMember
@@ -3980,6 +3982,64 @@ testGroupMsgForward =
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
 
+testGroupMsgForwardReport :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardReport =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      alice ##> "/mr team bob moderator"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob from admin to moderator",
+          bob <## "#team: alice changed your role from admin to moderator",
+          cath <## "#team: alice changed the role of bob from admin to moderator"
+        ]
+
+      alice ##> "/mr team cath member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath from admin to member",
+          bob <## "#team: alice changed the role of cath from admin to member",
+          cath <## "#team: alice changed your role from admin to member"
+        ]
+      cath ##> "/report #team content hi there"
+      cath <# "#team > bob hi there"
+      cath <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#team cath> > bob hi there"
+            alice <## "      report content",
+          do
+            bob <# "#team cath!> > bob hi there [>>]"
+            bob <## "      report content [>>]"
+        ]
+
+      alice ##> "/mr team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob from moderator to member",
+          bob <## "#team: alice changed your role from moderator to member",
+          cath <## "#team: alice changed the role of bob from moderator to member"
+        ]
+
+      cath ##> "/report #team content hi there"
+      cath <# "#team > bob hi there"
+      cath <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#team cath> > bob hi there"
+            alice <## "      report content",
+          (bob </)
+        ]
+
+      -- regular messages are still forwarded
+
+      cath #> "#team hey team"
+      alice <# "#team cath> hey team"
+      bob <# "#team cath> hey team [>>]"
+
 setupGroupForwarding3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding3 gName alice bob cath = do
   createGroup3 gName alice bob cath
@@ -4074,7 +4134,7 @@ testGroupMsgForwardDeletion =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -4792,7 +4852,7 @@ testGroupHistoryDeletedMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup2 "team" alice bob
-      disableFullDeletion2 "team" alice bob
+      -- disableFullDeletion2 "team" alice bob
 
       alice #> "#team hello"
       bob <# "#team alice> hello"
@@ -5482,7 +5542,7 @@ testBlockForAllMarkedBlocked =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       threadDelay 1000000
 
@@ -5570,7 +5630,7 @@ testBlockForAllFullDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
@@ -5651,7 +5711,7 @@ testBlockForAllAnotherAdminUnblocks =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
@@ -5680,7 +5740,7 @@ testBlockForAllBeforeJoining =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
@@ -5749,7 +5809,7 @@ testBlockForAllCantRepeat =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      disableFullDeletion3 "team" alice bob cath
+      -- disableFullDeletion3 "team" alice bob cath
 
       alice ##> "/unblock for all #team bob"
       alice <## "bad chat command: already unblocked"
@@ -5866,7 +5926,7 @@ testGroupMemberReports =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
       createGroup3 "jokes" alice bob cath
-      disableFullDeletion3 "jokes" alice bob cath
+      -- disableFullDeletion3 "jokes" alice bob cath
       alice ##> "/mr jokes bob moderator"
       concurrentlyN_
         [ alice <## "#jokes: you changed the role of bob from admin to moderator",
@@ -5925,7 +5985,7 @@ testGroupMemberReports =
       alice ##> "\\\\ #jokes cath inappropriate joke"
       concurrentlyN_
         [ do
-            alice <## "#jokes: 1 messages deleted by member alice"
+            alice <## "#jokes: 1 messages deleted by user"
             alice <## "message marked deleted by you",
           do
             bob <# "#jokes cath> [marked deleted by alice] inappropriate joke"
@@ -5938,6 +5998,77 @@ testGroupMemberReports =
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
+      -- delete all reports locally
+      alice #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      bob #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      dan #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      cath #> "#jokes ok joke"
+      concurrentlyN_
+        [ alice <# "#jokes cath> ok joke",
+          bob <# "#jokes cath> ok joke",
+          dan <# "#jokes cath> ok joke"
+        ]
+      dan ##> "/report #jokes content ok joke"
+      dan <# "#jokes > cath ok joke"
+      dan <## "      report content"
+      dan ##> "/report #jokes spam ok joke"
+      dan <# "#jokes > cath ok joke"
+      dan <## "      report spam"
+      concurrentlyN_
+        [ do
+            alice <# "#jokes dan> > cath ok joke"
+            alice <## "      report content"
+            alice <# "#jokes dan> > cath ok joke"
+            alice <## "      report spam",
+          do
+            bob <# "#jokes dan> > cath ok joke"
+            bob <## "      report content"
+            bob <# "#jokes dan> > cath ok joke"
+            bob <## "      report spam",
+          (cath </)
+        ]
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
+      cath #$> ("/_get chat #1 content=report count=100", chat, [])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content"), (1, "report spam")])
+      alice ##> "/_archive reports 1"
+      alice <## "#jokes: 2 messages deleted by user"
+      (bob </)
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]"), (0, "report spam [marked deleted by you]")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
+      bob ##> "/_archive reports 1"
+      bob <## "#jokes: 2 messages deleted by user"
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]"), (0, "report spam [marked deleted by you]")])
+      -- delete reports for all admins
+      alice #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      bob #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      dan #$> ("/clear #jokes", id, "#jokes: all messages are removed locally ONLY")
+      cath #> "#jokes ok joke 2"
+      concurrentlyN_
+        [ alice <# "#jokes cath> ok joke 2",
+          bob <# "#jokes cath> ok joke 2",
+          dan <# "#jokes cath> ok joke 2"
+        ]
+      dan ##> "/report #jokes content ok joke 2"
+      dan <# "#jokes > cath ok joke 2"
+      dan <## "      report content"
+      concurrentlyN_
+        [ do
+            alice <# "#jokes dan> > cath ok joke 2"
+            alice <## "      report content",
+          do
+            bob <# "#jokes dan> > cath ok joke 2"
+            bob <## "      report content",
+          (cath </)
+        ]
+      alice ##> "/last_item_id"
+      i :: ChatItemId <- read <$> getTermLine alice
+      alice ##> ("/_delete reports 1 " <> show i <> " broadcast")
+      alice <## "message marked deleted by you"
+      bob <# "#jokes dan> [marked deleted by alice] report content"
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
+      bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by alice]")])
+      dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
 
 testMemberMention :: HasCallStack => TestParams -> IO ()
 testMemberMention =

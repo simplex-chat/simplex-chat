@@ -1135,16 +1135,19 @@
 "Correct name to %@?" = "Поправи име на %@?";
 
 /* No comment provided by engineer. */
-"Create" = "Създай";
+"Create" = "Създаване";
 
 /* No comment provided by engineer. */
-"Create a group using a random profile." = "Създай група с автоматично генериран профилл.";
+"Create 1-time link" = "Създаване на еднократна препратка";
+
+/* No comment provided by engineer. */
+"Create a group using a random profile." = "Създаване група с автоматично създаден профил.";
 
 /* server test step */
-"Create file" = "Създай файл";
+"Create file" = "Създаване на файл";
 
 /* No comment provided by engineer. */
-"Create group" = "Създай група";
+"Create group" = "Създаване на група";
 
 /* No comment provided by engineer. */
 "Create group link" = "Създай групов линк";
@@ -1165,7 +1168,7 @@
 "Create secret group" = "Създай тайна група";
 
 /* No comment provided by engineer. */
-"Create SimpleX address" = "Създай SimpleX адрес";
+"Create SimpleX address" = "Създаване на адрес в SimpleX";
 
 /* No comment provided by engineer. */
 "Create your profile" = "Създай своя профил";
@@ -2637,7 +2640,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Множество профили за чат";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "Без звук";
 
 /* No comment provided by engineer. */
@@ -3980,7 +3983,7 @@
 /* authentication reason */
 "Unlock app" = "Отключи приложението";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "Уведомявай";
 
 /* swipe action */
@@ -4479,7 +4482,7 @@
 "Your settings" = "Вашите настройки";
 
 /* No comment provided by engineer. */
-"Your SimpleX address" = "Вашият SimpleX адрес";
+"Your SimpleX address" = "Вашият адрес в SimpleX";
 
 /* No comment provided by engineer. */
 "Your SMP servers" = "Вашите SMP сървъри";

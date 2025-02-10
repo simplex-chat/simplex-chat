@@ -3141,10 +3141,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Çoklu sohbet profili";
 
-/* No comment provided by engineer. */
-"mute" = "Sessiz";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "Sustur";
 
 /* No comment provided by engineer. */
@@ -4859,10 +4856,7 @@
 /* authentication reason */
 "Unlock app" = "Uygulama kilidini aç";
 
-/* No comment provided by engineer. */
-"unmute" = "susturmayı kaldır";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "Susturmayı kaldır";
 
 /* No comment provided by engineer. */

@@ -3325,11 +3325,20 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         UPDATE chat_items
         SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
-        WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND quoted_shared_msg_id = ?
+        WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ? AND item_sent = 0
+        RETURNING chat_item_id
+      
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=? AND item_sent=?)
+
+Query: 
+        UPDATE chat_items
+        SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND quoted_shared_msg_id = ? AND item_deleted = ?
         RETURNING chat_item_id;
       
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (user_id=? AND group_id=? AND msg_content_tag=? AND item_deleted=?)
 
 Query: 
         UPDATE chat_items
@@ -4577,7 +4586,7 @@ Query:
       FROM connections cc
       WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
     )
-   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND member_role IN (?,?,?)
+   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
 Plan:
 SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)

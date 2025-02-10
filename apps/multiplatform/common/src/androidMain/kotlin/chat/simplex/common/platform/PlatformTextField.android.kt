@@ -122,8 +122,10 @@ actual fun PlatformTextField(
       }
 
       override fun onSelectionChanged(selStart: Int, selEnd: Int) {
-        onMessageChange(ComposeMessage(text.toString(), TextRange(minOf(selStart, selEnd), maxOf(selStart, selEnd))))
-        super.onSelectionChanged(selStart, selEnd)
+        val start = minOf(text.length, minOf(selStart, selEnd))
+        val end = minOf(text.length, maxOf(selStart, selEnd))
+        onMessageChange(ComposeMessage(text.toString(), TextRange(start, end)))
+        super.onSelectionChanged(start, end)
       }
     }
     editText.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)

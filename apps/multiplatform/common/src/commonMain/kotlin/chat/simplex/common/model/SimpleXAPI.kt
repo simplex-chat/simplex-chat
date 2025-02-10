@@ -5160,6 +5160,7 @@ enum class GroupFeature: Feature {
   @SerialName("voice") Voice,
   @SerialName("files") Files,
   @SerialName("simplexLinks") SimplexLinks,
+  @SerialName("reports") Reports,
   @SerialName("history") History;
 
   override val hasParam: Boolean get() = when(this) {
@@ -5176,6 +5177,7 @@ enum class GroupFeature: Feature {
       Voice -> true
       Files -> true
       SimplexLinks -> true
+      Reports -> false
       History -> false
     }
 
@@ -5188,6 +5190,7 @@ enum class GroupFeature: Feature {
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
       SimplexLinks -> generalGetString(MR.strings.simplex_links)
+      Reports -> generalGetString(MR.strings.group_reports_member_reports)
       History -> generalGetString(MR.strings.recent_history)
     }
 
@@ -5200,6 +5203,7 @@ enum class GroupFeature: Feature {
       Voice -> painterResource(MR.images.ic_keyboard_voice)
       Files -> painterResource(MR.images.ic_draft)
       SimplexLinks -> painterResource(MR.images.ic_link)
+      Reports -> painterResource(MR.images.ic_flag)
       History -> painterResource(MR.images.ic_schedule)
     }
 
@@ -5212,6 +5216,7 @@ enum class GroupFeature: Feature {
     Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
     Files -> painterResource(MR.images.ic_draft_filled)
     SimplexLinks -> painterResource(MR.images.ic_link)
+    Reports -> painterResource(MR.images.ic_flag_filled)
     History -> painterResource(MR.images.ic_schedule_filled)
   }
 
@@ -5245,6 +5250,10 @@ enum class GroupFeature: Feature {
         SimplexLinks -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_simplex_links)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_simplex_links)
+        }
+        Reports -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_member_reports)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_member_reports)
         }
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
@@ -5280,6 +5289,10 @@ enum class GroupFeature: Feature {
         SimplexLinks -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_simplex_links)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.simplex_links_are_prohibited_in_group)
+        }
+        Reports -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_reports)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.member_reports_are_prohibited)
         }
         History -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
@@ -5400,6 +5413,7 @@ data class FullGroupPreferences(
   val voice: RoleGroupPreference,
   val files: RoleGroupPreference,
   val simplexLinks: RoleGroupPreference,
+  val reports: GroupPreference,
   val history: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
@@ -5411,7 +5425,8 @@ data class FullGroupPreferences(
       voice = voice,
       files = files,
       simplexLinks = simplexLinks,
-      history = history
+      reports = reports,
+      history = history,
     )
 
   companion object {
@@ -5423,6 +5438,7 @@ data class FullGroupPreferences(
       voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
@@ -5437,6 +5453,7 @@ data class GroupPreferences(
   val voice: RoleGroupPreference? = null,
   val files: RoleGroupPreference? = null,
   val simplexLinks: RoleGroupPreference? = null,
+  val reports: GroupPreference? = null,
   val history: GroupPreference? = null,
 ) {
   companion object {
@@ -5448,6 +5465,7 @@ data class GroupPreferences(
       voice = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       files = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
+      reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }

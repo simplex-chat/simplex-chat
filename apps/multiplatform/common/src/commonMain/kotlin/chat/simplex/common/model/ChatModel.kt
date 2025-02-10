@@ -1225,18 +1225,7 @@ data class Chat(
 
   fun groupFeatureEnabled(feature: GroupFeature): Boolean =
     if (chatInfo is ChatInfo.Group) {
-      val groupInfo = chatInfo.groupInfo
-      val p = groupInfo.fullGroupPreferences
-      when (feature) {
-        GroupFeature.TimedMessages -> p.timedMessages.on
-        GroupFeature.DirectMessages -> p.directMessages.on(groupInfo.membership)
-        GroupFeature.FullDelete -> p.fullDelete.on
-        GroupFeature.Reactions -> p.reactions.on
-        GroupFeature.Voice -> p.voice.on(groupInfo.membership)
-        GroupFeature.Files -> p.files.on(groupInfo.membership)
-        GroupFeature.SimplexLinks -> p.simplexLinks.on(groupInfo.membership)
-        GroupFeature.History -> p.history.on
-      }
+      chatInfo.groupInfo.groupFeatureEnabled(feature)
     } else {
       true
     }
@@ -1779,6 +1768,21 @@ data class GroupInfo (
 
   val canModerate: Boolean
     get() = membership.memberRole >= GroupMemberRole.Moderator && membership.memberActive
+
+  fun groupFeatureEnabled(feature: GroupFeature): Boolean {
+    val p = fullGroupPreferences
+    return when (feature) {
+      GroupFeature.TimedMessages -> p.timedMessages.on
+      GroupFeature.DirectMessages -> p.directMessages.on(membership)
+      GroupFeature.FullDelete -> p.fullDelete.on
+      GroupFeature.Reactions -> p.reactions.on
+      GroupFeature.Voice -> p.voice.on(membership)
+      GroupFeature.Files -> p.files.on(membership)
+      GroupFeature.SimplexLinks -> p.simplexLinks.on(membership)
+      GroupFeature.Reports -> p.reports.on
+      GroupFeature.History -> p.history.on
+    }
+  }
 
   companion object {
     val sampleData = GroupInfo(

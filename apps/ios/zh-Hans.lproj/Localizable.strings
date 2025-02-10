@@ -2865,10 +2865,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "多个聊天资料";
 
-/* No comment provided by engineer. */
-"mute" = "静音";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "静音";
 
 /* No comment provided by engineer. */
@@ -4508,10 +4505,7 @@
 /* authentication reason */
 "Unlock app" = "解锁应用程序";
 
-/* No comment provided by engineer. */
-"unmute" = "取消静音";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "取消静音";
 
 /* No comment provided by engineer. */

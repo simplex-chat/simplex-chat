@@ -271,6 +271,7 @@ final class ChatModel: ObservableObject {
     @Published var deviceToken: DeviceToken?
     @Published var savedToken: DeviceToken?
     @Published var tokenRegistered = false
+    @Published var reRegisterTknStatus: NtfTknStatus? = nil
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationServer: String?

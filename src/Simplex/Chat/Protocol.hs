@@ -390,19 +390,34 @@ forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   _ -> Nothing
 
 -- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat;
+--
 -- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
 -- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
--- to these members
+-- to these members;
+--
+-- same for reports (MCReport) - they are not batched with other events, so we can safely filter out
+-- members with role less than moderator when forwarding
 forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> NonEmpty (ChatMessage e) -> [GroupMember]
 forwardedToGroupMembers ms forwardedMsgs =
-  filter (\GroupMember {memberId} -> memberId `notElem` restrictMemberIds) ms
+  filter forwardToMember ms
   where
+    forwardToMember GroupMember {memberId, memberRole} =
+      (memberId `notElem` restrictMemberIds)
+        && (not hasReport || memberRole >= GRModerator)
     restrictMemberIds = mapMaybe restrictMemberId $ L.toList forwardedMsgs
     restrictMemberId ChatMessage {chatMsgEvent} = case encoding @e of
       SJson -> case chatMsgEvent of
         XGrpMemRestrict mId _ -> Just mId
         _ -> Nothing
       _ -> Nothing
+    hasReport = any isReportEvent forwardedMsgs
+    isReportEvent ChatMessage {chatMsgEvent} = case encoding @e of
+      SJson -> case chatMsgEvent of
+        XMsgNew mc -> case mcExtMsgContent mc of
+          ExtMsgContent {content = MCReport {}} -> True
+          _ -> False
+        _ -> False
+      _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -583,6 +598,11 @@ msgContentHasText =
 isVoice :: MsgContent -> Bool
 isVoice = \case
   MCVoice {} -> True
+  _ -> False
+
+isReport :: MsgContent -> Bool
+isReport = \case
+  MCReport {} -> True
   _ -> False
 
 msgContentTag :: MsgContent -> MsgContentTag

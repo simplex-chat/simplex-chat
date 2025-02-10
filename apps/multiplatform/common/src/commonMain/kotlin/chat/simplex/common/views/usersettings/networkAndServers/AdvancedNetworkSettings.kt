@@ -230,7 +230,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
           smpWebPort.value = it
         }
       }
-      SectionTextFooter(stringResource(MR.strings.private_routing_explanation))
+      SectionTextFooter(String.format(stringResource(MR.strings.network_smp_web_port_footer), if (smpWebPort.value) "443" else "5223"))
       SectionDividerSpaced(maxTopPadding = true)
 
       SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {

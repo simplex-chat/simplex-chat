@@ -37,6 +37,7 @@ struct GroupPreferencesView: View {
                 featureSection(.voice, $preferences.voice.enable, $preferences.voice.role)
                 featureSection(.files, $preferences.files.enable, $preferences.files.role)
                 featureSection(.simplexLinks, $preferences.simplexLinks.enable, $preferences.simplexLinks.role)
+                featureSection(.reports, $preferences.reports.enable)
                 featureSection(.history, $preferences.history.enable)
 
                 if groupInfo.isOwner {
@@ -89,6 +90,7 @@ struct GroupPreferencesView: View {
                 settingsRow(icon, color: color) {
                     Toggle(feature.text, isOn: enable)
                 }
+                .disabled(feature == .reports) // remove in 6.4
                 if timedOn {
                     DropdownCustomTimePicker(
                         selection: $preferences.timedMessages.ttl,
