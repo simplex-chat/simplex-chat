@@ -322,7 +322,7 @@ struct ChatListNavLink: View {
         } label: {
             SwipeLabel(NSLocalizedString("Archive reports", comment: "swipe action"), systemImage: "archivebox", inverted: oneHandUI)
         }
-        .tint(Color.red)
+        .tint(Color.orange)
     }
 
     private func clearChatButton() -> some View {
