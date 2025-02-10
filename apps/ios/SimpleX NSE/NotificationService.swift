@@ -790,7 +790,12 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotificationData)?
                 cItem = autoReceiveFile(file) ?? cItem
             }
             let ntf: NSENotificationData = (cInfo.ntfsEnabled(chatItem: cItem) && cItem.showNotification) ? .messageReceived(user, cInfo, cItem) : .noNtf
-            return (chatItem.chatId, ntf)
+            let chatIdOrMemberId = if case let .groupRcv(groupMember) = chatItem.chatItem.chatDir {
+                groupMember.id
+            } else {
+                chatItem.chatInfo.id
+            }
+            return (chatIdOrMemberId, ntf)
         } else {
             return nil
         }

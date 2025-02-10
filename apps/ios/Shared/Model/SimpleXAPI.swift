@@ -2141,13 +2141,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
 
         await MainActor.run {
             for item in items {
-                if item.deletedChatItem.chatItem.isActiveReport {
-                    m.decreaseGroupReportsCounter(item.deletedChatItem.chatId)
-                }
                 if let toChatItem = item.toChatItem {
                     _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
                 } else {
                     m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
+                }
+                if item.deletedChatItem.chatItem.isActiveReport {
+                    m.decreaseGroupReportsCounter(item.deletedChatItem.chatInfo.id)
                 }
             }
         }
