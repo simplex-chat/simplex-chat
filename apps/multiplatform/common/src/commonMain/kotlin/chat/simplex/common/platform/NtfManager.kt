@@ -134,7 +134,12 @@ abstract class NtfManager {
       }
       res
     } else {
-      cItem.text
+      val mc = cItem.content.msgContent
+      if (cItem.isReport && mc is MsgContent.MCReport) {
+        generalGetString(MR.strings.notification_group_report).format(cItem.text.ifEmpty { mc.reason.text })
+      } else {
+        cItem.text
+      }
     }
   }
 }
