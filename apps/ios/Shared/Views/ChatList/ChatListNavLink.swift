@@ -394,7 +394,7 @@ struct ChatListNavLink: View {
                                
             actionSheet = SomeActionSheet(
                 actionSheet: ActionSheet(
-                    title: Text("Clear or delete group?"),
+                    title: canShowGroupDelete ? Text("Clear or delete group?") : Text("Clear group?"),
                     buttons: buttons
                 ),
                 id: "other options"
