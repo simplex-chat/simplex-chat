@@ -1981,8 +1981,8 @@ func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ 
                             ChatModel.shared.decreaseGroupReportsCounter(chatInfo.id)
                         }
                     }
+                    onSuccess()
                 }
-                onSuccess()
             } catch {
                 logger.error("ChatView.archiveReports error: \(error.localizedDescription)")
             }
