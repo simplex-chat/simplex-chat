@@ -410,8 +410,8 @@ forwardedToGroupMembers ms forwardedMsgs =
         XGrpMemRestrict mId _ -> Just mId
         _ -> Nothing
       _ -> Nothing
-    hasReport = any isReport forwardedMsgs
-    isReport ChatMessage {chatMsgEvent} = case encoding @e of
+    hasReport = any isReportEvent forwardedMsgs
+    isReportEvent ChatMessage {chatMsgEvent} = case encoding @e of
       SJson -> case chatMsgEvent of
         XMsgNew mc -> case mcExtMsgContent mc of
           ExtMsgContent {content = MCReport {}} -> True
@@ -598,6 +598,11 @@ msgContentHasText =
 isVoice :: MsgContent -> Bool
 isVoice = \case
   MCVoice {} -> True
+  _ -> False
+
+isReport :: MsgContent -> Bool
+isReport = \case
+  MCReport {} -> True
   _ -> False
 
 msgContentTag :: MsgContent -> MsgContentTag

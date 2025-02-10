@@ -678,11 +678,11 @@ processChatCommand' vr = \case
             else markDirectCIsDeleted user ct items True =<< liftIO getCurrentTime
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       (gInfo, items) <- getCommandGroupChatItems user chatId itemIds
-      ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
       case mode of
         CIDMInternal -> deleteGroupCIs user gInfo items True False Nothing =<< liftIO getCurrentTime
         CIDMInternalMark -> markGroupCIsDeleted user gInfo items True Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
+          ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
@@ -711,30 +711,25 @@ processChatCommand' vr = \case
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     (gInfo, items) <- getCommandGroupChatItems user gId itemIds
     ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
-    assertDeletable gInfo items
-    assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
-    let msgMemIds = itemsMsgMemIds gInfo items
-        events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
-    mapM_ (sendGroupMessages user gInfo ms) events
-    delGroupChatItems user gInfo items True
+    delGroupChatItemsForMembers user gInfo ms items
+  APIArchiveReceivedReports gId -> withUser $ \user -> withFastStore $ \db -> do
+    g <- getGroupInfo db vr user gId
+    deleteTs <- liftIO getCurrentTime
+    ciIds <- liftIO $ markReceivedGroupReportsDeleted db user g deleteTs
+    pure $ CRGroupChatItemsDeleted user g ciIds True (Just $ membership g)
+  APIDeleteReceivedReports gId itemIds mode -> withUser $ \user -> withGroupLock "deleteReports" gId $ do
+    (gInfo, items) <- getCommandGroupChatItems user gId itemIds
+    unless (all isRcvReport items) $ throwChatError $ CECommandError "some items are not received reports"
+    case mode of
+      CIDMInternal -> deleteGroupCIs user gInfo items True False Nothing =<< liftIO getCurrentTime
+      CIDMInternalMark -> markGroupCIsDeleted user gInfo items True Nothing =<< liftIO getCurrentTime
+      CIDMBroadcast -> do
+        ms <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+        delGroupChatItemsForMembers user gInfo ms items
     where
-      assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
-      assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items =
-        unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
-        where
-          itemDeletable :: CChatItem 'CTGroup -> Bool
-          itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
-            case chatDir of
-              CIGroupRcv GroupMember {memberRole} -> membershipMemRole >= memberRole && isJust itemSharedMsgId
-              CIGroupSnd -> isJust itemSharedMsgId
-      itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
-      itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
-        where
-          itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, MemberId)
-          itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
-            join <$> forM itemSharedMsgId $ \msgId -> Just $ case chatDir of
-              CIGroupRcv GroupMember {memberId} -> (msgId, memberId)
-              CIGroupSnd -> (msgId, membershipMemId)
+      isRcvReport = \case
+        CChatItem _ ChatItem {content = CIRcvMsgContent (MCReport {})} -> True
+        _ -> False
   APIChatItemReaction (ChatRef cType chatId) itemId add reaction -> withUser $ \user -> case cType of
     CTDirect ->
       withContactLock "chatItemReaction" chatId $
@@ -756,9 +751,12 @@ processChatCommand' vr = \case
             pure $ CRChatItemReaction user add r
           _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
-      withGroupLock "chatItemReaction" chatId $
-        withFastStore (\db -> (,) <$> getGroup db vr user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
-          (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+      withGroupLock "chatItemReaction" chatId $ do
+        (Group g@GroupInfo {membership} ms, CChatItem md ci) <- withFastStore $ \db -> do
+          gr@(Group g _) <- getGroup db vr user chatId
+          (gr,) <$> getGroupCIWithReactions db user g itemId
+        case ci of
+          ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> do
             unless (groupFeatureAllowed SGFReactions g) $
               throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
             unless (ciReactionAllowed ci) $
@@ -2715,12 +2713,39 @@ processChatCommand' vr = \case
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
+    delGroupChatItemsForMembers :: User -> GroupInfo -> [GroupMember] -> [CChatItem CTGroup] -> CM ChatResponse
+    delGroupChatItemsForMembers user gInfo ms items = do
+      assertDeletable gInfo items
+      assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
+      let msgMemIds = itemsMsgMemIds gInfo items
+          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
+      mapM_ (sendGroupMessages user gInfo ms) events
+      delGroupChatItems user gInfo items True
+      where
+        assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
+        assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items =
+          unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
+          where
+            itemDeletable :: CChatItem 'CTGroup -> Bool
+            itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
+              case chatDir of
+                CIGroupRcv GroupMember {memberRole} -> membershipMemRole >= memberRole && isJust itemSharedMsgId
+                CIGroupSnd -> isJust itemSharedMsgId
+        itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
+        itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
+          where
+            itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, MemberId)
+            itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
+              join <$> forM itemSharedMsgId $ \msgId -> Just $ case chatDir of
+                CIGroupRcv GroupMember {memberId} -> (msgId, memberId)
+                CIGroupSnd -> (msgId, membershipMemId)
+
     delGroupChatItems :: User -> GroupInfo -> [CChatItem 'CTGroup] -> Bool -> CM ChatResponse
     delGroupChatItems user gInfo@GroupInfo {membership} items moderation = do
       deletedTs <- liftIO getCurrentTime
       when moderation $ do
         ciIds <- concat <$> withStore' (\db -> forM items $ \(CChatItem _ ci) -> markMessageReportsDeleted db user gInfo ci membership deletedTs)
-        unless (null ciIds) $ toView $ CRGroupChatItemsDeleted user gInfo ciIds False (Just membership)
+        unless (null ciIds) $ toView $ CRGroupChatItemsDeleted user gInfo ciIds True (Just membership)
       let m = if moderation then Just membership else Nothing
       if groupFeatureMemberAllowed SGFFullDelete membership gInfo
         then deleteGroupCIs user gInfo items True False m deletedTs
@@ -3041,7 +3066,7 @@ processChatCommand' vr = \case
             findProhibited :: [ComposedMessageReq] -> Maybe GroupFeature
             findProhibited =
               foldr'
-                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership mc ft fileSource <|> acc)
+                (\(ComposedMessage {fileSource, msgContent = mc}, _, (_, ft), _) acc -> prohibitedGroupContent gInfo membership mc ft fileSource True <|> acc)
                 Nothing
         processComposedMessages :: CM ChatResponse
         processComposedMessages = do
@@ -3715,6 +3740,8 @@ chatCommandP =
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <*> (" json" *> jsonP <|> " text " *> updatedMessagesTextP)),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <*> _strP),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
+      "/_archive reports " *> (APIArchiveReceivedReports <$> A.decimal),
+      "/_delete reports " *> (APIDeleteReceivedReports <$> A.decimal <*> _strP <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
       "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
@@ -3947,6 +3974,7 @@ chatCommandP =
       "/set disappear #" *> (SetGroupTimedMessages <$> displayNameP <*> (A.space *> timedTTLOnOffP)),
       "/set disappear @" *> (SetContactTimedMessages <$> displayNameP <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
+      "/set reports #" *> (SetGroupFeature (AGFNR SGFReports) <$> displayNameP <*> _strP),
       "/set links #" *> (SetGroupFeatureRole (AGFR SGFSimplexLinks) <$> displayNameP <*> _strP <*> optional memberRole),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       "/set device name " *> (SetLocalDeviceName <$> textP),

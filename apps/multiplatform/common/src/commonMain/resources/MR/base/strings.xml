@@ -2070,6 +2070,8 @@
   <string name="prohibit_sending_simplex_links">Prohibit sending SimpleX links</string>
   <string name="enable_sending_recent_history">Send up to 100 last messages to new members.</string>
   <string name="disable_sending_recent_history">Do not send history to new members.</string>
+  <string name="enable_sending_member_reports">Allow to report messsages to moderators.</string>
+  <string name="disable_sending_member_reports">Prohibit reporting messages to moderators.</string>
   <string name="group_members_can_send_disappearing">Members can send disappearing messages.</string>
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited.</string>
   <string name="group_members_can_send_dms">Members can send direct messages.</string>
@@ -2088,6 +2090,8 @@
   <string name="simplex_links_are_prohibited_in_group">SimpleX links are prohibited.</string>
   <string name="recent_history_is_sent_to_new_members">Up to 100 last messages are sent to new members.</string>
   <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
+  <string name="group_members_can_send_reports">Members can report messsages to moderators.</string>
+  <string name="member_reports_are_prohibited">Reporting messages is prohibited in this group.</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>

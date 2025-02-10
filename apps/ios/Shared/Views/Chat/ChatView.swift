@@ -1386,7 +1386,11 @@ struct ChatView: View {
                 if ci.chatDir != .groupSnd {
                     if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
                         moderateButton(ci, groupInfo)
-                    } else if ci.meta.itemDeleted == nil, case let .group(gInfo) = chat.chatInfo, gInfo.membership.memberRole == .member, !live, composeState.voiceMessageRecordingState == .noRecording {
+                    } else if ci.meta.itemDeleted == nil && chat.groupFeatureEnabled(.reports),
+                              case let .group(gInfo) = chat.chatInfo,
+                              gInfo.membership.memberRole == .member
+                                && !live
+                                && composeState.voiceMessageRecordingState == .noRecording {
                         reportButton(ci)
                     }
                 }

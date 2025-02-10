@@ -2,6 +2,9 @@
 "\n" = "\n";
 
 /* No comment provided by engineer. */
+"   " = "   ";
+
+/* No comment provided by engineer. */
 " (" = " (";
 
 /* No comment provided by engineer. */
@@ -199,6 +202,9 @@
 /* time interval */
 "%d sec" = "%d segundo(s)";
 
+/* delete after time */
+"%d seconds(s)" = "%d segundos";
+
 /* integrity error chat item */
 "%d skipped message(s)" = "%d mensaje(s) omitido(s)";
 
@@ -304,6 +310,9 @@
    time interval */
 "1 week" = "una semana";
 
+/* delete after time */
+"1 year" = "Un año";
+
 /* No comment provided by engineer. */
 "1-time link" = "Enlace de un uso";
 
@@ -398,6 +407,9 @@
 "Add friends" = "Añadir amigos";
 
 /* No comment provided by engineer. */
+"Add list" = "Añadir lista";
+
+/* No comment provided by engineer. */
 "Add profile" = "Añadir perfil";
 
 /* No comment provided by engineer. */
@@ -411,6 +423,9 @@
 
 /* No comment provided by engineer. */
 "Add to another device" = "Añadir a otro dispositivo";
+
+/* No comment provided by engineer. */
+"Add to list" = "Añadir a la lista";
 
 /* No comment provided by engineer. */
 "Add welcome message" = "Añadir mensaje de bienvenida";
@@ -470,10 +485,16 @@
 "agreeing encryption…" = "acordando cifrado…";
 
 /* No comment provided by engineer. */
+"All" = "Todo";
+
+/* No comment provided by engineer. */
 "All app data is deleted." = "Todos los datos de la aplicación se eliminarán.";
 
 /* No comment provided by engineer. */
 "All chats and messages will be deleted - this cannot be undone!" = "Se eliminarán todos los chats y mensajes. ¡No podrá deshacerse!";
+
+/* alert message */
+"All chats will be removed from the list (text), and the list deleted." = "Todos los chats serán quitados de la lista (text) y esta será eliminada.";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Al introducirlo todos los datos son eliminados.";
@@ -601,6 +622,9 @@
 /* No comment provided by engineer. */
 "and %lld other events" = "y %lld evento(s) más";
 
+/* report reason */
+"Another reason" = "Otro motivo";
+
 /* No comment provided by engineer. */
 "Answer call" = "Responder llamada";
 
@@ -615,6 +639,9 @@
 
 /* No comment provided by engineer. */
 "App encrypts new local files (except videos)." = "Cifrado de los nuevos archivos locales (excepto vídeos).";
+
+/* No comment provided by engineer. */
+"App group:" = "Grupo app:";
 
 /* No comment provided by engineer. */
 "App icon" = "Icono aplicación";
@@ -644,16 +671,31 @@
 "Apply to" = "Aplicar a";
 
 /* No comment provided by engineer. */
+"Archive" = "Archivar";
+
+/* No comment provided by engineer. */
 "Archive and upload" = "Archivar y subir";
 
 /* No comment provided by engineer. */
 "Archive contacts to chat later." = "Archiva contactos para charlar más tarde.";
 
 /* No comment provided by engineer. */
+"Archive report" = "Archivar informe";
+
+/* No comment provided by engineer. */
+"Archive report?" = "¿Archivar informe?";
+
+/* No comment provided by engineer. */
 "Archived contacts" = "Contactos archivados";
 
 /* No comment provided by engineer. */
+"archived report" = "informes archivados";
+
+/* No comment provided by engineer. */
 "Archiving database" = "Archivando base de datos";
+
+/* No comment provided by engineer. */
+"Ask" = "Preguntar";
 
 /* No comment provided by engineer. */
 "Attach" = "Adjuntar";
@@ -775,7 +817,7 @@
 /* rcv group event chat item */
 "blocked %@" = "ha bloqueado a %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "bloqueado por administrador";
 
 /* No comment provided by engineer. */
@@ -813,6 +855,9 @@
 
 /* No comment provided by engineer. */
 "Business chats" = "Chats empresariales";
+
+/* No comment provided by engineer. */
+"Businesses" = "Empresas";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Mediante perfil (predeterminado) o [por conexión](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -883,6 +928,9 @@
 
 /* No comment provided by engineer. */
 "Change" = "Cambiar";
+
+/* alert title */
+"Change automatic message deletion?" = "¿Modificar la eliminación automática de mensajes?";
 
 /* authentication reason */
 "Change chat profiles" = "Cambiar perfil de usuario";
@@ -1033,6 +1081,9 @@
 "Clear conversation?" = "¿Vaciar conversación?";
 
 /* No comment provided by engineer. */
+"Clear or delete group?" = "¿Vaciar o eliminar grupo?";
+
+/* No comment provided by engineer. */
 "Clear private notes?" = "¿Eliminar notas privadas?";
 
 /* No comment provided by engineer. */
@@ -1046,6 +1097,9 @@
 
 /* No comment provided by engineer. */
 "colored" = "coloreado";
+
+/* report reason */
+"Community guidelines violation" = "Violación de las normas de la comunidad";
 
 /* server test step */
 "Compare file" = "Comparar archivo";
@@ -1219,6 +1273,9 @@
 "Connection and servers status." = "Estado de tu conexión y servidores.";
 
 /* No comment provided by engineer. */
+"Connection blocked" = "Conexión bloqueada";
+
+/* No comment provided by engineer. */
 "Connection error" = "Error conexión";
 
 /* No comment provided by engineer. */
@@ -1228,10 +1285,19 @@
 "connection established" = "conexión establecida";
 
 /* No comment provided by engineer. */
+"Connection is blocked by server operator:\n%@" = "Conexión bloqueada por el operador del servidor:\n%@";
+
+/* No comment provided by engineer. */
+"Connection not ready." = "Conexión no establecida.";
+
+/* No comment provided by engineer. */
 "Connection notifications" = "Notificaciones de conexión";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "¡Solicitud de conexión enviada!";
+
+/* No comment provided by engineer. */
+"Connection requires encryption renegotiation." = "La conexión requiere renegociar el cifrado.";
 
 /* No comment provided by engineer. */
 "Connection security" = "Seguridad de conexión";
@@ -1293,6 +1359,9 @@
 /* No comment provided by engineer. */
 "Contacts can mark messages for deletion; you will be able to view them." = "Tus contactos sólo pueden marcar los mensajes para eliminar. Tu podrás verlos.";
 
+/* blocking reason */
+"Content violates conditions of use" = "El contenido viola las condiciones de uso";
+
 /* No comment provided by engineer. */
 "Continue" = "Continuar";
 
@@ -1334,6 +1403,9 @@
 
 /* No comment provided by engineer. */
 "Create link" = "Crear enlace";
+
+/* No comment provided by engineer. */
+"Create list" = "Crear lista";
 
 /* No comment provided by engineer. */
 "Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Crea perfil nuevo en la [aplicación para PC](https://simplex.Descargas/de chat/). 💻";
@@ -1515,6 +1587,9 @@
 "Delete chat" = "Eliminar chat";
 
 /* No comment provided by engineer. */
+"Delete chat messages from your device." = "Elimina los mensajes del dispositivo.";
+
+/* No comment provided by engineer. */
 "Delete chat profile" = "Eliminar perfil";
 
 /* No comment provided by engineer. */
@@ -1568,6 +1643,9 @@
 /* No comment provided by engineer. */
 "Delete link?" = "¿Eliminar enlace?";
 
+/* alert title */
+"Delete list?" = "¿Eliminar lista?";
+
 /* No comment provided by engineer. */
 "Delete member message?" = "¿Eliminar el mensaje de miembro?";
 
@@ -1575,7 +1653,7 @@
 "Delete message?" = "¿Eliminar mensaje?";
 
 /* alert button */
-"Delete messages" = "Eliminar mensaje";
+"Delete messages" = "Eliminar mensajes";
 
 /* No comment provided by engineer. */
 "Delete messages after" = "Eliminar en";
@@ -1597,6 +1675,9 @@
 
 /* server test step */
 "Delete queue" = "Eliminar cola";
+
+/* No comment provided by engineer. */
+"Delete report" = "Borrar informe";
 
 /* No comment provided by engineer. */
 "Delete up to 20 messages at once." = "Elimina hasta 20 mensajes a la vez.";
@@ -1706,6 +1787,12 @@
 /* No comment provided by engineer. */
 "Disable (keep overrides)" = "Desactivar (conservando anulaciones)";
 
+/* alert title */
+"Disable automatic message deletion?" = "¿Desactivar la eliminación automática de mensajes?";
+
+/* alert button */
+"Disable delete messages" = "Desactivar";
+
 /* No comment provided by engineer. */
 "Disable for all" = "Desactivar para todos";
 
@@ -1767,6 +1854,9 @@
 "Do NOT use SimpleX for emergency calls." = "NO uses SimpleX para llamadas de emergencia.";
 
 /* No comment provided by engineer. */
+"Documents:" = "Documentos:";
+
+/* No comment provided by engineer. */
 "Don't create address" = "No crear dirección SimpleX";
 
 /* No comment provided by engineer. */
@@ -1774,6 +1864,9 @@
 
 /* No comment provided by engineer. */
 "Don't show again" = "No volver a mostrar";
+
+/* No comment provided by engineer. */
+"Done" = "Hecho";
 
 /* No comment provided by engineer. */
 "Downgrade and open chat" = "Degradar y abrir Chat";
@@ -1957,6 +2050,9 @@
 "encryption re-negotiation required for %@" = "se requiere renegociar el cifrado para %@";
 
 /* No comment provided by engineer. */
+"Encryption renegotiation in progress." = "Renegociación de cifrado en curso.";
+
+/* No comment provided by engineer. */
 "ended" = "finalizado";
 
 /* call status */
@@ -2043,6 +2139,9 @@
 /* No comment provided by engineer. */
 "Error creating group link" = "Error al crear enlace de grupo";
 
+/* alert title */
+"Error creating list" = "Error al crear lista";
+
 /* No comment provided by engineer. */
 "Error creating member contact" = "Error al establecer contacto con el miembro";
 
@@ -2051,6 +2150,9 @@
 
 /* No comment provided by engineer. */
 "Error creating profile!" = "¡Error al crear perfil!";
+
+/* No comment provided by engineer. */
+"Error creating report" = "Error al crear informe";
 
 /* No comment provided by engineer. */
 "Error decrypting file" = "Error al descifrar el archivo";
@@ -2121,8 +2223,14 @@
 /* No comment provided by engineer. */
 "Error removing member" = "Error al eliminar miembro";
 
+/* alert title */
+"Error reordering lists" = "Error al reorganizar listas";
+
 /* No comment provided by engineer. */
 "Error resetting statistics" = "Error al restablecer las estadísticas";
+
+/* alert title */
+"Error saving chat list" = "Error al guardar listas";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Error al guardar perfil de grupo";
@@ -2199,7 +2307,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Error: ";
 
-/* alert message */
+/* file error text
+   snd error text */
 "Error: %@" = "Error: %@";
 
 /* No comment provided by engineer. */
@@ -2259,11 +2368,17 @@
 /* swipe action */
 "Favorite" = "Favoritos";
 
+/* No comment provided by engineer. */
+"Favorites" = "Favoritos";
+
 /* file error alert title */
 "File error" = "Error de archivo";
 
 /* alert message */
 "File errors:\n%@" = "Error(es) de archivo\n%@";
+
+/* file error text */
+"File is blocked by server operator:\n(info.reason.text)." = "Archivo bloqueado por el operador del servidor\n(info.reason.text).";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Archivo no encontrado, probablemente haya sido borrado o cancelado.";
@@ -2497,6 +2612,9 @@
 "Group will be deleted for you - this cannot be undone!" = "El grupo será eliminado para tí. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
+"Groups" = "Grupos";
+
+/* No comment provided by engineer. */
 "Help" = "Ayuda";
 
 /* No comment provided by engineer. */
@@ -2534,6 +2652,9 @@
 
 /* No comment provided by engineer. */
 "How it helps privacy" = "Cómo ayuda a la privacidad";
+
+/* alert button */
+"How it works" = "Cómo funciona";
 
 /* No comment provided by engineer. */
 "How SimpleX works" = "Cómo funciona SimpleX";
@@ -2621,6 +2742,12 @@
 
 /* No comment provided by engineer. */
 "inactive" = "inactivo";
+
+/* report reason */
+"Inappropriate content" = "Contenido inapropiado";
+
+/* report reason */
+"Inappropriate profile" = "Perfil inapropiado";
 
 /* No comment provided by engineer. */
 "Incognito" = "Incógnito";
@@ -2889,6 +3016,15 @@
 /* No comment provided by engineer. */
 "Linked desktops" = "Ordenadores enlazados";
 
+/* swipe action */
+"List" = "Lista";
+
+/* No comment provided by engineer. */
+"List name and emoji should be different for all lists." = "El nombre y el emoji deben ser diferentes en todas las listas.";
+
+/* No comment provided by engineer. */
+"List name..." = "Nombre de la lista...";
+
 /* No comment provided by engineer. */
 "LIVE" = "EN VIVO";
 
@@ -3066,6 +3202,9 @@
 /* No comment provided by engineer. */
 "Messages from %@ will be shown!" = "¡Los mensajes de %@ serán mostrados!";
 
+/* alert message */
+"Messages in this chat will never be deleted." = "Los mensajes de esta conversación nunca se borran.";
+
 /* No comment provided by engineer. */
 "Messages received" = "Mensajes recibidos";
 
@@ -3138,8 +3277,14 @@
 /* marked deleted chat item preview text */
 "moderated by %@" = "moderado por %@";
 
+/* member role */
+"moderator" = "moderador";
+
 /* time unit */
 "months" = "meses";
+
+/* swipe action */
+"More" = "Más";
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "¡Pronto habrá más mejoras!";
@@ -3156,10 +3301,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Múltiples perfiles";
 
-/* No comment provided by engineer. */
-"mute" = "silenciar";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "Silenciar";
 
 /* No comment provided by engineer. */
@@ -3256,6 +3398,15 @@
 "No app password" = "Sin contraseña de la aplicación";
 
 /* No comment provided by engineer. */
+"No chats" = "Sin chats";
+
+/* No comment provided by engineer. */
+"No chats found" = "Ningún chat encontrado";
+
+/* No comment provided by engineer. */
+"No chats in list %@" = "Sin chats en la lista %@";
+
+/* No comment provided by engineer. */
 "No contacts selected" = "Ningún contacto seleccionado";
 
 /* No comment provided by engineer. */
@@ -3325,10 +3476,16 @@
 "no text" = "sin texto";
 
 /* No comment provided by engineer. */
+"No unread chats" = "Ningún chat sin leer";
+
+/* No comment provided by engineer. */
 "No user identifiers." = "Sin identificadores de usuario.";
 
 /* No comment provided by engineer. */
 "Not compatible!" = "¡No compatible!";
+
+/* No comment provided by engineer. */
+"Notes" = "Notas";
 
 /* No comment provided by engineer. */
 "Nothing selected" = "Nada seleccionado";
@@ -3408,6 +3565,12 @@
 "Only group owners can enable voice messages." = "Sólo los propietarios del grupo pueden activar los mensajes de voz.";
 
 /* No comment provided by engineer. */
+"Only sender and moderators see it" = "Solo el remitente y el moderador pueden verlo";
+
+/* No comment provided by engineer. */
+"Only you and moderators see it" = "Solo tú y los moderadores podéis verlo";
+
+/* No comment provided by engineer. */
 "Only you can add message reactions." = "Sólo tú puedes añadir reacciones a los mensajes.";
 
 /* No comment provided by engineer. */
@@ -3455,11 +3618,20 @@
 /* No comment provided by engineer. */
 "Open group" = "Grupo abierto";
 
+/* No comment provided by engineer. */
+"Open link" = "Abrir enlace";
+
+/* No comment provided by engineer. */
+"Open links from chat list" = "Abrir enlaces desde listado de chats";
+
 /* authentication reason */
 "Open migration to another device" = "Abrir menú migración a otro dispositivo";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Abrir Configuración";
+
+/* No comment provided by engineer. */
+"Open web link?" = "¿Abrir enlace web?";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Iniciando aplicación…";
@@ -3711,7 +3883,7 @@
 "Prohibit sending voice messages." = "No se permiten mensajes de voz.";
 
 /* No comment provided by engineer. */
-"Protect app screen" = "Proteger la pantalla de la aplicación";
+"Protect app screen" = "Proteger la pantalla";
 
 /* No comment provided by engineer. */
 "Protect IP address" = "Proteger dirección IP";
@@ -3936,6 +4108,30 @@
 /* chat item action */
 "Reply" = "Responder";
 
+/* chat item action */
+"Report" = "Informe";
+
+/* report reason */
+"Report content: only group moderators will see it." = "Informar de contenido: sólo los moderadores del grupo lo verán.";
+
+/* report reason */
+"Report member profile: only group moderators will see it." = "Informar del perfil de un miembro: sólo los moderadores del grupo lo verán.";
+
+/* report reason */
+"Report other: only group moderators will see it." = "Informar de otros: sólo los moderadores del grupo lo verán.";
+
+/* No comment provided by engineer. */
+"Report reason?" = "¿Motivo del informe?";
+
+/* report reason */
+"Report spam: only group moderators will see it." = "Informar de spam: sólo los moderadores del grupo lo verán.";
+
+/* report reason */
+"Report violation: only group moderators will see it." = "Informar de violación: sólo los moderadores del grupo lo verán.";
+
+/* No comment provided by engineer. */
+"Reports" = "Informes";
+
 /* chat list item title */
 "requested to connect" = "solicitado para conectar";
 
@@ -4038,6 +4234,9 @@
 
 /* No comment provided by engineer. */
 "Save group profile" = "Guardar perfil de grupo";
+
+/* No comment provided by engineer. */
+"Save list" = "Guardar lista";
 
 /* No comment provided by engineer. */
 "Save passphrase and open chat" = "Guardar contraseña y abrir el chat";
@@ -4340,6 +4539,9 @@
 "Set 1 day" = "Establecer 1 día";
 
 /* No comment provided by engineer. */
+"Set chat name…" = "Nombre para el chat…";
+
+/* No comment provided by engineer. */
 "Set contact name…" = "Escribe el nombre del contacto…";
 
 /* No comment provided by engineer. */
@@ -4518,7 +4720,7 @@
 "Skipped messages" = "Mensajes omitidos";
 
 /* No comment provided by engineer. */
-"Small groups (max 20)" = "Grupos pequeños (máx. 20)";
+"Small groups (max 20)" = "Grupos pequeños (max. 20)";
 
 /* No comment provided by engineer. */
 "SMP server" = "Servidor SMP";
@@ -4546,6 +4748,10 @@
 
 /* notification title */
 "Somebody" = "Alguien";
+
+/* blocking reason
+   report reason */
+"Spam" = "Spam";
 
 /* No comment provided by engineer. */
 "Square, circle, or anything in between." = "Cuadrada, circular o cualquier forma intermedia.";
@@ -4603,6 +4809,9 @@
 
 /* No comment provided by engineer. */
 "Stopping chat" = "Parando chat";
+
+/* No comment provided by engineer. */
+"Storage" = "Almacenamiento";
 
 /* No comment provided by engineer. */
 "strike" = "tachado";
@@ -4764,6 +4973,9 @@
 "The profile is only shared with your contacts." = "El perfil sólo se comparte con tus contactos.";
 
 /* No comment provided by engineer. */
+"The report will be archived for you." = "El informe será archivado para ti.";
+
+/* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Las mismas condiciones se aplicarán al operador **%@**.";
 
 /* No comment provided by engineer. */
@@ -4782,7 +4994,7 @@
 "The servers for new connections of your current chat profile **%@**." = "Servidores para conexiones nuevas en tu perfil **%@**.";
 
 /* No comment provided by engineer. */
-"The servers for new files of your current chat profile **%@**." = "Servidores para archivos nuevos en tu perfil **%@**.";
+"The servers for new files of your current chat profile **%@**." = "Servidores para enviar archivos en tu perfil **%@**.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "El texto pegado no es un enlace SimpleX.";
@@ -4807,6 +5019,9 @@
 
 /* No comment provided by engineer. */
 "This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Esta acción es irreversible. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Podría tardar varios minutos.";
+
+/* alert message */
+"This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." = "Todos los mensajes previos a la selección serán eliminados del chat. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Esta acción es irreversible. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.";
@@ -5015,10 +5230,7 @@
 /* authentication reason */
 "Unlock app" = "Desbloquear aplicación";
 
-/* No comment provided by engineer. */
-"unmute" = "activar sonido";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "Activar audio";
 
 /* No comment provided by engineer. */
@@ -5049,7 +5261,7 @@
 "updated profile" = "perfil actualizado";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Al actualizar la configuración el cliente se reconectará a todos los servidores.";
+"Updating settings will re-connect the client to all servers." = "Para actualizar la configuración el cliente se reconectará a todos los servidores.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Actualizar y abrir Chat";
@@ -5338,6 +5550,9 @@
 
 /* pref value */
 "yes" = "sí";
+
+/* No comment provided by engineer. */
+"Yes" = "Si";
 
 /* No comment provided by engineer. */
 "you" = "tu";

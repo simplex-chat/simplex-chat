@@ -1059,7 +1059,7 @@
     <string name="passcode_set">Toegangscode ingesteld!</string>
     <string name="la_mode_system">Systeem</string>
     <string name="decryption_error">Decodering fout</string>
-    <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.</string>
+    <string name="alert_text_msg_bad_hash">De hash van het vorige bericht is anders.\"</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d berichten overgeslagen.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Het kan gebeuren wanneer u of de ander een oude database back-up gebruikt.</string>
     <string name="alert_text_fragment_please_report_to_developers">Meld het alsjeblieft aan de ontwikkelaars.</string>
@@ -1832,7 +1832,7 @@
     <string name="color_mode_system">Systeem</string>
     <string name="color_wallpaper_background">Wallpaper achtergrond</string>
     <string name="chat_theme_set_default_theme">Stel het standaard thema in</string>
-    <string name="chat_list_always_visible">Toon chatlijst in nieuw venster</string>
+    <string name="chat_list_always_visible">Toon chat-lijst in nieuw venster</string>
     <string name="message_queue_info_none">geen</string>
     <string name="info_row_debug_delivery">Foutopsporing bezorging</string>
     <string name="message_queue_info">Informatie over berichtenwachtrij</string>
@@ -1872,7 +1872,7 @@
     <string name="servers_info_details">Details</string>
     <string name="servers_info_messages_received">Berichten ontvangen</string>
     <string name="servers_info_subscriptions_section_header">Bericht ontvangst</string>
-    <string name="servers_info_private_data_disclaimer">Beginnend vanaf %s. \nAlle gegevens zijn privé op uw apparaat.</string>
+    <string name="servers_info_private_data_disclaimer">Vanaf %s.\nAlle gegevens blijven privé op uw apparaat.</string>
     <string name="servers_info_connected_servers_section_header">Verbonden servers</string>
     <string name="servers_info_subscriptions_connections_pending">In behandeling</string>
     <string name="servers_info_previously_connected_servers_section_header">Eerder verbonden servers</string>
@@ -2039,11 +2039,11 @@
     <string name="v6_0_delete_many_messages_descr">Verwijder maximaal 20 berichten tegelijk.</string>
     <string name="chat_database_exported_not_all_files">Sommige bestanden zijn niet geëxporteerd</string>
     <string name="reset_all_hints">Alle hints resetten</string>
-    <string name="one_hand_ui_card_title">Chatlijst wisselen:</string>
+    <string name="one_hand_ui_card_title">Chat-lijst wisselen:</string>
     <string name="one_hand_ui_change_instruction">U kunt dit wijzigen in de instellingen onder uiterlijk</string>
     <string name="create_address_button">Creëren</string>
     <string name="v6_0_privacy_blur">Vervagen voor betere privacy.</string>
-    <string name="v6_0_chat_list_media">Afspelen via de chatlijst.</string>
+    <string name="v6_0_chat_list_media">Afspelen via de chat-lijst.</string>
     <string name="v6_0_upgrade_app_descr">Download nieuwe versies van GitHub.</string>
     <string name="v6_0_increase_font_size">Vergroot het lettertype.</string>
     <string name="v6_0_upgrade_app">App automatisch upgraden</string>
@@ -2253,7 +2253,7 @@
     <string name="sync_connection_question">Verbinding herstellen?</string>
     <string name="sync_connection_confirm">Herstel</string>
     <string name="connection_not_ready">Verbinding nog niet klaar</string>
-    <string name="error_updating_chat_tags">Fout bij het bijwerken van de chatlijst</string>
+    <string name="error_updating_chat_tags">Fout bij het bijwerken van de chat-lijst</string>
     <string name="no_chats_in_list">Geen chats in lijst %s.</string>
     <string name="chat_list_favorites">Favorieten</string>
     <string name="chat_list_groups">Groepen</string>
@@ -2270,12 +2270,12 @@
     <string name="duplicated_list_error">De naam en emoji van de lijst moeten voor alle lijsten verschillend zijn.</string>
     <string name="save_list">Lijst opslaan</string>
     <string name="list_menu">Lijst</string>
-    <string name="error_loading_chat_tags">Fout bij het laden van chatlijsten</string>
+    <string name="error_loading_chat_tags">Fout bij het laden van chat-lijsten</string>
     <string name="delete_chat_list_warning">Alle chats worden verwijderd uit de lijst %s, en de lijst wordt verwijderd</string>
     <string name="add_to_list">Toevoegen aan lijst</string>
     <string name="chat_list_businesses">bedrijven</string>
     <string name="chat_list_contacts">Contacten</string>
-    <string name="error_creating_chat_tags">Fout bij het aanmaken van chatlijst</string>
+    <string name="error_creating_chat_tags">Fout bij het aanmaken van chat-lijst</string>
     <string name="no_unread_chats">Geen ongelezen chats</string>
     <string name="chat_list_notes">Notities</string>
     <string name="change_list">Lijst wijzigen</string>
@@ -2314,7 +2314,7 @@
     <string name="file_error_blocked">Bestand is geblokkeerd door server operator:\n%1$s.</string>
     <string name="privacy_chat_list_open_links_no">Nee</string>
     <string name="privacy_chat_list_open_web_link">Link openen</string>
-    <string name="privacy_chat_list_open_links">Open links van chatlijst</string>
+    <string name="privacy_chat_list_open_links">Open links vIn de chat-lijst</string>
     <string name="privacy_chat_list_open_links_ask">Vragen</string>
     <string name="chat_list_group_reports">Rapporten</string>
     <string name="blocking_reason_spam">Spam</string>
@@ -2329,4 +2329,10 @@
     <string name="chat_ttl_options_footer">Verwijder chatberichten van uw apparaat.</string>
     <string name="disable_automatic_deletion">Berichten verwijderen uitschakelen</string>
     <string name="chat_item_ttl_default">standaard (%s)</string>
+    <string name="network_smp_web_port_section_title">TCP-poort voor berichtenuitwisseling</string>
+    <string name="network_smp_web_port_toggle">Gebruik een webpoort</string>
+    <string name="network_smp_web_port_footer">Gebruik TCP-poort %1$s wanneer er geen poort is opgegeven.</string>
+    <string name="mute_all_chat">Alles dempen</string>
+    <string name="unread_mentions">Ongelezen vermeldingen</string>
+    <string name="max_group_mentions_per_message_reached">Je kunt maximaal %1$s leden per bericht vermelden!</string>
 </resources>
