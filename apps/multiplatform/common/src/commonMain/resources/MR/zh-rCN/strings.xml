@@ -1917,7 +1917,7 @@
     <string name="servers_info_reset_stats_alert_confirm">重置</string>
     <string name="network_error_broker_host_desc">服务器地址不兼容网络设置：%1$s。</string>
     <string name="servers_info_starting_from">起始自 %s。</string>
-    <string name="servers_info_private_data_disclaimer">自 %s 起 \n所有数据均私密地保存在你的设备上..</string>
+    <string name="servers_info_private_data_disclaimer">自 %s 起 \n所有数据均私密地保存在你的设备上.</string>
     <string name="subscribed">已订阅</string>
     <string name="acknowledged">已认可</string>
     <string name="network_error_broker_version_desc">服务器版本不兼容你的应用：%1$s.</string>
@@ -2316,4 +2316,10 @@
     <string name="change_automatic_chat_deletion_message">此操作无法撤销 —— 比此聊天中所选消息更早发出并收到的消息将被删除。</string>
     <string name="disable_automatic_deletion_message">此聊天中的消息永远不会被删除。</string>
     <string name="change_automatic_deletion_question">更改消息自动删除设置？</string>
+    <string name="network_smp_web_port_section_title">用于消息收发的 TCP 端口</string>
+    <string name="network_smp_web_port_footer">未指定端口时，使用 TCP 端口 %1$s。</string>
+    <string name="network_smp_web_port_toggle">使用 web 端口</string>
+    <string name="mute_all_chat">全部静音</string>
+    <string name="unread_mentions">取消提及的已读状态</string>
+    <string name="max_group_mentions_per_message_reached">每条消息最多提及 %1$s 名成员！</string>
 </resources>

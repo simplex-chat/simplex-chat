@@ -3156,10 +3156,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Кілька профілів чату";
 
-/* No comment provided by engineer. */
-"mute" = "приглушити";
-
-/* swipe action */
+/* notification label action */
 "Mute" = "Вимкнути звук";
 
 /* No comment provided by engineer. */
@@ -5015,10 +5012,7 @@
 /* authentication reason */
 "Unlock app" = "Розблокувати додаток";
 
-/* No comment provided by engineer. */
-"unmute" = "увімкнути звук";
-
-/* swipe action */
+/* notification label action */
 "Unmute" = "Увімкнути звук";
 
 /* No comment provided by engineer. */

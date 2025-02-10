@@ -1928,7 +1928,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "โปรไฟล์การแชทหลายรายการ";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "ปิดเสียง";
 
 /* No comment provided by engineer. */
@@ -2971,7 +2971,7 @@
 /* authentication reason */
 "Unlock app" = "ปลดล็อคแอป";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "เปิดเสียง";
 
 /* swipe action */
