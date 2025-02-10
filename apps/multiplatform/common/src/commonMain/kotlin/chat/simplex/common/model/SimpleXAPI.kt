@@ -3576,8 +3576,8 @@ sealed class CC {
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${updatedMessage.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
-    is ApiArchiveReceivedReports -> "/_archive reports $groupId"
-    is ApiDeleteReceivedReports -> "/_delete reports $groupId ${itemIds.joinToString(",")} ${mode.deleteMode}"
+    is ApiArchiveReceivedReports -> "/_archive reports #$groupId"
+    is ApiDeleteReceivedReports -> "/_delete reports #$groupId ${itemIds.joinToString(",")} ${mode.deleteMode}"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
     is ApiGetReactionMembers -> "/_reaction members $userId #$groupId $itemId ${json.encodeToString(reaction)}"
     is ApiForwardChatItems -> {
