@@ -217,23 +217,22 @@ struct ChatListNavLink: View {
                 let showLeaveGroup = groupInfo.membership.memberCurrent
                 let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
 
-                let showClearAdjusted = showClearButton && (totalNumberOfButtons <= 3 || !showReportsButton)
-                if showClearAdjusted {
+                if showClearButton && totalNumberOfButtons <= 3 {
                     clearChatButton()
                 }
 
-                if showReportsButton {
+                if showReportsButton && totalNumberOfButtons <= 3 {
                     archiveAllReportsButton()
                 }
 
-                if showLeaveGroup && totalNumberOfButtons <= 3 {
+                if showLeaveGroup {
                     leaveGroupChatButton(groupInfo)
                 }
 
                 if showDeleteGroup && totalNumberOfButtons <= 3 {
                     deleteGroupChatButton(groupInfo)
                 } else if totalNumberOfButtons > 3 {
-                    moreOptionsButton(!showClearAdjusted, chat, groupInfo)
+                    moreOptionsButton(chat, groupInfo)
                 }
             }
         }
@@ -324,7 +323,6 @@ struct ChatListNavLink: View {
         } label: {
             SwipeLabel(NSLocalizedString("Archive reports", comment: "swipe action"), systemImage: "archivebox", inverted: oneHandUI)
         }
-        .tint(Color.orange)
     }
 
     private func clearChatButton() -> some View {
@@ -368,22 +366,17 @@ struct ChatListNavLink: View {
         )
     }
     
-    private func moreOptionsButton(_ showClear: Bool, _ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
+    private func moreOptionsButton(_ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
         Button {
             var buttons: [Alert.Button] = []
+            buttons.append(.default(Text("Clear")) {
+                AlertManager.shared.showAlert(clearChatAlert())
+            })
 
-            if showClear {
-                buttons.append(.default(Text("Clear")) {
-                    AlertManager.shared.showAlert(clearChatAlert())
+            if let groupInfo, chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator && groupInfo.ready {
+                buttons.append(.default(Text("Archive reports")) {
+                    AlertManager.shared.showAlert(archiveAllReportsAlert())
                 })
-            }
-
-            if let groupInfo {
-                buttons.append(
-                    .default(Text(NSLocalizedString("Leave", comment: "swipe action"))) {
-                        AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
-                    }
-                )
             }
 
             if let gi = groupInfo, gi.canDelete {

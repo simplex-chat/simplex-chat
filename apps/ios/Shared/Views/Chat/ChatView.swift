@@ -145,9 +145,11 @@ struct ChatView: View {
                     archiveReports(chat.chatInfo, selected.sorted(), false, deletedSelectedMessages)
                 }
             }
-            Button("For all moderators", role: .destructive) {
-                if let selected = selectedChatItems {
-                    archiveReports(chat.chatInfo, selected.sorted(), true, deletedSelectedMessages)
+            if case let ChatInfo.group(groupInfo) = chat.chatInfo, groupInfo.membership.memberActive {
+                Button("For all moderators", role: .destructive) {
+                    if let selected = selectedChatItems {
+                        archiveReports(chat.chatInfo, selected.sorted(), true, deletedSelectedMessages)
+                    }
                 }
             }
         }
@@ -1258,10 +1260,12 @@ struct ChatView: View {
                             self.archivingReports = []
                         }
                     }
-                    Button("For all moderators", role: .destructive) {
-                        if let reports = self.archivingReports {
-                            archiveReports(chat.chatInfo, reports.sorted(), true)
-                            self.archivingReports = []
+                    if case let ChatInfo.group(groupInfo) = chat.chatInfo, groupInfo.membership.memberActive {
+                        Button("For all moderators", role: .destructive) {
+                            if let reports = self.archivingReports {
+                                archiveReports(chat.chatInfo, reports.sorted(), true)
+                                self.archivingReports = []
+                            }
                         }
                     }
                 }
@@ -1726,7 +1730,7 @@ struct ChatView: View {
         }
         
         private func archiveReportButton(_ cItem: ChatItem) -> Button<some View> {
-            Button(role: .destructive) {
+            Button {
                 archivingReports = [cItem.id]
                 showArchivingReports = true
             } label: {
