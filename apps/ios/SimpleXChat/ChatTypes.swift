@@ -2411,13 +2411,6 @@ public struct ChatItemDeletion: Decodable, Hashable {
 public struct AChatItem: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
-
-    public var chatId: String {
-        if case let .groupRcv(groupMember) = chatItem.chatDir {
-            return groupMember.id
-        }
-        return chatInfo.id
-    }
 }
 
 public struct CIMentionMember: Decodable, Hashable {
