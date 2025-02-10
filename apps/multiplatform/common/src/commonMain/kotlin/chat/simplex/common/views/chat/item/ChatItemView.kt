@@ -923,7 +923,7 @@ private fun ArchiveReportItemAction(id: Long, showMenu: MutableState<Boolean>, a
       showArchiveReportsAlert(listOf(id), archiveReports)
       showMenu.value = false
     },
-    color = Color.Red
+    color = WarningOrange
   )
 }
 
