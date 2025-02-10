@@ -211,27 +211,29 @@ struct ChatListNavLink: View {
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 tagChatButton(chat)
-                if chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator {
-                    archiveAllReportsButton()
-                }
+                let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
                 let showClearButton = !chat.chatItems.isEmpty
                 let showDeleteGroup = groupInfo.canDelete
                 let showLeaveGroup = groupInfo.membership.memberCurrent
-                let totalNumberOfButtons = 1 + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
+                let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
 
-                if showClearButton, totalNumberOfButtons <= 3 {
+                let showClearAdjusted = showClearButton && (totalNumberOfButtons <= 3 || !showReportsButton)
+                if showClearAdjusted {
                     clearChatButton()
                 }
-                if (showLeaveGroup) {
+
+                if showReportsButton {
+                    archiveAllReportsButton()
+                }
+
+                if showLeaveGroup && totalNumberOfButtons <= 3 {
                     leaveGroupChatButton(groupInfo)
                 }
-                
-                if showDeleteGroup {
-                    if totalNumberOfButtons <= 3 {
-                        deleteGroupChatButton(groupInfo)
-                    } else {
-                        moreOptionsButton(chat, groupInfo)
-                    }
+
+                if showDeleteGroup && totalNumberOfButtons <= 3 {
+                    deleteGroupChatButton(groupInfo)
+                } else {
+                    moreOptionsButton(!showClearAdjusted, chat, groupInfo)
                 }
             }
         }
@@ -366,14 +368,24 @@ struct ChatListNavLink: View {
         )
     }
     
-    private func moreOptionsButton(_ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
+    private func moreOptionsButton(_ showClear: Bool, _ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
         Button {
-            var buttons: [Alert.Button] = [
-                .default(Text("Clear")) {
+            var buttons: [Alert.Button] = []
+
+            if showClear {
+                buttons.append(.default(Text("Clear")) {
                     AlertManager.shared.showAlert(clearChatAlert())
-                }
-            ]
-            
+                })
+            }
+
+            if let groupInfo {
+                buttons.append(
+                    .default(Text(NSLocalizedString("Leave", comment: "swipe action"))) {
+                        AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
+                    }
+                )
+            }
+
             if let gi = groupInfo, gi.canDelete {
                 buttons.append(.destructive(Text("Delete")) {
                     AlertManager.shared.showAlert(deleteGroupAlert(gi))
