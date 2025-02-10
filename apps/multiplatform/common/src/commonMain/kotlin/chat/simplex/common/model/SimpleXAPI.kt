@@ -2620,6 +2620,9 @@ object ChatController {
             } else {
               upsertChatItem(rhId, cInfo, toChatItem.chatItem)
             }
+            if (cItem.isActiveReport) {
+              decreaseGroupReportsCounter(rhId, cInfo.id)
+            }
           }
           withReportsChatsIfOpen {
             if (cItem.isReport) {
