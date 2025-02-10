@@ -142,16 +142,12 @@ struct ChatView: View {
         .confirmationDialog(selectedChatItems?.count == 1 ? "Archive report?" : "Archive \((selectedChatItems?.count ?? 0)) reports?", isPresented: $showArchiveSelectedReports, titleVisibility: .visible) {
             Button("For me", role: .destructive) {
                 if let selected = selectedChatItems {
-                    archiveReports(chat.chatInfo, selected.sorted(), false) {
-                        self.selectedChatItems = []
-                    }
+                    archiveReports(chat.chatInfo, selected.sorted(), false, deletedSelectedMessages)
                 }
             }
             Button("For all moderators", role: .destructive) {
                 if let selected = selectedChatItems {
-                    archiveReports(chat.chatInfo, selected.sorted(), true) {
-                        self.selectedChatItems = []
-                    }
+                    archiveReports(chat.chatInfo, selected.sorted(), true, deletedSelectedMessages)
                 }
             }
         }
@@ -1959,7 +1955,7 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
     }
 }
 
-func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ onSuccess: @escaping () -> Void = {}) {
+func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ onSuccess: @escaping () async -> Void = {}) {
     if itemIds.count > 0 {
         Task {
             do {
@@ -1981,8 +1977,8 @@ func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ 
                             ChatModel.shared.decreaseGroupReportsCounter(chatInfo.id)
                         }
                     }
-                    onSuccess()
                 }
+                await onSuccess()
             } catch {
                 logger.error("ChatView.archiveReports error: \(error.localizedDescription)")
             }
