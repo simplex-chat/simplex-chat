@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
@@ -299,6 +300,11 @@ fun GroupMenuItems(
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, groupInfo.chatSettings.enableNtfs.nextMode(true), showMenu)
       TagListAction(chat, showMenu)
+      if (chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+        ArchiveAllReportsItemAction(showMenu) {
+          archiveAllReportsForMe(chat.remoteHostId, chat.chatInfo.apiId)
+        }
+      }
       ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
@@ -561,6 +567,18 @@ private fun InvalidDataView() {
       Spacer(Modifier.height(height))
     }
   }
+}
+
+@Composable
+private fun ArchiveAllReportsItemAction(showMenu: MutableState<Boolean>, archiveReports: () -> Unit) {
+  ItemAction(
+    stringResource(MR.strings.archive_reports),
+    painterResource(MR.images.ic_inventory_2),
+    onClick = {
+      showArchiveAllReportsForMeAlert(archiveReports)
+      showMenu.value = false
+    }
+  )
 }
 
 fun markChatRead(c: Chat) {
@@ -882,6 +900,25 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       if (current != null) {
         currentState.value = chatSettings.enableNtfs
       }
+    }
+  }
+}
+
+private fun showArchiveAllReportsForMeAlert(archiveReports: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.report_archive_alert_title_all),
+    text = generalGetString(MR.strings.report_archive_alert_desc_all),
+    onConfirm = archiveReports,
+    destructive = true,
+    confirmText = generalGetString(MR.strings.archive_verb),
+  )
+}
+
+private fun archiveAllReportsForMe(chatRh: Long?, apiId: Long) {
+  withBGApi {
+    val r = chatModel.controller.apiArchiveReceivedReports(chatRh, apiId)
+    if (r != null) {
+      controller.groupChatItemsDeleted(chatRh, r)
     }
   }
 }

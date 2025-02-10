@@ -918,7 +918,7 @@ final class ChatModel: ObservableObject {
     }
 
     func decreaseGroupReportsCounter(_ chatId: ChatId, by: Int = 1) {
-        changeGroupReportsCounter(chatId, -1)
+        changeGroupReportsCounter(chatId, -by)
     }
 
     private func changeGroupReportsCounter(_ chatId: ChatId, _ by: Int = 0) {

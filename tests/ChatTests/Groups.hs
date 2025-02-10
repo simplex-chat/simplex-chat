@@ -6031,12 +6031,12 @@ testGroupMemberReports =
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
       cath #$> ("/_get chat #1 content=report count=100", chat, [])
       dan #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content"), (1, "report spam")])
-      alice ##> "/_archive reports 1"
+      alice ##> "/_archive reports #1"
       alice <## "#jokes: 2 messages deleted by user"
       (bob </)
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]"), (0, "report spam [marked deleted by you]")])
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report spam")])
-      bob ##> "/_archive reports 1"
+      bob ##> "/_archive reports #1"
       bob <## "#jokes: 2 messages deleted by user"
       bob #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]"), (0, "report spam [marked deleted by you]")])
       -- delete reports for all admins
@@ -6063,7 +6063,7 @@ testGroupMemberReports =
         ]
       alice ##> "/last_item_id"
       i :: ChatItemId <- read <$> getTermLine alice
-      alice ##> ("/_delete reports 1 " <> show i <> " broadcast")
+      alice ##> ("/_delete reports #1 " <> show i <> " broadcast")
       alice <## "message marked deleted by you"
       bob <# "#jokes dan> [marked deleted by alice] report content"
       alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
