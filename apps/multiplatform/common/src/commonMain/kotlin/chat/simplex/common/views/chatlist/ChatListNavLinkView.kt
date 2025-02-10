@@ -577,8 +577,7 @@ private fun ArchiveAllReportsItemAction(showMenu: MutableState<Boolean>, archive
     onClick = {
       showArchiveAllReportsForMeAlert(archiveReports)
       showMenu.value = false
-    },
-    color = WarningOrange
+    }
   )
 }
 

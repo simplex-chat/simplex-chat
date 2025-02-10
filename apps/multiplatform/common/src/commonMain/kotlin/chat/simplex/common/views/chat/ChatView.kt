@@ -2418,7 +2418,7 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
 private fun archiveItems(rhId: Long?, chatInfo: ChatInfo, selectedChatItems: MutableState<Set<Long>?>) {
   val itemIds = selectedChatItems.value
   if (itemIds != null) {
-    showArchiveReportsAlert(itemIds.sorted(), archiveReports = { ids, forAll ->
+    showArchiveReportsAlert(itemIds.sorted(), chatInfo is ChatInfo.Group && chatInfo.groupInfo.membership.memberActive, archiveReports = { ids, forAll ->
       archiveReports(rhId, chatInfo, ids, forAll) {
         selectedChatItems.value = null
       }

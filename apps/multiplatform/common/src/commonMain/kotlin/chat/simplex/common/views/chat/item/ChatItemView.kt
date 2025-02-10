@@ -302,7 +302,7 @@ fun ChatItemView(
             cItem.isReport && cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group -> {
               DefaultDropdownMenu(showMenu) {
                 if (cItem.chatDir !is CIDirection.GroupSnd && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-                  ArchiveReportItemAction(cItem.id, showMenu, archiveReports)
+                  ArchiveReportItemAction(cItem.id, cInfo.groupInfo.membership.memberActive, showMenu, archiveReports)
                 }
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
                 Divider()
@@ -915,19 +915,18 @@ private fun ReportItemAction(
 }
 
 @Composable
-private fun ArchiveReportItemAction(id: Long, showMenu: MutableState<Boolean>, archiveReports: (List<Long>, Boolean) -> Unit) {
+private fun ArchiveReportItemAction(id: Long, allowForAll: Boolean, showMenu: MutableState<Boolean>, archiveReports: (List<Long>, Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.archive_report),
     painterResource(MR.images.ic_inventory_2),
     onClick = {
-      showArchiveReportsAlert(listOf(id), archiveReports)
+      showArchiveReportsAlert(listOf(id), allowForAll, archiveReports)
       showMenu.value = false
-    },
-    color = WarningOrange
+    }
   )
 }
 
-fun showArchiveReportsAlert(ids: List<Long>, archiveReports: (List<Long>, Boolean) -> Unit) {
+fun showArchiveReportsAlert(ids: List<Long>, allowForAll: Boolean, archiveReports: (List<Long>, Boolean) -> Unit) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = if (ids.size == 1) {
       generalGetString(MR.strings.report_archive_alert_title)
@@ -948,17 +947,19 @@ fun showArchiveReportsAlert(ids: List<Long>, archiveReports: (List<Long>, Boolea
           color = MaterialTheme.colors.error
         )
       }
-      // Archive for all moderators
-      SectionItemView({
-        AlertManager.shared.hideAlert()
-        archiveReports(ids, true)
-      }) {
-        Text(
-          stringResource(MR.strings.report_archive_for_all_moderators),
-          Modifier.fillMaxWidth(),
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.error
-        )
+      if (allowForAll) {
+        // Archive for all moderators
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          archiveReports(ids, true)
+        }) {
+          Text(
+            stringResource(MR.strings.report_archive_for_all_moderators),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.error
+          )
+        }
       }
     }
   )
