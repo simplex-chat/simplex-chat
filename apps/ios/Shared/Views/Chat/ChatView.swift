@@ -46,6 +46,7 @@ struct ChatView: View {
     @State private var forwardedChatItems: [ChatItem] = []
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
+    @State private var showArchiveSelectedReports: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -100,6 +101,9 @@ struct ChatView: View {
                             allowToDeleteSelectedMessagesForAll = forAll
                             showDeleteSelectedMessages = true
                         },
+                        archiveItems: {
+                            showArchiveSelectedReports = true
+                        },
                         moderateItems: {
                             if case let .group(groupInfo) = chat.chatInfo {
                                 showModerateSelectedMessagesAlert(groupInfo)
@@ -131,6 +135,22 @@ struct ChatView: View {
                     if let selected = selectedChatItems {
                         allowToDeleteSelectedMessagesForAll = false
                         deleteMessages(chat, selected.sorted(), .cidmBroadcast, moderate: false, deletedSelectedMessages)
+                    }
+                }
+            }
+        }
+        .confirmationDialog(selectedChatItems?.count == 1 ? "Archive report?" : "Archive \((selectedChatItems?.count ?? 0)) reports?", isPresented: $showArchiveSelectedReports, titleVisibility: .visible) {
+            Button("For me", role: .destructive) {
+                if let selected = selectedChatItems {
+                    archiveReports(chat.chatInfo, selected.sorted(), false) {
+                        self.selectedChatItems = []
+                    }
+                }
+            }
+            Button("For all moderators", role: .destructive) {
+                if let selected = selectedChatItems {
+                    archiveReports(chat.chatInfo, selected.sorted(), true) {
+                        self.selectedChatItems = []
                     }
                 }
             }
@@ -914,6 +934,8 @@ struct ChatView: View {
         @State private var showDeleteMessage = false
         @State private var deletingItems: [Int64] = []
         @State private var showDeleteMessages = false
+        @State private var archivingReports: Set<Int64>? = nil
+        @State private var showArchivingReports = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var msgWidth: CGFloat = 0
@@ -1231,6 +1253,20 @@ struct ChatView: View {
                 .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
                         deleteMessages(chat, deletingItems, moderate: false)
+                    }
+                }
+                .confirmationDialog(archivingReports?.count == 1 ? "Archive report?" : "Archive \(archivingReports?.count ?? 0) reports?", isPresented: $showArchivingReports, titleVisibility: .visible) {
+                    Button("For me", role: .destructive) {
+                        if let reports = self.archivingReports {
+                            archiveReports(chat.chatInfo, reports.sorted(), false)
+                            self.archivingReports = []
+                        }
+                    }
+                    Button("For all moderators", role: .destructive) {
+                        if let reports = self.archivingReports {
+                            archiveReports(chat.chatInfo, reports.sorted(), true)
+                            self.archivingReports = []
+                        }
                     }
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -1691,17 +1727,8 @@ struct ChatView: View {
         
         private func archiveReportButton(_ cItem: ChatItem) -> Button<some View> {
             Button(role: .destructive) {
-                AlertManager.shared.showAlert(
-                    Alert(
-                        title: Text("Archive report?"),
-                        message: Text("The report will be archived for you."),
-                        primaryButton: .destructive(Text("Archive")) {
-                            deletingItem = cItem
-                            deleteMessage(.cidmInternalMark, moderate: false)
-                        },
-                        secondaryButton: .cancel()
-                    )
-                )
+                archivingReports = [cItem.id]
+                showArchivingReports = true
             } label: {
                 Label("Archive report", systemImage: "archivebox")
             }
@@ -1927,6 +1954,37 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                 await onSuccess()
             } catch {
                 logger.error("ChatView.deleteMessages error: \(error.localizedDescription)")
+            }
+        }
+    }
+}
+
+func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ onSuccess: @escaping () -> Void = {}) {
+    if itemIds.count > 0 {
+        Task {
+            do {
+                let deleted = try await apiDeleteReceivedReports(
+                    groupId: chatInfo.apiId,
+                    itemIds: itemIds,
+                    mode: forAll ? CIDeleteMode.cidmBroadcast : CIDeleteMode.cidmInternalMark
+                )
+
+                await MainActor.run {
+                    for di in deleted {
+                        if let toItem = di.toChatItem {
+                            _ = ChatModel.shared.upsertChatItem(chatInfo, toItem.chatItem)
+                        } else {
+                            ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
+                        }
+                        let deletedItem = di.deletedChatItem.chatItem
+                        if deletedItem.isActiveReport {
+                            ChatModel.shared.decreaseGroupReportsCounter(chatInfo.id)
+                        }
+                    }
+                }
+                onSuccess()
+            } catch {
+                logger.error("ChatView.archiveReports error: \(error.localizedDescription)")
             }
         }
     }

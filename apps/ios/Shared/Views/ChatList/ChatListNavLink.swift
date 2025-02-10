@@ -211,6 +211,9 @@ struct ChatListNavLink: View {
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 tagChatButton(chat)
+                if chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator {
+                    archiveAllReportsButton()
+                }
                 let showClearButton = !chat.chatItems.isEmpty
                 let showDeleteGroup = groupInfo.canDelete
                 let showLeaveGroup = groupInfo.membership.memberCurrent
@@ -311,6 +314,15 @@ struct ChatListNavLink: View {
         } else {
             EmptyView()
         }
+    }
+
+    private func archiveAllReportsButton() -> some View {
+        Button {
+            AlertManager.shared.showAlert(archiveAllReportsAlert())
+        } label: {
+            SwipeLabel(NSLocalizedString("Archive reports", comment: "swipe action"), systemImage: "archivebox", inverted: oneHandUI)
+        }
+        .tint(Color.red)
     }
 
     private func clearChatButton() -> some View {
@@ -488,6 +500,27 @@ struct ChatListNavLink: View {
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func archiveAllReportsAlert() -> Alert {
+        Alert(
+            title: Text("Archive all reports?"),
+            message: Text("All reports will be archived for you."),
+            primaryButton: .destructive(Text("Archive")) {
+                Task { await archiveAllReportsForMe(chat.chatInfo.apiId) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func archiveAllReportsForMe(_ apiId: Int64) async {
+        do {
+            if case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member) = try await apiArchiveReceivedReports(groupId: apiId) {
+                await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member)
+            }
+        } catch {
+            logger.error("archiveAllReportsForMe error: \(responseError(error))")
+        }
     }
 
     private func clearChatAlert() -> Alert {
