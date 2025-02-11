@@ -2297,4 +2297,18 @@
     <string name="network_smp_web_port_section_title">Port TCP per a missatgeria</string>
     <string name="network_smp_web_port_toggle">Emprar port web</string>
     <string name="network_smp_web_port_footer">Emprar el port TCP %1$s quan no se n\'especifica cap.</string>
+    <string name="mute_all_chat">Silenciar tot</string>
+    <string name="unread_mentions">Mencions no llegides</string>
+    <string name="max_group_mentions_per_message_reached">Podeu mencionar fins a %1$s membres per missatge!</string>
+    <string name="enable_sending_member_reports">Permetre denunciar missatges a moderació.</string>
+    <string name="disable_sending_member_reports">No permetre denunciar missatges a moderació.</string>
+    <string name="report_archive_alert_title_all">Arxivar totes les denúncies?</string>
+    <string name="report_archive_alert_title_nth">Arxivar %d denúncies?</string>
+    <string name="archive_reports">Arxivar denúncies</string>
+    <string name="report_archive_for_all_moderators">Per a totes les moderadores</string>
+    <string name="report_archive_for_me">Per a mi</string>
+    <string name="notification_group_report">Denúncia: %s</string>
+    <string name="member_reports_are_prohibited">En aquest grup no es permet denunciar missatges.</string>
+    <string name="group_members_can_send_reports">Els/les membres poden denunciar els missatges a moderació.</string>
+    <string name="report_archive_alert_desc_all">Totes les denúncies s\'arxivaran.</string>
 </resources>
