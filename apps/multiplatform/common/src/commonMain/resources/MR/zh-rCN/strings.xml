@@ -2322,4 +2322,15 @@
     <string name="mute_all_chat">全部静音</string>
     <string name="unread_mentions">取消提及的已读状态</string>
     <string name="max_group_mentions_per_message_reached">每条消息最多提及 %1$s 名成员！</string>
+    <string name="report_archive_alert_desc_all">将为你存档所有举报。</string>
+    <string name="report_archive_alert_title_all">存档所有举报？</string>
+    <string name="report_archive_alert_title_nth">存档 %d 份举报？</string>
+    <string name="archive_reports">存档举报</string>
+    <string name="report_archive_for_all_moderators">所有 moderators</string>
+    <string name="report_archive_for_me">仅自己</string>
+    <string name="notification_group_report">举报：%s</string>
+    <string name="disable_sending_member_reports">禁止向 moderators 举报消息。</string>
+    <string name="member_reports_are_prohibited">此群禁止消息举报。</string>
+    <string name="group_members_can_send_reports">成员可以向 moderators 举报消息。</string>
+    <string name="enable_sending_member_reports">允许向 moderators 举报消息。</string>
 </resources>
