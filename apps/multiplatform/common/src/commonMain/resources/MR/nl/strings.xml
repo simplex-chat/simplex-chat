@@ -1596,7 +1596,7 @@
     <string name="profile_update_event_removed_address">contactadres verwijderd</string>
     <string name="profile_update_event_removed_picture">profielfoto verwijderd</string>
     <string name="profile_update_event_set_new_address">nieuw contactadres instellen</string>
-    <string name="profile_update_event_set_new_picture">nieuwe profielfoto instellen</string>
+    <string name="profile_update_event_set_new_picture">nieuwe profielfoto</string>
     <string name="member_blocked_by_admin">Geblokkeerd door beheerder</string>
     <string name="block_for_all">Blokkeren voor iedereen</string>
     <string name="block_for_all_question">Lid voor iedereen blokkeren?</string>
@@ -2335,4 +2335,15 @@
     <string name="mute_all_chat">Alles dempen</string>
     <string name="unread_mentions">Ongelezen vermeldingen</string>
     <string name="max_group_mentions_per_message_reached">Je kunt maximaal %1$s leden per bericht vermelden!</string>
+    <string name="enable_sending_member_reports">Hiermee kunt u berichten rapporteren aan moderators.</string>
+    <string name="report_archive_alert_desc_all">Alle rapporten worden voor u gearchiveerd.</string>
+    <string name="report_archive_alert_title_all">Alle rapporten archiveren?</string>
+    <string name="report_archive_alert_title_nth">%d rapporten archiveren?</string>
+    <string name="report_archive_for_me">Voor mij</string>
+    <string name="group_members_can_send_reports">Leden kunnen berichten melden bij moderators.</string>
+    <string name="member_reports_are_prohibited">Het melden van berichten in deze groep is niet toegestaan</string>
+    <string name="notification_group_report">Rapport: %s</string>
+    <string name="disable_sending_member_reports">Het melden van berichten aan moderators is niet toegestaan.</string>
+    <string name="report_archive_for_all_moderators">Voor alle moderators</string>
+    <string name="archive_reports">Rapporten archiveren</string>
 </resources>
