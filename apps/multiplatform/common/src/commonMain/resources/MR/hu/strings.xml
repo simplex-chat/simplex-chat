@@ -2216,7 +2216,7 @@
     <string name="error_saving_database">Hiba az adatbázis mentésekor</string>
     <string name="strikethrough_text">áthúzott</string>
     <string name="users_delete_profile_for">A következő csevegési profil törlése:</string>
-    <string name="delete_messages_after">Üzenetek törlése ennyi idő után:</string>
+    <string name="delete_messages_after">Üzenetek törlése ennyi idő után</string>
     <string name="a_plus_b">a + b</string>
     <string name="connection_not_ready">A kapcsolat nem áll készen.</string>
     <string name="open_with_app">Megnyitás a következővel: %s</string>
@@ -2301,4 +2301,15 @@
     <string name="unread_mentions">Olvasatlan megemlítések</string>
     <string name="mute_all_chat">Összes némítása</string>
     <string name="max_group_mentions_per_message_reached">Legfeljebb %1$s tagot említhet meg egy üzenetben!</string>
+    <string name="enable_sending_member_reports">Lehetővé teszi az üzenetek jelentését a moderátorok felé.</string>
+    <string name="disable_sending_member_reports">Az üzenetek a moderátorok felé történő jelentésének megtiltása.</string>
+    <string name="report_archive_alert_title_all">Az összes jelentés archiválása?</string>
+    <string name="report_archive_alert_title_nth">%d jelentés archiválása?</string>
+    <string name="report_archive_for_me">Csak magamnak</string>
+    <string name="archive_reports">Jelentések archiválása</string>
+    <string name="report_archive_for_all_moderators">Az összes moderátor számára</string>
+    <string name="member_reports_are_prohibited">Az üzenetek jelentése ebben a csoportban le van tiltva.</string>
+    <string name="group_members_can_send_reports">A tagok jelenthetik az üzeneteket a moderátorok felé.</string>
+    <string name="report_archive_alert_desc_all">Az összes jelentés archiválva lesz az Ön számára.</string>
+    <string name="notification_group_report">Jelentés: %s</string>
 </resources>
