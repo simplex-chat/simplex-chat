@@ -1896,7 +1896,7 @@ processChatCommand' vr = \case
           -- TODO Broadcast rework
           -- In createNewSndMessage and encodeChatMessage we could use Nothing for sharedMsgId,
           -- then we could reuse message body across broadcast.
-          -- Including sharedMsgId and reusing body is meaningless as referencing will not work anyway.
+          -- Encoding different sharedMsgId and reusing body is meaningless as referencing will not work anyway.
           -- As an improvement, single message record with its sharedMsgId could be created for new "broadcast" entity.
           -- Then all recipients could refer to broadcast message using same sharedMsgId.
           sndMsgs <- lift $ createSndMessages idsEvts
