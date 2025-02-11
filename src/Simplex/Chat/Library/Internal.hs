@@ -37,6 +37,8 @@ import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as IM
 import Data.List (find, mapAccumL, partition)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
@@ -218,10 +220,11 @@ prepareGroupMsg db user g@GroupInfo {membership} mc mentions quotedItemId_ itemF
 
 updatedMentionNames :: MsgContent -> Maybe MarkdownList -> Map MemberName CIMention -> (MsgContent, Maybe MarkdownList, Map MemberName CIMention)
 updatedMentionNames mc ft_ mentions = case ft_ of
-  Just ft | not (null ft) && not (null mentions) && not (all sameName $ M.assocs mentions) ->
-    let (mentions', ft') = mapAccumL update M.empty ft
-        text = T.concat $ map markdownText ft'
-     in (mc {text} :: MsgContent, Just ft', mentions')
+  Just ft
+    | not (null ft) && not (null mentions) && not (all sameName $ M.assocs mentions) ->
+        let (mentions', ft') = mapAccumL update M.empty ft
+            text = T.concat $ map markdownText ft'
+         in (mc {text} :: MsgContent, Just ft', mentions')
   _ -> (mc, ft_, mentions)
   where
     sameName (name, CIMention {memberRef}) = case memberRef of
@@ -261,9 +264,10 @@ getCIMentions db user GroupInfo {groupId} ft_ mentions = case ft_ of
 
 getRcvCIMentions :: DB.Connection -> User -> GroupInfo -> Maybe MarkdownList -> Map MemberName MsgMention -> IO (Map MemberName CIMention)
 getRcvCIMentions db user GroupInfo {groupId} ft_ mentions = case ft_ of
-  Just ft | not (null ft) && not (null mentions) ->
-    let mentions' = uniqueMsgMentions maxRcvMentions mentions $ mentionedNames ft
-     in mapM (getMentionedMemberByMemberId db user groupId) mentions'
+  Just ft
+    | not (null ft) && not (null mentions) ->
+        let mentions' = uniqueMsgMentions maxRcvMentions mentions $ mentionedNames ft
+         in mapM (getMentionedMemberByMemberId db user groupId) mentions'
   _ -> pure M.empty
 
 -- prevent "invisible" and repeated-with-different-name mentions
@@ -274,8 +278,9 @@ uniqueMsgMentions maxMentions mentions = go M.empty S.empty 0
     go acc seen n (name : rest)
       | n >= maxMentions = acc
       | otherwise = case M.lookup name mentions of
-          Just mm@MsgMention {memberId} | S.notMember memberId seen -> 
-            go (M.insert name mm acc) (S.insert memberId seen) (n + 1) rest
+          Just mm@MsgMention {memberId}
+            | S.notMember memberId seen ->
+                go (M.insert name mm acc) (S.insert memberId seen) (n + 1) rest
           _ -> go acc seen n rest
 
 getMessageMentions :: DB.Connection -> User -> GroupId -> Text -> IO (Map MemberName GroupMemberId)
@@ -1309,11 +1314,11 @@ batchSendConnMessages user conn msgFlags msgs =
 
 batchSendConnMessagesB :: User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessagesB _user conn msgFlags msgs_ = do
-  let batched_ = batchSndMessagesJSON msgs_
+  let (batchBodies, batched_) = batchSndMessagesJSON msgs_
   case L.nonEmpty batched_ of
     Just batched' -> do
       let msgReqs = L.map (fmap (msgBatchReq conn msgFlags)) batched'
-      delivered <- deliverMessagesB msgReqs
+      delivered <- deliverMessagesB batchBodies msgReqs
       let msgs' = concat $ L.zipWith flattenMsgs batched' delivered
           pqEnc = findLastPQEnc delivered
       when (length msgs' /= length msgs_) $ logError "batchSendConnMessagesB: msgs_ and msgs' length mismatch"
@@ -1321,17 +1326,20 @@ batchSendConnMessagesB _user conn msgFlags msgs_ = do
     Nothing -> pure ([], Nothing)
   where
     flattenMsgs :: Either ChatError MsgBatch -> Either ChatError ([Int64], PQEncryption) -> [Either ChatError SndMessage]
-    flattenMsgs (Right (MsgBatch _ sndMsgs)) (Right _) = map Right sndMsgs
-    flattenMsgs (Right (MsgBatch _ sndMsgs)) (Left ce) = replicate (length sndMsgs) (Left ce)
+    flattenMsgs (Right (MsgBatch _ _ sndMsgs)) (Right _) = map Right sndMsgs
+    flattenMsgs (Right (MsgBatch _ _ sndMsgs)) (Left ce) = replicate (length sndMsgs) (Left ce)
     flattenMsgs (Left ce) _ = [Left ce] -- restore original ChatError
     findLastPQEnc :: NonEmpty (Either ChatError ([Int64], PQEncryption)) -> Maybe PQEncryption
     findLastPQEnc = foldr' (\x acc -> case x of Right (_, pqEnc) -> Just pqEnc; Left _ -> acc) Nothing
 
-batchSndMessagesJSON :: NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
-batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
+batchSndMessagesJSON :: NonEmpty (Either ChatError SndMessage) -> (IntMap MsgBody, [Either ChatError MsgBatch])
+batchSndMessagesJSON msgs = do
+  let batchedMsgs = batchMessages maxEncodedMsgLength $ L.toList msgs
+      batchBodies = IM.fromList [(batchNum, batchBody) | MsgBatch batchNum batchBody _ <- rights batchedMsgs]
+   in (batchBodies, batchedMsgs)
 
 msgBatchReq :: Connection -> MsgFlags -> MsgBatch -> ChatMsgReq
-msgBatchReq conn msgFlags (MsgBatch batchBody sndMsgs) = (conn, msgFlags, batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
+msgBatchReq conn msgFlags (MsgBatch batchNum _ sndMsgs) = (conn, msgFlags, batchNum, map (\SndMessage {msgId} -> msgId) sndMsgs)
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo chatMsgEvent = do
@@ -1358,44 +1366,40 @@ deliverMessage conn cmEventTag msgBody msgId = do
 
 deliverMessage' :: Connection -> MsgFlags -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage' conn msgFlags msgBody msgId =
-  deliverMessages ((conn, msgFlags, msgBody, [msgId]) :| []) >>= \case
+  deliverMessages (IM.singleton 1 msgBody) ((conn, msgFlags, 1, [msgId]) :| []) >>= \case
     r :| [] -> case r of
       Right ([deliveryId], pqEnc) -> pure (deliveryId, pqEnc)
       Right (deliveryIds, _) -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 delivery id, got " <> show (length deliveryIds)
       Left e -> throwError e
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
+type MsgBodyKey = Int
+
 -- [MessageId] - SndMessage ids inside MsgBatch, or single message id
-type ChatMsgReq = (Connection, MsgFlags, MsgBody, [MessageId])
+type ChatMsgReq = (Connection, MsgFlags, MsgBodyKey, [MessageId])
 
-deliverMessages :: NonEmpty ChatMsgReq -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
-deliverMessages msgs = deliverMessagesB $ L.map Right msgs
+deliverMessages :: IntMap MsgBody -> NonEmpty ChatMsgReq -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
+deliverMessages msgBodies msgs = deliverMessagesB msgBodies $ L.map Right msgs
 
-deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
-deliverMessagesB msgReqs = do
-  msgReqs' <- liftIO compressBodies
-  sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
+deliverMessagesB :: IntMap MsgBody -> NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
+deliverMessagesB msgBodies msgReqs = do
+  msgBodies' <- mapM compressBody msgBodies
+  sent <- L.zipWith prepareBatch msgReqs <$> withAgent (\a -> sendMessagesB a msgBodies' $ snd (mapAccumL toAgent Nothing msgReqs))
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    compressBodies =
-      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgIds) ->
-        runExceptT $ case pqSupport of
-          -- we only compress messages when:
-          -- 1) PQ support is enabled
-          -- 2) version is compatible with compression
-          -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
-          PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
-            let msgBody' = compressedBatchMsgBody_ msgBody
-            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-            pure (conn, msgFlags, msgBody', msgIds)
-          _ -> pure mr
+    compressBody msgBody
+      | B.length msgBody > maxCompressedMsgLength = do
+          let msgBody' = compressedBatchMsgBody_ msgBody
+          when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
+          pure msgBody'
+      | otherwise = pure msgBody
     toAgent prev = \case
-      Right (conn@Connection {connId, pqEncryption}, msgFlags, msgBody, _msgIds) ->
+      Right (conn@Connection {connId, pqEncryption}, msgFlags, msgBodyKey, _msgIds) ->
         let cId = case prev of
               Just prevId | prevId == connId -> ""
               _ -> aConnId conn
-         in (Just connId, Right (cId, pqEncryption, msgFlags, msgBody))
+         in (Just connId, Right (cId, pqEncryption, msgFlags, msgBodyKey))
       Left _ce -> (prev, Left (AP.INTERNAL "ChatError, skip")) -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
@@ -1463,8 +1467,8 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
   -- Deliver to toSend members
-  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSendSeparate toSendBatched
-  delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB) $ L.nonEmpty msgReqs
+  let (sendToMemIds, msgBodies, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSendSeparate toSendBatched
+  delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB msgBodies) $ L.nonEmpty msgReqs
   when (length delivered /= length sendToMemIds) $ logError "sendGroupMessages_: sendToMemIds and delivered length mismatch"
   -- Save as pending for toPending members
   let (pendingMemIds, pendingReqs) = preparePending sndMsgs_ toPending
@@ -1494,22 +1498,29 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], IntMap MsgBody, [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs_ toSendSeparate toSendBatched = do
-      let batched_ = batchSndMessagesJSON msgs_
+      let (batchBodies, batched_) = batchSndMessagesJSON msgs_
+          maxKey = findMaxKey batchBodies
+          nextKey = maybe 1 (+ 1) maxKey
+          (sepMsgBodies, sepMsgs) = mapMsgsWithKeys nextKey msgs_
       case L.nonEmpty batched_ of
         Just batched' -> do
-          let (memsSep, mreqsSep) = foldr' foldMsgs ([], []) toSendSeparate
+          let (memsSep, mreqsSep) = foldr' (foldMsgs sepMsgs) ([], []) toSendSeparate
               (memsBtch, mreqsBtch) = foldr' (foldBatches batched') ([], []) toSendBatched
-          (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
-        Nothing -> ([], [])
+          (memsSep <> memsBtch, IM.union batchBodies sepMsgBodies, mreqsSep <> mreqsBtch)
+        Nothing -> ([], IM.empty, [])
       where
-        foldMsgs :: (GroupMember, Connection) -> ([GroupMemberId], [Either ChatError ChatMsgReq]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-        foldMsgs (GroupMember {groupMemberId}, conn) memIdsReqs =
-          foldr' (\msg_ (memIds, reqs) -> (groupMemberId : memIds, fmap sndMessageReq msg_ : reqs)) memIdsReqs msgs_
+        findMaxKey :: IntMap a -> Maybe Int
+        findMaxKey imap
+          | IM.null imap = Nothing
+          | otherwise = Just $ maximum (IM.keys imap)
+        foldMsgs :: NonEmpty (Either ChatError (MsgBodyKey, SndMessage)) -> (GroupMember, Connection) -> ([GroupMemberId], [Either ChatError ChatMsgReq]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+        foldMsgs sepMsgs (GroupMember {groupMemberId}, conn) memIdsReqs =
+          foldr' (\msg_ (memIds, reqs) -> (groupMemberId : memIds, fmap sndMessageReq msg_ : reqs)) memIdsReqs sepMsgs
           where
-            sndMessageReq :: SndMessage -> ChatMsgReq
-            sndMessageReq SndMessage {msgId, msgBody} = (conn, msgFlags, msgBody, [msgId])
+            sndMessageReq :: (MsgBodyKey, SndMessage) -> ChatMsgReq
+            sndMessageReq (msgKey, SndMessage {msgId}) = (conn, msgFlags, msgKey, [msgId])
         foldBatches :: NonEmpty (Either ChatError MsgBatch) -> (GroupMember, Connection) -> ([GroupMemberId], [Either ChatError ChatMsgReq]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
         foldBatches batched' (GroupMember {groupMemberId}, conn) memIdsReqs =
           foldr' (\batch_ (memIds, reqs) -> (groupMemberId : memIds, fmap (msgBatchReq conn msgFlags) batch_ : reqs)) memIdsReqs batched'
@@ -1526,6 +1537,16 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
     createPendingMsg :: DB.Connection -> (GroupMemberId, MessageId) -> IO (Either ChatError ())
     createPendingMsg db (groupMemberId, msgId) =
       createPendingGroupMessage db groupMemberId msgId Nothing $> Right ()
+
+mapMsgsWithKeys :: MsgBodyKey -> NonEmpty (Either ChatError SndMessage) -> (IntMap MsgBody, NonEmpty (Either ChatError (MsgBodyKey, SndMessage)))
+mapMsgsWithKeys firstKey sndMsgs = do
+  let msgsWithKeys = L.fromList . mapKey firstKey . L.toList $ sndMsgs
+      msgBodies = IM.fromList [(msgKey, msgBody) | (msgKey, SndMessage {msgBody}) <- rights (L.toList msgsWithKeys)]
+   in (msgBodies, msgsWithKeys)
+  where
+    mapKey _ [] = []
+    mapKey k (Left e : msgs) = Left e : mapKey k msgs
+    mapKey k (Right msg : msgs) = Right (k, msg) : mapKey (k + 1) msgs
 
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
