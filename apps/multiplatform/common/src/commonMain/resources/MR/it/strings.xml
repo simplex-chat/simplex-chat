@@ -2307,11 +2307,11 @@
     <string name="archive_report">Archivia la segnalazione</string>
     <string name="delete_report">Elimina la segnalazione</string>
     <string name="chat_list_group_reports">Segnalazioni</string>
-    <string name="group_reports_archived_member_reports">Segnalazioni membro archiviate</string>
+    <string name="group_reports_archived_member_reports">Segnalazioni dei membri archiviate</string>
     <string name="group_reports_active_one">1 segnalazione</string>
     <string name="report_item_archived_by">segnalazione archiviata da %s</string>
     <string name="group_reports_active">%d segnalazioni</string>
-    <string name="group_reports_member_reports">Segnalazioni membro</string>
+    <string name="group_reports_member_reports">Segnalazioni dei membri</string>
     <string name="blocking_reason_spam">Spam</string>
     <string name="connection_error_blocked">Connessione bloccata</string>
     <string name="file_error_blocked">Il file è bloccato dall\'operatore del server:\n%1$s.</string>
@@ -2338,4 +2338,15 @@
     <string name="mute_all_chat">Silenzia tutto</string>
     <string name="unread_mentions">Menzioni non lette</string>
     <string name="max_group_mentions_per_message_reached">Puoi menzionare fino a %1$s membri per messaggio!</string>
+    <string name="group_members_can_send_reports">I membri possono segnalare messaggi ai moderatori.</string>
+    <string name="report_archive_alert_title_all">Archiviare tutte le segnalazioni?</string>
+    <string name="report_archive_alert_title_nth">Archiviare %d segnalazioni?</string>
+    <string name="archive_reports">Archivia segnalazioni</string>
+    <string name="report_archive_for_all_moderators">Per tutti i moderatori</string>
+    <string name="report_archive_for_me">Per me</string>
+    <string name="notification_group_report">Segnalazione: %s</string>
+    <string name="member_reports_are_prohibited">In questo gruppo è vietato segnalare messaggi.</string>
+    <string name="enable_sending_member_reports">Consenti di segnalare messaggi ai moderatori.</string>
+    <string name="report_archive_alert_desc_all">Tutte le segnalazioni verranno archiviate per te.</string>
+    <string name="disable_sending_member_reports">Vieta di segnalare messaggi ai moderatori.</string>
 </resources>
