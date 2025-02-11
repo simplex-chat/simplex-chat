@@ -77,6 +77,7 @@ fun ChatItemView(
   selectChatItem: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
+  archiveReports: (List<Long>, Boolean) -> Unit,
   receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
@@ -301,7 +302,7 @@ fun ChatItemView(
             cItem.isReport && cItem.meta.itemDeleted == null && cInfo is ChatInfo.Group -> {
               DefaultDropdownMenu(showMenu) {
                 if (cItem.chatDir !is CIDirection.GroupSnd && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-                  ArchiveReportItemAction(cItem, showMenu, deleteMessage)
+                  ArchiveReportItemAction(cItem.id, cInfo.groupInfo.membership.memberActive, showMenu, archiveReports)
                 }
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages, buttonText = stringResource(MR.strings.delete_report))
                 Divider()
@@ -914,23 +915,53 @@ private fun ReportItemAction(
 }
 
 @Composable
-private fun ArchiveReportItemAction(cItem: ChatItem, showMenu: MutableState<Boolean>, deleteMessage: (Long, CIDeleteMode) -> Unit) {
+private fun ArchiveReportItemAction(id: Long, allowForAll: Boolean, showMenu: MutableState<Boolean>, archiveReports: (List<Long>, Boolean) -> Unit) {
   ItemAction(
     stringResource(MR.strings.archive_report),
     painterResource(MR.images.ic_inventory_2),
     onClick = {
-      AlertManager.shared.showAlertDialog(
-        title = generalGetString(MR.strings.report_archive_alert_title),
-        text = generalGetString(MR.strings.report_archive_alert_desc),
-        onConfirm = {
-          deleteMessage(cItem.id, CIDeleteMode.cidmInternalMark)
-        },
-        destructive = true,
-        confirmText = generalGetString(MR.strings.archive_verb),
-      )
+      showArchiveReportsAlert(listOf(id), allowForAll, archiveReports)
       showMenu.value = false
+    }
+  )
+}
+
+fun showArchiveReportsAlert(ids: List<Long>, allowForAll: Boolean, archiveReports: (List<Long>, Boolean) -> Unit) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = if (ids.size == 1) {
+      generalGetString(MR.strings.report_archive_alert_title)
+    } else {
+      generalGetString(MR.strings.report_archive_alert_title_nth).format(ids.size)
     },
-    color = Color.Red
+    text = null,
+    buttons = {
+      // Archive for me
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        archiveReports(ids, false)
+      }) {
+        Text(
+          generalGetString(MR.strings.report_archive_for_me),
+          Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colors.error
+        )
+      }
+      if (allowForAll) {
+        // Archive for all moderators
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          archiveReports(ids, true)
+        }) {
+          Text(
+            stringResource(MR.strings.report_archive_for_all_moderators),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.error
+          )
+        }
+      }
+    }
   )
 }
 
@@ -1310,6 +1341,7 @@ fun PreviewChatItemView(
     selectChatItem = {},
     deleteMessage = { _, _ -> },
     deleteMessages = { _ -> },
+    archiveReports = { _, _ -> },
     receiveFile = { _ -> },
     cancelFile = {},
     joinGroup = { _, _ -> },
@@ -1356,6 +1388,7 @@ fun PreviewChatItemViewDeletedContent() {
       selectChatItem = {},
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
+      archiveReports = { _, _ -> },
       receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },

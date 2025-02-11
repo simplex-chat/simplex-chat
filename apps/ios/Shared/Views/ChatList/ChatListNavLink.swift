@@ -211,23 +211,32 @@ struct ChatListNavLink: View {
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 tagChatButton(chat)
+                let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
                 let showClearButton = !chat.chatItems.isEmpty
                 let showDeleteGroup = groupInfo.canDelete
                 let showLeaveGroup = groupInfo.membership.memberCurrent
-                let totalNumberOfButtons = 1 + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
+                let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
 
-                if showClearButton, totalNumberOfButtons <= 3 {
+                if showClearButton && totalNumberOfButtons <= 3 {
                     clearChatButton()
                 }
-                if (showLeaveGroup) {
+
+                if showReportsButton && totalNumberOfButtons <= 3 {
+                    archiveAllReportsButton()
+                }
+
+                if showLeaveGroup {
                     leaveGroupChatButton(groupInfo)
                 }
-                
-                if showDeleteGroup {
-                    if totalNumberOfButtons <= 3 {
+
+                if showDeleteGroup && totalNumberOfButtons <= 3 {
+                    deleteGroupChatButton(groupInfo)
+                } else if totalNumberOfButtons > 3 {
+                    if showDeleteGroup && !groupInfo.membership.memberActive {
                         deleteGroupChatButton(groupInfo)
+                        moreOptionsButton(false, chat, groupInfo)
                     } else {
-                        moreOptionsButton(chat, groupInfo)
+                        moreOptionsButton(true, chat, groupInfo)
                     }
                 }
             }
@@ -313,6 +322,14 @@ struct ChatListNavLink: View {
         }
     }
 
+    private func archiveAllReportsButton() -> some View {
+        Button {
+            AlertManager.shared.showAlert(archiveAllReportsAlert())
+        } label: {
+            SwipeLabel(NSLocalizedString("Archive reports", comment: "swipe action"), systemImage: "archivebox", inverted: oneHandUI)
+        }
+    }
+
     private func clearChatButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearChatAlert())
@@ -354,15 +371,20 @@ struct ChatListNavLink: View {
         )
     }
     
-    private func moreOptionsButton(_ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
+    private func moreOptionsButton(_ canShowGroupDelete: Bool, _ chat: Chat, _ groupInfo: GroupInfo?) -> some View {
         Button {
-            var buttons: [Alert.Button] = [
-                .default(Text("Clear")) {
-                    AlertManager.shared.showAlert(clearChatAlert())
-                }
-            ]
-            
-            if let gi = groupInfo, gi.canDelete {
+            var buttons: [Alert.Button] = []
+            buttons.append(.default(Text("Clear")) {
+                AlertManager.shared.showAlert(clearChatAlert())
+            })
+
+            if let groupInfo, chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator && groupInfo.ready {
+                buttons.append(.default(Text("Archive reports")) {
+                    AlertManager.shared.showAlert(archiveAllReportsAlert())
+                })
+            }
+
+            if canShowGroupDelete, let gi = groupInfo, gi.canDelete {
                 buttons.append(.destructive(Text("Delete")) {
                     AlertManager.shared.showAlert(deleteGroupAlert(gi))
                 })
@@ -372,7 +394,7 @@ struct ChatListNavLink: View {
                                
             actionSheet = SomeActionSheet(
                 actionSheet: ActionSheet(
-                    title: Text("Clear or delete group?"),
+                    title: canShowGroupDelete ? Text("Clear or delete group?") : Text("Clear group?"),
                     buttons: buttons
                 ),
                 id: "other options"
@@ -488,6 +510,27 @@ struct ChatListNavLink: View {
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func archiveAllReportsAlert() -> Alert {
+        Alert(
+            title: Text("Archive all reports?"),
+            message: Text("All reports will be archived for you."),
+            primaryButton: .destructive(Text("Archive")) {
+                Task { await archiveAllReportsForMe(chat.chatInfo.apiId) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func archiveAllReportsForMe(_ apiId: Int64) async {
+        do {
+            if case let .groupChatItemsDeleted(user, groupInfo, chatItemIDs, _, member) = try await apiArchiveReceivedReports(groupId: apiId) {
+                await groupChatItemsDeleted(user, groupInfo, chatItemIDs, member)
+            }
+        } catch {
+            logger.error("archiveAllReportsForMe error: \(responseError(error))")
+        }
     }
 
     private func clearChatAlert() -> Alert {
