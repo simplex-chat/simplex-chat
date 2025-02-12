@@ -712,7 +712,7 @@
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b>، ثم انقر فوق <b>اتصال</b> في التطبيق.]]></string>
     <string name="share_text_moderated_at">تحت الإشراف في: %s</string>
     <string name="message_reactions_prohibited_in_this_chat">ردود الفعل الرسائل ممنوعة في هذه الدردشة.</string>
-    <string name="moderated_item_description">مُشرف بواسطة %s</string>
+    <string name="moderated_item_description">أُشرف بواسطة %s</string>
     <string name="message_delivery_error_desc">من المرجح أن جهة الاتصال هذه قد حذفت الاتصال بك.</string>
     <string name="v5_1_message_reactions">ردود فعل الرسائل</string>
     <string name="callstatus_missed">مكالمة فائتة</string>
@@ -1438,7 +1438,7 @@
     <string name="v5_4_incognito_groups">مجموعات التخفي</string>
     <string name="group_members_n">%s و%s و%d عضو</string>
     <string name="this_device">هذا الجهاز</string>
-    <string name="moderated_items_description">%1$d من الرسائل يُشرف عليها بواسطة %2$s</string>
+    <string name="moderated_items_description">%1$d من الرسائل أُشرف عليها بواسطة %2$s</string>
     <string name="unblock_member_button">إلغاء حظر العضو</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[جوّال <b>%s</b> قُطع اتصاله]]></string>
     <string name="waiting_for_desktop">في انتظار سطح المكتب…</string>
@@ -2058,7 +2058,7 @@
     <string name="network_proxy_random_credentials">استخدم بيانات اعتماد عشوائية</string>
     <string name="settings_section_title_chat_database">قاعدة بيانات الدردشة</string>
     <string name="forward_files_missing_desc">حُذف %1$d ملف/ات.</string>
-    <string name="forward_files_in_progress_desc">لا يزال يتم تنزيل %1$d ملفًا.</string>
+    <string name="forward_files_in_progress_desc">لا يزال يتم تنزيل %1$d ملف/ات.</string>
     <string name="network_proxy_auth_mode_no_auth">لا تستخدم بيانات الاعتماد مع الوكيل.</string>
     <string name="error_forwarding_messages">خطأ في تحويل الرسائل</string>
     <string name="switching_profile_error_title">خطأ في تبديل ملف التعريف</string>
@@ -2270,7 +2270,7 @@
     <string name="change_list">تغيير القائمة</string>
     <string name="change_order_chat_list_menu_action">تغيير الترتيب</string>
     <string name="prefs_error_saving_settings">خطأ في حفظ الإعدادات</string>
-    <string name="error_creating_report">خطأ في إنشاء التقرير</string>
+    <string name="error_creating_report">خطأ في إنشاء بلاغ</string>
     <string name="report_item_visibility_submitter">أنت والمشرفون فقط هم من يرون ذلك</string>
     <string name="report_item_archived">بلاغ مؤرشف</string>
     <string name="report_item_visibility_moderators">لا يراه إلا المُرسِل والمُشرفين</string>
@@ -2324,4 +2324,15 @@
     <string name="mute_all_chat">اكتم الكل</string>
     <string name="unread_mentions">ذّكورات غير مقروءة</string>
     <string name="max_group_mentions_per_message_reached">يمكنك ذكر ما يصل إلى %1$s من الأعضاء في الرسالة الواحدة!</string>
+    <string name="enable_sending_member_reports">السماح بالإبلاغ عن الرسائل إلى المشرفين.</string>
+    <string name="disable_sending_member_reports">منع الإبلاغ عن الرسائل للمشرفين.</string>
+    <string name="report_archive_alert_title_all">أرشفة كافة البلاغات؟</string>
+    <string name="archive_reports">أرشف البلاغات</string>
+    <string name="report_archive_for_all_moderators">لكل المشرفين</string>
+    <string name="report_archive_for_me">لي</string>
+    <string name="notification_group_report">بلّغ: %s</string>
+    <string name="group_members_can_send_reports">يمكن للأعضاء الإبلاغ عن الرسائل إلى المشرفين.</string>
+    <string name="report_archive_alert_desc_all">سيتم أرشفة كافة البلاغات لك.</string>
+    <string name="report_archive_alert_title_nth">أرشفة %d بلاغ؟</string>
+    <string name="member_reports_are_prohibited">يُمنع الإبلاغ عن الرسائل في هذه المجموعة.</string>
 </resources>
