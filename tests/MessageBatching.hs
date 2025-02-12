@@ -14,9 +14,9 @@ import Data.Int (Int64)
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages (SndMessage (..))
+import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Protocol (SharedMsgId (..), maxEncodedMsgLength)
 import Test.Hspec
 
@@ -113,7 +113,7 @@ runBatcherTest maxLen msgs expectedErrors expectedBatches =
 runBatcherTest' :: Int -> [SndMessage] -> [ChatError] -> [ByteString] -> IO ()
 runBatcherTest' maxLen msgs expectedErrors expectedBatches = do
   let (errors, batches) = partitionEithers $ batchMessages maxLen (map Right msgs)
-      batchedStrs = map (\(MsgBatch batchBody _) -> batchBody) batches
+      batchedStrs = map (\(MsgBatch _ batchBody _) -> batchBody) batches
   testErrors errors `shouldBe` testErrors expectedErrors
   batchedStrs `shouldBe` expectedBatches
   where
