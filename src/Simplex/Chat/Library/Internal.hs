@@ -1383,11 +1383,16 @@ deliverMessages msgBodies msgs = deliverMessagesB msgBodies $ L.map Right msgs
 
 deliverMessagesB :: IntMap MsgBody -> NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgBodies msgReqs = do
-  msgBodies' <- mapM compressBody msgBodies
+  msgBodies' <- if shouldCompress then mapM compressBody msgBodies else pure msgBodies
   sent <- L.zipWith prepareBatch msgReqs <$> withAgent (\a -> sendMessagesB a msgBodies' $ snd (mapAccumL toAgent Nothing msgReqs))
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
+    shouldCompress = any connSupportsPQ $ rights (L.toList msgReqs)
+      where
+        connSupportsPQ :: ChatMsgReq -> Bool
+        connSupportsPQ (Connection {pqSupport, connChatVersion = v}, _, _, _) =
+          pqSupport == PQSupportOn && v >= pqEncryptionCompressionVersion
     compressBody msgBody
       | B.length msgBody > maxCompressedMsgLength = do
           let msgBody' = compressedBatchMsgBody_ msgBody
