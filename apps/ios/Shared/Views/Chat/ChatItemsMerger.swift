@@ -106,13 +106,13 @@ struct MergedItems: Hashable, Equatable {
                 // found item that is considered as a split
                 if let unclosedSplitIndex, let unclosedSplitIndexInParent {
                     // it was at least second split in the list
-                    splitRanges.append(SplitRange(indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
+                    splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
                 }
                 unclosedSplitIndex = index
                 unclosedSplitIndexInParent = visibleItemIndexInParent
             } else if index + 1 == items.count, let unclosedSplitIndex, let unclosedSplitIndexInParent {
                 // just one split for the whole list, there will be no more, it's the end
-                splitRanges.append(SplitRange(indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
+                splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
             }
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
@@ -127,6 +127,19 @@ struct MergedItems: Hashable, Equatable {
             indexInParentItems: indexInParentItems,
             snapshot: NSDiffableDataSourceSnapshot()
         )
+    }
+
+    // Use this check to ensure that mergedItems state based on currently actual state of global
+    // splits and reversedChatItems
+    func isActualState() -> Bool {
+        let im = ItemsModel.shared
+        // do not load anything if global splits state is different than in merged items because it
+        // will produce undefined results in terms of loading and placement of items. 
+        // Same applies to reversedChatItems
+        return indexInParentItems.count == im.reversedChatItems.count &&
+        splits.count == im.chatState.splits.count &&
+        // that's just an optimization because most of the time only 1 split exists
+        ((splits.count == 1 && splits[0].itemId == im.chatState.splits[0]) || splits.map({ split in split.itemId }).sorted() == im.chatState.splits.sorted())
     }
 }
 
@@ -234,6 +247,7 @@ enum MergedItem: Identifiable, Hashable, Equatable {
 }
 
 struct SplitRange {
+    let itemId: Int64
     /** range of indexes inside reversedChatItems where the first element is the split (it's index is [indexRangeInReversed.first])
      * so [0, 1, 2, -100-, 101] if the 3 is a split, SplitRange(indexRange = 3 .. 4) will be this SplitRange instance
      * (3, 4 indexes of the splitRange with the split itself at index 3)

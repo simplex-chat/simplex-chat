@@ -52,6 +52,8 @@ struct ChatView: View {
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var updateMergedItemsTask: Task<Void, Never>? = nil
 
+    private let useItemsUpdateTask = false
+
     @State var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -196,6 +198,10 @@ struct ChatView: View {
         }
         .onAppear {
             scrollView.listState.onUpdateListener = {
+                if !mergedItems.boxedValue.isActualState() {
+                    logger.debug("LALALA 4 NOT EQUAL \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
+                    return
+                }
                 ChatView.FloatingButtonModel.shared.updateOnListChange()
                 //ChatView.FloatingButtonModel.shared.updateFloatingButtons.send()
                 preloadIfNeeded(
@@ -518,9 +524,6 @@ struct ChatView: View {
                     forwardedChatItems: $forwardedChatItems,
                     reveal: { reveal in
                         mergedItem.reveal(reveal, $revealedItems)
-                        //updateMergedItemsTask?.cancel()
-                        //mergedItems.boxedValue = MergedItems.create(ItemsModel.shared.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
-                        //scrollView.updateItems(mergedItems.boxedValue.items)
                     }
                 )
                 // crashes on Cell size calculation without this line
@@ -546,15 +549,21 @@ struct ChatView: View {
             }
             .onChange(of: im.reversedChatItems) { items in
                 updateMergedItemsTask?.cancel()
-                updateMergedItemsTask = Task {
-                    let items = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
-                    if Task.isCancelled {
-                        return
+                if useItemsUpdateTask {
+                    updateMergedItemsTask = Task {
+                        let start = Date.now.timeIntervalSince1970
+                        let items = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                        if Task.isCancelled {
+                            return
+                        }
+                        await MainActor.run {
+                            mergedItems.boxedValue = items
+                            scrollView.updateItems(mergedItems.boxedValue.items)
+                        }
                     }
-                    await MainActor.run {
-                        mergedItems.boxedValue = items
-                        scrollView.updateItems(mergedItems.boxedValue.items)
-                    }
+                } else {
+                    mergedItems.boxedValue = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    scrollView.updateItems(mergedItems.boxedValue.items)
                 }
             }
             .onChange(of: revealedItems) { revealed in

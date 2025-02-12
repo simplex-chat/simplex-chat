@@ -148,15 +148,15 @@ async {
     }
 
     func preloadItemsAfter() async {
-        let items: [ChatItem] = ItemsModel.shared.reversedChatItems.reversed()
         let splits = mergedItems.splits
         let split = splits.last(where: { $0.indexRangeInParentItems.contains(firstVisibleIndex) })
         // we're inside a splitRange (top --- [end of the splitRange --- we're here --- start of the splitRange] --- bottom)
-        logger.debug("LALAL PRELOAD AFTER \(String(describing: splits)) \(firstVisibleIndex) \((split?.indexRangeInParentItems.lowerBound ?? 0) + remaining) \(items.count - 1 - (split?.indexRangeInParentItems.lowerBound ?? -1))")
+        let reversedItems: [ChatItem] = ItemsModel.shared.reversedChatItems
         if let split, split.indexRangeInParentItems.lowerBound + remaining > firstVisibleIndex {
-            let index = items.count - 1 - split.indexRangeInReversed.lowerBound
+            let index = split.indexRangeInReversed.lowerBound
             if index >= 0 {
-                let loadFromItemId = items[index].id
+                let loadFromItemId = reversedItems[index].id
+                logger.debug("LALAL PRELOAD AFTER \(String(describing: splits)) \(firstVisibleIndex) \((split.indexRangeInParentItems.lowerBound) + remaining) index \(index), id \(loadFromItemId)")
                 _ = await loadItems(ChatPagination.after(chatItemId: loadFromItemId, count: ChatPagination.PRELOAD_COUNT))
             }
         }
@@ -180,7 +180,7 @@ private func lastFullyVisibleIemInListState(_ mergedItems: MergedItems, _ listSt
 }
 
 private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVisibleIndex: Int, _ remaining: Int, _ splits: [SplitRange]) -> Int? {
-//    logger.debug("LALAL SPLITS \(String(describing: splits))     \(firstVisibleIndex) / \(remaining)   \(lastVisibleIndex)")
+    logger.debug("LALAL SPLITS \(String(describing: splits))     \(firstVisibleIndex) / \(remaining)   \(lastVisibleIndex)")
     for split in splits {
         // before any split
         if split.indexRangeInParentItems.lowerBound > firstVisibleIndex {

@@ -9,8 +9,8 @@
 import SwiftUI
 
 /// `UIHostingConfiguration` back-port for iOS14 and iOS15
-/// Implemented as a `UITableViewCell` that wraps and manages a generic `UIHostingController`
-final class HostingCell<Hosted: View>: UITableViewCell {
+/// Implemented as a `UIView` that wraps and manages a generic `UIHostingController`
+final class HostingCell<Hosted: View>: UIView {
     private let hostingController = UIHostingController<Hosted?>(rootView: nil)
 
     /// Updates content of the cell
@@ -21,18 +21,18 @@ final class HostingCell<Hosted: View>: UITableViewCell {
         if let hostingView = hostingController.view {
             hostingView.invalidateIntrinsicContentSize()
             if hostingController.parent != parent { parent.addChild(hostingController) }
-            if !contentView.subviews.contains(hostingController.view) {
-                contentView.addSubview(hostingController.view)
+            if !subviews.contains(hostingController.view) {
+                addSubview(hostingController.view)
                 hostingView.translatesAutoresizingMaskIntoConstraints = false
                 NSLayoutConstraint.activate([
                     hostingView.leadingAnchor
-                        .constraint(equalTo: contentView.leadingAnchor),
+                        .constraint(equalTo: leadingAnchor),
                     hostingView.trailingAnchor
-                        .constraint(equalTo: contentView.trailingAnchor),
+                        .constraint(equalTo: trailingAnchor),
                     hostingView.topAnchor
-                        .constraint(equalTo: contentView.topAnchor),
+                        .constraint(equalTo: topAnchor),
                     hostingView.bottomAnchor
-                        .constraint(equalTo: contentView.bottomAnchor)
+                        .constraint(equalTo: bottomAnchor)
                 ])
             }
             if hostingController.parent != parent { hostingController.didMove(toParent: parent) }
@@ -41,8 +41,8 @@ final class HostingCell<Hosted: View>: UITableViewCell {
         }
     }
 
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        hostingController.rootView = nil
-    }
+//    override func prepareForReuse() {
+//        super.prepareForReuse()
+//        hostingController.rootView = nil
+//    }
 }
