@@ -1915,7 +1915,7 @@ processChatCommand' vr = \case
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
       ctMsgReq :: (Contact, Connection) -> SndMessage -> ChatMsgReq
-      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, vrValue msgBody, [msgId])
+      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, (vrValue msgBody, [msgId]))
       combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError ([Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
@@ -2666,7 +2666,7 @@ processChatCommand' vr = \case
         ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
         ctMsgReq ChangedProfileContact {conn} =
           fmap $ \SndMessage {msgId, msgBody} ->
-            (conn, MsgFlags {notification = hasNotification XInfo_}, vrValue msgBody, [msgId])
+            (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'

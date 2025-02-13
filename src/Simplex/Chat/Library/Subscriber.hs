@@ -274,7 +274,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                   map (\fileDescr -> (conn, (connOrGroupId, XMsgFileDescr {msgId = sharedMsgId, fileDescr}))) (L.toList $ splitFileDescr partSize rfdText)
             toMsgReq :: (Connection, (ConnOrGroupId, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
             toMsgReq (conn, _) SndMessage {msgId, msgBody} =
-              (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, vrValue msgBody, [msgId])
+              (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
         sendFileError :: FileError -> Text -> VersionRangeChat -> FileTransferMeta -> CM ()
         sendFileError ferr err vr ft = do
           logError $ "Sent file error: " <> err
