@@ -80,7 +80,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
 import Simplex.Messaging.Agent as Agent
@@ -1900,7 +1900,7 @@ processChatCommand' vr = \case
           -- As an improvement, single message record with its sharedMsgId could be created for new "broadcast" entity.
           -- Then all recipients could refer to broadcast message using same sharedMsgId.
           sndMsgs <- lift $ createSndMessages idsEvts
-          let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = L.fromList $ zipWith3 (\i c -> fmap (ctMsgReq i c)) [0..] (L.toList ctConns) (L.toList sndMsgs)
+          let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = zipWith3' (\i c -> fmap (ctMsgReq i c)) [0..] ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
@@ -1916,8 +1916,6 @@ processChatCommand' vr = \case
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
       ctMsgReq :: Int -> (Contact, Connection) -> SndMessage -> ChatMsgReq
       ctMsgReq i (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, VRValue i msgBody, [msgId])
-      zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
-      zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
       combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError ([Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
@@ -2640,7 +2638,7 @@ processChatCommand' vr = \case
               Just changedCts -> do
                 let idsEvts = L.map ctSndEvent changedCts
                 sndMsgs <- lift $ createSndMessages idsEvts
-                let msgReqs_ = L.fromList $ zipWith3 ctMsgReq [0..] (L.toList changedCts) (L.toList sndMsgs)
+                let msgReqs_ = zipWith3' ctMsgReq [0..] changedCts sndMsgs
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
                 let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts

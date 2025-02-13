@@ -61,7 +61,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (shuffle)
+import Simplex.Chat.Util (shuffle, zipWith3')
 import Simplex.FileTransfer.Description (ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FilePartyI)
@@ -260,7 +260,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
           partSize <- asks $ xftpDescrPartSize . config
           let connsIdsEvts = connDescrEvents partSize
           sndMsgs_ <- lift $ createSndMessages $ L.map snd connsIdsEvts
-          let (errs, msgReqs) = partitionEithers $ zipWith3 (\i c -> fmap (toMsgReq i c)) [0..] (L.toList connsIdsEvts) (L.toList sndMsgs_)
+          let (errs, msgReqs) = partitionEithers . L.toList $ zipWith3' (\i c -> fmap (toMsgReq i c)) [0 ..] connsIdsEvts sndMsgs_
           delivered <- mapM deliverMessages (L.nonEmpty msgReqs)
           let errs' = errs <> maybe [] (lefts . L.toList) delivered
           unless (null errs') $ toView $ CRChatErrors (Just user) errs'
