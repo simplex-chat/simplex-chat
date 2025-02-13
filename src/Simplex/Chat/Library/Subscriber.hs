@@ -260,7 +260,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
           partSize <- asks $ xftpDescrPartSize . config
           let connsIdsEvts = connDescrEvents partSize
           sndMsgs_ <- lift $ createSndMessages $ L.map snd connsIdsEvts
-          let (errs, msgReqs) = partitionEithers . L.toList $ L.zipWith (fmap . toMsgReq) connsIdsEvts sndMsgs_
+          let (errs, msgReqs) = partitionEithers $ zipWith3 (\i c -> fmap (toMsgReq i c)) [0..] (L.toList connsIdsEvts) (L.toList sndMsgs_)
           delivered <- mapM deliverMessages (L.nonEmpty msgReqs)
           let errs' = errs <> maybe [] (lefts . L.toList) delivered
           unless (null errs') $ toView $ CRChatErrors (Just user) errs'
@@ -272,9 +272,9 @@ processAgentMsgSndFile _corrId aFileId msg = do
                 splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, ChatMsgEvent 'Json))]
                 splitText (conn, _, rfdText) =
                   map (\fileDescr -> (conn, (connOrGroupId, XMsgFileDescr {msgId = sharedMsgId, fileDescr}))) (L.toList $ splitFileDescr partSize rfdText)
-            toMsgReq :: (Connection, (ConnOrGroupId, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
-            toMsgReq (conn, _) SndMessage {msgId, msgBody} =
-              (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, msgBody, [msgId])
+            toMsgReq :: Int -> (Connection, (ConnOrGroupId, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
+            toMsgReq i (conn, _) SndMessage {msgId, msgBody} =
+              (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, VRValue i msgBody, [msgId])
         sendFileError :: FileError -> Text -> VersionRangeChat -> FileTransferMeta -> CM ()
         sendFileError ferr err vr ft = do
           logError $ "Sent file error: " <> err
