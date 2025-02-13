@@ -2633,7 +2633,8 @@ processChatCommand' vr = \case
               Nothing -> pure $ UserProfileUpdateSummary 0 0 []
               Just changedCts -> do
                 let idsEvts = L.map ctSndEvent changedCts
-                msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
+                sndMsgs <- lift $ createSndMessages idsEvts
+                let msgReqs_ = L.zipWith ctMsgReq changedCts sndMsgs
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
                 let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
