@@ -1390,13 +1390,12 @@ deliverMessagesB msgReqs = do
           pqSupport == PQSupportOn && v >= pqEncryptionCompressionVersion
     compressBodies =
       forME msgReqs $ \(conn, msgFlags, mbr, msgIds) -> runExceptT $ do
-        mbr' <- forM mbr $ \msgBody ->
-          if B.length msgBody > maxCompressedMsgLength
-            then do
-              let msgBody' = compressedBatchMsgBody_ msgBody
-              when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-              pure msgBody'
-            else pure msgBody
+        mbr' <- case mbr of
+          VRValue i msgBody | B.length msgBody > maxCompressedMsgLength -> do
+            let msgBody' = compressedBatchMsgBody_ msgBody
+            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
+            pure $ VRValue i msgBody'
+          v -> pure v
         pure (conn, msgFlags, mbr', msgIds)
     toAgent prev = \case
       Right (conn@Connection {connId, pqEncryption}, msgFlags, mbr, _msgIds) ->
