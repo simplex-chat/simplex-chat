@@ -1900,7 +1900,7 @@ processChatCommand' vr = \case
           -- As an improvement, single message record with its sharedMsgId could be created for new "broadcast" entity.
           -- Then all recipients could refer to broadcast message using same sharedMsgId.
           sndMsgs <- lift $ createSndMessages idsEvts
-          let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = zipWith3' (\i c -> fmap (ctMsgReq i c)) [0..] ctConns sndMsgs
+          let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = zipWith3' (\i c -> fmap (ctMsgReq i c)) [0 ..] ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
@@ -2638,7 +2638,7 @@ processChatCommand' vr = \case
               Just changedCts -> do
                 let idsEvts = L.map ctSndEvent changedCts
                 sndMsgs <- lift $ createSndMessages idsEvts
-                let msgReqs_ = zipWith3' ctMsgReq [0..] changedCts sndMsgs
+                let msgReqs_ = zipWith3' ctMsgReq [0 ..] changedCts sndMsgs
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
                 let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
