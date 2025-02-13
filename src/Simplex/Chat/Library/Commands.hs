@@ -80,7 +80,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
 import Simplex.Messaging.Agent as Agent
@@ -1893,8 +1893,14 @@ processChatCommand' vr = \case
           pure CRBroadcastSent {user, msgContent = mc, successes = 0, failures = 0, timestamp}
         Just (ctConns :: NonEmpty (Contact, Connection)) -> do
           let idsEvts = L.map ctSndEvent ctConns
+          -- TODO Broadcast rework
+          -- In createNewSndMessage and encodeChatMessage we could use Nothing for sharedMsgId,
+          -- then we could reuse message body across broadcast.
+          -- Encoding different sharedMsgId and reusing body is meaningless as referencing will not work anyway.
+          -- As an improvement, single message record with its sharedMsgId could be created for new "broadcast" entity.
+          -- Then all recipients could refer to broadcast message using same sharedMsgId.
           sndMsgs <- lift $ createSndMessages idsEvts
-          let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
+          let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = zipWith3' (\i c -> fmap (ctMsgReq i c)) [0 ..] ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
@@ -1908,10 +1914,8 @@ processChatCommand' vr = \case
         _ -> ctConns
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
-      ctMsgReq :: (Contact, Connection) -> SndMessage -> ChatMsgReq
-      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, msgBody, [msgId])
-      zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
-      zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
+      ctMsgReq :: Int -> (Contact, Connection) -> SndMessage -> ChatMsgReq
+      ctMsgReq i (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, VRValue i msgBody, [msgId])
       combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError ([Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
@@ -2633,7 +2637,8 @@ processChatCommand' vr = \case
               Nothing -> pure $ UserProfileUpdateSummary 0 0 []
               Just changedCts -> do
                 let idsEvts = L.map ctSndEvent changedCts
-                msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
+                sndMsgs <- lift $ createSndMessages idsEvts
+                let msgReqs_ = zipWith3' ctMsgReq [0 ..] changedCts sndMsgs
                 (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
                 unless (null errs) $ toView $ CRChatErrors (Just user) errs
                 let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
@@ -2659,10 +2664,10 @@ processChatCommand' vr = \case
             mergedProfile' = userProfileToSend user' Nothing (Just ct') False
         ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
         ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
-        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
-        ctMsgReq ChangedProfileContact {conn} =
+        ctMsgReq :: Int -> ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
+        ctMsgReq i ChangedProfileContact {conn} =
           fmap $ \SndMessage {msgId, msgBody} ->
-            (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, [msgId])
+            (conn, MsgFlags {notification = hasNotification XInfo_}, VRValue i msgBody, [msgId])
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
