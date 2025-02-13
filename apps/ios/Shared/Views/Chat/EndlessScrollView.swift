@@ -56,17 +56,17 @@ struct ScrollRepresentable<Content: View, ScrollItem>: UIViewControllerRepresent
             }
             cell.isHidden = false
             cell.backgroundColor = .clear
-            cell.setContentHuggingPriority(.defaultLow, for: .vertical)
-            //let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude))
-            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude), withHorizontalFittingPriority: .fittingSizeLevel, verticalFittingPriority: .fittingSizeLevel)
+            //cell.setContentHuggingPriority(.defaultLow, for: .vertical)
+            let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude))
+            //let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude), withHorizontalFittingPriority: .fittingSizeLevel, verticalFittingPriority: .fittingSizeLevel)
             cell.frame.size.width = scrollView.bounds.width
             cell.frame.size.height = size.height
             //cell.sizeToFit()
             //cell.setNeedsLayout()
             //cell.contentView.layoutIfNeeded()
             //cell.autoresizingMask = UIView.AutoresizingMask(rawValue: UIView.AutoresizingMask.flexibleTopMargin.rawValue | UIView.AutoresizingMask.flexibleWidth.rawValue)
-            cell.autoresizingMask = UIView.AutoresizingMask.flexibleWidth
-            //println("LALAL ASK FOR CELL1 \(index) \(cell.frame) \(cell.contentView.frame) \(size)")
+            //cell.autoresizingMask = UIView.AutoresizingMask.flexibleWidth
+            println("LALAL ASK FOR CELL1 \(index) \(cell.frame) \(size)")
             return cell
         }
 
@@ -86,7 +86,7 @@ struct ScrollRepresentable<Content: View, ScrollItem>: UIViewControllerRepresent
             let size = cell.systemLayoutSizeFitting(CGSizeMake(scrollView.bounds.width, CGFloat.greatestFiniteMagnitude))
             cell.frame.size.width = scrollView.bounds.width
             cell.frame.size.height = size.height
-            cell.layoutIfNeeded()
+            cell.setNeedsLayout()
             println("LALAL ASK FOR CELL RELOAD \(index) \(cell.frame) \(size)")
         }
     }
@@ -279,11 +279,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
     }
 
     private func setup() {
-        //backgroundColor = UIColor.blue
-        var s = frame.size
-        println("LALAL SIZE \(contentSize) \(frame)")
-        s.height = initialOffset * 2
-        contentSize = s
+        contentSize = CGSizeMake(frame.size.width, initialOffset * 2)
         prevProcessedOffset = initialOffset
         contentOffset = CGPointMake(0, initialOffset)
         
@@ -336,6 +332,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
         let contentOffsetY = overridenOffset ?? contentOffset.y
 
+        var oldVisible = listState.visibleItems
         var newVisible: [VisibleItem] = []
         let offsetsDiff = contentOffsetY - prevProcessedOffset
         if debug {
@@ -347,23 +344,27 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         var allowOneMore = false
         var nextOffsetY: CGFloat = 0
         var i = shouldBeFirstVisible
+        println("LALAL TIME SPENT: 0")
         // building list of visible items starting from the first one that should be visible
         while i >= 0 && i < items.count {
             let item = items[i]
-            let visibleIndex = listState.visibleItems.firstIndex(where: { vis in vis.item.id == item.id })
+            println("LALAL TIME SPENT: 1")
+            let visibleIndex = oldVisible.firstIndex(where: { vis in vis.item.id == item.id })
+            println("LALAL TIME SPENT: 2")
             let visible: VisibleItem?
             if let visibleIndex {
-                let v = listState.visibleItems[visibleIndex]
-                if forceReloadVisible || v.item.hashValue != item.hashValue {
+                let v = oldVisible.remove(at: visibleIndex)
+                if forceReloadVisible || v.view.bounds.width != bounds.width || v.item.hashValue != item.hashValue {
                     updateCell(v.view, i, items)
                 }
                 visible = v
             } else {
                 visible = nil
             }
-
+            println("LALAL TIME SPENT: 3")
             if shouldBeFirstVisible == i {
-                if let vis = visible, let visibleIndex {
+                println("LALAL TIME SPENT: 4")
+                if let vis = visible {
                     let oldHeight = vis.view.frame.height
                     vis.view.frame.origin.y += oldHeight - vis.view.frame.height
 //                    vis.view.frame.origin.y -= offsetsDiff
@@ -387,8 +388,8 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                         //firstVisibleItemOffset -= vis.view.frame.height
                         //vis.view.removeFromSuperview()
                         //hideAndRemoveFromSuperviewIfNeeded(vis.view)
-                        listState.visibleItems.remove(at: visibleIndex)
                         cellsToReuse.append(vis.view)
+                        hideAndRemoveFromSuperviewIfNeeded(vis.view)
                         continue
                     }
                 }
@@ -406,7 +407,9 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 newVisible.append(vis)
                 nextOffsetY = vis.view.frame.origin.y
 //                println("LALAL ORIGIN0 \(vis.view.frame.origin.y)")
+                println("LALAL TIME SPENT: 5")
             } else {
+                println("LALAL TIME SPENT: 6")
                 let vis: VisibleItem
                 if let visible {
                     vis = VisibleItem(index: i, item: item, view: visible.view, offset: offsetToBottom(visible.view))
@@ -423,6 +426,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 }
                 newVisible.append(vis)
                 //println("LALAL ORIGIN1 \(vis.view.frame.origin.y)")
+                println("LALAL TIME SPENT: 7")
             }
             if abs(nextOffsetY) < contentOffsetY && !allowOneMore {
                 break
@@ -432,14 +436,16 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             i += 1
         }
         if let firstVisible = newVisible.first, firstVisible.view.frame.origin.y + firstVisible.view.frame.height < contentOffsetY + bounds.height, firstVisible.index > 0 {
+            println("LALAL TIME SPENT: 8")
             var offset: CGFloat = firstVisible.view.frame.origin.y + firstVisible.view.frame.height
             let index = firstVisible.index
             for i in stride(from: index - 1, through: 0, by: -1) {
                 println("LALAL INSIDE \(i) \(cellsToReuse.count) hasSuperview \(cellsToReuse.map({ $0.superview != nil }))")
                 let item = items[i]
-                let visible = listState.visibleItems.first(where: { vis in vis.item.id == item.id })
+                let visibleIndex = oldVisible.firstIndex(where: { vis in vis.item.id == item.id })
                 let vis: VisibleItem
-                if let visible {
+                if let visibleIndex {
+                    let visible = oldVisible.remove(at: visibleIndex)
                     visible.view.frame.origin.y = offset
                     vis = VisibleItem(index: i, item: item, view: visible.view, offset: offsetToBottom(visible.view))
                 } else {
@@ -452,24 +458,21 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 }
                 offset += vis.view.frame.height
                 newVisible.insert(vis, at: 0)
-                if offset > contentOffsetY + bounds.height {
+                if offset >= contentOffsetY + bounds.height {
                     break
                 }
+                println("LALAL TIME SPENT: 9")
             }
         }
 
+        println("LALAL TIME SPENT: 10")
 
-        //let cellsToReuseCount = cellsToReuse.count
-        //cellsToReuse.forEach { cell in cell.removeFromSuperview() }
         // removing already unneeded visible items
-        listState.visibleItems.forEach { vis in
-            if !newVisible.contains(where: { newVis in newVis.item.id.hashValue == vis.item.id.hashValue }) {
-                //vis.view.removeFromSuperview()
-                cellsToReuse.append(vis.view)
-            }
+        oldVisible.forEach { vis in
+            cellsToReuse.append(vis.view)
+            hideAndRemoveFromSuperviewIfNeeded(vis.view)
         }
-        cellsToReuse.forEach { cell in hideAndRemoveFromSuperviewIfNeeded(cell) }
-
+        println("LALAL TIME SPENT: 10 2")
         let itemsCountChanged = listState.items.count != items.count
         prevProcessedOffset = contentOffsetY
 
@@ -480,21 +483,23 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         listState.firstVisibleItemIndex = listState.visibleItems.first?.index ?? 0
         listState.firstVisibleItemOffset = listState.visibleItems.first?.offset ?? -insetTop
 
+        println("LALAL TIME SPENT: 10 3")
         estimatedContentHeight.update(contentOffset, listState, averageItemHeight, itemsCountChanged)
 
         if debug {
-            println("LALAL CURRENTOFFSET \(estimatedContentHeight.virtualScrollOffsetY)  \(estimatedContentHeight.virtualOverscrolledHeight)")
+            //println("LALAL CURRENTOFFSET \(estimatedContentHeight.virtualScrollOffsetY)  \(estimatedContentHeight.virtualOverscrolledHeight)")
         }
-        scrollBarView.contentSize = CGSizeMake(bounds.width, estimatedContentHeight.virtualOverscrolledHeight)
-        scrollBarView.setContentOffset(CGPointMake(0, estimatedContentHeight.virtualScrollOffsetY), animated: false)
+        //scrollBarView.contentSize = CGSizeMake(bounds.width, estimatedContentHeight.virtualOverscrolledHeight)
+        //scrollBarView.setContentOffset(CGPointMake(0, estimatedContentHeight.virtualScrollOffsetY), animated: false)
 
+        println("LALAL TIME SPENT 11")
         if debug {
             //println("LALAL VISIBLE \(newVisible.map({ item in (item.index, item.offset) })), cellsToReuse \(cellsToReuseCount), time spent \((-start.timeIntervalSinceNow).description.prefix(5).replacingOccurrences(of: "0.000", with: "<0").replacingOccurrences(of: "0.", with: ""))")
             println("time spent \((-start.timeIntervalSinceNow).description.prefix(5).replacingOccurrences(of: "0.000", with: "<0").replacingOccurrences(of: "0.", with: ""))")
         }
     }
 
-    func scrollToItem(_ index: Int, animated: Bool) async {
+    func scrollToItem(_ index: Int, animated: Bool, top: Bool = true) async {
         println("LALAL SCROLLTOITEM \(index)")
         if index >= listState.items.count || listState.isScrolling {
             return
@@ -516,7 +521,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
         var upPrev = index > listState.firstVisibleItemIndex
         let firstOrLastIndex = upPrev ? listState.visibleItems.last?.index ?? 0 : listState.firstVisibleItemIndex
-        let step: CGFloat = max(0.1, CGFloat(abs(index - firstOrLastIndex)) * scrollStepMultiplier)
+        //let step: CGFloat = max(0.1, CGFloat(abs(index - firstOrLastIndex)) * scrollStepMultiplier)
         //let step: CGFloat = 200//max(0.1, CGFloat(abs(index - firstOrLastIndexInitial)) * scrollStepMultiplier)
         //let up = index > listState.firstVisibleItemIndex
         //let firstOrLastIndex = up ? listState.visibleItems.last?.index ?? 0 : listState.firstVisibleItemIndex
@@ -538,13 +543,12 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             adjustedOffset += offsetToScroll
             println("LALAL first \(firstOrLastIndex) \(up) \(adjustedOffset)    \(estimatedContentHeight.topOffsetY) .. \(estimatedContentHeight.bottomOffsetY)  \(step * stepSlowdownMultiplier)")
             if let item = listState.visibleItems.first(where: { $0.index == index }) {
-                if item.view.frame.origin.y + (up ? -insetTop : 0) <= adjustedOffset || i > 0 {
-                    // the requested item became visible, scroll to it
-                    setContentOffset(CGPointMake(contentOffset.x, min(estimatedContentHeight.bottomOffsetY - bounds.height + (up ? -insetTop : 0), item.view.frame.origin.y + (up ? -insetTop : 0))), animated: animated)
+                let y = if top {
+                    min(estimatedContentHeight.bottomOffsetY - bounds.height, item.view.frame.origin.y - insetTop)
                 } else {
-                    // the requested item was visible initially, scroll to it animated
-                    setContentOffset(CGPointMake(contentOffset.x, min(estimatedContentHeight.bottomOffsetY - bounds.height + (up ? -insetTop : 0), item.view.frame.origin.y + (up ? -insetTop : 0))), animated: animated)
+                    max(estimatedContentHeight.topOffsetY - insetTop, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
                 }
+                setContentOffset(CGPointMake(contentOffset.x, y), animated: animated)
                 scrollBarView.flashScrollIndicators()
                 break
             }
@@ -592,7 +596,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         //view.prepareForReuse()
         view.isHidden = true
         //println("LALAL IS HIDDEN DISAP0")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             //println("LALAL IS HIDDEN DISAP1 \(view.isHidden)")
             if view.isHidden { view.removeFromSuperview() }
         }

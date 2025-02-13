@@ -72,7 +72,7 @@ func preloadIfNeeded(
     _ ignoreLoadingRequests: Binding<Int64?>,
     _ listState: EndlessScrollView<MergedItem>.ListState,
     _ mergedItems: BoxedValue<MergedItems>,
-    loadItems: @escaping (Bool, ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
+    loadItems: @escaping (Bool, ChatPagination) async -> Bool
 ) {
     let state = PreloadState.shared
     guard !listState.isScrolling,
@@ -93,7 +93,7 @@ func preloadIfNeeded(
         }
         //logger.debug("LALAL LOADING BEFORE INSIDE \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits)")
         await preloadItems(mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
-            let triedToLoad = await loadItems(false, pagination, { visibleItemIndexesNonReversed(listState, mergedItems.boxedValue) })
+            let triedToLoad = await loadItems(false, pagination)
             //logger.debug("LALAL LOADING INSIDE \(mergedItems.items[listState.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits), triedToLoad: \(triedToLoad)")
             return triedToLoad
         }

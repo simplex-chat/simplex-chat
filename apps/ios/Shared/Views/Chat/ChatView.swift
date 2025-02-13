@@ -197,27 +197,7 @@ struct ChatView: View {
             }
         }
         .onAppear {
-            scrollView.listState.onUpdateListener = {
-                if !mergedItems.boxedValue.isActualState() {
-                    logger.debug("LALALA 4 NOT EQUAL \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
-                    return
-                }
-                ChatView.FloatingButtonModel.shared.updateOnListChange()
-                //ChatView.FloatingButtonModel.shared.updateFloatingButtons.send()
-                preloadIfNeeded(
-                    $allowLoadMoreItems,
-                    $ignoreLoadingRequests,
-                    scrollView.listState,
-                    mergedItems,
-                    loadItems: { unchecked, pagination, visibleItemIndexesNonReversed in
-                        if unchecked {
-                            await loadChatItemsUnchecked(cInfo, pagination, visibleItemIndexesNonReversed)
-                        } else {
-                            await loadChatItems(cInfo, pagination, visibleItemIndexesNonReversed)
-                        }
-                    }
-                )
-            }
+            setScrollListeners()
             scrollModel.scrollView = scrollView
             scrollModel.mergedItems = mergedItems
             FloatingButtonModel.shared.listState = scrollView.listState
@@ -236,25 +216,11 @@ struct ChatView: View {
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
+                setScrollListeners()
                 initChatView()
                 theme = buildTheme()
             } else {
                 dismiss()
-            }
-        }
-        .onChange(of: im.isLoading) { isLoading in
-            if !isLoading,
-               im.reversedChatItems.count <= loadItemsPerPage,
-               filtered(im.reversedChatItems).count < 10 {
-                let pagination: ChatPagination =
-                if let lastItem = im.reversedChatItems.last {
-                    .before(chatItemId: lastItem.id, count: loadItemsPerPage)
-                } else {
-                    .last(count: loadItemsPerPage)
-                }
-                Task {
-                    _ = await loadChatItems(chat.chatInfo, pagination)
-                }
             }
         }
         .environmentObject(scrollModel)
@@ -592,8 +558,10 @@ struct ChatView: View {
             .onChange(of: im.itemAdded) { added in
                 if added {
                     im.itemAdded = false
-                    if FloatingButtonModel.shared.isReallyNearBottom {
+                    if scrollView.listState.firstVisibleItemIndex < 2 {
                         scrollModel.scrollToBottom()
+                    } else {
+                        scrollModel.scroll(by: 34)
                     }
                 }
             }
@@ -622,7 +590,6 @@ struct ChatView: View {
         @Published var isDateVisible: Bool = false
         var listState: EndlessScrollView<MergedItem>.ListState!
         var totalUnread: Int = 0
-        var isReallyNearBottom: Bool = true
         var hideDateWorkItem: DispatchWorkItem?
 
         let updateFloatingButtons = PassthroughSubject<Void, Never>()
@@ -631,17 +598,11 @@ struct ChatView: View {
         init() {
             updateFloatingButtons
                 .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
-                .sink {
-                    // LALAL
-                    //if !listState.isScrolling.scrollToItemInProgress {
-                        ChatView.FloatingButtonModel.shared.updateOnListChange()
-                    //}
-                }
+                .sink { ChatView.FloatingButtonModel.shared.updateOnListChange() }
                 .store(in: &bag)
         }
 
         func updateOnListChange() {
-            let im = ItemsModel.shared
             let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(listState.items, listState)
             let unreadBelow = if let lastVisibleItem {
                     max(0, totalUnread - lastVisibleItem.unreadBefore)
@@ -661,13 +622,10 @@ struct ChatView: View {
                 it.setDate(visibility: true)
                 it.unreadBelow = unreadBelow
                 it.date = date
-                // LALAL
-                it.isReallyNearBottom = (self?.listState.firstVisibleItemIndex ?? 0) < 2//listState.scrollOffset > 0 && listState.scrollOffset < 500
             }
             
             // set floating button indication mode
-            // LALAL
-            let nearBottom = listState.firstVisibleItemIndex < 4 //listState.scrollOffset < 800
+            let nearBottom = listState.firstVisibleItemIndex < 4
             if nearBottom != self.isNearBottom {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
                     self?.isNearBottom = nearBottom
@@ -1015,59 +973,60 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
+    private func loadChatItems(_ chatType: ChatType, _ apiId: Int64, _ pagination: ChatPagination) async -> Bool {
         if loadingMoreItems { return false }
         await MainActor.run {
             loadingMoreItems = true
         }
-        var chatItemsAvailable = true
-        var itemsCountChanged = false
-        // Load additional items until the page is +50 large after merging
-        //while chatItemsAvailable && filtered(im.reversedChatItems).count < loadItemsPerPage {
-        let oldCount = im.reversedChatItems.count
-        await apiLoadMessages(
-            cInfo.chatType,
-            cInfo.apiId,
-            pagination,
-            im.chatState,
-            searchText,
-            visibleItemIndexesNonReversed
-        )
-        itemsCountChanged = im.reversedChatItems.count != oldCount
-        chatItemsAvailable = itemsCountChanged
-        //}
-        logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
-
+        let triedToLoad = await loadChatItemsUnchecked(chatType, apiId, pagination)
         await MainActor.run {
             loadingMoreItems = false
         }
-        return true
+        return triedToLoad
     }
 
-    private func loadChatItemsUnchecked(_ cInfo: ChatInfo, _ pagination: ChatPagination, _ visibleItemIndexesNonReversed: @escaping () -> ClosedRange<Int> = { 0 ... 0 }) async -> Bool {
-        var chatItemsAvailable = true
-        var itemsCountChanged = false
-        // Load additional items until the page is +50 large after merging
-        //while chatItemsAvailable && filtered(im.reversedChatItems).count < loadItemsPerPage {
-        let oldCount = im.reversedChatItems.count
+    private func loadChatItemsUnchecked(_ chatType: ChatType, _ apiId: Int64, _ pagination: ChatPagination) async -> Bool {
         await apiLoadMessages(
-            cInfo.chatType,
-            cInfo.apiId,
+            chatType,
+            apiId,
             pagination,
             im.chatState,
             searchText,
-            visibleItemIndexesNonReversed
+            { visibleItemIndexesNonReversed(scrollView.listState, mergedItems.boxedValue) }
         )
-        itemsCountChanged = im.reversedChatItems.count != oldCount
-        chatItemsAvailable = itemsCountChanged
-        //}
-        logger.debug("LALAL ITEMCOUNTCHANGED \(itemsCountChanged) \(oldCount) \(im.reversedChatItems.count)")
         return true
     }
 
     func stopAudioPlayer() {
         VoiceItemState.chatView.values.forEach { $0.audioPlayer?.stop() }
         VoiceItemState.chatView = [:]
+    }
+
+    // it should be re-set everytime chatId changes
+    func setScrollListeners() {
+        scrollModel.loadChatItems = { pagination in
+            await loadChatItems(chat.chatInfo.chatType, chat.chatInfo.apiId, pagination)
+        }
+        scrollView.listState.onUpdateListener = {
+            if !mergedItems.boxedValue.isActualState() {
+                logger.debug("LALALA 4 NOT EQUAL \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
+                return
+            }
+            ChatView.FloatingButtonModel.shared.updateOnListChange()
+            preloadIfNeeded(
+                $allowLoadMoreItems,
+                $ignoreLoadingRequests,
+                scrollView.listState,
+                mergedItems,
+                loadItems: { unchecked, pagination in
+                    if unchecked {
+                        await loadChatItemsUnchecked(chat.chatInfo.chatType, chat.chatInfo.apiId, pagination)
+                    } else {
+                        await loadChatItems(chat.chatInfo.chatType, chat.chatInfo.apiId, pagination)
+                    }
+                }
+            )
+        }
     }
 
     private struct ChatItemWithMenu: View {

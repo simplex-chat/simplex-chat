@@ -2,7 +2,7 @@
 //  ChatItemsLoader.swift
 //  SimpleX (iOS)
 //
-//  Created by me on 17.12.2024.
+//  Created by Stanislav Dmitrenko on 17.12.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 
@@ -63,29 +63,23 @@ func apiLoadMessages(
             chatState.unreadAfterNewestLoaded = navInfo.afterUnread
         }
     case let .before(paginationChatItemId, _):
-        logger.debug("LALALA 0")
         newItems.append(contentsOf: oldItems)
         let indexInCurrentItems = oldItems.firstIndex(where: { $0.id == paginationChatItemId })
         guard let indexInCurrentItems else { return }
         let (newIds, _) = mapItemsToIds(chat.chatItems)
-        logger.debug("LALALA 1")
         let wasSize = newItems.count
         let visibleItemIndexes = await MainActor.run { visibleItemIndexesNonReversed() }
-        logger.debug("LALALA 2")
         let modifiedSplits = removeDuplicatesAndModifySplitsOnBeforePagination(
             unreadAfterItemId, &newItems, newIds, chatState.splits, visibleItemIndexes
         )
-        logger.debug("LALALA 3")
         let insertAt = max((indexInCurrentItems - (wasSize - newItems.count) + modifiedSplits.trimmedIds.count), 0)
         newItems.insert(contentsOf: chat.chatItems, at: insertAt)
-        logger.debug("LALALA 4")
         let newReversed: [ChatItem] = newItems.reversed()
         await MainActor.run {
             ItemsModel.shared.reversedChatItems = newReversed
             chatState.splits = modifiedSplits.newSplits
             chatState.moveUnreadAfterItem(modifiedSplits.oldUnreadSplitIndex, modifiedSplits.newUnreadSplitIndex, oldItems)
         }
-        logger.debug("LALALA 5")
     case let .after(paginationChatItemId, _):
         newItems.append(contentsOf: oldItems)
         let indexInCurrentItems = oldItems.firstIndex(where: { $0.id == paginationChatItemId })
@@ -210,7 +204,6 @@ private func removeDuplicatesAndModifySplitsOnBeforePagination(
         index += 1
         return (invisibleItemToTrim && prevItemWasTrimmed) || newIds.contains($0.id)
     })
-    logger.debug("LALAL TRIMMED COUNT \(trimmedIds.count)  \(visibleItemIndexes) \(trimRange) \(prevItemTrimRange)")
     // will remove any splits that now becomes obsolete because items were merged
     newSplits = newSplits.filter { split in !newIds.contains(split) && !trimmedIds.contains(split) }
     return ModifiedSplits(oldUnreadSplitIndex: oldUnreadSplitIndex, newUnreadSplitIndex:  newUnreadSplitIndex, trimmedIds: trimmedIds, newSplits: newSplits)
@@ -252,6 +245,7 @@ private func removeDuplicatesAndModifySplitsOnAfterPagination(
         return duplicate
     })
     var newSplits: [Int64] = []
+    // LALAL BUG SOMEWHERE HERE. CAN BE TRIGGERER WHILE NOT REALLY CORRECT
     if firstItemIdBelowAllSplits != nil {
         // no splits anymore, all were merged with bottom items
         newSplits = []
@@ -268,7 +262,6 @@ private func removeDuplicatesAndModifySplitsOnAfterPagination(
             var new = splits
             new[enlargedSplit] = chat.chatItems.last!.id
             newSplits = new
-            // Log.d(TAG, "Enlarged split range $newSplits")
         }
     }
     return (newSplits, unreadInLoaded)
@@ -296,8 +289,7 @@ private func removeDuplicatesAndUpperSplits(
         if (!duplicate && visibleItemIndexes.lowerBound > index) {
             idsToTrim.last?.boxedValue.insert($0.id)
         }
-        let firstIndex = splits.firstIndex(of: $0.id)
-        if visibleItemIndexes.lowerBound > index, let firstIndex {
+        if visibleItemIndexes.lowerBound > index, let firstIndex = newSplits.firstIndex(of: $0.id) {
             newSplits.remove(at: firstIndex)
             // closing previous range. All items in idsToTrim that ends with empty set should be deleted.
             // Otherwise, the last set should be excluded from trimming because it is in currently visible split range

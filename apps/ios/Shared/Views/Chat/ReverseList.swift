@@ -28,7 +28,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
     let content: (Int, MergedItem) -> Content
 
     // unchecked, pagination, visibleItemIndexesNonReversed
-    let loadItems: (Bool, ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
+    let loadItems: (Bool, ChatPagination) async -> Bool
 
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
@@ -702,6 +702,8 @@ class ReverseListScrollModel: ObservableObject {
     var scrollView: EndlessScrollView<MergedItem>!
     var mergedItems: BoxedValue<MergedItems>!
 
+    var loadChatItems: ((ChatPagination) async -> Bool)!
+
     enum State: Equatable {
         enum Destination: Equatable {
             case item(ChatItem.ID)
@@ -719,7 +721,7 @@ class ReverseListScrollModel: ObservableObject {
         Task {
             logger.log("LALAL SCROLL TO BOTTOM START")
             //controller.scrollToItemInProgress = true
-            await scrollView.scrollToItem(0, animated: true)
+            await scrollView.scrollToItem(0, animated: true, top: false)
             //DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             //  controller.setScrollEndedListener()
             //controller.scrollToItemInProgress = false
@@ -728,22 +730,44 @@ class ReverseListScrollModel: ObservableObject {
         }
     }
 
-    func scrollToItem(id: ChatItem.ID) {
-        logger.debug("LALAL SCROLL TO ID called \(id)")
-        if let index = mergedItems.boxedValue.indexInParentItems[id] {
-            Task {
-                logger.debug("LALAL SCROLLING TO \(index)")
-                await scrollView.scrollToItem(index, animated: true)
-                //controller.setScrollEndedListener()
-                logger.debug("LALAL SCROLLING ENDED TO \(index)")
+    func scrollToItem(itemId: ChatItem.ID) {
+//        if scrollToItemInProgress {
+//            logger.debug("LALAL SCROLLING IN PROGRESS")
+//            return
+//        }
+//        scrollToItemInProgress = true
+        Task {
+            logger.debug("LALAL SCROLL TO ITEM \(itemId)  \(ItemsModel.shared.reversedChatItems.count)")
+            do {
+                var index = mergedItems.boxedValue.indexInParentItems[itemId]
+                logger.debug("LALAL SCROLL TO ITEM \(index ?? -2)")
+                if index == nil {
+                    let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
+                    let oldSize = ItemsModel.shared.reversedChatItems.count
+                    let triedToLoad = await self.loadChatItems(pagination)
+                    if !triedToLoad {
+                        return
+                    }
+                    var repeatsLeft = 50
+                    while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
+                        try await Task.sleep(nanoseconds: 20_000000)
+                        repeatsLeft -= 1
+                        logger.debug("LALAL SCROLL REPEATS \(repeatsLeft)")
+                    }
+                    index = mergedItems.boxedValue.indexInParentItems[itemId]
+                }
+                logger.debug("LALAL SCROLL TO ITEM2 \(index ?? -3) \(ItemsModel.shared.reversedChatItems.count)")
+                if let index {
+                    scrollToItem(index: min(ItemsModel.shared.reversedChatItems.count - 1, index))
+                }
+            } catch {
+                logger.error("Error scrolling to item: \(error)")
             }
-        } else {
-            loadAndScrollToItem(id: id)
+//            await MainActor.run {
+//                representer.loadingMoreItems = false
+//                scrollToItemInProgress = false
+//            }
         }
-    }
-
-    func loadAndScrollToItem(id: Int64) {
-
     }
 
     func scrollToItem(index: Int) {
@@ -751,6 +775,10 @@ class ReverseListScrollModel: ObservableObject {
             await scrollView.scrollToItem(index, animated: true)
         }
         //controller.setScrollEndedListener()
+    }
+
+    func scroll(by: CGFloat, animated: Bool = true) {
+        scrollView.setContentOffset(CGPointMake(scrollView.contentOffset.x, scrollView.contentOffset.y + by), animated: animated)
     }
 }
 
