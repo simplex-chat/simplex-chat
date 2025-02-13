@@ -1315,7 +1315,7 @@ batchSendConnMessagesB _user conn msgFlags msgs_ = do
   let batched_ = batchSndMessagesJSON msgs_
   case L.nonEmpty batched_ of
     Just batched' -> do
-      let msgReqs = L.map (fmap (msgBatchReq True 0 conn msgFlags)) batched'
+      let msgReqs = L.map (fmap (msgBatchReq msgFlags True 0 conn)) batched'
       delivered <- deliverMessagesB msgReqs
       let msgs' = concat $ L.zipWith flattenMsgs batched' delivered
           pqEnc = findLastPQEnc delivered
@@ -1333,8 +1333,8 @@ batchSendConnMessagesB _user conn msgFlags msgs_ = do
 batchSndMessagesJSON :: NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
 batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
 
-msgBatchReq :: Bool -> Int -> Connection -> MsgFlags -> MsgBatch -> ChatMsgReq
-msgBatchReq fstConn i conn msgFlags (MsgBatch batchBody sndMsgs) =
+msgBatchReq :: MsgFlags -> Bool -> Int -> Connection -> MsgBatch -> ChatMsgReq
+msgBatchReq msgFlags fstConn i conn (MsgBatch batchBody sndMsgs) =
   let mbr = if fstConn then VRValue i batchBody else VRRef i
    in (conn, msgFlags, mbr, map (\SndMessage {msgId} -> msgId) sndMsgs)
 
@@ -1507,19 +1507,19 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
       let batched_ = batchSndMessagesJSON msgs
       case L.nonEmpty batched_ of
         Just batched' -> do
-          let (memsSep, mreqsSep) = snd $ foldr' (foldMsgBodies 0 sndMessageReq msgs) (True, ([], [])) toSendSeparate
+          let (memsSep, mreqsSep) = snd $ foldr' (foldMsgBodies 0 (sndMessageReq msgFlags) msgs) (True, ([], [])) toSendSeparate
               nextRef = length msgs
-              (memsBtch, mreqsBtch) = snd $ foldr' (foldMsgBodies nextRef msgBatchReq batched') (True, ([], [])) toSendBatched
+              (memsBtch, mreqsBtch) = snd $ foldr' (foldMsgBodies nextRef (msgBatchReq msgFlags) batched') (True, ([], [])) toSendBatched
           (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
         Nothing -> ([], [])
       where
-        sndMessageReq :: Bool -> Int -> Connection -> MsgFlags -> SndMessage -> ChatMsgReq
-        sndMessageReq fstConn i conn msgFlags' SndMessage {msgId, msgBody} =
+        sndMessageReq :: MsgFlags -> Bool -> Int -> Connection -> SndMessage -> ChatMsgReq
+        sndMessageReq msgFlags' fstConn i conn SndMessage {msgId, msgBody} =
           let mbr = if fstConn then VRValue i msgBody else VRRef i
            in (conn, msgFlags', mbr, [msgId])
-        foldMsgBodies :: Int -> (Bool -> Int -> Connection -> MsgFlags -> a -> ChatMsgReq) -> NonEmpty (Either ChatError a) -> (GroupMember, Connection) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq]))
+        foldMsgBodies :: Int -> (Bool -> Int -> Connection -> a -> ChatMsgReq) -> NonEmpty (Either ChatError a) -> (GroupMember, Connection) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq]))
         foldMsgBodies firstRef f as (GroupMember {groupMemberId}, conn) (fstMem, memIdsReqs) =
-          let memIdsReqs' = snd $ foldr' (\a_ (i, (memIds, reqs)) -> (i + 1, (groupMemberId : memIds, fmap (f fstMem i conn msgFlags) a_ : reqs))) (firstRef, memIdsReqs) as
+          let memIdsReqs' = snd $ foldr' (\a_ (i, (memIds, reqs)) -> (i + 1, (groupMemberId : memIds, fmap (f fstMem i conn) a_ : reqs))) (firstRef, memIdsReqs) as
            in (False, memIdsReqs')
     preparePending :: NonEmpty (Either ChatError SndMessage) -> [GroupMember] -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)])
     preparePending msgs_ =
