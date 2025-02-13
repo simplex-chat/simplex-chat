@@ -1389,8 +1389,8 @@ deliverMessagesB msgReqs = do
         connSupportsPQ (Connection {pqSupport, connChatVersion = v}, _, _, _) =
           pqSupport == PQSupportOn && v >= pqEncryptionCompressionVersion
     compressBodies =
-      forME msgReqs $ \mr@(conn, msgFlags, mbr, msgIds) -> runExceptT $ do
-        mbr' <- forM mbr $ \msgBody -> 
+      forME msgReqs $ \(conn, msgFlags, mbr, msgIds) -> runExceptT $ do
+        mbr' <- forM mbr $ \msgBody ->
           if B.length msgBody > maxCompressedMsgLength
             then do
               let msgBody' = compressedBatchMsgBody_ msgBody
@@ -1507,28 +1507,19 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
       let batched_ = batchSndMessagesJSON msgs
       case L.nonEmpty batched_ of
         Just batched' -> do
-          let (memsSep, mreqsSep) = snd $ foldr' foldMsgs (True, ([], [])) toSendSeparate
-              firstRef = length msgs
-              (memsBtch, mreqsBtch) = snd $ foldr' (foldBatches firstRef batched') (True, ([], [])) toSendBatched
+          let (memsSep, mreqsSep) = snd $ foldr' (foldMsgBodies 0 sndMessageReq msgs) (True, ([], [])) toSendSeparate
+              nextRef = length msgs
+              (memsBtch, mreqsBtch) = snd $ foldr' (foldMsgBodies nextRef msgBatchReq batched') (True, ([], [])) toSendBatched
           (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
         Nothing -> ([], [])
       where
-        foldMsgs :: (GroupMember, Connection) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-        foldMsgs (GroupMember {groupMemberId}, conn) (fstMem, memIdsReqs) = do
-          let memIdsReqs' = snd $ foldr' (\msg (i, (memIds, reqs)) -> (i + 1, (groupMemberId : memIds, fmap (sndMessageReq i) msg : reqs))) (0 :: Int, memIdsReqs) msgs
-           in (False, memIdsReqs')
-          where
-            sndMessageReq :: Int -> SndMessage -> ChatMsgReq
-            sndMessageReq i SndMessage {msgId, msgBody} =
-              let mbr = if fstMem then VRValue i msgBody else VRRef i
-               in (conn, msgFlags, mbr, [msgId])
-        foldBatches :: Int -> NonEmpty (Either ChatError MsgBatch) -> (GroupMember, Connection) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-        foldBatches firstRef batched' (GroupMember {groupMemberId}, conn) (fstMem, memIdsReqs) =
-          let memIdsReqs' = snd $ foldr' (\batch_ (i, (memIds, reqs)) -> (i + 1, (groupMemberId : memIds, fmap (msgBatchReq fstMem i conn msgFlags) batch_ : reqs))) (firstRef, memIdsReqs) batched'
-           in (False, memIdsReqs')
-        foldValues :: Int -> (Bool -> Int -> a -> ChatMsgReq) -> NonEmpty (Either ChatError a) -> (GroupMember, Connection) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-        foldValues firstRef f as (GroupMember {groupMemberId}, conn) (fstMem, memIdsReqs) =
-          let memIdsReqs' = snd $ foldr' (\a_ (i, (memIds, reqs)) -> (i + 1, (groupMemberId : memIds, fmap (f fstMem i) a_ : reqs))) (firstRef, memIdsReqs) as
+        sndMessageReq :: Bool -> Int -> Connection -> MsgFlags -> SndMessage -> ChatMsgReq
+        sndMessageReq fstConn i conn msgFlags' SndMessage {msgId, msgBody} =
+          let mbr = if fstConn then VRValue i msgBody else VRRef i
+           in (conn, msgFlags', mbr, [msgId])
+        foldMsgBodies :: Int -> (Bool -> Int -> Connection -> MsgFlags -> a -> ChatMsgReq) -> NonEmpty (Either ChatError a) -> (GroupMember, Connection) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Bool, ([GroupMemberId], [Either ChatError ChatMsgReq]))
+        foldMsgBodies firstRef f as (GroupMember {groupMemberId}, conn) (fstMem, memIdsReqs) =
+          let memIdsReqs' = snd $ foldr' (\a_ (i, (memIds, reqs)) -> (i + 1, (groupMemberId : memIds, fmap (f fstMem i conn msgFlags) a_ : reqs))) (firstRef, memIdsReqs) as
            in (False, memIdsReqs')
     preparePending :: NonEmpty (Either ChatError SndMessage) -> [GroupMember] -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)])
     preparePending msgs_ =
