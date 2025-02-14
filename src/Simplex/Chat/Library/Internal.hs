@@ -1501,8 +1501,7 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
         Just batched' -> do
           let lenMsgs = length msgs
               (memsSep, mreqsSep) = foldMembers lenMsgs sndMessageMBR msgs toSendSeparate
-              lastBatchRef = length batched' + if length toSendSeparate > 0 then lenMsgs else 0
-              (memsBtch, mreqsBtch) = foldMembers lastBatchRef msgBatchMBR batched' toSendBatched
+              (memsBtch, mreqsBtch) = foldMembers (length batched' + lenMsgs) msgBatchMBR batched' toSendBatched
           (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
         Nothing -> ([], [])
       where
