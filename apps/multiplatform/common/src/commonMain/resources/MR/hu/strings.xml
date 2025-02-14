@@ -258,7 +258,7 @@
     <string name="rcv_group_event_group_deleted">törölt csoport</string>
     <string name="full_deletion">Törlés az összes tagnál</string>
     <string name="button_create_group_link">Hivatkozás létrehozása</string>
-    <string name="chat_preferences">Csevegési beállítások</string>
+    <string name="chat_preferences">Csevegés-beállítások</string>
     <string name="delete_profile">Profil törlése</string>
     <string name="la_current_app_passcode">Jelenlegi jelkód</string>
     <string name="group_member_status_connecting">kapcsolódás</string>
@@ -774,7 +774,7 @@
     <string name="no_filtered_chats">Nincsenek szűrt csevegések</string>
     <string name="invalid_data">érvénytelen adat</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a WebRTC ICE-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
-    <string name="only_owners_can_enable_files_and_media">Csak a csoport-tulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
+    <string name="only_owners_can_enable_files_and_media">Csak a csoport tulajdonosai engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
     <string name="loading_remote_file_title">A fájl betöltése…</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
@@ -791,7 +791,7 @@
     <string name="user_mute">Némítás</string>
     <string name="link_a_mobile">Hordozható eszköz társítása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
-    <string name="only_group_owners_can_enable_voice">Csak a csoport-tulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
+    <string name="only_group_owners_can_enable_voice">Csak a csoport tulajdonosai engedélyezhetik a hangüzenetek küldését.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">A felhasználói profilok, ismerősök, csoportok és üzenetek csak az eszközön vannak tárolva a kliensen belül.</string>
     <string name="invalid_migration_confirmation">Érvénytelen átköltöztetési visszaigazolás</string>
     <string name="only_group_owners_can_change_prefs">Csak a csoport tulajdonosai módosíthatják a csoport-beállításokat.</string>
@@ -1816,7 +1816,7 @@
     <string name="remote_ctrl_connection_stopped_identity_desc">Ezt a hivatkozást egy másik hordozható eszközön már használták, hozzon létre egy új hivatkozást a számítógépén.</string>
     <string name="remote_ctrl_connection_stopped_desc">Ellenőrizze, hogy a hordozható eszköz és a számítógép ugyanahhoz a helyi hálózathoz csatlakozik-e, valamint a számítógép tűzfalában engedélyezve van-e a kapcsolat.\nMinden további problémát osszon meg a fejlesztőkkel.</string>
     <string name="cannot_share_message_alert_title">Nem lehet üzenetet küldeni</string>
-    <string name="cannot_share_message_alert_text">A kijelölt csevegési beállítások tiltják ezt az üzenetet.</string>
+    <string name="cannot_share_message_alert_text">A kijelölt csevegés-beállítások tiltják ezt az üzenetet.</string>
     <string name="please_try_later">Próbálja meg később.</string>
     <string name="network_error_broker_host_desc">A kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %1$s.</string>
     <string name="member_inactive_title">Inaktív tag</string>
@@ -2148,7 +2148,7 @@
     <string name="operator_use_for_sending">A küldéshez</string>
     <string name="operator_added_xftp_servers">Hozzáadott média- és fájlkiszolgálók</string>
     <string name="operator_open_conditions">Feltételek megnyitása</string>
-    <string name="operator_open_changes">Változások megnyitása</string>
+    <string name="operator_open_changes">Módosítások megtekintése</string>
     <string name="error_updating_server_title">Hiba a kiszolgáló frissítésekor</string>
     <string name="error_server_protocol_changed">A kiszolgáló-protokoll módosult.</string>
     <string name="error_server_operator_changed">A kiszolgáló üzemeltetője módosult.</string>
@@ -2187,7 +2187,7 @@
     <string name="delete_chat_for_self_cannot_undo_warning">A csevegés törölve lesz az Ön számára – ez a művelet nem vonható vissza!</string>
     <string name="delete_chat_question">Csevegés törlése?</string>
     <string name="button_leave_chat">Csevegés elhagyása</string>
-    <string name="only_chat_owners_can_change_prefs">Csak a csevegés tulajdonosai módosíthatják a beállításokat.</string>
+    <string name="only_chat_owners_can_change_prefs">Csak a csevegés tulajdonosai módosíthatják a csevegés-beállításokat.</string>
     <string name="chat_bottom_bar">Könnyen elérhető csevegési eszköztár</string>
     <string name="member_will_be_removed_from_chat_cannot_be_undone">A tag el lesz távolítva a csevegésből – ez a művelet nem vonható vissza!</string>
     <string name="info_row_chat">Csevegés</string>
