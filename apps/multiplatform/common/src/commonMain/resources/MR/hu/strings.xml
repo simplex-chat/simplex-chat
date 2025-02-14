@@ -1448,7 +1448,7 @@
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
     <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók el lesznek távolítva.</string>
     <string name="receipts_groups_override_enabled">A kézbesítési jelentések engedélyezve vannak %d csoportban</string>
-    <string name="member_role_will_be_changed_with_notification">A szerepkör a következőre fog módosulni: %s. A csoport tagjai értesítést fognak kapni.</string>
+    <string name="member_role_will_be_changed_with_notification">A tag szerepköre a következőre fog módosulni: „%s”. A csoport összes tagja értesítést fog kapni.</string>
     <string name="users_delete_with_connections">Profil és kiszolgálókapcsolatok</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Egy üzenetváltó- és alkalmazásplatform, amely védi az adatait és biztonságát.</string>
     <string name="tap_to_activate_profile">A profil aktiválásához koppintson az ikonra.</string>
@@ -1467,7 +1467,7 @@
     <string name="smp_servers_per_user">A jelenlegi csevegőprofiljához tartozó új kapcsolatok kiszolgálói</string>
     <string name="receiving_via">Fogadás a következőn keresztül:</string>
     <string name="store_passphrase_securely_without_recover">Tárolja el biztonságosan jelmondát, mert ha elveszti azt, akkor NEM férhet hozzá a csevegéshez.</string>
-    <string name="member_role_will_be_changed_with_invitation">A szerepkör a következőre fog módosulni: %s. A tag új meghívót fog kapni.</string>
+    <string name="member_role_will_be_changed_with_invitation">A tag szerepköre a következőre fog módosulni: „%s”. A tag új meghívást fog kapni.</string>
     <string name="icon_descr_profile_image_placeholder">profilkép helyőrzője</string>
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza – profiljai, ismerősei, üzenetei és fájljai véglegesen törölve lesznek.</string>
@@ -2191,7 +2191,7 @@
     <string name="chat_bottom_bar">Könnyen elérhető csevegési eszköztár</string>
     <string name="member_will_be_removed_from_chat_cannot_be_undone">A tag el lesz távolítva a csevegésből – ez a művelet nem vonható vissza!</string>
     <string name="info_row_chat">Csevegés</string>
-    <string name="member_role_will_be_changed_with_notification_chat">A szerepkör a következőre fog módosulni: %s. A csevegés tagjai értesítést fognak kapni.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">A tag szerepköre a következőre fog módosulni: „%s”. A csevegés összes tagja értesítést fog kapni.</string>
     <string name="chat_main_profile_sent">A csevegési profilja el lesz küldve a csevegésben résztvevő tagok számára</string>
     <string name="direct_messages_are_prohibited">A tagok közötti közvetlen üzenetek le vannak tiltva.</string>
     <string name="v6_2_business_chats">Üzleti csevegések</string>
