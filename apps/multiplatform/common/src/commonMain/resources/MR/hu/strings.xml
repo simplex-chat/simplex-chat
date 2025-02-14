@@ -248,7 +248,7 @@
     <string name="network_session_mode_user">Csevegési profil</string>
     <string name="create_another_profile_button">Profil létrehozása</string>
     <string name="connected_desktop">Társított számítógép</string>
-    <string name="share_text_deleted_at">Törölve ekkor: %s</string>
+    <string name="share_text_deleted_at">Törlés ideje: %s</string>
     <string name="info_row_deleted_at">Törlés ideje</string>
     <string name="v4_6_chinese_spanish_interface">Kínai és spanyol kezelőfelület</string>
     <string name="alert_title_cant_invite_contacts">Nem lehet meghívni az ismerősöket!</string>
@@ -367,7 +367,7 @@
     <string name="delivery_receipts_title">Kézbesítési jelentések!</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Az eszközön nincs beállítva a képernyőzár. A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</string>
     <string name="decryption_error">Titkosítás visszafejtési hiba</string>
-    <string name="share_text_disappears_at">Eltűnik ekkor: %s</string>
+    <string name="share_text_disappears_at">Eltűnés ideje: %s</string>
     <string name="icon_descr_edited">szerkesztve</string>
     <string name="delete_verb">Törlés</string>
     <string name="ttl_hours">%d óra</string>
@@ -821,7 +821,7 @@
     <string name="no_selected_chat">Nincs csevegés kijelölve</string>
     <string name="users_delete_data_only">Csak helyi profiladatok</string>
     <string name="description_via_one_time_link_incognito">inkognitó egy egyszer használható hivatkozáson keresztül</string>
-    <string name="share_text_moderated_at">Moderálva lett ekkor: %s</string>
+    <string name="share_text_moderated_at">Moderálás ideje: %s</string>
     <string name="one_time_link">Egyszer használható meghívó-hivatkozás</string>
     <string name="invalid_name">Érvénytelen név!</string>
     <string name="email_invite_subject">Beszélgessünk a SimpleX Chatben</string>
@@ -992,7 +992,7 @@
     <string name="simplex_link_mode">SimpleX-hivatkozások</string>
     <string name="v4_4_disappearing_messages_desc">Az elküldött üzenetek törölve lesznek a beállított idő után.</string>
     <string name="user_unmute">Némítás megszüntetése</string>
-    <string name="share_text_sent_at">Elküldve ekkor: %s</string>
+    <string name="share_text_sent_at">Elküldés ideje: %s</string>
     <string name="connect_use_current_profile">Jelenlegi profil használata</string>
     <string name="this_device">Ez az eszköz</string>
     <string name="share_address_with_contacts_question">Megosztja a címet az ismerőseivel?</string>
@@ -1228,7 +1228,7 @@
     <string name="v5_4_more_things_descr">- értesíti az ismerősöket a törlésről (nem kötelező)\n- profil nevek szóközökkel\n- és még sok más!</string>
     <string name="v5_0_polish_interface">Lengyel kezelőfelület</string>
     <string name="smp_servers_use_server">Kiszolgáló használata</string>
-    <string name="share_text_received_at">Fogadva ekkor: %s</string>
+    <string name="share_text_received_at">Fogadás ideje: %s</string>
     <string name="la_notice_title_simplex_lock">SimpleX-zár</string>
     <string name="save_and_notify_group_members">Mentés és a csoporttagok értesítése</string>
     <string name="reset_verb">Visszaállítás</string>
@@ -1558,7 +1558,7 @@
     <string name="clear_note_folder_question">Privát jegyzetek kiürítése?</string>
     <string name="info_row_created_at">Létrehozás ideje</string>
     <string name="saved_message_title">Mentett üzenet</string>
-    <string name="share_text_created_at">Megosztva ekkor: %s</string>
+    <string name="share_text_created_at">Megosztás ideje: %s</string>
     <string name="clear_note_folder_warning">Az összes üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="v5_5_message_delivery">Továbbfejlesztett üzenetkézbesítés</string>
     <string name="v5_5_join_group_conversation">Csatlakozás csoportos beszélgetésekhez</string>
@@ -2126,7 +2126,7 @@
     <string name="operator_servers_title">%s kiszolgáló</string>
     <string name="operator_info_title">Hálózati üzemeltető</string>
     <string name="operator_website">Weboldal</string>
-    <string name="operator_conditions_accepted_on">Feltételek elfogadva ekkor: %s.</string>
+    <string name="operator_conditions_accepted_on">Feltételek elfogadásának ideje: %s.</string>
     <string name="operator_conditions_will_be_accepted_on">A feltételek ekkor lesznek elfogadva: %s.</string>
     <string name="operator_use_operator_toggle_description">Kiszolgálók használata</string>
     <string name="use_servers_of_operator_x">%s használata</string>
@@ -2293,7 +2293,7 @@
     <string name="chat_item_ttl_year">1 év</string>
     <string name="chat_item_ttl_default">alapértelmezett (%s)</string>
     <string name="chat_ttl_options_footer">Csevegési üzenetek törlése az Ön eszközéről.</string>
-    <string name="change_automatic_deletion_question">Automatikus üzenettörlés módosítása?</string>
+    <string name="change_automatic_deletion_question">Automatikus üzenettörlés megváltoztatása?</string>
     <string name="change_automatic_chat_deletion_message">Ez a művelet nem vonható vissza – a kijelölt üzenettől korábban küldött és fogadott üzenetek törölve lesznek a csevegésből.</string>
     <string name="network_smp_web_port_footer">A(z) %1$s port használata, amikor nincs port megadva.</string>
     <string name="network_smp_web_port_section_title">TCP-port az üzenetváltáshoz</string>
