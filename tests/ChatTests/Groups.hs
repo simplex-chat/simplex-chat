@@ -84,6 +84,7 @@ chatGroupTests = do
     it "send multiple timed messages" testSendMultiTimed
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
     xit'' "shared message body is reused" testSharedMessageBody
+    xit'' "shared batch body is reused" testSharedBatchBody
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1912,6 +1913,64 @@ testSharedMessageBody ps =
             ]
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
+          bodiesCount2 <- withCCAgentTransaction alice $ \db ->
+            DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
+          bodiesCount2 `shouldBe` [[0]]
+
+    alice <##. "server disconnected localhost"
+  where
+    tmp = tmpPath ps
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testSharedBatchBody :: HasCallStack => TestParams -> IO ()
+testSharedBatchBody ps =
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice -> do
+    withSmpServer' serverCfg' $
+      withNewTestChatOpts ps opts' "bob" bobProfile $ \bob ->
+        withNewTestChatOpts ps opts' "cath" cathProfile $ \cath -> do
+          createGroup3 "team" alice bob cath
+
+    alice <##. "server disconnected localhost"
+
+    let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+        cms = intercalate ", " (map cm [1 .. 300 :: Int])
+    alice `send` ("/_send #1 json [" <> cms <> "]")
+    _ <- getTermLine alice
+    alice <## "300 messages sent"
+
+    bodiesCount1 <- withCCAgentTransaction alice $ \db ->
+      DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
+    bodiesCount1 `shouldBe` [[3]]
+
+    withSmpServer' serverCfg' $
+      withTestChatOpts ps opts' "bob" $ \bob ->
+        withTestChatOpts ps opts' "cath" $ \cath -> do
+          concurrentlyN_
+            [ alice <##. "server connected localhost",
+              do
+                bob <## "1 contacts connected (use /cs for the list)"
+                bob <## "#team: connected to server(s)",
+              do
+                cath <## "1 contacts connected (use /cs for the list)"
+                cath <## "#team: connected to server(s)"
+            ]
+          forM_ [(1 :: Int) .. 300] $ \i -> do
+            concurrently_
+              (bob <# ("#team alice> message " <> show i))
+              (cath <# ("#team alice> message " <> show i))
           bodiesCount2 <- withCCAgentTransaction alice $ \db ->
             DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
           bodiesCount2 `shouldBe` [[0]]
