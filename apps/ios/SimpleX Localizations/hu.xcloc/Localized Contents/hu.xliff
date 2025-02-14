@@ -1735,9 +1735,9 @@
         <target>Elkészült</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conditions accepted on: %@." xml:space="preserve">
+      <trans-unit id="Conditions accepted on: %@." xml:space="preserve" approved="no">
         <source>Conditions accepted on: %@.</source>
-        <target>Feltételek elfogadva ekkor: %@.</target>
+        <target state="translated">Feltételek elfogadásának ideje: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conditions are accepted for the operator(s): **%@**." xml:space="preserve">
@@ -2201,9 +2201,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target state="translated">Létrehozás ideje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Created at: %@" xml:space="preserve">
+      <trans-unit id="Created at: %@" xml:space="preserve" approved="no">
         <source>Created at: %@</source>
-        <target>Létrehozva ekkor: %@</target>
+        <target state="translated">Létrehozás ideje: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Creating archive link" xml:space="preserve">
@@ -2605,9 +2605,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target state="translated">Törlés ideje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted at: %@" xml:space="preserve">
+      <trans-unit id="Deleted at: %@" xml:space="preserve" approved="no">
         <source>Deleted at: %@</source>
-        <target>Törölve ekkor: %@</target>
+        <target state="translated">Törlés ideje: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Deletion errors" xml:space="preserve">
@@ -2785,9 +2785,9 @@ Ez az Ön egyszer használható meghívó-hivatkozása!</target>
         <target state="translated">Eltűnés ideje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappears at: %@" xml:space="preserve">
+      <trans-unit id="Disappears at: %@" xml:space="preserve" approved="no">
         <source>Disappears at: %@</source>
-        <target>Eltűnik ekkor: %@</target>
+        <target state="translated">Eltűnés ideje: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Disconnect" xml:space="preserve">
@@ -5026,9 +5026,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target state="translated">Moderálás ideje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Moderated at: %@" xml:space="preserve">
+      <trans-unit id="Moderated at: %@" xml:space="preserve" approved="no">
         <source>Moderated at: %@</source>
-        <target>Moderálva ekkor: %@</target>
+        <target state="translated">Moderálás ideje: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="More" xml:space="preserve">
@@ -6132,9 +6132,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target state="translated">Fogadás ideje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received at: %@" xml:space="preserve">
+      <trans-unit id="Received at: %@" xml:space="preserve" approved="no">
         <source>Received at: %@</source>
-        <target>Fogadva ekkor: %@</target>
+        <target state="translated">Fogadás ideje: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Received file event" xml:space="preserve">
@@ -6904,9 +6904,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target state="translated">Elküldés ideje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent at: %@" xml:space="preserve">
+      <trans-unit id="Sent at: %@" xml:space="preserve" approved="no">
         <source>Sent at: %@</source>
-        <target>Elküldve ekkor: %@</target>
+        <target state="translated">Elküldés ideje: %@</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Sent directly" xml:space="preserve">
