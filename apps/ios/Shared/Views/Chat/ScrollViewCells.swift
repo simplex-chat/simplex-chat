@@ -8,9 +8,13 @@
 
 import SwiftUI
 
+protocol ReusableView {
+    func prepareForReuse()
+}
+
 /// `UIHostingConfiguration` back-port for iOS14 and iOS15
 /// Implemented as a `UIView` that wraps and manages a generic `UIHostingController`
-final class HostingCell<Hosted: View>: UIView {
+final class HostingCell<Hosted: View>: UIView, ReusableView {
     private let hostingController = UIHostingController<Hosted?>(rootView: nil)
 
     /// Updates content of the cell
@@ -41,8 +45,8 @@ final class HostingCell<Hosted: View>: UIView {
         }
     }
 
-//    override func prepareForReuse() {
-//        super.prepareForReuse()
-//        hostingController.rootView = nil
-//    }
+    func prepareForReuse() {
+        //super.prepareForReuse()
+        hostingController.rootView = nil
+    }
 }

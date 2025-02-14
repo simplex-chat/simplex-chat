@@ -24,7 +24,7 @@ struct ChatView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
-    @StateObject private var scrollModel = ReverseListScrollModel()
+    @StateObject private var scrollModel = ItemsScrollModel()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -462,9 +462,7 @@ struct ChatView: View {
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
-            let _ = logger.debug("LALAL RELOAD \(im.reversedChatItems.count)")
-            // LALAL CAN I CHANGE BINDING LIKE THIS IN ignoreLoadingRequests?
-            //ReverseList(mergedItems: $mergedItems, revealedItems: $revealedItems, unreadCount: Binding.constant(chat.chatStats.unreadCount), scrollState: $scrollModel.state, loadingMoreItems: $loadingMoreItems, allowLoadMoreItems: $allowLoadMoreItems, ignoreLoadingRequests: searchValueIsEmpty ? $ignoreLoadingRequests : Binding.constant(nil)) { index, mergedItem in
+            //let _ = logger.debug("Reloading chatItemsList with number of itmes: \(im.reversedChatItems.count)")
             ScrollRepresentable(scrollView: scrollView) { (index: Int, mergedItem: MergedItem) in
                 let ci = switch mergedItem {
                 case let .single(item, _, _): item.item
@@ -497,7 +495,7 @@ struct ChatView: View {
                 )
                 // crashes on Cell size calculation without this line
                 .environmentObject(ChatModel.shared)
-                .environmentObject(theme) // crashes without this line when scrolling to the first unread in ReverseList
+                .environmentObject(theme) // crashes without this line when scrolling to the first unread in EndlessScrollVIew
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             }
             .onAppear {
@@ -559,7 +557,7 @@ struct ChatView: View {
                 }
             }
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
-            .padding(.vertical, -InvertedTableView.inset)
+            .padding(.vertical, -100)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
                 Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, search: searchText) }
@@ -675,7 +673,7 @@ struct ChatView: View {
 
     private struct FloatingButtons: View {
         let theme: AppTheme
-        let scrollModel: ReverseListScrollModel
+        let scrollModel: ItemsScrollModel
         let chat: Chat
         @Binding var loadingMoreItems: Bool
         @ObservedObject var model = FloatingButtonModel.shared
@@ -706,9 +704,8 @@ struct ChatView: View {
                                     // scroll to the top unread item
                                     scrollModel.scrollToItem(index: index)
                                 } else {
-                                    logger.debug("LALAL NO UNREAD ITEMS0!  \(model.listState.items.count)")
+                                    logger.debug("No more unread items, total: \(model.listState.items.count)")
                                 }
-                                logger.debug("LALAL NO UNREAD ITEMS1!  \(model.listState.items.count)")
                             }
                             .contextMenu {
                                 Button {
@@ -1128,7 +1125,6 @@ struct ChatView: View {
             }
             let showAvatar = shouldShowAvatar(item, listItem.nextItem)
             let itemSeparation: ItemSeparation
-            let prevItemSeparationLargeGap: Bool
             let single = switch merged {
             case .single: true
             default: false
@@ -1182,7 +1178,6 @@ struct ChatView: View {
                 }
             }
             .onDisappear {
-                logger.debug("LALAL DISAPPEAR")
                 markReadTask?.cancel()
                 markedRead = false
             }

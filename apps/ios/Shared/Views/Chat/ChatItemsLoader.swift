@@ -19,7 +19,6 @@ func apiLoadMessages(
     _ search: String = "",
     _ visibleItemIndexesNonReversed: @MainActor () -> ClosedRange<Int> = { 0 ... 0 }
 ) async {
-    //try? await Task.sleep(nanoseconds: 2000_000000)
     let chat: Chat
     let navInfo: NavigationInfo
     do {
@@ -219,7 +218,7 @@ private func removeDuplicatesAndModifySplitsOnAfterPagination(
 ) -> ([Int64], Int) {
     var unreadInLoaded = unreadInLoaded
     var firstItemIdBelowAllSplits: Int64? = nil
-    var splitsToRemove: [Int64] = []
+    var splitsToRemove: Set<Int64> = []
     let indexInSplitRanges = splits.firstIndex(of: paginationChatItemId)
     // Currently, it should always load from split range
     let loadingFromSplitRange = indexInSplitRanges != nil
@@ -233,7 +232,7 @@ private func removeDuplicatesAndModifySplitsOnAfterPagination(
         if loadingFromSplitRange && duplicate {
             if splitsToMerge.contains(new.id) {
                 splitsToMerge.removeAll(where: { $0 == new.id })
-                splitsToRemove.append(new.id)
+                splitsToRemove.insert(new.id)
             } else if firstItemIdBelowAllSplits == nil && splitsToMerge.isEmpty {
                 // we passed all splits and found duplicated item below all of them, which means no splits anymore below the loaded items
                 firstItemIdBelowAllSplits = new.id
@@ -245,14 +244,12 @@ private func removeDuplicatesAndModifySplitsOnAfterPagination(
         return duplicate
     })
     var newSplits: [Int64] = []
-    // LALAL BUG SOMEWHERE HERE. CAN BE TRIGGERER WHILE NOT REALLY CORRECT
     if firstItemIdBelowAllSplits != nil {
         // no splits anymore, all were merged with bottom items
         newSplits = []
     } else {
         if !splitsToRemove.isEmpty {
             var new = splits
-            // LALAL TODO make it set
             new.removeAll(where: { splitsToRemove.contains($0) })
             newSplits = new
         }

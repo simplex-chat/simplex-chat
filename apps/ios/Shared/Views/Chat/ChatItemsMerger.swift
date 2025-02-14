@@ -28,7 +28,6 @@ struct MergedItems: Hashable, Equatable {
             return MergedItems(items: [], splits: [], indexInParentItems: [:])
         }
 
-        logger.debug("LALAL STEP 0")
         let unreadAfterItemId = chatState.unreadAfterItemId
         let itemSplits = chatState.splits
         var mergedItems: [MergedItem] = []
@@ -116,7 +115,6 @@ struct MergedItems: Hashable, Equatable {
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
         }
-        logger.debug("LALAL STEP 7")
         return MergedItems(
             items: mergedItems,
             splits: splitRanges,
@@ -140,7 +138,7 @@ struct MergedItems: Hashable, Equatable {
 
 
 enum MergedItem: Identifiable, Hashable, Equatable {
-    // equatable and hashable implementations allows to NSDiffableDataSourceSnapshot to see the difference and correcrly scroll items we want. Without any of it, the scroll position will be random in ReverseList
+    // equatable and hashable implementations allows to see the difference and correctly scroll to items we want
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.hash == rhs.hash
     }

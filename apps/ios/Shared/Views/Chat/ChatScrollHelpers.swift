@@ -2,7 +2,7 @@
 //  ChatScrollHelpers.swift
 //  SimpleX (iOS)
 //
-//  Created by me on 20.12.2024.
+//  Created by Stanislav Dmitrenko on 20.12.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 
@@ -28,37 +28,6 @@ func loadLastItems(_ loadingMoreItems: Binding<Bool>, _ chatInfo: ChatInfo) {
         }
     }
 }
-//
-//func trackListState(
-//    _ allowLoadMoreItems: Binding<Bool>,
-//    _ ignoreLoadingRequests: Binding<Bool>,
-//    _ listState: EndlessScrollView<MergedItem>.ListState,
-//    _ mergedItemsBox: BoxedValue<MergedItems>,
-//    _ loadItems: (Bool, ChatPagination, @escaping @MainActor () -> ClosedRange<Int>) async -> Bool
-//) {
-//    let mergedItems = mergedItemsBox.boxedValue
-//    ChatView.FloatingButtonModel.shared.updateFloatingButtons.send()
-//    
-//    if !listState.isScrolling {
-//        //if nearSplit(remaining: 30, ignoreTopOfTopSplit: true, listState, mergedItems) {
-//            //logger.debug("LALAL IN SPLIT OR NO YESSSSSS  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
-//          //  stopScrolling(disable: false)
-//        //}
-//        //logger.debug("LALAL IN SPLIT OR NO \(self.nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, self.prevMergedItems))  \(listState.firstVisibleItemIndex)..\(listState.lastVisibleItemIndex)   \(String(describing: self.prevMergedItems.splits))")
-//        //if nearSplit(remaining: 40, ignoreTopOfTopSplit: false, listState, prevMergedItems) {
-////            if !updatingInProgress {
-////                runBlockOnEndDecelerating = nil
-////                // it's important to have it in DispatchQueue.main. Otherwise, it will be deadlock and jumping scroll
-////                // without any visible reason
-////                DispatchQueue.main.async {
-////                    block()
-////                }
-////            }
-////        } else {
-//            preloadIfNeeded(allowLoadMoreItems, ignoreLoadingRequests, listState, mergedItems, loaditems)
-//        //}
-//    }
-//}
 
 class PreloadState {
     static let shared = PreloadState()
@@ -82,7 +51,6 @@ func preloadIfNeeded(
     else {
         return
     }
-    //logger.debug("LALAL LOADING BEFORE ANYTHING \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(self.representer.$mergedItems.wrappedValue.items[state.firstVisibleItemIndex].newest().item.id)")
     state.prevFirstVisible = listState.firstVisibleItemId as! Int64
     state.prevItemsCount = mergedItems.boxedValue.indexInParentItems.count
     state.preloading = true
@@ -91,11 +59,8 @@ func preloadIfNeeded(
         defer {
             state.preloading = false
         }
-        //logger.debug("LALAL LOADING BEFORE INSIDE \(state.firstVisibleItemIndex) \(self.prevSnapshot.itemIdentifiers[state.firstVisibleItemIndex].newest().item.id)  \(mergedItems.items[state.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits)")
         await preloadItems(mergedItems.boxedValue, allowLoadMore, listState, ignoreLoadingRequests) { pagination in
-            let triedToLoad = await loadItems(false, pagination)
-            //logger.debug("LALAL LOADING INSIDE \(mergedItems.items[listState.firstVisibleItemIndex].newest().item.id) \(mergedItems.splits), triedToLoad: \(triedToLoad)")
-            return triedToLoad
+            await loadItems(false, pagination)
         }
     }
 }
@@ -119,19 +84,15 @@ async {
         let splits = mergedItems.splits
         let lastVisibleIndex = listState.lastVisibleItemIndex
         var lastIndexToLoadFrom: Int? = findLastIndexToLoadFromInSplits(firstVisibleIndex, lastVisibleIndex, remaining, splits)
-        logger.debug("LALAL LASTINDEX TO LOAD FROM \(lastIndexToLoadFrom ?? -1)")
         let items: [ChatItem] = ItemsModel.shared.reversedChatItems.reversed()
         if splits.isEmpty && !items.isEmpty && lastVisibleIndex > mergedItems.items.count - remaining {
             lastIndexToLoadFrom = items.count - 1
         }
-        logger.debug("LALAL LASTINDEX TO LOAD FROM after \(lastIndexToLoadFrom ?? -1), count \(items.count)")
         let loadFromItemId: Int64?
         if allowLoad, let lastIndexToLoadFrom {
             let index = items.count - 1 - lastIndexToLoadFrom
             loadFromItemId = index >= 0 ? items[index].id : nil
-            logger.debug("LALAL LASTINDEX TO LOAD FROM inside \(loadFromItemId ?? -1)")
         } else {
-            logger.debug("LALAL LOADFROMNIL")
             loadFromItemId = nil
         }
         guard let loadFromItemId, ignoreLoadingRequests.wrappedValue != loadFromItemId else {
@@ -140,7 +101,6 @@ async {
         let sizeWas = items.count
         let firstItemIdWas = items.first?.id
         let triedToLoad = await loadItems(ChatPagination.before(chatItemId: loadFromItemId, count: ChatPagination.PRELOAD_COUNT))
-        logger.debug("LALAL PRELOAD BEFORE \(String(describing: splits)) \(firstVisibleIndex) sizeWas \(sizeWas) now \(ItemsModel.shared.reversedChatItems.count) \(triedToLoad) \(lastIndexToLoadFrom ?? -1)")
         if triedToLoad && sizeWas == ItemsModel.shared.reversedChatItems.count && firstItemIdWas == ItemsModel.shared.reversedChatItems.last?.id {
             ignoreLoadingRequests.wrappedValue = loadFromItemId
         }
@@ -156,7 +116,6 @@ async {
             let index = split.indexRangeInReversed.lowerBound
             if index >= 0 {
                 let loadFromItemId = reversedItems[index].id
-                logger.debug("LALAL PRELOAD AFTER \(String(describing: splits)) \(firstVisibleIndex) \((split.indexRangeInParentItems.lowerBound) + remaining) index \(index), id \(loadFromItemId)")
                 _ = await loadItems(ChatPagination.after(chatItemId: loadFromItemId, count: ChatPagination.PRELOAD_COUNT))
             }
         }
@@ -171,7 +130,7 @@ func oldestPartiallyVisibleListItemInListStateOrNull(_ items: [MergedItem], _ li
     }
 }
 
-private func lastFullyVisibleIemInListState(_ mergedItems: MergedItems, _ listState: ListState) -> ChatItem? {
+private func lastFullyVisibleIemInListState(_ mergedItems: MergedItems, _ listState: EndlessScrollView<MergedItem>.ListState) -> ChatItem? {
     if listState.lastVisibleItemIndex < mergedItems.items.count {
         return mergedItems.items[listState.lastVisibleItemIndex].newest().item
     } else {
@@ -180,7 +139,6 @@ private func lastFullyVisibleIemInListState(_ mergedItems: MergedItems, _ listSt
 }
 
 private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVisibleIndex: Int, _ remaining: Int, _ splits: [SplitRange]) -> Int? {
-    logger.debug("LALAL SPLITS \(String(describing: splits))     \(firstVisibleIndex) / \(remaining)   \(lastVisibleIndex)")
     for split in splits {
         // before any split
         if split.indexRangeInParentItems.lowerBound > firstVisibleIndex {
@@ -200,17 +158,64 @@ private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVis
     return nil
 }
 
-// LALAL DELETE?
-func tryBlockAndSetLoadingMore(_ loadingMoreItems: Binding<Bool>, _ block: @escaping () async throws -> Void) async {
-    do {
-        await MainActor.run {
-            loadingMoreItems.wrappedValue = true
+class ItemsScrollModel: ObservableObject {
+    var scrollView: EndlessScrollView<MergedItem>!
+    var mergedItems: BoxedValue<MergedItems>!
+
+    var loadChatItems: ((ChatPagination) async -> Bool)!
+
+    func scrollToBottom() {
+        Task {
+            await scrollView.scrollToItem(0, animated: true, top: false)
         }
-        try await block()
-    } catch {
-        logger.error("Error loading more items: \(error)")
     }
-    await MainActor.run {
-        loadingMoreItems.wrappedValue = false
+
+    func scrollToItem(itemId: ChatItem.ID) {
+        Task {
+            do {
+                var index = mergedItems.boxedValue.indexInParentItems[itemId]
+                if index == nil {
+                    let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
+                    let oldSize = ItemsModel.shared.reversedChatItems.count
+                    let triedToLoad = await self.loadChatItems(pagination)
+                    if !triedToLoad {
+                        return
+                    }
+                    var repeatsLeft = 50
+                    while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
+                        try await Task.sleep(nanoseconds: 20_000000)
+                        repeatsLeft -= 1
+                    }
+                    index = mergedItems.boxedValue.indexInParentItems[itemId]
+                }
+                if let index {
+                    scrollToItem(index: min(ItemsModel.shared.reversedChatItems.count - 1, index))
+                }
+            } catch {
+                logger.error("Error scrolling to item: \(error)")
+            }
+        }
+    }
+
+    func scrollToItem(index: Int) {
+        Task {
+            await scrollView.scrollToItem(index, animated: true)
+        }
+    }
+
+    func scroll(by: CGFloat, animated: Bool = true) {
+        scrollView.setContentOffset(CGPointMake(scrollView.contentOffset.x, scrollView.contentOffset.y + by), animated: animated)
+    }
+}
+
+/// Disable animation on iOS 15
+func withConditionalAnimation<Result>(
+    _ animation: Animation? = .default,
+    _ body: () throws -> Result
+) rethrows -> Result {
+    if #available(iOS 16.0, *) {
+        try withAnimation(animation, body)
+    } else {
+        try body()
     }
 }
