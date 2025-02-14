@@ -910,6 +910,10 @@ Query: SELECT count(*) FROM snd_message_deliveries WHERE conn_id = ? AND interna
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
+Query: SELECT count(1) FROM snd_message_bodies
+Plan:
+SCAN snd_message_bodies
+
 Query: SELECT deleted FROM snd_files WHERE snd_file_id = ?
 Plan:
 SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
