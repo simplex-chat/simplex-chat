@@ -3391,8 +3391,12 @@ extension MsgReaction: Decodable {
             let type = try container.decode(String.self, forKey: CodingKeys.type)
             switch type {
             case "emoji":
-                let emoji = try container.decode(MREmojiChar.self, forKey: CodingKeys.emoji)
-                self = .emoji(emoji: emoji)
+                do {
+                    let emoji = try container.decode(MREmojiChar.self, forKey: CodingKeys.emoji)
+                    self = .emoji(emoji: emoji)
+                } catch {
+                    self = .unknown(type: "emoji")
+                }
             default:
                 self = .unknown(type: type)
             }
