@@ -863,7 +863,7 @@
     <string name="v5_2_more_things_descr">- stabilabb üzenetkézbesítés.\n- picit továbbfejlesztett csoportok.\n- és még sok más!</string>
     <string name="v5_1_message_reactions">Üzenetreakciók</string>
     <string name="no_connected_mobile">Nincs társított hordozható eszköz</string>
-    <string name="network_status">Hálózat állapota</string>
+    <string name="network_status">Hálózat állapota:</string>
     <string name="new_passcode">Új jelkód</string>
     <string name="message_delivery_error_desc">Valószínűleg ez az ismerős törölte Önnel a kapcsolatot.</string>
     <string name="join_group_incognito_button">Csatlakozás inkognitóban</string>
@@ -1733,7 +1733,7 @@
     <string name="network_smp_proxy_mode_never">Soha</string>
     <string name="network_smp_proxy_mode_unknown">Ismeretlen kiszolgálók</string>
     <string name="network_smp_proxy_fallback_allow_protected">Ha az IP-cím rejtett</string>
-    <string name="private_routing_show_message_status">Üzenetállapot megjelenítése</string>
+    <string name="private_routing_show_message_status">Üzenet állapotának megjelenítése</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Visszafejlesztés engedélyezése</string>
     <string name="network_smp_proxy_mode_always">Mindig</string>
     <string name="network_smp_proxy_fallback_prohibit">Nem</string>
@@ -1805,13 +1805,13 @@
     <string name="message_queue_info_server_info">a kiszolgáló sorbaállítási információi: %1$s\n\nutoljára kézbesített üzenet: %2$s</string>
     <string name="file_error_auth">Érvénytelen kulcs vagy ismeretlen fájltöredékcím – valószínűleg a fájl törlődött.</string>
     <string name="temporary_file_error">Ideiglenesfájl-hiba</string>
-    <string name="info_row_message_status">Üzenetállapot:</string>
-    <string name="share_text_message_status">Üzenetállapot: %s</string>
+    <string name="info_row_message_status">Üzenet állapota:</string>
+    <string name="share_text_message_status">Üzenet állapota: %s</string>
     <string name="file_error">Fájlhiba</string>
     <string name="file_error_no_file">A fájl nem található – valószínűleg a fájlt törölték vagy visszavonták.</string>
     <string name="file_error_relay">Fájlkiszolgáló-hiba: %1$s</string>
-    <string name="info_row_file_status">Fájlállapot</string>
-    <string name="share_text_file_status">Fájlállapot: %s</string>
+    <string name="info_row_file_status">Fájl állapota:</string>
+    <string name="share_text_file_status">Fájl állapota: %s</string>
     <string name="copy_error">Másolási hiba</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Ezt a hivatkozást egy másik hordozható eszközön már használták, hozzon létre egy új hivatkozást a számítógépén.</string>
     <string name="remote_ctrl_connection_stopped_desc">Ellenőrizze, hogy a hordozható eszköz és a számítógép ugyanahhoz a helyi hálózathoz csatlakozik-e, valamint a számítógép tűzfalában engedélyezve van-e a kapcsolat.\nMinden további problémát osszon meg a fejlesztőkkel.</string>
