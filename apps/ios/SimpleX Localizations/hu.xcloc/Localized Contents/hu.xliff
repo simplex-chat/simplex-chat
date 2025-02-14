@@ -5116,9 +5116,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Hálózati beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Network status" xml:space="preserve">
+      <trans-unit id="Network status" xml:space="preserve" approved="no">
         <source>Network status</source>
-        <target>Hálózat állapota</target>
+        <target state="translated">Hálózat állapota:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New" xml:space="preserve" approved="no">
@@ -7195,9 +7195,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Legutóbbi üzenet előnézetének megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show message status" xml:space="preserve">
+      <trans-unit id="Show message status" xml:space="preserve" approved="no">
         <source>Show message status</source>
-        <target>Üzenetállapot megjelenítése</target>
+        <target state="translated">Üzenet állapotának megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show percentage" xml:space="preserve">
