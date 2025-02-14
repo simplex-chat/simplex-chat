@@ -17,6 +17,20 @@ SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
               SELECT
+                m.msg_type, m.msg_flags, m.msg_body, m.pq_encryption, m.internal_ts, m.internal_snd_id, s.previous_msg_hash,
+                s.retry_int_slow, s.retry_int_fast, s.msg_encrypt_key, s.padded_msg_len, sb.agent_msg
+              FROM messages m
+              JOIN snd_messages s ON s.conn_id = m.conn_id AND s.internal_id = m.internal_id
+              LEFT JOIN snd_message_bodies sb ON sb.snd_message_body_id = s.snd_message_body_id
+              WHERE m.conn_id = ? AND m.internal_id = ?
+            
+Plan:
+SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
+SEARCH s USING PRIMARY KEY (conn_id=?)
+SEARCH sb USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+              SELECT
                 r.snd_file_chunk_replica_id, r.replica_id, r.replica_key, r.replica_status, r.delay, r.retries,
                 s.xftp_host, s.xftp_port, s.xftp_key_hash
               FROM snd_file_chunk_replicas r
@@ -44,16 +58,6 @@ Query:
             
 Plan:
 SEARCH commands USING INDEX idx_commands_server_commands (host=? AND port=?)
-
-Query: 
-              SELECT m.msg_type, m.msg_flags, m.msg_body, m.pq_encryption, m.internal_ts, s.retry_int_slow, s.retry_int_fast
-              FROM messages m
-              JOIN snd_messages s ON s.conn_id = m.conn_id AND s.internal_id = m.internal_id
-              WHERE m.conn_id = ? AND m.internal_id = ?
-            
-Plan:
-SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
-SEARCH s USING PRIMARY KEY (conn_id=?)
 
 Query: 
               SELECT rcv_file_chunk_id, chunk_no, chunk_size, digest, tmp_path
@@ -512,9 +516,9 @@ Plan:
 
 Query: 
       INSERT INTO snd_messages
-        ( conn_id, internal_snd_id, internal_id, internal_hash, previous_msg_hash)
+        ( conn_id, internal_snd_id, internal_id, internal_hash, previous_msg_hash, msg_encrypt_key, padded_msg_len, snd_message_body_id)
       VALUES
-        (?,?,?,?,?)
+        (?,?,?,?,?,?,?,?)
     
 Plan:
 SEARCH messages USING COVERING INDEX idx_messages_conn_id_internal_snd_id (conn_id=? AND internal_snd_id=?)
@@ -805,6 +809,11 @@ Plan:
 SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_file_chunks USING COVERING INDEX idx_snd_file_chunks_snd_file_id (snd_file_id=?)
 
+Query: DELETE FROM snd_message_bodies WHERE snd_message_body_id = ?
+Plan:
+SEARCH snd_message_bodies USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH snd_messages USING COVERING INDEX idx_snd_messages_snd_message_body_id (snd_message_body_id=?)
+
 Query: DELETE FROM snd_message_deliveries WHERE conn_id = ? AND snd_queue_id = ?
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries (conn_id=? AND snd_queue_id=?)
@@ -860,6 +869,10 @@ Plan:
 
 Query: INSERT INTO snd_files (snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, prefix_path, key, nonce, status, redirect_size, redirect_digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
+
+Query: INSERT INTO snd_message_bodies (agent_msg) VALUES (?) RETURNING snd_message_body_id
+Plan:
+SEARCH snd_messages USING COVERING INDEX idx_snd_messages_snd_message_body_id (snd_message_body_id=?)
 
 Query: INSERT INTO snd_message_deliveries (conn_id, snd_queue_id, internal_id) VALUES (?, ?, ?)
 Plan:
@@ -921,7 +934,7 @@ Query: SELECT ratchet_state, x3dh_pub_key_1, x3dh_pub_key_2, pq_pub_kem FROM rat
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
-Query: SELECT rcpt_internal_id, rcpt_status FROM snd_messages WHERE conn_id = ? AND internal_id = ?
+Query: SELECT rcpt_internal_id, rcpt_status, snd_message_body_id FROM snd_messages WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH snd_messages USING PRIMARY KEY (conn_id=?)
 
