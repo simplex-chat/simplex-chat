@@ -559,8 +559,17 @@ struct ChatView: View {
             .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -100)
             .onTapGesture { hideKeyboard() }
-            .onChange(of: searchText) { _ in
-                Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, search: searchText) }
+            .onChange(of: searchText) { s in
+                Task {
+                    await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, search: s)
+                    if s.isEmpty {
+                        await scrollView.scrollToItem(0, animated: false, top: false)
+                        loadLastItems($loadingMoreItems, chat.chatInfo)
+                    } else if let index = scrollView.listState.items.lastIndex(where: { $0.hasUnread() }) {
+                        // scroll to the top unread item
+                        await scrollView.scrollToItem(index, animated: false)
+                    }
+                }
             }
             .onChange(of: im.itemAdded) { added in
                 if added {

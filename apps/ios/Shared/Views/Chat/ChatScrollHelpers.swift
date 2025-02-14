@@ -164,9 +164,9 @@ class ItemsScrollModel: ObservableObject {
 
     var loadChatItems: ((ChatPagination) async -> Bool)!
 
-    func scrollToBottom() {
+    func scrollToBottom(animated: Bool = true) {
         Task {
-            await scrollView.scrollToItem(0, animated: true, top: false)
+            await scrollView.scrollToItem(0, animated: animated, top: false)
         }
     }
 
@@ -197,9 +197,9 @@ class ItemsScrollModel: ObservableObject {
         }
     }
 
-    func scrollToItem(index: Int) {
+    func scrollToItem(index: Int, animated: Bool = true) {
         Task {
-            await scrollView.scrollToItem(index, animated: true)
+            await scrollView.scrollToItem(index, animated: animated)
         }
     }
 
