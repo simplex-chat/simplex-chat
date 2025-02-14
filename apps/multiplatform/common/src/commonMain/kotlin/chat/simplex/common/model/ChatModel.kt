@@ -546,7 +546,11 @@ object ChatModel {
     }
 
     fun removeChat(rhId: Long?, id: String) {
-      chats.removeAll { it.id == id && it.remoteHostId == rhId }
+      val i = getChatIndex(rhId, id)
+      if (i != -1) {
+        val chat = chats.removeAt(i)
+        removeWallpaperFilesFromChat(chat)
+      }
     }
 
     suspend fun upsertGroupMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember): Boolean {
@@ -2977,7 +2981,7 @@ sealed class MsgReaction {
       MREmojiChar.Heart -> "❤️"
       else -> emoji.value
     }
-    is Unknown -> ""
+    is Unknown -> "?"
   }
 
   companion object {
@@ -2999,8 +3003,13 @@ object MsgReactionSerializer : KSerializer<MsgReaction> {
     return if (json is JsonObject && "type" in json) {
       when(val t = json["type"]?.jsonPrimitive?.content ?: "") {
         "emoji" -> {
-          val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
-          if (emoji == null) MsgReaction.Unknown(t, json) else MsgReaction.Emoji(emoji)
+          val msgReaction = try {
+            val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
+            MsgReaction.Emoji(emoji)
+          } catch (e: Throwable) {
+            MsgReaction.Unknown(t, json)
+          }
+          msgReaction
         }
         else -> MsgReaction.Unknown(t, json)
       }
