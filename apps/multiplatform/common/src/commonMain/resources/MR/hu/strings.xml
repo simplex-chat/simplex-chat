@@ -382,7 +382,7 @@
     <string name="database_passphrase">Adatbázis-jelmondat</string>
     <string name="ttl_days">%d nap</string>
     <string name="icon_descr_server_status_disconnected">Kapcsolat bontva</string>
-    <string name="encrypted_with_random_passphrase">Az adatbázis egy véletlenszerű jelmondattal van titkosítva, amelyet módosíthat.</string>
+    <string name="encrypted_with_random_passphrase">Az adatbázis egy véletlenszerű jelmondattal van titkosítva, amelyet szabadon módosíthat.</string>
     <string name="ttl_h">%dó</string>
     <string name="ttl_w">%dhét</string>
     <string name="discover_on_network">Felfedezés helyi hálózaton keresztül</string>
