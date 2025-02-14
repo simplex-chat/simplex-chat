@@ -209,8 +209,6 @@ struct ChatView: View {
             showChatInfoSheet = false
             selectedChatItems = nil
             revealedItems = Set()
-            // LALAL
-            scrollModel.scrollToBottom()
             stopAudioPlayer()
             if let cId {
                 if let c = chatModel.getChat(cId) {
@@ -219,6 +217,11 @@ struct ChatView: View {
                 setScrollListeners()
                 initChatView()
                 theme = buildTheme()
+                Task {
+                    if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
+                        await scrollView.scrollToItem(unreadIndex, animated: false)
+                    }
+                }
             } else {
                 dismiss()
             }
@@ -515,7 +518,6 @@ struct ChatView: View {
                     }
                 }
                 loadLastItems($loadingMoreItems, chat.chatInfo)
-                allowLoadMoreItems = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     allowLoadMoreItems = true
                 }
