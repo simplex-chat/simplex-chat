@@ -1923,7 +1923,6 @@ testSharedMessageBody ps =
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
-          msgQueueQuota = 2,
           storeLogFile = Just $ tmp <> "/smp-server-store.log",
           storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
         }
@@ -1981,7 +1980,6 @@ testSharedBatchBody ps =
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
-          msgQueueQuota = 2,
           storeLogFile = Just $ tmp <> "/smp-server-store.log",
           storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
         }
