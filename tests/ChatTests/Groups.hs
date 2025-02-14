@@ -83,6 +83,7 @@ chatGroupTests = do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
+    xit'' "shared message body is reused" testSharedMessageBody
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1882,6 +1883,56 @@ testSendMultiManyBatches =
       cathItemsCount <- withCCTransaction cath $ \db ->
         DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdCath) :: IO [[Int]]
       cathItemsCount `shouldBe` [[300]]
+
+testSharedMessageBody :: HasCallStack => TestParams -> IO ()
+testSharedMessageBody ps =
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice -> do
+    withSmpServer' serverCfg' $
+      withNewTestChatOpts ps opts' "bob" bobProfile $ \bob ->
+        withNewTestChatOpts ps opts' "cath" cathProfile $ \cath -> do
+          createGroup3 "team" alice bob cath
+
+    alice <##. "server disconnected localhost"
+    alice #> "#team hello"
+    bodiesCount1 <- withCCAgentTransaction alice $ \db ->
+      DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
+    bodiesCount1 `shouldBe` [[1]]
+
+    withSmpServer' serverCfg' $
+      withTestChatOpts ps opts' "bob" $ \bob ->
+        withTestChatOpts ps opts' "cath" $ \cath -> do
+          concurrentlyN_
+            [ alice <##. "server connected localhost",
+              do
+                bob <## "1 contacts connected (use /cs for the list)"
+                bob <## "#team: connected to server(s)",
+              do
+                cath <## "1 contacts connected (use /cs for the list)"
+                cath <## "#team: connected to server(s)"
+            ]
+          bob <# "#team alice> hello"
+          cath <# "#team alice> hello"
+          bodiesCount2 <- withCCAgentTransaction alice $ \db ->
+            DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
+          bodiesCount2 `shouldBe` [[0]]
+
+    alice <##. "server disconnected localhost"
+  where
+    tmp = tmpPath ps
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          storeLogFile = Just $ tmp <> "/smp-server-store.log",
+          storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
 
 testGroupAsync :: HasCallStack => TestParams -> IO ()
 testGroupAsync ps = do
