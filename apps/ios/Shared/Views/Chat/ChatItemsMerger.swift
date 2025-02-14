@@ -166,7 +166,7 @@ enum MergedItem: Identifiable, Hashable, Equatable {
     /** The item that can contain multiple items or just one depending on revealed state. When the whole group of merged items is revealed,
      * there will be multiple [Grouped] items with revealed flag set to true. When the whole group is collapsed, it will be just one instance
      *  of [Grouped] item with all grouped items inside [items]. In other words, number of [MergedItem] will always be equal to number of
-     *  visible rows in ChatView LazyColumn  */
+     *  visible items in ChatView's EndlessScrollView  */
     case grouped (
         items: BoxedValue<[ListItem]>,
         revealed: Bool,
@@ -269,8 +269,7 @@ struct ListItem: Hashable {
         }
     }
 
-    // using meta.hashValue instead of parts of it gives 120ms vs 90ms for MergedItems list generation for 1800 items (+ snapshot time generation for UITableView in MergedItems).
-    // so better to use partial meta here
+    // using meta.hashValue instead of parts takes much more time so better to use partial meta here
     func genHash(_ prevRevealed: Bool, _ nextRevealed: Bool) -> String {
         "\(item.meta.itemId) \(item.meta.updatedAt.hashValue) \(item.meta.itemEdited) \(item.meta.itemDeleted?.hashValue ?? 0) \(item.meta.itemTimed?.hashValue ?? 0) \(item.meta.itemStatus.hashValue) \(item.meta.sentViaProxy ?? false) \(item.mergeCategory?.hashValue ?? 0) \(chatDirHash(item.chatDir)) \(item.reactions.hashValue) \(item.meta.isRcvNew) \(item.text.hash) \(item.file?.hashValue ?? 0) \(item.quotedItem?.itemId ?? 0) \(unreadBefore) \(prevItem?.id ?? 0) \(chatDirHash(prevItem?.chatDir)) \(prevItem?.mergeCategory?.hashValue ?? 0) \(prevRevealed) \(nextItem?.id ?? 0) \(chatDirHash(nextItem?.chatDir)) \(nextItem?.mergeCategory?.hashValue ?? 0) \(nextRevealed)"
     }
@@ -355,7 +354,7 @@ func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.Li
         return zero
     }
 
-    // visible items mapped to their underlying data structure which is chatModel.chatItems
+    // visible items mapped to their underlying data structure which is ItemsModel.shared.reversedChatItems.reversed()
     return range
 }
 

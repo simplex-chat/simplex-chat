@@ -608,16 +608,6 @@ struct ChatView: View {
         var totalUnread: Int = 0
         var hideDateWorkItem: DispatchWorkItem?
 
-        let updateFloatingButtons = PassthroughSubject<Void, Never>()
-        private var bag = Set<AnyCancellable>()
-
-        init() {
-            updateFloatingButtons
-                .throttle(for: 0.2, scheduler: DispatchQueue.global(qos: .background), latest: true)
-                .sink { ChatView.FloatingButtonModel.shared.updateOnListChange() }
-                .store(in: &bag)
-        }
-
         func updateOnListChange() {
             let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(listState.items, listState)
             let unreadBelow = if let lastVisibleItem {
