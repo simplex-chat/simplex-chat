@@ -104,7 +104,6 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
                         }
                         await MainActor.run {
                             let prevSnapshot = controller.prevSnapshot
-                            logger.debug("LALAL SNAPSHOT SIZE1 \(prevSnapshot.numberOfItems), new \(mergedItems.snapshot.numberOfItems)")
                             controller.update(mergedItems)
                         }
                     }
@@ -120,7 +119,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
 
         //
         var prevSnapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem> = NSDiffableDataSourceSnapshot()
-        var prevMergedItems: MergedItems = MergedItems(items: [], splits: [], indexInParentItems: [:], snapshot: NSDiffableDataSourceSnapshot())
+        var prevMergedItems: MergedItems = MergedItems(items: [], splits: [], indexInParentItems: [:])
         //let updateFloatingButtons = PassthroughSubject<Void, Never>()
         //private var bag = Set<AnyCancellable>()
 
@@ -300,7 +299,7 @@ struct ReverseList<Content: View>: UIViewControllerRepresentable {
             tableView.panGestureRecognizer.isEnabled = false
             let items: [MergedItem] = mergedItems.items
             let indexInParentItems = mergedItems.indexInParentItems
-            let snapshot = mergedItems.snapshot
+            let snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
 
             logger.debug("LALAL STEP 1  \(items.count)")
             let wasCount = self.prevSnapshot.numberOfItems

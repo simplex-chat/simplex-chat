@@ -16,7 +16,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
-    @State var mergedItems: BoxedValue<MergedItems> = BoxedValue(MergedItems.create(ItemsModel.shared.reversedChatItems, 0, [], ItemsModel.shared.chatState))
+    @State var mergedItems: BoxedValue<MergedItems> = BoxedValue(MergedItems(items: [], splits: [], indexInParentItems: [:]))
     @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
@@ -498,12 +498,19 @@ struct ChatView: View {
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             }
             .onAppear {
-                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
-                scrollView.updateItems(mergedItems.boxedValue.items)
                 Task {
-                    // LALAL
-                    //try? await Task.sleep(nanoseconds: 2000_000000)
-                    if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
+                    mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() })
+                    let unreadItemId: Int64? = if let unreadIndex { mergedItems.boxedValue.items[unreadIndex].newest().item.id } else { nil }
+                    await MainActor.run {
+                        // this helps to speed up initial process of setting scroll position and reduce time needed
+                        // to layout items on screen
+                        if let unreadIndex, let unreadItemId {
+                            scrollView.setScrollPosition(unreadIndex, unreadItemId)
+                        }
+                        scrollView.updateItems(mergedItems.boxedValue.items)
+                    }
+                    if let unreadIndex {
                         await scrollView.scrollToItem(unreadIndex, animated: false)
                     }
                 }
@@ -1009,7 +1016,7 @@ struct ChatView: View {
         }
         scrollView.listState.onUpdateListener = {
             if !mergedItems.boxedValue.isActualState() {
-                logger.debug("LALALA 4 NOT EQUAL \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
+                //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
                 return
             }
             ChatView.FloatingButtonModel.shared.updateOnListChange()

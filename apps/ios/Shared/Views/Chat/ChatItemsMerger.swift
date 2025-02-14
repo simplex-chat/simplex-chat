@@ -14,7 +14,6 @@ struct MergedItems: Hashable, Equatable {
     let splits: [SplitRange]
     // chat item id, index in list
     let indexInParentItems: Dictionary<Int64, Int>
-    let snapshot: NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.hashValue == rhs.hashValue
@@ -26,7 +25,7 @@ struct MergedItems: Hashable, Equatable {
 
     static func create(_ items: [ChatItem], _ unreadCount: Int, _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
         if items.isEmpty {
-            return MergedItems(items: [], splits: [], indexInParentItems: [:], snapshot: NSDiffableDataSourceSnapshot())
+            return MergedItems(items: [], splits: [], indexInParentItems: [:])
         }
 
         logger.debug("LALAL STEP 0")
@@ -118,14 +117,10 @@ struct MergedItems: Hashable, Equatable {
             index += 1
         }
         logger.debug("LALAL STEP 7")
-        //var snapshot = NSDiffableDataSourceSnapshot<ReverseListSection, MergedItem>()
-        //snapshot.appendSections([ReverseListSection.main])
-        //snapshot.appendItems(mergedItems)
         return MergedItems(
             items: mergedItems,
             splits: splitRanges,
-            indexInParentItems: indexInParentItems,
-            snapshot: NSDiffableDataSourceSnapshot()
+            indexInParentItems: indexInParentItems
         )
     }
 

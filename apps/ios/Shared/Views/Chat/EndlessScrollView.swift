@@ -326,7 +326,10 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             scrollBarView.contentOffset = .zero
 
             prevProcessedOffset = contentOffset.y
-            self.listState.items = items
+            // this check is just to prevent didSet listener from firing on the same empty array, no use for this
+            if !self.listState.items.isEmpty {
+                self.listState.items = items
+            }
             return
         }
 
@@ -497,6 +500,12 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             //println("LALAL VISIBLE \(newVisible.map({ item in (item.index, item.offset) })), cellsToReuse \(cellsToReuseCount), time spent \((-start.timeIntervalSinceNow).description.prefix(5).replacingOccurrences(of: "0.000", with: "<0").replacingOccurrences(of: "0.", with: ""))")
             println("time spent \((-start.timeIntervalSinceNow).description.prefix(5).replacingOccurrences(of: "0.000", with: "<0").replacingOccurrences(of: "0.", with: ""))")
         }
+    }
+
+    func setScrollPosition(_ index: Int, _ id: Int64, _ offset: CGFloat = 0) {
+        listState.firstVisibleItemIndex = index
+        listState.firstVisibleItemId = id
+        listState.firstVisibleItemOffset = offset == 0 ? -bounds.height + insetTop + insetBottom : offset
     }
 
     func scrollToItem(_ index: Int, animated: Bool, top: Bool = true) async {
