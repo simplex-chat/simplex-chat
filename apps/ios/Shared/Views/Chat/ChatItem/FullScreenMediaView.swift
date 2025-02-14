@@ -13,7 +13,7 @@ import AVKit
 
 struct FullScreenMediaView: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var scrollModel: ReverseListScrollModel
+    @EnvironmentObject var scrollModel: ItemsScrollModel
     @State var chatItem: ChatItem
     @State var image: UIImage?
     @State var player: AVPlayer? = nil
@@ -71,7 +71,7 @@ struct FullScreenMediaView: View {
                 let w = abs(t.width)
                 if t.height > 60 && t.height > w * 2  {
                     showView = false
-                    scrollModel.scrollToItem(id: chatItem.id)
+                    scrollModel.scrollToItem(itemId: chatItem.id)
                 } else if w > 60 && w > abs(t.height) * 2 && !scrolling {
                     let previous = t.width > 0
                     scrolling = true
