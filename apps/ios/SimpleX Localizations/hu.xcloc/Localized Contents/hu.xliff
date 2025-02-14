@@ -377,9 +377,9 @@
         <target>**Megjegyzés:** ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
+      <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target>**Megjegyzés:** NEM fogja tudni helyreállítani, vagy megváltoztatni a jelmondatot abban az esetben, ha elveszíti.</target>
+        <target state="translated">**Megjegyzés:** NEM fogja tudni helyreállítani, vagy módosítani a jelmondatot abban az esetben, ha elveszíti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." xml:space="preserve">
@@ -585,14 +585,14 @@
         <target>Megszakítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address" xml:space="preserve">
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
         <source>Abort changing address</source>
-        <target>Címváltoztatás megszakítása</target>
+        <target state="translated">Címmódosítás megszakítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address?" xml:space="preserve">
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
-        <target>Címváltoztatás megszakítása??</target>
+        <target state="translated">Címmódosítás megszakítása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX Chat" xml:space="preserve">
@@ -1494,9 +1494,9 @@
         <target state="translated">A fogadócím módosítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Change receiving address?" xml:space="preserve">
+      <trans-unit id="Change receiving address?" xml:space="preserve" approved="no">
         <source>Change receiving address?</source>
-        <target>Megváltoztatja a fogadócímet?</target>
+        <target state="translated">Módosítja a fogadócímet?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change role" xml:space="preserve" approved="no">
@@ -1590,9 +1590,9 @@
         <target>Csevegési beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat preferences were changed." xml:space="preserve">
+      <trans-unit id="Chat preferences were changed." xml:space="preserve" approved="no">
         <source>Chat preferences were changed.</source>
-        <target>A csevegési beállítások megváltoztak.</target>
+        <target state="translated">A csevegési beállítások módosultak.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Chat profile" xml:space="preserve">
@@ -2310,14 +2310,14 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Adatbázishiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve">
+      <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase, you can change it.</source>
-        <target>Az adatbázis egy véletlenszerű jelmondattal van titkosítva, ami megváltoztatható.</target>
+        <target state="translated">Az adatbázis egy véletlenszerű jelmondattal van titkosítva, amelyet módosíthat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve">
+      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase. Please change it before exporting.</source>
-        <target>Az adatbázis egy véletlenszerű jelmondattal van titkosítva. Exportálás előtt változtassa meg.</target>
+        <target state="translated">Az adatbázis egy véletlenszerű jelmondattal van titkosítva. Exportálás előtt módosítsa.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase" xml:space="preserve">
@@ -5449,9 +5449,9 @@ VPN engedélyezése szükséges.</target>
         <target>Onion-kiszolgálók nem lesznek használva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only chat owners can change preferences." xml:space="preserve">
+      <trans-unit id="Only chat owners can change preferences." xml:space="preserve" approved="no">
         <source>Only chat owners can change preferences.</source>
-        <target>Csak a csevegés tulajdonosai változtathatják meg a beállításokat.</target>
+        <target state="translated">Csak a csevegés tulajdonosai módosíthatják a beállításokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
@@ -5464,9 +5464,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak a beszélgetés törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
+      <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target>Csak a csoport-tulajdonosok változtathatják meg a csoport-beállításokat.</target>
+        <target state="translated">Csak a csoport-tulajdonosok módosíthatják a csoport-beállításokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
@@ -5825,9 +5825,9 @@ Hiba: %@</target>
         <target>Tárolja el biztonságosan jelmondát, mert ha elveszti azt, akkor NEM férhet hozzá a csevegéshez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve">
+      <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve" approved="no">
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
-        <target>Tárolja el biztonságosan jelmondatát, mert ha elveszíti azt, NEM tudja megváltoztatni.</target>
+        <target state="translated">Tárolja el biztonságosan jelmondatát, mert ha elveszíti azt, NEM tudja módosítani.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please try to disable and re-enable notfications." xml:space="preserve" approved="no">
@@ -7099,9 +7099,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Settings were changed." xml:space="preserve">
+      <trans-unit id="Settings were changed." xml:space="preserve" approved="no">
         <source>Settings were changed.</source>
-        <target>A beállítások megváltoztak.</target>
+        <target state="translated">A beállítások módosultak.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Shape profile images" xml:space="preserve">
@@ -8706,9 +8706,9 @@ Csatlakozáskérés megismétlése?</target>
         <target>Hívásokat fogadhat a lezárási képernyőről, eszköz- és alkalmazás-hitelesítés nélkül.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve" approved="no">
         <source>You can change it in Appearance settings.</source>
-        <target>Ezt a „Megjelenés” menüben változtathatja meg.</target>
+        <target state="translated">Ezt a „Megjelenés” menüben módosíthatja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can configure operators in Network &amp; servers settings." xml:space="preserve">
@@ -9233,19 +9233,19 @@ Kapcsolatkérés megismétlése?</target>
         <target>%@ visszavonva</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="changed address for you" xml:space="preserve">
+      <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
-        <target>megváltoztatta a címet az Ön számára</target>
+        <target state="translated">módosította a címet az Ön számára</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changed role of %@ to %@" xml:space="preserve">
+      <trans-unit id="changed role of %@ to %@" xml:space="preserve" approved="no">
         <source>changed role of %1$@ to %2$@</source>
-        <target>%1$@ szerepkörét megváltoztatta a következőre: %2$@</target>
+        <target state="translated">módosította %1$@ szerepkörét a következőre: %2$@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changed your role to %@" xml:space="preserve">
+      <trans-unit id="changed your role to %@" xml:space="preserve" approved="no">
         <source>changed your role to %@</source>
-        <target>megváltoztatta az Ön szerepkörét a következőre: %@</target>
+        <target state="translated">módosította az Ön szerepkörét a következőre: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
@@ -9328,9 +9328,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>kapcsolat: %@</target>
         <note>connection information</note>
       </trans-unit>
-      <trans-unit id="contact %@ changed to %@" xml:space="preserve">
+      <trans-unit id="contact %@ changed to %@" xml:space="preserve" approved="no">
         <source>contact %1$@ changed to %2$@</source>
-        <target>%1$@ megváltoztatta a nevét a következőre: %2$@</target>
+        <target state="translated">%1$@ a következőre módosította a nevét: %2$@</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
@@ -9639,9 +9639,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>tag</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="member %@ changed to %@" xml:space="preserve">
+      <trans-unit id="member %@ changed to %@" xml:space="preserve" approved="no">
         <source>member %1$@ changed to %2$@</source>
-        <target>%1$@ megváltoztatta a nevét a következőre: %2$@</target>
+        <target state="translated">%1$@ a következőre módosította a nevét: %2$@</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
@@ -10020,24 +10020,24 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Ön letiltotta őt: %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you changed address" xml:space="preserve">
+      <trans-unit id="you changed address" xml:space="preserve" approved="no">
         <source>you changed address</source>
-        <target>Ön megváltoztatta a címet</target>
+        <target state="translated">Ön módosította a címet</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="you changed address for %@" xml:space="preserve">
+      <trans-unit id="you changed address for %@" xml:space="preserve" approved="no">
         <source>you changed address for %@</source>
-        <target>Ön megváltoztatta a címet %@ számára</target>
+        <target state="translated">Ön módosította a címet %@ számára</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
+      <trans-unit id="you changed role for yourself to %@" xml:space="preserve" approved="no">
         <source>you changed role for yourself to %@</source>
-        <target>Ön megváltoztatta a saját szerepkörét a következőre: %@</target>
+        <target state="translated">Ön a következőre módosította a saját szerepkörét: %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you changed role of %@ to %@" xml:space="preserve">
+      <trans-unit id="you changed role of %@ to %@" xml:space="preserve" approved="no">
         <source>you changed role of %1$@ to %2$@</source>
-        <target>Ön megváltoztatta %1$@ szerepkörét a következőre: %@</target>
+        <target state="translated">Ön módosította %1$@ szerepkörét a következőre: %2$@</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
