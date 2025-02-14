@@ -60,8 +60,12 @@ struct FramedItemView: View {
                         .onTapGesture {
                             if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
-                                    scrollModel.scrollToItem(id: ci.id)
+                                    scrollModel.scrollToItem(itemId: ci.id)
                                 }
+                            } else if let id = qi.itemId {
+                                scrollModel.scrollToItem(itemId: id)
+                            } else {
+                                showQuotedItemDoesNotExistAlert()
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
@@ -337,6 +341,13 @@ struct FramedItemView: View {
         } else {
             return videoWidth
         }
+    }
+
+    private func showQuotedItemDoesNotExistAlert() {
+        AlertManager.shared.showAlertMsg(
+            title: "No message",
+            message: "This message was deleted or not received yet."
+        )
     }
 }
 
