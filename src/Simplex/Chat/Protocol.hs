@@ -407,6 +407,13 @@ data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json
 emojiTag :: IsString a => a
 emojiTag = "emoji"
 
+knownReaction :: MsgReaction -> Either String MsgReaction
+knownReaction = \case
+  r@MREmoji {} -> Right r
+  MRUnknown {} -> Left "unknown MsgReaction"
+
+-- parseJSON for MsgReaction parses unknown emoji reactions as MRUnknown with type "emoji",
+-- allowing to add new emojis in a backwards compatible way - UI shows them as ?
 instance FromJSON MsgReaction where
   parseJSON (J.Object v) = do
     tag <- v .: "type"
