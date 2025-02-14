@@ -2312,7 +2312,7 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase, you can change it.</source>
-        <target state="translated">Az adatbázis egy véletlenszerű jelmondattal van titkosítva, amelyet módosíthat.</target>
+        <target state="translated">Az adatbázis egy véletlenszerű jelmondattal van titkosítva, amelyet szabadon módosíthat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve" approved="no">
@@ -6984,9 +6984,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>Kiszolgáló-üzemeltetők</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server protocol changed." xml:space="preserve">
+      <trans-unit id="Server protocol changed." xml:space="preserve" approved="no">
         <source>Server protocol changed.</source>
-        <target>A kiszolgáló-protokoll megváltozott.</target>
+        <target state="translated">A kiszolgáló-protokoll módosult.</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
@@ -9053,9 +9053,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>A profilja az eszközén van tárolva és csak az ismerőseivel van megosztva. A SimpleX-kiszolgálók nem láthatják a profilját.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
+      <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve" approved="no">
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
-        <target>A profilja megváltozott. Ha elmenti, a profilfrissítés el lesz küldve az Ön ismerősei számára.</target>
+        <target state="translated">A profilja módosult. Ha elmenti, a profilfrissítés el lesz küldve az Ön ismerősei számára.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
@@ -9846,9 +9846,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>titok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="security code changed" xml:space="preserve">
+      <trans-unit id="security code changed" xml:space="preserve" approved="no">
         <source>security code changed</source>
-        <target>a biztonsági kód megváltozott</target>
+        <target state="translated">a biztonsági kód módosult</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="send direct message" xml:space="preserve">
