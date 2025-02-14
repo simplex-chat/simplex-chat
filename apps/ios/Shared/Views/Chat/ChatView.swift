@@ -235,6 +235,7 @@ struct ChatView: View {
                     if chatModel.chatId == nil {
                         chatModel.chatItemStatuses = [:]
                         ItemsModel.shared.reversedChatItems = []
+                        ItemsModel.shared.chatItemsChangesListener?.cleared()
                         chatModel.groupMembers = []
                         chatModel.groupMembersIndexes.removeAll()
                         chatModel.membersLoaded = false

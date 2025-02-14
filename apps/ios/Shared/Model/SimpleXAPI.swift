@@ -345,7 +345,10 @@ func loadChat(type: ChatType, id: Int64, search: String = "", clearItems: Bool =
     let im = ItemsModel.shared
     m.chatItemStatuses = [:]
     if clearItems {
-        await MainActor.run { im.reversedChatItems = [] }
+        await MainActor.run { 
+            im.reversedChatItems = []
+            ItemsModel.shared.chatItemsChangesListener?.cleared()
+        }
     }
     await apiLoadMessages(type, id, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })
 }

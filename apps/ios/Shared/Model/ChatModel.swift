@@ -550,6 +550,7 @@ final class ChatModel: ObservableObject {
                 ci.meta.itemStatus = status
             }
             im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+            im.chatItemsChangesListener?.added((ci.id, ci.isRcvNew), hasLiveDummy ? 1 : 0)
             im.itemAdded = true
             ChatItemDummyModel.shared.sendUpdate()
             return true
@@ -595,8 +596,9 @@ final class ChatModel: ObservableObject {
         // remove from current chat
         if chatId == cInfo.id {
             if let i = getChatItemIndex(cItem) {
-                _ = withAnimation {
-                    im.reversedChatItems.remove(at: i)
+                withAnimation {
+                    let item = im.reversedChatItems.remove(at: i)
+                    im.chatItemsChangesListener?.removed([(item.id, i, item.isRcvNew)], im.reversedChatItems.reversed())
                 }
             }
         }
@@ -645,6 +647,7 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
+            im.chatItemsChangesListener?.added((cItem.id, cItem.isRcvNew), 0)
             im.itemAdded = true
         }
         return cItem
@@ -750,16 +753,22 @@ final class ChatModel: ObservableObject {
         if chatId == cInfo.id {
             chatItemStatuses = [:]
             im.reversedChatItems = []
+            im.chatItemsChangesListener?.cleared()
         }
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], _ mentionsRead: Int) {
         if self.chatId == cInfo.id {
+            var unreadItemIds: Set<ChatItem.ID> = []
             for itemId in itemIds {
                 if let i = im.reversedChatItems.firstIndex(where: { $0.id == itemId }) {
+                    if im.reversedChatItems[i].isRcvNew {
+                        unreadItemIds.insert(itemId)
+                    }
                     markChatItemRead_(i)
                 }
             }
+            im.chatItemsChangesListener?.read(unreadItemIds, im.reversedChatItems.reversed())
         }
         self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
     }
