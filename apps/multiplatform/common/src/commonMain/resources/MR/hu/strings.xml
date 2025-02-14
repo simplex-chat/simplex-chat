@@ -249,7 +249,7 @@
     <string name="create_another_profile_button">Profil létrehozása</string>
     <string name="connected_desktop">Társított számítógép</string>
     <string name="share_text_deleted_at">Törölve ekkor: %s</string>
-    <string name="info_row_deleted_at">Törölve ekkor:</string>
+    <string name="info_row_deleted_at">Törlés ideje</string>
     <string name="v4_6_chinese_spanish_interface">Kínai és spanyol kezelőfelület</string>
     <string name="alert_title_cant_invite_contacts">Nem lehet meghívni az ismerősöket!</string>
     <string name="chat_is_stopped_indication">A csevegés megállt</string>
@@ -348,7 +348,7 @@
     <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
     <string name="database_error">Adatbázishiba</string>
     <string name="database_encryption_will_be_updated_in_settings">Az adatbázis titkosítási jelmondata frissülni fog és a beállításokban lesz tárolva.</string>
-    <string name="info_row_database_id">Adatbázis-azonosító:</string>
+    <string name="info_row_database_id">Adatbázis-azonosító</string>
     <string name="share_text_database_id">Adatbázis-azonosító: %d</string>
     <string name="developer_options">Adatbázis-azonosítók és átvitel-izolációs beállítások.</string>
     <string name="database_encryption_will_be_updated">Az adatbázis titkosítási jelmondata frissülni fog és a Keystore-ban lesz tárolva.</string>
@@ -411,7 +411,7 @@
     <string name="receipts_contacts_disable_keep_overrides">Letiltás (felülírások megtartásával)</string>
     <string name="database_upgrade">Adatbázis fejlesztése</string>
     <string name="blocked_items_description">%d üzenet letiltva</string>
-    <string name="info_row_disappears_at">Eltűnik ekkor:</string>
+    <string name="info_row_disappears_at">Eltűnés ideje</string>
     <string name="ttl_weeks">%d hét</string>
     <string name="feature_enabled_for_you">engedélyezve az Ön számára</string>
     <string name="timed_messages">Eltűnő üzenetek</string>
@@ -555,7 +555,7 @@
     <string name="error_adding_members">Hiba a tag(ok) hozzáadásakor</string>
     <string name="icon_descr_file">Fájl</string>
     <string name="group_members_can_send_files">A tagok küldhetnek fájlokat és médiatartalmakat.</string>
-    <string name="delete_after">Törlés ennyi idő után:</string>
+    <string name="delete_after">Törlés ennyi idő után</string>
     <string name="error_changing_message_deletion">Hiba a beállítás megváltoztatásakor</string>
     <string name="error_updating_link_for_group">Hiba a csoporthivatkozás frissítésekor</string>
     <string name="group_member_status_group_deleted">a csoport törölve</string>
@@ -646,7 +646,7 @@
     <string name="how_to_use_simplex_chat">Használati útmutató</string>
     <string name="v4_3_improved_privacy_and_security_desc">Alkalmazás képernyőjének elrejtése a gyakran használt alkalmazások között.</string>
     <string name="v4_3_improved_server_configuration">Javított kiszolgáló konfiguráció</string>
-    <string name="edit_history">Előzmények:</string>
+    <string name="edit_history">Előzmények</string>
     <string name="hidden_profile_password">Rejtett profiljelszó</string>
     <string name="import_database">Adatbázis importálása</string>
     <string name="import_database_confirmation">Importálás</string>
@@ -825,7 +825,7 @@
     <string name="one_time_link">Egyszer használható meghívó-hivatkozás</string>
     <string name="invalid_name">Érvénytelen név!</string>
     <string name="email_invite_subject">Beszélgessünk a SimpleX Chatben</string>
-    <string name="info_row_moderated_at">Moderálva ekkor:</string>
+    <string name="info_row_moderated_at">Moderálás ideje</string>
     <string name="v4_4_live_messages">Élő üzenetek</string>
     <string name="mark_code_verified">Hitelesítés</string>
     <string name="v5_2_message_delivery_receipts">Üzenetkézbesítési jelentések!</string>
@@ -839,7 +839,7 @@
     <string name="new_passphrase">Új jelmondat…</string>
     <string name="callstatus_missed">nem fogadott hívás</string>
     <string name="database_migrations">Átköltöztetés: %s</string>
-    <string name="in_reply_to">Válaszul erre:</string>
+    <string name="in_reply_to">Válaszul erre</string>
     <string name="notification_preview_mode_message">Név és üzenet</string>
     <string name="notifications_will_be_hidden">Az értesítések csak az alkalmazás bezárásáig érkeznek!</string>
     <string name="info_menu">Információ</string>
@@ -863,7 +863,7 @@
     <string name="v5_2_more_things_descr">- stabilabb üzenetkézbesítés.\n- picit továbbfejlesztett csoportok.\n- és még sok más!</string>
     <string name="v5_1_message_reactions">Üzenetreakciók</string>
     <string name="no_connected_mobile">Nincs társított hordozható eszköz</string>
-    <string name="network_status">Hálózat állapota:</string>
+    <string name="network_status">Hálózat állapota</string>
     <string name="new_passcode">Új jelkód</string>
     <string name="message_delivery_error_desc">Valószínűleg ez az ismerős törölte Önnel a kapcsolatot.</string>
     <string name="join_group_incognito_button">Csatlakozás inkognitóban</string>
@@ -1132,7 +1132,7 @@
     <string name="set_passcode">Jelkód beállítása</string>
     <string name="whats_new">Újdonságok</string>
     <string name="connect_plan_open_group">Csoport megnyitása</string>
-    <string name="info_row_sent_at">Elküldve ekkor:</string>
+    <string name="info_row_sent_at">Elküldés ideje</string>
     <string name="prohibit_sending_voice">A hangüzenetek küldése le van tiltva.</string>
     <string name="privacy_show_last_messages">Legutóbbi üzenet előnézetének megjelenítése</string>
     <string name="smp_servers_preset_address">Az előre beállított kiszolgáló címe</string>
@@ -1252,7 +1252,7 @@
     <string name="whats_new_read_more">Tudjon meg többet</string>
     <string name="sender_cancelled_file_transfer">A fájl küldője visszavonta az átvitelt.</string>
     <string name="stop_chat_question">Csevegési szolgáltatás megállítása?</string>
-    <string name="info_row_received_at">Fogadva ekkor:</string>
+    <string name="info_row_received_at">Fogadás ideje</string>
     <string name="accept_feature_set_1_day">Beállítva 1 nap</string>
     <string name="user_unhide">Felfedés</string>
     <string name="color_received_message">Fogadott üzenetbuborék színe</string>
@@ -1471,7 +1471,7 @@
     <string name="icon_descr_profile_image_placeholder">profilkép helyőrzője</string>
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza – profiljai, ismerősei, üzenetei és fájljai véglegesen törölve lesznek.</string>
-    <string name="info_row_updated_at">A bejegyzés frissítve:</string>
+    <string name="info_row_updated_at">Bejegyzés frissítési időpontja</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
@@ -1556,7 +1556,7 @@
     <string name="error_deleting_note_folder">Hiba a privát jegyzetek törlésekor</string>
     <string name="error_creating_message">Hiba az üzenet létrehozásakor</string>
     <string name="clear_note_folder_question">Privát jegyzetek kiürítése?</string>
-    <string name="info_row_created_at">Létrehozva ekkor:</string>
+    <string name="info_row_created_at">Létrehozás ideje</string>
     <string name="saved_message_title">Mentett üzenet</string>
     <string name="share_text_created_at">Megosztva ekkor: %s</string>
     <string name="clear_note_folder_warning">Az összes üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
@@ -1693,13 +1693,13 @@
     <string name="prohibit_sending_simplex_links">A SimpleX-hivatkozások küldése le van tiltva</string>
     <string name="files_and_media_not_allowed">A fájlok- és médiatartalmak nincsenek engedélyezve</string>
     <string name="allow_to_send_simplex_links">A SimpleX-hivatkozások küldése engedélyezve van.</string>
-    <string name="feature_enabled_for">Számukra engedélyezve:</string>
+    <string name="feature_enabled_for">Számukra engedélyezve</string>
     <string name="saved_description">mentett</string>
     <string name="saved_from_description">elmentve innen: %s</string>
-    <string name="forwarded_from_chat_item_info_title">Továbbítva innen:</string>
+    <string name="forwarded_from_chat_item_info_title">Továbbítva innen</string>
     <string name="recipients_can_not_see_who_message_from">A címzett(ek) nem látja(k), hogy kitől származik ez az üzenet.</string>
     <string name="saved_chat_item_info_tab">Mentett</string>
-    <string name="saved_from_chat_item_info_title">Elmentve innen:</string>
+    <string name="saved_from_chat_item_info_title">Elmentve innen</string>
     <string name="download_file">Letöltés</string>
     <string name="forward_chat_item">Továbbítás</string>
     <string name="forwarded_chat_item_info_tab">Továbbított</string>
@@ -1805,12 +1805,12 @@
     <string name="message_queue_info_server_info">a kiszolgáló sorbaállítási információi: %1$s\n\nutoljára kézbesített üzenet: %2$s</string>
     <string name="file_error_auth">Érvénytelen kulcs vagy ismeretlen fájltöredékcím – valószínűleg a fájl törlődött.</string>
     <string name="temporary_file_error">Ideiglenesfájl-hiba</string>
-    <string name="info_row_message_status">Üzenet állapota:</string>
+    <string name="info_row_message_status">Üzenet állapota</string>
     <string name="share_text_message_status">Üzenet állapota: %s</string>
     <string name="file_error">Fájlhiba</string>
     <string name="file_error_no_file">A fájl nem található – valószínűleg a fájlt törölték vagy visszavonták.</string>
     <string name="file_error_relay">Fájlkiszolgáló-hiba: %1$s</string>
-    <string name="info_row_file_status">Fájl állapota:</string>
+    <string name="info_row_file_status">Fájl állapota</string>
     <string name="share_text_file_status">Fájl állapota: %s</string>
     <string name="copy_error">Másolási hiba</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Ezt a hivatkozást egy másik hordozható eszközön már használták, hozzon létre egy új hivatkozást a számítógépén.</string>
@@ -1905,7 +1905,7 @@
     <string name="servers_info_transport_sessions_section_header">Munkamenetek átvitele</string>
     <string name="servers_info_subscriptions_total">Összes kapcsolat</string>
     <string name="servers_info_statistics_section_header">Statisztikák</string>
-    <string name="servers_info_target">Információk megjelenítése a következőhöz:</string>
+    <string name="servers_info_target">Információk megjelenítése a következőhöz</string>
     <string name="network_error_broker_version_desc">A kiszolgáló verziója nem kompatibilis az alkalmazással: %1$s.</string>
     <string name="servers_info_proxied_servers_section_footer">Ön nem kapcsolódik ezekhez a kiszolgálókhoz. A privát útválasztás az üzenetek kézbesítésére szolgál.</string>
     <string name="servers_info_subscriptions_connections_subscribed">Aktív kapcsolatok száma</string>
@@ -1994,7 +1994,7 @@
     <string name="v6_0_reachable_chat_toolbar">Könnyen elérhető eszköztár</string>
     <string name="message_servers">Üzenetkiszolgálók</string>
     <string name="network_socks_proxy">SOCKS-proxy</string>
-    <string name="chat_database_exported_not_all_files">Néhány fájl nem lett exportálva:</string>
+    <string name="chat_database_exported_not_all_files">Néhány fájl nem lett exportálva</string>
     <string name="chat_database_exported_migrate">Az exportált adatbázist átköltöztetheti.</string>
     <string name="network_options_save_and_reconnect">Mentés és újrakapcsolódás</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Használja az alkalmazást egy kézzel.</string>
@@ -2215,8 +2215,8 @@
     <string name="debug_logs">Naplózás engedélyezése</string>
     <string name="error_saving_database">Hiba az adatbázis mentésekor</string>
     <string name="strikethrough_text">áthúzott</string>
-    <string name="users_delete_profile_for">A következő csevegési profil törlése:</string>
-    <string name="delete_messages_after">Üzenetek törlése ennyi idő után:</string>
+    <string name="users_delete_profile_for">A következő csevegési profil törlése</string>
+    <string name="delete_messages_after">Üzenetek törlése ennyi idő után</string>
     <string name="a_plus_b">a + b</string>
     <string name="connection_not_ready">A kapcsolat nem áll készen.</string>
     <string name="open_with_app">Megnyitás a következővel: %s</string>
