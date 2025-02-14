@@ -33,6 +33,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Client.Main (xftpClientCLI)
+import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -555,6 +556,10 @@ withCCUser cc action = do
 withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCTransaction cc action =
   withTransaction (chatStore $ chatController cc) $ \db -> action db
+
+withCCAgentTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
+withCCAgentTransaction TestCC {chatController = ChatController {smpAgent}} action =
+  withTransaction (agentClientStore smpAgent) $ \db -> action db
 
 createCCNoteFolder :: TestCC -> IO ()
 createCCNoteFolder cc =
