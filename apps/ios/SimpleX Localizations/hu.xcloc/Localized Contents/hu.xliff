@@ -1585,14 +1585,14 @@
         <target>A csevegés átköltöztetve!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat preferences" xml:space="preserve">
+      <trans-unit id="Chat preferences" xml:space="preserve" approved="no">
         <source>Chat preferences</source>
-        <target>Csevegési beállítások</target>
+        <target state="translated">Csevegés-beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat preferences were changed." xml:space="preserve" approved="no">
         <source>Chat preferences were changed.</source>
-        <target state="translated">A csevegési beállítások módosultak.</target>
+        <target state="translated">A csevegés-beállítások módosultak.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Chat profile" xml:space="preserve">
@@ -5451,7 +5451,7 @@ VPN engedélyezése szükséges.</target>
       </trans-unit>
       <trans-unit id="Only chat owners can change preferences." xml:space="preserve" approved="no">
         <source>Only chat owners can change preferences.</source>
-        <target state="translated">Csak a csevegés tulajdonosai módosíthatják a beállításokat.</target>
+        <target state="translated">Csak a csevegés tulajdonosai módosíthatják a csevegés-beállításokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages." xml:space="preserve">
@@ -5469,14 +5469,14 @@ VPN engedélyezése szükséges.</target>
         <target state="translated">Csak a csoport tulajdonosai módosíthatják a csoport-beállításokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
+      <trans-unit id="Only group owners can enable files and media." xml:space="preserve" approved="no">
         <source>Only group owners can enable files and media.</source>
-        <target>Csak a csoport-tulajdonosok engedélyezhetik a fájlok- és a médiatartalmak küldését.</target>
+        <target state="translated">Csak a csoport tulajdonosai engedélyezhetik a fájlok- és a médiatartalmak küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
+      <trans-unit id="Only group owners can enable voice messages." xml:space="preserve" approved="no">
         <source>Only group owners can enable voice messages.</source>
-        <target>Csak a csoport-tulajdonosok engedélyezhetik a hangüzenetek küldését.</target>
+        <target state="translated">Csak a csoport tulajdonosai engedélyezhetik a hangüzenetek küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only sender and moderators see it" xml:space="preserve">
@@ -5549,9 +5549,9 @@ VPN engedélyezése szükséges.</target>
         <target>Beállítások megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open changes" xml:space="preserve">
+      <trans-unit id="Open changes" xml:space="preserve" approved="no">
         <source>Open changes</source>
-        <target>Változások megnyitása</target>
+        <target state="translated">Módosítások megtekintése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open chat" xml:space="preserve">
@@ -6744,9 +6744,9 @@ Engedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.
         <target>%lld kijelölve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>A kijelölt csevegési beállítások tiltják ezt az üzenetet.</target>
+        <target state="translated">A kijelölt csevegés-beállítások tiltják ezt az üzenetet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Self-destruct" xml:space="preserve">
@@ -8983,9 +8983,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>A csevegési adatbázis nincs titkosítva – adjon meg egy jelmondatot a titkosításhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat preferences" xml:space="preserve">
+      <trans-unit id="Your chat preferences" xml:space="preserve" approved="no">
         <source>Your chat preferences</source>
-        <target>Csevegési beállítások</target>
+        <target state="translated">Az Ön csevegés-beállításai</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve">
@@ -10330,9 +10330,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Hozzon létre egy profilt a SimpleX alkalmazásban</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>A kijelölt csevegési beállítások tiltják ezt az üzenetet.</target>
+        <target state="translated">A kijelölt csevegés-beállítások tiltják ezt az üzenetet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
