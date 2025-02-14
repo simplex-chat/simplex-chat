@@ -101,8 +101,8 @@ Owner SMP             Owner            Super-peers       Super-peers SMP      Ne
     |                   |                   |  3. create group  |                   |
     |                   |                   |       links       |                   |
     |                   |                   |------------------>|                   |
-    |                   |                   |   new addresses   |                   |
     |                   |                   |<------------------|                   |
+    |                   |                   |   new addresses   |                   |
     |                   |4. accept requests |                   |                   |
     |                   |(CONF, group links)|                   |                   |
     |                   |<------------------|                   |                   |
@@ -111,16 +111,15 @@ Owner SMP             Owner            Super-peers       Super-peers SMP      Ne
     |                   |                   |                   |                   |
     |  6. upload blob   |                   |                   |                   |
     |<------------------|                   |                   |                   |
-    |    short link     |                   |                   |                   |
     |------------------>|                   |                   |                   |
+    |    short link     |                   |                   |                   |
     |                   |                    7. short link (oob)                    |
     |                   |~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ >|
     |                   |                   |                   |                   |
     |                                8. retrieve blob                               |
     |<------------------------------------------------------------------------------|
-    |                   |                   |                   |                   |
-    |                       blob with super-peers group links                       |
     |------------------------------------------------------------------------------>|
+    |                       blob with super-peers group links                       |
     |                   |                   |                   |                   |
     |                   |                   |      9. connect via group links       |
     |                   |                   |<--------------------------------------|
