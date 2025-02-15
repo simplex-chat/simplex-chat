@@ -110,7 +110,7 @@
     <string name="integrity_msg_duplicate">mensaje duplicado</string>
     <string name="settings_developer_tools">Herramientas desarrollo</string>
     <string name="delete_files_and_media_for_all_users">Eliminar los archivos de todos los perfiles</string>
-    <string name="delete_messages">Eliminar mensajes</string>
+    <string name="delete_messages">Activar</string>
     <string name="database_encrypted">¡Base de datos cifrada!</string>
     <string name="encrypted_with_random_passphrase">La base de datos está cifrada con una contraseña aleatoria, puedes cambiarla.</string>
     <string name="database_error">Error en base de datos</string>
@@ -2328,7 +2328,7 @@
     <string name="change_automatic_deletion_question">¿Modificar la eliminación automática de mensajes?</string>
     <string name="chat_ttl_options_footer">Elimina los mensajes del dispositivo</string>
     <string name="disable_automatic_deletion_message">Los mensajes de esta conversación nunca se borran.</string>
-    <string name="change_automatic_chat_deletion_message">Todos los mensajes previos a la selección serán eliminados del chat. ¡No podrá deshacerse!</string>
+    <string name="change_automatic_chat_deletion_message">Todos los mensajes previos al período seleccionado serán eliminados del chat. ¡No podrá deshacerse!</string>
     <string name="chat_item_ttl_year">Un año</string>
     <string name="chat_item_ttl_default">predefinido (%s)</string>
     <string name="network_smp_web_port_section_title">Puerto TCP para mensajes</string>
