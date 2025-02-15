@@ -742,7 +742,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
-testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
+testBusinessUpdateProfiles = withTestOutput $ testChat4 businessProfile aliceProfile bobProfile cathProfile $
   \biz alice bob cath -> do
     biz ##> "/ad"
     cLink <- getContactLink biz True

@@ -1604,7 +1604,7 @@ testGroupModerate =
 
 testGroupModerateOwn :: HasCallStack => TestParams -> IO ()
 testGroupModerateOwn =
-  testChat2 aliceProfile bobProfile $
+  withTestOutput $ testChat2 aliceProfile bobProfile $
     \alice bob -> do
       createGroup2 "team" alice bob
       -- disableFullDeletion2 "team" alice bob
