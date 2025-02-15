@@ -76,6 +76,17 @@ Plan:
 SEARCH snd_file_chunks USING INDEX idx_snd_file_chunks_snd_file_id (snd_file_id=?)
 
 Query: 
+            DELETE FROM snd_message_bodies
+            WHERE NOT EXISTS (SELECT 1 FROM snd_messages WHERE snd_message_body_id = ?)
+              AND snd_message_body_id = ?
+          
+Plan:
+SEARCH snd_message_bodies USING INTEGER PRIMARY KEY (rowid=?)
+SCALAR SUBQUERY 1
+SEARCH snd_messages USING COVERING INDEX idx_snd_messages_snd_message_body_id (snd_message_body_id=?)
+SEARCH snd_messages USING COVERING INDEX idx_snd_messages_snd_message_body_id (snd_message_body_id=?)
+
+Query: 
             SELECT
               f.rcv_file_id, f.rcv_file_entity_id, f.user_id, c.rcv_file_chunk_id, c.chunk_no, c.chunk_size, c.digest, f.tmp_path, c.tmp_path,
               r.rcv_file_chunk_replica_id, r.replica_id, r.replica_key, r.received, r.delay, r.retries,
@@ -187,6 +198,16 @@ SEARCH r USING INDEX idx_snd_file_chunk_replicas_pending (replica_status=? AND r
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+            SELECT rcpt_status, snd_message_body_id FROM snd_messages
+            WHERE NOT EXISTS (SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND internal_id = ? AND failed = 0)
+              AND conn_id = ? AND internal_id = ?
+          
+Plan:
+SEARCH snd_messages USING PRIMARY KEY (conn_id=?)
+SCALAR SUBQUERY 1
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
 Query: 
             SELECT rcv_file_entity_id, user_id, size, digest, key, nonce, chunk_size, prefix_path, tmp_path, save_path, save_file_key, save_file_nonce, status, deleted, redirect_id, redirect_entity_id, redirect_size, redirect_digest
@@ -809,11 +830,6 @@ Plan:
 SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_file_chunks USING COVERING INDEX idx_snd_file_chunks_snd_file_id (snd_file_id=?)
 
-Query: DELETE FROM snd_message_bodies WHERE snd_message_body_id = ?
-Plan:
-SEARCH snd_message_bodies USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH snd_messages USING COVERING INDEX idx_snd_messages_snd_message_body_id (snd_message_body_id=?)
-
 Query: DELETE FROM snd_message_deliveries WHERE conn_id = ? AND snd_queue_id = ?
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries (conn_id=? AND snd_queue_id=?)
@@ -906,10 +922,6 @@ Query: SELECT conn_id FROM connections WHERE user_id = ?
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 
-Query: SELECT count(*) FROM snd_message_deliveries WHERE conn_id = ? AND internal_id = ? AND failed = 0
-Plan:
-SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
-
 Query: SELECT count(1) FROM snd_message_bodies
 Plan:
 SCAN snd_message_bodies
@@ -937,10 +949,6 @@ SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 Query: SELECT ratchet_state, x3dh_pub_key_1, x3dh_pub_key_2, pq_pub_kem FROM ratchets WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
-
-Query: SELECT rcpt_internal_id, rcpt_status, snd_message_body_id FROM snd_messages WHERE conn_id = ? AND internal_id = ?
-Plan:
-SEARCH snd_messages USING PRIMARY KEY (conn_id=?)
 
 Query: SELECT rcv_file_id FROM rcv_files WHERE rcv_file_entity_id = ?
 Plan:
@@ -1103,6 +1111,10 @@ Plan:
 SEARCH snd_messages USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 
 Query: UPDATE snd_messages SET retry_int_slow = ?, retry_int_fast = ? WHERE conn_id = ? AND internal_id = ?
+Plan:
+SEARCH snd_messages USING COVERING INDEX idx_snd_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
+
+Query: UPDATE snd_messages SET snd_message_body_id = NULL WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH snd_messages USING COVERING INDEX idx_snd_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
 
