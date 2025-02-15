@@ -489,10 +489,7 @@ struct ChatView: View {
                     showChatInfoSheet: $showChatInfoSheet,
                     revealedItems: $revealedItems,
                     selectedChatItems: $selectedChatItems,
-                    forwardedChatItems: $forwardedChatItems,
-                    reveal: { reveal in
-                        mergedItem.reveal(reveal, $revealedItems)
-                    }
+                    forwardedChatItems: $forwardedChatItems
                 )
                 // crashes on Cell size calculation without this line
                 .environmentObject(ChatModel.shared)
@@ -1067,12 +1064,14 @@ struct ChatView: View {
         @State private var markReadTask: Task<Void, Never>? = nil
         @State private var actionSheet: SomeActionSheet? = nil
 
-        var reveal: (Bool) -> Void
-
         var revealed: Bool { revealedItems.contains(chatItem.id) }
 
         typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
 
+        private func reveal(_ yes: Bool) -> Void {
+            merged.revealItems(yes, $revealedItems)
+        }
+        
         func getItemSeparation(_ chatItem: ChatItem, _ prevItem: ChatItem?) -> ItemSeparation {
             guard let prevItem else {
                 return ItemSeparation(timestamp: true, largeGap: true, date: nil)

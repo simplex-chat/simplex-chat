@@ -181,7 +181,7 @@ enum MergedItem: Identifiable, Hashable, Equatable {
         hash: String
     )
 
-    func reveal(_ reveal: Bool, _ revealedItems: Binding<Set<Int64>>) {
+    func revealItems(_ reveal: Bool, _ revealedItems: Binding<Set<Int64>>) {
         if case .grouped(let items, _, let revealedIdsWithinGroup, _, _, _, _, _) = self {
             var newRevealed = revealedItems.wrappedValue
             var i = 0
