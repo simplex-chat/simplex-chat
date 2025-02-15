@@ -2535,9 +2535,9 @@ This is your own one-time link!</source>
         <target>¿Eliminar mensaje?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete messages" xml:space="preserve">
+      <trans-unit id="Delete messages" xml:space="preserve" approved="no">
         <source>Delete messages</source>
-        <target>Eliminar mensajes</target>
+        <target state="translated">Activar</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Delete messages after" xml:space="preserve">
@@ -7820,9 +7820,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Esta acción es irreversible. Se eliminarán los mensajes enviados y recibidos anteriores a la selección. Podría tardar varios minutos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Todos los mensajes previos a la selección serán eliminados del chat. ¡No podrá deshacerse!</target>
+        <target state="translated">Todos los mensajes previos al período seleccionado serán eliminados del chat. ¡No podrá deshacerse!</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
