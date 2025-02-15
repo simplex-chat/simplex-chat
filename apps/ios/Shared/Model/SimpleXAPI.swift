@@ -328,19 +328,13 @@ func apiGetChatTagsAsync() async throws -> [ChatTag] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
+func apiGetChat(chatId: ChatId, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
+    let r = await chatSendCmd(.apiGetChat(chatId: chatId, pagination: pagination, search: search))
     if case let .apiChat(_, chat, navInfo) = r { return (Chat.init(chat), navInfo ?? NavigationInfo()) }
     throw r
 }
 
-func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
-    if case let .apiChat(_, chat, _) = r { return chat.chatItems }
-    throw r
-}
-
-func loadChat(type: ChatType, id: Int64, search: String = "", clearItems: Bool = true) async {
+func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) async {
     let m = ChatModel.shared
     let im = ItemsModel.shared
     m.chatItemStatuses = [:]
@@ -350,7 +344,7 @@ func loadChat(type: ChatType, id: Int64, search: String = "", clearItems: Bool =
             ItemsModel.shared.chatItemsChangesListener?.cleared()
         }
     }
-    await apiLoadMessages(type, id, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })
+    await apiLoadMessages(chatId, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {

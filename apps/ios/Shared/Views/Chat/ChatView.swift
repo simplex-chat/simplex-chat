@@ -429,7 +429,7 @@ struct ChatView: View {
                 searchText = ""
                 searchMode = false
                 searchFocussed = false
-                Task { await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId) }
+                Task { await loadChat(chatId: chat.chatInfo.id) }
             }
         }
         .padding(.horizontal)
@@ -562,7 +562,7 @@ struct ChatView: View {
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { s in
                 Task {
-                    await loadChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, search: s)
+                    await loadChat(chatId: chat.chatInfo.id, search: s)
                     if s.isEmpty {
                         await scrollView.scrollToItem(0, animated: false, top: false)
                         loadLastItems($loadingMoreItems, chat.chatInfo)
@@ -979,22 +979,21 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ chatType: ChatType, _ apiId: Int64, _ pagination: ChatPagination) async -> Bool {
+    private func loadChatItems(_ chatId: ChatId, _ pagination: ChatPagination) async -> Bool {
         if loadingMoreItems { return false }
         await MainActor.run {
             loadingMoreItems = true
         }
-        let triedToLoad = await loadChatItemsUnchecked(chatType, apiId, pagination)
+        let triedToLoad = await loadChatItemsUnchecked(chatId, pagination)
         await MainActor.run {
             loadingMoreItems = false
         }
         return triedToLoad
     }
 
-    private func loadChatItemsUnchecked(_ chatType: ChatType, _ apiId: Int64, _ pagination: ChatPagination) async -> Bool {
+    private func loadChatItemsUnchecked(_ chatId: ChatId, _ pagination: ChatPagination) async -> Bool {
         await apiLoadMessages(
-            chatType,
-            apiId,
+            chatId,
             pagination,
             im.chatState,
             searchText,
@@ -1011,7 +1010,7 @@ struct ChatView: View {
     // it should be re-set everytime chatId changes
     func setScrollListeners() {
         scrollModel.loadChatItems = { pagination in
-            await loadChatItems(chat.chatInfo.chatType, chat.chatInfo.apiId, pagination)
+            await loadChatItems(chat.chatInfo.id, pagination)
         }
         scrollView.listState.onUpdateListener = {
             if !mergedItems.boxedValue.isActualState() {
@@ -1026,9 +1025,9 @@ struct ChatView: View {
                 mergedItems,
                 loadItems: { unchecked, pagination in
                     if unchecked {
-                        await loadChatItemsUnchecked(chat.chatInfo.chatType, chat.chatInfo.apiId, pagination)
+                        await loadChatItemsUnchecked(chat.chatInfo.id, pagination)
                     } else {
-                        await loadChatItems(chat.chatInfo.chatType, chat.chatInfo.apiId, pagination)
+                        await loadChatItems(chat.chatInfo.id, pagination)
                     }
                 }
             )

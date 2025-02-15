@@ -22,7 +22,7 @@ func loadLastItems(_ loadingMoreItems: Binding<Bool>, _ chatInfo: ChatInfo) {
             }
             return
         }
-        await apiLoadMessages(chatInfo.chatType, chatInfo.apiId, ChatPagination.last(count: 50), ItemsModel.shared.chatState)
+        await apiLoadMessages(chatInfo.id, ChatPagination.last(count: 50), ItemsModel.shared.chatState)
         await MainActor.run {
             loadingMoreItems.wrappedValue = false
         }

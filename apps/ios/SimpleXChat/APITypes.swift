@@ -42,7 +42,7 @@ public enum ChatCommand {
     case apiGetSettings(settings: AppSettings)
     case apiGetChatTags(userId: Int64)
     case apiGetChats(userId: Int64)
-    case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
+    case apiGetChat(chatId: ChatId, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
     case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     case apiCreateChatTag(tag: ChatTagData)
@@ -212,7 +212,7 @@ public enum ChatCommand {
             case let .apiGetSettings(settings): return "/_get app settings \(encodeJSON(settings))"
             case let .apiGetChatTags(userId): return "/_get tags \(userId)"
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
-            case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
+            case let .apiGetChat(chatId, pagination, search): return "/_get chat \(chatId) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
             case let .apiGetChatItemInfo(type, id, itemId): return "/_get item info \(ref(type, id)) \(itemId)"
             case let .apiSendMessages(type, id, live, ttl, composedMessages):

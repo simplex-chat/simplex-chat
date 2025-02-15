@@ -86,12 +86,10 @@ class ItemsModel: ObservableObject {
                 await MainActor.run { showLoadingProgress = true }
             } catch {}
         }
-        let type = ChatType(rawValue: String(chatId.prefix(1)))!
-        let id = Int64(chatId.suffix(from: chatId.index(chatId.startIndex, offsetBy: 1)))!
         Task {
             await MainActor.run { self.isLoading = true }
             //                try? await Task.sleep(nanoseconds: 5000_000000)
-            await loadChat(type: type, id: id)
+            await loadChat(chatId: chatId)
             navigationTimeout.cancel()
             progressTimeout.cancel()
             await MainActor.run {

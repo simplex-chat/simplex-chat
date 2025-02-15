@@ -12,8 +12,7 @@ import SwiftUI
 let TRIM_KEEP_COUNT = 200
 
 func apiLoadMessages(
-    _ chatType: ChatType,
-    _ apiId: Int64,
+    _ chatId: ChatId,
     _ pagination: ChatPagination,
     _ chatState: ActiveChatState,
     _ search: String = "",
@@ -22,7 +21,7 @@ func apiLoadMessages(
     let chat: Chat
     let navInfo: NavigationInfo
     do {
-        (chat, navInfo) = try await apiGetChat(type: chatType, id: apiId, pagination: pagination, search: search)
+        (chat, navInfo) = try await apiGetChat(chatId: chatId, pagination: pagination, search: search)
     } catch let error {
         logger.error("apiLoadMessages error: \(responseError(error))")
         return
