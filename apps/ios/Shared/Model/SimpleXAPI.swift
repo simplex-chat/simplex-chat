@@ -345,7 +345,7 @@ func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) asyn
     if clearItems {
         await MainActor.run { 
             im.reversedChatItems = []
-            ItemsModel.shared.chatItemsChangesListener?.cleared()
+            ItemsModel.shared.chatItemsChangesListener.cleared()
         }
     }
     await apiLoadMessages(chatId, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })

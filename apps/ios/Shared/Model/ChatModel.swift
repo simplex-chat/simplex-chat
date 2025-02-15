@@ -55,8 +55,8 @@ class ItemsModel: ObservableObject {
     }
 
     // set listener here that will be notified on every add/delete of a chat item
-    var chatItemsChangesListener: RecalculatePositions? = nil
     let chatState = ActiveChatState()
+    var chatItemsChangesListener: RecalculatePositions = RecalculatePositions()
 
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
@@ -548,7 +548,7 @@ final class ChatModel: ObservableObject {
                 ci.meta.itemStatus = status
             }
             im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-            im.chatItemsChangesListener?.added((ci.id, ci.isRcvNew), hasLiveDummy ? 1 : 0)
+            im.chatItemsChangesListener.added((ci.id, ci.isRcvNew), hasLiveDummy ? 1 : 0)
             im.itemAdded = true
             ChatItemDummyModel.shared.sendUpdate()
             return true
@@ -596,7 +596,7 @@ final class ChatModel: ObservableObject {
             if let i = getChatItemIndex(cItem) {
                 withAnimation {
                     let item = im.reversedChatItems.remove(at: i)
-                    im.chatItemsChangesListener?.removed([(item.id, i, item.isRcvNew)], im.reversedChatItems.reversed())
+                    im.chatItemsChangesListener.removed([(item.id, i, item.isRcvNew)], im.reversedChatItems.reversed())
                 }
             }
         }
@@ -645,7 +645,7 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
-            im.chatItemsChangesListener?.added((cItem.id, cItem.isRcvNew), 0)
+            im.chatItemsChangesListener.added((cItem.id, cItem.isRcvNew), 0)
             im.itemAdded = true
         }
         return cItem
@@ -669,7 +669,6 @@ final class ChatModel: ObservableObject {
         // update preview
         _updateChat(cInfo.id) { chat in
             self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
-            self.updateFloatingButtons(unreadCount: 0)
             ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
         }
@@ -685,12 +684,6 @@ final class ChatModel: ObservableObject {
             markChatItemRead_(j)
             j += 1
         }
-    }
-
-    private func updateFloatingButtons(unreadCount: Int) {
-        let fbm = ChatView.FloatingButtonModel.shared
-        fbm.totalUnread = unreadCount
-        fbm.objectWillChange.send()
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
@@ -721,7 +714,6 @@ final class ChatModel: ObservableObject {
                         ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
                         let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions ? markedMentionsCount : markedCount
                         self.decreaseUnreadCounter(user: self.currentUser!, by: by)
-                        self.updateFloatingButtons(unreadCount: chat.chatStats.unreadCount)
                     }
                 }
             }
@@ -751,7 +743,7 @@ final class ChatModel: ObservableObject {
         if chatId == cInfo.id {
             chatItemStatuses = [:]
             im.reversedChatItems = []
-            im.chatItemsChangesListener?.cleared()
+            im.chatItemsChangesListener.cleared()
         }
     }
 
@@ -766,7 +758,7 @@ final class ChatModel: ObservableObject {
                     markChatItemRead_(i)
                 }
             }
-            im.chatItemsChangesListener?.read(unreadItemIds, im.reversedChatItems.reversed())
+            im.chatItemsChangesListener.read(unreadItemIds, im.reversedChatItems.reversed())
         }
         self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
     }
@@ -794,9 +786,6 @@ final class ChatModel: ObservableObject {
         }
 
         func changeUnreadCounter(_ chatId: ChatId, by count: Int, unreadMentions: Int) {
-            if chatId == ChatModel.shared.chatId {
-                ChatView.FloatingButtonModel.shared.totalUnread += count
-            }
             let (unread, mentions) = self.unreadCounts[chatId] ?? (0, 0)
             self.unreadCounts[chatId] = (unread + count, mentions + unreadMentions)
             subject.send()

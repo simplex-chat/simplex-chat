@@ -235,7 +235,7 @@ struct ChatView: View {
                     if chatModel.chatId == nil {
                         chatModel.chatItemStatuses = [:]
                         ItemsModel.shared.reversedChatItems = []
-                        ItemsModel.shared.chatItemsChangesListener?.cleared()
+                        ItemsModel.shared.chatItemsChangesListener.cleared()
                         chatModel.groupMembers = []
                         chatModel.groupMembersIndexes.removeAll()
                         chatModel.membersLoaded = false
@@ -402,7 +402,7 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
-        ChatView.FloatingButtonModel.shared.totalUnread = chat.chatStats.unreadCount
+        ChatView.FloatingButtonModel.shared.updateOnListChange()
     }
 
     private func searchToolbar() -> some View {
@@ -606,13 +606,12 @@ struct ChatView: View {
         @Published var date: Date?
         @Published var isDateVisible: Bool = false
         var listState: EndlessScrollView<MergedItem>.ListState!
-        var totalUnread: Int = 0
         var hideDateWorkItem: DispatchWorkItem?
 
         func updateOnListChange() {
             let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(listState.items, listState)
             let unreadBelow = if let lastVisibleItem {
-                    max(0, totalUnread - lastVisibleItem.unreadBefore)
+                max(0, ItemsModel.shared.chatState.unreadTotal - lastVisibleItem.unreadBefore)
             } else {
              0
             }
@@ -689,7 +688,7 @@ struct ChatView: View {
                          .padding(.vertical, 4)
                 }
                 VStack {
-                    let unreadAbove = model.totalUnread - model.unreadBelow
+                    let unreadAbove = ItemsModel.shared.chatState.unreadTotal - model.unreadBelow
                     if unreadAbove > 0 {
                         if loadingMoreItems {
                             circleButton { ProgressView() }

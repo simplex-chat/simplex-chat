@@ -359,11 +359,7 @@ func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.Li
 }
 
 class RecalculatePositions {
-    private let chatState: ActiveChatState
-
-    init(chatState: ActiveChatState) {
-        self.chatState = chatState
-    }
+    private var chatState: ActiveChatState { get { ItemsModel.shared.chatState } }
 
     func read(_ itemIds: Set<Int64>?, _ newItems: [ChatItem]) {
         guard let itemIds else {
