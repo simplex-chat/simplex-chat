@@ -358,11 +358,7 @@ func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.Li
     return range
 }
 
-func recalculateChatStatePositions(_ chatState: ActiveChatState) -> ChatItemsChangesListener {
-    RecalculatePositions(chatState: chatState)
-}
-
-private class RecalculatePositions: ChatItemsChangesListener {
+class RecalculatePositions {
     private let chatState: ActiveChatState
 
     init(chatState: ActiveChatState) {

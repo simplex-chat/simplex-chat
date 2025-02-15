@@ -55,7 +55,7 @@ class ItemsModel: ObservableObject {
     }
 
     // set listener here that will be notified on every add/delete of a chat item
-    var chatItemsChangesListener: ChatItemsChangesListener? = nil
+    var chatItemsChangesListener: RecalculatePositions? = nil
     let chatState = ActiveChatState()
 
     // Publishes directly to `objectWillChange` publisher,
@@ -1092,15 +1092,6 @@ final class ChatModel: ObservableObject {
             }
         }
     }
-}
-
-protocol ChatItemsChangesListener {
-    // pass null itemIds if the whole chat now read
-    func read(_ itemIds: Set<Int64>?, _ newItems: [ChatItem])
-    func added(_ item: (Int64, Bool), _ index: Int)
-    // itemId, index in old chatModel.chatItems (before the update), isRcvNew (is item unread or not)
-    func removed(_ itemIds: [(Int64, Int, Bool)], _ newItems: [ChatItem])
-    func cleared()
 }
 
 struct ShowingInvitation {
