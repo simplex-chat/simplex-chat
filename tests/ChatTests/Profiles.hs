@@ -742,7 +742,7 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
       (biz <# "#bob bob_1> hey there")
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
-testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
+testBusinessUpdateProfiles = withTestOutput $ testChat4 businessProfile aliceProfile bobProfile cathProfile $
   \biz alice bob cath -> do
     biz ##> "/ad"
     cLink <- getContactLink biz True
@@ -756,8 +756,11 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     alice <## "#biz: joining the group..."
     biz <# "#alice Welcome" -- auto reply
     biz <## "#alice: alice_1 joined the group"
-    alice <# "#biz biz_1> Welcome"
-    alice <## "#biz: you joined the group"
+    alice
+      <###
+        [ WithTime "#biz biz_1> Welcome",
+          "#biz: you joined the group"
+        ]
     biz #> "#alice hi"
     alice <# "#biz biz_1> hi"
     alice #> "#biz hello"

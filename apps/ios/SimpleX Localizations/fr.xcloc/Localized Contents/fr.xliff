@@ -833,6 +833,10 @@
         <target>Tous les profiles</target>
         <note>profile dropdown</note>
       </trans-unit>
+      <trans-unit id="All reports will be archived for you." xml:space="preserve">
+        <source>All reports will be archived for you.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
         <source>All your contacts will remain connected.</source>
         <target>Tous vos contacts resteront connectés.</target>
@@ -906,6 +910,10 @@
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
         <target>Autoriser la suppression irréversible de messages envoyés. (24 heures)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
+        <source>Allow to report messsages to moderators.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -1070,6 +1078,14 @@
         <source>Archive</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Archive %lld reports?" xml:space="preserve">
+        <source>Archive %lld reports?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Archive all reports?" xml:space="preserve">
+        <source>Archive all reports?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Archive and upload" xml:space="preserve">
         <source>Archive and upload</source>
         <target>Archiver et téléverser</target>
@@ -1087,6 +1103,10 @@
       <trans-unit id="Archive report?" xml:space="preserve">
         <source>Archive report?</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Archive reports" xml:space="preserve">
+        <source>Archive reports</source>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
         <source>Archived contacts</source>
@@ -1640,6 +1660,10 @@
       <trans-unit id="Clear conversation?" xml:space="preserve">
         <source>Clear conversation?</source>
         <target>Effacer la conversation ?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear group?" xml:space="preserve">
+        <source>Clear group?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear or delete group?" xml:space="preserve">
@@ -3693,6 +3717,10 @@ Il s'agit de votre propre lien unique !</target>
         <target>Correction non prise en charge par un membre du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="For all moderators" xml:space="preserve">
+        <source>For all moderators</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="For chat profile %@:" xml:space="preserve">
         <source>For chat profile %@:</source>
         <target>Pour le profil de discussion %@ :</target>
@@ -3706,6 +3734,10 @@ Il s'agit de votre propre lien unique !</target>
       <trans-unit id="For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." xml:space="preserve">
         <source>For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</source>
         <target>Par exemple, si votre contact reçoit des messages via un serveur SimpleX Chat, votre application les transmettra via un serveur Flux.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="For me" xml:space="preserve">
+        <source>For me</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For private routing" xml:space="preserve">
@@ -4647,6 +4679,10 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Membre inactif</target>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Member reports" xml:space="preserve">
+        <source>Member reports</source>
+        <note>chat feature</note>
+      </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All chat members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All chat members will be notified.</source>
         <target>Le rôle du membre sera modifié pour « %@ ». Tous les membres du chat seront notifiés.</target>
@@ -4680,6 +4716,10 @@ Voici votre lien pour le groupe %@ !</target>
       <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Members can irreversibly delete sent messages. (24 hours)</source>
         <target>Les membres du groupe peuvent supprimer de manière irréversible les messages envoyés. (24 heures)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Members can report messsages to moderators." xml:space="preserve">
+        <source>Members can report messsages to moderators.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can send SimpleX links." xml:space="preserve">
@@ -5851,6 +5891,10 @@ Erreur : %@</target>
         <target>Interdire les réactions aux messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Prohibit reporting messages to moderators." xml:space="preserve">
+        <source>Prohibit reporting messages to moderators.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
         <source>Prohibit sending SimpleX links.</source>
         <target>Interdire l'envoi de liens SimpleX.</target>
@@ -6248,6 +6292,14 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       <trans-unit id="Report violation: only group moderators will see it." xml:space="preserve">
         <source>Report violation: only group moderators will see it.</source>
         <note>report reason</note>
+      </trans-unit>
+      <trans-unit id="Report: (text.isEmpty ? reason.text : text)" xml:space="preserve">
+        <source>Report: (text.isEmpty ? reason.text : text)</source>
+        <note>report in notification</note>
+      </trans-unit>
+      <trans-unit id="Reporting messages to moderators is prohibited." xml:space="preserve">
+        <source>Reporting messages to moderators is prohibited.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reports" xml:space="preserve">
         <source>Reports</source>
@@ -7582,10 +7634,6 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
         <source>The profile is only shared with your contacts.</source>
         <target>Le profil n'est partagé qu'avec vos contacts.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="The report will be archived for you." xml:space="preserve">
-        <source>The report will be archived for you.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">

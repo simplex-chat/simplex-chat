@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -75,10 +76,10 @@ main = do
 #endif
   where
 #if defined(dbPostgres)
-    testBracket test = withSmpServer $ tmpBracket $ test . TestParams
+    testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
 #else
     testBracket chatQueryStats agentQueryStats test =
-      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats}
+      withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
 #endif
     tmpBracket test = do
       t <- getSystemTime

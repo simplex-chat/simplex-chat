@@ -259,13 +259,13 @@ createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix
   insertUser agentStore
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
-  startTestChat_ db cfg opts user
+  startTestChat_ ps db cfg opts user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
   Right db@ChatDatabase {chatStore} <- createDatabase ps coreOptions dbPrefix
   Just user <- find activeUser <$> withTransaction chatStore getUsers
-  startTestChat_ db cfg opts user
+  startTestChat_ ps db cfg opts user
 
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
@@ -282,8 +282,8 @@ insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) VALUES (1)")
 #endif
 
-startTestChat_ :: ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
-startTestChat_ db cfg opts user = do
+startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
+startTestChat_ TestParams {printOutput} db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
@@ -292,7 +292,7 @@ startTestChat_ db cfg opts user = do
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
-  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput = False}
+  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput}
 
 stopTestChat :: TestParams -> TestCC -> IO ()
 stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync, termAsync} = do
@@ -355,10 +355,10 @@ withTestChatOpts ps = withTestChatCfgOpts ps testCfg
 withTestChatCfgOpts :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatCfgOpts ps cfg opts dbPrefix = bracket (startTestChat ps cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat ps cc)
 
--- enable output for specific chat controller, use like this:
--- withNewTestChat tmp "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do ...
-withTestOutput :: HasCallStack => TestCC -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestOutput cc runTest = runTest cc {printOutput = True}
+-- enable output for specific test.
+-- usage: withTestOutput $ testChat2 aliceProfile bobProfile $ \alice bob -> do ...
+withTestOutput :: HasCallStack => (HasCallStack => TestParams -> IO ()) -> TestParams -> IO ()
+withTestOutput test ps = test ps {printOutput = True}
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -404,12 +404,12 @@ testChatN cfg opts ps test params = do
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
 getTermLine :: HasCallStack => TestCC -> IO String
-getTermLine cc =
+getTermLine cc@TestCC {printOutput} =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
       -- when True $ do
-      when (printOutput cc) $ do
+      when printOutput $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

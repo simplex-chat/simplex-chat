@@ -3311,7 +3311,7 @@ sealed class MsgReaction {
       MREmojiChar.Heart -> "❤️"
       else -> emoji.value
     }
-    is Unknown -> ""
+    is Unknown -> "?"
   }
 
   companion object {
@@ -3341,8 +3341,13 @@ object MsgReactionSerializer : KSerializer<MsgReaction> {
     return if (json is JsonObject && "type" in json) {
       when(val t = json["type"]?.jsonPrimitive?.content ?: "") {
         "emoji" -> {
-          val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
-          if (emoji == null) MsgReaction.Unknown(t, json) else MsgReaction.Emoji(emoji)
+          val msgReaction = try {
+            val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
+            MsgReaction.Emoji(emoji)
+          } catch (e: Throwable) {
+            MsgReaction.Unknown(t, json)
+          }
+          msgReaction
         }
         else -> MsgReaction.Unknown(t, json)
       }

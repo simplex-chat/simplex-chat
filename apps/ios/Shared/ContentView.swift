@@ -317,6 +317,12 @@ struct ContentView: View {
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+            if let url = userActivity.webpageURL {
+                logger.debug("onContinueUserActivity.NSUserActivityTypeBrowsingWeb: \(url)")
+                chatModel.appOpenUrl = url
+            }
+        }
     }
 
     private func setConditionsNotified_() async {
