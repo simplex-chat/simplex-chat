@@ -248,8 +248,8 @@
     <string name="network_session_mode_user">Csevegési profil</string>
     <string name="create_another_profile_button">Profil létrehozása</string>
     <string name="connected_desktop">Társított számítógép</string>
-    <string name="share_text_deleted_at">Törlés ideje: %s</string>
-    <string name="info_row_deleted_at">Törlés ideje</string>
+    <string name="share_text_deleted_at">Törölve: %s</string>
+    <string name="info_row_deleted_at">Törölve</string>
     <string name="v4_6_chinese_spanish_interface">Kínai és spanyol kezelőfelület</string>
     <string name="alert_title_cant_invite_contacts">Nem lehet meghívni az ismerősöket!</string>
     <string name="chat_is_stopped_indication">A csevegés megállt</string>
@@ -367,7 +367,7 @@
     <string name="delivery_receipts_title">Kézbesítési jelentések!</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Az eszközön nincs beállítva a képernyőzár. A SimpleX-zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</string>
     <string name="decryption_error">Titkosítás visszafejtési hiba</string>
-    <string name="share_text_disappears_at">Eltűnés ideje: %s</string>
+    <string name="share_text_disappears_at">Eltűnik: %s</string>
     <string name="icon_descr_edited">szerkesztve</string>
     <string name="delete_verb">Törlés</string>
     <string name="ttl_hours">%d óra</string>
@@ -411,7 +411,7 @@
     <string name="receipts_contacts_disable_keep_overrides">Letiltás (felülírások megtartásával)</string>
     <string name="database_upgrade">Adatbázis fejlesztése</string>
     <string name="blocked_items_description">%d üzenet letiltva</string>
-    <string name="info_row_disappears_at">Eltűnés ideje</string>
+    <string name="info_row_disappears_at">Eltűnik</string>
     <string name="ttl_weeks">%d hét</string>
     <string name="feature_enabled_for_you">engedélyezve az Ön számára</string>
     <string name="timed_messages">Eltűnő üzenetek</string>
@@ -821,11 +821,11 @@
     <string name="no_selected_chat">Nincs csevegés kijelölve</string>
     <string name="users_delete_data_only">Csak helyi profiladatok</string>
     <string name="description_via_one_time_link_incognito">inkognitó egy egyszer használható hivatkozáson keresztül</string>
-    <string name="share_text_moderated_at">Moderálás ideje: %s</string>
+    <string name="share_text_moderated_at">Moderálva: %s</string>
     <string name="one_time_link">Egyszer használható meghívási hivatkozás</string>
     <string name="invalid_name">Érvénytelen név!</string>
     <string name="email_invite_subject">Beszélgessünk a SimpleX Chatben</string>
-    <string name="info_row_moderated_at">Moderálás ideje</string>
+    <string name="info_row_moderated_at">Moderálva</string>
     <string name="v4_4_live_messages">Élő üzenetek</string>
     <string name="mark_code_verified">Hitelesítés</string>
     <string name="v5_2_message_delivery_receipts">Üzenetkézbesítési jelentések!</string>
@@ -992,7 +992,7 @@
     <string name="simplex_link_mode">SimpleX-hivatkozások</string>
     <string name="v4_4_disappearing_messages_desc">Az elküldött üzenetek törölve lesznek a beállított idő után.</string>
     <string name="user_unmute">Némítás megszüntetése</string>
-    <string name="share_text_sent_at">Elküldés ideje: %s</string>
+    <string name="share_text_sent_at">Elküldve: %s</string>
     <string name="connect_use_current_profile">Jelenlegi profil használata</string>
     <string name="this_device">Ez az eszköz</string>
     <string name="share_address_with_contacts_question">Megosztja a címet az ismerőseivel?</string>
@@ -1132,7 +1132,7 @@
     <string name="set_passcode">Jelkód beállítása</string>
     <string name="whats_new">Újdonságok</string>
     <string name="connect_plan_open_group">Csoport megnyitása</string>
-    <string name="info_row_sent_at">Elküldés ideje</string>
+    <string name="info_row_sent_at">Elküldve</string>
     <string name="prohibit_sending_voice">A hangüzenetek küldése le van tiltva.</string>
     <string name="privacy_show_last_messages">Legutóbbi üzenet előnézetének megjelenítése</string>
     <string name="smp_servers_preset_address">Az előre beállított kiszolgáló címe</string>
@@ -1228,7 +1228,7 @@
     <string name="v5_4_more_things_descr">- értesíti az ismerősöket a törlésről (nem kötelező)\n- profil nevek szóközökkel\n- és még sok más!</string>
     <string name="v5_0_polish_interface">Lengyel kezelőfelület</string>
     <string name="smp_servers_use_server">Kiszolgáló használata</string>
-    <string name="share_text_received_at">Fogadás ideje: %s</string>
+    <string name="share_text_received_at">Fogadva: %s</string>
     <string name="la_notice_title_simplex_lock">SimpleX-zár</string>
     <string name="save_and_notify_group_members">Mentés és a csoporttagok értesítése</string>
     <string name="reset_verb">Visszaállítás</string>
@@ -1252,7 +1252,7 @@
     <string name="whats_new_read_more">Tudjon meg többet</string>
     <string name="sender_cancelled_file_transfer">A fájl küldője visszavonta az átvitelt.</string>
     <string name="stop_chat_question">Csevegési szolgáltatás megállítása?</string>
-    <string name="info_row_received_at">Fogadás ideje</string>
+    <string name="info_row_received_at">Fogadva</string>
     <string name="accept_feature_set_1_day">Beállítva 1 nap</string>
     <string name="user_unhide">Felfedés</string>
     <string name="color_received_message">Fogadott üzenetbuborék színe</string>
@@ -1425,7 +1425,7 @@
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">A kézbesítési jelentések küldése engedélyezve lesz az összes látható csevegési profilban lévő összes ismerőse számára.</string>
     <string name="v4_6_audio_video_calls_descr">Bluetooth támogatás és további fejlesztések.</string>
     <string name="in_developing_desc">Ez a funkció még nem támogatott. Próbálja meg a következő kiadásban.</string>
-    <string name="share_text_updated_at">A bejegyzés frissítve: %s</string>
+    <string name="share_text_updated_at">Bejegyzés frissítve: %s</string>
     <string name="skip_inviting_button">Tagok meghívásának kihagyása</string>
     <string name="receipts_section_description_1">Ezek felülbírálhatók az ismerős- és csoport-beállításokban.</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Az ismerőse, akivel megosztotta ezt a hivatkozást, NEM fog tudni kapcsolódni!</string>
@@ -1471,7 +1471,7 @@
     <string name="icon_descr_profile_image_placeholder">profilkép helyőrzője</string>
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza – profiljai, ismerősei, üzenetei és fájljai véglegesen törölve lesznek.</string>
-    <string name="info_row_updated_at">Bejegyzés frissítési időpontja</string>
+    <string name="info_row_updated_at">Bejegyzés frissítve</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
@@ -1523,7 +1523,7 @@
     <string name="remote_ctrl_error_disconnected">Kapcsolat bontva a számítógéppel</string>
     <string name="remote_host_was_disconnected_title">A kapcsolat megszakadt</string>
     <string name="remote_ctrl_was_disconnected_title">A kapcsolat megszakadt</string>
-    <string name="remote_ctrl_error_bad_state">Számítógép kapcsolata rossz állapotban van</string>
+    <string name="remote_ctrl_error_bad_state">A kapcsolat a számítógéppel rossz állapotban van</string>
     <string name="agent_critical_error_desc">Jelentse a fejlesztőknek:\n%s\n\nAz alkalmazás újraindítása javasolt.</string>
     <string name="agent_internal_error_desc">Jelentse a fejlesztőknek:
 \n%s</string>
@@ -1556,9 +1556,9 @@
     <string name="error_deleting_note_folder">Hiba a privát jegyzetek törlésekor</string>
     <string name="error_creating_message">Hiba az üzenet létrehozásakor</string>
     <string name="clear_note_folder_question">Privát jegyzetek kiürítése?</string>
-    <string name="info_row_created_at">Létrehozás ideje</string>
+    <string name="info_row_created_at">Létrehozva</string>
     <string name="saved_message_title">Mentett üzenet</string>
-    <string name="share_text_created_at">Megosztás ideje: %s</string>
+    <string name="share_text_created_at">Létrehozva: %s</string>
     <string name="clear_note_folder_warning">Az összes üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="v5_5_message_delivery">Továbbfejlesztett üzenetkézbesítés</string>
     <string name="v5_5_join_group_conversation">Csatlakozás csoportos beszélgetésekhez</string>
@@ -2126,7 +2126,7 @@
     <string name="operator_servers_title">%s kiszolgáló</string>
     <string name="operator_info_title">Hálózati üzemeltető</string>
     <string name="operator_website">Weboldal</string>
-    <string name="operator_conditions_accepted_on">Feltételek elfogadásának ideje: %s.</string>
+    <string name="operator_conditions_accepted_on">Feltételek elfogadva: %s.</string>
     <string name="operator_conditions_will_be_accepted_on">A feltételek ekkor lesznek elfogadva: %s.</string>
     <string name="operator_use_operator_toggle_description">Kiszolgálók használata</string>
     <string name="use_servers_of_operator_x">%s használata</string>
