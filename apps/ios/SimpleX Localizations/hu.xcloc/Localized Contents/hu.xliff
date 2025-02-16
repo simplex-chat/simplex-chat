@@ -893,14 +893,14 @@
         <target>Az üzenetek végleges törlése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow message reactions only if your contact allows them.</source>
-        <target>Az üzenetreakciók küldése csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</target>
+        <target state="translated">A rekaciók hozzádása az üzenetekhez csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow message reactions." xml:space="preserve" approved="no">
         <source>Allow message reactions.</source>
-        <target state="translated">Az üzenetreakciók küldése engedélyezve van.</target>
+        <target state="translated">A reakciók hozzáadása az üzenetekhez engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
@@ -953,9 +953,9 @@
         <target>Hangüzenetek engedélyezése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve">
+      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
         <source>Allow your contacts adding message reactions.</source>
-        <target>Az üzenetreakciók küldése engedélyezve van az ismerősei számára.</target>
+        <target state="translated">A reakciók hozzáadása az üzenetekhez engedélyezve van az ismerősei számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to call you." xml:space="preserve">
@@ -1325,7 +1325,7 @@
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Both you and your contact can add message reactions.</source>
-        <target state="translated">Mindkét fél küldhet üzenetreakciókat.</target>
+        <target state="translated">Mindkét fél hozzádhat az üzenetekhez reakciókat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
@@ -3086,9 +3086,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Titkosított üzenet: váratlan hiba</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encryption re-negotiation error" xml:space="preserve">
+      <trans-unit id="Encryption re-negotiation error" xml:space="preserve" approved="no">
         <source>Encryption re-negotiation error</source>
-        <target>Titkosítás-újraegyeztetési hiba</target>
+        <target state="translated">Hiba a titkosítás újraegyeztetésekor</target>
         <note>message decrypt error item</note>
       </trans-unit>
       <trans-unit id="Encryption re-negotiation failed." xml:space="preserve" approved="no">
@@ -4778,7 +4778,7 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Members can add message reactions." xml:space="preserve" approved="no">
         <source>Members can add message reactions.</source>
-        <target state="translated">A tagok üzenetreakciókat adhatnak hozzá az üzenetekhez.</target>
+        <target state="translated">A tagok reakciókat adhatnak hozzá az üzenetekhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Members can irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
@@ -4861,14 +4861,14 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Üzenetreakciók</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Message reactions are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited in this chat.</source>
-        <target>Az üzenetreakciók küldése le van tiltva ebben a csevegésben.</target>
+        <target state="translated">A reakciók hozzáadása az üzenetekhez le van tiltva ebben a csevegésben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions are prohibited." xml:space="preserve" approved="no">
         <source>Message reactions are prohibited.</source>
-        <target state="translated">Az üzenetreakciók küldése az üzenetekre le van tiltva.</target>
+        <target state="translated">A reakciók hozzáadása az üzenetekhez le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reception" xml:space="preserve">
@@ -5489,9 +5489,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak Ön és a moderátorok látják</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can add message reactions." xml:space="preserve">
+      <trans-unit id="Only you can add message reactions." xml:space="preserve" approved="no">
         <source>Only you can add message reactions.</source>
-        <target>Csak Ön adhat hozzá üzenetreakciókat.</target>
+        <target state="translated">Csak Ön adhat hozzá reakciókat az üzenetekhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve">
@@ -5514,9 +5514,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak Ön tud hangüzeneteket küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Only your contact can add message reactions.</source>
-        <target>Csak az ismerőse tud üzenetreakciókat küldeni.</target>
+        <target state="translated">Csak az ismerőse adhat hozzá reakciókat az üzenetekhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" xml:space="preserve">
@@ -5970,14 +5970,14 @@ Hiba: %@</target>
         <target state="translated">Az elküldött üzenetek végleges törlése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit message reactions." xml:space="preserve">
+      <trans-unit id="Prohibit message reactions." xml:space="preserve" approved="no">
         <source>Prohibit message reactions.</source>
-        <target>Az üzenetreakciók küldése le van tiltva.</target>
+        <target state="translated">A reakciók hozzáadása az üzenethez le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit messages reactions." xml:space="preserve" approved="no">
         <source>Prohibit messages reactions.</source>
-        <target state="translated">Az üzenetreakciók küldése le van tiltva.</target>
+        <target state="translated">A reakciók hozzáadása az üzenetekhez le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit reporting messages to moderators." xml:space="preserve" approved="no">
@@ -9466,7 +9466,7 @@ Kapcsolatkérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed" xml:space="preserve" approved="no">
         <source>encryption re-negotiation allowed</source>
-        <target state="translated">titkosítás újra egyeztetése engedélyezve</target>
+        <target state="translated">a titkosítás újraegyeztetése engedélyezve van</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation allowed for %@" xml:space="preserve">
@@ -9474,9 +9474,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>a titkosítás újraegyeztetése engedélyezve van %@ számára</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="encryption re-negotiation required" xml:space="preserve">
+      <trans-unit id="encryption re-negotiation required" xml:space="preserve" approved="no">
         <source>encryption re-negotiation required</source>
-        <target>titkosítás-újraegyeztetés szükséges</target>
+        <target state="translated">a titkosítás újraegyeztetése szükséges</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="encryption re-negotiation required for %@" xml:space="preserve">
