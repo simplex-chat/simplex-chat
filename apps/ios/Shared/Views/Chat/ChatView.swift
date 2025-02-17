@@ -196,7 +196,7 @@ struct ChatView: View {
             }
         }
         .onAppear {
-            setUpdateListener()
+            scrollView.listState.onUpdateListener = onChatItemsUpdated
             FloatingButtonModel.shared.listState = scrollView.listState
             selectedChatItems = nil
             revealedItems = Set()
@@ -211,7 +211,7 @@ struct ChatView: View {
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
-                setUpdateListener()
+                scrollView.listState.onUpdateListener = onChatItemsUpdated
                 initChatView()
                 theme = buildTheme()
                 Task {
@@ -475,13 +475,6 @@ struct ChatView: View {
             }
             .map { $0.element }
     }
-
-    var searchValueIsEmpty: Bool {
-        get {
-            searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-    }
-
 
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
@@ -1027,28 +1020,25 @@ struct ChatView: View {
         VoiceItemState.chatView = [:]
     }
 
-    // it should be re-set everytime chatId changes
-    func setUpdateListener() {
-        scrollView.listState.onUpdateListener = {
-            if !mergedItems.boxedValue.isActualState() {
-                //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
-                return
-            }
-            ChatView.FloatingButtonModel.shared.updateOnListChange()
-            preloadIfNeeded(
-                $allowLoadMoreItems,
-                $ignoreLoadingRequests,
-                scrollView.listState,
-                mergedItems,
-                loadItems: { unchecked, pagination in
-                    if unchecked {
-                        await loadChatItemsUnchecked(chat, pagination)
-                    } else {
-                        await loadChatItems(chat, pagination)
-                    }
-                }
-            )
+    func onChatItemsUpdated() {
+        if !mergedItems.boxedValue.isActualState() {
+            //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
+            return
         }
+        ChatView.FloatingButtonModel.shared.updateOnListChange()
+        preloadIfNeeded(
+            $allowLoadMoreItems,
+            $ignoreLoadingRequests,
+            scrollView.listState,
+            mergedItems,
+            loadItems: { unchecked, pagination in
+                if unchecked {
+                    await loadChatItemsUnchecked(chat, pagination)
+                } else {
+                    await loadChatItems(chat, pagination)
+                }
+            }
+        )
     }
 
     private struct ChatItemWithMenu: View {
