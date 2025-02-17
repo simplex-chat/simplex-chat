@@ -10,6 +10,39 @@ Each member record to have `rateLimit :: Maybe MemberRateLimit`, Nothing by defa
 
 Rate limit can be overridden per member by sending `XGrpMemRestrict` with updated `rateLimit` by member of same role or higher, similar to changing roles. `APIRateLimitMember` allows to enable or disable rate limiting for member, we could also provide more granular control in it (pass `WindowLimit`), but it seems unnecessary complex for UI.
 
+```haskell
+data MemberRateLimit
+  = MRLNone -- default for owners, admins, moderators
+  | MRLWindow WindowLimit
+  deriving (Eq, Show)
+
+data WindowLimit = WindowLimit
+  { window :: Int, -- seconds
+    limit :: Int
+  }
+  deriving (Eq, Show)
+
+-- sent in XGrpMemRestrict
+data MemberRestrictions = MemberRestrictions
+  { restriction :: MemberRestrictionStatus,
+    rateLimit :: Maybe MemberRateLimit -- Nothing means use default
+  }
+  deriving (Eq, Show)
+
+-- new api in ChatCommand
+| APIRateLimitMember GroupId GroupMemberId
+
+-- new response in ChatResponse
+| CRMemberRateLimit {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+
+-- new field in GroupMember
+data GroupMember = GroupMember {
+  ...
+  rateLimit :: Maybe MemberRateLimit,
+  ...
+}
+```
+
 Rate limit overrides to be persisted on group member records.
 
 ```sql
@@ -18,9 +51,29 @@ ALTER TABLE group_members ADD COLUMN rate_limit TEXT; -- MemberRateLimit JSON en
 
 Limits can be tracked inside fixed windows both for receiving and sending.
 
+```haskell
+data ChatController = ChatController {
+  ...
+  memberLimits :: TMap (GroupId, MemberId) (TVar MemberRateLimitWindow),
+  ownLimits :: TMap GroupId (TVar MemberRateLimitWindow),
+  ...
+}
+
+data MemberRateLimitWindow = MemberRateLimitWindow {
+  startedAt :: UTCTime,
+  windowLimit :: WindowLimit,
+  messages :: Int
+}
+```
+
 Client to track limit for each writing member in state - `memberLimits`. If current window's interval has passed, checked against `startedAt` of `MemberRateLimitWindow`, reset `messages` counter.
 
 Track own limits per group - `ownLimits`. When limit in group is reached, `CRGroupSendingLimited blocked = True` event is sent to UI to block sending in group. Unblock group sending in UI by scheduling background process to send `CRGroupSendingLimited blocked = False` after interval?
+
+```haskell
+-- new event in ChatResponse
+| CRGroupSendingLimited {user :: User, groupInfo :: GroupInfo, blocked :: Bool}
+```
 
 ### Receiving messages from limited members
 
