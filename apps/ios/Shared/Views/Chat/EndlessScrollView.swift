@@ -441,7 +441,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         estimatedContentHeight.update(contentOffset, listState, averageItemHeight, itemsCountChanged)
         scrollBarView.contentSize = CGSizeMake(bounds.width, estimatedContentHeight.virtualOverscrolledHeight)
         scrollBarView.contentOffset = CGPointMake(0, estimatedContentHeight.virtualScrollOffsetY)
-        scrollBarView.isHidden = listState.visibleItems.count == listState.items.count && (listState.visibleItems.isEmpty || -listState.firstVisibleItemOffset + listState.visibleItems.last!.offset + insetTop < bounds.height)
+        scrollBarView.isHidden = listState.visibleItems.count == listState.items.count && (listState.visibleItems.isEmpty || -listState.firstVisibleItemOffset + (listState.visibleItems.last?.offset ?? 0) + insetTop < bounds.height)
 
         if debug {
             println("time spent \((-start.timeIntervalSinceNow).description.prefix(5).replacingOccurrences(of: "0.000", with: "<0").replacingOccurrences(of: "0.", with: ""))")
