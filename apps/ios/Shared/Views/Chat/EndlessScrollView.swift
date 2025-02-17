@@ -518,7 +518,16 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
     func scroll(by: CGFloat, animated: Bool = true) {
         setContentOffset(CGPointMake(contentOffset.x, contentOffset.y + by), animated: animated)
     }
-    
+
+    func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
+        if !listState.items.isEmpty {
+            Task {
+                await scrollToItem(listState.items.count - 1, animated: true)
+            }
+        }
+        return false
+    }
+
     private func snapToContent(animated: Bool = true) {
         let topBlankSpace = estimatedContentHeight.height < bounds.height ? bounds.height - estimatedContentHeight.height : 0
         if topY < estimatedContentHeight.topOffsetY - topBlankSpace {
