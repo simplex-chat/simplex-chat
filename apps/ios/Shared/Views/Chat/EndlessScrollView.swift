@@ -527,9 +527,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
     func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
         if !listState.items.isEmpty {
-            Task {
-                await scrollToItem(listState.items.count - 1, animated: true)
-            }
+            scrollToBottom()
         }
         return false
     }
