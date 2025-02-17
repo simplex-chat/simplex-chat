@@ -1165,9 +1165,6 @@ struct ChatView: View {
                 }
             }
             .onAppear {
-                // LALAL
-                //return ()
-
                 if markedRead {
                     return
                 } else {
