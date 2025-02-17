@@ -50,6 +50,7 @@ struct ChatView: View {
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var updateMergedItemsTask: Task<Void, Never>? = nil
+    @State private var floatingButtonModel: FloatingButtonModel = FloatingButtonModel()
 
     private let useItemsUpdateTask = false
 
@@ -87,7 +88,7 @@ struct ChatView: View {
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
-                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems)
+                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems, listState: scrollView.listState, model: floatingButtonModel)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -197,7 +198,6 @@ struct ChatView: View {
         }
         .onAppear {
             scrollView.listState.onUpdateListener = onChatItemsUpdated
-            FloatingButtonModel.shared.listState = scrollView.listState
             selectedChatItems = nil
             revealedItems = Set()
             initChatView()
@@ -398,7 +398,7 @@ struct ChatView: View {
                 await markChatUnread(chat, unreadChat: false)
             }
         }
-        ChatView.FloatingButtonModel.shared.updateOnListChange()
+        floatingButtonModel.updateOnListChange(scrollView.listState)
     }
 
     private func scrollToItemId(_ itemId: ChatItem.ID) {
@@ -614,16 +614,14 @@ struct ChatView: View {
     }
 
     class FloatingButtonModel: ObservableObject {
-        static let shared = FloatingButtonModel()
         @Published var unreadBelow: Int = 0
         @Published var isNearBottom: Bool = true
-        @Published var date: Date?
+        @Published var date: Date? = nil
         @Published var isDateVisible: Bool = false
-        var listState: EndlessScrollView<MergedItem>.ListState!
-        var hideDateWorkItem: DispatchWorkItem?
+        var hideDateWorkItem: DispatchWorkItem? = nil
 
-        func updateOnListChange() {
-            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(listState.items, listState)
+        func updateOnListChange(_ listState: EndlessScrollView<MergedItem>.ListState) {
+            let lastVisibleItem = oldestPartiallyVisibleListItemInListStateOrNull(listState)
             let unreadBelow = if let lastVisibleItem {
                 max(0, ItemsModel.shared.chatState.unreadTotal - lastVisibleItem.unreadBefore)
             } else {
@@ -689,7 +687,8 @@ struct ChatView: View {
         let scrollView: EndlessScrollView<MergedItem>
         let chat: Chat
         @Binding var loadingMoreItems: Bool
-        @ObservedObject var model = FloatingButtonModel.shared
+        let listState: EndlessScrollView<MergedItem>.ListState
+        @ObservedObject var model: FloatingButtonModel
 
         var body: some View {
             ZStack(alignment: .top) {
@@ -713,11 +712,11 @@ struct ChatView: View {
                                     .foregroundColor(theme.colors.primary)
                             }
                             .onTapGesture {
-                                if let index = model.listState.items.lastIndex(where: { $0.hasUnread() }) {
+                                if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
                                     // scroll to the top unread item
                                     Task { await scrollView.scrollToItem(index, animated: true) }
                                 } else {
-                                    logger.debug("No more unread items, total: \(model.listState.items.count)")
+                                    logger.debug("No more unread items, total: \(listState.items.count)")
                                 }
                             }
                             .contextMenu {
@@ -1025,7 +1024,7 @@ struct ChatView: View {
             //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
             return
         }
-        ChatView.FloatingButtonModel.shared.updateOnListChange()
+        floatingButtonModel.updateOnListChange(scrollView.listState)
         preloadIfNeeded(
             $allowLoadMoreItems,
             $ignoreLoadingRequests,

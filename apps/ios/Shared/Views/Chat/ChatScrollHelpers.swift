@@ -122,19 +122,11 @@ async {
     }
 }
 
-func oldestPartiallyVisibleListItemInListStateOrNull(_ items: [MergedItem], _ listState: EndlessScrollView<MergedItem>.ListState) -> ListItem? {
-    if listState.lastVisibleItemIndex < items.count {
-        return items[listState.lastVisibleItemIndex].oldest()
+func oldestPartiallyVisibleListItemInListStateOrNull(_ listState: EndlessScrollView<MergedItem>.ListState) -> ListItem? {
+    if listState.lastVisibleItemIndex < listState.items.count {
+        return listState.items[listState.lastVisibleItemIndex].oldest()
     } else {
-        return items.last?.oldest()
-    }
-}
-
-private func lastFullyVisibleIemInListState(_ mergedItems: MergedItems, _ listState: EndlessScrollView<MergedItem>.ListState) -> ChatItem? {
-    if listState.lastVisibleItemIndex < mergedItems.items.count {
-        return mergedItems.items[listState.lastVisibleItemIndex].newest().item
-    } else {
-        return mergedItems.items.last?.newest().item
+        return listState.items.last?.oldest()
     }
 }
 
