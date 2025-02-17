@@ -82,7 +82,7 @@
     <string name="alert_title_msg_bad_id">Téves üzenet ID</string>
     <string name="allow_your_contacts_adding_message_reactions">A reakciók hozzáadása az üzenetekhez engedélyezve van az ismerősei számára.</string>
     <string name="allow_to_send_voice">A hangüzenetek küldése engedélyezve van.</string>
-    <string name="allow_message_reactions_only_if">A reakciók hozzádása az üzenetekhez csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
+    <string name="allow_message_reactions_only_if">A reakciók hozzáadása az üzenetekhez csak abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="back">Vissza</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is meg lesznek jelenítve amíg az alkalmazás fut.]]></string>
     <string name="v4_2_group_links_desc">Az adminisztrátorok hivatkozásokat hozhatnak létre a csoportokhoz való csatlakozáshoz.</string>
