@@ -24,7 +24,7 @@ struct ScrollRepresentable<Content: View, ScrollItem>: UIViewControllerRepresent
         fileprivate var items: [ScrollItem] = []
         fileprivate var content: ((Int, ScrollItem) -> Content)!
 
-        fileprivate init(scrollView: EndlessScrollView<ScrollItem> = EndlessScrollView(frame: .zero), content: @escaping (Int, ScrollItem) -> Content) {
+        fileprivate init(scrollView: EndlessScrollView<ScrollItem>, content: @escaping (Int, ScrollItem) -> Content) {
             self.scrollView = scrollView
             self.content = content
             super.init(nibName: nil, bundle: nil)
@@ -509,6 +509,16 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         estimatedContentHeight.update(contentOffset, listState, averageItemHeight, true)
     }
 
+    func scrollToBottomTask(animated: Bool = true) {
+        Task {
+            await scrollToItem(0, animated: animated, top: false)
+        }
+    }
+
+    func scroll(by: CGFloat, animated: Bool = true) {
+        setContentOffset(CGPointMake(contentOffset.x, contentOffset.y + by), animated: animated)
+    }
+    
     private func snapToContent(animated: Bool = true) {
         let topBlankSpace = estimatedContentHeight.height < bounds.height ? bounds.height - estimatedContentHeight.height : 0
         if topY < estimatedContentHeight.topOffsetY - topBlankSpace {

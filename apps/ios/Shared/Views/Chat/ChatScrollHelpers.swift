@@ -164,12 +164,6 @@ class ItemsScrollModel: ObservableObject {
 
     var loadChatItems: ((ChatPagination) async -> Bool)!
 
-    func scrollToBottom(animated: Bool = true) {
-        Task {
-            await scrollView.scrollToItem(0, animated: animated, top: false)
-        }
-    }
-
     func scrollToItem(itemId: ChatItem.ID) {
         Task {
             do {
@@ -189,22 +183,12 @@ class ItemsScrollModel: ObservableObject {
                     index = mergedItems.boxedValue.indexInParentItems[itemId]
                 }
                 if let index {
-                    scrollToItem(index: min(ItemsModel.shared.reversedChatItems.count - 1, index))
+                    await scrollView.scrollToItem(min(ItemsModel.shared.reversedChatItems.count - 1, index), animated: true)
                 }
             } catch {
                 logger.error("Error scrolling to item: \(error)")
             }
         }
-    }
-
-    func scrollToItem(index: Int, animated: Bool = true) {
-        Task {
-            await scrollView.scrollToItem(index, animated: animated)
-        }
-    }
-
-    func scroll(by: CGFloat, animated: Bool = true) {
-        scrollView.setContentOffset(CGPointMake(scrollView.contentOffset.x, scrollView.contentOffset.y + by), animated: animated)
     }
 }
 

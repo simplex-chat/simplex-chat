@@ -54,8 +54,8 @@ struct ChatView: View {
 
     private let useItemsUpdateTask = false
 
-    @State var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
-
+    @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
+    
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
@@ -88,7 +88,7 @@ struct ChatView: View {
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
-                    FloatingButtons(theme: theme, scrollModel: scrollModel, chat: chat, loadingMoreItems: $loadingMoreItems)
+                    FloatingButtons(theme: theme, scrollView: scrollView, scrollModel: scrollModel, chat: chat, loadingMoreItems: $loadingMoreItems)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -573,9 +573,9 @@ struct ChatView: View {
                 if added {
                     im.itemAdded = false
                     if scrollView.listState.firstVisibleItemIndex < 2 {
-                        scrollModel.scrollToBottom()
+                        scrollView.scrollToBottomTask()
                     } else {
-                        scrollModel.scroll(by: 34)
+                        scrollView.scroll(by: 34)
                     }
                 }
             }
@@ -669,6 +669,7 @@ struct ChatView: View {
 
     private struct FloatingButtons: View {
         let theme: AppTheme
+        let scrollView: EndlessScrollView<MergedItem>
         let scrollModel: ItemsScrollModel
         let chat: Chat
         @Binding var loadingMoreItems: Bool
@@ -698,7 +699,7 @@ struct ChatView: View {
                             .onTapGesture {
                                 if let index = model.listState.items.lastIndex(where: { $0.hasUnread() }) {
                                     // scroll to the top unread item
-                                    scrollModel.scrollToItem(index: index)
+                                    Task { await scrollView.scrollToItem(index, animated: true) }
                                 } else {
                                     logger.debug("No more unread items, total: \(model.listState.items.count)")
                                 }
@@ -725,7 +726,7 @@ struct ChatView: View {
                                     .foregroundColor(theme.colors.primary)
                             }
                             .onTapGesture {
-                                scrollModel.scrollToBottom()
+                                scrollView.scrollToBottomTask()
                             }
                         }
                     } else if !model.isNearBottom {
@@ -735,7 +736,7 @@ struct ChatView: View {
                             circleButton {
                                 Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
                             }
-                            .onTapGesture { scrollModel.scrollToBottom() }
+                            .onTapGesture { scrollView.scrollToBottomTask() }
                         }
                     }
                 }
