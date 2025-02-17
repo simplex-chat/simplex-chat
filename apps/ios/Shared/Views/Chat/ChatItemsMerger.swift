@@ -409,7 +409,7 @@ class RecalculatePositions {
             // deleted the item that was right before the split between items, find newer item so it will act like the split
             if let index {
                 let idx = itemIds[index].1 - itemIds.filter { (_, delIndex, _) in delIndex <= index }.count
-                let newSplit = newItems.count > idx ? newItems[idx].id : nil
+                let newSplit = newItems.count > idx && idx >= 0 ? newItems[idx].id : nil
                 // it the  whole section is gone and splits overlap, don't add it at all
                 if let newSplit, !newSplits.contains(newSplit) {
                     newSplits.append(newSplit)
@@ -424,7 +424,7 @@ class RecalculatePositions {
         // unread after item was removed
         if let index {
             let idx = itemIds[index].1 - itemIds.filter { (_, delIndex, _) in delIndex <= index }.count
-            var newUnreadAfterItemId = newItems.count > idx ? newItems[idx].id : nil
+            var newUnreadAfterItemId = newItems.count > idx && idx >= 0 ? newItems[idx].id : nil
             let newUnreadAfterItemWasNull = newUnreadAfterItemId == nil
             if newUnreadAfterItemId == nil {
                 // everything on top (including unread after item) were deleted, take top item as unread after id
