@@ -198,6 +198,8 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         var topOffsetY: CGFloat = 0
         var bottomOffsetY: CGFloat = 0
 
+        var virtualScrollOffsetY: CGFloat = 0
+
         /// How much distance were overscolled on top which often means to show sticky scrolling that should scroll back to real position after a users finishes dragging the scrollView
         var overscrolledTop: CGFloat = 0
 
@@ -227,11 +229,13 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             guard let last = lastVisible, let first = firstVisible else {
                 topOffsetY = contentOffset.y
                 bottomOffsetY = contentOffset.y
+                virtualScrollOffsetY = 0
                 overscrolledTop = 0
                 return
             }
             topOffsetY = last.view.frame.origin.y - CGFloat(listState.totalItemsCount - last.index - 1) * averageItemHeight - self.inset
             bottomOffsetY = first.view.frame.origin.y + first.view.bounds.height + CGFloat(first.index) * averageItemHeight + self.inset
+            virtualScrollOffsetY = contentOffset.y - topOffsetY
             overscrolledTop = max(0, last.index == listState.totalItemsCount - 1 ? last.view.frame.origin.y - contentOffset.y : 0)
         }
     }
@@ -435,6 +439,8 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         listState.firstVisibleItemOffset = listState.visibleItems.first?.offset ?? -insetTop
 
         estimatedContentHeight.update(contentOffset, listState, averageItemHeight, itemsCountChanged)
+        scrollBarView.contentSize = CGSizeMake(bounds.width, estimatedContentHeight.virtualOverscrolledHeight)
+        scrollBarView.contentOffset = CGPointMake(0, estimatedContentHeight.virtualScrollOffsetY)
 
         if debug {
             println("time spent \((-start.timeIntervalSinceNow).description.prefix(5).replacingOccurrences(of: "0.000", with: "<0").replacingOccurrences(of: "0.", with: ""))")
