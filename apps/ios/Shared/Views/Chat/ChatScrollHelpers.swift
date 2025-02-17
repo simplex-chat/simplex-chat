@@ -158,40 +158,6 @@ private func findLastIndexToLoadFromInSplits(_ firstVisibleIndex: Int, _ lastVis
     return nil
 }
 
-class ItemsScrollModel: ObservableObject {
-    var scrollView: EndlessScrollView<MergedItem>!
-    var mergedItems: BoxedValue<MergedItems>!
-
-    var loadChatItems: ((ChatPagination) async -> Bool)!
-
-    func scrollToItem(itemId: ChatItem.ID) {
-        Task {
-            do {
-                var index = mergedItems.boxedValue.indexInParentItems[itemId]
-                if index == nil {
-                    let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
-                    let oldSize = ItemsModel.shared.reversedChatItems.count
-                    let triedToLoad = await self.loadChatItems(pagination)
-                    if !triedToLoad {
-                        return
-                    }
-                    var repeatsLeft = 50
-                    while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
-                        try await Task.sleep(nanoseconds: 20_000000)
-                        repeatsLeft -= 1
-                    }
-                    index = mergedItems.boxedValue.indexInParentItems[itemId]
-                }
-                if let index {
-                    await scrollView.scrollToItem(min(ItemsModel.shared.reversedChatItems.count - 1, index), animated: true)
-                }
-            } catch {
-                logger.error("Error scrolling to item: \(error)")
-            }
-        }
-    }
-}
-
 /// Disable animation on iOS 15
 func withConditionalAnimation<Result>(
     _ animation: Animation? = .default,

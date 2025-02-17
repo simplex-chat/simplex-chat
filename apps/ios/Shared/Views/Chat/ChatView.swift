@@ -24,7 +24,6 @@ struct ChatView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
-    @StateObject private var scrollModel = ItemsScrollModel()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -88,7 +87,7 @@ struct ChatView: View {
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
-                    FloatingButtons(theme: theme, scrollView: scrollView, scrollModel: scrollModel, chat: chat, loadingMoreItems: $loadingMoreItems)
+                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -198,8 +197,6 @@ struct ChatView: View {
         }
         .onAppear {
             setScrollListeners()
-            scrollModel.scrollView = scrollView
-            scrollModel.mergedItems = mergedItems
             FloatingButtonModel.shared.listState = scrollView.listState
             selectedChatItems = nil
             revealedItems = Set()
@@ -226,7 +223,6 @@ struct ChatView: View {
                 dismiss()
             }
         }
-        .environmentObject(scrollModel)
         .onDisappear {
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
@@ -405,6 +401,33 @@ struct ChatView: View {
         ChatView.FloatingButtonModel.shared.updateOnListChange()
     }
 
+    private func scrollToItemId(_ itemId: ChatItem.ID) {
+        Task {
+            do {
+                var index = mergedItems.boxedValue.indexInParentItems[itemId]
+                if index == nil {
+                    let pagination = ChatPagination.around(chatItemId: itemId, count: ChatPagination.PRELOAD_COUNT * 2)
+                    let oldSize = ItemsModel.shared.reversedChatItems.count
+                    let triedToLoad = await loadChatItems(chat, pagination)
+                    if !triedToLoad {
+                        return
+                    }
+                    var repeatsLeft = 50
+                    while oldSize == ItemsModel.shared.reversedChatItems.count && repeatsLeft > 0 {
+                        try await Task.sleep(nanoseconds: 20_000000)
+                        repeatsLeft -= 1
+                    }
+                    index = mergedItems.boxedValue.indexInParentItems[itemId]
+                }
+                if let index {
+                    await scrollView.scrollToItem(min(ItemsModel.shared.reversedChatItems.count - 1, index), animated: true)
+                }
+            } catch {
+                logger.error("Error scrolling to item: \(error)")
+            }
+        }
+    }
+    
     private func searchToolbar() -> some View {
         HStack(spacing: 12) {
             HStack(spacing: 4) {
@@ -482,6 +505,7 @@ struct ChatView: View {
                     index: index,
                     isLastItem: index == mergedItems.boxedValue.items.count - 1,
                     chatItem: ci,
+                    scrollToItemId: scrollToItemId,
                     merged: mergedItem,
                     maxWidth: maxWidth,
                     composeState: $composeState,
@@ -670,7 +694,6 @@ struct ChatView: View {
     private struct FloatingButtons: View {
         let theme: AppTheme
         let scrollView: EndlessScrollView<MergedItem>
-        let scrollModel: ItemsScrollModel
         let chat: Chat
         @Binding var loadingMoreItems: Bool
         @ObservedObject var model = FloatingButtonModel.shared
@@ -1006,9 +1029,6 @@ struct ChatView: View {
 
     // it should be re-set everytime chatId changes
     func setScrollListeners() {
-        scrollModel.loadChatItems = { pagination in
-            await loadChatItems(chat, pagination)
-        }
         scrollView.listState.onUpdateListener = {
             if !mergedItems.boxedValue.isActualState() {
                 //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")
@@ -1040,6 +1060,7 @@ struct ChatView: View {
         let index: Int
         let isLastItem: Bool
         let chatItem: ChatItem
+        let scrollToItemId: (ChatItem.ID) -> Void
         let merged: MergedItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
@@ -1385,6 +1406,7 @@ struct ChatView: View {
                 ChatItemView(
                     chat: chat,
                     chatItem: ci,
+                    scrollToItemId: scrollToItemId,
                     maxWidth: maxWidth,
                     allowMenu: $allowMenu
                 )
