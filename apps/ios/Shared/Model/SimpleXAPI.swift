@@ -328,38 +328,27 @@ func apiGetChatTagsAsync() async throws -> [ChatTag] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
-    if case let .apiChat(_, chat) = r { return Chat.init(chat) }
+func apiGetChat(chatId: ChatId, pagination: ChatPagination, search: String = "") async throws -> (Chat, NavigationInfo) {
+    let r = await chatSendCmd(.apiGetChat(chatId: chatId, pagination: pagination, search: search))
+    if case let .apiChat(_, chat, navInfo) = r { return (Chat.init(chat), navInfo ?? NavigationInfo()) }
     throw r
 }
 
-func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
-    if case let .apiChat(_, chat) = r { return chat.chatItems }
-    throw r
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
+    await loadChat(chatId: chat.chatInfo.id)
 }
 
-func loadChat(chat: Chat, search: String = "", clearItems: Bool = true, replaceChat: Bool = false) async {
-    do {
-        let cInfo = chat.chatInfo
-        let m = ChatModel.shared
-        let im = ItemsModel.shared
-        m.chatItemStatuses = [:]
-        if clearItems {
-            await MainActor.run { im.reversedChatItems = [] }
+func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) async {
+    let m = ChatModel.shared
+    let im = ItemsModel.shared
+    m.chatItemStatuses = [:]
+    if clearItems {
+        await MainActor.run { 
+            im.reversedChatItems = []
+            ItemsModel.shared.chatItemsChangesListener.cleared()
         }
-        let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        await MainActor.run {
-            im.reversedChatItems = chat.chatItems.reversed()
-            m.updateChatInfo(chat.chatInfo)
-            if (replaceChat) {
-                m.replaceChat(chat.chatInfo.id, chat)
-            }
-        }
-    } catch let error {
-        logger.error("loadChat error: \(responseError(error))")
     }
+    await apiLoadMessages(chatId, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {
@@ -869,7 +858,7 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
 
 func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection? {
     let r = await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
-    
+
     if case let .connectionUserChanged(_, _, toConnection, _) = r {return toConnection}
     throw r
 }
@@ -2172,7 +2161,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .groupLinkConnecting(user, groupInfo, hostMember):
         if !active(user) { return }
-        
+
         await MainActor.run {
             m.updateGroup(groupInfo)
             if let hostConn = hostMember.activeConn {

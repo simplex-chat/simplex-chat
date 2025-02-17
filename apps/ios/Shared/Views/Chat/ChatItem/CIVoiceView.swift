@@ -498,10 +498,10 @@ struct CIVoiceView_Previews: PreviewProvider {
                 duration: 30,
                 allowMenu: Binding.constant(true)
             )
-            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWtFile, allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, scrollToItemId: { _ in }, allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(), scrollToItemId: { _ in }, allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItemId: { _ in }, allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWtFile, scrollToItemId: { _ in }, allowMenu: .constant(true))
         }
         .previewLayout(.fixed(width: 360, height: 360))
     }

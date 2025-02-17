@@ -35,18 +35,21 @@ struct ChatItemView: View {
     @Environment(\.showTimestamp) var showTimestamp: Bool
     @Environment(\.revealed) var revealed: Bool
     var chatItem: ChatItem
+    var scrollToItemId: (ChatItem.ID) -> Void
     var maxWidth: CGFloat = .infinity
     @Binding var allowMenu: Bool
 
     init(
         chat: Chat,
         chatItem: ChatItem,
+        scrollToItemId: @escaping (ChatItem.ID) -> Void,
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
         allowMenu: Binding<Bool> = .constant(false)
     ) {
         self.chat = chat
         self.chatItem = chatItem
+        self.scrollToItemId = scrollToItemId
         self.maxWidth = maxWidth
         _allowMenu = allowMenu
     }
@@ -90,6 +93,7 @@ struct ChatItemView: View {
         return FramedItemView(
             chat: chat,
             chatItem: chatItem,
+            scrollToItemId: scrollToItemId,
             preview: preview,
             maxWidth: maxWidth,
             imgWidth: adjustedMaxWidth,
@@ -244,15 +248,15 @@ func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
 struct ChatItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample())
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true)).environment(\.revealed, true)
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true)).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "hello there too"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(2, .directRcv, .now, "🙂🙂🙂🙂🙂🙂"), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample(), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), scrollToItemId: { _ in })
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "🙂", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemLive: true), scrollToItemId: { _ in }).environment(\.revealed, true)
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 70))
@@ -272,7 +276,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: 1, toMsgId: 2)),
                     quotedItem: nil,
                     file: nil
-                )
+                ),
+                scrollToItemId: { _ in }
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -282,7 +287,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvDecryptionError(msgDecryptError: .ratchetHeader, msgCount: 2),
                     quotedItem: nil,
                     file: nil
-                )
+                ),
+                scrollToItemId: { _ in }
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -292,7 +298,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: .pending), memberRole: .admin),
                     quotedItem: nil,
                     file: nil
-                )
+                ),
+                scrollToItemId: { _ in }
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -302,7 +309,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
                     quotedItem: nil,
                     file: nil
-                )
+                ),
+                scrollToItemId: { _ in }
             )
             ChatItemView(
                 chat: Chat.sampleData,
@@ -312,7 +320,8 @@ struct ChatItemView_NonMsgContentDeleted_Previews: PreviewProvider {
                     content: ciFeatureContent,
                     quotedItem: nil,
                     file: nil
-                )
+                ),
+                scrollToItemId: { _ in }
             )
         }
         .environment(\.revealed, true)
