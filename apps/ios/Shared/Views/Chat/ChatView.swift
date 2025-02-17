@@ -196,7 +196,7 @@ struct ChatView: View {
             }
         }
         .onAppear {
-            setScrollListeners()
+            setUpdateListener()
             FloatingButtonModel.shared.listState = scrollView.listState
             selectedChatItems = nil
             revealedItems = Set()
@@ -211,7 +211,7 @@ struct ChatView: View {
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
-                setScrollListeners()
+                setUpdateListener()
                 initChatView()
                 theme = buildTheme()
                 Task {
@@ -597,7 +597,7 @@ struct ChatView: View {
                 if added {
                     im.itemAdded = false
                     if scrollView.listState.firstVisibleItemIndex < 2 {
-                        scrollView.scrollToBottomTask()
+                        scrollView.scrollToBottom()
                     } else {
                         scrollView.scroll(by: 34)
                     }
@@ -749,7 +749,7 @@ struct ChatView: View {
                                     .foregroundColor(theme.colors.primary)
                             }
                             .onTapGesture {
-                                scrollView.scrollToBottomTask()
+                                scrollView.scrollToBottom()
                             }
                         }
                     } else if !model.isNearBottom {
@@ -759,7 +759,7 @@ struct ChatView: View {
                             circleButton {
                                 Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
                             }
-                            .onTapGesture { scrollView.scrollToBottomTask() }
+                            .onTapGesture { scrollView.scrollToBottom() }
                         }
                     }
                 }
@@ -1028,7 +1028,7 @@ struct ChatView: View {
     }
 
     // it should be re-set everytime chatId changes
-    func setScrollListeners() {
+    func setUpdateListener() {
         scrollView.listState.onUpdateListener = {
             if !mergedItems.boxedValue.isActualState() {
                 //logger.debug("Items are not actual, waiting for the next update: \(String(describing: mergedItems.boxedValue.splits))  \(ItemsModel.shared.chatState.splits), \(mergedItems.boxedValue.indexInParentItems.count) vs \(ItemsModel.shared.reversedChatItems.count)")

@@ -509,7 +509,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         estimatedContentHeight.update(contentOffset, listState, averageItemHeight, true)
     }
 
-    func scrollToBottomTask(animated: Bool = true) {
+    func scrollToBottom(animated: Bool = true) {
         Task {
             await scrollToItem(0, animated: animated, top: false)
         }
