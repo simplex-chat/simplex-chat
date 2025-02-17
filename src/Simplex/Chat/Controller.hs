@@ -243,6 +243,8 @@ data ChatController = ChatController
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
+    memberLimits :: TMap (GroupId, MemberId) (TVar MemberRateLimitWindow),
+    ownLimits :: TMap GroupId (TVar MemberRateLimitWindow),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
     tempDirectory :: TVar (Maybe FilePath),
@@ -250,6 +252,12 @@ data ChatController = ChatController
     logFilePath :: Maybe FilePath,
     contactMergeEnabled :: TVar Bool
   }
+
+data MemberRateLimitWindow = MemberRateLimitWindow {
+  startedAt :: UTCTime,
+  windowLimit :: WindowLimit,
+  messages :: Int
+}
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
   deriving (Show)
@@ -360,6 +368,7 @@ data ChatCommand
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
   | APIBlockMemberForAll GroupId GroupMemberId Bool
+  | APIRateLimitMember GroupId GroupMemberId
   | APIRemoveMember GroupId GroupMemberId
   | APILeaveGroup GroupId
   | APIListMembers GroupId
@@ -753,6 +762,8 @@ data ChatResponse
   | CRMemberRoleUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
   | CRMemberBlockedForAllUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, blocked :: Bool}
+  | CRMemberRateLimit {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRGroupSendingLimited {user :: User, groupInfo :: GroupInfo, blocked :: Bool}
   | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
   | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}

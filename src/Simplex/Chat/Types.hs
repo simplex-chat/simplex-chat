@@ -739,14 +739,26 @@ mrsBlocked = \case
   MRSBlocked -> True
   _ -> False
 
+data MemberRateLimit
+  = MRLNone -- default for owners, admins, moderators
+  | MRLWindow WindowLimit
+  deriving (Eq, Show)
+
+data WindowLimit = WindowLimit
+  { window :: Int, -- seconds
+    limit :: Int
+  }
+  deriving (Eq, Show)
+
 data MemberRestrictions = MemberRestrictions
-  { restriction :: MemberRestrictionStatus
+  { restriction :: MemberRestrictionStatus,
+    rateLimit :: Maybe MemberRateLimit -- Nothing means use default
   }
   deriving (Eq, Show)
 
 memberRestrictions :: GroupMember -> Maybe MemberRestrictions
 memberRestrictions m
-  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked}
+  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked, rateLimit = Nothing}
   | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
@@ -769,6 +781,7 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
     blockedByAdmin :: Bool,
+    rateLimit :: Maybe MemberRateLimit,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -1760,6 +1773,10 @@ $(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 $(JQ.deriveJSON defaultJSON ''Connection)
 
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
+
+$(JQ.deriveJSON defaultJSON ''WindowLimit)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "MRL") ''MemberRateLimit)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
