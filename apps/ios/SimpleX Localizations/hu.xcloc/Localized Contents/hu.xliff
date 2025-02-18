@@ -4696,9 +4696,9 @@ Ez az Ön hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Tegye priváttá a profilját!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
+      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve" approved="no">
         <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
-        <target>Győződjön meg arról, hogy a WebRTC ICE-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</target>
+        <target state="translated">Győződjön meg arról, hogy a megadott WebRTC ICE-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Mark deleted for everyone" xml:space="preserve">
