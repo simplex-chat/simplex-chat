@@ -163,9 +163,9 @@ simplexChatSMPServers =
 
 simplexChatSuperpeers :: [NewSuperpeer]
 simplexChatSuperpeers =
-  [ presetSuperpeer True "supeerpeer1.simplex.im" (either error id $ strDecode "simplex:/contact#/address1"),
-    presetSuperpeer True "supeerpeer2.simplex.im" (either error id $ strDecode "simplex:/contact#/address2"),
-    presetSuperpeer True "supeerpeer3.simplex.im" (either error id $ strDecode "simplex:/contact#/address3")
+  [ presetSuperpeer True "superpeer1.simplex.im" (either error id $ strDecode "simplex:/contact#/address1"),
+    presetSuperpeer True "superpeer2.simplex.im" (either error id $ strDecode "simplex:/contact#/address2"),
+    presetSuperpeer True "superpeer3.simplex.im" (either error id $ strDecode "simplex:/contact#/address3")
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]
