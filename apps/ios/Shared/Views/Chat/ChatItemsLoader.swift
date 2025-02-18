@@ -32,7 +32,7 @@ func apiLoadMessages(
     // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
     let paginationIsInitial = switch pagination { case .initial: true; default: false }
     let paginationIsLast = switch pagination { case .last: true; default: false }
-    if ((chatModel.chatId != chat.id || chat.chatItems.isEmpty) && !paginationIsInitial && !paginationIsLast) {
+    if ((chatModel.chatId != chat.id || chat.chatItems.isEmpty) && !paginationIsInitial && !paginationIsLast) || Task.isCancelled {
         return
     }
 

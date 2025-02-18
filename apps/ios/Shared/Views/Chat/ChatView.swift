@@ -290,7 +290,6 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                let isLoading = im.isLoading && im.showLoadingProgress
                 if selectedChatItems != nil {
                     Button {
                         withAnimation {
@@ -313,23 +312,19 @@ struct ChatView: View {
                                 }
                             }
                             Menu {
-                                if !isLoading {
-                                    if callsPrefEnabled && chatModel.activeCall == nil {
-                                        Button {
-                                            CallController.shared.startCall(contact, .video)
-                                        } label: {
-                                            Label("Video call", systemImage: "video")
-                                        }
-                                        .disabled(!contact.ready || !contact.active)
+                                if callsPrefEnabled && chatModel.activeCall == nil {
+                                    Button {
+                                        CallController.shared.startCall(contact, .video)
+                                    } label: {
+                                        Label("Video call", systemImage: "video")
                                     }
-                                    searchButton()
-                                    ToggleNtfsButton(chat: chat)
-                                        .disabled(!contact.ready || !contact.active)
+                                    .disabled(!contact.ready || !contact.active)
                                 }
+                                searchButton()
+                                ToggleNtfsButton(chat: chat)
+                                    .disabled(!contact.ready || !contact.active)
                             } label: {
                                 Image(systemName: "ellipsis")
-                                    .tint(isLoading ? Color.clear : nil)
-                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case let .group(groupInfo):
@@ -351,14 +346,10 @@ struct ChatView: View {
                                 }
                             }
                             Menu {
-                                if !isLoading {
-                                    searchButton()
-                                    ToggleNtfsButton(chat: chat)
-                                }
+                                searchButton()
+                                ToggleNtfsButton(chat: chat)
                             } label: {
                                 Image(systemName: "ellipsis")
-                                    .tint(isLoading ? Color.clear : nil)
-                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case .local:
@@ -571,7 +562,6 @@ struct ChatView: View {
                     allowLoadMoreItems = true
                 }
             }
-            .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -100)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { s in

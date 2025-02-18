@@ -15,6 +15,7 @@ struct ChatPreviewView: View {
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
+    @ObservedObject private var im: ItemsModel = ItemsModel.shared
     @State var deleting: Bool = false
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
     @State private var activeContentPreview: ActiveContentPreview? = nil
@@ -431,23 +432,27 @@ struct ChatPreviewView: View {
 
     @ViewBuilder private func chatStatusImage() -> some View {
         let size = dynamicSize(userFont).incognitoSize
-        switch chat.chatInfo {
-        case let .direct(contact):
-            if contact.active && contact.activeConn != nil {
-                NetworkStatusView(contact: contact, size: size)
-            } else {
+        if im.showLoadingProgress == chat.id {
+            ProgressView()
+        } else {
+            switch chat.chatInfo {
+            case let .direct(contact):
+                if contact.active && contact.activeConn != nil {
+                    NetworkStatusView(contact: contact, size: size)
+                } else {
+                    incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
+                }
+            case .group:
+                if progressByTimeout {
+                    ProgressView()
+                } else if chat.chatStats.reportsCount > 0 {
+                    groupReportsIcon(size: size * 0.8)
+                } else {
+                    incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
+                }
+            default:
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
-        case .group:
-            if progressByTimeout {
-                ProgressView()
-            } else if chat.chatStats.reportsCount > 0 {
-                groupReportsIcon(size: size * 0.8)
-            } else {
-                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-            }
-        default:
-            incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
         }
     }
 

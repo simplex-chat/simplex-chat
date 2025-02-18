@@ -61,7 +61,10 @@ class ItemsModel: ObservableObject {
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
     @Published var isLoading = false
-    @Published var showLoadingProgress = false
+    @Published var showLoadingProgress: ChatId? = nil
+
+    private var progressTimeoutTask: Task<Void, Never>? = nil
+    private var loadChatTask: Task<Void, Never>? = nil
 
     init() {
         publisher
@@ -71,32 +74,27 @@ class ItemsModel: ObservableObject {
     }
 
     func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
-        let navigationTimeout = Task {
+        progressTimeoutTask?.cancel()
+        loadChatTask?.cancel()
+        progressTimeoutTask = Task {
             do {
                 try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
-                    willNavigate()
-                    ChatModel.shared.chatId = chatId
+                    showLoadingProgress = chatId
                 }
             } catch {}
         }
-        let progressTimeout = Task {
-            do {
-                try await Task.sleep(nanoseconds: 1500_000000)
-                await MainActor.run { showLoadingProgress = true }
-            } catch {}
-        }
-        Task {
+        loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
-            //                try? await Task.sleep(nanoseconds: 5000_000000)
+//            try? await Task.sleep(nanoseconds: 2000_000000)
             await loadChat(chatId: chatId)
-            navigationTimeout.cancel()
-            progressTimeout.cancel()
-            await MainActor.run {
-                self.isLoading = false
-                self.showLoadingProgress = false
-                willNavigate()
-//                ChatModel.shared.chatId = id
+            if !Task.isCancelled {
+                progressTimeoutTask?.cancel()
+                await MainActor.run {
+                    self.isLoading = false
+                    self.showLoadingProgress = nil
+                    willNavigate()
+                }
             }
         }
     }
