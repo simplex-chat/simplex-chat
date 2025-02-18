@@ -694,7 +694,7 @@
     <string name="no_info_on_delivery">Nincs kézbesítési információ</string>
     <string name="moderated_description">moderált</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból – ez a művelet nem vonható vissza!</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az XFTP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott XFTP-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
     <string name="no_contacts_selected">Nincs ismerős kijelölve</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 hordozható eszköz: koppintson a <b>Megnyitás hordozható eszköz-alkalmazásban</b>, majd koppintson a <b>Kapcsolódás</b> gombra az alkalmazásban.]]></string>
@@ -733,7 +733,7 @@
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
     <string name="new_desktop"><![CDATA[<i>(új)</i>]]></string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy az SMP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott SMP-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
     <string name="network_use_onion_hosts_no_desc">Az onion-kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
@@ -773,7 +773,7 @@
     <string name="ok">Rendben</string>
     <string name="no_filtered_chats">Nincsenek szűrt csevegések</string>
     <string name="invalid_data">érvénytelen adat</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a WebRTC ICE-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott WebRTC ICE-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
     <string name="only_owners_can_enable_files_and_media">Csak a csoport tulajdonosai engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
     <string name="loading_remote_file_title">A fájl betöltése…</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó ismerős</string>
