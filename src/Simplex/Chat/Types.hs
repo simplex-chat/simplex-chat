@@ -129,13 +129,15 @@ data User = User
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
-    uiThemes :: Maybe UIThemeEntityOverrides
+    uiThemes :: Maybe UIThemeEntityOverrides,
+    userSuperpeer :: Bool
   }
   deriving (Show)
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
-    pastTimestamp :: Bool
+    pastTimestamp :: Bool,
+    userSuperpeer :: Bool
   }
   deriving (Show)
 
@@ -784,7 +786,8 @@ data GroupMember = GroupMember
     -- member chat protocol version range; if member has active connection, its version range is preferred;
     -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
     -- but it's correctly set on read (see toGroupInfo)
-    memberChatVRange :: VersionRangeChat
+    memberChatVRange :: VersionRangeChat,
+    superpeer :: Bool
   }
   deriving (Eq, Show)
 
@@ -839,7 +842,8 @@ data NewGroupMember = NewGroupMember
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     memProfileId :: Int64,
-    memContactId :: Maybe Int64
+    memContactId :: Maybe Int64,
+    superpeer :: Bool
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}

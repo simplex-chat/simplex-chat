@@ -47,7 +47,7 @@ import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
-import Simplex.Chat.Types (User)
+import Simplex.Chat.Types (ConnReqContact, User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Encoding.String
@@ -274,12 +274,29 @@ data UserServer' s (p :: ProtocolType) = UserServer
   }
   deriving (Show)
 
+type Superpeer = Superpeer' 'DBStored
+
+type NewSuperpeer = Superpeer' 'DBNew
+
+data Superpeer' s = Superpeer
+  { superpeerId :: DBEntityId' s,
+    address :: ConnReqContact,
+    name :: Text,
+    preset :: Bool,
+    tested :: Maybe Bool,
+    enabled :: Bool,
+    deleted :: Bool
+  }
+  deriving (Show)
+
 data PresetOperator = PresetOperator
   { operator :: Maybe NewServerOperator,
     smp :: [NewUserServer 'PSMP],
     useSMP :: Int,
     xftp :: [NewUserServer 'PXFTP],
-    useXFTP :: Int
+    useXFTP :: Int,
+    superpeers :: [NewSuperpeer],
+    useSuperpeers :: Int
   }
   deriving (Show)
 
@@ -305,6 +322,16 @@ newUserServer = newUserServer_ False True
 newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
+
+presetSuperpeer :: Bool -> Text -> ConnReqContact -> NewSuperpeer
+presetSuperpeer = newSuperpeer_ True
+
+newSuperpeer :: Text -> ConnReqContact -> NewSuperpeer
+newSuperpeer = newSuperpeer_ False True
+
+newSuperpeer_ :: Bool -> Bool -> Text -> ConnReqContact -> NewSuperpeer
+newSuperpeer_ preset enabled name address =
+  Superpeer {superpeerId = DBNewEntity, address, name, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
 -- it evaluates to (current conditions, and conditions to add)
@@ -368,7 +395,7 @@ updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpSe
               storedSrvs :: Map (ProtoServerWithAuth p) (UserServer p)
               storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
               customServer :: UserServer p -> Bool
-              customServer srv = not (preset srv) && all (`S.notMember` presetHosts) (srvHost srv)
+              customServer srv@UserServer{preset} = not preset && all (`S.notMember` presetHosts) (srvHost srv)
               presetSrvs :: [NewUserServer p]
               presetSrvs = pServers p presetOp
               presetHosts :: Set TransportHost

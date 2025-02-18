@@ -36,7 +36,8 @@ CREATE TABLE users(
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
-  active_order INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  active_order INTEGER NOT NULL DEFAULT 0,
+  user_superpeer INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -166,6 +167,7 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
+  superpeer INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -649,6 +651,19 @@ CREATE TABLE chat_item_mentions(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   display_name TEXT NOT NULL
 );
+CREATE TABLE superpeers(
+  super_peer_id INTEGER PRIMARY KEY,
+  address TEXT NOT NULL,
+  name TEXT NOT NULL, -- domain to match with operators to be part of name/address, or separate field?
+  preset INTEGER NOT NULL DEFAULT 0,
+  tested INTEGER,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  UNIQUE(user_id, address),
+  UNIQUE(user_id, name)
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1018,3 +1033,4 @@ CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
 );
+CREATE INDEX idx_superpeers_user_id ON superpeers(user_id);

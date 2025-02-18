@@ -42,6 +42,7 @@ import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), ServerRoles (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
+import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
@@ -99,14 +100,18 @@ defaultChatConfig =
                     smp = simplexChatSMPServers,
                     useSMP = 4,
                     xftp = map (presetServer True) $ L.toList defaultXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    superpeers = simplexChatSuperpeers,
+                    useSuperpeers = 2
                   },
                 PresetOperator
                   { operator = Just operatorFlux,
                     smp = fluxSMPServers,
                     useSMP = 3,
                     xftp = fluxXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    superpeers = [],
+                    useSuperpeers = 0
                   }
               ],
             ntf = _defaultNtfServers,
@@ -155,6 +160,13 @@ simplexChatSMPServers =
         "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
         "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
       ]
+
+simplexChatSuperpeers :: [NewSuperpeer]
+simplexChatSuperpeers =
+  [ presetSuperpeer True "supeerpeer1.simplex.im" (either error id $ strDecode "simplex:/contact#/address1"),
+    presetSuperpeer True "supeerpeer2.simplex.im" (either error id $ strDecode "simplex:/contact#/address2"),
+    presetSuperpeer True "supeerpeer3.simplex.im" (either error id $ strDecode "simplex:/contact#/address3")
+  ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]
 fluxSMPServers =
@@ -304,7 +316,9 @@ newChatController
                 smp = map newUserServer smpSrvs,
                 useSMP = 0,
                 xftp = map newUserServer xftpSrvs,
-                useXFTP = 0
+                useXFTP = 0,
+                superpeers = [],
+                useSuperpeers = 0
               }
       randomServerCfgs :: UserProtocol p => String -> SProtocolType p -> [(Text, ServerOperator)] -> [PresetOperator] -> IO (NonEmpty (ServerCfg p))
       randomServerCfgs name p opDomains rndSrvs =

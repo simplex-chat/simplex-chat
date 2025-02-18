@@ -1218,6 +1218,7 @@ data ChatErrorType
   | CEUserUnknown
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
+  | CESuperpeerExists
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}
