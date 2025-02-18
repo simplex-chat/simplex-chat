@@ -1243,8 +1243,9 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
+-- TODO [superpeers] view superpeers
 viewUserServers :: UserOperatorServers -> [StyledString]
-viewUserServers (UserOperatorServers _ [] []) = []
+viewUserServers (UserOperatorServers _ [] [] []) = []
 viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
   [plain $ maybe "Your servers" shortViewOperator operator]
     <> viewServers SPSMP smpServers

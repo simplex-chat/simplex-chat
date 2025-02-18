@@ -48,6 +48,7 @@ validateServersTest = describe "validate user servers" $ do
     aSMP = AProtocolType SPSMP
     aXFTP = AProtocolType SPXFTP
 
+-- TODO [superpeers] test
 updatedServersTest :: Spec
 updatedServersTest = describe "validate user servers" $ do
   it "adding preset operators on first start" $ do
@@ -57,7 +58,7 @@ updatedServersTest = describe "validate user servers" $ do
     all addedPreset ops' `shouldBe` True
     let ops'' :: [(Maybe PresetOperator, Maybe ServerOperator)] =
           saveOps ops' -- mock getUpdateServerOperators
-    uss <- groupByOperator' (ops'', [], []) -- no stored servers
+    uss <- groupByOperator' (ops'', [], [], []) -- no stored servers
     length uss `shouldBe` 3
     [op1, op2, op3] <- pure $ map updatedUserServers uss
     [p1, p2] <- pure operators -- presets
@@ -65,14 +66,15 @@ updatedServersTest = describe "validate user servers" $ do
     sameServers p2 op2
     null (servers' SPSMP op3) `shouldBe` True
     null (servers' SPXFTP op3) `shouldBe` True
-  it "adding preset operators and assiging servers to operator for existing users" $ do
+  it "adding preset operators and assigning servers to operator for existing users" $ do
     let ops' = updatedServerOperators operators []
         ops'' = saveOps ops'
     uss <-
       groupByOperator'
         ( ops'',
           saveSrvs $ take 3 simplexChatSMPServers <> [newUserServer "smp://abcd@smp.example.im"],
-          saveSrvs $ map (presetServer True) $ L.take 3 defaultXFTPServers
+          saveSrvs $ map (presetServer True) $ L.take 3 defaultXFTPServers,
+          []
         )
     [op1, op2, op3] <- pure $ map updatedUserServers uss
     [p1, p2] <- pure operators -- presets
@@ -96,12 +98,14 @@ deriving instance Eq User
 
 deriving instance Eq UserServersError
 
+-- TODO [superpeers] no superpeers should not be valid
 valid :: UpdatedUserOperatorServers
 valid =
   UpdatedUserOperatorServers
     { operator = Just operatorSimpleXChat {operatorId = DBEntityId 1},
       smpServers = map (AUS SDBNew) simplexChatSMPServers,
-      xftpServers = map (AUS SDBNew . presetServer True) $ L.toList defaultXFTPServers
+      xftpServers = map (AUS SDBNew . presetServer True) $ L.toList defaultXFTPServers,
+      superpeers = []
     }
 
 invalidNoServers :: UpdatedUserOperatorServers

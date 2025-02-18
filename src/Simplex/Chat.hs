@@ -339,7 +339,8 @@ newChatController
           getServers ops opDomains user' = do
             smpSrvs <- getProtocolServers db SPSMP user'
             xftpSrvs <- getProtocolServers db SPXFTP user'
-            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs)
+            -- TODO [superpeers] get superpeers, group
+            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs, [])
             ts <- getCurrentTime
             uss' <- mapM (setUserServers' db user' ts . updatedUserServers) uss
             let auId = aUserId user'

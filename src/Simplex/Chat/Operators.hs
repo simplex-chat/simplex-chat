@@ -220,14 +220,16 @@ conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAccept
 data UserOperatorServers = UserOperatorServers
   { operator :: Maybe ServerOperator,
     smpServers :: [UserServer 'PSMP],
-    xftpServers :: [UserServer 'PXFTP]
+    xftpServers :: [UserServer 'PXFTP],
+    superpeers :: [Superpeer]
   }
   deriving (Show)
 
 data UpdatedUserOperatorServers = UpdatedUserOperatorServers
   { operator :: Maybe ServerOperator,
     smpServers :: [AUserServer 'PSMP],
-    xftpServers :: [AUserServer 'PXFTP]
+    xftpServers :: [AUserServer 'PXFTP],
+    superpeers :: [ASuperpeer]
   }
   deriving (Show)
 
@@ -277,6 +279,10 @@ data UserServer' s (p :: ProtocolType) = UserServer
 type Superpeer = Superpeer' 'DBStored
 
 type NewSuperpeer = Superpeer' 'DBNew
+
+data ASuperpeer = forall s. AS (SDBStored s) (Superpeer' s)
+
+deriving instance Show ASuperpeer
 
 data Superpeer' s = Superpeer
   { superpeerId :: DBEntityId' s,
@@ -360,8 +366,8 @@ usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
 presetUserServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedUserOperatorServers]
 presetUserServers = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
   where
-    mkUS op PresetOperator {smp, xftp} =
-      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp)
+    mkUS op PresetOperator {smp, xftp, superpeers} =
+      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp) (map (AS SDBNew) superpeers)
 
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
@@ -382,7 +388,7 @@ updatedServerOperators presetOps storedOps =
 -- This function should be used inside DB transaction to update servers.
 updatedUserServers :: (Maybe PresetOperator, UserOperatorServers) -> UpdatedUserOperatorServers
 updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpServers}) =
-  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp'}
+  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp', superpeers = []}
   where
     stored = map (AUS SDBStored)
     (smp', xftp') = case presetOp_ of
@@ -438,17 +444,18 @@ instance Box ((,) (Maybe a)) where
   box = (Nothing,)
   unbox = snd
 
-groupByOperator :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [UserOperatorServers]
-groupByOperator (ops, smpSrvs, xftpSrvs) = map runIdentity <$> groupByOperator_ (map Identity ops, smpSrvs, xftpSrvs)
+groupByOperator :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [Superpeer]) -> IO [UserOperatorServers]
+groupByOperator (ops, smpSrvs, xftpSrvs, speers) = map runIdentity <$> groupByOperator_ (map Identity ops, smpSrvs, xftpSrvs, speers)
 
 -- For the initial app start this function relies on tuple being Functor/Box
 -- to preserve the information about operator being DBNew or DBStored
-groupByOperator' :: ([(Maybe PresetOperator, Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [(Maybe PresetOperator, UserOperatorServers)]
+groupByOperator' :: ([(Maybe PresetOperator, Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP], [Superpeer]) -> IO [(Maybe PresetOperator, UserOperatorServers)]
 groupByOperator' = groupByOperator_
 {-# INLINE groupByOperator' #-}
 
-groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [f UserOperatorServers]
-groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
+-- TODO [superpeers] group superpeers by operator
+groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP], [Superpeer]) -> IO [f UserOperatorServers]
+groupByOperator_ (ops, smpSrvs, xftpSrvs, speers) = do
   let ops' = mapMaybe sequence ops
       customOp_ = find (isNothing . unbox) ops
   ss <- mapM ((\op -> (serverDomains (unbox op),) <$> newIORef (mkUS . Just <$> op))) ops'
@@ -459,7 +466,7 @@ groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
   customSrvs <- readIORef custom
   pure $ opSrvs <> [customSrvs]
   where
-    mkUS op = UserOperatorServers op [] []
+    mkUS op = UserOperatorServers op [] [] []
     addServer :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
     addServer ss custom add srv =
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
@@ -538,6 +545,16 @@ instance DBStoredI s => FromJSON (ServerOperator' s) where
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "UCA") ''UsageConditionsAction)
 
 $(JQ.deriveJSON defaultJSON ''ServerOperatorConditions)
+
+instance ToJSON (Superpeer' s) where
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''Superpeer')
+  toJSON = $(JQ.mkToJSON defaultJSON ''Superpeer')
+
+instance (DBStoredI s) => FromJSON (Superpeer' s) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''Superpeer')
+
+instance FromJSON ASuperpeer where
+  parseJSON v = (AS SDBStored <$> parseJSON v) <|> (AS SDBNew <$> parseJSON v)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer')
