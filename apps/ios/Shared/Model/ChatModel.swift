@@ -665,7 +665,7 @@ final class ChatModel: ObservableObject {
         im.reversedChatItems.first?.isLiveDummy == true
     }
 
-    func markChatItemsRead(_ cInfo: ChatInfo) {
+    func markAllChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
         _updateChat(cInfo.id) { chat in
             self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
@@ -674,54 +674,14 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == cInfo.id {
-            markCurrentChatRead()
-        }
-    }
-
-    private func markCurrentChatRead(fromIndex i: Int = 0) {
-        var j = i
-        while j < im.reversedChatItems.count {
-            markChatItemRead_(j)
-            j += 1
-        }
-    }
-
-    func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
-        if let cItem = aboveItem {
-            if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-                markCurrentChatRead(fromIndex: i)
-                _updateChat(cInfo.id) { chat in
-                    var unreadBelow = 0
-                    var unreadMentionsBelow = 0
-                    var j = i - 1
-                    while j >= 0 {
-                        let meta = self.im.reversedChatItems[j].meta
-                        if case .rcvNew = meta.itemStatus {
-                            unreadBelow += 1
-                            if meta.userMention {
-                                unreadMentionsBelow += 1
-                            }
-                        }
-                        j -= 1
-                    }
-                    // update preview
-                    let markedCount = chat.chatStats.unreadCount - unreadBelow
-                    let markedMentionsCount = chat.chatStats.unreadMentions - unreadMentionsBelow
-                    if markedCount > 0 || markedMentionsCount > 0 {
-                        let wasUnread = chat.unreadTag
-                        chat.chatStats.unreadCount -= markedCount
-                        chat.chatStats.unreadMentions -= markedMentionsCount
-                        ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
-                        let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions ? markedMentionsCount : markedCount
-                        self.decreaseUnreadCounter(user: self.currentUser!, by: by)
-                    }
-                }
+            var i = 0
+            while i < im.reversedChatItems.count {
+                markChatItemRead_(i)
+                i += 1
             }
-        } else {
-            markChatItemsRead(cInfo)
+            im.chatItemsChangesListener.read(nil, im.reversedChatItems.reversed())
         }
     }
-
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
             let wasUnread = chat.unreadTag
@@ -750,13 +710,16 @@ final class ChatModel: ObservableObject {
     func markChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], _ mentionsRead: Int) {
         if self.chatId == cInfo.id {
             var unreadItemIds: Set<ChatItem.ID> = []
-            for itemId in itemIds {
-                if let i = im.reversedChatItems.firstIndex(where: { $0.id == itemId }) {
-                    if im.reversedChatItems[i].isRcvNew {
-                        unreadItemIds.insert(itemId)
-                    }
+            var i = 0
+            var ids = Set(itemIds)
+            while i < im.reversedChatItems.count && !ids.isEmpty {
+                let item = im.reversedChatItems[i]
+                if ids.contains(item.id) && item.isRcvNew {
                     markChatItemRead_(i)
+                    unreadItemIds.insert(item.id)
+                    ids.remove(item.id)
                 }
+                i += 1
             }
             im.chatItemsChangesListener.read(unreadItemIds, im.reversedChatItems.reversed())
         }

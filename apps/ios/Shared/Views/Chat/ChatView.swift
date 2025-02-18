@@ -515,7 +515,7 @@ struct ChatView: View {
             }
             .onAppear {
                 Task {
-                    mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
                     let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() })
                     let unreadItemId: Int64? = if let unreadIndex { mergedItems.boxedValue.items[unreadIndex].newest().item.id } else { nil }
                     await MainActor.run {
@@ -539,8 +539,7 @@ struct ChatView: View {
                 updateMergedItemsTask?.cancel()
                 if useItemsUpdateTask {
                     updateMergedItemsTask = Task {
-                        let start = Date.now.timeIntervalSince1970
-                        let items = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                        let items = MergedItems.create(items, revealedItems, im.chatState)
                         if Task.isCancelled {
                             return
                         }
@@ -550,18 +549,13 @@ struct ChatView: View {
                         }
                     }
                 } else {
-                    mergedItems.boxedValue = MergedItems.create(items, chat.chatStats.unreadCount, revealedItems, ItemsModel.shared.chatState)
+                    mergedItems.boxedValue = MergedItems.create(items, revealedItems, im.chatState)
                     scrollView.updateItems(mergedItems.boxedValue.items)
                 }
             }
             .onChange(of: revealedItems) { revealed in
                 updateMergedItemsTask?.cancel()
-                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, chat.chatStats.unreadCount, revealed, ItemsModel.shared.chatState)
-                scrollView.updateItems(mergedItems.boxedValue.items)
-            }
-            .onChange(of: chat.chatStats.unreadCount) { unreadCount in
-                updateMergedItemsTask?.cancel()
-                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, unreadCount, revealedItems, ItemsModel.shared.chatState)
+                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealed, im.chatState)
                 scrollView.updateItems(mergedItems.boxedValue.items)
             }
             .onChange(of: chat.id) { _ in
@@ -614,6 +608,7 @@ struct ChatView: View {
     }
 
     class FloatingButtonModel: ObservableObject {
+        @Published var unreadAbove: Int = 0
         @Published var unreadBelow: Int = 0
         @Published var isNearBottom: Bool = true
         @Published var date: Date? = nil
@@ -627,6 +622,7 @@ struct ChatView: View {
             } else {
              0
             }
+            let unreadAbove = ItemsModel.shared.chatState.unreadTotal - unreadBelow
             let date: Date? =
             if let lastVisible = listState.visibleItems.last {
                 Calendar.current.startOfDay(for: lastVisible.item.oldest().item.meta.itemTs)
@@ -638,6 +634,7 @@ struct ChatView: View {
             DispatchQueue.main.async { [weak self] in
                 guard let it = self else { return }
                 it.setDate(visibility: true)
+                it.unreadAbove = unreadAbove
                 it.unreadBelow = unreadBelow
                 it.date = date
             }
@@ -701,13 +698,12 @@ struct ChatView: View {
                          .padding(.vertical, 4)
                 }
                 VStack {
-                    let unreadAbove = ItemsModel.shared.chatState.unreadTotal - model.unreadBelow
-                    if unreadAbove > 0 {
+                    if model.unreadAbove > 0 {
                         if loadingMoreItems {
                             circleButton { ProgressView() }
                         } else {
                             circleButton {
-                                unreadCountText(unreadAbove)
+                                unreadCountText(model.unreadAbove)
                                     .font(.callout)
                                     .foregroundColor(theme.colors.primary)
                             }
