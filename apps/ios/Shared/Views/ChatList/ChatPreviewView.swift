@@ -97,7 +97,7 @@ struct ChatPreviewView: View {
             .opacity(deleting ? 0.4 : 1)
             .padding(.bottom, -8)
             
-            if deleting {
+            if deleting || im.showLoadingProgress == chat.id {
                 ProgressView()
                     .scaleEffect(2)
             }
@@ -432,27 +432,23 @@ struct ChatPreviewView: View {
 
     @ViewBuilder private func chatStatusImage() -> some View {
         let size = dynamicSize(userFont).incognitoSize
-        if im.showLoadingProgress == chat.id {
-            ProgressView()
-        } else {
-            switch chat.chatInfo {
-            case let .direct(contact):
-                if contact.active && contact.activeConn != nil {
-                    NetworkStatusView(contact: contact, size: size)
-                } else {
-                    incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-                }
-            case .group:
-                if progressByTimeout {
-                    ProgressView()
-                } else if chat.chatStats.reportsCount > 0 {
-                    groupReportsIcon(size: size * 0.8)
-                } else {
-                    incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-                }
-            default:
+        switch chat.chatInfo {
+        case let .direct(contact):
+            if contact.active && contact.activeConn != nil {
+                NetworkStatusView(contact: contact, size: size)
+            } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
+        case .group:
+            if progressByTimeout {
+                ProgressView()
+            } else if chat.chatStats.reportsCount > 0 {
+                groupReportsIcon(size: size * 0.8)
+            } else {
+                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
+            }
+        default:
+            incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
         }
     }
 
