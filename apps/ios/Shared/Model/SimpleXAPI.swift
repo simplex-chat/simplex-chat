@@ -1513,7 +1513,7 @@ func markChatRead(_ chat: Chat) async {
             let cInfo = chat.chatInfo
             try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
             await MainActor.run {
-                withAnimation { ChatModel.shared.markChatItemsRead(cInfo) }
+                withAnimation { ChatModel.shared.markAllChatItemsRead(cInfo) }
             }
         }
         if chat.chatStats.unreadChat {
