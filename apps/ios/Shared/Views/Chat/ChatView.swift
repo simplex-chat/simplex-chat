@@ -33,6 +33,10 @@ struct ChatView: View {
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
     @State private var loadingMoreItems = false
+    @State private var loadingTopItems = false
+    @State private var requestedTopScroll = false
+    @State private var loadingBottomItems = false
+    @State private var requestedBottomScroll = false
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -88,7 +92,7 @@ struct ChatView: View {
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
-                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems, listState: scrollView.listState, model: floatingButtonModel)
+                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, listState: scrollView.listState, model: floatingButtonModel)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -551,7 +555,7 @@ struct ChatView: View {
                 scrollView.updateItems(mergedItems.boxedValue.items)
             }
             .onChange(of: chat.id) { _ in
-                loadLastItems($loadingMoreItems, chat)
+                loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
                 allowLoadMoreItems = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     allowLoadMoreItems = true
@@ -571,10 +575,10 @@ struct ChatView: View {
                     } else if let index = scrollView.listState.items.lastIndex(where: { $0.hasUnread() }) {
                         // scroll to the top unread item
                         scrollView.scrollToItem(index)
-                        loadLastItems($loadingMoreItems, chat)
+                        loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
                     } else {
                         scrollView.scrollToBottom()
-                        loadLastItems($loadingMoreItems, chat)
+                        loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
                     }
                 }
             }
@@ -620,7 +624,7 @@ struct ChatView: View {
         if let unreadIndex {
             scrollView.scrollToItem(unreadIndex)
         }
-        loadLastItems($loadingMoreItems, chat)
+        loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             allowLoadMoreItems = true
         }
@@ -702,7 +706,10 @@ struct ChatView: View {
         let theme: AppTheme
         let scrollView: EndlessScrollView<MergedItem>
         let chat: Chat
-        @Binding var loadingMoreItems: Bool
+        @Binding var loadingTopItems: Bool
+        @Binding var requestedTopScroll: Bool
+        @Binding var loadingBottomItems: Bool
+        @Binding var requestedBottomScroll: Bool
         let listState: EndlessScrollView<MergedItem>.ListState
         @ObservedObject var model: FloatingButtonModel
 
@@ -718,7 +725,7 @@ struct ChatView: View {
                 }
                 VStack {
                     if model.unreadAbove > 0 {
-                        if loadingMoreItems {
+                        if loadingTopItems && requestedTopScroll {
                             circleButton { ProgressView() }
                         } else {
                             circleButton {
@@ -727,11 +734,11 @@ struct ChatView: View {
                                     .foregroundColor(theme.colors.primary)
                             }
                             .onTapGesture {
-                                if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
-                                    // scroll to the top unread item
-                                    Task { await scrollView.scrollToItemAnimated(index) }
+                                if loadingTopItems {
+                                    requestedTopScroll = true
+                                    requestedBottomScroll = false
                                 } else {
-                                    logger.debug("No more unread items, total: \(listState.items.count)")
+                                    scrollToTopUnread()
                                 }
                             }
                             .contextMenu {
@@ -747,7 +754,7 @@ struct ChatView: View {
                     }
                     Spacer()
                     if model.unreadBelow > 0 {
-                        if loadingMoreItems {
+                        if loadingBottomItems && requestedBottomScroll {
                             circleButton { ProgressView() }
                         } else {
                             circleButton {
@@ -756,25 +763,57 @@ struct ChatView: View {
                                     .foregroundColor(theme.colors.primary)
                             }
                             .onTapGesture {
-                                scrollView.scrollToBottomAnimated()
+                                if loadingBottomItems {
+                                    requestedTopScroll = false
+                                    requestedBottomScroll = true
+                                } else {
+                                    scrollView.scrollToBottomAnimated()
+                                }
                             }
                         }
                     } else if !model.isNearBottom {
-                        if loadingMoreItems {
+                        if loadingBottomItems && requestedBottomScroll {
                             circleButton { ProgressView() }
                         } else {
                             circleButton {
                                 Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
                             }
-                            .onTapGesture { scrollView.scrollToBottomAnimated() }
+                            .onTapGesture {
+                                if loadingBottomItems {
+                                    requestedTopScroll = false
+                                    requestedBottomScroll = true
+                                } else {
+                                    scrollView.scrollToBottomAnimated()
+                                }
+                            }
                         }
                     }
                 }
-                .disabled(loadingMoreItems)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
+            .onChange(of: loadingTopItems) { loading in
+                if !loading && requestedTopScroll {
+                    requestedTopScroll = false
+                    scrollToTopUnread()
+                }
+            }
+            .onChange(of: loadingBottomItems) { loading in
+                if !loading && requestedBottomScroll {
+                    requestedBottomScroll = false
+                    scrollView.scrollToBottomAnimated()
+                }
+            }
             .onDisappear(perform: model.resetDate)
+        }
+
+        private func scrollToTopUnread() {
+            if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
+                // scroll to the top unread item
+                Task { await scrollView.scrollToItemAnimated(index) }
+            } else {
+                logger.debug("No more unread items, total: \(listState.items.count)")
+            }
         }
 
         private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
@@ -1010,10 +1049,20 @@ struct ChatView: View {
         if loadingMoreItems { return false }
         await MainActor.run {
             loadingMoreItems = true
+            if case .before = pagination {
+                loadingTopItems = true
+            } else if case .after = pagination {
+                loadingBottomItems = true
+            }
         }
         let triedToLoad = await loadChatItemsUnchecked(chat, pagination)
         await MainActor.run {
             loadingMoreItems = false
+            if case .before = pagination {
+                loadingTopItems = false
+            } else if case .after = pagination {
+                loadingBottomItems = false
+            }
         }
         return triedToLoad
     }

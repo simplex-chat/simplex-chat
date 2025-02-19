@@ -949,7 +949,7 @@ final class ChatModel: ObservableObject {
                     memberIds.insert(m.groupMemberId)
                 }
             } else {
-                logger.error("getPrevHiddenMember: index >= count of reversed items: \(i) vs \(items.count)")
+                logger.error("getPrevHiddenMember: index >= count of reversed items: \(i) vs \(items.count), range: \(String(describing: range))")
             }
         }
         return (prevMember, memberIds.count)

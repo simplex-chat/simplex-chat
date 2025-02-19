@@ -9,11 +9,12 @@
 import SwiftUI
 import SimpleXChat
 
-func loadLastItems(_ loadingMoreItems: Binding<Bool>, _ chat: Chat) {
+func loadLastItems(_ loadingMoreItems: Binding<Bool>, loadingBottomItems: Binding<Bool>, _ chat: Chat) {
     if ItemsModel.shared.chatState.totalAfter == 0 {
         return
     }
     loadingMoreItems.wrappedValue = true
+    loadingBottomItems.wrappedValue = true
     Task {
         try? await Task.sleep(nanoseconds: 1500_000000)
         if ChatModel.shared.chatId != chat.chatInfo.id {
@@ -25,6 +26,7 @@ func loadLastItems(_ loadingMoreItems: Binding<Bool>, _ chat: Chat) {
         await apiLoadMessages(chat.chatInfo.id, ChatPagination.last(count: 50), ItemsModel.shared.chatState)
         await MainActor.run {
             loadingMoreItems.wrappedValue = false
+            loadingBottomItems.wrappedValue = false
         }
     }
 }
