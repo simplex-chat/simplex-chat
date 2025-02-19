@@ -585,7 +585,7 @@
     <string name="alert_title_group_invitation_expired">انتهت صلاحية الدعوة!</string>
     <string name="join_group_question">انضمام إلى المجموعة؟</string>
     <string name="join_group_incognito_button">الانضمام المتخفي</string>
-    <string name="joining_group">الانضمام إلى المجموعة</string>
+    <string name="joining_group">جارِ الانضمام إلى المجموعة</string>
     <string name="leave_group_button">غادِر</string>
     <string name="leave_group_question">مغادرة المجموعة؟</string>
     <string name="group_member_status_left">غادر</string>
@@ -1260,7 +1260,7 @@
     <string name="smp_servers_your_server_address">عنوان خادمك</string>
     <string name="your_chat_database">قاعدة بيانات الدردشة الخاصة بك</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">أنت مدعو إلى المجموعة. انضم للتواصل مع أعضاء المجموعة.</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">لقد انضممت إلى هذه المجموعة. الاتصال بدعوة عضو المجموعة.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">لقد انضممت إلى هذه المجموعة. جارِ الاتصال بدعوة عضو المجموعة.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">غيّرتَ العنوان ل%s</string>
     <string name="unhide_chat_profile">إلغاء إخفاء ملف تعريف الدردشة</string>
     <string name="voice_prohibited_in_this_chat">الرسائل الصوتية ممنوعة في هذه الدردشة.</string>
