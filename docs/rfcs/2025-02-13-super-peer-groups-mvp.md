@@ -208,12 +208,16 @@ Owner SMP             Owner         Current super-peer   New super-peer         
 
 If group has more than one active super-peer, owner can remove a super-peer from group immediately.
 
-Even without addition of new super-peer, current super-peers synchronize state by forwarding all messages to each other.
+### Member profile accounting, group statistics
+
+Super-peers don't broadcast all member profiles on introduction, instead they keep accounting of which member profiles were shared to which members, and when forwarding messages also send profiles to members who haven't received them before. Regular members don't see full list of member profiles, only overall number of members and list of profiles of actively participating members (who send messages).
+
+Even without addition of new super-peer, current super-peers can synchronize state by forwarding all messages to each other.
 
 Periodically super-peers send group statistics to owner:
 
-- Number of actively participating members - those who send messages and whose profiles were shared to other members. \*
+- Number of actively participating members - those who send messages and whose profiles were shared to other members (known via shared profile accounting).
 - Number of connected members - members to whom super-peer forwards messages.
 - Number of inactive members - members to whom super-peer currently doesn't forward messages due to inactivity. Super-peer considers member inactive if it received their profile from previous super-peer and new member hasn't connected, or due to QUOTA error inactivity. These reasons could be differentiated. Perhaps number of members with QUOTA error inactivity should be a sub-count of connected members.
 
-\* Super-peers don't broadcast all member profiles on introduction, instead they keep accounting of which member profiles were shared to which members, and when forwarding messages also send profiles to members who haven't received them before. Regular members don't see full list of member profiles, only overall number of members and list of profiles of active members.
+Owner client can show aggregated statistics and detailed statistics for each super-peer.
