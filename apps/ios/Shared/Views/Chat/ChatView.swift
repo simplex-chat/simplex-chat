@@ -121,7 +121,7 @@ struct ChatView: View {
                 }
             }
             if im.showLoadingProgress == chat.id {
-                ProgressView()
+                ProgressView().scaleEffect(2)
             }
         }
         .safeAreaInset(edge: .top) {
