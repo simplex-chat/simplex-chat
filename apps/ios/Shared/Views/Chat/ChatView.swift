@@ -663,7 +663,7 @@ struct ChatView: View {
             }
 
             // set floating button indication mode
-            let nearBottom = listState.firstVisibleItemIndex < 4
+            let nearBottom = listState.firstVisibleItemIndex < 1
             if nearBottom != self.isNearBottom {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
                     self?.isNearBottom = nearBottom
