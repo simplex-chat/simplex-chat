@@ -2330,7 +2330,7 @@
     <string name="archive_reports">أرشف البلاغات</string>
     <string name="report_archive_for_all_moderators">لكل المشرفين</string>
     <string name="report_archive_for_me">لي</string>
-    <string name="notification_group_report">بلّغ: %s</string>
+    <string name="notification_group_report">بلاغ: %s</string>
     <string name="group_members_can_send_reports">يمكن للأعضاء الإبلاغ عن الرسائل إلى المشرفين.</string>
     <string name="report_archive_alert_desc_all">سيتم أرشفة كافة البلاغات لك.</string>
     <string name="report_archive_alert_title_nth">أرشفة %d بلاغ؟</string>
