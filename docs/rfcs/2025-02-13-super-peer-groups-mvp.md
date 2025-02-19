@@ -160,7 +160,7 @@ If group has a single super-peer, owner has to add a new one before removing it.
 5. Members that have received this message start connecting with new super-peer.
 6. Once group state is synchronized, current (removed) super-peer deletes connections with members.
     - To be clarified, protocol for synchronizing group state between super-peers.
-7. Members that haven't received announcement via removed super-peer (for example, they were offline), receive AUTH errors on subscription to connection with it. Knowing it is a super-peer connection to a specific group, they retrieve new super-peer group link from updated blob short link and connect to it.
+7. Members that haven't received announcement via removed super-peer (for example, they were offline), receive AUTH errors on subscription to connection with it. Knowing it is a super-peer connection to a specific group, they retrieve new super-peer group link from updated blob via short link and connect to it.
 
 ```
 Owner SMP             Owner         Current super-peer   New super-peer          Members
