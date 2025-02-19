@@ -186,7 +186,7 @@ Owner SMP             Owner         Current super-peer   New super-peer         
     |                   |                   |                   |                   |
     |                   |                   |                   |    5. connect     |
     |                   |                   |                   | (members who re-  |
-    |                   |                   |                   | ceived announcemt)|
+    |                   |                   |                   |ceived announcemnt)|
     |                   |                   |                   |<----------------->|
     |                   |                   |                   |                   |
     |                   |                 [ state is synchronized ]                 |
