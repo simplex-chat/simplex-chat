@@ -146,3 +146,74 @@ Problems:
 - To prevent abuse from owner, super-peer can periodically or on each group join check short link for presence of its group link. If it's absent, it should delete group link, and after some time stop forwarding messages in group and leave it, see next point.
 - If group has only one super-peer, fully removing it from group should not be possible until new super-peer \[fully?\] connects to \[all? active?\] existing group members. For this, current super-peer has to remain in group in order to introduce members to new super-peer. At the very least, current super-peer should forward owner's message with new super peer's group link to members. Better, to prevent downtimes or failures in delivery, current super-peer should wait for confirmations of connection from members.
 - If group has a single super-peer, or only super-peers of select operators, nothing prevents these super-peers (operators) from effectively deleting group by destroying all connections with members. So if operators adhere to the same moderating/banning policies, group is not protected from censorship unless it uses self-hosted or other custom configured super-peers. Even then, if group used at least one super-peer of select operators, group owner is subject to potential client restrictions.
+
+### Removing super-peer from group
+
+If group has a single super-peer, owner has to add a new one before removing it. Protocol for removing single super-peer from group:
+
+1. Owner adds new super-peer to group and connects with it (as above).
+2. New super-peer connects with current super-peer and starts to synchronize its group state, including group history and member profiles.
+    - TBC group state to synchronize: full or partial history, additional metadata?
+3. Owner updates short link: adds new super-peer group link to it, removes or marks as disabled current super-peer.
+4. Owner announces deleting current and adding new super-peer to group by forwarding message via current super-peer.
+    - Separate messages or single specialized message ("replace")?
+5. Members that have received this message start connecting with new super-peer.
+6. Once group state is synchronized, current (removed) super-peer deletes connections with members.
+    - To be clarified, protocol for synchronizing group state between super-peers.
+7. Members that haven't received announcement via removed super-peer (for example, they were offline), receive AUTH errors on subscription to connection with it. Knowing it is a super-peer connection to a specific group, they retrieve new super-peer group link from updated blob short link and connect to it.
+
+```
+Owner SMP             Owner         Current super-peer   New super-peer          Members
+    |                   |                   |                   |                   |
+    |                   |       1. connect (add to group)       |                   |
+    |                   |-------------------------------------->|                   |
+    |                   |<--------------------------------------|                   |
+    |                   |      new address for this group       |                   |
+    |                   |                   |                   |                   |
+    |                   |                   |    2. connect,    |                   |
+    |                   |                   |start synchronizing|                   |
+    |                   |                   |<----------------->|                   |
+    |  3. update blob   |                   |                   |                   |
+    |   by short link   |                   |                   |                   |
+    |  (new, disabled   |                   |                   |                   |
+    |   super-peers)    |                   |                   |                   |
+    |<------------------|                   |                   |                   |
+    |------------------>|                   |                   |                   |
+    |        OK         |                   |                   |                   |
+    |                   |             4. announce removing current and              |
+    |                   |       adding new super-peer (via current super-peer)      |
+    |                   |-------------------+------------------ ~ ----------------->|
+    |                   |                   |                   |                   |
+    |                   |                   |                   |    5. connect     |
+    |                   |                   |                   | (members that re- |
+    |                   |                   |                   |ceived announcemnt)|
+    |                   |                   |                   |<----------------->|
+    |                   |                   |                   |                   |
+    |                   |                 [ state is synchronized ]                 |
+    |                   |                   |                   |                   |
+    |                   |        |6. delete connections|        |                   |
+    |                   |                   |                   |                   |
+    |                           7. retrieve updated blob                            |
+    |<------------------------------------------------------------------------------|
+    |------------------------------------------------------------------------------>|
+    |                       blob with new super-peer group link                     |
+    |                   |                   |                   |                   |
+    |                   |                   |                   |    7. connect     |
+    |                   |                   |                   | (members that get |
+    |                   |                   |                   | AUTH on subscribe)|
+    |                   |                   |                   |<----------------->|
+    |                   |                   |                   |                   |
+    *                   *                   *                   *                   *
+```
+
+If group has more than one active super-peer, owner can remove a super-peer from group immediately.
+
+Even without addition of new super-peer, current super-peers synchronize state by forwarding all messages to each other.
+
+Periodically super-peers send group statistics to owner:
+
+- Number of actively participating members - those who send messages and whose profiles were shared to other members. \*
+- Number of connected members - members to whom super-peer forwards messages.
+- Number of inactive members - members to whom super-peer currently doesn't forward messages due to inactivity. Super-peer considers member inactive if it received their profile from previous super-peer and new member hasn't connected, or due to QUOTA error inactivity. These reasons could be differentiated. Perhaps number of members with QUOTA error inactivity should be a sub-count of connected members.
+
+\* Super-peers don't broadcast all member profiles on introduction, instead they keep accounting of which member profiles were shared to which members, and when forwarding messages also send profiles to members who haven't received them before. Regular members don't see full list of member profiles, only overall number of members and list of profiles of active members.
