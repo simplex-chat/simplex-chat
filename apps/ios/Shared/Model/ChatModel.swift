@@ -53,7 +53,11 @@ class ItemsModel: ObservableObject {
     var itemAdded = false {
         willSet { publisher.send() }
     }
-    
+
+    // set listener here that will be notified on every add/delete of a chat item
+    let chatState = ActiveChatState()
+    var chatItemsChangesListener: RecalculatePositions = RecalculatePositions()
+
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
     @Published var isLoading = false
@@ -83,18 +87,16 @@ class ItemsModel: ObservableObject {
             } catch {}
         }
         Task {
-            if let chat = ChatModel.shared.getChat(chatId) {
-                await MainActor.run { self.isLoading = true }
-//                try? await Task.sleep(nanoseconds: 5000_000000)
-                await loadChat(chat: chat)
-                navigationTimeout.cancel()
-                progressTimeout.cancel()
-                await MainActor.run {
-                    self.isLoading = false
-                    self.showLoadingProgress = false
-                    willNavigate()
-                    ChatModel.shared.chatId = chatId
-                }
+            await MainActor.run { self.isLoading = true }
+            //                try? await Task.sleep(nanoseconds: 5000_000000)
+            await loadChat(chatId: chatId)
+            navigationTimeout.cancel()
+            progressTimeout.cancel()
+            await MainActor.run {
+                self.isLoading = false
+                self.showLoadingProgress = false
+                willNavigate()
+//                ChatModel.shared.chatId = id
             }
         }
     }
@@ -546,6 +548,7 @@ final class ChatModel: ObservableObject {
                 ci.meta.itemStatus = status
             }
             im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+            im.chatItemsChangesListener.added((ci.id, ci.isRcvNew), hasLiveDummy ? 1 : 0)
             im.itemAdded = true
             ChatItemDummyModel.shared.sendUpdate()
             return true
@@ -591,8 +594,9 @@ final class ChatModel: ObservableObject {
         // remove from current chat
         if chatId == cInfo.id {
             if let i = getChatItemIndex(cItem) {
-                _ = withAnimation {
-                    im.reversedChatItems.remove(at: i)
+                withAnimation {
+                    let item = im.reversedChatItems.remove(at: i)
+                    im.chatItemsChangesListener.removed([(item.id, i, item.isRcvNew)], im.reversedChatItems.reversed())
                 }
             }
         }
@@ -641,6 +645,7 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
+            im.chatItemsChangesListener.added((cItem.id, cItem.isRcvNew), 0)
             im.itemAdded = true
         }
         return cItem
@@ -660,71 +665,23 @@ final class ChatModel: ObservableObject {
         im.reversedChatItems.first?.isLiveDummy == true
     }
 
-    func markChatItemsRead(_ cInfo: ChatInfo) {
+    func markAllChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
         _updateChat(cInfo.id) { chat in
             self.decreaseUnreadCounter(user: self.currentUser!, chat: chat)
-            self.updateFloatingButtons(unreadCount: 0)
             ChatTagsModel.shared.markChatTagRead(chat)
             chat.chatStats = ChatStats()
         }
         // update current chat
         if chatId == cInfo.id {
-            markCurrentChatRead()
-        }
-    }
-
-    private func markCurrentChatRead(fromIndex i: Int = 0) {
-        var j = i
-        while j < im.reversedChatItems.count {
-            markChatItemRead_(j)
-            j += 1
-        }
-    }
-
-    private func updateFloatingButtons(unreadCount: Int) {
-        let fbm = ChatView.FloatingButtonModel.shared
-        fbm.totalUnread = unreadCount
-        fbm.objectWillChange.send()
-    }
-
-    func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
-        if let cItem = aboveItem {
-            if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-                markCurrentChatRead(fromIndex: i)
-                _updateChat(cInfo.id) { chat in
-                    var unreadBelow = 0
-                    var unreadMentionsBelow = 0
-                    var j = i - 1
-                    while j >= 0 {
-                        let meta = self.im.reversedChatItems[j].meta
-                        if case .rcvNew = meta.itemStatus {
-                            unreadBelow += 1
-                            if meta.userMention {
-                                unreadMentionsBelow += 1
-                            }
-                        }
-                        j -= 1
-                    }
-                    // update preview
-                    let markedCount = chat.chatStats.unreadCount - unreadBelow
-                    let markedMentionsCount = chat.chatStats.unreadMentions - unreadMentionsBelow
-                    if markedCount > 0 || markedMentionsCount > 0 {
-                        let wasUnread = chat.unreadTag
-                        chat.chatStats.unreadCount -= markedCount
-                        chat.chatStats.unreadMentions -= markedMentionsCount
-                        ChatTagsModel.shared.updateChatTagRead(chat, wasUnread: wasUnread)
-                        let by = chat.chatInfo.chatSettings?.enableNtfs == .mentions ? markedMentionsCount : markedCount
-                        self.decreaseUnreadCounter(user: self.currentUser!, by: by)
-                        self.updateFloatingButtons(unreadCount: chat.chatStats.unreadCount)
-                    }
-                }
+            var i = 0
+            while i < im.reversedChatItems.count {
+                markChatItemRead_(i)
+                i += 1
             }
-        } else {
-            markChatItemsRead(cInfo)
+            im.chatItemsChangesListener.read(nil, im.reversedChatItems.reversed())
         }
     }
-
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
         _updateChat(cInfo.id) { chat in
             let wasUnread = chat.unreadTag
@@ -746,16 +703,25 @@ final class ChatModel: ObservableObject {
         if chatId == cInfo.id {
             chatItemStatuses = [:]
             im.reversedChatItems = []
+            im.chatItemsChangesListener.cleared()
         }
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], _ mentionsRead: Int) {
         if self.chatId == cInfo.id {
-            for itemId in itemIds {
-                if let i = im.reversedChatItems.firstIndex(where: { $0.id == itemId }) {
+            var unreadItemIds: Set<ChatItem.ID> = []
+            var i = 0
+            var ids = Set(itemIds)
+            while i < im.reversedChatItems.count && !ids.isEmpty {
+                let item = im.reversedChatItems[i]
+                if ids.contains(item.id) && item.isRcvNew {
                     markChatItemRead_(i)
+                    unreadItemIds.insert(item.id)
+                    ids.remove(item.id)
                 }
+                i += 1
             }
+            im.chatItemsChangesListener.read(unreadItemIds, im.reversedChatItems.reversed())
         }
         self.unreadCollector.changeUnreadCounter(cInfo.id, by: -itemIds.count, unreadMentions: -mentionsRead)
     }
@@ -783,9 +749,6 @@ final class ChatModel: ObservableObject {
         }
 
         func changeUnreadCounter(_ chatId: ChatId, by count: Int, unreadMentions: Int) {
-            if chatId == ChatModel.shared.chatId {
-                ChatView.FloatingButtonModel.shared.totalUnread += count
-            }
             let (unread, mentions) = self.unreadCounts[chatId] ?? (0, 0)
             self.unreadCounts[chatId] = (unread + count, mentions + unreadMentions)
             subject.send()
@@ -979,12 +942,17 @@ final class ChatModel: ObservableObject {
 
     // returns the previous member in the same merge group and the count of members in this group
     func getPrevHiddenMember(_ member: GroupMember, _ range: ClosedRange<Int>) -> (GroupMember?, Int) {
+        let items = im.reversedChatItems
         var prevMember: GroupMember? = nil
         var memberIds: Set<Int64> = []
         for i in range {
-            if case let .groupRcv(m) = im.reversedChatItems[i].chatDir {
-                if prevMember == nil && m.groupMemberId != member.groupMemberId { prevMember = m }
-                memberIds.insert(m.groupMemberId)
+            if i < items.count {
+                if case let .groupRcv(m) = items[i].chatDir {
+                    if prevMember == nil && m.groupMemberId != member.groupMemberId { prevMember = m }
+                    memberIds.insert(m.groupMemberId)
+                }
+            } else {
+                logger.error("getPrevHiddenMember: index >= count of reversed items: \(i) vs \(items.count)")
             }
         }
         return (prevMember, memberIds.count)

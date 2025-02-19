@@ -80,7 +80,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Util (liftIOEither, zipWith3')
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
 import Simplex.Messaging.Agent as Agent
@@ -1893,6 +1893,12 @@ processChatCommand' vr = \case
           pure CRBroadcastSent {user, msgContent = mc, successes = 0, failures = 0, timestamp}
         Just (ctConns :: NonEmpty (Contact, Connection)) -> do
           let idsEvts = L.map ctSndEvent ctConns
+          -- TODO Broadcast rework
+          -- In createNewSndMessage and encodeChatMessage we could use Nothing for sharedMsgId,
+          -- then we could reuse message body across broadcast.
+          -- Encoding different sharedMsgId and reusing body is meaningless as referencing will not work anyway.
+          -- As an improvement, single message record with its sharedMsgId could be created for new "broadcast" entity.
+          -- Then all recipients could refer to broadcast message using same sharedMsgId.
           sndMsgs <- lift $ createSndMessages idsEvts
           let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
@@ -1909,9 +1915,7 @@ processChatCommand' vr = \case
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
       ctMsgReq :: (Contact, Connection) -> SndMessage -> ChatMsgReq
-      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, msgBody, [msgId])
-      zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
-      zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
+      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, (vrValue msgBody, [msgId]))
       combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError ([Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
@@ -2662,7 +2666,7 @@ processChatCommand' vr = \case
         ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
         ctMsgReq ChangedProfileContact {conn} =
           fmap $ \SndMessage {msgId, msgBody} ->
-            (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, [msgId])
+            (conn, MsgFlags {notification = hasNotification XInfo_}, (vrValue msgBody, [msgId]))
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -2713,7 +2717,7 @@ processChatCommand' vr = \case
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    delGroupChatItemsForMembers :: User -> GroupInfo -> [GroupMember] -> [CChatItem CTGroup] -> CM ChatResponse
+    delGroupChatItemsForMembers :: User -> GroupInfo -> [GroupMember] -> [CChatItem 'CTGroup] -> CM ChatResponse
     delGroupChatItemsForMembers user gInfo ms items = do
       assertDeletable gInfo items
       assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
@@ -2723,8 +2727,8 @@ processChatCommand' vr = \case
       delGroupChatItems user gInfo items True
       where
         assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
-        assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items =
-          unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
+        assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items' =
+          unless (all itemDeletable items') $ throwChatError CEInvalidChatItemDelete
           where
             itemDeletable :: CChatItem 'CTGroup -> Bool
             itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
@@ -3742,8 +3746,8 @@ chatCommandP =
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_archive reports #" *> (APIArchiveReceivedReports <$> A.decimal),
       "/_delete reports #" *> (APIDeleteReceivedReports <$> A.decimal <*> _strP <*> _strP),
-      "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
-      "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
+      "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> (knownReaction <$?> jsonP)),
+      "/_reaction members " *> (APIGetReactionMembers <$> A.decimal <* " #" <*> A.decimal <* A.space <*> A.decimal <* A.space <*> (knownReaction <$?> jsonP)),
       "/_forward plan " *> (APIPlanForwardChatItems <$> chatRefP <*> _strP),
       "/_forward " *> (APIForwardChatItems <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_read user " *> (APIUserRead <$> A.decimal),
