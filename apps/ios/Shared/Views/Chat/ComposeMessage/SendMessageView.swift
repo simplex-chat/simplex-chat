@@ -33,7 +33,7 @@ struct SendMessageView: View {
     @Namespace var namespace
     @Binding var keyboardVisible: Bool
     var sendButtonColor = Color.accentColor
-    @State private var teHeight: CGFloat = 42
+    @State private var teHeight: CGFloat = NativeTextEditor.minHeight
     @State private var teFont: Font = .body
     @State private var sendButtonSize: CGFloat = 29
     @State private var sendButtonOpacity: CGFloat = 1

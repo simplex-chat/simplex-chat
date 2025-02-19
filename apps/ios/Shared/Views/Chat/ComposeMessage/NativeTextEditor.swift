@@ -20,12 +20,12 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var selectedRange: NSRange
     let onImagesAdded: ([UploadContent]) -> Void
     
-    private let minHeight: CGFloat = 37
+    static let minHeight: CGFloat = 39
 
     private let defaultHeight: CGFloat = {
         let field = CustomUITextField(parent: nil, height: Binding.constant(0))
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
-        return min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, 37), 360).rounded(.down)
+        return min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), 360).rounded(.down)
     }()
     
     func makeUIView(context: Context) -> UITextView {
@@ -81,7 +81,7 @@ struct NativeTextEditor: UIViewRepresentable {
         // When having emoji in text view and then removing it, sizeThatFits shows previous size (too big for empty text view), so using work around with default size
         let newHeight = field.text == ""
         ? defaultHeight
-        : min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, minHeight), maxHeight).rounded(.down)
+        : min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), maxHeight).rounded(.down)
 
         if field.frame.size.height != newHeight {
             field.frame.size = CGSizeMake(field.frame.size.width, newHeight)
