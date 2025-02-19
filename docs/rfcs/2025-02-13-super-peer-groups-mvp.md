@@ -193,6 +193,11 @@ Owner SMP             Owner         Current super-peer   New super-peer         
     |                   |                   |                   |                   |
     |                   |        |6. delete connections|        |                   |
     |                   |                   |                   |                   |
+    |                   |                   |                   |  7. subscribe,    |
+    |                   |                   |                   |  get AUTH error   |
+    |                   |                   |                   |  (didn't receive  |
+    |                   |                   |                   |   announcement)   |
+    |                   |                   |                   |<------------------|
     |                           7. retrieve updated blob                            |
     |<------------------------------------------------------------------------------|
     |------------------------------------------------------------------------------>|
@@ -205,6 +210,8 @@ Owner SMP             Owner         Current super-peer   New super-peer         
     |                   |                   |                   |                   |
     *                   *                   *                   *                   *
 ```
+
+The advantage of this approach is that current super-peer doesn't have to wait for new super-peer to connect to existing members, which can take arbitrary time if they are offline, or even never complete if they don't come online.
 
 If group has more than one active super-peer, owner can remove a super-peer from group immediately.
 
