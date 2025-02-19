@@ -23,10 +23,12 @@ struct MergedItems: Hashable, Equatable {
         hasher.combine("\(items.hashValue)")
     }
 
-    static func create(_ items: [ChatItem], _ unreadCount: Int, _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
+    static func create(_ items: [ChatItem], _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
         if items.isEmpty {
             return MergedItems(items: [], splits: [], indexInParentItems: [:])
         }
+
+        let unreadCount = chatState.unreadTotal
 
         let unreadAfterItemId = chatState.unreadAfterItemId
         let itemSplits = chatState.splits
