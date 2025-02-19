@@ -2065,8 +2065,7 @@
     <string name="forward_alert_forward_messages_without_files">¿Reenviar mensajes sin los archivos?</string>
     <string name="network_proxy_incorrect_config_desc">Asegúrate de que la configuración del proxy es correcta.</string>
     <string name="forward_files_missing_desc">%1$d archivo(s) ha(n) sido eliminado(s).</string>
-    <string name="n_file_errors">%1$d error(es) de archivo
-\n%2$s</string>
+    <string name="n_file_errors">%1$d error(es) de archivo:\n%2$s</string>
     <string name="forward_files_failed_to_receive_desc">La descarga ha fallado para %1$d archivo(s).</string>
     <string name="forward_files_not_accepted_desc">%1$d archivo(s) no se ha(n) descargado.</string>
     <string name="forward_files_messages_deleted_after_selection_title">%1$s mensajes no enviados</string>
