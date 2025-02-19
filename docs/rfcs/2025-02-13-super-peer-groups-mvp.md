@@ -185,27 +185,24 @@ Owner SMP             Owner         Current super-peer   New super-peer         
     |                   |-------------------+------------------ ~ ----------------->|
     |                   |                   |                   |                   |
     |                   |                   |                   |    5. connect     |
-    |                   |                   |                   | (members that re- |
-    |                   |                   |                   |ceived announcemnt)|
+    |                   |                   |                   | (members who re-  |
+    |                   |                   |                   | ceived announcemt)|
     |                   |                   |                   |<----------------->|
     |                   |                   |                   |                   |
     |                   |                 [ state is synchronized ]                 |
     |                   |                   |                   |                   |
     |                   |        |6. delete connections|        |                   |
     |                   |                   |                   |                   |
-    |                   |                   |                   |  7. subscribe,    |
-    |                   |                   |                   |  get AUTH error   |
-    |                   |                   |                   |  (didn't receive  |
-    |                   |                   |                   |   announcement)   |
-    |                   |                   |                   |<------------------|
+    |                   |                   |      7. subscribe (members who        |
+    |                   |                   |     didn't receive announcement)      |
+    |                   |                   |<--------------------------------------|
+    |                   |                   |-------------------------------------->|
+    |                   |                   |        AUTH error (from SMP)          |
     |                           7. retrieve updated blob                            |
     |<------------------------------------------------------------------------------|
     |------------------------------------------------------------------------------>|
     |                       blob with new super-peer group link                     |
-    |                   |                   |                   |                   |
     |                   |                   |                   |    7. connect     |
-    |                   |                   |                   | (members that get |
-    |                   |                   |                   | AUTH on subscribe)|
     |                   |                   |                   |<----------------->|
     |                   |                   |                   |                   |
     *                   *                   *                   *                   *
