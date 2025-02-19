@@ -50,7 +50,6 @@ func apiLoadMessages(
             chatModel.chatItemStatuses.removeAll()
             ItemsModel.shared.reversedChatItems = chat.chatItems.reversed()
             chatModel.updateChatInfo(chat.chatInfo)
-            chatModel.chatId = chat.chatInfo.id
             chatState.splits = newSplits
             if !chat.chatItems.isEmpty {
                 chatState.unreadAfterItemId = chat.chatItems.last!.id

@@ -15,7 +15,6 @@ struct ChatPreviewView: View {
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
-    @ObservedObject private var im: ItemsModel = ItemsModel.shared
     @State var deleting: Bool = false
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
     @State private var activeContentPreview: ActiveContentPreview? = nil
@@ -97,7 +96,7 @@ struct ChatPreviewView: View {
             .opacity(deleting ? 0.4 : 1)
             .padding(.bottom, -8)
             
-            if deleting || im.showLoadingProgress == chat.id {
+            if deleting {
                 ProgressView()
                     .scaleEffect(2)
             }

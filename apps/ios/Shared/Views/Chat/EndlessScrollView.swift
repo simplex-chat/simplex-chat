@@ -115,6 +115,8 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
     /// Adds content padding to bottom
     var insetBottom: CGFloat = 100
 
+    var scrollToItemIndexDelayed: Int? = nil
+
     /// The second scroll view that is used only for purpose of displaying scroll bar with made-up content size and scroll offset that is gathered from main scroll view, see [estimatedContentHeight]
     let scrollBarView: UIScrollView = UIScrollView(frame: .zero)
 
@@ -260,6 +262,10 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         }
         oldScreenHeight = newScreenHeight
         adaptItems(listState.items, false)
+        if let index = scrollToItemIndexDelayed {
+            scrollToItem(index)
+            scrollToItemIndexDelayed = nil
+        }
     }
 
     private func setup() {
@@ -284,7 +290,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             return
         }
         adaptItems(items, forceReloadVisible)
-        snapToContent()
+        snapToContent(animated: false)
     }
 
     /// [forceReloadVisible]: reloads every item that was visible regardless of hashValue changes
@@ -454,21 +460,70 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
         listState.firstVisibleItemOffset = offset == 0 ? -bounds.height + insetTop + insetBottom : offset
     }
 
-    func scrollToItem(_ index: Int, animated: Bool, top: Bool = true) async {
+    func scrollToItem(_ index: Int, top: Bool = true) {
         if index >= listState.items.count || listState.isScrolling {
+            return
+        }
+        if bounds.height == 0 {
+            scrollToItemIndexDelayed = index
             return
         }
         listState.isScrolling = true
         defer {
             listState.isScrolling = false
         }
-        if !animated {
-            // just a faster way to set top item as requested index
-            listState.firstVisibleItemIndex = index
-            listState.firstVisibleItemId = listState.items[index].id
-            listState.firstVisibleItemOffset = -bounds.height + insetTop + insetBottom
-            scrollBarView.flashScrollIndicators()
-            adaptItems(listState.items, false)
+
+        // just a faster way to set top item as requested index
+        listState.firstVisibleItemIndex = index
+        listState.firstVisibleItemId = listState.items[index].id
+        listState.firstVisibleItemOffset = -bounds.height + insetTop + insetBottom
+        scrollBarView.flashScrollIndicators()
+        adaptItems(listState.items, false)
+
+        var adjustedOffset = self.contentOffset.y
+        var i = 0
+
+        var upPrev = index > listState.firstVisibleItemIndex
+        //let firstOrLastIndex = upPrev ? listState.visibleItems.last?.index ?? 0 : listState.firstVisibleItemIndex
+        //let step: CGFloat = max(0.1, CGFloat(abs(index - firstOrLastIndex)) * scrollStepMultiplier)
+
+        var stepSlowdownMultiplier: CGFloat = 1
+        while true {
+            let up = index > listState.firstVisibleItemIndex
+            if upPrev != up {
+                stepSlowdownMultiplier = stepSlowdownMultiplier * 0.5
+                upPrev = up
+            }
+
+            // these two lines makes scrolling's finish non-linear and NOT overscroll visually when reach target index
+            let firstOrLastIndex = up ? listState.visibleItems.last?.index ?? 0 : listState.firstVisibleItemIndex
+            let step: CGFloat = max(0.1, CGFloat(abs(index - firstOrLastIndex)) * scrollStepMultiplier) * stepSlowdownMultiplier
+
+            let offsetToScroll = (up ? -averageItemHeight : averageItemHeight) * step * stepSlowdownMultiplier
+            adjustedOffset += offsetToScroll
+            if let item = listState.visibleItems.first(where: { $0.index == index }) {
+                let y = if top {
+                    min(estimatedContentHeight.bottomOffsetY - bounds.height, item.view.frame.origin.y - insetTop)
+                } else {
+                    max(estimatedContentHeight.topOffsetY - insetTop, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
+                }
+                setContentOffset(CGPointMake(contentOffset.x, y), animated: false)
+                scrollBarView.flashScrollIndicators()
+                break
+            }
+            contentOffset = CGPointMake(contentOffset.x, adjustedOffset)
+            i += 1
+        }
+        estimatedContentHeight.update(contentOffset, listState, averageItemHeight, true)
+    }
+
+    func scrollToItemAnimated(_ index: Int, top: Bool = true) async {
+        if index >= listState.items.count || listState.isScrolling {
+            return
+        }
+        listState.isScrolling = true
+        defer {
+            listState.isScrolling = false
         }
         var adjustedOffset = self.contentOffset.y
         var i = 0
@@ -497,28 +552,32 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 } else {
                     max(estimatedContentHeight.topOffsetY - insetTop, item.view.frame.origin.y + item.view.bounds.height - bounds.height + insetBottom)
                 }
-                setContentOffset(CGPointMake(contentOffset.x, y), animated: animated)
+                setContentOffset(CGPointMake(contentOffset.x, y), animated: true)
                 scrollBarView.flashScrollIndicators()
                 break
             }
             contentOffset = CGPointMake(contentOffset.x, adjustedOffset)
-            if animated {
-                // skipping unneded relayout if this offset is already processed
-                if prevProcessedOffset - contentOffset.y != 0 {
-                    adaptItems(listState.items, false)
-                    snapToContent(animated: false)
-                }
-                // let UI time to update to see the animated position change
-                await MainActor.run {}
+
+            // skipping unneded relayout if this offset is already processed
+            if prevProcessedOffset - contentOffset.y != 0 {
+                adaptItems(listState.items, false)
+                snapToContent(animated: false)
             }
+            // let UI time to update to see the animated position change
+            await MainActor.run {}
+
             i += 1
         }
         estimatedContentHeight.update(contentOffset, listState, averageItemHeight, true)
     }
 
-    func scrollToBottom(animated: Bool = true) {
+    func scrollToBottom() {
+        scrollToItem(0, top: false)
+    }
+
+    func scrollToBottomAnimated() {
         Task {
-            await scrollToItem(0, animated: animated, top: false)
+            await scrollToItemAnimated(0, top: false)
         }
     }
 
@@ -528,12 +587,12 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
     func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
         if !listState.items.isEmpty {
-            scrollToBottom()
+            scrollToBottomAnimated()
         }
         return false
     }
 
-    private func snapToContent(animated: Bool = true) {
+    private func snapToContent(animated: Bool) {
         let topBlankSpace = estimatedContentHeight.height < bounds.height ? bounds.height - estimatedContentHeight.height : 0
         if topY < estimatedContentHeight.topOffsetY - topBlankSpace {
             setContentOffset(CGPointMake(0, estimatedContentHeight.topOffsetY - topBlankSpace), animated: animated)
@@ -567,7 +626,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         if !decelerate {
-            snapToContent()
+            snapToContent(animated: true)
         }
     }
 
@@ -582,7 +641,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 } else {
                     DispatchQueue.main.async {
                         self.setContentOffset(newValue, animated: false)
-                        self.snapToContent()
+                        self.snapToContent(animated: true)
                     }
                 }
             } else if contentOffset.y > 0 && newOffset.y + bounds.height > estimatedContentHeight.bottomOffsetY && contentOffset.y < newOffset.y {
@@ -591,7 +650,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                 } else {
                     DispatchQueue.main.async {
                         self.setContentOffset(newValue, animated: false)
-                        self.snapToContent()
+                        self.snapToContent(animated: true)
                     }
                 }
             }

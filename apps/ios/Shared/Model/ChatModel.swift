@@ -63,7 +63,7 @@ class ItemsModel: ObservableObject {
     @Published var isLoading = false
     @Published var showLoadingProgress: ChatId? = nil
 
-    private var progressTimeoutTask: Task<Void, Never>? = nil
+    private var navigationTimeoutTask: Task<Void, Never>? = nil
     private var loadChatTask: Task<Void, Never>? = nil
 
     init() {
@@ -74,26 +74,25 @@ class ItemsModel: ObservableObject {
     }
 
     func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
-        progressTimeoutTask?.cancel()
+        navigationTimeoutTask?.cancel()
         loadChatTask?.cancel()
-        progressTimeoutTask = Task {
+        navigationTimeoutTask = Task {
             do {
                 try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
-                    showLoadingProgress = chatId
+                    ChatModel.shared.chatId = chatId
+                    willNavigate()
                 }
             } catch {}
         }
         loadChatTask = Task {
             await MainActor.run { self.isLoading = true }
-//            try? await Task.sleep(nanoseconds: 2000_000000)
+//            try? await Task.sleep(nanoseconds: 1000_000000)
             await loadChat(chatId: chatId)
             if !Task.isCancelled {
-                progressTimeoutTask?.cancel()
                 await MainActor.run {
                     self.isLoading = false
                     self.showLoadingProgress = nil
-                    willNavigate()
                 }
             }
         }

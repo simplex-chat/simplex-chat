@@ -16,7 +16,7 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var im = ItemsModel.shared
-    @State var mergedItems: BoxedValue<MergedItems> = BoxedValue(MergedItems(items: [], splits: [], indexInParentItems: [:]))
+    @State var mergedItems: BoxedValue<MergedItems> = BoxedValue(MergedItems.create(ItemsModel.shared.reversedChatItems, [], ItemsModel.shared.chatState))
     @State var revealedItems: Set<Int64> = Set()
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
@@ -55,7 +55,7 @@ struct ChatView: View {
     private let useItemsUpdateTask = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
-    
+
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
@@ -119,6 +119,9 @@ struct ChatView: View {
                         forwardItems: forwardSelectedMessages
                     )
                 }
+            }
+            if im.showLoadingProgress == chat.id {
+                ProgressView()
             }
         }
         .safeAreaInset(edge: .top) {
@@ -201,6 +204,16 @@ struct ChatView: View {
             selectedChatItems = nil
             revealedItems = Set()
             initChatView()
+            if im.isLoading {
+                Task {
+                    try? await Task.sleep(nanoseconds: 500_000000)
+                    await MainActor.run {
+                        if im.isLoading {
+                            im.showLoadingProgress = chat.id
+                        }
+                    }
+                }
+            }
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
@@ -214,10 +227,10 @@ struct ChatView: View {
                 scrollView.listState.onUpdateListener = onChatItemsUpdated
                 initChatView()
                 theme = buildTheme()
-                Task {
-                    if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
-                        await scrollView.scrollToItem(unreadIndex, animated: false)
-                    }
+                if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
+                    scrollView.scrollToItem(unreadIndex)
+                } else {
+                    scrollView.scrollToBottom()
                 }
             } else {
                 dismiss()
@@ -361,7 +374,7 @@ struct ChatView: View {
             }
         }
     }
-    
+
     private func initChatView() {
         let cInfo = chat.chatInfo
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
@@ -411,14 +424,14 @@ struct ChatView: View {
                     index = mergedItems.boxedValue.indexInParentItems[itemId]
                 }
                 if let index {
-                    await scrollView.scrollToItem(min(ItemsModel.shared.reversedChatItems.count - 1, index), animated: true)
+                    await scrollView.scrollToItemAnimated(min(ItemsModel.shared.reversedChatItems.count - 1, index))
                 }
             } catch {
                 logger.error("Error scrolling to item: \(error)")
             }
         }
     }
-    
+
     private func searchToolbar() -> some View {
         HStack(spacing: 12) {
             HStack(spacing: 4) {
@@ -449,7 +462,7 @@ struct ChatView: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
-    
+
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
@@ -505,25 +518,13 @@ struct ChatView: View {
                 .id(ci.id) // Required to trigger `onAppear` on iOS15
             }
             .onAppear {
-                Task {
-                    mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
-                    let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() })
-                    let unreadItemId: Int64? = if let unreadIndex { mergedItems.boxedValue.items[unreadIndex].newest().item.id } else { nil }
-                    await MainActor.run {
-                        // this helps to speed up initial process of setting scroll position and reduce time needed
-                        // to layout items on screen
-                        if let unreadIndex, let unreadItemId {
-                            scrollView.setScrollPosition(unreadIndex, unreadItemId)
-                        }
-                        scrollView.updateItems(mergedItems.boxedValue.items)
-                    }
-                    if let unreadIndex {
-                        await scrollView.scrollToItem(unreadIndex, animated: false)
-                    }
+                if !im.isLoading {
+                    updateWithInitiallyLoadedItems()
                 }
-                loadLastItems($loadingMoreItems, chat)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    allowLoadMoreItems = true
+            }
+            .onChange(of: im.isLoading) { loading in
+                if !loading {
+                    updateWithInitiallyLoadedItems()
                 }
             }
             .onChange(of: im.reversedChatItems) { items in
@@ -561,12 +562,19 @@ struct ChatView: View {
             .onChange(of: searchText) { s in
                 Task {
                     await loadChat(chat: chat, search: s)
-                    if s.isEmpty {
-                        await scrollView.scrollToItem(0, animated: false, top: false)
-                        loadLastItems($loadingMoreItems, chat)
+                    mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+                    await MainActor.run {
+                        scrollView.updateItems(mergedItems.boxedValue.items)
+                    }
+                    if !s.isEmpty {
+                        scrollView.scrollToBottom()
                     } else if let index = scrollView.listState.items.lastIndex(where: { $0.hasUnread() }) {
                         // scroll to the top unread item
-                        await scrollView.scrollToItem(index, animated: false)
+                        scrollView.scrollToItem(index)
+                        loadLastItems($loadingMoreItems, chat)
+                    } else {
+                        scrollView.scrollToBottom()
+                        loadLastItems($loadingMoreItems, chat)
                     }
                 }
             }
@@ -574,7 +582,7 @@ struct ChatView: View {
                 if added {
                     im.itemAdded = false
                     if scrollView.listState.firstVisibleItemIndex < 2 {
-                        scrollView.scrollToBottom()
+                        scrollView.scrollToBottomAnimated()
                     } else {
                         scrollView.scroll(by: 34)
                     }
@@ -594,6 +602,27 @@ struct ChatView: View {
                 .padding(.top)
         } else {
             EmptyView()
+        }
+    }
+
+    private func updateWithInitiallyLoadedItems() {
+        if mergedItems.boxedValue.items.isEmpty {
+            mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, ItemsModel.shared.chatState)
+        }
+        let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() })
+        let unreadItemId: Int64? = if let unreadIndex { mergedItems.boxedValue.items[unreadIndex].newest().item.id } else { nil }
+        // this helps to speed up initial process of setting scroll position and reduce time needed
+        // to layout items on screen
+        if let unreadIndex, let unreadItemId {
+            scrollView.setScrollPosition(unreadIndex, unreadItemId)
+        }
+        scrollView.updateItems(mergedItems.boxedValue.items)
+        if let unreadIndex {
+            scrollView.scrollToItem(unreadIndex)
+        }
+        loadLastItems($loadingMoreItems, chat)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            allowLoadMoreItems = true
         }
     }
 
@@ -628,7 +657,7 @@ struct ChatView: View {
                 it.unreadBelow = unreadBelow
                 it.date = date
             }
-            
+
             // set floating button indication mode
             let nearBottom = listState.firstVisibleItemIndex < 4
             if nearBottom != self.isNearBottom {
@@ -636,7 +665,7 @@ struct ChatView: View {
                     self?.isNearBottom = nearBottom
                 }
             }
-            
+
             // hide Date indicator after 1 second of no scrolling
             hideDateWorkItem?.cancel()
             let workItem = DispatchWorkItem { [weak self] in
@@ -700,7 +729,7 @@ struct ChatView: View {
                             .onTapGesture {
                                 if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
                                     // scroll to the top unread item
-                                    Task { await scrollView.scrollToItem(index, animated: true) }
+                                    Task { await scrollView.scrollToItemAnimated(index) }
                                 } else {
                                     logger.debug("No more unread items, total: \(listState.items.count)")
                                 }
@@ -727,7 +756,7 @@ struct ChatView: View {
                                     .foregroundColor(theme.colors.primary)
                             }
                             .onTapGesture {
-                                scrollView.scrollToBottom()
+                                scrollView.scrollToBottomAnimated()
                             }
                         }
                     } else if !model.isNearBottom {
@@ -737,7 +766,7 @@ struct ChatView: View {
                             circleButton {
                                 Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
                             }
-                            .onTapGesture { scrollView.scrollToBottom() }
+                            .onTapGesture { scrollView.scrollToBottomAnimated() }
                         }
                     }
                 }
@@ -939,7 +968,7 @@ struct ChatView: View {
                 )
             }
         }
-        
+
         func forwardAction(_ items: [Int64]) -> UIAlertAction {
             UIAlertAction(
                 title: NSLocalizedString("Forward messages", comment: "alert action"),
@@ -1068,7 +1097,7 @@ struct ChatView: View {
         private func reveal(_ yes: Bool) -> Void {
             merged.revealItems(yes, $revealedItems)
         }
-        
+
         func getItemSeparation(_ chatItem: ChatItem, _ prevItem: ChatItem?) -> ItemSeparation {
             guard let prevItem else {
                 return ItemSeparation(timestamp: true, largeGap: true, date: nil)
@@ -1179,7 +1208,7 @@ struct ChatView: View {
             let im = ItemsModel.shared
             var unreadItems: [ChatItem.ID] = []
             var unreadMentions: Int = 0
-            
+
             for i in range {
                 let ci = im.reversedChatItems[i]
                 if ci.isRcvNew {
@@ -1189,10 +1218,10 @@ struct ChatView: View {
                     }
                 }
             }
-            
+
             return (unreadItems, unreadMentions)
         }
-        
+
         private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
             markReadTask = Task {
                 do {
@@ -1205,7 +1234,7 @@ struct ChatView: View {
                 }
             }
         }
-        
+
 
         @available(iOS 16.0, *)
         struct MemberLayout: Layout {
@@ -1882,7 +1911,7 @@ struct ChatView: View {
                 )
             }
         }
-        
+
         private func archiveReportButton(_ cItem: ChatItem) -> Button<some View> {
             Button {
                 archivingReports = [cItem.id]
@@ -1930,7 +1959,7 @@ struct ChatView: View {
                 )
             }
         }
-        
+
         private func reportButton(_ ci: ChatItem) -> Button<some View> {
             Button(role: .destructive) {
                 var buttons: [ActionSheet.Button] = ReportReason.supportedReasons.map { reason in
@@ -1944,9 +1973,9 @@ struct ChatView: View {
                         }
                     }
                 }
-                
+
                 buttons.append(.cancel())
-               
+
                 actionSheet = SomeActionSheet(
                     actionSheet: ActionSheet(
                         title: Text("Report reason?"),
@@ -1961,7 +1990,7 @@ struct ChatView: View {
                 )
             }
         }
-        
+
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
             return n == 1 ? "Delete message?" : "Delete \(n) messages?"
@@ -2034,7 +2063,7 @@ struct ChatView: View {
                 }
             }
         }
-        
+
         @ViewBuilder private func contactReactionMenu(_ contact: Contact, _ r: CIReactionCount) -> some View {
             if !r.userReacted || r.totalReacted > 1 {
                 Button { showChatInfoSheet = true } label: {

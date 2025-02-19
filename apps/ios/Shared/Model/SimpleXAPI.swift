@@ -335,7 +335,7 @@ func apiGetChat(chatId: ChatId, pagination: ChatPagination, search: String = "")
 }
 
 func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
-    await loadChat(chatId: chat.chatInfo.id)
+    await loadChat(chatId: chat.chatInfo.id, search: search, clearItems: clearItems)
 }
 
 func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) async {
