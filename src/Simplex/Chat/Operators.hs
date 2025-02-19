@@ -280,7 +280,7 @@ type Superpeer = Superpeer' 'DBStored
 
 type NewSuperpeer = Superpeer' 'DBNew
 
-data ASuperpeer = forall s. AS (SDBStored s) (Superpeer' s)
+data ASuperpeer = forall s. ASP (SDBStored s) (Superpeer' s)
 
 deriving instance Show ASuperpeer
 
@@ -288,6 +288,7 @@ data Superpeer' s = Superpeer
   { superpeerId :: DBEntityId' s,
     address :: ConnReqContact,
     name :: Text,
+    domains :: Text,
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool,
@@ -329,15 +330,15 @@ newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
 
-presetSuperpeer :: Bool -> Text -> ConnReqContact -> NewSuperpeer
+presetSuperpeer :: Bool -> Text -> Text -> ConnReqContact -> NewSuperpeer
 presetSuperpeer = newSuperpeer_ True
 
-newSuperpeer :: Text -> ConnReqContact -> NewSuperpeer
+newSuperpeer :: Text -> Text -> ConnReqContact -> NewSuperpeer
 newSuperpeer = newSuperpeer_ False True
 
-newSuperpeer_ :: Bool -> Bool -> Text -> ConnReqContact -> NewSuperpeer
-newSuperpeer_ preset enabled name address =
-  Superpeer {superpeerId = DBNewEntity, address, name, preset, tested = Nothing, enabled, deleted = False}
+newSuperpeer_ :: Bool -> Bool -> Text -> Text -> ConnReqContact -> NewSuperpeer
+newSuperpeer_ preset enabled name domains address =
+  Superpeer {superpeerId = DBNewEntity, address, name, domains, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
 -- it evaluates to (current conditions, and conditions to add)
@@ -367,7 +368,7 @@ presetUserServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedU
 presetUserServers = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
   where
     mkUS op PresetOperator {smp, xftp, superpeers} =
-      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp) (map (AS SDBNew) superpeers)
+      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp) (map (ASP SDBNew) superpeers)
 
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
@@ -481,6 +482,7 @@ data UserServersError
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
   deriving (Show)
 
+-- TODO [superpeers] validate superpeers, UserServersWarning if none
 validateUserServers :: UserServersClass u' => [u'] -> [(User, [UserOperatorServers])] -> [UserServersError]
 validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
   where
@@ -554,7 +556,7 @@ instance (DBStoredI s) => FromJSON (Superpeer' s) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''Superpeer')
 
 instance FromJSON ASuperpeer where
-  parseJSON v = (AS SDBStored <$> parseJSON v) <|> (AS SDBNew <$> parseJSON v)
+  parseJSON v = (ASP SDBStored <$> parseJSON v) <|> (ASP SDBNew <$> parseJSON v)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer')

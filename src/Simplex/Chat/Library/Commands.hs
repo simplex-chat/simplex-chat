@@ -349,7 +349,7 @@ processChatCommand' vr = \case
       copyServers :: UserOperatorServers -> UpdatedUserOperatorServers
       copyServers UserOperatorServers {operator, smpServers, xftpServers, superpeers} =
         let newSrv srv = AUS SDBNew srv {serverId = DBNewEntity}
-            newSpeer speer = AS SDBNew speer {superpeerId = DBNewEntity}
+            newSpeer speer = ASP SDBNew speer {superpeerId = DBNewEntity}
          in
           UpdatedUserOperatorServers {
             operator,
@@ -1362,8 +1362,8 @@ processChatCommand' vr = \case
       getServers db as ops opDomains user = do
         smpSrvs <- getProtocolServers db SPSMP user
         xftpSrvs <- getProtocolServers db SPXFTP user
-        -- TODO [superpeers] get superpeers
-        uss <- groupByOperator (ops, smpSrvs, xftpSrvs, [])
+        speers <- getSuperpeers db user
+        uss <- groupByOperator (ops, smpSrvs, xftpSrvs, speers)
         pure $ (aUserId user,) $ useServers as opDomains uss
   SetServerOperators operatorsRoles -> do
     ops <- serverOperators <$> withFastStore getServerOperators
@@ -3260,9 +3260,7 @@ processChatCommand' vr = \case
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
--- TODO [superpeers] used for CLI specific APIs (also updatedServers below)
--- TODO              - rework/add similar APIs for superpeers?
--- TODO              - new "ServerType" type to replace ProtocolType that would unify servers and superpeers?
+-- TODO [superpeers] used for CLI specific APIs (also updatedServers below) - rework/add similar APIs for superpeers?
 protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [Superpeer]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [Superpeer])
 protocolServers p (operators, smpServers, xftpServers, _superpeers) = case p of
   SPSMP -> (operators, smpServers, [], [])
@@ -3271,8 +3269,8 @@ protocolServers p (operators, smpServers, xftpServers, _superpeers) = case p of
 -- disable preset and replace custom servers (groupByOperator always adds custom)
 updatedServers :: forall p. UserProtocol p => SProtocolType p -> [AUserServer p] -> UserOperatorServers -> UpdatedUserOperatorServers
 updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers, superpeers} = case p' of
-  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers, map (AS SDBStored) superpeers)
-  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers, map (AS SDBStored) superpeers)
+  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers, map (ASP SDBStored) superpeers)
+  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers, map (ASP SDBStored) superpeers)
   where
     u = uncurry3 $ UpdatedUserOperatorServers operator
     uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)

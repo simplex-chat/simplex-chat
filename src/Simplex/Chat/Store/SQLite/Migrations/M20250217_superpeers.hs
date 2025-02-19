@@ -9,9 +9,10 @@ m20250217_superpeers :: Query
 m20250217_superpeers =
   [sql|
 CREATE TABLE superpeers(
-  super_peer_id INTEGER PRIMARY KEY,
+  superpeer_id INTEGER PRIMARY KEY,
   address TEXT NOT NULL,
-  name TEXT NOT NULL, -- domain to match with operators to be part of name/address, or separate field?
+  name TEXT NOT NULL,
+  domains TEXT NOT NULL,
   preset INTEGER NOT NULL DEFAULT 0,
   tested INTEGER,
   enabled INTEGER NOT NULL DEFAULT 1,

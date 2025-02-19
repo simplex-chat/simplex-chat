@@ -163,9 +163,9 @@ simplexChatSMPServers =
 
 simplexChatSuperpeers :: [NewSuperpeer]
 simplexChatSuperpeers =
-  [ presetSuperpeer True "superpeer1.simplex.im" (either error id $ strDecode "simplex:/contact#/address1"),
-    presetSuperpeer True "superpeer2.simplex.im" (either error id $ strDecode "simplex:/contact#/address2"),
-    presetSuperpeer True "superpeer3.simplex.im" (either error id $ strDecode "simplex:/contact#/address3")
+  [ presetSuperpeer True "superpeer1" "simplex.im" (either error id $ strDecode "simplex:/contact#/address1"),
+    presetSuperpeer True "superpeer2" "simplex.im" (either error id $ strDecode "simplex:/contact#/address2"),
+    presetSuperpeer True "superpeer3" "simplex.im" (either error id $ strDecode "simplex:/contact#/address3")
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]
@@ -339,8 +339,8 @@ newChatController
           getServers ops opDomains user' = do
             smpSrvs <- getProtocolServers db SPSMP user'
             xftpSrvs <- getProtocolServers db SPXFTP user'
-            -- TODO [superpeers] get superpeers, group
-            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs, [])
+            speers <- getSuperpeers db user'
+            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs, speers)
             ts <- getCurrentTime
             uss' <- mapM (setUserServers' db user' ts . updatedUserServers) uss
             let auId = aUserId user'
