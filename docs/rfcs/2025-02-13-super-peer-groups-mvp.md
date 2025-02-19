@@ -155,7 +155,8 @@ If group has a single super-peer, owner has to add a new one before removing it.
 2. New super-peer connects with current super-peer and starts to synchronize its group state, including group history and member profiles.
     - TBC group state to synchronize: full or partial history, additional metadata?
 3. Owner updates short link: adds new super-peer group link to it, removes or marks as disabled current super-peer.
-4. Owner announces deleting current and adding new super-peer to group by forwarding message via current super-peer.
+4. Owner announces deleting current and adding new super-peer to group.
+    - Via both super-peers - current would forward to existing members, new would forward to newly joined.
     - Separate messages or single specialized message ("replace")?
 5. Members that have received this message start connecting with new super-peer.
 6. Once group state is synchronized, current (removed) super-peer deletes connections with members.
@@ -181,8 +182,8 @@ Owner SMP             Owner         Current super-peer   New super-peer         
     |------------------>|                   |                   |                   |
     |        OK         |                   |                   |                   |
     |                   |             4. announce removing current and              |
-    |                   |       adding new super-peer (via current super-peer)      |
-    |                   |-------------------+------------------ ~ ----------------->|
+    |                   |                  adding new super-peer                    |
+    |                   |---------------------------------------------------------->|
     |                   |                   |                   |                   |
     |                   |                   |                   |    5. connect     |
     |                   |                   |                   | (members who re-  |
