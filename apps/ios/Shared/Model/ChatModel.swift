@@ -78,7 +78,7 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         navigationTimeoutTask = Task {
             do {
-                try await Task.sleep(nanoseconds: 100_000000)
+                try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
                     willNavigate()
