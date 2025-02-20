@@ -53,6 +53,7 @@ struct ChatView: View {
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: Int64? = nil
+    @State private var animatedScrollingInProgress: Bool = false
     @State private var updateMergedItemsTask: Task<Void, Never>? = nil
     @State private var floatingButtonModel: FloatingButtonModel = FloatingButtonModel()
 
@@ -92,7 +93,7 @@ struct ChatView: View {
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
-                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, listState: scrollView.listState, model: floatingButtonModel)
+                    FloatingButtons(theme: theme, scrollView: scrollView, chat: chat, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, animatedScrollingInProgress: $animatedScrollingInProgress, listState: scrollView.listState, model: floatingButtonModel)
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -428,7 +429,9 @@ struct ChatView: View {
                     index = mergedItems.boxedValue.indexInParentItems[itemId]
                 }
                 if let index {
+                    await MainActor.run { animatedScrollingInProgress = true }
                     await scrollView.scrollToItemAnimated(min(ItemsModel.shared.reversedChatItems.count - 1, index))
+                    await MainActor.run { animatedScrollingInProgress = false }
                 }
             } catch {
                 logger.error("Error scrolling to item: \(error)")
@@ -710,6 +713,7 @@ struct ChatView: View {
         @Binding var requestedTopScroll: Bool
         @Binding var loadingBottomItems: Bool
         @Binding var requestedBottomScroll: Bool
+        @Binding var animatedScrollingInProgress: Bool
         let listState: EndlessScrollView<MergedItem>.ListState
         @ObservedObject var model: FloatingButtonModel
 
@@ -724,7 +728,7 @@ struct ChatView: View {
                          .padding(.vertical, 4)
                 }
                 VStack {
-                    if model.unreadAbove > 0 {
+                    if model.unreadAbove > 0 && !animatedScrollingInProgress {
                         if loadingTopItems && requestedTopScroll {
                             circleButton { ProgressView() }
                         } else {
@@ -753,37 +757,27 @@ struct ChatView: View {
                         }
                     }
                     Spacer()
-                    if model.unreadBelow > 0 {
+                    if listState.firstVisibleItemIndex != 0 && !animatedScrollingInProgress {
                         if loadingBottomItems && requestedBottomScroll {
                             circleButton { ProgressView() }
                         } else {
                             circleButton {
-                                unreadCountText(model.unreadBelow)
-                                    .font(.callout)
-                                    .foregroundColor(theme.colors.primary)
-                            }
-                            .onTapGesture {
-                                if loadingBottomItems {
-                                    requestedTopScroll = false
-                                    requestedBottomScroll = true
-                                } else {
-                                    scrollView.scrollToBottomAnimated()
+                                Group {
+                                    if model.unreadBelow > 0 {
+                                        unreadCountText(model.unreadBelow)
+                                            .font(.callout)
+                                            .foregroundColor(theme.colors.primary)
+                                    } else {
+                                        Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
+                                    }
                                 }
                             }
-                        }
-                    } else if !model.isNearBottom {
-                        if loadingBottomItems && requestedBottomScroll {
-                            circleButton { ProgressView() }
-                        } else {
-                            circleButton {
-                                Image(systemName: "chevron.down").foregroundColor(theme.colors.primary)
-                            }
                             .onTapGesture {
                                 if loadingBottomItems {
                                     requestedTopScroll = false
                                     requestedBottomScroll = true
                                 } else {
-                                    scrollView.scrollToBottomAnimated()
+                                    scrollToBottom()
                                 }
                             }
                         }
@@ -801,7 +795,7 @@ struct ChatView: View {
             .onChange(of: loadingBottomItems) { loading in
                 if !loading && requestedBottomScroll {
                     requestedBottomScroll = false
-                    scrollView.scrollToBottomAnimated()
+                    scrollToBottom()
                 }
             }
             .onDisappear(perform: model.resetDate)
@@ -809,10 +803,22 @@ struct ChatView: View {
 
         private func scrollToTopUnread() {
             if let index = listState.items.lastIndex(where: { $0.hasUnread() }) {
+                animatedScrollingInProgress = true
                 // scroll to the top unread item
-                Task { await scrollView.scrollToItemAnimated(index) }
+                Task {
+                    await scrollView.scrollToItemAnimated(index)
+                    await MainActor.run { animatedScrollingInProgress = false }
+                }
             } else {
                 logger.debug("No more unread items, total: \(listState.items.count)")
+            }
+        }
+
+        private func scrollToBottom() {
+            animatedScrollingInProgress = true
+            Task {
+                await scrollView.scrollToItemAnimated(0, top: false)
+                await MainActor.run { animatedScrollingInProgress = false }
             }
         }
 

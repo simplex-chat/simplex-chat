@@ -16,7 +16,7 @@ func loadLastItems(_ loadingMoreItems: Binding<Bool>, loadingBottomItems: Bindin
     loadingMoreItems.wrappedValue = true
     loadingBottomItems.wrappedValue = true
     Task {
-        try? await Task.sleep(nanoseconds: 1500_000000)
+        try? await Task.sleep(nanoseconds: 500_000000)
         if ChatModel.shared.chatId != chat.chatInfo.id {
             await MainActor.run {
                 loadingMoreItems.wrappedValue = false
