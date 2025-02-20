@@ -255,7 +255,7 @@ instance UserServersClass UserOperatorServers where
     SPSMP -> smpServers
     SPXFTP -> xftpServers
   superpeers' UserOperatorServers {superpeers} = superpeers
-  aUserSuperpeer' = ASP SDBStored
+  aUserSuperpeer' = AUSP SDBStored
 
 instance UserServersClass UpdatedUserOperatorServers where
   type AServer UpdatedUserOperatorServers = AUserServer
@@ -290,7 +290,7 @@ type UserSuperpeer = UserSuperpeer' 'DBStored
 
 type NewUserSuperpeer = UserSuperpeer' 'DBNew
 
-data AUserSuperpeer = forall s. ASP (SDBStored s) (UserSuperpeer' s)
+data AUserSuperpeer = forall s. AUSP (SDBStored s) (UserSuperpeer' s)
 
 deriving instance Show AUserSuperpeer
 
@@ -378,7 +378,7 @@ presetUserServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedU
 presetUserServers = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
   where
     mkUS op PresetOperator {smp, xftp, superpeers} =
-      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp) (map (ASP SDBNew) superpeers)
+      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp) (map (AUSP SDBNew) superpeers)
 
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
@@ -532,14 +532,14 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
     superpeerErrs :: UserServersClass u => [u] -> [UserServersError]
     superpeerErrs uss = concatMap duplicateErrs_ speers
       where
-        speers = filter (\(ASP _ UserSuperpeer {deleted}) -> not deleted) $ userSuperpeers uss
-        duplicateErrs_ (ASP _ UserSuperpeer {name, address}) =
+        speers = filter (\(AUSP _ UserSuperpeer {deleted}) -> not deleted) $ userSuperpeers uss
+        duplicateErrs_ (AUSP _ UserSuperpeer {name, address}) =
           [USEDuplicateSuperpeerName name | name `elem` duplicateNames]
             <> [USEDuplicateSuperpeerAddress name address | address `elem` duplicateAddresses]
         duplicateNames = snd $ foldl' addDuplicate (S.empty, S.empty) allNames
-        allNames = map (\(ASP _ speer) -> name speer) speers
+        allNames = map (\(AUSP _ speer) -> name speer) speers
         duplicateAddresses = snd $ foldl' addAddress ([], []) allAddresses
-        allAddresses = map (\(ASP _ speer) -> address speer) speers
+        allAddresses = map (\(AUSP _ speer) -> address speer) speers
         addAddress :: ([ConnReqContact], [ConnReqContact]) -> ConnReqContact -> ([ConnReqContact], [ConnReqContact])
         addAddress (xs, dups) x
           | any (sameConnReqContact x) xs = (xs, x : dups)
@@ -552,7 +552,7 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
       | otherwise = []
       where
         noSuperpeers cond = not $ any speerEnabled $ userSuperpeers $ filter cond uss
-        speerEnabled (ASP _ UserSuperpeer {deleted, enabled}) = enabled && not deleted
+        speerEnabled (AUSP _ UserSuperpeer {deleted, enabled}) = enabled && not deleted
     userSuperpeers :: UserServersClass u => [u] -> [AUserSuperpeer]
     userSuperpeers = map aUserSuperpeer' . concatMap superpeers'
     opEnabled :: UserServersClass u => u -> Bool
@@ -604,7 +604,7 @@ instance DBStoredI s => FromJSON (UserSuperpeer' s) where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''UserSuperpeer')
 
 instance FromJSON AUserSuperpeer where
-  parseJSON v = (ASP SDBStored <$> parseJSON v) <|> (ASP SDBNew <$> parseJSON v)
+  parseJSON v = (AUSP SDBStored <$> parseJSON v) <|> (AUSP SDBNew <$> parseJSON v)
 
 instance ProtocolTypeI p => ToJSON (UserServer' s p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''UserServer')

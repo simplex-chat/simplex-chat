@@ -877,7 +877,7 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
     upsertOrDeleteSpeer :: AUserSuperpeer -> IO (Maybe UserSuperpeer)
-    upsertOrDeleteSpeer (ASP _ speer@UserSuperpeer {superpeerId, deleted}) = case superpeerId of
+    upsertOrDeleteSpeer (AUSP _ speer@UserSuperpeer {superpeerId, deleted}) = case superpeerId of
       DBNewEntity
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertSuperpeer db user ts speer

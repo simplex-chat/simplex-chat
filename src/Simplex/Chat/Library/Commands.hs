@@ -349,7 +349,7 @@ processChatCommand' vr = \case
       copyServers :: UserOperatorServers -> UpdatedUserOperatorServers
       copyServers UserOperatorServers {operator, smpServers, xftpServers, superpeers} =
         let newSrv srv = AUS SDBNew srv {serverId = DBNewEntity}
-            newSpeer speer = ASP SDBNew speer {superpeerId = DBNewEntity}
+            newSpeer speer = AUSP SDBNew speer {superpeerId = DBNewEntity}
          in
           UpdatedUserOperatorServers {
             operator,
@@ -3270,8 +3270,8 @@ protocolServers p (operators, smpServers, xftpServers, _superpeers) = case p of
 -- disable preset and replace custom servers (groupByOperator always adds custom)
 updatedServers :: forall p. UserProtocol p => SProtocolType p -> [AUserServer p] -> UserOperatorServers -> UpdatedUserOperatorServers
 updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers, superpeers} = case p' of
-  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers, map (ASP SDBStored) superpeers)
-  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers, map (ASP SDBStored) superpeers)
+  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers, map (AUSP SDBStored) superpeers)
+  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers, map (AUSP SDBStored) superpeers)
   where
     u = uncurry3 $ UpdatedUserOperatorServers operator
     uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)

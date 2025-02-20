@@ -124,7 +124,7 @@ valid =
     { operator = Just operatorSimpleXChat {operatorId = DBEntityId 1},
       smpServers = map (AUS SDBNew) simplexChatSMPServers,
       xftpServers = map (AUS SDBNew . presetServer True) $ L.toList defaultXFTPServers,
-      superpeers = map (ASP SDBNew) simplexChatSuperpeers
+      superpeers = map (AUSP SDBNew) simplexChatSuperpeers
     }
 
 invalidNoServers :: UpdatedUserOperatorServers
@@ -160,13 +160,13 @@ invalidNoSuperpeers = (valid :: UpdatedUserOperatorServers) {superpeers = []}
 invalidDuplicateSpeerName :: UpdatedUserOperatorServers
 invalidDuplicateSpeerName =
   (valid :: UpdatedUserOperatorServers)
-    { superpeers = map (ASP SDBNew) $ simplexChatSuperpeers <> [presetSuperpeer True "superpeer1" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp444.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D")]
+    { superpeers = map (AUSP SDBNew) $ simplexChatSuperpeers <> [presetSuperpeer True "superpeer1" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp444.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D")]
     }
 
 invalidDuplicateSpeerAddress :: UpdatedUserOperatorServers
 invalidDuplicateSpeerAddress =
   (valid :: UpdatedUserOperatorServers)
-    { superpeers = map (ASP SDBNew) $ simplexChatSuperpeers <> [presetSuperpeer True "superpeer4" ["simplex.im"] duplicateAddr]
+    { superpeers = map (AUSP SDBNew) $ simplexChatSuperpeers <> [presetSuperpeer True "superpeer4" ["simplex.im"] duplicateAddr]
     }
 
 duplicateAddr :: ConnReqContact
