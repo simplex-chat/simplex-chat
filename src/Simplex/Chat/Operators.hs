@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -332,9 +333,11 @@ operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
 
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
 presetServer = newUserServer_ True
+{-# INLINE presetServer #-}
 
 newUserServer :: ProtoServerWithAuth p -> NewUserServer p
 newUserServer = newUserServer_ False True
+{-# INLINE newUserServer #-}
 
 newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
@@ -342,12 +345,14 @@ newUserServer_ preset enabled server =
 
 presetSuperpeer :: Bool -> Text -> [Text] -> ConnReqContact -> NewUserSuperpeer
 presetSuperpeer = newSuperpeer_ True
+{-# INLINE presetSuperpeer #-}
 
 newSuperpeer :: Text -> [Text] -> ConnReqContact -> NewUserSuperpeer
 newSuperpeer = newSuperpeer_ False True
+{-# INLINE newSuperpeer #-}
 
 newSuperpeer_ :: Bool -> Bool -> Text -> [Text] -> ConnReqContact -> NewUserSuperpeer
-newSuperpeer_ preset enabled name domains address =
+newSuperpeer_ preset enabled name domains !address =
   UserSuperpeer {superpeerId = DBNewEntity, address, name, domains, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database

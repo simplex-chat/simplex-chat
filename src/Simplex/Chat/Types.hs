@@ -115,6 +115,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
+-- TODO [superpeers] filter out superpeer users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
