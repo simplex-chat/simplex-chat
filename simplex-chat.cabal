@@ -95,6 +95,7 @@ library
           Simplex.Chat.Options.Postgres
           Simplex.Chat.Store.Postgres.Migrations
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
+          Simplex.Chat.Store.Postgres.Migrations.M20250217_superpeers
   else
       exposed-modules:
           Simplex.Chat.Archive
