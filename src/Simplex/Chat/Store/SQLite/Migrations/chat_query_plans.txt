@@ -3283,6 +3283,14 @@ Plan:
 SEARCH protocol_servers USING INDEX idx_smp_servers_user_id (user_id=?)
 
 Query: 
+        SELECT superpeer_id, address, name, domains, preset, tested, enabled
+        FROM superpeers
+        WHERE user_id = ?
+      
+Plan:
+SEARCH superpeers USING INDEX idx_superpeers_user_id (user_id=?)
+
+Query: 
         SELECT to_group_member_id
         FROM group_member_intros
         WHERE re_group_member_id = ? AND intro_status NOT IN (?,?,?)

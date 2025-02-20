@@ -161,11 +161,12 @@ simplexChatSMPServers =
         "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
       ]
 
+-- TODO [superpeers] real superpeers
 simplexChatSuperpeers :: [NewUserSuperpeer]
 simplexChatSuperpeers =
-  [ presetSuperpeer True "superpeer1" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/address1"),
-    presetSuperpeer True "superpeer2" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/address2"),
-    presetSuperpeer True "superpeer3" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/address3")
+  [ presetSuperpeer True "superpeer1" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp111.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D"),
+    presetSuperpeer True "superpeer2" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp222.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D"),
+    presetSuperpeer True "superpeer3" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp333.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D")
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]

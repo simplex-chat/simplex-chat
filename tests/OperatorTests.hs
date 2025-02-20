@@ -22,6 +22,7 @@ import Simplex.Chat.Operators
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol
 import Test.Hspec
 
@@ -36,13 +37,29 @@ validateServersTest = describe "validate user servers" $ do
   it "should fail without servers" $ do
     validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [])
     validateUserServers [invalidDisabled] [] `shouldBe` ([USENoServers aSMP Nothing], [])
-    validateUserServers [invalidDisabledOp] [] `shouldBe` ([USENoServers aSMP Nothing, USENoServers aXFTP Nothing], [])
+    validateUserServers [invalidDisabledOp] [] `shouldBe` ([USENoServers aSMP Nothing, USENoServers aXFTP Nothing], [USWNoSuperpeers Nothing])
   it "should fail without servers with storage role" $ do
     validateUserServers [invalidNoStorage] [] `shouldBe` ([USEStorageMissing aSMP Nothing], [])
   it "should fail with duplicate host" $ do
-    validateUserServers [invalidDuplicate] []
+    validateUserServers [invalidDuplicateSrv] []
       `shouldBe` ( [ USEDuplicateServer aSMP "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion" "smp8.simplex.im",
                      USEDuplicateServer aSMP "smp://abcd@smp8.simplex.im" "smp8.simplex.im"
+                   ],
+                   []
+                 )
+  it "should warn without superpeers" $
+    validateUserServers [invalidNoSuperpeers] [] `shouldBe` ([], [USWNoSuperpeers Nothing])
+  it "should fail with duplicate superpeer name" $ do
+    validateUserServers [invalidDuplicateSpeerName] []
+      `shouldBe` ( [ USEDuplicateSuperpeerName "superpeer1",
+                     USEDuplicateSuperpeerName "superpeer1"
+                   ],
+                   []
+                 )
+  it "should fail with duplicate superpeer address" $ do
+    validateUserServers [invalidDuplicateSpeerAddress] []
+      `shouldBe` ( [ USEDuplicateSuperpeerAddress "superpeer1" duplicateAddr,
+                     USEDuplicateSuperpeerAddress "superpeer4" duplicateAddr
                    ],
                    []
                  )
@@ -50,7 +67,6 @@ validateServersTest = describe "validate user servers" $ do
     aSMP = AProtocolType SPSMP
     aXFTP = AProtocolType SPXFTP
 
--- TODO [superpeers] test
 updatedServersTest :: Spec
 updatedServersTest = describe "validate user servers" $ do
   it "adding preset operators on first start" $ do
@@ -102,14 +118,13 @@ deriving instance Eq UserServersError
 
 deriving instance Eq UserServersWarning
 
--- TODO [superpeers] no superpeers should not be valid
 valid :: UpdatedUserOperatorServers
 valid =
   UpdatedUserOperatorServers
     { operator = Just operatorSimpleXChat {operatorId = DBEntityId 1},
       smpServers = map (AUS SDBNew) simplexChatSMPServers,
       xftpServers = map (AUS SDBNew . presetServer True) $ L.toList defaultXFTPServers,
-      superpeers = []
+      superpeers = map (ASP SDBNew) simplexChatSuperpeers
     }
 
 invalidNoServers :: UpdatedUserOperatorServers
@@ -133,8 +148,26 @@ invalidNoStorage =
     { operator = Just operatorSimpleXChat {operatorId = DBEntityId 1, smpRoles = allRoles {storage = False}}
     }
 
-invalidDuplicate :: UpdatedUserOperatorServers
-invalidDuplicate =
+invalidDuplicateSrv :: UpdatedUserOperatorServers
+invalidDuplicateSrv =
   (valid :: UpdatedUserOperatorServers)
     { smpServers = map (AUS SDBNew) $ simplexChatSMPServers <> [presetServer True "smp://abcd@smp8.simplex.im"]
     }
+
+invalidNoSuperpeers :: UpdatedUserOperatorServers
+invalidNoSuperpeers = (valid :: UpdatedUserOperatorServers) {superpeers = []}
+
+invalidDuplicateSpeerName :: UpdatedUserOperatorServers
+invalidDuplicateSpeerName =
+  (valid :: UpdatedUserOperatorServers)
+    { superpeers = map (ASP SDBNew) $ simplexChatSuperpeers <> [presetSuperpeer True "superpeer1" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp444.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D")]
+    }
+
+invalidDuplicateSpeerAddress :: UpdatedUserOperatorServers
+invalidDuplicateSpeerAddress =
+  (valid :: UpdatedUserOperatorServers)
+    { superpeers = map (ASP SDBNew) $ simplexChatSuperpeers <> [presetSuperpeer True "superpeer4" ["simplex.im"] duplicateAddr]
+    }
+
+duplicateAddr :: ConnReqContact
+duplicateAddr = either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp111.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D"

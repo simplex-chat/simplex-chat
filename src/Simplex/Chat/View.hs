@@ -1243,13 +1243,13 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
--- TODO [superpeers] view superpeers
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] [] []) = []
-viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
+viewUserServers UserOperatorServers {operator, smpServers, xftpServers, superpeers} =
   [plain $ maybe "Your servers" shortViewOperator operator]
     <> viewServers SPSMP smpServers
     <> viewServers SPXFTP xftpServers
+    <> viewSuperpeers superpeers
   where
     viewServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServer p] -> [StyledString]
     viewServers _ [] = []
@@ -1272,6 +1272,19 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
           | otherwise = "disabled (servers known)"
           where
             rs = operatorRoles p op
+    viewSuperpeers :: [UserSuperpeer] -> [StyledString]
+    viewSuperpeers [] = []
+    viewSuperpeers speers
+      | maybe True (\ServerOperator {enabled} -> enabled) operator =
+           ["Superpeers"] <> map (plain . ("    " <>) . viewSuperpeer) speers
+      | otherwise = []
+      where
+        viewSuperpeer UserSuperpeer {name, address, preset, tested, enabled} = name <> superpeerAddress <> superpeerInfo
+          where
+            superpeerAddress = "(" <> safeDecodeUtf8 (strEncode address) <> ")"
+            superpeerInfo = if null superpeerInfo_ then "" else parens $ T.intercalate ", " superpeerInfo_
+            superpeerInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
+            testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
 
 serversUserHelp :: [StyledString]
 serversUserHelp =
