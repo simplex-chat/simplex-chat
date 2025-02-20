@@ -588,7 +588,7 @@ serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_)
       auth = safeDecodeUtf8 . unBasicAuth <$> auth_
    in (protocol, host, port, keyHash, auth)
 
-getSuperpeers :: DB.Connection -> User -> IO [Superpeer]
+getSuperpeers :: DB.Connection -> User -> IO [UserSuperpeer]
 getSuperpeers db User {userId} =
   map toSuperpeer
     <$> DB.query
@@ -600,12 +600,12 @@ getSuperpeers db User {userId} =
       |]
       (Only userId)
   where
-    toSuperpeer :: (DBEntityId, ConnReqContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> Superpeer
+    toSuperpeer :: (DBEntityId, ConnReqContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserSuperpeer
     toSuperpeer (superpeerId, address, name, domains, BI preset, tested, BI enabled) =
-      Superpeer {superpeerId, address, name, domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+      UserSuperpeer {superpeerId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
 
-insertSuperpeer :: DB.Connection -> User -> UTCTime -> NewSuperpeer -> IO Superpeer
-insertSuperpeer db User {userId} ts speer@Superpeer {address, name, domains, preset, tested, enabled} = do
+insertSuperpeer :: DB.Connection -> User -> UTCTime -> NewUserSuperpeer -> IO UserSuperpeer
+insertSuperpeer db User {userId} ts speer@UserSuperpeer {address, name, domains, preset, tested, enabled} = do
   sId <-
     fromOnly . head
       <$> DB.query
@@ -616,11 +616,11 @@ insertSuperpeer db User {userId} ts speer@Superpeer {address, name, domains, pre
           VALUES (?,?,?,?,?,?,?,?,?)
           RETURNING superpeer_id
         |]
-        (address, name, domains, BI preset, BI <$> tested, BI enabled, userId, ts, ts)
+        (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, userId, ts, ts)
   pure speer {superpeerId = DBEntityId sId}
 
-updateSuperpeer :: DB.Connection -> UTCTime -> Superpeer -> IO ()
-updateSuperpeer db ts Superpeer {superpeerId, address, name, domains, preset, tested, enabled} =
+updateSuperpeer :: DB.Connection -> UTCTime -> UserSuperpeer -> IO ()
+updateSuperpeer db ts UserSuperpeer {superpeerId, address, name, domains, preset, tested, enabled} =
   DB.execute
     db
     [sql|
@@ -629,7 +629,7 @@ updateSuperpeer db ts Superpeer {superpeerId, address, name, domains, preset, te
           preset = ?, tested = ?, enabled = ?, updated_at = ?
       WHERE superpeer_id = ?
     |]
-    (address, name, domains, BI preset, BI <$> tested, BI enabled, ts, superpeerId)
+    (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, ts, superpeerId)
 
 getServerOperators :: DB.Connection -> ExceptT StoreError IO ServerOperatorConditions
 getServerOperators db = do
@@ -642,7 +642,7 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [Superpeer])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserSuperpeer])
 getUserServers db user =
   (,,,)
     <$> (map Just . serverOperators <$> getServerOperators db)
@@ -876,8 +876,8 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
       DBEntityId srvId
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
-    upsertOrDeleteSpeer :: ASuperpeer -> IO (Maybe Superpeer)
-    upsertOrDeleteSpeer (ASP _ speer@Superpeer {superpeerId, deleted}) = case superpeerId of
+    upsertOrDeleteSpeer :: AUserSuperpeer -> IO (Maybe UserSuperpeer)
+    upsertOrDeleteSpeer (ASP _ speer@UserSuperpeer {superpeerId, deleted}) = case superpeerId of
       DBNewEntity
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertSuperpeer db user ts speer

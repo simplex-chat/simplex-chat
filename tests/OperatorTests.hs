@@ -32,18 +32,20 @@ operatorTests = describe "managing server operators" $ do
 
 validateServersTest :: Spec
 validateServersTest = describe "validate user servers" $ do
-  it "should pass valid user servers" $ validateUserServers [valid] [] `shouldBe` []
+  it "should pass valid user servers" $ validateUserServers [valid] [] `shouldBe` ([], [])
   it "should fail without servers" $ do
-    validateUserServers [invalidNoServers] [] `shouldBe` [USENoServers aSMP Nothing]
-    validateUserServers [invalidDisabled] [] `shouldBe` [USENoServers aSMP Nothing]
-    validateUserServers [invalidDisabledOp] [] `shouldBe` [USENoServers aSMP Nothing, USENoServers aXFTP Nothing]
+    validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [])
+    validateUserServers [invalidDisabled] [] `shouldBe` ([USENoServers aSMP Nothing], [])
+    validateUserServers [invalidDisabledOp] [] `shouldBe` ([USENoServers aSMP Nothing, USENoServers aXFTP Nothing], [])
   it "should fail without servers with storage role" $ do
-    validateUserServers [invalidNoStorage] [] `shouldBe` [USEStorageMissing aSMP Nothing]
+    validateUserServers [invalidNoStorage] [] `shouldBe` ([USEStorageMissing aSMP Nothing], [])
   it "should fail with duplicate host" $ do
-    validateUserServers [invalidDuplicate] [] `shouldBe`
-      [ USEDuplicateServer aSMP "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion" "smp8.simplex.im",
-        USEDuplicateServer aSMP "smp://abcd@smp8.simplex.im" "smp8.simplex.im"
-      ]
+    validateUserServers [invalidDuplicate] []
+      `shouldBe` ( [ USEDuplicateServer aSMP "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion" "smp8.simplex.im",
+                     USEDuplicateServer aSMP "smp://abcd@smp8.simplex.im" "smp8.simplex.im"
+                   ],
+                   []
+                 )
   where
     aSMP = AProtocolType SPSMP
     aXFTP = AProtocolType SPXFTP
@@ -86,8 +88,8 @@ updatedServersTest = describe "validate user servers" $ do
     addedPreset = \case
       (Just PresetOperator {operator = Just op}, Just (ASO SDBNew op')) -> operatorTag op == operatorTag op'
       _ -> False
-    saveOps = zipWith (\i -> second ((\(ASO _ op) -> op {operatorId = DBEntityId i}) <$>)) [1..]
-    saveSrvs = zipWith (\i srv -> srv {serverId = DBEntityId i}) [1..]
+    saveOps = zipWith (\i -> second ((\(ASO _ op) -> op {operatorId = DBEntityId i}) <$>)) [1 ..]
+    saveSrvs = zipWith (\i srv -> srv {serverId = DBEntityId i}) [1 ..]
     sameServers preset op = do
       map srvHost (pServers SPSMP preset) `shouldBe` map srvHost' (servers' SPSMP op)
       map srvHost (pServers SPXFTP preset) `shouldBe` map srvHost' (servers' SPXFTP op)
@@ -97,6 +99,8 @@ updatedServersTest = describe "validate user servers" $ do
 deriving instance Eq User
 
 deriving instance Eq UserServersError
+
+deriving instance Eq UserServersWarning
 
 -- TODO [superpeers] no superpeers should not be valid
 valid :: UpdatedUserOperatorServers
