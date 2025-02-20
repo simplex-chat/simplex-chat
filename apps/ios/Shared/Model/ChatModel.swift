@@ -78,7 +78,7 @@ class ItemsModel: ObservableObject {
         loadChatTask?.cancel()
         navigationTimeoutTask = Task {
             do {
-                try await Task.sleep(nanoseconds: 100_000000)
+                try await Task.sleep(nanoseconds: 250_000000)
                 await MainActor.run {
                     ChatModel.shared.chatId = chatId
                     willNavigate()
@@ -949,7 +949,7 @@ final class ChatModel: ObservableObject {
                     memberIds.insert(m.groupMemberId)
                 }
             } else {
-                logger.error("getPrevHiddenMember: index >= count of reversed items: \(i) vs \(items.count)")
+                logger.error("getPrevHiddenMember: index >= count of reversed items: \(i) vs \(items.count), range: \(String(describing: range))")
             }
         }
         return (prevMember, memberIds.count)

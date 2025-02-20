@@ -136,8 +136,11 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     override var intrinsicContentSize: CGSize {
-        if height.wrappedValue != newHeight {
-            DispatchQueue.main.asyncAfter(deadline: .now(), execute: { self.height.wrappedValue = self.newHeight })
+        if height.wrappedValue != newHeight ||
+            // when both heights equal to minHeight, we must update $height, even if it's the same, because only this way
+            // the swift ui wrapper will redisplay this view with updated height
+            newHeight == NativeTextEditor.minHeight {
+            DispatchQueue.main.async { self.height.wrappedValue = self.newHeight }
         }
         return CGSizeMake(0, newHeight)
     }
