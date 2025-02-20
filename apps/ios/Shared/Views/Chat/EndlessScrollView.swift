@@ -107,7 +107,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
     var averageItemHeight: CGFloat = 30
 
     /// This is used as a multiplier for difference between current index and scrollTo index using [averageItemHeight] as well. Increase it to get faster speed
-    var scrollStepMultiplier: CGFloat = 0.6
+    var scrollStepMultiplier: CGFloat = 0.37
 
     /// Adds content padding to top
     var insetTop: CGFloat = 100
@@ -324,6 +324,8 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
 
         var shouldBeFirstVisible = items.firstIndex(where: { item in item.id == listState.firstVisibleItemId as! ScrollItem.ID }) ?? 0
 
+        var wasFirstVisibleItemOffset = listState.firstVisibleItemOffset
+        var alreadyChangedIndexWhileScrolling = false
         var allowOneMore = false
         var nextOffsetY: CGFloat = 0
         var i = shouldBeFirstVisible
@@ -343,16 +345,24 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             }
             if shouldBeFirstVisible == i {
                 if let vis = visible {
-                    let oldHeight = vis.view.frame.height
-                    vis.view.frame.origin.y += oldHeight - vis.view.frame.height
-                    // the fist visible item previously is hidden now, remove it and move on
-                    if !isVisible(vis.view) {
+
+                    if // there is auto scroll in progress and the first item has a higher offset than bottom part
+                        // of the screen. In order to make scrolling down & up equal in time, we treat this as a sign to
+                        // re-make the first visible item
+                        (listState.isScrolling && vis.view.frame.origin.y + vis.view.bounds.height < contentOffsetY + bounds.height) ||
+                        // the fist visible item previously is hidden now, remove it and move on
+                        !isVisible(vis.view) {
                         let newIndex: Int
                         if listState.isScrolling {
                             // skip many items to make the scrolling take less time
-                            var indexDiff = Int(ceil(abs(offsetsDiff / averageItemHeight)))
+                            var indexDiff = !alreadyChangedIndexWhileScrolling ? Int(ceil(abs(offsetsDiff / averageItemHeight))) : 0
+                            // if index was already changed, no need to change it again. Otherwise, the scroll will overscoll and return back animated. Because it means the whole screen was scrolled
+                            alreadyChangedIndexWhileScrolling = true
+
                             indexDiff = offsetsDiff <= 0 ? indexDiff : -indexDiff
                             newIndex = max(0, min(items.count - 1, i + indexDiff))
+                            // offset for the first visible item can now be 0 because the previous first visible item doesn't exist anymore
+                            wasFirstVisibleItemOffset = 0
                         } else {
                             // don't skip multiple items if it's manual scrolling gesture
                             newIndex = i + (offsetsDiff <= 0 ? 1 : -1)
@@ -370,7 +380,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
                     vis = VisibleItem(index: i, item: item, view: visible.view, offset: offsetToBottom(visible.view))
                 } else {
                     let cell = createCell(i, items, &cellsToReuse)!
-                    cell.frame.origin.y = bottomY + listState.firstVisibleItemOffset - cell.frame.height
+                    cell.frame.origin.y = bottomY + wasFirstVisibleItemOffset - cell.frame.height
                     vis = VisibleItem(index: i, item: item, view: cell, offset: offsetToBottom(cell))
                 }
                 if vis.view.superview == nil {
@@ -499,7 +509,7 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             let firstOrLastIndex = up ? listState.visibleItems.last?.index ?? 0 : listState.firstVisibleItemIndex
             let step: CGFloat = max(0.1, CGFloat(abs(index - firstOrLastIndex)) * scrollStepMultiplier) * stepSlowdownMultiplier
 
-            let offsetToScroll = (up ? -averageItemHeight : averageItemHeight) * step * stepSlowdownMultiplier
+            let offsetToScroll = (up ? -averageItemHeight : averageItemHeight) * step
             adjustedOffset += offsetToScroll
             if let item = listState.visibleItems.first(where: { $0.index == index }) {
                 let y = if top {
@@ -544,7 +554,9 @@ class EndlessScrollView<ScrollItem>: UIScrollView, UIScrollViewDelegate, UIGestu
             let firstOrLastIndex = up ? listState.visibleItems.last?.index ?? 0 : listState.firstVisibleItemIndex
             let step: CGFloat = max(0.1, CGFloat(abs(index - firstOrLastIndex)) * scrollStepMultiplier) * stepSlowdownMultiplier
 
-            let offsetToScroll = (up ? -averageItemHeight : averageItemHeight) * step * stepSlowdownMultiplier
+            //println("Scrolling step \(step) \(stepSlowdownMultiplier)  index \(index) \(firstOrLastIndex)  \(index - firstOrLastIndex)  \(adjustedOffset), up \(up), i \(i)")
+
+            let offsetToScroll = (up ? -averageItemHeight : averageItemHeight) * step
             adjustedOffset += offsetToScroll
             if let item = listState.visibleItems.first(where: { $0.index == index }) {
                 let y = if top {
