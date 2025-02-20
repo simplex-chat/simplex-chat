@@ -209,7 +209,7 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 - implements the same client-side restrictions as Software,
 - requires that the users accept the same Conditions of use of preset operators' Infrastructure as in Software prior to providing access to this Infrastructure,
 - displays the notice that it is the App for using SimpleX network,
-- provides its source code under open-source license accessible to the users via the App interface. In case the App uses the source code of Software, the App's source code must be provided under AGPLv3 license, and in case it is developed without using Software code its source code must be provided under any [OSI-approved](https://opensource.org/licenses) open-source license,
+- provides its source code under open-source license accessible to the users via the App interface. In case the App uses the source code of Software, the App's source code must be provided under AGPLv3 license, and in case it is developed without using Software code its source code must be provided under any widely recognized free open-source license,
 - does NOT use the branding of SimpleX Chat Ltd without the permission,
 - does NOT pretend to be Software,
 - complies with these Conditions of use.
