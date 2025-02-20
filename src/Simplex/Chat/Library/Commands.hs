@@ -3261,7 +3261,7 @@ processChatCommand' vr = \case
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
--- TODO [superpeers] used for CLI specific APIs (also updatedServers below) - rework/add similar APIs for superpeers?
+-- TODO [superpeers] used for CLI specific APIs (same for `updatedServers` below) - add similar APIs for superpeers?
 protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserSuperpeer]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserSuperpeer])
 protocolServers p (operators, smpServers, xftpServers, _superpeers) = case p of
   SPSMP -> (operators, smpServers, [], [])
