@@ -2287,7 +2287,7 @@
   <string name="v6_3_reports">Send private reports</string>
   <string name="v6_3_reports_descr">Help admins moderating their groups.</string>
   <string name="v6_3_organize_chat_lists">Organize chats into lists</string>
-  <string name="v6_3_organize_chat_lists_descr">Don't miss important messages.</string>
+  <string name="v6_3_organize_chat_lists_descr">Don\'t miss important messages.</string>
   <string name="v6_3_better_privacy_and_security">Better privacy and security</string>
   <string name="v6_3_private_media_file_names">Private media file names.</string>
   <string name="v6_3_set_message_expiration_in_chats">Set message expiration in chats.</string>
