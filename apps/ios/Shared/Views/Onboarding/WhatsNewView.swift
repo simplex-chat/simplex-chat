@@ -545,28 +545,36 @@ private let versionDescriptions: [VersionDescription] = [
         // post: URL(string: "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html"),
         features: [
             .feature(Description(
-                icon: "list.bullet.clipboard",
-                title: "Chat lists",
-                description: "Organize and filter your chats."
-            )),
-            .feature(Description(
                 icon: "at",
-                title: "Mentions",
-                description: "Mention group members. Be notified when mentioned."
+                title: "Mention members 👋",
+                description: "Get notified when mentioned."
             )),
             .feature(Description(
                 icon: "flag",
-                title: "Reports",
-                description: "Report content to group owners and admins."
+                title: "Send private reports",
+                description: "Help admins moderating their groups."
+            )),
+            .feature(Description(
+                icon: "list.bullet.clipboard",
+                title: "Organize chats into lists",
+                description: "Don't    miss important messages."
             )),
             .feature(Description(
                 icon: nil,
-                title: "Improved privacy and security",
+                title: "Better privacy and security",
                 description: nil,
                 subfeatures: [
                     ("eye.slash", "Private media file names."),
-                    ("person.2.slash", "Fast group deletion."),
-                    ("trash", "Per chat message expiration.")
+                    ("trash", "Set message expiration in chats.")
+                ]
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better groups performance",
+                description: nil,
+                subfeatures: [
+                    ("bolt", "Faster sending messages."),
+                    ("person.2.slash", "Faster deletion of groups.")
                 ]
             )),
         ]
