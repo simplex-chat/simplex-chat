@@ -2311,4 +2311,16 @@
     <string name="member_reports_are_prohibited">En aquest grup no es permet denunciar missatges.</string>
     <string name="group_members_can_send_reports">Els/les membres poden denunciar els missatges a moderació.</string>
     <string name="report_archive_alert_desc_all">Totes les denúncies s\'arxivaran.</string>
+    <string name="v6_3_mentions">Mencionar els membres 👋</string>
+    <string name="v6_3_reports">Enviar denúncies privades</string>
+    <string name="v6_3_better_privacy_and_security">Millor privadesa i seguretat</string>
+    <string name="v6_3_organize_chat_lists_descr">No us perdeu missatges importants.</string>
+    <string name="v6_3_faster_sending_messages">Enviament de missatges més ràpid.</string>
+    <string name="v6_3_organize_chat_lists">Organitzar els xats en llistes</string>
+    <string name="v6_3_private_media_file_names">Noms de fitxers multimèdia privats.</string>
+    <string name="v6_3_set_message_expiration_in_chats">Establir la caducitat del missatge als xats.</string>
+    <string name="v6_3_mentions_descr">Rebeu notificació quan se us menciona.</string>
+    <string name="v6_3_better_groups_performance">Millor rendiment dels grups</string>
+    <string name="v6_3_faster_deletion_of_groups">Supressió més ràpida de grups.</string>
+    <string name="v6_3_reports_descr">Ajudar els administradors a moderar els seus grups.</string>
 </resources>
