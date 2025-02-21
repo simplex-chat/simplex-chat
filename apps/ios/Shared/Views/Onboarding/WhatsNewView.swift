@@ -539,7 +539,38 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Delivered even when Apple drops them."
             )),
         ]
-    )
+    ),
+    VersionDescription(
+        version: "v6.3",
+        // post: URL(string: "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html"),
+        features: [
+            .feature(Description(
+                icon: "list.bullet.clipboard",
+                title: "Chat lists",
+                description: "Organize and filter your chats."
+            )),
+            .feature(Description(
+                icon: "at",
+                title: "Mentions",
+                description: "Mention group members. Be notified when mentioned."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "Reports",
+                description: "Report content to group owners and admins."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Improved privacy and security",
+                description: nil,
+                subfeatures: [
+                    ("eye.slash", "Private media file names."),
+                    ("person.2.slash", "Fast group deletion."),
+                    ("trash", "Per chat message expiration.")
+                ]
+            )),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
