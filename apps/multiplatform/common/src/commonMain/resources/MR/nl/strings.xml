@@ -2346,4 +2346,16 @@
     <string name="disable_sending_member_reports">Het melden van berichten aan moderators is niet toegestaan.</string>
     <string name="report_archive_for_all_moderators">Voor alle moderators</string>
     <string name="archive_reports">Rapporten archiveren</string>
+    <string name="v6_3_better_groups_performance">Betere prestaties van groepen</string>
+    <string name="v6_3_set_message_expiration_in_chats">Stel de berichtvervaldatum in chats in.</string>
+    <string name="v6_3_better_privacy_and_security">Betere privacy en veiligheid</string>
+    <string name="v6_3_organize_chat_lists_descr">‐Mis geen belangrijke berichten.</string>
+    <string name="v6_3_faster_deletion_of_groups">Sneller verwijderen van groepen.</string>
+    <string name="v6_3_mentions_descr">Ontvang een melding als u vermeld wordt.</string>
+    <string name="v6_3_reports_descr">Help beheerders bij het modereren van hun groepen.</string>
+    <string name="v6_3_mentions">Vermeld leden 👋</string>
+    <string name="v6_3_organize_chat_lists">Organiseer chats in lijsten</string>
+    <string name="v6_3_private_media_file_names">Namen van persoonlijke mediabestanden.</string>
+    <string name="v6_3_reports">Privérapporten verzenden</string>
+    <string name="v6_3_faster_sending_messages">Sneller verzenden van berichten.</string>
 </resources>
