@@ -2312,4 +2312,16 @@
     <string name="group_members_can_send_reports">A tagok jelenthetik az üzeneteket a moderátorok felé.</string>
     <string name="report_archive_alert_desc_all">Az összes jelentés archiválva lesz az Ön számára.</string>
     <string name="notification_group_report">Jelentés: %s</string>
+    <string name="v6_3_mentions">Tagok megemlítése 👋</string>
+    <string name="v6_3_reports">Privát jelentések küldése</string>
+    <string name="v6_3_organize_chat_lists_descr">Ne maradjon le a fontos üzenetekről.</string>
+    <string name="v6_3_faster_sending_messages">Gyorsabb üzenetküldés.</string>
+    <string name="v6_3_faster_deletion_of_groups">Gyorsabb csoporttörlés.</string>
+    <string name="v6_3_reports_descr">Segítsen az adminisztrátoroknak a csoportjaik moderálásában.</string>
+    <string name="v6_3_private_media_file_names">Privát nevek a médiafájlokhoz.</string>
+    <string name="v6_3_set_message_expiration_in_chats">Üzenetek lejárati idejének módosítása a csevegésekben.</string>
+    <string name="v6_3_better_groups_performance">Továbbfejlesztett, gyorsabb csoportok</string>
+    <string name="v6_3_better_privacy_and_security">Továbbfejlesztett adatvédelem és biztonság</string>
+    <string name="v6_3_mentions_descr">Kapjon értesítést, ha megemlítik.</string>
+    <string name="v6_3_organize_chat_lists">Csevegések listákba szervezése</string>
 </resources>
