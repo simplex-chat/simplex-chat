@@ -21,7 +21,7 @@ struct NativeTextEditor: UIViewRepresentable {
     let onImagesAdded: ([UploadContent]) -> Void
     
     static let minHeight: CGFloat = 39
-    
+
     func makeUIView(context: Context) -> CustomUITextField {
         let field = CustomUITextField(parent: self, height: _height)
         field.backgroundColor = .clear
@@ -78,12 +78,6 @@ class CustomUITextField: UITextView, UITextViewDelegate {
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
     var onFocusChanged: (Bool) -> Void = { focused in }
 
-    let defaultHeight: CGFloat = {
-        let field = UITextView()
-        field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
-        return min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), 360).rounded(.down)
-    }()
-
     private let placeholderLabel: UILabel = UILabel()
 
     init(parent: NativeTextEditor?, height: Binding<CGFloat>) {
@@ -111,13 +105,10 @@ class CustomUITextField: UITextView, UITextViewDelegate {
 
     func updateHeight(updateBindingNow: Bool = true) {
         let maxHeight = min(360, font!.lineHeight * 12)
-        // When having emoji in text view and then removing it, sizeThatFits shows previous size (too big for empty text view), so using work around with default size
-        let newHeight = text == ""
-        ? defaultHeight
-        : min(max(sizeThatFits(CGSizeMake(frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), maxHeight).rounded(.down)
+        let newHeight = min(max(sizeThatFits(CGSizeMake(frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), maxHeight).rounded(.down)
 
         if self.newHeight != newHeight {
-            //frame.size = CGSizeMake(frame.size.width, newHeight)
+            frame.size = CGSizeMake(frame.size.width, newHeight)
             invalidateIntrinsicContentHeight(newHeight)
             if updateBindingNow {
                 self.height.wrappedValue = newHeight
@@ -135,6 +126,11 @@ class CustomUITextField: UITextView, UITextViewDelegate {
         : UIFont.preferredFont(forTextStyle: .body)
         if font != newFont {
             font = newFont
+            // force apply new font because it has problem with doing it when the field had two emojis
+            if text.count == 0 {
+                text = " "
+                text = ""
+            }
         }
     }
 

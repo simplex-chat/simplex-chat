@@ -80,7 +80,7 @@ struct SendMessageView: View {
                 ProgressView()
                     .scaleEffect(1.4)
                     .frame(width: 31, height: 31, alignment: .center)
-                    .padding([.bottom, .trailing], 3)
+                    .padding([.bottom, .trailing], 4)
             } else {
                 composeActionButtons()
                 // required for intercepting clicks
@@ -170,7 +170,7 @@ struct SendMessageView: View {
             composeState.inProgress
         )
         .frame(width: 29, height: 29)
-        .padding([.bottom, .trailing], 4)
+        .padding([.bottom, .trailing], 5)
     }
 
     private func sendMessageButton() -> some View {
@@ -196,7 +196,7 @@ struct SendMessageView: View {
         .contextMenu{
             sendButtonContextMenuItems()
         }
-        .padding([.bottom, .trailing], 4)
+        .padding([.bottom, .trailing], 5)
         .confirmationDialog("Send disappearing message", isPresented: $showCustomDisappearingMessageDialogue, titleVisibility: .visible) {
             Button("30 seconds") { sendMessage(30) }
             Button("1 minute") { sendMessage(60) }
@@ -270,7 +270,7 @@ struct SendMessageView: View {
             }
             .disabled(disabled)
             .frame(width: 29, height: 29)
-            .padding([.bottom, .trailing], 4)
+            .padding([.bottom, .trailing], 5)
             ._onButtonGesture { down in
                 if down {
                     holdingVMR = true
@@ -326,7 +326,7 @@ struct SendMessageView: View {
         }
         .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)
-        .padding([.bottom, .trailing], 4)
+        .padding([.bottom, .trailing], 5)
     }
 
     private func cancelLiveMessageButton(cancel: @escaping () -> Void) -> some View {
@@ -411,7 +411,7 @@ struct SendMessageView: View {
         }
         .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)
-        .padding([.bottom, .trailing], 4)
+        .padding([.bottom, .trailing], 5)
     }
 
     private func updateFont(_ text: String) {
