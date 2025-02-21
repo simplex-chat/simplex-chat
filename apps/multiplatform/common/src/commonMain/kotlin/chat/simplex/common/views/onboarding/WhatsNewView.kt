@@ -762,6 +762,45 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         descrId = MR.strings.v6_2_improved_chat_navigation_descr
       ),
     ),
+  ),
+  VersionDescription(
+    version = "v6.3",
+    // post = "https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_at,
+        titleId = MR.strings.v6_3_mentions,
+        descrId = MR.strings.v6_3_mentions_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_flag,
+        titleId = MR.strings.v6_3_reports,
+        descrId = MR.strings.v6_3_reports_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_menu,
+        titleId = MR.strings.v6_3_organize_chat_lists,
+        descrId = MR.strings.v6_3_organize_chat_lists_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_3_better_privacy_and_security,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_visibility_off to MR.strings.v6_3_private_media_file_names,
+          MR.images.ic_delete to MR.strings.v6_3_set_message_expiration_in_chats
+        )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_3_better_groups_performance,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_bolt to MR.strings.v6_3_faster_sending_messages,
+          MR.images.ic_group_off to MR.strings.v6_3_faster_deletion_of_groups
+        )
+      ),
+    )
   )
 )
 
