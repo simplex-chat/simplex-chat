@@ -2349,4 +2349,13 @@
     <string name="enable_sending_member_reports">Consenti di segnalare messaggi ai moderatori.</string>
     <string name="report_archive_alert_desc_all">Tutte le segnalazioni verranno archiviate per te.</string>
     <string name="disable_sending_member_reports">Vieta di segnalare messaggi ai moderatori.</string>
+    <string name="v6_3_organize_chat_lists_descr">Non perdere messaggi importanti.</string>
+    <string name="v6_3_faster_deletion_of_groups">Eliminazione dei gruppi più veloce.</string>
+    <string name="v6_3_mentions_descr">Ricevi una notifica quando menzionato.</string>
+    <string name="v6_3_reports_descr">Aiuta gli amministratori a moderare i loro gruppi.</string>
+    <string name="v6_3_mentions">Menziona i membri 👋</string>
+    <string name="v6_3_better_privacy_and_security">Privacy e sicurezza migliorate</string>
+    <string name="v6_3_faster_sending_messages">Invio dei messaggi più veloce.</string>
+    <string name="v6_3_better_groups_performance">Prestazioni dei gruppi migliorate</string>
+    <string name="v6_3_organize_chat_lists">Organizza le chat in elenchi</string>
 </resources>
