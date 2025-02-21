@@ -682,7 +682,7 @@
     <string name="image_will_be_received_when_contact_is_online">A kép akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
     <string name="group_member_status_invited">meghíva</string>
     <string name="invalid_connection_link">Érvénytelen kapcsolattartási hivatkozás</string>
-    <string name="mute_chat">Némítás</string>
+    <string name="mute_chat">Csak említések</string>
     <string name="no_details">nincsenek részletek</string>
     <string name="icon_descr_call_missed">Nem fogadott hívás</string>
     <string name="theme_light">Világos</string>
@@ -1436,7 +1436,7 @@
     <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importáláskor:</string>
     <string name="v4_5_italian_interface_descr">Köszönet a felhasználóknak – hozzájárulás a Weblate-en!</string>
     <string name="relay_server_if_necessary">A továbbító-kiszolgáló csak szükség esetén lesz használva. Egy másik fél megfigyelheti az IP-címet.</string>
-    <string name="v5_0_app_passcode_descr">Rendszer-hitelesítés helyetti beállítás.</string>
+    <string name="v5_0_app_passcode_descr">Beállítás a rendszer-hitelesítés helyett.</string>
     <string name="switch_receiving_address_desc">A fogadási cím egy másik kiszolgálóra fog módosulni. A cím módosítása a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegési adatbázis exportálásához, importálásához vagy törléséhez. A csevegés megállításakor nem tud üzeneteket fogadni és küldeni.</string>
     <string name="save_passphrase_in_keychain">Jelmondat mentése a Keystore-ba</string>
@@ -1644,7 +1644,7 @@
     <string name="migrate_from_device_bytes_uploaded">%s feltöltve</string>
     <string name="migrate_from_device_upload_failed">Sikertelen feltöltés</string>
     <string name="migrate_from_device_uploading_archive">Archívum feltöltése</string>
-    <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Figyelmeztetés: a csevegés elindítása egyszerre több eszközön nem támogatott, és üzenetkézbesítési hibákat okozhat</string>
+    <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Figyelmeztetés: a csevegés elindítása egyszerre több eszközön nem támogatott, mert üzenetkézbesítési hibákat okoz</string>
     <string name="migrate_to_device_repeat_import">Importálás ismét</string>
     <string name="conn_event_disabled_pq">szabványos végpontok közötti titkosítás</string>
     <string name="migrate_to_device_title">Átköltöztetés ide</string>
@@ -2298,7 +2298,7 @@
     <string name="network_smp_web_port_footer">A(z) %1$s port használata, amikor nincs port megadva.</string>
     <string name="network_smp_web_port_section_title">TCP-port az üzenetváltáshoz</string>
     <string name="network_smp_web_port_toggle">Webport használata</string>
-    <string name="unread_mentions">Olvasatlan megemlítések</string>
+    <string name="unread_mentions">Olvasatlan említések</string>
     <string name="mute_all_chat">Összes némítása</string>
     <string name="max_group_mentions_per_message_reached">Legfeljebb %1$s tagot említhet meg egy üzenetben!</string>
     <string name="enable_sending_member_reports">Lehetővé teszi az üzenetek jelentését a moderátorok felé.</string>
@@ -2312,7 +2312,7 @@
     <string name="group_members_can_send_reports">A tagok jelenthetik az üzeneteket a moderátorok felé.</string>
     <string name="report_archive_alert_desc_all">Az összes jelentés archiválva lesz az Ön számára.</string>
     <string name="notification_group_report">Jelentés: %s</string>
-    <string name="v6_3_mentions">Tagok megemlítése 👋</string>
+    <string name="v6_3_mentions">Tagok említése 👋</string>
     <string name="v6_3_reports">Privát jelentések küldése</string>
     <string name="v6_3_organize_chat_lists_descr">Ne maradjon le a fontos üzenetekről.</string>
     <string name="v6_3_faster_sending_messages">Gyorsabb üzenetküldés.</string>
