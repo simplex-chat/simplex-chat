@@ -60,19 +60,21 @@ struct NativeTextEditor: UIViewRepresentable {
     
     func updateUIView(_ field: UITextView, context: Context) {
         if field.markedTextRange == nil && field.text != text {
-            field.text = text
-            field.textAlignment = alignment(text)
-            updateFont(field)
-            updateHeight(field)
+            DispatchQueue.main.async {
+                field.text = text
+                field.textAlignment = alignment(text)
+                updateFont(field)
+                updateHeight(field)
+            }
         }
-        
+        if field.selectedRange != selectedRange {
+            DispatchQueue.main.async {
+                field.selectedRange = selectedRange
+            }
+        }
         let castedField = field as! CustomUITextField
         if castedField.placeholder != placeholder {
             castedField.placeholder = placeholder
-        }
-        
-        if field.selectedRange != selectedRange {
-            field.selectedRange = selectedRange
         }
     }
 
