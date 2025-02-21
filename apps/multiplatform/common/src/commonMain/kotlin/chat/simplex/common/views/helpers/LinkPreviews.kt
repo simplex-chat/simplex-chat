@@ -45,7 +45,7 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
             .timeout(10000)
             .followRedirects(true)
 
-          val response = if (url.lowercase().startsWith("https://x.com")) {
+          val response = if (url.lowercase().startsWith("https://x.com/")) {
             // Apple sends request with special user-agent which handled differently by X.com.
             // Different response that includes video poster from post
             connection
