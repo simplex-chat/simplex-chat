@@ -2907,6 +2907,7 @@ object ChatController {
       is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost
+        ModalManager.start.closeModals()
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.ContactDisabled -> {
