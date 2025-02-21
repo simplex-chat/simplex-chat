@@ -51,7 +51,7 @@ module Simplex.Chat.Store.Profiles
     getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
-    insertProtocolServer,
+    getSuperpeers,
     getUpdateServerOperators,
     getServerOperators,
     getUserServers,
@@ -117,11 +117,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
-createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
+createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> Bool -> ExceptT StoreError IO User
+createUserRecord db auId p userSuperpeer activeUser = createUserRecordAt db auId p userSuperpeer activeUser =<< liftIO getCurrentTime
 
-createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
-createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, preferences = userPreferences} activeUser currentTs =
+createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> Bool -> UTCTime -> ExceptT StoreError IO User
+createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, preferences = userPreferences} userSuperpeer activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
@@ -148,7 +148,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order, displayName, fullName, image, Nothing, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, Nothing, Nothing, Nothing, Nothing, BI userSuperpeer)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -588,6 +588,49 @@ serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_)
       auth = safeDecodeUtf8 . unBasicAuth <$> auth_
    in (protocol, host, port, keyHash, auth)
 
+getSuperpeers :: DB.Connection -> User -> IO [UserSuperpeer]
+getSuperpeers db User {userId} =
+  map toSuperpeer
+    <$> DB.query
+      db
+      [sql|
+        SELECT superpeer_id, address, name, domains, preset, tested, enabled
+        FROM superpeers
+        WHERE user_id = ?
+      |]
+      (Only userId)
+  where
+    toSuperpeer :: (DBEntityId, ConnReqContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserSuperpeer
+    toSuperpeer (superpeerId, address, name, domains, BI preset, tested, BI enabled) =
+      UserSuperpeer {superpeerId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+
+insertSuperpeer :: DB.Connection -> User -> UTCTime -> NewUserSuperpeer -> IO UserSuperpeer
+insertSuperpeer db User {userId} ts speer@UserSuperpeer {address, name, domains, preset, tested, enabled} = do
+  sId <-
+    fromOnly . head
+      <$> DB.query
+        db
+        [sql|
+          INSERT INTO superpeers
+            (address, name, domains, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?)
+          RETURNING superpeer_id
+        |]
+        (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, userId, ts, ts)
+  pure speer {superpeerId = DBEntityId sId}
+
+updateSuperpeer :: DB.Connection -> UTCTime -> UserSuperpeer -> IO ()
+updateSuperpeer db ts UserSuperpeer {superpeerId, address, name, domains, preset, tested, enabled} =
+  DB.execute
+    db
+    [sql|
+      UPDATE superpeers
+      SET address = ?, name = ?, domains = ?,
+          preset = ?, tested = ?, enabled = ?, updated_at = ?
+      WHERE superpeer_id = ?
+    |]
+    (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, ts, superpeerId)
+
 getServerOperators :: DB.Connection -> ExceptT StoreError IO ServerOperatorConditions
 getServerOperators db = do
   currentConditions <- getCurrentUsageConditions db
@@ -599,12 +642,13 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserSuperpeer])
 getUserServers db user =
-  (,,)
+  (,,,)
     <$> (map Just . serverOperators <$> getServerOperators db)
     <*> liftIO (getProtocolServers db SPSMP user)
     <*> liftIO (getProtocolServers db SPXFTP user)
+    <*> liftIO (getSuperpeers db user)
 
 setServerOperators :: DB.Connection -> NonEmpty ServerOperator -> IO ()
 setServerOperators db ops = do
@@ -817,20 +861,29 @@ setUserServers :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers
 setUserServers db user ts = checkConstraint SEUniqueID . liftIO . setUserServers' db user ts
 
 setUserServers' :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers -> IO UserOperatorServers
-setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers} = do
+setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers, superpeers} = do
   mapM_ (updateServerOperator db ts) operator
-  smpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPSMP) smpServers
-  xftpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPXFTP) xftpServers
-  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs'}
+  smpSrvs' <- catMaybes <$> mapM (upsertOrDeleteSrv SPSMP) smpServers
+  xftpSrvs' <- catMaybes <$> mapM (upsertOrDeleteSrv SPXFTP) xftpServers
+  speers' <- catMaybes <$> mapM upsertOrDeleteSpeer superpeers
+  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs', superpeers = speers'}
   where
-    upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> AUserServer p -> IO (Maybe (UserServer p))
-    upsertOrDelete p (AUS _ s@UserServer {serverId, deleted}) = case serverId of
+    upsertOrDeleteSrv :: ProtocolTypeI p => SProtocolType p -> AUserServer p -> IO (Maybe (UserServer p))
+    upsertOrDeleteSrv p (AUS _ s@UserServer {serverId, deleted}) = case serverId of
       DBNewEntity
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertProtocolServer db p user ts s
       DBEntityId srvId
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
+    upsertOrDeleteSpeer :: AUserSuperpeer -> IO (Maybe UserSuperpeer)
+    upsertOrDeleteSpeer (AUSP _ speer@UserSuperpeer {superpeerId, deleted}) = case superpeerId of
+      DBNewEntity
+        | deleted -> pure Nothing
+        | otherwise -> Just <$> insertSuperpeer db user ts speer
+      DBEntityId speerId
+        | deleted -> Nothing <$ DB.execute db "DELETE FROM superpeers WHERE user_id = ? AND superpeer_id = ? AND preset = ?" (userId, speerId, BI False)
+        | otherwise -> Just speer <$ updateSuperpeer db ts speer
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do

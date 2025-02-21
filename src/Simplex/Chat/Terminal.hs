@@ -9,7 +9,7 @@ module Simplex.Chat.Terminal where
 
 import Control.Monad
 import qualified Data.List.NonEmpty as L
-import Simplex.Chat (defaultChatConfig, operatorSimpleXChat)
+import Simplex.Chat (defaultChatConfig, operatorSimpleXChat, simplexChatSuperpeers)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
@@ -49,7 +49,9 @@ terminalChatConfig =
                         ],
                     useSMP = 3,
                     xftp = map (presetServer True) $ L.toList defaultXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    superpeers = simplexChatSuperpeers,
+                    useSuperpeers = 2
                   }
               ],
             ntf = _defaultNtfServers,
