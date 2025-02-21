@@ -557,7 +557,7 @@ private let versionDescriptions: [VersionDescription] = [
             .feature(Description(
                 icon: "list.bullet.clipboard",
                 title: "Organize chats into lists",
-                description: "Don't    miss important messages."
+                description: "Don't miss important messages."
             )),
             .feature(Description(
                 icon: nil,
