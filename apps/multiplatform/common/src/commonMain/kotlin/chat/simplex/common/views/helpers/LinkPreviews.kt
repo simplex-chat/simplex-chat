@@ -40,11 +40,21 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
           url
         }
         else -> {
-          val response = Jsoup.connect(url)
+          val connection = Jsoup.connect(url)
             .ignoreContentType(true)
             .timeout(10000)
             .followRedirects(true)
-            .execute()
+
+          val response = if (url.lowercase().startsWith("https://x.com")) {
+            // Apple sends request with special user-agent which handled differently by X.com.
+            // Different response that includes video poster from post
+            connection
+              .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0")
+              .execute()
+          } else {
+            connection
+              .execute()
+          }
           val doc = response.parse()
           val ogTags = doc.select(OG_SELECT_QUERY)
           title = ogTags.firstOrNull { it.attr("property") == "og:title" }?.attr("content") ?: doc.title()
