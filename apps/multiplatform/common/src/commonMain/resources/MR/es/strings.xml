@@ -355,7 +355,7 @@
     <string name="ignore">Ignorar</string>
     <string name="error_deleting_database">Error al eliminar base de datos</string>
     <string name="encrypted_database">Base de datos cifrada</string>
-    <string name="error_removing_member">Error al eliminar miembro</string>
+    <string name="error_removing_member">Error al expulsar miembro</string>
     <string name="group_members_can_send_voice">Los miembros pueden enviar mensajes de voz.</string>
     <string name="description_via_contact_address_link_incognito">en modo incógnito mediante enlace de dirección del contacto</string>
     <string name="failed_to_create_user_title">¡Error al crear perfil!</string>
@@ -1474,14 +1474,14 @@
     <string name="found_desktop">Ordenador encontrado</string>
     <string name="not_compatible">¡No compatible!</string>
     <string name="waiting_for_mobile_to_connect">Esperando conexión móvil:</string>
-    <string name="remove_member_button">Eliminar miembro</string>
+    <string name="remove_member_button">Expulsar miembro</string>
     <string name="unblock_member_question">¿Desbloquear miembro?</string>
     <string name="open_port_in_firewall_desc">Para permitir que la aplicación móvil se conecte al ordenador, abre este puerto en el firewall si está habilitado</string>
     <string name="settings_section_title_use_from_desktop">Usar desde ordenador</string>
     <string name="session_code">Código de sesión</string>
     <string name="connect_plan_repeat_join_request">¿Repetir solicitud de admisión?</string>
     <string name="create_chat_profile">Crear perfil de chat</string>
-    <string name="button_remove_member_question">¿Eliminar miembro?</string>
+    <string name="button_remove_member_question">¿Expulsar miembro?</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">¡Ya estás conectando mediante este enlace de un solo uso!</string>
     <string name="unlink_desktop">Desenlazar</string>
     <string name="this_device_name_shared_with_mobile">El nombre del dispositivo será compartido con el cliente móvil conectado.</string>
@@ -2337,8 +2337,8 @@
     <string name="unread_mentions">Menciones sin leer</string>
     <string name="max_group_mentions_per_message_reached">¡Puedes mencionar hasta %1$s miembros por mensaje!</string>
     <string name="group_members_can_send_reports">Los miembros pueden informar de mensajes a los moderadores.</string>
-    <string name="disable_sending_member_reports">No permitir informar de mensajes a los moderadores.</string>
-    <string name="enable_sending_member_reports">Permitir informar de mensajes a los moderadores.</string>
+    <string name="disable_sending_member_reports">No se permite informar de mensajes a los moderadores.</string>
+    <string name="enable_sending_member_reports">Se permite informar de mensajes a los moderadores.</string>
     <string name="notification_group_report">Informe: %s</string>
     <string name="report_archive_alert_title_nth">¿Archivar %d informes?</string>
     <string name="archive_reports">Archivar informes</string>
@@ -2347,4 +2347,16 @@
     <string name="member_reports_are_prohibited">No se permite informar de mensajes en este grupo.</string>
     <string name="report_archive_alert_desc_all">Todos los informes serán archivados para ti.</string>
     <string name="report_archive_alert_title_all">¿Archivar todos los informes?</string>
+    <string name="v6_3_mentions_descr">Las menciones ahora notifican.</string>
+    <string name="v6_3_mentions">Mencionar miembros 👋</string>
+    <string name="v6_3_organize_chat_lists_descr">No pierdas los mensajes importantes.</string>
+    <string name="v6_3_organize_chat_lists">Organiza los chats en listas</string>
+    <string name="v6_3_private_media_file_names">Nombres privados de archivos de media.</string>
+    <string name="v6_3_faster_deletion_of_groups">Eliminación más rápida de grupos.</string>
+    <string name="v6_3_faster_sending_messages">Envío más rápido de mensajes.</string>
+    <string name="v6_3_reports_descr">Ayuda a los admins moderar sus grupos.</string>
+    <string name="v6_3_better_groups_performance">Mejor rendimiento de los grupos</string>
+    <string name="v6_3_better_privacy_and_security">Mejor privacidad y seguridad</string>
+    <string name="v6_3_reports">Envia informes privados</string>
+    <string name="v6_3_set_message_expiration_in_chats">Establece la expiración de mensajes en chats.</string>
 </resources>
