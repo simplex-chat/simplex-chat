@@ -481,7 +481,7 @@ data ChatCommand
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | MemberRole GroupName ContactName GroupMemberRole
   | BlockForAll GroupName ContactName Bool
-  | RemoveMember GroupName ContactName
+  | RemoveMembers GroupName (NonEmpty ContactName)
   | LeaveGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
