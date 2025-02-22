@@ -157,7 +157,7 @@
     <string name="allow_direct_messages">A közvetlen üzenetek küldése a tagok között engedélyezve van.</string>
     <string name="settings_section_title_app">ALKALMAZÁS</string>
     <string name="icon_descr_call_progress">Hívás folyamatban</string>
-    <string name="both_you_and_your_contact_can_add_message_reactions">Mindkét fél hozzádhat az üzenetekhez reakciókat.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Mindkét fél hozzáadhat az üzenetekhez reakciókat.</string>
     <string name="both_you_and_your_contact_can_make_calls">Mindkét fél tud hívásokat kezdeményezni.</string>
     <string name="la_auth_failed">Sikertelen hitelesítés</string>
     <string name="block_member_desc">Az összes %s által írt új üzenet el lesz rejtve!</string>
@@ -448,7 +448,7 @@
     <string name="chat_preferences_default">alapértelmezett (%s)</string>
     <string name="integrity_msg_duplicate">duplikált üzenet</string>
     <string name="disconnect_desktop_question">Számítógép leválasztása?</string>
-    <string name="desktop_app_version_is_incompatible">Számítógép-alkalmazás verziója %s nem kompatibilis ezzel az alkalmazással.</string>
+    <string name="desktop_app_version_is_incompatible">A számítógép-alkalmazás verziója (%s) nem kompatibilis ezzel az alkalmazással.</string>
     <string name="delivery">Kézbesítés</string>
     <string name="total_files_count_and_size">%d fájl %s összméretben</string>
     <string name="database_passphrase_is_required">A csevegés megnyitásához adja meg az adatbázis jelmondatát.</string>
@@ -618,7 +618,7 @@
     <string name="la_immediately">Azonnal</string>
     <string name="files_and_media_prohibited">A fájlok- és a médiatartalmak küldése le van tiltva!</string>
     <string name="hide_profile">Profil elrejtése</string>
-    <string name="how_to_use_your_servers">Saját kiszolgálók használata</string>
+    <string name="how_to_use_your_servers">Hogyan használja a saját kiszolgálóit</string>
     <string name="v5_2_favourites_filter">Csevegési üzenetek gyorsabb megtalálása</string>
     <string name="import_theme">Téma importálása</string>
     <string name="import_theme_error">Hiba a téma importálásakor</string>
@@ -782,7 +782,7 @@
     <string name="add_contact">Egyszer használható meghívási hivatkozás</string>
     <string name="notifications">Értesítések</string>
     <string name="images_limit_desc">Egyszerre csak 10 kép küldhető el</string>
-    <string name="feature_offered_item_with_param">ajánlott %s: %2s</string>
+    <string name="feature_offered_item_with_param">ajánlotta: %s, ekkor: %2s</string>
     <string name="not_compatible">Nem kompatibilis!</string>
     <string name="make_profile_private">Tegye priváttá a profilját!</string>
     <string name="message_delivery_error_title">Üzenetkézbesítési hiba</string>
@@ -807,9 +807,9 @@
     <string name="shutdown_alert_desc">Az értesítések az alkalmazás elindításáig nem fognak működni</string>
     <string name="chat_preferences_off">kikapcsolva</string>`
   <string name="this_device_version"><![CDATA[<i>(ez az eszköz: v%s)</i>]]></string>
-    <string name="feature_offered_item">ajánlott %s</string>
+    <string name="feature_offered_item">%s ajánlotta</string>
     <string name="button_leave_group">Csoport elhagyása</string>
-    <string name="unblock_member_desc">Az összes %s által írt üzenet megjelenik!</string>
+    <string name="unblock_member_desc">Az összes %s által írt üzenet meg fog jelenni!</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:\n1. Az üzenetek 2 nap után, vagy a kiszolgálón 30 nap után lejártak.\n2. Az üzenet visszafejtése sikertelen volt, mert Ön, vagy az ismerőse régebbi adatbázis biztonsági mentést használt.\n3. A kapcsolat sérült.</string>
     <string name="group_member_role_observer">megfigyelő</string>
     <string name="description_via_group_link_incognito">inkognitó a csoporthivatkozáson keresztül</string>
@@ -913,7 +913,7 @@
     <string name="v4_5_reduced_battery_usage">Csökkentett akkumulátor-használat</string>
     <string name="save_and_notify_contacts">Mentés és az ismerősök értesítése</string>
     <string name="group_welcome_preview">Előnézet</string>
-    <string name="use_chat">Simplex Chat használata</string>
+    <string name="use_chat">SimpleX Chat használata</string>
     <string name="share_verb">Megosztás</string>
     <string name="received_message">Fogadott üzenet</string>
     <string name="button_welcome_message">Üdvözlőüzenet</string>
@@ -1108,7 +1108,7 @@
     <string name="voice_message">Hangüzenet</string>
     <string name="settings_section_title_use_from_desktop">Társítás számítógéppel</string>
     <string name="settings_section_title_you">PROFIL</string>
-    <string name="network_proxy_port">port %d</string>
+    <string name="network_proxy_port">%d-s port</string>
     <string name="to_connect_via_link_title">Kapcsolódás egy hivatkozáson keresztül</string>
     <string name="share_address">Cím megosztása</string>
     <string name="smp_servers_scan_qr">A kiszolgáló QR-kódjának beolvasása</string>
@@ -1543,7 +1543,7 @@
     <string name="developer_options_section">Fejlesztői beállítások</string>
     <string name="possible_slow_function_desc">A funkció végrehajtása túl sokáig tart: %1$d másodperc: %2$s</string>
     <string name="remote_host_error_busy"><![CDATA[A(z) <b>%s</b> hordozható eszköz elfoglalt]]></string>
-    <string name="past_member_vName">Már nem tag %1$s</string>
+    <string name="past_member_vName">(Már nem tag) %1$s</string>
     <string name="group_member_status_unknown">ismeretlen állapot</string>
     <string name="profile_update_event_member_name_changed">%1$s a következőre módosította a nevét: %2$s</string>
     <string name="profile_update_event_removed_address">eltávolította a kapcsolattartási címet</string>
