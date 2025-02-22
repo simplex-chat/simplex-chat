@@ -1320,7 +1320,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                         if v >= groupFastLinkJoinVersion
                           then do
-                            mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
+                            mem <- acceptGroupJoinRequestAsync user gInfo cReq GRObserver profileMode
                             createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                             toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
                           else messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
