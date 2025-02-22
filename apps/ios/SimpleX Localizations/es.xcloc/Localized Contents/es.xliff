@@ -925,7 +925,7 @@
       </trans-unit>
       <trans-unit id="Allow to report messsages to moderators." xml:space="preserve" approved="no">
         <source>Allow to report messsages to moderators.</source>
-        <target state="translated">Permitir informar de mensajes a los moderadores.</target>
+        <target state="translated">Se permite informar de mensajes a los moderadores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
@@ -3376,9 +3376,9 @@ This is your own one-time link!</source>
         <target state="translated">Error al registrarse para notificaciones</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error removing member" xml:space="preserve">
+      <trans-unit id="Error removing member" xml:space="preserve" approved="no">
         <source>Error removing member</source>
-        <target>Error al eliminar miembro</target>
+        <target state="translated">Error al expulsar miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error reordering lists" xml:space="preserve">
@@ -5982,7 +5982,7 @@ Error: %@</target>
       </trans-unit>
       <trans-unit id="Prohibit reporting messages to moderators." xml:space="preserve" approved="no">
         <source>Prohibit reporting messages to moderators.</source>
-        <target state="translated">No permitir informar de mensajes a los moderadores.</target>
+        <target state="translated">No se permite informar de mensajes a los moderadores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
