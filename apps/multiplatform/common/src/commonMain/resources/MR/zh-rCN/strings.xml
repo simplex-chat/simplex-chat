@@ -2333,4 +2333,16 @@
     <string name="member_reports_are_prohibited">此群禁止消息举报。</string>
     <string name="group_members_can_send_reports">成员可以向 moderators 举报消息。</string>
     <string name="enable_sending_member_reports">允许向 moderators 举报消息。</string>
+    <string name="v6_3_mentions">提及成员👋</string>
+    <string name="v6_3_better_groups_performance">更好的群性能</string>
+    <string name="v6_3_better_privacy_and_security">更好的隐私和安全</string>
+    <string name="v6_3_organize_chat_lists_descr">不错过重要消息。</string>
+    <string name="v6_3_faster_deletion_of_groups">更快地删除群。</string>
+    <string name="v6_3_faster_sending_messages">更快死发送消息。</string>
+    <string name="v6_3_mentions_descr">被提及时收到通知。</string>
+    <string name="v6_3_reports_descr">帮助管理员管理群组。</string>
+    <string name="v6_3_organize_chat_lists">将聊天组织到列表</string>
+    <string name="v6_3_private_media_file_names">私密媒体文件名。</string>
+    <string name="v6_3_reports">发送私下举报</string>
+    <string name="v6_3_set_message_expiration_in_chats">在聊天中设置消息过期时间。</string>
 </resources>
