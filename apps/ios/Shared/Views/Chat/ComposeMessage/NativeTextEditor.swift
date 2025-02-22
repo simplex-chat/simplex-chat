@@ -22,13 +22,7 @@ struct NativeTextEditor: UIViewRepresentable {
     
     static let minHeight: CGFloat = 39
 
-    private let defaultHeight: CGFloat = {
-        let field = CustomUITextField(parent: nil, height: Binding.constant(0))
-        field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
-        return min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), 360).rounded(.down)
-    }()
-    
-    func makeUIView(context: Context) -> UITextView {
+    func makeUIView(context: Context) -> CustomUITextField {
         let field = CustomUITextField(parent: self, height: _height)
         field.backgroundColor = .clear
         field.text = text
@@ -38,10 +32,9 @@ struct NativeTextEditor: UIViewRepresentable {
             if !disableEditing {
                 text = newText
                 field.textAlignment = alignment(text)
-                updateFont(field)
+                field.updateFont()
                 // Speed up the process of updating layout, reduce jumping content on screen
-                updateHeight(field)
-                self.height = field.frame.size.height
+                field.updateHeight()
             } else {
                 field.text = text
             }
@@ -53,48 +46,23 @@ struct NativeTextEditor: UIViewRepresentable {
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
         field.setPlaceholderView()
-        updateFont(field)
-        updateHeight(field)
+        field.updateFont()
+        field.updateHeight(updateBindingNow: false)
         return field
     }
     
-    func updateUIView(_ field: UITextView, context: Context) {
+    func updateUIView(_ field: CustomUITextField, context: Context) {
         if field.markedTextRange == nil && field.text != text {
             field.text = text
             field.textAlignment = alignment(text)
-            updateFont(field)
-            updateHeight(field)
+            field.updateFont()
+            field.updateHeight(updateBindingNow: false)
         }
-        
-        let castedField = field as! CustomUITextField
-        if castedField.placeholder != placeholder {
-            castedField.placeholder = placeholder
+        if field.placeholder != placeholder {
+            field.placeholder = placeholder
         }
-        
         if field.selectedRange != selectedRange {
             field.selectedRange = selectedRange
-        }
-    }
-
-    private func updateHeight(_ field: UITextView) {
-        let maxHeight = min(360, field.font!.lineHeight * 12)
-        // When having emoji in text view and then removing it, sizeThatFits shows previous size (too big for empty text view), so using work around with default size
-        let newHeight = field.text == ""
-        ? defaultHeight
-        : min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), maxHeight).rounded(.down)
-
-        if field.frame.size.height != newHeight {
-            field.frame.size = CGSizeMake(field.frame.size.width, newHeight)
-            (field as! CustomUITextField).invalidateIntrinsicContentHeight(newHeight)
-        }
-    }
-
-    private func updateFont(_ field: UITextView) {
-        let newFont = isShortEmoji(field.text)
-        ? (field.text.count < 4 ? largeEmojiUIFont : mediumEmojiUIFont)
-        : UIFont.preferredFont(forTextStyle: .body)
-        if field.font != newFont {
-            field.font = newFont
         }
     }
 }
@@ -103,13 +71,13 @@ private func alignment(_ text: String) -> NSTextAlignment {
     isRightToLeft(text) ? .right : .left
 }
 
-private class CustomUITextField: UITextView, UITextViewDelegate {
+class CustomUITextField: UITextView, UITextViewDelegate {
     var parent: NativeTextEditor?
     var height: Binding<CGFloat>
     var newHeight: CGFloat = 0
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
     var onFocusChanged: (Bool) -> Void = { focused in }
-    
+
     private let placeholderLabel: UILabel = UILabel()
 
     init(parent: NativeTextEditor?, height: Binding<CGFloat>) {
@@ -135,14 +103,44 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
         invalidateIntrinsicContentSize()
     }
 
-    override var intrinsicContentSize: CGSize {
-        if height.wrappedValue != newHeight ||
-            // when both heights equal to minHeight, we must update $height, even if it's the same, because only this way
-            // the swift ui wrapper will redisplay this view with updated height
-            newHeight == NativeTextEditor.minHeight {
-            DispatchQueue.main.async { self.height.wrappedValue = self.newHeight }
+    func updateHeight(updateBindingNow: Bool = true) {
+        let maxHeight = min(360, font!.lineHeight * 12)
+        let newHeight = min(max(sizeThatFits(CGSizeMake(frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), maxHeight).rounded(.down)
+
+        if self.newHeight != newHeight {
+            frame.size = CGSizeMake(frame.size.width, newHeight)
+            invalidateIntrinsicContentHeight(newHeight)
+            if updateBindingNow {
+                self.height.wrappedValue = newHeight
+            } else {
+                DispatchQueue.main.async {
+                    self.height.wrappedValue = newHeight
+                }
+            }
         }
-        return CGSizeMake(0, newHeight)
+    }
+
+    func updateFont() {
+        let newFont = isShortEmoji(text)
+        ? (text.count < 4 ? largeEmojiUIFont : mediumEmojiUIFont)
+        : UIFont.preferredFont(forTextStyle: .body)
+        if font != newFont {
+            font = newFont
+            // force apply new font because it has problem with doing it when the field had two emojis
+            if text.count == 0 {
+                text = " "
+                text = ""
+            }
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateHeight()
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSizeMake(0, newHeight)
     }
 
     func setOnTextChangedListener(onTextChanged: @escaping (String, [UploadContent]) -> Void) {
