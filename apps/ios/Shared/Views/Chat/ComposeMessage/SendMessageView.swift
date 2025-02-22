@@ -169,8 +169,8 @@ struct SendMessageView: View {
             !composeState.sendEnabled ||
             composeState.inProgress
         )
-        .frame(width: 29, height: 29)
-        .padding([.bottom, .trailing], 5)
+        .frame(width: 31, height: 31)
+        .padding([.bottom, .trailing], 4)
     }
 
     private func sendMessageButton() -> some View {
@@ -192,11 +192,11 @@ struct SendMessageView: View {
             composeState.endLiveDisabled ||
             disableSendButton
         )
-        .frame(width: 29, height: 29)
+        .frame(width: 31, height: 31)
         .contextMenu{
             sendButtonContextMenuItems()
         }
-        .padding([.bottom, .trailing], 5)
+        .padding([.bottom, .trailing], 4)
         .confirmationDialog("Send disappearing message", isPresented: $showCustomDisappearingMessageDialogue, titleVisibility: .visible) {
             Button("30 seconds") { sendMessage(30) }
             Button("1 minute") { sendMessage(60) }
@@ -269,8 +269,8 @@ struct SendMessageView: View {
                     .foregroundColor(theme.colors.primary)
             }
             .disabled(disabled)
-            .frame(width: 29, height: 29)
-            .padding([.bottom, .trailing], 5)
+            .frame(width: 31, height: 31)
+            .padding([.bottom, .trailing], 4)
             ._onButtonGesture { down in
                 if down {
                     holdingVMR = true
@@ -325,8 +325,8 @@ struct SendMessageView: View {
                 .foregroundColor(theme.colors.secondary)
         }
         .disabled(composeState.inProgress)
-        .frame(width: 29, height: 29)
-        .padding([.bottom, .trailing], 5)
+        .frame(width: 31, height: 31)
+        .padding([.bottom, .trailing], 4)
     }
 
     private func cancelLiveMessageButton(cancel: @escaping () -> Void) -> some View {
@@ -410,8 +410,8 @@ struct SendMessageView: View {
                 .foregroundColor(theme.colors.primary)
         }
         .disabled(composeState.inProgress)
-        .frame(width: 29, height: 29)
-        .padding([.bottom, .trailing], 5)
+        .frame(width: 31, height: 31)
+        .padding([.bottom, .trailing], 4)
     }
 
     private func updateFont(_ text: String) {
