@@ -1263,7 +1263,7 @@
     <string name="unhide_chat_profile">Csevegési profil felfedése</string>
     <string name="v5_0_large_files_support">Videók és fájlok legfeljebb 1GB méretig</string>
     <string name="network_option_tcp_connection_timeout">TCP kapcsolat időtúllépése</string>
-    <string name="connect__your_profile_will_be_shared">A(z) %1$s nevű profiljának SimpleX-címe meg lesz osztva.</string>
+    <string name="connect__your_profile_will_be_shared">A(z) %1$s nevű profilja meg lesz osztva.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Ön már kapcsolódott a következőhöz: %1$s.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">A jelenlegi csevegési adatbázis TÖRÖLVE és CSERÉLVE lesz az importáltra!\nEz a művelet nem vonható vissza – profiljai, ismerősei, csevegési üzenetei és fájljai véglegesen törölve lesznek.</string>
     <string name="chat_with_the_founder">Ötletek és javaslatok</string>
@@ -1725,7 +1725,7 @@
     <string name="snd_error_expired">Hálózati problémák – az üzenet többszöri elküldési kísérlet után lejárt.</string>
     <string name="srv_error_version">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal.</string>
     <string name="snd_error_auth">Érvénytelen kulcs vagy ismeretlen kapcsolat – valószínűleg ez a kapcsolat törlődött.</string>
-    <string name="snd_error_proxy_relay">Továbbító-kiszolgáló: %1$s\nCélkiszolgáló hiba: %2$s</string>
+    <string name="snd_error_proxy_relay">Továbbító-kiszolgáló: %1$s\nCélkiszolgáló-hiba: %2$s</string>
     <string name="ci_status_other_error">Hiba: %1$s</string>
     <string name="snd_error_quota">Kapacitás túllépés – a címzett nem kapta meg a korábban elküldött üzeneteket.</string>
     <string name="message_delivery_warning_title">Üzenetkézbesítési figyelmeztetés</string>
@@ -2122,7 +2122,7 @@
     <string name="operator_conditions_accepted_for_enabled_operators_on">A feltételek automatikusan el lesznek fogadva az engedélyezett üzemeltetők számára: %s.</string>
     <string name="your_servers">Az Ön kiszolgálói</string>
     <string name="operators_conditions_accepted_for"><![CDATA[A következő üzemeltető(k) számára elfogadott feltételek: <b>%s</b>.]]></string>
-    <string name="operators_conditions_will_be_accepted_for"><![CDATA[Automatikus feltétel-elfogadás a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
+    <string name="operators_conditions_will_be_accepted_for"><![CDATA[A feltételek el lesznek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
     <string name="operator_servers_title">%s kiszolgáló</string>
     <string name="operator_info_title">Hálózati üzemeltető</string>
     <string name="operator_website">Weboldal</string>
@@ -2132,14 +2132,14 @@
     <string name="use_servers_of_operator_x">%s használata</string>
     <string name="operator_conditions_failed_to_load">A jelenlegi feltételek szövegét nem lehetett betölteni, a feltételeket a következő hivatkozáson keresztül vizsgálhatja felül:</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[A feltételek már el lettek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
-    <string name="operator_same_conditions_will_be_applied"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető számára: <b>%s</b>.]]></string>
-    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető számára is: <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k) számára is: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Ezek a feltételek lesznek elfogadva a következő számára is: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[A feltételek el lesznek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Ezek a feltételek lesznek elfogadva a következő számára is: <b>%s</b>.]]></string>
     <string name="accept_conditions">Feltételek elfogadása</string>
     <string name="operator_conditions_of_use">Használati feltételek</string>
-    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[A(z) <b>%s</b> kiszolgálók használatához fogadja el a használati feltételeket.]]></string>
+    <string name="operator_in_order_to_use_accept_conditions"><![CDATA[A(z) <b>%s</b> kiszolgálóinak használatához fogadja el a használati feltételeket.]]></string>
     <string name="operator_use_for_messages">Használat az üzenetekhez</string>
     <string name="operator_use_for_messages_receiving">A fogadáshoz</string>
     <string name="operator_use_for_messages_private_routing">A privát útválasztáshoz</string>
