@@ -10,6 +10,7 @@ module Directory.Service
   ( welcomeGetOpts,
     directoryService,
     directoryServiceCLI,
+    directoryChatConfig
   )
 where
 
@@ -24,6 +25,7 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.Events
@@ -97,8 +99,9 @@ directoryServiceCLI st opts = do
   env <- newServiceState
   eventQ <- newTQueueIO
   let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
+  cfg <- directoryChatConfig opts
   race_
-    (simplexChatCLI' terminalChatConfig {chatHooks = defaultChatHooks {eventHook}} (mkChatOpts opts) Nothing)
+    (simplexChatCLI' cfg {chatHooks = defaultChatHooks {eventHook}} (mkChatOpts opts) Nothing)
     (processEvents eventQ env)
   where
     processEvents eventQ env = forever $ do
@@ -113,6 +116,12 @@ directoryService st opts@DirectoryOpts {testing} user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     directoryServiceEvent st opts env user cc resp
+
+directoryChatConfig :: DirectoryOpts -> IO ChatConfig
+directoryChatConfig DirectoryOpts {blockedNamesFile, profileNameLimit, acceptAsObserver} = do
+  blockedNames <- mapM (fmap (S.fromList . T.lines) . T.readFile) blockedNamesFile
+  let allowedProfileName = maybe (const True) (flip S.notMember) blockedNames
+  pure terminalChatConfig {allowedProfileName, profileNameLimit, acceptAsObserver}
 
 directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
 directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests} user@User {userId} cc event =

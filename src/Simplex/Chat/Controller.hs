@@ -137,6 +137,9 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
+    allowedProfileName :: ContactName -> Bool,
+    profileNameLimit :: Int,
+    acceptAsObserver :: Maybe AcceptAsObserver,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
@@ -157,6 +160,11 @@ data ChatConfig = ChatConfig
     deviceNameForRemote :: Text,
     chatHooks :: ChatHooks
   }
+
+data AcceptAsObserver
+  = AOAll -- all members
+  | AONameOnly -- members without image
+  | AOIncognito -- members with incognito-style names and without image
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),

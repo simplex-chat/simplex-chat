@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,9 +13,10 @@ module Directory.Options
 where
 
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (AcceptAsObserver (..), updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
@@ -22,6 +24,9 @@ data DirectoryOpts = DirectoryOpts
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    blockedNamesFile :: Maybe FilePath,
+    profileNameLimit :: Int,
+    acceptAsObserver :: Maybe AcceptAsObserver,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
     runCLI :: Bool,
@@ -55,6 +60,29 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  blockedNamesFile <-
+    optional $
+      strOption
+        ( long "blocked-names-file"
+            <> metavar "BLOCKED_NAMES_FILE"
+            <> help "File with the basic forms of blocked names of profiles and groups"
+        )
+  profileNameLimit <-
+    option
+      auto
+      ( long "profile-name-limit"
+          <> metavar "PROFILE_NAME_LIMIT"
+          <> help "Max length of profile name that will be allowed to connect and to join groups"
+          <> value maxBound
+      )
+  acceptAsObserver <-
+    optional $
+      option
+        parseAcceptAsObserver
+        ( long "accept-as-observer"
+            <> metavar "ACCEPT_AS_OBSERVER"
+            <> help "Whether to accept all or some of the joining members without posting rights ('all', 'no-image', 'incognito')"
+        )
   directoryLog <-
     Just
       <$> strOption
@@ -80,6 +108,9 @@ directoryOpts appDir defaultDbName = do
         adminUsers,
         superUsers,
         ownersGroup,
+        blockedNamesFile,
+        profileNameLimit,
+        acceptAsObserver,
         directoryLog,
         serviceName = T.pack serviceName,
         runCLI,
@@ -116,3 +147,12 @@ mkChatOpts DirectoryOpts {coreOptions} =
       markRead = False,
       maintenance = False
     }
+
+parseAcceptAsObserver :: ReadM AcceptAsObserver
+parseAcceptAsObserver = eitherReader $ decodeAAO . encodeUtf8 . T.pack
+  where
+    decodeAAO = \case
+      "all" -> Right AOAll
+      "name-only" -> Right AONameOnly
+      "incognito" -> Right AOIncognito
+      _ -> Left "bad AcceptAsObserver"
