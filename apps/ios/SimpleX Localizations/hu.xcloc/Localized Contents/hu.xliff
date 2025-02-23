@@ -2236,9 +2236,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Jelenlegi profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
         <source>Currently maximum supported file size is %@.</source>
-        <target>Jelenleg a maximális támogatott fájlméret %@.</target>
+        <target state="translated">Jelenleg támogatott legnagyobb fájl méret: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Custom time" xml:space="preserve" approved="no">
@@ -2660,9 +2660,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>A(z) %@ célkiszolgáló címe nem kompatibilis a(z) %@ továbbító kiszolgáló beállításaival.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server error: %@" xml:space="preserve">
+      <trans-unit id="Destination server error: %@" xml:space="preserve" approved="no">
         <source>Destination server error: %@</source>
-        <target>Célkiszolgáló hiba: %@</target>
+        <target state="translated">Célkiszolgáló-hiba: %@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
@@ -3650,9 +3650,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>A fájl nem található – valószínűleg a fájlt törölték vagy visszavonták.</target>
         <note>file error text</note>
       </trans-unit>
-      <trans-unit id="File server error: %@" xml:space="preserve">
+      <trans-unit id="File server error: %@" xml:space="preserve" approved="no">
         <source>File server error: %@</source>
-        <target>Fájlkiszolgáló hiba: %@</target>
+        <target state="translated">Fájlkiszolgáló-hiba: %@</target>
         <note>file error text</note>
       </trans-unit>
       <trans-unit id="File status" xml:space="preserve" approved="no">
@@ -3869,7 +3869,7 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <source>Forwarding server: %1$@
 Destination server error: %2$@</source>
         <target state="translated">Továbbító-kiszolgáló: %1$@
-Célkiszolgáló hiba: %2$@</target>
+Célkiszolgáló-hiba: %2$@</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve">
@@ -7745,14 +7745,14 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A profilja csak az ismerőseivel van megosztva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve">
+      <trans-unit id="The same conditions will apply to operator **%@**." xml:space="preserve" approved="no">
         <source>The same conditions will apply to operator **%@**.</source>
-        <target>Ugyanezek a feltételek lesznek elfogadva a következő üzemeltetőre is: **%@**.</target>
+        <target state="translated">Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető számára is: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve">
+      <trans-unit id="The same conditions will apply to operator(s): **%@**." xml:space="preserve" approved="no">
         <source>The same conditions will apply to operator(s): **%@**.</source>
-        <target>Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k)re is: **%@**.</target>
+        <target state="translated">Ugyanezek a feltételek lesznek elfogadva a következő üzemeltető(k) számára is: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The second preset operator in the app!" xml:space="preserve">
@@ -8509,9 +8509,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>WebRTC ICE-kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome %@!" xml:space="preserve">
+      <trans-unit id="Welcome %@!" xml:space="preserve" approved="no">
         <source>Welcome %@!</source>
-        <target>Üdvözöllek %@!</target>
+        <target state="translated">Üdvözöljük %@!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Welcome message" xml:space="preserve">
@@ -8639,9 +8639,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Már van egy csevegési profil ugyanezzel a megjelenített névvel. Válasszon egy másik nevet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connected to %@." xml:space="preserve">
+      <trans-unit id="You are already connected to %@." xml:space="preserve" approved="no">
         <source>You are already connected to %@.</source>
-        <target>Ön már kapcsolódva van a következőhöz: %@.</target>
+        <target state="translated">Ön már kapcsolódott a következőhöz: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected with %@." xml:space="preserve">
@@ -8649,9 +8649,9 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
         <target>Ön már kapcsolódva van vele: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are already connecting to %@." xml:space="preserve">
+      <trans-unit id="You are already connecting to %@." xml:space="preserve" approved="no">
         <source>You are already connecting to %@.</source>
-        <target>Már folyamatban van a kapcsolódás a következőhöz: %@.</target>
+        <target state="translated">A kapcsolódás már folyamatban van a következőhöz: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve" approved="no">
@@ -8682,7 +8682,7 @@ A kapcsolódáshoz kérje meg az ismerősét, hogy hozzon létre egy másik kapc
       <trans-unit id="You are already joining the group!&#10;Repeat join request?" xml:space="preserve" approved="no">
         <source>You are already joining the group!
 Repeat join request?</source>
-        <target state="translated">A csatlakozás folyamatban van a csoporthoz!
+        <target state="translated">A csatlakozás már folyamatban van a csoporthoz!
 Csatlakozáskérés megismétlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8998,9 +8998,9 @@ Kapcsolatkérés megismétlése?</target>
         <target>A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
+      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve" approved="no">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>Az ismerőse olyan fájlt küldött, amely meghaladja a jelenleg támogatott maximális méretet (%@).</target>
+        <target state="translated">Az ismerőse a jelenleg megengedett maximális méretű (%@) fájlnál nagyobbat küldött.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
@@ -10225,9 +10225,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Hozzászólás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
         <source>Currently maximum supported file size is %@.</source>
-        <target>Jelenleg a maximálisan támogatott fájlméret: %@.</target>
+        <target state="translated">Jelenleg támogatott legnagyobb fájl méret: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade required" xml:space="preserve">
