@@ -1283,9 +1283,9 @@
         <target>Letiltás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block for all" xml:space="preserve">
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
         <source>Block for all</source>
-        <target>Letiltás az összes tag számára</target>
+        <target state="translated">Letiltás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
@@ -2750,9 +2750,9 @@ Ez az Ön egyszer használható meghívási hivatkozása!</target>
         <target>Üzenetek törlésének letiltása</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Disable for all" xml:space="preserve">
+      <trans-unit id="Disable for all" xml:space="preserve" approved="no">
         <source>Disable for all</source>
-        <target>Letiltás az összes tag számára</target>
+        <target state="translated">Letiltás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disabled" xml:space="preserve">
@@ -8047,9 +8047,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Feloldás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unblock for all" xml:space="preserve">
+      <trans-unit id="Unblock for all" xml:space="preserve" approved="no">
         <source>Unblock for all</source>
-        <target>Letiltás feloldása az összes tag számára</target>
+        <target state="translated">Feloldás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve">
