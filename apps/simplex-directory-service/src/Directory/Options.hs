@@ -24,7 +24,9 @@ data DirectoryOpts = DirectoryOpts
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
-    blockedNamesFile :: Maybe FilePath,
+    blockedWordsFile :: Maybe FilePath,
+    blockedExtensionRules :: Maybe FilePath,
+    nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
     acceptAsObserver :: Maybe AcceptAsObserver,
     directoryLog :: Maybe FilePath,
@@ -60,12 +62,26 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
-  blockedNamesFile <-
+  blockedWordsFile <-
     optional $
       strOption
-        ( long "blocked-names-file"
-            <> metavar "BLOCKED_NAMES_FILE"
-            <> help "File with the basic forms of blocked names of profiles and groups"
+        ( long "blocked-words-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of words not allowed in profiles and groups"
+        )
+  blockedExtensionRules <-
+    optional $
+      strOption
+        ( long "blocked-extenstion-rules"
+            <> metavar "BLOCKED_EXTENSION_RULES"
+            <> help "Substitions to extend the list of blocked words"
+        )
+  nameSpellingFile <-
+    optional $
+      strOption
+        ( long "name-spelling-file"
+            <> metavar "NAME_SPELLING_FILE"
+            <> help "File with the character substitions to match in profile names"
         )
   profileNameLimit <-
     option
@@ -108,7 +124,9 @@ directoryOpts appDir defaultDbName = do
         adminUsers,
         superUsers,
         ownersGroup,
-        blockedNamesFile,
+        blockedWordsFile,
+        blockedExtensionRules,
+        nameSpellingFile,
         profileNameLimit,
         acceptAsObserver,
         directoryLog,

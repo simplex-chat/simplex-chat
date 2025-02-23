@@ -137,7 +137,7 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
-    allowedProfileName :: ContactName -> Bool,
+    allowedProfileName :: Maybe (ContactName -> Bool),
     profileNameLimit :: Int,
     acceptAsObserver :: Maybe AcceptAsObserver,
     tbqSize :: Natural,

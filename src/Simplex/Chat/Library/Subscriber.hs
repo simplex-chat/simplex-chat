@@ -1329,7 +1329,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 _ -> toView $ CRReceivedContactRequest user cReq
           where
             withAllowedName ChatConfig {profileNameLimit, allowedProfileName} action
-              | T.length displayName <= profileNameLimit && allowedProfileName displayName = action
+              | T.length displayName <= profileNameLimit && maybe True ($ displayName) allowedProfileName = action
               | otherwise = liftIO $ putStrLn $ "Joining of " <> T.unpack displayName <> " is blocked" -- TODO send response, maybe event to UI?
             userMemberRole linkRole = \case
               Just AOAll -> GRObserver
