@@ -6,7 +6,6 @@ import Directory.Options
 import Directory.Service
 import Directory.Store
 import Simplex.Chat.Core
-import Simplex.Chat.Terminal (terminalChatConfig)
 
 main :: IO ()
 main = do
@@ -14,4 +13,6 @@ main = do
   st <- restoreDirectoryStore directoryLog
   if runCLI
     then directoryServiceCLI st opts
-    else simplexChatCore terminalChatConfig (mkChatOpts opts) $ directoryService st opts
+    else do
+      cfg <- directoryChatConfig opts
+      simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts

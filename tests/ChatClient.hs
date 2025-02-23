@@ -390,15 +390,15 @@ withTmpFiles =
     (removeDirectoryRecursive "tests/tmp")
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> TestParams -> IO ()
-testChatN cfg opts ps test params = do
-  tcs <- getTestCCs (zip ps [1 ..]) []
-  test tcs
-  concurrentlyN_ $ map (<// 100000) tcs
-  concurrentlyN_ $ map (stopTestChat params) tcs
+testChatN cfg opts ps test params =
+  bracket (getTestCCs (zip ps [1 ..]) []) entTests test
   where
     getTestCCs :: [(Profile, Int)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
     getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat params cfg opts (show db) p <*> getTestCCs envs' tcs
+    entTests tcs = do
+      concurrentlyN_ $ map (<// 100000) tcs
+      concurrentlyN_ $ map (stopTestChat params) tcs
 
 (<//) :: HasCallStack => TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing

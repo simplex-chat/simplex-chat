@@ -784,7 +784,9 @@ data GroupMember = GroupMember
     -- member chat protocol version range; if member has active connection, its version range is preferred;
     -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
     -- but it's correctly set on read (see toGroupInfo)
-    memberChatVRange :: VersionRangeChat
+    memberChatVRange :: VersionRangeChat,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
   }
   deriving (Eq, Show)
 

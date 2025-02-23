@@ -1,5 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,9 +13,10 @@ module Directory.Options
 where
 
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (AcceptAsObserver (..), updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
@@ -22,6 +24,11 @@ data DirectoryOpts = DirectoryOpts
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    blockedWordsFile :: Maybe FilePath,
+    blockedExtensionRules :: Maybe FilePath,
+    nameSpellingFile :: Maybe FilePath,
+    profileNameLimit :: Int,
+    acceptAsObserver :: Maybe AcceptAsObserver,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
     runCLI :: Bool,
@@ -55,6 +62,43 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  blockedWordsFile <-
+    optional $
+      strOption
+        ( long "blocked-words-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of words not allowed in profiles and groups"
+        )
+  blockedExtensionRules <-
+    optional $
+      strOption
+        ( long "blocked-extenstion-rules"
+            <> metavar "BLOCKED_EXTENSION_RULES"
+            <> help "Substitions to extend the list of blocked words"
+        )
+  nameSpellingFile <-
+    optional $
+      strOption
+        ( long "name-spelling-file"
+            <> metavar "NAME_SPELLING_FILE"
+            <> help "File with the character substitions to match in profile names"
+        )
+  profileNameLimit <-
+    option
+      auto
+      ( long "profile-name-limit"
+          <> metavar "PROFILE_NAME_LIMIT"
+          <> help "Max length of profile name that will be allowed to connect and to join groups"
+          <> value maxBound
+      )
+  acceptAsObserver <-
+    optional $
+      option
+        parseAcceptAsObserver
+        ( long "accept-as-observer"
+            <> metavar "ACCEPT_AS_OBSERVER"
+            <> help "Whether to accept all or some of the joining members without posting rights ('all', 'no-image', 'incognito')"
+        )
   directoryLog <-
     Just
       <$> strOption
@@ -80,6 +124,11 @@ directoryOpts appDir defaultDbName = do
         adminUsers,
         superUsers,
         ownersGroup,
+        blockedWordsFile,
+        blockedExtensionRules,
+        nameSpellingFile,
+        profileNameLimit,
+        acceptAsObserver,
         directoryLog,
         serviceName = T.pack serviceName,
         runCLI,
@@ -116,3 +165,12 @@ mkChatOpts DirectoryOpts {coreOptions} =
       markRead = False,
       maintenance = False
     }
+
+parseAcceptAsObserver :: ReadM AcceptAsObserver
+parseAcceptAsObserver = eitherReader $ decodeAAO . encodeUtf8 . T.pack
+  where
+    decodeAAO = \case
+      "all" -> Right AOAll
+      "name-only" -> Right AONameOnly
+      "incognito" -> Right AOIncognito
+      _ -> Left "bad AcceptAsObserver"
