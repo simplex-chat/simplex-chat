@@ -308,19 +308,20 @@ processChatCommand cmd =
 processChatCommand' :: VersionRangeChat -> ChatCommand -> CM ChatResponse
 processChatCommand' vr = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser NewUser {profile, pastTimestamp} -> do
+  CreateActiveUser NewUser {profile, pastTimestamp, userSuperpeer} -> do
     forM_ profile $ \Profile {displayName} -> checkValidName displayName
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
     users <- withFastStore' getUsers
-    forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
+    forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash, userSuperpeer = userSuperpeer'} -> do
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
+      when (userSuperpeer && userSuperpeer') $ throwChatError CESuperpeerExists
     (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
     auId <- withAgent $ \a -> createUser a smp' xftp'
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
-      user <- createUserRecordAt db (AgentUserId auId) p True ts
+      user <- createUserRecordAt db (AgentUserId auId) p userSuperpeer True ts
       mapM_ (setUserServers db user ts) uss
       createPresetContactCards db user `catchStoreError` \_ -> pure ()
       createNoteFolder db user
@@ -346,9 +347,16 @@ processChatCommand' vr = \case
             let RandomAgentServers {smpServers = smp', xftpServers = xftp'} = as
             pure (uss, (smp', xftp'))
       copyServers :: UserOperatorServers -> UpdatedUserOperatorServers
-      copyServers UserOperatorServers {operator, smpServers, xftpServers} =
-        let new srv = AUS SDBNew srv {serverId = DBNewEntity}
-         in UpdatedUserOperatorServers {operator, smpServers = map new smpServers, xftpServers = map new xftpServers}
+      copyServers UserOperatorServers {operator, smpServers, xftpServers, superpeers} =
+        let newSrv srv = AUS SDBNew srv {serverId = DBNewEntity}
+            newSpeer speer = AUSP SDBNew speer {superpeerId = DBNewEntity}
+         in
+          UpdatedUserOperatorServers {
+            operator,
+            smpServers = map newSrv smpServers,
+            xftpServers = map newSrv xftpServers,
+            superpeers = map newSpeer superpeers
+          }
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -1354,7 +1362,8 @@ processChatCommand' vr = \case
       getServers db as ops opDomains user = do
         smpSrvs <- getProtocolServers db SPSMP user
         xftpSrvs <- getProtocolServers db SPXFTP user
-        uss <- groupByOperator (ops, smpSrvs, xftpSrvs)
+        speers <- getSuperpeers db user
+        uss <- groupByOperator (ops, smpSrvs, xftpSrvs, speers)
         pure $ (aUserId user,) $ useServers as opDomains uss
   SetServerOperators operatorsRoles -> do
     ops <- serverOperators <$> withFastStore getServerOperators
@@ -1369,8 +1378,9 @@ processChatCommand' vr = \case
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db -> do
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
-    errors <- validateAllUsersServers userId $ L.toList userServers
+    (errors, warnings) <- validateAllUsersServers userId $ L.toList userServers
     unless (null errors) $ throwChatError (CECommandError $ "user servers validation error(s): " <> show errors)
+    unless (null warnings) $ logWarn $ "user servers validation warning(s): " <> tshow warnings
     uss <- withFastStore $ \db -> do
       ts <- liftIO getCurrentTime
       mapM (setUserServers db user ts) userServers
@@ -1383,7 +1393,7 @@ processChatCommand' vr = \case
       setProtocolServers a auId xftp'
     ok_
   APIValidateServers userId userServers -> withUserId userId $ \user ->
-    CRUserServersValidation user <$> validateAllUsersServers userId userServers
+    uncurry (CRUserServersValidation user) <$> validateAllUsersServers userId userServers
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
@@ -2784,7 +2794,7 @@ processChatCommand' vr = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
-    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM [UserServersError]
+    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM ([UserServersError], [UserServersWarning])
     validateAllUsersServers currUserId userServers = withFastStore $ \db -> do
       users' <- filter (\User {userId} -> userId /= currUserId) <$> liftIO (getUsers db)
       others <- mapM (getUserOperatorServers db) users'
@@ -3251,18 +3261,21 @@ processChatCommand' vr = \case
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
-protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
-protocolServers p (operators, smpServers, xftpServers) = case p of
-  SPSMP -> (operators, smpServers, [])
-  SPXFTP -> (operators, [], xftpServers)
+-- TODO [superpeers] used for CLI specific APIs (same for `updatedServers` below) - add similar APIs for superpeers?
+protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserSuperpeer]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserSuperpeer])
+protocolServers p (operators, smpServers, xftpServers, _superpeers) = case p of
+  SPSMP -> (operators, smpServers, [], [])
+  SPXFTP -> (operators, [], xftpServers, [])
 
 -- disable preset and replace custom servers (groupByOperator always adds custom)
 updatedServers :: forall p. UserProtocol p => SProtocolType p -> [AUserServer p] -> UserOperatorServers -> UpdatedUserOperatorServers
-updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers} = case p' of
-  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
-  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
+updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers, superpeers} = case p' of
+  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers, map (AUSP SDBStored) superpeers)
+  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers, map (AUSP SDBStored) superpeers)
   where
-    u = uncurry $ UpdatedUserOperatorServers operator
+    u = uncurry3 $ UpdatedUserOperatorServers operator
+    uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)
+    uncurry3 f ~(a,b,c) = f a b c
     updateSrvs :: [UserServer p] -> [AUserServer p]
     updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs (const []) operator
     disableSrv srv@UserServer {preset} =
@@ -3665,7 +3678,8 @@ chatCommandP =
       "/block #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
       "/unblock #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/_create user " *> (CreateActiveUser <$> jsonP),
-      "/create user " *> (CreateActiveUser <$> newUserP),
+      "/create user " *> (CreateActiveUser <$> newUserP False),
+      "/create superpeer user " *> (CreateActiveUser <$> newUserP True),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayNameP <*> optional (A.space *> pwdP)),
@@ -4065,10 +4079,10 @@ chatCommandP =
       pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayNameP <*> fullNameP
-    newUserP = do
+    newUserP userSuperpeer = do
       (cName, fullName) <- profileNames
       let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
-      pure NewUser {profile, pastTimestamp = False}
+      pure NewUser {profile, pastTimestamp = False, userSuperpeer}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do
