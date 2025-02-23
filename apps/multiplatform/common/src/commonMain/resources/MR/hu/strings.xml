@@ -377,7 +377,7 @@
     <string name="passphrase_is_different">Az adatbázis-jelmondat eltér a Keystore-ban lévőtől.</string>
     <string name="direct_messages">Közvetlen üzenetek</string>
     <string name="icon_descr_email">E-mail</string>
-    <string name="receipts_contacts_disable_for_all">Letiltás az összes tag számára</string>
+    <string name="receipts_contacts_disable_for_all">Letiltás</string>
     <string name="settings_developer_tools">Fejlesztői eszközök</string>
     <string name="database_passphrase">Adatbázis-jelmondat</string>
     <string name="ttl_days">%d nap</string>
@@ -1575,10 +1575,10 @@
     <string name="blocked_by_admin_item_description">letiltva az adminisztrátor által</string>
     <string name="member_blocked_by_admin">Letiltva az adminisztrátor által</string>
     <string name="rcv_group_event_member_blocked">letiltotta őt: %s</string>
-    <string name="block_for_all">Letiltás az összes tag számára</string>
+    <string name="block_for_all">Letiltás</string>
     <string name="block_for_all_question">Az összes tag számára letiltja ezt a tagot?</string>
     <string name="blocked_by_admin_items_description">%d üzenetet letiltott az adminisztrátor</string>
-    <string name="unblock_for_all">Letiltás feloldása az összes tag számára</string>
+    <string name="unblock_for_all">Feloldás</string>
     <string name="unblock_for_all_question">Az összes tag számára feloldja a tag letiltását?</string>
     <string name="snd_group_event_member_blocked">Ön letiltotta őt: %s</string>
     <string name="error_blocking_member_for_all">Hiba a tag az összes csoporttag számára való letiltásakor</string>
