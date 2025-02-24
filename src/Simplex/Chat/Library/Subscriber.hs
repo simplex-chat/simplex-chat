@@ -765,7 +765,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
           -- sent when connecting via group link
           XInfo _ ->
-            -- TODO [group rejection] Keep rejected member record and connection for ability to communicate rejection reason.
+            -- TODO [group rejection] Keep rejected member record and connection for ability to start dialogue.
             when (memberStatus m == GSMemRejected) $ do
               deleteMemberConnection' user m True
               withStore' $ \db -> deleteGroupMember db user m
