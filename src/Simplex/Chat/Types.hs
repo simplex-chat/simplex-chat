@@ -32,6 +32,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
@@ -670,6 +671,40 @@ data GroupLinkInvitation = GroupLinkInvitation
   }
   deriving (Eq, Show)
 
+data GroupLinkRejection = GroupLinkRejection
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile,
+    rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+data GroupRejectionReason
+  = GRRBadName
+  | GRROther {text :: Text}
+  deriving (Eq, Show)
+
+instance FromField GroupRejectionReason where fromField = blobFieldDecoder strDecode
+
+instance ToField GroupRejectionReason where toField = toField . strEncode
+
+instance StrEncoding GroupRejectionReason where
+  strEncode = \case
+    GRRBadName -> "bad_name"
+    GRROther text -> "other " <> encodeUtf8 text
+  strP =
+    A.takeWhile1 (/= ' ') >>= \case
+      "bad_name" -> pure GRRBadName
+      "other" -> GRROther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      s -> GRROther . safeDecodeUtf8 . (s <>) <$> A.takeByteString
+
+instance FromJSON GroupRejectionReason where
+  parseJSON = strParseJSON "GroupRejectionReason"
+
+instance ToJSON GroupRejectionReason where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
     memberRole :: GroupMemberRole
@@ -862,6 +897,9 @@ instance ToJSON MemberId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+nameFromMemberId :: MemberId -> ContactName
+nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
+
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)
 
@@ -950,7 +988,8 @@ instance TextEncoding GroupMemberCategory where
     GCPostMember -> "post"
 
 data GroupMemberStatus
-  = GSMemRemoved -- member who was removed from the group
+  = GSMemRejected -- joining member who was rejected by the host
+  | GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
   | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
@@ -977,6 +1016,7 @@ instance ToJSON GroupMemberStatus where
 
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
+  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -996,6 +1036,7 @@ memberCurrent = memberCurrent' . memberStatus
 -- update getGroupSummary if this is changed
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
+  GSMemRejected -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -1011,6 +1052,7 @@ memberCurrent' = \case
 
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of
+  GSMemRejected -> True
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
@@ -1026,6 +1068,7 @@ memberRemoved m = case memberStatus m of
 
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
+    "rejected" -> Just GSMemRejected
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
@@ -1040,6 +1083,7 @@ instance TextEncoding GroupMemberStatus where
     "creator" -> Just GSMemCreator
     _ -> Nothing
   textEncode = \case
+    GSMemRejected -> "rejected"
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
@@ -1792,6 +1836,8 @@ $(JQ.deriveJSON defaultJSON ''MemberInfo)
 $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
+
+$(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 

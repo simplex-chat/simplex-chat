@@ -219,6 +219,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
   CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
+  CRGroupLinkRejected u g _ reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]
   CRBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
@@ -316,6 +317,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
+  CRRejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
   CRNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
@@ -1128,7 +1130,7 @@ showRole = plain . strEncode
 viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
-    removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
+    removedOrLeft m = let s = memberStatus m in s == GSMemRejected || s == GSMemRemoved || s == GSMemLeft
     groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
     role :: GroupMember -> String
     role GroupMember {memberRole} = B.unpack $ strEncode memberRole
@@ -1138,6 +1140,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GCHostMember -> ["host"]
       _ -> []
     status m = case memberStatus m of
+      GSMemRejected -> ["rejected"]
       GSMemRemoved -> ["removed"]
       GSMemLeft -> ["left"]
       GSMemUnknown -> ["status unknown"]
@@ -1178,6 +1181,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
       where
         viewMemberStatus = \case
+          GSMemRejected -> delete "you are rejected"
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"

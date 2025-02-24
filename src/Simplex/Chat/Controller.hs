@@ -672,6 +672,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CRGroupLinkRejected {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, groupRejectionReason :: GroupRejectionReason}
   | CRBusinessLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, fromContact :: Contact}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
@@ -777,6 +778,7 @@ data ChatResponse
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRRejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
   | CRNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
