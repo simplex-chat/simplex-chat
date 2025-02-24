@@ -1612,6 +1612,7 @@ public struct ChatStats: Decodable, Hashable {
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
+    // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
 }
 
