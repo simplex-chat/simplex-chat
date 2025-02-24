@@ -31,6 +31,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.apiDeleteChatTag
 import chat.simplex.common.model.ChatController.apiSetChatTags
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel.clearActiveChatFilterIfNeeded
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
@@ -447,9 +448,7 @@ private fun deleteTag(rhId: Long?, tag: ChatTag, saving: MutableState<Boolean>) 
       val tagId = tag.chatTagId
       if (apiDeleteChatTag(rhId, tagId)) {
         chatModel.userTags.value = chatModel.userTags.value.filter { it.chatTagId != tagId }
-        if (chatModel.activeChatTagFilter.value == ActiveFilter.UserTag(tag)) {
-          chatModel.activeChatTagFilter.value = null
-        }
+        clearActiveChatFilterIfNeeded()
         chatModel.chats.value.forEach { c ->
           when (val cInfo = c.chatInfo) {
             is ChatInfo.Direct -> {

@@ -247,15 +247,12 @@ object ChatModel {
       }
     }
 
-    if (activeChatTagFilter.value is ActiveFilter.PresetTag &&
-      (newPresetTags[(activeChatTagFilter.value as ActiveFilter.PresetTag).tag] ?: 0) == 0) {
-      activeChatTagFilter.value = null
-    }
-
     presetTags.clear()
     presetTags.putAll(newPresetTags)
     unreadTags.clear()
     unreadTags.putAll(newUnreadTags)
+
+    clearActiveChatFilterIfNeeded()
   }
 
   fun updateChatFavorite(favorite: Boolean, wasFavorite: Boolean) {
@@ -265,9 +262,7 @@ object ChatModel {
       presetTags[PresetTagKind.FAVORITES] = (count ?: 0) + 1
     } else if (!favorite && wasFavorite && count != null) {
       presetTags[PresetTagKind.FAVORITES] = maxOf(0, count - 1)
-      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.FAVORITES) && (presetTags[PresetTagKind.FAVORITES] ?: 0) == 0) {
-        activeChatTagFilter.value = null
-      }
+      clearActiveChatFilterIfNeeded()
     }
   }
 
@@ -285,12 +280,10 @@ object ChatModel {
         val count = presetTags[tag]
         if (count != null) {
           presetTags[tag] = maxOf(0, count - 1)
-          if (activeChatTagFilter.value == ActiveFilter.PresetTag(tag) && (presetTags[tag] ?: 0) == 0) {
-            activeChatTagFilter.value = null
-          }
         }
       }
     }
+    clearActiveChatFilterIfNeeded()
   }
 
   fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
@@ -879,9 +872,16 @@ object ChatModel {
     private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
       if (by == 0 || contentTag != null) return
       presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
-      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.GROUP_REPORTS) && (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) == 0) {
-        activeChatTagFilter.value = null
-      }
+      clearActiveChatFilterIfNeeded()
+    }
+  }
+
+  fun clearActiveChatFilterIfNeeded() {
+    val filter = activeChatTagFilter.value
+    if (filter is ActiveFilter.PresetTag && (presetTags[filter.tag] ?: 0) == 0) {
+      activeChatTagFilter.value = null
+    } else if (filter is ActiveFilter.UserTag && userTags.value.none { it.chatTagId == filter.tag.chatTagId }) {
+      activeChatTagFilter.value = null
     }
   }
 
