@@ -877,11 +877,16 @@ object ChatModel {
   }
 
   fun clearActiveChatFilterIfNeeded() {
-    val filter = activeChatTagFilter.value
-    if (filter is ActiveFilter.PresetTag && (presetTags[filter.tag] ?: 0) == 0) {
-      activeChatTagFilter.value = null
-    } else if (filter is ActiveFilter.UserTag && userTags.value.none { it.chatTagId == filter.tag.chatTagId }) {
-      activeChatTagFilter.value = null
+    when(val f = activeChatTagFilter.value) {
+      is ActiveFilter.PresetTag ->
+        if ((presetTags[f.tag] ?: 0) == 0) {
+          activeChatTagFilter.value = null
+        }
+      is ActiveFilter.UserTag ->
+        if (userTags.value.none { it.chatTagId == f.tag.chatTagId }) {
+          activeChatTagFilter.value = null
+        }
+      else -> {}
     }
   }
 
