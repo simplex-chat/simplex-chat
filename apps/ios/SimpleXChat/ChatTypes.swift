@@ -1612,6 +1612,7 @@ public struct ChatStats: Decodable, Hashable {
     // actual only via getChats() and getChat(.initial), otherwise, zero
     public var reportsCount: Int = 0
     public var minUnreadItemId: Int64 = 0
+    // actual only via getChats(), otherwise, false
     public var unreadChat: Bool = false
 }
 
@@ -3523,8 +3524,12 @@ extension MsgReaction: Decodable {
             let type = try container.decode(String.self, forKey: CodingKeys.type)
             switch type {
             case "emoji":
-                let emoji = try container.decode(MREmojiChar.self, forKey: CodingKeys.emoji)
-                self = .emoji(emoji: emoji)
+                do {
+                    let emoji = try container.decode(MREmojiChar.self, forKey: CodingKeys.emoji)
+                    self = .emoji(emoji: emoji)
+                } catch {
+                    self = .unknown(type: "emoji")
+                }
             default:
                 self = .unknown(type: type)
             }

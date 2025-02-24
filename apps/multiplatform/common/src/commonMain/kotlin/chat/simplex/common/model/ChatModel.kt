@@ -1233,10 +1233,11 @@ data class Chat(
   @Serializable
   data class ChatStats(
     val unreadCount: Int = 0,
-    // actual only via getChats() and getChat(.initial), otherwise, zero
     val unreadMentions: Int = 0,
+    // actual only via getChats() and getChat(.initial), otherwise, zero
     val reportsCount: Int = 0,
     val minUnreadItemId: Long = 0,
+    // actual only via getChats(), otherwise, false
     val unreadChat: Boolean = false
   )
 
@@ -3311,7 +3312,7 @@ sealed class MsgReaction {
       MREmojiChar.Heart -> "❤️"
       else -> emoji.value
     }
-    is Unknown -> ""
+    is Unknown -> "?"
   }
 
   companion object {
@@ -3341,8 +3342,13 @@ object MsgReactionSerializer : KSerializer<MsgReaction> {
     return if (json is JsonObject && "type" in json) {
       when(val t = json["type"]?.jsonPrimitive?.content ?: "") {
         "emoji" -> {
-          val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
-          if (emoji == null) MsgReaction.Unknown(t, json) else MsgReaction.Emoji(emoji)
+          val msgReaction = try {
+            val emoji = Json.decodeFromString<MREmojiChar>(json["emoji"].toString())
+            MsgReaction.Emoji(emoji)
+          } catch (e: Throwable) {
+            MsgReaction.Unknown(t, json)
+          }
+          msgReaction
         }
         else -> MsgReaction.Unknown(t, json)
       }

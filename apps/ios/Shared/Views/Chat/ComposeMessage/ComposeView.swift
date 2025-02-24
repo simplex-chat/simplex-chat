@@ -392,7 +392,7 @@ struct ComposeView: View {
                 }
                 .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
                 .frame(width: 25, height: 25)
-                .padding(.bottom, 12)
+                .padding(.bottom, 16)
                 .padding(.leading, 12)
                 .tint(theme.colors.primary)
                 if case let .group(g) = chat.chatInfo,
