@@ -877,17 +877,12 @@ object ChatModel {
   }
 
   fun clearActiveChatFilterIfNeeded() {
-    when(val f = activeChatTagFilter.value) {
-      is ActiveFilter.PresetTag ->
-        if ((presetTags[f.tag] ?: 0) == 0) {
-          activeChatTagFilter.value = null
-        }
-      is ActiveFilter.UserTag ->
-        if (userTags.value.none { it.chatTagId == f.tag.chatTagId }) {
-          activeChatTagFilter.value = null
-        }
-      is ActiveFilter.Unread, null -> {}
+    val clear = when(val f = activeChatTagFilter.value) {
+      is ActiveFilter.PresetTag -> (presetTags[f.tag] ?: 0) == 0
+      is ActiveFilter.UserTag -> userTags.value.none { it.chatTagId == f.tag.chatTagId }
+      is ActiveFilter.Unread, null -> false
     }
+    if (clear) activeChatTagFilter.value = null
   }
 
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
