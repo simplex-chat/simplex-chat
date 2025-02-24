@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layoutId
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -19,6 +20,7 @@ import chat.simplex.common.model.LinkPreview
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
+import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -133,7 +135,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
-  Column(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
+  Column(Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(
       base64ToBitmap(linkPreview.image),
