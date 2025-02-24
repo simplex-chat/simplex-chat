@@ -247,15 +247,12 @@ object ChatModel {
       }
     }
 
-    if (activeChatTagFilter.value is ActiveFilter.PresetTag &&
-      (newPresetTags[(activeChatTagFilter.value as ActiveFilter.PresetTag).tag] ?: 0) == 0) {
-      activeChatTagFilter.value = null
-    }
-
     presetTags.clear()
     presetTags.putAll(newPresetTags)
     unreadTags.clear()
     unreadTags.putAll(newUnreadTags)
+
+    clearActiveChatFilterIfNeeded()
   }
 
   fun updateChatFavorite(favorite: Boolean, wasFavorite: Boolean) {
@@ -265,9 +262,7 @@ object ChatModel {
       presetTags[PresetTagKind.FAVORITES] = (count ?: 0) + 1
     } else if (!favorite && wasFavorite && count != null) {
       presetTags[PresetTagKind.FAVORITES] = maxOf(0, count - 1)
-      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.FAVORITES) && (presetTags[PresetTagKind.FAVORITES] ?: 0) == 0) {
-        activeChatTagFilter.value = null
-      }
+      clearActiveChatFilterIfNeeded()
     }
   }
 
@@ -288,6 +283,7 @@ object ChatModel {
         }
       }
     }
+    clearActiveChatFilterIfNeeded()
   }
 
   fun moveChatTagUnread(chat: Chat, oldTags: List<Long>?, newTags: List<Long>) {
@@ -875,8 +871,18 @@ object ChatModel {
 
     private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
       if (by == 0 || contentTag != null) return
-      presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
+      presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
+      clearActiveChatFilterIfNeeded()
     }
+  }
+
+  fun clearActiveChatFilterIfNeeded() {
+    val clear = when(val f = activeChatTagFilter.value) {
+      is ActiveFilter.PresetTag -> (presetTags[f.tag] ?: 0) == 0
+      is ActiveFilter.UserTag -> userTags.value.none { it.chatTagId == f.tag.chatTagId }
+      is ActiveFilter.Unread, null -> false
+    }
+    if (clear) activeChatTagFilter.value = null
   }
 
   fun updateCurrentUser(rhId: Long?, newProfile: Profile, preferences: FullChatPreferences? = null) {
