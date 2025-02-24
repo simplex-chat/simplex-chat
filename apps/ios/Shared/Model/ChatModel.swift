@@ -123,11 +123,9 @@ class ChatTagsModel: ObservableObject {
                 }
             }
         }
-        if case let .presetTag(tag) = tm.activeFilter, (newPresetTags[tag] ?? 0) == 0 {
-            activeFilter = nil
-        }
         presetTags = newPresetTags
         unreadTags = newUnreadTags
+        clearActiveChatFilterIfNeeded()
     }
 
     func updateChatFavorite(favorite: Bool, wasFavorite: Bool) {
@@ -136,9 +134,7 @@ class ChatTagsModel: ObservableObject {
             presetTags[.favorites] = (count ?? 0) + 1
         } else if !favorite && wasFavorite, let count {
             presetTags[.favorites] = max(0, count - 1)
-            if case .presetTag(.favorites) = activeFilter, (presetTags[.favorites] ?? 0) == 0 {
-                activeFilter = nil
-            }
+            clearActiveChatFilterIfNeeded()
         }
     }
 
@@ -162,6 +158,7 @@ class ChatTagsModel: ObservableObject {
                 }
             }
         }
+        clearActiveChatFilterIfNeeded()
     }
     
     func markChatTagRead(_ chat: Chat) -> Void {
@@ -192,7 +189,16 @@ class ChatTagsModel: ObservableObject {
 
     func changeGroupReportsTag(_ by: Int = 0) {
         if by == 0 { return }
-        presetTags[.groupReports] = (presetTags[.groupReports] ?? 0) + by
+        presetTags[.groupReports] = max(0, (presetTags[.groupReports] ?? 0) + by)
+        clearActiveChatFilterIfNeeded()
+    }
+
+    func clearActiveChatFilterIfNeeded() {
+        if case let .presetTag(tag) = activeFilter, (presetTags[tag] ?? 0) == 0 {
+            activeFilter = nil
+        } else if case let .userTag(tag) = activeFilter, !userTags.contains(tag) {
+            activeFilter = nil
+        }
     }
 }
 

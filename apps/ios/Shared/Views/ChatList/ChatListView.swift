@@ -682,18 +682,6 @@ struct TagsView: View {
         HStack {
             tagsView()
         }
-        .onChange(of: chatTagsModel.presetTags) { tags in
-            if case let .presetTag(tag) = chatTagsModel.activeFilter, !tags.contains(where: { (key, value) in
-                key == tag && value > 0
-            }) {
-                chatTagsModel.activeFilter = nil
-            }
-        }
-        .onChange(of: chatTagsModel.userTags) { tags in
-            if case let .userTag(tag) = chatTagsModel.activeFilter, !tags.contains(tag) {
-                chatTagsModel.activeFilter = nil
-            }
-        }
     }
     
     @ViewBuilder private func tagsView() -> some View {
