@@ -54,7 +54,7 @@ import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
-import Simplex.Messaging.Server.Env.STM
+import Simplex.Messaging.Server.Env.STM (ServerConfig (..), StartOptions (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import Simplex.Messaging.Server.MsgStore.Types (AMSType (..), SMSType (..))
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
@@ -283,13 +283,13 @@ insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) V
 #endif
 
 startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
-startTestChat_ TestParams {printOutput} db cfg opts user = do
+startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {maintenance} user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") `runReaderT` cc
   chatAsync <- async . runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
-  atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
+  atomically . unless maintenance $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput}
@@ -517,7 +517,8 @@ smpServerCfg =
       smpAgentCfg = defaultSMPClientAgentConfig,
       allowSMPProxy = True,
       serverClientConcurrency = 16,
-      information = Nothing
+      information = Nothing,
+      startOptions = StartOptions False False
     }
 
 withSmpServer :: IO () -> IO ()

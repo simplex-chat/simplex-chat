@@ -54,11 +54,13 @@ suspend fun processLoadedChat(
       if (contentTag == null) {
         // update main chats, not content tagged
         withChats {
-          if (getChat(chat.id) == null) {
+          val oldChat = getChat(chat.id)
+          if (oldChat == null) {
             addChat(chat)
           } else {
             updateChatInfo(chat.remoteHostId, chat.chatInfo)
-            updateChatStats(chat.remoteHostId, chat.id, chat.chatStats)
+            // unreadChat is currently not actual in getChat query (always false)
+            updateChatStats(chat.remoteHostId, chat.id, chat.chatStats.copy(unreadChat = oldChat.chatStats.unreadChat))
           }
         }
       }
