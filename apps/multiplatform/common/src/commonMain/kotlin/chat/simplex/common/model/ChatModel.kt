@@ -875,7 +875,12 @@ object ChatModel {
 
     private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
       if (by == 0 || contentTag != null) return
-      presetTags[PresetTagKind.GROUP_REPORTS] = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
+      val total = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
+      presetTags[PresetTagKind.GROUP_REPORTS] = total
+      val filter = activeChatTagFilter.value
+      if (total <= 0 && filter is ActiveFilter.PresetTag && filter.tag == PresetTagKind.GROUP_REPORTS) {
+        activeChatTagFilter.value = null
+      }
     }
   }
 
