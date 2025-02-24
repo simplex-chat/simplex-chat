@@ -17,7 +17,7 @@
 "Comment" = "Hozzászólás";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Jelenleg a maximálisan támogatott fájlméret: %@.";
+"Currently maximum supported file size is %@." = "Jelenleg támogatott legnagyobb fájl méret: %@.";
 
 /* No comment provided by engineer. */
 "Database downgrade required" = "Adatbázis visszafejlesztése szükséges";
@@ -80,7 +80,7 @@
 "Please create a profile in the SimpleX app" = "Hozzon létre egy profilt a SimpleX alkalmazásban";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "A kijelölt csevegési beállítások tiltják ezt az üzenetet.";
+"Selected chat preferences prohibit this message." = "A kijelölt csevegés-beállítások tiltják ezt az üzenetet.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "Az üzenet elküldése a vártnál tovább tart.";

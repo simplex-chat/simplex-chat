@@ -704,7 +704,7 @@
     <string name="icon_descr_instant_notifications">Anlık bildirimler</string>
     <string name="service_notifications">Anlık bildirimler</string>
     <string name="service_notifications_disabled">Anlık bildirimler devre dışı!</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Kullanmak için, lütfen bir sonraki iletişim kutusunda <b>SimpleX in arkaplanda çalışmasına izin ver</b> seçeneğini işaretleyin. Aksi takdirde, bildirimler devre dışı bırakılacaktır.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Bildirimleri anında almak için bir sonraki iletişim kutusunda buna <b>izin verin</b>. ]]></string>
     <string name="notification_preview_mode_contact">Kişi ismi</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Cihaz doğrulaması devre dışı. SimpleX Kilidi Kapatılıyor.</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Cihaz doğrulaması etkin değil. Cihaz doğrulamasını etkinleştirdikten sonra SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.</string>
@@ -2138,4 +2138,25 @@
     <string name="add_to_list">Listeye ekle</string>
     <string name="delete_chat_list_warning">%s listesindeki bütün sohbetler kaldırılacak ve liste silinecek</string>
     <string name="chat_list_businesses">İşletmeler</string>
+    <string name="report_item_archived">arşivlenmiş rapor</string>
+    <string name="report_reason_other">Başka bir sebep</string>
+    <string name="archive_report">Raporu arşivle</string>
+    <string name="report_item_archived_by">%s tarafından arşivlenen rapor</string>
+    <string name="group_reports_active_one">1 rapor</string>
+    <string name="group_reports_archived_member_reports">Arşivlenmiş üye raporları</string>
+    <string name="operators_conditions_will_be_accepted_for"><![CDATA[Operatör(ler) için koşullar kabul edilecektir: <b>%s</b>.]]></string>
+    <string name="privacy_chat_list_open_links_ask">Sor</string>
+    <string name="chat_item_ttl_year">1 yıl</string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi cihazları</b>: Bildirimlerin çalışması için lütfen sistem ayarlarında Otomatik Başlat\'ı etkinleştirin.]]></string>
+    <string name="report_archive_alert_desc_all">Tüm raporlar sizin için arşivlenecektir.</string>
+    <string name="report_archive_alert_title_all">Tüm raporlar arşivlensin mi?</string>
+    <string name="archive_reports">Raporları arşivle</string>
+    <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Operatör(ler) için koşullar kabul edilecektir: <b>%s</b>.]]></string>
+    <string name="operator_same_conditions_will_be_applied"><![CDATA[Aynı koşullar <b>%s</b> operatörü için de geçerli olacaktır.]]></string>
+    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Aynı koşullar <b>%s</b> operatörü(leri) için de geçerli olacaktır.]]></string>
+    <string name="enable_sending_member_reports">Mesajların moderatörlere bildirilmesine izin verin.</string>
+    <string name="report_archive_alert_title_nth">%d raporu arşivleyelim mi?</string>
+    <string name="archive_verb">Arşiv</string>
+    <string name="report_archive_alert_title">Raporu arşivleyelim mi?</string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tüm mesajlar ve dosyalar <b>uçtan uca şifreli</b> olarak gönderilir ve doğrudan mesajlarda kuantum sonrası güvenlik sağlanır.]]></string>
 </resources>

@@ -2309,4 +2309,15 @@
     <string name="max_group_mentions_per_message_reached">Bạn có thể nhắc đến tối đa là %1$s thành viên trong một tin nhắn!</string>
     <string name="mute_all_chat">Tắt thông báo tất cả</string>
     <string name="unread_mentions">Những lời nhắc chưa đọc</string>
+    <string name="group_members_can_send_reports">Các thành viên có thể báo cáo tin nhắn tới các kiểm duyệt viên.</string>
+    <string name="report_archive_alert_desc_all">Tất cả các báo cáo sẽ được lưu trữ cho bạn.</string>
+    <string name="report_archive_alert_title_all">Lưu trữ tất cả báo cáo?</string>
+    <string name="report_archive_alert_title_nth">Lưu trữ %d báo cáo?</string>
+    <string name="archive_reports">Lưu trữ các báo cáo</string>
+    <string name="report_archive_for_all_moderators">Cho tất cả các kiểm duyệt viên</string>
+    <string name="report_archive_for_me">Cho tôi</string>
+    <string name="notification_group_report">Báo cáo: %s</string>
+    <string name="enable_sending_member_reports">Cho phép báo cáo tin nhắn tới các kiểm duyệt viên.</string>
+    <string name="disable_sending_member_reports">Cấm báo cáo tin nhắn tới các kiểm duyệt viên.</string>
+    <string name="member_reports_are_prohibited">Báo cáo tin nhắn bị cấm trong nhóm này.</string>
 </resources>

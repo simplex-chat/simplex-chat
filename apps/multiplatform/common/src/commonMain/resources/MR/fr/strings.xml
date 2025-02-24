@@ -2321,4 +2321,9 @@
     <string name="onboarding_network_operators_conditions_you_can_configure">Vous pouvez définir les opérateurs dans les paramètres Réseau et serveurs.</string>
     <string name="appearance_in_app_bars_alpha">Transparence</string>
     <string name="you_can_set_connection_name_to_remember">Vous pouvez définir un nom de connexion pour vous rappeler avec qui le lien a été partagé.</string>
+    <string name="enable_sending_member_reports">Autoriser le signalement des messages aux modérateurs.</string>
+    <string name="chat_item_ttl_year">1 an</string>
+    <string name="report_archive_alert_desc_all">Tous les signalements seront archivés pour vous.</string>
+    <string name="report_archive_alert_title_all">Archiver tous les signalements ?</string>
+    <string name="report_archive_alert_title_nth">Archiver %d signalements ?</string>
 </resources>

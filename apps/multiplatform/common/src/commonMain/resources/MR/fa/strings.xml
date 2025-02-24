@@ -1850,4 +1850,5 @@
 \nلطفا هر مشکل دیگری را با توسعه‌دهندگان به اشتراک بگذارید.</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">این لینک توسط موبایل دیگری استفاده شده است، لطفا لینک جدیدی در کامپیوتر بسازید.</string>
     <string name="file_error_relay">خطای سرور پرونده:%1$s</string>
+    <string name="n_file_errors">%1$d خطای پرونده:\n%2$s</string>
 </resources>

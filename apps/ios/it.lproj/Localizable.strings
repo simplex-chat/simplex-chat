@@ -59,6 +59,12 @@
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Dai una stella su GitHub](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
+"@'%@'" = "@'%@'";
+
+/* No comment provided by engineer. */
+"@%@" = "@%@";
+
+/* No comment provided by engineer. */
 "**Create 1-time link**: to create and share a new invitation link." = "**Aggiungi contatto**: per creare un nuovo link di invito.";
 
 /* No comment provided by engineer. */
@@ -397,6 +403,9 @@
 /* No comment provided by engineer. */
 "Acknowledgement errors" = "Errori di riconoscimento";
 
+/* token status text */
+"Active" = "Attivo";
+
 /* No comment provided by engineer. */
 "Active connections" = "Connessioni attive";
 
@@ -524,6 +533,9 @@
 "All profiles" = "Tutti gli profili";
 
 /* No comment provided by engineer. */
+"All reports will be archived for you." = "Tutte le segnalazioni verranno archiviate per te.";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Tutti i tuoi contatti resteranno connessi.";
 
 /* No comment provided by engineer. */
@@ -567,6 +579,9 @@
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Permetti di eliminare irreversibilmente i messaggi inviati. (24 ore)";
+
+/* No comment provided by engineer. */
+"Allow to report messsages to moderators." = "Consenti di segnalare messaggi ai moderatori.";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Consenti l'invio di file e contenuti multimediali.";
@@ -674,6 +689,12 @@
 "Archive" = "Archivia";
 
 /* No comment provided by engineer. */
+"Archive %lld reports?" = "Archiviare %lld segnalazioni?";
+
+/* No comment provided by engineer. */
+"Archive all reports?" = "Archiviare tutte le segnalazioni?";
+
+/* No comment provided by engineer. */
 "Archive and upload" = "Archivia e carica";
 
 /* No comment provided by engineer. */
@@ -684,6 +705,9 @@
 
 /* No comment provided by engineer. */
 "Archive report?" = "Archiviare la segnalazione?";
+
+/* swipe action */
+"Archive reports" = "Archivia segnalazioni";
 
 /* No comment provided by engineer. */
 "Archived contacts" = "Contatti archiviati";
@@ -1081,6 +1105,9 @@
 "Clear conversation?" = "Svuotare la conversazione?";
 
 /* No comment provided by engineer. */
+"Clear group?" = "Svuotare il gruppo?";
+
+/* No comment provided by engineer. */
 "Clear or delete group?" = "Svuotare o eliminare il gruppo?";
 
 /* No comment provided by engineer. */
@@ -1172,6 +1199,9 @@
 
 /* No comment provided by engineer. */
 "Confirm upload" = "Conferma caricamento";
+
+/* token status text */
+"Confirmed" = "Confermato";
 
 /* server test step */
 "Connect" = "Connetti";
@@ -2128,6 +2158,9 @@
 "Error changing to incognito!" = "Errore nel passaggio a incognito!";
 
 /* No comment provided by engineer. */
+"Error checking token status" = "Errore di controllo dello stato del token";
+
+/* No comment provided by engineer. */
 "Error connecting to forwarding server %@. Please try later." = "Errore di connessione al server di inoltro %@. Riprova più tardi.";
 
 /* No comment provided by engineer. */
@@ -2220,6 +2253,9 @@
 /* No comment provided by engineer. */
 "Error reconnecting servers" = "Errore di riconnessione ai server";
 
+/* alert title */
+"Error registering for notifications" = "Errore di registrazione per le notifiche";
+
 /* No comment provided by engineer. */
 "Error removing member" = "Errore nella rimozione del membro";
 
@@ -2284,6 +2320,9 @@
 "Error synchronizing connection" = "Errore nella sincronizzazione della connessione";
 
 /* No comment provided by engineer. */
+"Error testing server connection" = "Errore provando la connessione al server";
+
+/* No comment provided by engineer. */
 "Error updating group link" = "Errore nell'aggiornamento del link del gruppo";
 
 /* No comment provided by engineer. */
@@ -2336,6 +2375,9 @@
 
 /* No comment provided by engineer. */
 "expired" = "scaduto";
+
+/* token status text */
+"Expired" = "Scaduto";
 
 /* No comment provided by engineer. */
 "Export database" = "Esporta database";
@@ -2455,6 +2497,9 @@
 "Fix not supported by group member" = "Correzione non supportata dal membro del gruppo";
 
 /* No comment provided by engineer. */
+"For all moderators" = "Per tutti i moderatori";
+
+/* No comment provided by engineer. */
 "for better metadata privacy." = "per una migliore privacy dei metadati.";
 
 /* servers error */
@@ -2465,6 +2510,9 @@
 
 /* No comment provided by engineer. */
 "For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server." = "Ad esempio, se il tuo contatto riceve messaggi tramite un server di SimpleX Chat, la tua app li consegnerà tramite un server Flux.";
+
+/* No comment provided by engineer. */
+"For me" = "Per me";
 
 /* No comment provided by engineer. */
 "For private routing" = "Per l'instradamento privato";
@@ -2814,6 +2862,21 @@
 /* No comment provided by engineer. */
 "Interface colors" = "Colori dell'interfaccia";
 
+/* token status text */
+"Invalid" = "Non valido";
+
+/* token status text */
+"Invalid (bad token)" = "Non valido (token corrotto)";
+
+/* token status text */
+"Invalid (expired)" = "Non valido (scaduto)";
+
+/* token status text */
+"Invalid (unregistered)" = "Non valido (non registrato)";
+
+/* token status text */
+"Invalid (wrong topic)" = "Non valido (argomento sbagliato)";
+
 /* invalid chat data */
 "invalid chat" = "chat non valida";
 
@@ -3093,6 +3156,9 @@
 /* item status text */
 "Member inactive" = "Membro inattivo";
 
+/* chat feature */
+"Member reports" = "Segnalazioni dei membri";
+
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All chat members will be notified." = "Il ruolo del membro verrà cambiato in \"%@\". Verranno notificati tutti i membri della chat.";
 
@@ -3113,6 +3179,9 @@
 
 /* No comment provided by engineer. */
 "Members can irreversibly delete sent messages. (24 hours)" = "I membri del gruppo possono eliminare irreversibilmente i messaggi inviati. (24 ore)";
+
+/* No comment provided by engineer. */
+"Members can report messsages to moderators." = "I membri possono segnalare messaggi ai moderatori.";
 
 /* No comment provided by engineer. */
 "Members can send direct messages." = "I membri del gruppo possono inviare messaggi diretti.";
@@ -3303,6 +3372,9 @@
 /* notification label action */
 "Mute" = "Silenzia";
 
+/* notification label action */
+"Mute all" = "Silenzia tutto";
+
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Silenzioso quando inattivo!";
 
@@ -3335,6 +3407,9 @@
 
 /* delete after time */
 "never" = "mai";
+
+/* token status text */
+"New" = "Nuovo";
 
 /* No comment provided by engineer. */
 "New chat" = "Nuova chat";
@@ -3474,6 +3549,9 @@
 /* copied message info in history */
 "no text" = "nessun testo";
 
+/* alert title */
+"No token!" = "Nessun token!";
+
 /* No comment provided by engineer. */
 "No unread chats" = "Nessuna chat non letta";
 
@@ -3498,8 +3576,14 @@
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Le notifiche sono disattivate!";
 
+/* alert title */
+"Notifications error" = "Errore delle notifiche";
+
 /* No comment provided by engineer. */
 "Notifications privacy" = "Privacy delle notifiche";
+
+/* alert title */
+"Notifications status" = "Stato delle notifiche";
 
 /* No comment provided by engineer. */
 "Now admins can:\n- delete members' messages.\n- disable members (\"observer\" role)" = "Ora gli amministratori possono:\n- eliminare i messaggi dei membri.\n- disattivare i membri (ruolo \"osservatore\")";
@@ -3785,6 +3869,15 @@
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Conserva la password in modo sicuro, NON potrai cambiarla se la perdi.";
 
+/* token info */
+"Please try to disable and re-enable notfications." = "Prova a disattivare e riattivare le notifiche.";
+
+/* token info */
+"Please wait for token activation to complete." = "Attendi il completamento dell'attivazione del token.";
+
+/* token info */
+"Please wait for token to be registered." = "Attendi la registrazione del token.";
+
 /* No comment provided by engineer. */
 "Polish interface" = "Interfaccia polacca";
 
@@ -3865,6 +3958,9 @@
 
 /* No comment provided by engineer. */
 "Prohibit messages reactions." = "Proibisci le reazioni ai messaggi.";
+
+/* No comment provided by engineer. */
+"Prohibit reporting messages to moderators." = "Vieta di segnalare messaggi ai moderatori.";
 
 /* No comment provided by engineer. */
 "Prohibit sending direct messages to members." = "Proibisci l'invio di messaggi diretti ai membri.";
@@ -4028,6 +4124,15 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Consumo di batteria ridotto";
 
+/* No comment provided by engineer. */
+"Register" = "Registra";
+
+/* token info */
+"Register notification token?" = "Registrare il token di notifica?";
+
+/* token status text */
+"Registered" = "Registrato";
+
 /* reject incoming call via notification
    swipe action */
 "Reject" = "Rifiuta";
@@ -4127,6 +4232,12 @@
 
 /* report reason */
 "Report violation: only group moderators will see it." = "Segnala violazione: solo i moderatori del gruppo lo vedranno.";
+
+/* report in notification */
+"Report: (text.isEmpty ? reason.text : text)" = "Segnalazione: (text.isEmpty ? reason.text : text)";
+
+/* No comment provided by engineer. */
+"Reporting messages to moderators is prohibited." = "È vietato segnalare messaggi ai moderatori.";
 
 /* No comment provided by engineer. */
 "Reports" = "Segnalazioni";
@@ -4882,6 +4993,9 @@
 "TCP connection timeout" = "Scadenza connessione TCP";
 
 /* No comment provided by engineer. */
+"TCP port for messaging" = "Porta TCP per i messaggi";
+
+/* No comment provided by engineer. */
 "TCP_KEEPCNT" = "TCP_KEEPCNT";
 
 /* No comment provided by engineer. */
@@ -4895,6 +5009,9 @@
 
 /* server test failure */
 "Test failed at step %@." = "Test fallito al passo %@.";
+
+/* No comment provided by engineer. */
+"Test notifications" = "Prova le notifiche";
 
 /* No comment provided by engineer. */
 "Test server" = "Prova server";
@@ -4970,9 +5087,6 @@
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Il profilo è condiviso solo con i tuoi contatti.";
-
-/* No comment provided by engineer. */
-"The report will be archived for you." = "La segnalazione verrà archiviata per te.";
 
 /* No comment provided by engineer. */
 "The same conditions will apply to operator **%@**." = "Le stesse condizioni si applicheranno all'operatore **%@**.";
@@ -5120,6 +5234,9 @@
 
 /* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Attiva/disattiva l'incognito quando ti colleghi.";
+
+/* token status */
+"Token status: %@." = "Stato del token: %@.";
 
 /* No comment provided by engineer. */
 "Toolbar opacity" = "Opacità barra degli strumenti";
@@ -5335,10 +5452,16 @@
 "Use SOCKS proxy" = "Usa proxy SOCKS";
 
 /* No comment provided by engineer. */
+"Use TCP port %@ when no port is specified." = "Usa la porta TCP %@ quando non è specificata alcuna porta.";
+
+/* No comment provided by engineer. */
 "Use the app while in the call." = "Usa l'app mentre sei in chiamata.";
 
 /* No comment provided by engineer. */
 "Use the app with one hand." = "Usa l'app con una mano sola.";
+
+/* No comment provided by engineer. */
+"Use web port" = "Usa porta web";
 
 /* No comment provided by engineer. */
 "User selection" = "Selezione utente";
@@ -5747,6 +5870,9 @@
 
 /* chat list item description */
 "you shared one-time link incognito" = "hai condiviso un link incognito una tantum";
+
+/* token info */
+"You should receive notifications." = "Dovresti ricevere le notifiche.";
 
 /* snd group event chat item */
 "you unblocked %@" = "hai sbloccato %@";
