@@ -1048,6 +1048,18 @@ private fun TagsView(searchText: MutableState<TextFieldValue>) {
       }
     }
   }
+
+  LaunchedEffect(presetTags.toMap(), userTags.value.toList()) {
+    val containsInTags = when (val af = activeFilter.value) {
+      is ActiveFilter.PresetTag -> (presetTags[af.tag] ?: 0) > 0
+      is ActiveFilter.UserTag -> userTags.value.contains(af.tag)
+      is ActiveFilter.Unread -> return@LaunchedEffect
+      null -> return@LaunchedEffect
+    }
+    if (!containsInTags) {
+      activeFilter.value = null
+    }
+  }
 }
 
 @Composable
