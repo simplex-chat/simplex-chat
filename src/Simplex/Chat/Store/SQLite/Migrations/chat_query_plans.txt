@@ -1012,7 +1012,7 @@ Query:
           JOIN group_members m USING (group_id)
           WHERE g.user_id = ?
             AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?)
+            AND m.member_status NOT IN (?,?,?,?,?)
         
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
@@ -1075,7 +1075,7 @@ Query:
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
           WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
-            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?)
+            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?,?)
           LIMIT 1
         
 Plan:
@@ -5025,6 +5025,15 @@ SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?
 SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
 
+Query: DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_member_profile_id (member_profile_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (contact_profile_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
+
 Query: DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
@@ -5496,6 +5505,10 @@ Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid>?)
 
+Query: SELECT count(1) FROM group_members
+Plan:
+SCAN group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id
+
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
@@ -5531,6 +5544,10 @@ SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND loca
 Query: SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1
+Plan:
+SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 
 Query: SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?
 Plan:

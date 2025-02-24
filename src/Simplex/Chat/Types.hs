@@ -988,7 +988,7 @@ instance TextEncoding GroupMemberCategory where
     GCPostMember -> "post"
 
 data GroupMemberStatus
-  = GSMemRejected -- joining member who was rejected by the host
+  = GSMemRejected -- joining member who was rejected by the host, or host that rejected the join
   | GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
