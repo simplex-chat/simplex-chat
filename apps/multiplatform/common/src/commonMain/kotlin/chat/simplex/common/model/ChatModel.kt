@@ -886,7 +886,7 @@ object ChatModel {
         if (userTags.value.none { it.chatTagId == f.tag.chatTagId }) {
           activeChatTagFilter.value = null
         }
-      else -> {}
+      is ActiveFilter.Unread, null -> {}
     }
   }
 
