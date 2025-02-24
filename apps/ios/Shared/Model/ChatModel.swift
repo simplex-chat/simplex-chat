@@ -194,17 +194,12 @@ class ChatTagsModel: ObservableObject {
     }
 
     func clearActiveChatFilterIfNeeded() {
-        switch activeFilter {
-        case let .presetTag(tag):
-            if (presetTags[tag] ?? 0) == 0 {
-                activeFilter = nil
-            }
-        case let .userTag(tag):
-            if !userTags.contains(tag) {
-                activeFilter = nil
-            }
-        case .unread, nil: ()
+        let clear = switch activeFilter {
+        case let .presetTag(tag): (presetTags[tag] ?? 0) == 0
+        case let .userTag(tag): !userTags.contains(tag)
+        case .unread, nil: false
         }
+        if clear { activeFilter = nil }
     }
 }
 
