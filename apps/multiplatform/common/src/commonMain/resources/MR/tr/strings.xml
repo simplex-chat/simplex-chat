@@ -2147,7 +2147,7 @@
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Operatör(ler) için koşullar kabul edilecektir: <b>%s</b>.]]></string>
     <string name="privacy_chat_list_open_links_ask">Sor</string>
     <string name="chat_item_ttl_year">1 yıl</string>
-    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi cihazları</b>: Bildirimlerin çalışması için lütfen sistem ayarlarında Otomatik Başlat'ı etkinleştirin.]]></string>
+    <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi cihazları</b>: Bildirimlerin çalışması için lütfen sistem ayarlarında Otomatik Başlat\'ı etkinleştirin.]]></string>
     <string name="report_archive_alert_desc_all">Tüm raporlar sizin için arşivlenecektir.</string>
     <string name="report_archive_alert_title_all">Tüm raporlar arşivlensin mi?</string>
     <string name="archive_reports">Raporları arşivle</string>
@@ -2158,5 +2158,5 @@
     <string name="report_archive_alert_title_nth">%d raporu arşivleyelim mi?</string>
     <string name="archive_verb">Arşiv</string>
     <string name="report_archive_alert_title">Raporu arşivleyelim mi?</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tüm mesajlar ve dosyalar </b>uçtan uca şifreli</b> olarak gönderilir ve doğrudan mesajlarda kuantum sonrası güvenlik sağlanır.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tüm mesajlar ve dosyalar <b>uçtan uca şifreli</b> olarak gönderilir ve doğrudan mesajlarda kuantum sonrası güvenlik sağlanır.]]></string>
 </resources>

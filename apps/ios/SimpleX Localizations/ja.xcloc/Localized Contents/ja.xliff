@@ -1191,6 +1191,10 @@
         <source>Better groups</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better groups performance" xml:space="preserve">
+        <source>Better groups performance</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve">
         <source>Better message dates.</source>
         <note>No comment provided by engineer.</note>
@@ -1206,6 +1210,10 @@
       </trans-unit>
       <trans-unit id="Better notifications" xml:space="preserve">
         <source>Better notifications</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better privacy and security" xml:space="preserve">
+        <source>Better privacy and security</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -2668,6 +2676,10 @@ This is your own one-time link!</source>
         <target>有効にしない</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Don't miss important messages." xml:space="preserve">
+        <source>Don't miss important messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
         <target>次から表示しない</target>
@@ -3365,8 +3377,16 @@ This is your own one-time link!</source>
         <target>送信者がオンラインになるまでの待ち時間がなく、速い！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Faster deletion of groups." xml:space="preserve">
+        <source>Faster deletion of groups.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
         <source>Faster joining and more reliable messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Faster sending messages." xml:space="preserve">
+        <source>Faster sending messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
@@ -3634,6 +3654,10 @@ Error: %2$@</source>
         <target>GIFとステッカー</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Get notified when mentioned." xml:space="preserve">
+        <source>Get notified when mentioned.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
         <source>Good afternoon!</source>
         <note>message preview</note>
@@ -3742,6 +3766,10 @@ Error: %2$@</source>
       <trans-unit id="Help" xml:space="preserve">
         <source>Help</source>
         <target>ヘルプ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Help admins moderating their groups." xml:space="preserve">
+        <source>Help admins moderating their groups.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
@@ -4469,6 +4497,10 @@ This is your link for group %@!</source>
         <target>グループのメンバーが音声メッセージを送信できます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Mention members 👋" xml:space="preserve">
+        <source>Mention members 👋</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
         <source>Menus</source>
         <note>No comment provided by engineer.</note>
@@ -4887,6 +4919,10 @@ This is your link for group %@!</source>
         <source>No media &amp; file servers.</source>
         <note>servers error</note>
       </trans-unit>
+      <trans-unit id="No message" xml:space="preserve">
+        <source>No message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No message servers." xml:space="preserve">
         <source>No message servers.</source>
         <note>servers error</note>
@@ -5207,6 +5243,10 @@ VPN を有効にする必要があります。</target>
         <source>Or to share privately</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Organize chats into lists" xml:space="preserve">
+        <source>Organize chats into lists</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Other" xml:space="preserve">
         <source>Other</source>
         <note>No comment provided by engineer.</note>
@@ -5447,6 +5487,10 @@ Error: %@</source>
       <trans-unit id="Private filenames" xml:space="preserve">
         <source>Private filenames</source>
         <target>プライベートなファイル名</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private media file names." xml:space="preserve">
+        <source>Private media file names.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private message routing" xml:space="preserve">
@@ -6289,6 +6333,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>通知を送信する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send private reports" xml:space="preserve">
+        <source>Send private reports</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send questions and ideas" xml:space="preserve">
         <source>Send questions and ideas</source>
         <target>質問やアイデアを送る</target>
@@ -6498,6 +6546,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Set it instead of system authentication." xml:space="preserve">
         <source>Set it instead of system authentication.</source>
         <target>システム認証の代わりに設定します。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set message expiration in chats." xml:space="preserve">
+        <source>Set message expiration in chats.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passcode" xml:space="preserve">
@@ -7230,6 +7282,10 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
         <source>This link was used with another mobile device, please create a new link on the desktop.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This message was deleted or not received yet." xml:space="preserve">
+        <source>This message was deleted or not received yet.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">

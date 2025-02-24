@@ -1222,6 +1222,10 @@
         <target>Daha iyi gruplar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better groups performance" xml:space="preserve">
+        <source>Better groups performance</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve">
         <source>Better message dates.</source>
         <target>Daha iyi mesaj tarihleri.</target>
@@ -1240,6 +1244,10 @@
       <trans-unit id="Better notifications" xml:space="preserve">
         <source>Better notifications</source>
         <target>Daha iyi bildirimler</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Better privacy and security" xml:space="preserve">
+        <source>Better privacy and security</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -2814,6 +2822,10 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Etkinleştirme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Don't miss important messages." xml:space="preserve">
+        <source>Don't miss important messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
         <source>Don't show again</source>
         <target>Yeniden gösterme</target>
@@ -3560,9 +3572,17 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Hızlı ve gönderici çevrimiçi olana kadar beklemek yok!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Faster deletion of groups." xml:space="preserve">
+        <source>Faster deletion of groups.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
         <source>Faster joining and more reliable messages.</source>
         <target>Daha hızlı katılma ve daha güvenilir mesajlar.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Faster sending messages." xml:space="preserve">
+        <source>Faster sending messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
@@ -3863,6 +3883,10 @@ Hata: %2$@</target>
         <target>GİFler ve çıkartmalar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Get notified when mentioned." xml:space="preserve">
+        <source>Get notified when mentioned.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
         <source>Good afternoon!</source>
         <target>İyi öğlenler!</target>
@@ -3975,6 +3999,10 @@ Hata: %2$@</target>
       <trans-unit id="Help" xml:space="preserve">
         <source>Help</source>
         <target>Yardım</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Help admins moderating their groups." xml:space="preserve">
+        <source>Help admins moderating their groups.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
@@ -4745,6 +4773,10 @@ Bu senin grup için bağlantın %@!</target>
         <target>Grup üyeleri sesli mesajlar gönderebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Mention members 👋" xml:space="preserve">
+        <source>Mention members 👋</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
         <source>Menus</source>
         <target>Menüler</target>
@@ -5197,6 +5229,10 @@ Bu senin grup için bağlantın %@!</target>
         <source>No media &amp; file servers.</source>
         <note>servers error</note>
       </trans-unit>
+      <trans-unit id="No message" xml:space="preserve">
+        <source>No message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No message servers." xml:space="preserve">
         <source>No message servers.</source>
         <note>servers error</note>
@@ -5532,6 +5568,10 @@ VPN'nin etkinleştirilmesi gerekir.</target>
         <source>Or to share privately</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Organize chats into lists" xml:space="preserve">
+        <source>Organize chats into lists</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Other" xml:space="preserve">
         <source>Other</source>
         <target>Diğer</target>
@@ -5791,6 +5831,10 @@ Hata: %@</target>
       <trans-unit id="Private filenames" xml:space="preserve">
         <source>Private filenames</source>
         <target>Gizli dosya adları</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private media file names." xml:space="preserve">
+        <source>Private media file names.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private message routing" xml:space="preserve">
@@ -6700,6 +6744,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Bildirimler gönder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send private reports" xml:space="preserve">
+        <source>Send private reports</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send questions and ideas" xml:space="preserve">
         <source>Send questions and ideas</source>
         <target>Fikirler ve sorular gönderin</target>
@@ -6933,6 +6981,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Set it instead of system authentication." xml:space="preserve">
         <source>Set it instead of system authentication.</source>
         <target>Sistem kimlik doğrulaması yerine ayarla.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set message expiration in chats." xml:space="preserve">
+        <source>Set message expiration in chats.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passcode" xml:space="preserve">
@@ -7718,6 +7770,10 @@ Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.
       <trans-unit id="This link was used with another mobile device, please create a new link on the desktop." xml:space="preserve">
         <source>This link was used with another mobile device, please create a new link on the desktop.</source>
         <target>Bu bağlantı başka bir mobil cihazda kullanıldı, lütfen masaüstünde yeni bir bağlantı oluşturun.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This message was deleted or not received yet." xml:space="preserve">
+        <source>This message was deleted or not received yet.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
