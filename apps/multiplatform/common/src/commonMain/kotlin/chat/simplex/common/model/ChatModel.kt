@@ -285,6 +285,9 @@ object ChatModel {
         val count = presetTags[tag]
         if (count != null) {
           presetTags[tag] = maxOf(0, count - 1)
+          if (activeChatTagFilter.value == ActiveFilter.PresetTag(tag) && (presetTags[tag] ?: 0) == 0) {
+            activeChatTagFilter.value = null
+          }
         }
       }
     }
@@ -875,10 +878,8 @@ object ChatModel {
 
     private fun changeGroupReportsTagNoContentTag(by: Int = 0) {
       if (by == 0 || contentTag != null) return
-      val total = (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by
-      presetTags[PresetTagKind.GROUP_REPORTS] = total
-      val filter = activeChatTagFilter.value
-      if (total <= 0 && filter is ActiveFilter.PresetTag && filter.tag == PresetTagKind.GROUP_REPORTS) {
+      presetTags[PresetTagKind.GROUP_REPORTS] = kotlin.math.max(0, (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) + by)
+      if (activeChatTagFilter.value == ActiveFilter.PresetTag(PresetTagKind.GROUP_REPORTS) && (presetTags[PresetTagKind.GROUP_REPORTS] ?: 0) == 0) {
         activeChatTagFilter.value = null
       }
     }
