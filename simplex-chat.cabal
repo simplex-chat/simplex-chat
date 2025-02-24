@@ -15,6 +15,7 @@ license:        AGPL-3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
+    PRIVACY.md
     README.md
     cabal.project
 
