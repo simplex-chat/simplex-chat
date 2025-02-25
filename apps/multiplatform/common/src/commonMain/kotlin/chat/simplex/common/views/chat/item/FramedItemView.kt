@@ -202,7 +202,7 @@ fun FramedItemView(
       Column(
         Modifier
           .width(IntrinsicSize.Max)
-          .padding(start = if (tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
+          .padding(start = if (!sent && tailRendered) msgTailWidthDp else 0.dp, end = if (sent && tailRendered) msgTailWidthDp else 0.dp)
       ) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           @Composable

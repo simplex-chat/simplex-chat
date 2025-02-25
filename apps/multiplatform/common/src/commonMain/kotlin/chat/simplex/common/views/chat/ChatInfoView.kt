@@ -1398,7 +1398,8 @@ private suspend fun afterSetChatTTL(rhId: Long?, chatInfo: ChatInfo, progressInd
       chat,
       navInfo,
       contentTag = null,
-      pagination = pagination
+      pagination = pagination,
+      openAroundItemId = null
     )
   } catch (e: Exception) {
     Log.e(TAG, "apiGetChat error: ${e.stackTraceToString()}")
