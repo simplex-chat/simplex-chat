@@ -98,7 +98,7 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-    fit "reject member joining via group link - blocked name" testGroupLinkRejectBlockedName
+    it "reject member joining via group link - blocked name" testGroupLinkRejectBlockedName
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -2884,9 +2884,9 @@ testGroupLinkRejectBlockedName =
       gLink <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
-      alice <## "bob (Bob): rejecting request to join group #team, reason: GRRBadName"
+      alice <## "bob (Bob): rejecting request to join group #team, reason: GRRBlockedName"
       bob <## "#team: joining the group..."
-      bob <## "#team: join rejected, reason: GRRBadName"
+      bob <## "#team: join rejected, reason: GRRBlockedName"
 
       threadDelay 100000
 

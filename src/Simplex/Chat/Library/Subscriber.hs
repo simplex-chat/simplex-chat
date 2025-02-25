@@ -1342,7 +1342,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           where
             rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
               | T.length displayName > profileNameLimit = Just GRRLongName
-              | maybe False ($ displayName) allowedProfileName = Just GRRBlockedName
+              | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
               | otherwise = Nothing
             userMemberRole linkRole = \case
               Just AOAll -> GRObserver
