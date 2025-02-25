@@ -444,6 +444,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRTimedAction _ _ -> []
   CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
+  CRTerminalEvent te -> case te of
+    TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
+    TEGroupLinkRejected u g reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss
@@ -1128,7 +1131,7 @@ showRole = plain . strEncode
 viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
-    removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
+    removedOrLeft m = let s = memberStatus m in s == GSMemRejected || s == GSMemRemoved || s == GSMemLeft
     groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
     role :: GroupMember -> String
     role GroupMember {memberRole} = B.unpack $ strEncode memberRole
@@ -1138,6 +1141,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GCHostMember -> ["host"]
       _ -> []
     status m = case memberStatus m of
+      GSMemRejected -> ["rejected"]
       GSMemRemoved -> ["removed"]
       GSMemLeft -> ["left"]
       GSMemUnknown -> ["status unknown"]
@@ -1178,6 +1182,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
       where
         viewMemberStatus = \case
+          GSMemRejected -> delete "you are rejected"
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"

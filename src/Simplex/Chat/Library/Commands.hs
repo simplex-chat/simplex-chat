@@ -2621,7 +2621,7 @@ processChatCommand' vr = \case
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
-        cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
+        cId == Just contactId && s /= GSMemRejected && s /= GSMemRemoved && s /= GSMemLeft
     checkSndFile :: CryptoFile -> CM Integer
     checkSndFile (CryptoFile f cfArgs) = do
       fsFilePath <- lift $ toFSFilePath f
@@ -2969,6 +2969,7 @@ processChatCommand' vr = \case
                 (Just gInfo, _) -> groupPlan gInfo
       where
         groupPlan gInfo@GroupInfo {membership}
+          | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo)
           | not (memberActive membership) && not (memberRemoved membership) =
               pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
           | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
