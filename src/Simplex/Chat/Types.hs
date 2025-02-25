@@ -26,6 +26,7 @@
 
 module Simplex.Chat.Types where
 
+import Control.Applicative ((<|>))
 import Crypto.Number.Serialize (os2ip)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
@@ -35,6 +36,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
+import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
@@ -680,8 +682,9 @@ data GroupLinkRejection = GroupLinkRejection
   deriving (Eq, Show)
 
 data GroupRejectionReason
-  = GRRBadName
-  | GRROther {text :: Text}
+  = GRRLongName
+  | GRRBlockedName
+  | GRRUnknown {text :: Text}
   deriving (Eq, Show)
 
 instance FromField GroupRejectionReason where fromField = blobFieldDecoder strDecode
@@ -690,13 +693,13 @@ instance ToField GroupRejectionReason where toField = toField . strEncode
 
 instance StrEncoding GroupRejectionReason where
   strEncode = \case
-    GRRBadName -> "bad_name"
-    GRROther text -> "other " <> encodeUtf8 text
+    GRRLongName -> "long_name"
+    GRRBlockedName -> "blocked_name"
+    GRRUnknown text -> encodeUtf8 text
   strP =
-    A.takeWhile1 (/= ' ') >>= \case
-      "bad_name" -> pure GRRBadName
-      "other" -> GRROther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
-      s -> GRROther . safeDecodeUtf8 . (s <>) <$> A.takeByteString
+    "long_name" $> GRRLongName <|>
+    "blocked_name" $> GRRBlockedName <|>
+    GRRUnknown . safeDecodeUtf8 <$> A.takeByteString
 
 instance FromJSON GroupRejectionReason where
   parseJSON = strParseJSON "GroupRejectionReason"

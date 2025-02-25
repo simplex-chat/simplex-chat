@@ -1324,25 +1324,26 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         cfg <- asks config
                         if v >= groupFastLinkJoinVersion
                           then
-                            if nameAllowed cfg
-                              then do
+                            case nameRejectionReason cfg of
+                              Nothing -> do
                                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                                     useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
                                 mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
                                 createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                                 toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                              else
+                              Just rejectionReason ->
                                 if v >= groupJoinRejectVersion
                                   then do
-                                    mem <- acceptGroupJoinSendRejectAsync user gInfo cReq GRRBadName
-                                    toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem GRRBadName
+                                    mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rejectionReason
+                                    toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rejectionReason
                                   else messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
                           else messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                 _ -> toView $ CRReceivedContactRequest user cReq
           where
-            nameAllowed ChatConfig {profileNameLimit, allowedProfileName}
-              | T.length displayName <= profileNameLimit && maybe True ($ displayName) allowedProfileName = True
-              | otherwise = False
+            nameRejectionReason ChatConfig {profileNameLimit, allowedProfileName}
+              | T.length displayName > profileNameLimit = Just GRRLongName
+              | maybe False ($ displayName) allowedProfileName = Just GRRBlockedName
+              | otherwise = Nothing
             userMemberRole linkRole = \case
               Just AOAll -> GRObserver
               Just AONameOnly | noImage -> GRObserver
