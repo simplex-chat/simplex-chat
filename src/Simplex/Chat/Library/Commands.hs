@@ -2073,25 +2073,39 @@ processChatCommand' vr = \case
       splitMember mId ms = case break ((== mId) . groupMemberId') ms of
         (_, []) -> Nothing
         (ms1, bm : ms2) -> Just (bm, ms1 <> ms2)
-  APIRemoveMember groupId memberId -> withUser $ \user -> do
-    Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
-    case find ((== memberId) . groupMemberId') members of
-      Nothing -> throwChatError CEGroupMemberNotFound
-      Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
-        assertUserGroupRole gInfo $ max GRAdmin mRole
-        withGroupLock "removeMember" groupId . procCmd $ do
-          case mStatus of
-            GSMemInvited -> do
-              deleteMemberConnection user m
-              withFastStore' $ \db -> deleteGroupMember db user m
-            _ -> do
-              msg <- sendGroupMessage user gInfo members $ XGrpMemDel mId
-              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
-              toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
-              deleteMemberConnection' user m True
-              -- undeleted "member connected" chat item will prevent deletion of member record
-              deleteOrUpdateMemberRecord user m
-          pure $ CRUserDeletedMember user gInfo m {memberStatus = GSMemRemoved}
+  APIRemoveMembers groupId memberIds -> withUser $ \user -> do
+    g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
+    let maxMemRole = maximum $ map (\GroupMember {memberRole} -> memberRole) members
+    assertUserGroupRole gInfo $ max GRAdmin maxMemRole
+    -- TODO
+    -- split members into invited and not
+    -- for invited members:
+    -- - deleteMembersConnections
+    -- - batch db: deleteGroupMember
+    -- for other members:
+    -- - batch send XGrpMemDel
+    -- - batch create chat items
+    -- - deleteMembersConnections' with waitDelivery = True
+    -- - batch db: deleteOrUpdateMemberRecord
+    forM_ memberIds $ deleteMember user g
+    pure $ CRUserDeletedMembers user gInfo [m {memberStatus = GSMemRemoved}]
+    where
+      deleteMember user (Group gInfo members) memberId =
+        case find ((== memberId) . groupMemberId') members of
+          Nothing -> throwChatError CEGroupMemberNotFound
+          Just m@GroupMember {memberId = mId, memberStatus = mStatus, memberProfile} ->
+            withGroupLock "removeMember" groupId . procCmd $ do
+              case mStatus of
+                GSMemInvited -> do
+                  deleteMemberConnection user m
+                  withFastStore' $ \db -> deleteGroupMember db user m
+                _ -> do
+                  msg <- sendGroupMessage user gInfo members $ XGrpMemDel mId
+                  ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
+                  toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
+                  deleteMemberConnection' user m True
+                  -- undeleted "member connected" chat item will prevent deletion of member record
+                  deleteOrUpdateMemberRecord user m
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
@@ -2121,11 +2135,7 @@ processChatCommand' vr = \case
       gId <- getGroupIdByName db user gName
       gMemberIds <- forM gMemberNames $ getGroupMemberIdByName db user gId
       pure (gId, gMemberIds)
-    rs <- forM (L.zip (L.fromList [1..]) gMemberIds) $ \(i, memId) -> do
-      r <- processChatCommand (APIRemoveMember gId memId)
-      when (i < length gMemberIds) $ toView r
-      pure r
-    pure $ L.last rs 
+    processChatCommand $ APIRemoveMembers gId gMemberIds
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APILeaveGroup groupId
@@ -3797,7 +3807,7 @@ chatCommandP =
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_block #" *> (APIBlockMemberForAll <$> A.decimal <* A.space <*> A.decimal <* A.space <* "blocked=" <*> onOffP),
-      "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
+      "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
       "/_server test " *> (APITestProtoServer <$> A.decimal <* A.space <*> strP),
