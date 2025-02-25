@@ -1910,6 +1910,7 @@ data class GroupMember (
     }
 
   val memberActive: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRejected -> false
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
@@ -1925,6 +1926,7 @@ data class GroupMember (
   }
 
   val memberCurrent: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRejected -> false
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
@@ -2028,6 +2030,7 @@ enum class GroupMemberCategory {
 
 @Serializable
 enum class GroupMemberStatus {
+  @SerialName("rejected") MemRejected,
   @SerialName("removed") MemRemoved,
   @SerialName("left") MemLeft,
   @SerialName("deleted") MemGroupDeleted,
@@ -2042,6 +2045,7 @@ enum class GroupMemberStatus {
   @SerialName("creator") MemCreator;
 
   val text: String get() = when (this) {
+    MemRejected -> generalGetString(MR.strings.group_member_status_rejected)
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
@@ -2057,6 +2061,7 @@ enum class GroupMemberStatus {
   }
 
   val shortText: String get() = when (this) {
+    MemRejected -> generalGetString(MR.strings.group_member_status_rejected)
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
