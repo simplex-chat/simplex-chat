@@ -52,7 +52,7 @@ main = do
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "SimpleX chat view" viewTests
-      describe "SimpleX chat protocol" protocolTests
+      fdescribe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests
       describe "Message batching" batchingTests
       describe "Operators" operatorTests

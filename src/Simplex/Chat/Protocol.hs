@@ -74,13 +74,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 10 - business chats (2024-11-29)
 -- 11 - fix profile update in business chats (2024-12-05)
 -- 12 - support sending and receiving content reports (2025-01-03)
--- 13 - support sending and receiving group join rejection (2025-02-24)
+-- 14 - support sending and receiving group join rejection (2025-02-24)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 13
+currentChatVersion = VersionChat 14
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -133,7 +133,7 @@ contentReportsVersion = VersionChat 12
 
 -- support sending and receiving group join rejection (XGrpLinkReject)
 groupJoinRejectVersion :: VersionChat
-groupJoinRejectVersion = VersionChat 13
+groupJoinRejectVersion = VersionChat 14
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v

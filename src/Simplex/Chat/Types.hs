@@ -697,9 +697,9 @@ instance StrEncoding GroupRejectionReason where
     GRRBlockedName -> "blocked_name"
     GRRUnknown text -> encodeUtf8 text
   strP =
-    "long_name" $> GRRLongName <|>
-    "blocked_name" $> GRRBlockedName <|>
-    GRRUnknown . safeDecodeUtf8 <$> A.takeByteString
+    "long_name" $> GRRLongName
+    <|> "blocked_name" $> GRRBlockedName
+    <|> GRRUnknown . safeDecodeUtf8 <$> A.takeByteString
 
 instance FromJSON GroupRejectionReason where
   parseJSON = strParseJSON "GroupRejectionReason"
