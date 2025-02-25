@@ -31,8 +31,10 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.LocalContentTag
+import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import kotlinx.datetime.Clock
 import kotlin.math.*
 
@@ -73,6 +75,7 @@ fun ChatItemView(
   highlighted: State<Boolean>,
   range: State<IntRange?>,
   selectedChatItems: MutableState<Set<Long>?>,
+  searchMode: State<Boolean>,
   fillMaxWidth: Boolean = true,
   selectChatItem: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -228,7 +231,39 @@ fun ChatItemView(
       }
     }
 
+    @Composable
+    fun GoToInnerButton(alignStart: Boolean, icon: ImageResource, onClick: () -> Unit) {
+      IconButton(
+        onClick,
+        Modifier
+          .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
+          .size(22.dp)
+      ) {
+        Icon(painterResource(icon), null, Modifier.size(22.dp), tint = MaterialTheme.colors.secondary)
+      }
+    }
+
+    @Composable
+    fun GoToButton(alignStart: Boolean) {
+      val chatTypeIdMsgId = cItem.meta.itemForwarded?.chatTypeIdMsgId
+      if (searchMode.value) {
+        GoToInnerButton(alignStart, MR.images.ic_search) {
+          withBGApi { openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id) }
+        }
+      } else if (chatTypeIdMsgId != null) {
+        GoToInnerButton(alignStart, MR.images.ic_arrow_forward) {
+          val (chatType, apiId, msgId) = chatTypeIdMsgId
+          withBGApi { openChat(rhId, chatType, apiId, null, msgId) }
+        }
+      }
+    }
+
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      if (cItem.chatDir.sent) {
+        GoToButton(true)
+      }
+    Column(Modifier.weight(1f, fill = false)) {
       val interactionSource = remember { MutableInteractionSource() }
       val enterInteraction = remember { HoverInteraction.Enter() }
       KeyChangeEffect(highlighted.value) {
@@ -689,11 +724,15 @@ fun ChatItemView(
           }
         }
       }
-
+      }
+      if (!cItem.chatDir.sent) {
+        GoToButton(false)
+      }
+    }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
         ChatItemReactions()
       }
-    }
+      }
   }
 }
 
@@ -1109,7 +1148,7 @@ fun Modifier.clipChatItem(chatItem: ChatItem? = null, tailVisible: Boolean = fal
 
 private fun chatItemShape(roundness: Float, density: Density, tailVisible: Boolean, sent: Boolean = false): GenericShape = GenericShape { size, _ ->
   val (msgTailWidth, msgBubbleMaxRadius) = with(density) { Pair(msgTailWidthDp.toPx(), msgBubbleMaxRadius.toPx()) }
-  val width = if (sent && tailVisible) size.width - msgTailWidth else size.width
+  val width = size.width
   val height = size.height
   val rxMax = min(msgBubbleMaxRadius, width / 2)
   val ryMax = min(msgBubbleMaxRadius, height / 2)
@@ -1338,6 +1377,7 @@ fun PreviewChatItemView(
     highlighted = remember { mutableStateOf(false) },
     range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
+    searchMode = remember { mutableStateOf(false) },
     selectChatItem = {},
     deleteMessage = { _, _ -> },
     deleteMessages = { _ -> },
@@ -1385,6 +1425,7 @@ fun PreviewChatItemViewDeletedContent() {
       highlighted = remember { mutableStateOf(false) },
       range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
+      searchMode = remember { mutableStateOf(false) },
       selectChatItem = {},
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
