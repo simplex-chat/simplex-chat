@@ -112,7 +112,7 @@ defaultChatConfig =
             ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
           },
-      allowedProfileName = Nothing,
+      allowedProfileName = Just (const False),
       profileNameLimit = maxBound,
       acceptAsObserver = Nothing,
       tbqSize = 1024,
