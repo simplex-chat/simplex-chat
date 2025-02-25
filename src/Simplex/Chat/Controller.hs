@@ -844,6 +844,12 @@ data ChatResponse
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   | CRCustomChatResponse {user_ :: Maybe User, response :: Text}
+  | CRTerminalEvent TerminalEvent
+  deriving (Show)
+
+data TerminalEvent
+  = TEGroupLinkRejected {user :: User, groupInfo :: GroupInfo, groupRejectionReason :: GroupRejectionReason}
+  | TERejectingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, groupRejectionReason :: GroupRejectionReason}
   deriving (Show)
 
 data DeletedRcvQueue = DeletedRcvQueue
@@ -1491,6 +1497,10 @@ chatCmdError user = CRChatCmdError user . ChatError . CECommandError
 throwChatError :: ChatErrorType -> CM a
 throwChatError = throwError . ChatError
 
+toViewTE :: TerminalEvent -> CM ()
+toViewTE = toView . CRTerminalEvent
+{-# INLINE toViewTE #-}
+
 -- | Emit local events.
 toView :: ChatResponse -> CM ()
 toView = lift . toView'
@@ -1629,6 +1639,8 @@ $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "TE") ''TerminalEvent)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

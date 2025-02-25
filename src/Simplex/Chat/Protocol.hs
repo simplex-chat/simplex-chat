@@ -74,12 +74,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 10 - business chats (2024-11-29)
 -- 11 - fix profile update in business chats (2024-12-05)
 -- 12 - support sending and receiving content reports (2025-01-03)
+-- 14 - support sending and receiving group join rejection (2025-02-24)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 12
+currentChatVersion = VersionChat 14
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -129,6 +130,10 @@ businessChatPrefsVersion = VersionChat 11
 -- support sending and receiving content reports (MCReport message content)
 contentReportsVersion :: VersionChat
 contentReportsVersion = VersionChat 12
+
+-- support sending and receiving group join rejection (XGrpLinkReject)
+groupJoinRejectVersion :: VersionChat
+groupJoinRejectVersion = VersionChat 14
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -326,7 +331,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
-  -- XGrpLinkReject :: GroupProfile -> RejectionReason -> ChatMsgEvent 'Json
+  XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
@@ -816,6 +821,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpInv_ :: CMEventTag 'Json
   XGrpAcpt_ :: CMEventTag 'Json
   XGrpLinkInv_ :: CMEventTag 'Json
+  XGrpLinkReject_ :: CMEventTag 'Json
   XGrpLinkMem_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
@@ -867,6 +873,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpInv_ -> "x.grp.inv"
     XGrpAcpt_ -> "x.grp.acpt"
     XGrpLinkInv_ -> "x.grp.link.inv"
+    XGrpLinkReject_ -> "x.grp.link.reject"
     XGrpLinkMem_ -> "x.grp.link.mem"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
@@ -919,6 +926,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.inv" -> XGrpInv_
         "x.grp.acpt" -> XGrpAcpt_
         "x.grp.link.inv" -> XGrpLinkInv_
+        "x.grp.link.reject" -> XGrpLinkReject_
         "x.grp.link.mem" -> XGrpLinkMem_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
@@ -967,6 +975,7 @@ toCMEventTag msg = case msg of
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
   XGrpLinkInv _ -> XGrpLinkInv_
+  XGrpLinkReject _ -> XGrpLinkReject_
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
@@ -1068,6 +1077,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
+      XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
@@ -1130,6 +1140,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
+      XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
