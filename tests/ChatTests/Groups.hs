@@ -98,7 +98,7 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-    it "reject member joining via group link - bad name" testGroupLinkRejectBadName
+    fit "reject member joining via group link - blocked name" testGroupLinkRejectBlockedName
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -2872,8 +2872,8 @@ testGroupLinkExistingContactMerged =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
-testGroupLinkRejectBadName :: HasCallStack => TestParams -> IO ()
-testGroupLinkRejectBadName =
+testGroupLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
+testGroupLinkRejectBlockedName =
   testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
