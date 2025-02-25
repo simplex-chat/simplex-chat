@@ -210,8 +210,26 @@ suspend fun openGroupChat(rhId: Long?, groupId: Long, contentTag: MsgContentTag?
 
 suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, contentTag: MsgContentTag? = null) = openChat(rhId, chatInfo.chatType, chatInfo.apiId, contentTag)
 
-private suspend fun openChat(rhId: Long?, chatType: ChatType, apiId: Long, contentTag: MsgContentTag? = null) =
-  apiLoadMessages(rhId, chatType, apiId, contentTag, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
+suspend fun openChat(
+  rhId: Long?,
+  chatType: ChatType,
+  apiId: Long,
+  contentTag: MsgContentTag? = null,
+  openAroundItemId: Long? = null
+) =
+  apiLoadMessages(
+    rhId,
+    chatType,
+    apiId,
+    contentTag,
+    if (openAroundItemId != null) {
+      ChatPagination.Around(openAroundItemId, ChatPagination.INITIAL_COUNT)
+    } else {
+      ChatPagination.Initial(ChatPagination.INITIAL_COUNT)
+    },
+    "",
+    openAroundItemId
+  )
 
 suspend fun openLoadedChat(chat: Chat, contentTag: MsgContentTag? = null) {
   withChats(contentTag) {
