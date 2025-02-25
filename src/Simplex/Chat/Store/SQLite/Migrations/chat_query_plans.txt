@@ -1075,7 +1075,7 @@ Query:
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
           WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
-            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?,?)
+            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?)
           LIMIT 1
         
 Plan:
