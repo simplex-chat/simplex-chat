@@ -2969,6 +2969,7 @@ processChatCommand' vr = \case
                 (Just gInfo, _) -> groupPlan gInfo
       where
         groupPlan gInfo@GroupInfo {membership}
+          | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo)
           | not (memberActive membership) && not (memberRemoved membership) =
               pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
           | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)

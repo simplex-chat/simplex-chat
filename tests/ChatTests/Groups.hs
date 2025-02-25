@@ -2893,6 +2893,10 @@ testGroupLinkRejectBadName =
       memCount <- withCCTransaction alice $ \db ->
         DB.query_ db "SELECT count(1) FROM group_members" :: IO [[Int]]
       memCount `shouldBe` [[1]]
+
+      bob ##> ("/c " <> gLink)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
   where
     cfg = testCfg {allowedProfileName = Just (const False)}
 

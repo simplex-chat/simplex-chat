@@ -1691,10 +1691,10 @@ getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHa
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
           WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
-            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?,?)
+            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?)
           LIMIT 1
         |]
-        (userId, groupLinkHash1, groupLinkHash2, userContactId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
+        (userId, groupLinkHash1, groupLinkHash2, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db vr user) groupId_
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
