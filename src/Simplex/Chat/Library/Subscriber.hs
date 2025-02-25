@@ -1335,7 +1335,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 if v >= groupJoinRejectVersion
                                   then do
                                     mem <- acceptGroupJoinSendRejectAsync user gInfo cReq GRRBadName
-                                    toView $ CRRejectingGroupJoinRequestMember user gInfo mem GRRBadName
+                                    toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem GRRBadName
                                   else messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
                           else messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                 _ -> toView $ CRReceivedContactRequest user cReq
@@ -2489,7 +2489,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           pure (conn', True)
         XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
           (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db vr user conn' glRjct
-          toView $ CRGroupLinkRejected user gInfo host rejectionReason
+          toView $ CRGroupLinkConnecting user gInfo host
+          toViewTE $ TEGroupLinkRejected user gInfo rejectionReason
           pure (conn', True)
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure (conn', False)

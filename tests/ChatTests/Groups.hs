@@ -2885,6 +2885,7 @@ testGroupLinkRejectBadName =
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): rejecting request to join group #team, reason: GRRBadName"
+      bob <## "#team: joining the group..."
       bob <## "#team: join rejected, reason: GRRBadName"
 
       threadDelay 100000
