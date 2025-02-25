@@ -70,6 +70,7 @@ fun ChatPreviewView(
         }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
+          GroupMemberStatus.MemRejected -> inactiveIcon()
           GroupMemberStatus.MemLeft -> inactiveIcon()
           GroupMemberStatus.MemRemoved -> inactiveIcon()
           GroupMemberStatus.MemGroupDeleted -> inactiveIcon()
@@ -156,7 +157,7 @@ fun ChatPreviewView(
             else
               if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary
           )
-          GroupMemberStatus.MemAccepted -> chatPreviewTitleText(MaterialTheme.colors.secondary)
+          GroupMemberStatus.MemAccepted, GroupMemberStatus.MemRejected -> chatPreviewTitleText(MaterialTheme.colors.secondary)
           else -> chatPreviewTitleText(
             if (deleting)
               MaterialTheme.colors.secondary
@@ -237,6 +238,7 @@ fun ChatPreviewView(
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
+            GroupMemberStatus.MemRejected -> Text(stringResource(MR.strings.group_preview_rejected))
             GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(currentUserProfileDisplayName, cInfo.groupInfo))
             GroupMemberStatus.MemAccepted -> Text(stringResource(MR.strings.group_connection_pending), color = MaterialTheme.colors.secondary)
             else -> {}
