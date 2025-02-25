@@ -1323,21 +1323,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                         cfg <- asks config
                         case rejectionReason cfg of
-                          Nothing ->
-                            if v >= groupFastLinkJoinVersion
-                              then do
-                                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                                    useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
-                                mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
-                                createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                                toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                              else messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
-                          Just rjctReason ->
-                            if v >= groupJoinRejectVersion
-                              then do
-                                mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
-                                toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
-                              else messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
+                          Nothing
+                            | v < groupFastLinkJoinVersion ->
+                              messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
+                            | otherwise -> do
+                              let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                                  useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
+                              mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
+                              createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                              toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
+                          Just rjctReason
+                            | v < groupJoinRejectVersion ->
+                              messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
+                            | otherwise -> do
+                              mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
+                              toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CRReceivedContactRequest user cReq
           where
             rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
