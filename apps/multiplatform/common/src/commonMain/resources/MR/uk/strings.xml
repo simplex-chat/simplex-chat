@@ -2346,4 +2346,18 @@
     <string name="member_reports_are_prohibited">Повідомлення модераторам заборонено в цій групі.</string>
     <string name="group_members_can_send_reports">Учасники можуть повідомляти повідомлення модераторам.</string>
     <string name="enable_sending_member_reports">Дозволити повідомляти повідомлення модераторам.</string>
+    <string name="group_preview_rejected">відхилено</string>
+    <string name="group_member_status_rejected">відхилено</string>
+    <string name="v6_3_better_groups_performance">Краща продуктивність груп</string>
+    <string name="v6_3_organize_chat_lists_descr">Не пропускайте важливі повідомлення.</string>
+    <string name="v6_3_mentions_descr">Отримуйте сповіщення, коли вас згадують.</string>
+    <string name="v6_3_reports_descr">Допоможіть адміністраторам модерувати їхні групи.</string>
+    <string name="v6_3_organize_chat_lists">Організовуйте чати в списки</string>
+    <string name="v6_3_private_media_file_names">Приватні імена медіа-файлів.</string>
+    <string name="v6_3_reports">Надсилати приватні звіти</string>
+    <string name="v6_3_better_privacy_and_security">Краща конфіденційність та безпека</string>
+    <string name="v6_3_faster_sending_messages">Швидша відправка повідомлень.</string>
+    <string name="v6_3_mentions">Згадуйте учасників 👋</string>
+    <string name="v6_3_set_message_expiration_in_chats">Встановлюйте термін придатності повідомлень у чатах.</string>
+    <string name="v6_3_faster_deletion_of_groups">Швидше видалення груп.</string>
 </resources>
