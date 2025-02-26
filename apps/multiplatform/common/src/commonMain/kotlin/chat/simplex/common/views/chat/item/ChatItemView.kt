@@ -3,14 +3,14 @@ package chat.simplex.common.views.chat.item
 import SectionItemView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.HoverInteraction
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
@@ -115,8 +115,16 @@ fun ChatItemView(
   val onLinkLongClick = { _: String -> showMenu.value = true }
   val live = remember { derivedStateOf { composeState.value.liveMessage != null } }.value
 
+  val bubbleInteractionSource = remember { MutableInteractionSource() }
+  val lineInteractionSource = remember { MutableInteractionSource() }
+  val bubblePressed = bubbleInteractionSource.collectIsPressedAsState()
+  val linePressed = lineInteractionSource.collectIsPressedAsState()
+  val lineHovered = lineInteractionSource.collectIsHoveredAsState()
+  val lineActivated = remember { derivedStateOf { lineHovered.value || linePressed.value || bubblePressed.value } }
   Box(
-    modifier = if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier,
+    modifier = (if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
+      .hoverable(lineInteractionSource)
+      .clickable(onClick = {}, interactionSource = lineInteractionSource, indication = null),
     contentAlignment = alignment,
   ) {
     val info = cItem.meta.itemStatus.statusInto
@@ -232,29 +240,36 @@ fun ChatItemView(
     }
 
     @Composable
-    fun GoToInnerButton(alignStart: Boolean, icon: ImageResource, onClick: () -> Unit) {
+    fun GoToInnerButton(alignStart: Boolean, icon: ImageResource, parentActivated: State<Boolean>, onClick: () -> Unit) {
+      val buttonInteractionSource = remember { MutableInteractionSource() }
+      val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
+      val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
+      val buttonActivated = remember { derivedStateOf { buttonHovered.value || buttonPressed.value } }
       IconButton(
         onClick,
         Modifier
           .padding(start = if (alignStart) 0.dp else DEFAULT_PADDING_HALF + 3.dp, end = if (alignStart) DEFAULT_PADDING_HALF + 3.dp else 0.dp)
           .size(22.dp)
+          .alpha(if (parentActivated.value || buttonActivated.value) 1f else 0.4f),
+        interactionSource = buttonInteractionSource
       ) {
         Icon(painterResource(icon), null, Modifier.size(22.dp), tint = MaterialTheme.colors.secondary)
       }
     }
 
     @Composable
-    fun GoToButton(alignStart: Boolean) {
+    fun GoToButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeIdMsgId = cItem.meta.itemForwarded?.chatTypeIdMsgId
       if (searchMode.value) {
-        GoToInnerButton(alignStart, MR.images.ic_search) {
+        GoToInnerButton(alignStart, MR.images.ic_search, parentActivated) {
+
           withBGApi {
             openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id)
             closeReportsIfNeeded()
           }
         }
       } else if (chatTypeIdMsgId != null) {
-        GoToInnerButton(alignStart, MR.images.ic_arrow_forward) {
+        GoToInnerButton(alignStart, MR.images.ic_arrow_forward, parentActivated) {
           val (chatType, apiId, msgId) = chatTypeIdMsgId
           withBGApi {
             openChat(rhId, chatType, apiId, null, msgId)
@@ -267,22 +282,21 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       if (cItem.chatDir.sent) {
-        GoToButton(true)
+        GoToButton(true, lineActivated)
       }
     Column(Modifier.weight(1f, fill = false)) {
-      val interactionSource = remember { MutableInteractionSource() }
       val enterInteraction = remember { HoverInteraction.Enter() }
       KeyChangeEffect(highlighted.value) {
         if (highlighted.value) {
-          interactionSource.emit(enterInteraction)
+          bubbleInteractionSource.emit(enterInteraction)
         } else {
-          interactionSource.emit(HoverInteraction.Exit(enterInteraction))
+          bubbleInteractionSource.emit(HoverInteraction.Exit(enterInteraction))
         }
       }
       Column(
         Modifier
           .clipChatItem(cItem, itemSeparation.largeGap, revealed.value)
-          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick, interactionSource = interactionSource, indication = LocalIndication.current)
+          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick, interactionSource = bubbleInteractionSource, indication = LocalIndication.current)
           .onRightClick { showMenu.value = true },
       ) {
         @Composable
@@ -732,7 +746,7 @@ fun ChatItemView(
       }
       }
       if (!cItem.chatDir.sent) {
-        GoToButton(false)
+        GoToButton(false, lineActivated)
       }
     }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
