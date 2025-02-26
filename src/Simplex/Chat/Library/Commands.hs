@@ -2087,9 +2087,9 @@ processChatCommand' vr = \case
       pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2) -- same order is not guaranteed
     where
       selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole)
-      selectMembers = foldl' addMember ([], [], GRObserver)
+      selectMembers = foldr' addMember ([], [], GRObserver)
         where
-          addMember (invited, other, maxRole) m@GroupMember {groupMemberId, memberStatus, memberRole}
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, other, maxRole)
             | groupMemberId `elem` memberIds =
                 let role' = max maxRole memberRole
                  in if memberStatus == GSMemInvited then (m : invited, other, role') else (invited, m : other, role')
