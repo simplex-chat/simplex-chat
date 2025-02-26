@@ -240,7 +240,7 @@ fun ChatItemView(
     }
 
     @Composable
-    fun GoToInnerButton(alignStart: Boolean, icon: ImageResource, parentActivated: State<Boolean>, onClick: () -> Unit) {
+    fun GoToItemInnerButton(alignStart: Boolean, icon: ImageResource, parentActivated: State<Boolean>, onClick: () -> Unit) {
       val buttonInteractionSource = remember { MutableInteractionSource() }
       val buttonHovered = buttonInteractionSource.collectIsHoveredAsState()
       val buttonPressed = buttonInteractionSource.collectIsPressedAsState()
@@ -258,10 +258,10 @@ fun ChatItemView(
     }
 
     @Composable
-    fun GoToButton(alignStart: Boolean, parentActivated: State<Boolean>) {
+    fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeIdMsgId = cItem.meta.itemForwarded?.chatTypeIdMsgId
       if (searchMode.value) {
-        GoToInnerButton(alignStart, MR.images.ic_search, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_search, parentActivated) {
 
           withBGApi {
             openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id)
@@ -269,7 +269,7 @@ fun ChatItemView(
           }
         }
       } else if (chatTypeIdMsgId != null) {
-        GoToInnerButton(alignStart, MR.images.ic_arrow_forward, parentActivated) {
+        GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, parentActivated) {
           val (chatType, apiId, msgId) = chatTypeIdMsgId
           withBGApi {
             openChat(rhId, chatType, apiId, null, msgId)
@@ -282,7 +282,7 @@ fun ChatItemView(
     Column(horizontalAlignment = if (cItem.chatDir.sent) Alignment.End else Alignment.Start) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         if (cItem.chatDir.sent) {
-          GoToButton(true, lineActivated)
+          GoToItemButton(true, lineActivated)
         }
         Column(Modifier.weight(1f, fill = false)) {
           val enterInteraction = remember { HoverInteraction.Enter() }
@@ -745,7 +745,7 @@ fun ChatItemView(
           }
         }
         if (!cItem.chatDir.sent) {
-          GoToButton(false, lineActivated)
+          GoToItemButton(false, lineActivated)
         }
       }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
