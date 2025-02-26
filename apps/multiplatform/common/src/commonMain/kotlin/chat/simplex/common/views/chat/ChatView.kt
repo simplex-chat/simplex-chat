@@ -1372,14 +1372,6 @@ fun BoxScope.ChatItemsList(
             return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
           }
 
-          @Composable
-          fun Reactions() {
-            if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
-              val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
-              ChatItemReactions(remoteHostId, cItem, chatInfo, itemSeparation, highlighted, showMemberInfo, showChatInfo, setReaction)
-            }
-          }
-
           Box {
             val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
             val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf

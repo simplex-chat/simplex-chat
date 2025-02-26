@@ -130,6 +130,108 @@ fun ChatItemView(
     } else { {} }
 
     @Composable
+    fun ChatItemReactions() {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
+        cItem.reactions.forEach { r ->
+          val showReactionMenu = remember { mutableStateOf(false) }
+          val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
+          val interactionSource = remember { MutableInteractionSource() }
+          val enterInteraction = remember { HoverInteraction.Enter() }
+          KeyChangeEffect(highlighted.value) {
+            if (highlighted.value) {
+              interactionSource.emit(enterInteraction)
+            } else {
+              interactionSource.emit(HoverInteraction.Exit(enterInteraction))
+            }
+          }
+
+          var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
+          if (cInfo.featureEnabled(ChatFeature.Reactions)) {
+            fun showReactionsMenu() {
+              when (cInfo) {
+                is ChatInfo.Group -> {
+                  withBGApi {
+                    try {
+                      val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
+                      if (members != null) {
+                        showReactionMenu.value = true
+                        reactionMenuItems.value = members.map {
+                          val enabled = cInfo.groupInfo.membership.groupMemberId != it.groupMember.groupMemberId
+                          val click = if (enabled) ({ showMemberInfo(cInfo.groupInfo, it.groupMember) }) else null
+                          ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click)
+                        }
+                      }
+                    } catch (e: Exception) {
+                      Log.d(TAG, "chatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
+                    }
+                  }
+                }
+                is ChatInfo.Direct -> {
+                  showReactionMenu.value = true
+                  val reactions = mutableListOf<ChatItemReactionMenuItem>()
+
+                  if (!r.userReacted || r.totalReacted > 1) {
+                    val contact = cInfo.contact
+                    reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo))
+                  }
+
+                  if (r.userReacted) {
+                    reactions.add(ChatItemReactionMenuItem(generalGetString(MR.strings.sender_you_pronoun), currentUser.value?.image, null))
+                  }
+                  reactionMenuItems.value = reactions
+                }
+                else -> {}
+              }
+            }
+            modifier = modifier
+              .combinedClickable(
+                onClick = {
+                  if (cItem.allowAddReaction || r.userReacted) {
+                    setReaction(cInfo, cItem, !r.userReacted, r.reaction)
+                  }
+                },
+                onLongClick = {
+                  showReactionsMenu()
+                },
+                interactionSource = interactionSource,
+                indication = LocalIndication.current
+              )
+              .onRightClick { showReactionsMenu() }
+          }
+          Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
+            ReactionIcon(r.reaction.text, fontSize = 12.sp)
+            DefaultDropdownMenu(showMenu = showReactionMenu) {
+              reactionMenuItems.value.forEach { m ->
+                ItemAction(
+                  text = m.name,
+                  composable = { ProfileImage(44.dp, m.image) },
+                  onClick = {
+                    val click = m.onClick
+                    if (click != null) {
+                      click()
+                      showReactionMenu.value = false
+                    }
+                  },
+                  lineLimit = 1,
+                  color = if (m.onClick == null) MaterialTheme.colors.secondary else MenuTextColor
+                )
+              }
+            }
+            if (r.totalReacted > 1) {
+              Spacer(Modifier.width(4.dp))
+              Text(
+                "${r.totalReacted}",
+                fontSize = 11.5.sp,
+                fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
+                color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+              )
+            }
+          }
+        }
+      }
+    }
+
+    @Composable
     fun GoToInnerButton(alignStart: Boolean, icon: ImageResource, onClick: () -> Unit) {
       IconButton(
         onClick,
@@ -634,120 +736,9 @@ fun ChatItemView(
       }
     }
       if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
-        ChatItemReactions(rhId, cItem, cInfo, itemSeparation, highlighted, showMemberInfo, showChatInfo, setReaction)
+        ChatItemReactions()
       }
       }
-  }
-}
-
-@Composable
-fun ChatItemReactions(
-  rhId: Long?,
-  cItem: ChatItem,
-  cInfo: ChatInfo,
-  itemSeparation: ItemSeparation,
-  highlighted: State<Boolean>,
-  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  showChatInfo: () -> Unit,
-  setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit
-) {
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.chatItemOffset(cItem, itemSeparation.largeGap, inverted = true, revealed = true)) {
-    cItem.reactions.forEach { r ->
-      val showReactionMenu = remember { mutableStateOf(false) }
-      val reactionMenuItems = remember { mutableStateOf(emptyList<ChatItemReactionMenuItem>()) }
-      val interactionSource = remember { MutableInteractionSource() }
-      val enterInteraction = remember { HoverInteraction.Enter() }
-      KeyChangeEffect(highlighted.value) {
-        if (highlighted.value) {
-          interactionSource.emit(enterInteraction)
-        } else {
-          interactionSource.emit(HoverInteraction.Exit(enterInteraction))
-        }
-      }
-
-      var modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp).clip(RoundedCornerShape(8.dp))
-      if (cInfo.featureEnabled(ChatFeature.Reactions)) {
-        fun showReactionsMenu() {
-          when (cInfo) {
-            is ChatInfo.Group -> {
-              withBGApi {
-                try {
-                  val members = controller.apiGetReactionMembers(rhId, cInfo.groupInfo.groupId, cItem.id, r.reaction)
-                  if (members != null) {
-                    showReactionMenu.value = true
-                    reactionMenuItems.value = members.map {
-                      val enabled = cInfo.groupInfo.membership.groupMemberId != it.groupMember.groupMemberId
-                      val click = if (enabled) ({ showMemberInfo(cInfo.groupInfo, it.groupMember) }) else null
-                      ChatItemReactionMenuItem(it.groupMember.displayName, it.groupMember.image, click)
-                    }
-                  }
-                } catch (e: Exception) {
-                  Log.d(TAG, "chatItemView ChatItemReactions onLongClick: unexpected exception: ${e.stackTraceToString()}")
-                }
-              }
-            }
-            is ChatInfo.Direct -> {
-              showReactionMenu.value = true
-              val reactions = mutableListOf<ChatItemReactionMenuItem>()
-
-              if (!r.userReacted || r.totalReacted > 1) {
-                val contact = cInfo.contact
-                reactions.add(ChatItemReactionMenuItem(contact.displayName, contact.image, showChatInfo))
-              }
-
-              if (r.userReacted) {
-                reactions.add(ChatItemReactionMenuItem(generalGetString(MR.strings.sender_you_pronoun), currentUser.value?.image, null))
-              }
-              reactionMenuItems.value = reactions
-            }
-            else -> {}
-          }
-        }
-        modifier = modifier
-          .combinedClickable(
-            onClick = {
-              if (cItem.allowAddReaction || r.userReacted) {
-                setReaction(cInfo, cItem, !r.userReacted, r.reaction)
-              }
-            },
-            onLongClick = {
-              showReactionsMenu()
-            },
-            interactionSource = interactionSource,
-            indication = LocalIndication.current
-          )
-          .onRightClick { showReactionsMenu() }
-      }
-      Row(modifier.padding(2.dp), verticalAlignment = Alignment.CenterVertically) {
-        ReactionIcon(r.reaction.text, fontSize = 12.sp)
-        DefaultDropdownMenu(showMenu = showReactionMenu) {
-          reactionMenuItems.value.forEach { m ->
-            ItemAction(
-              text = m.name,
-              composable = { ProfileImage(44.dp, m.image) },
-              onClick = {
-                val click = m.onClick
-                if (click != null) {
-                  click()
-                  showReactionMenu.value = false
-                }
-              },
-              lineLimit = 1,
-              color = if (m.onClick == null) MaterialTheme.colors.secondary else MenuTextColor
-            )
-          }
-        }
-        if (r.totalReacted > 1) {
-          Spacer(Modifier.width(4.dp))
-          Text(
-            "${r.totalReacted}",
-            fontSize = 11.5.sp,
-            fontWeight = if (r.userReacted) FontWeight.Bold else FontWeight.Normal,
-            color = if (r.userReacted) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          )
-        }
-      }
-    }
   }
 }
 
