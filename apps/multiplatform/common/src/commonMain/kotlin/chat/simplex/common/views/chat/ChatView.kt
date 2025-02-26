@@ -671,7 +671,7 @@ fun ChatLayout(
   scrollToItemId: MutableState<Long?>,
   attachmentOption: MutableState<AttachmentOption?>,
   attachmentBottomSheetState: ModalBottomSheetState,
-  searchValue: MutableState<String>,
+  searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
