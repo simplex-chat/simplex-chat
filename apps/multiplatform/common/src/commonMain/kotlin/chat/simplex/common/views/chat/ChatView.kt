@@ -133,9 +133,12 @@ fun ChatView(
 
         SimpleXThemeOverride(overrides ?: CurrentColors.collectAsState().value) {
           val onSearchValueChanged: (String) -> Unit = onSearchValueChanged@{ value ->
-            if (searchText.value == value || (searchText.value.isEmpty() && !showSearch.value)) return@onSearchValueChanged
-            val c = chatModel.getChat(chatInfo.id) ?: return@onSearchValueChanged
-            if (chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
+            val sameText = searchText.value == value
+            // showSearch can be false with empty text when it was closed manually after clicking on message from search to load .around it
+            // (required on Android to have this check to prevent call to search with old text)
+            val emptyAndClosedSearch = searchText.value.isEmpty() && !showSearch.value && contentTag == null
+            val c = chatModel.getChat(chatInfo.id)
+            if (sameText || emptyAndClosedSearch || c == null || chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
             withBGApi {
               apiFindMessages(c, value, contentTag)
               searchText.value = value
@@ -1190,15 +1193,15 @@ fun BoxScope.ChatItemsList(
   val maxHeightForList = rememberUpdatedState(
     with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
   )
-  val toggleListState = remember { mutableStateOf(false) }
+  val resetListState = remember { mutableStateOf(false) }
   remember(chatModel.openAroundChatItemId.value) {
     if (chatModel.openAroundChatItemId.value != null) {
       closeSearch()
-      toggleListState.value = !toggleListState.value
+      resetListState.value = !resetListState.value
     }
   }
   val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
-  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, toggleListState.value, saver = LazyListState.Saver) {
+  val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, resetListState.value, saver = LazyListState.Saver) {
     val openAroundItemId = chatModel.openAroundChatItemId.value
     val index = mergedItems.value.indexInParentItems[openAroundItemId] ?: mergedItems.value.items.indexOfLast { it.hasUnread() }
     val reportsState = reportsListState
@@ -1257,7 +1260,7 @@ fun BoxScope.ChatItemsList(
       scrollToItemId.value = null }
     }
   }
-  LoadLastItems(loadingMoreItems, remoteHostId, chatInfo)
+  LoadLastItems(loadingMoreItems, resetListState, remoteHostId, chatInfo)
   SmallScrollOnNewMessage(listState, reversedChatItems)
   val finishedInitialComposition = remember { mutableStateOf(false) }
   NotifyChatListOnFinishingComposition(finishedInitialComposition, chatInfo, revealedItems, listState, onComposed)
@@ -1367,6 +1370,14 @@ fun BoxScope.ChatItemsList(
             val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
 
             return originalPadding + (if (tailRendered) 0.dp else if (start) msgTailWidthDp * 2 else msgTailWidthDp)
+          }
+
+          @Composable
+          fun Reactions() {
+            if (cItem.content.msgContent != null && (cItem.meta.itemDeleted == null || revealed.value) && cItem.reactions.isNotEmpty()) {
+              val highlighted = remember { derivedStateOf { highlightedItems.value.contains(cItem.id) } }
+              ChatItemReactions(remoteHostId, cItem, chatInfo, itemSeparation, highlighted, showMemberInfo, showChatInfo, setReaction)
+            }
           }
 
           Box {
@@ -1586,9 +1597,9 @@ fun BoxScope.ChatItemsList(
 }
 
 @Composable
-private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, remoteHostId: Long?, chatInfo: ChatInfo) {
+private fun LoadLastItems(loadingMoreItems: MutableState<Boolean>, resetListState: State<Boolean>, remoteHostId: Long?, chatInfo: ChatInfo) {
   val contentTag = LocalContentTag.current
-  LaunchedEffect(remoteHostId, chatInfo.id) {
+  LaunchedEffect(remoteHostId, chatInfo.id, resetListState.value) {
     try {
       loadingMoreItems.value = true
       if (chatModel.chatStateForContent(contentTag).totalAfter.value <= 0) return@LaunchedEffect
