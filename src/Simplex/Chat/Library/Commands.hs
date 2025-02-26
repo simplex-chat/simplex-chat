@@ -2081,8 +2081,8 @@ processChatCommand' vr = \case
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvited user invited
       (errs2, deleted2, acis) <- deleteOther user g other
-      let errs = errs1 <> errs2
       unless (null acis) $ toView $ CRNewChatItems user acis
+      let errs = errs1 <> errs2
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
       pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2) -- same order is not guaranteed
     where
