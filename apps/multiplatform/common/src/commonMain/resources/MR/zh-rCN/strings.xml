@@ -2345,4 +2345,6 @@
     <string name="v6_3_private_media_file_names">私密媒体文件名。</string>
     <string name="v6_3_reports">发送私下举报</string>
     <string name="v6_3_set_message_expiration_in_chats">在聊天中设置消息过期时间。</string>
+    <string name="group_preview_rejected">被拒绝</string>
+    <string name="group_member_status_rejected">被拒绝</string>
 </resources>
