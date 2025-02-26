@@ -1251,7 +1251,7 @@ deleteMemberConnection' user GroupMember {activeConn} waitDelivery = do
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
 deleteOrUpdateMemberRecord :: User -> GroupMember -> CM ()
-deleteOrUpdateMemberRecord user@User {userId} member =
+deleteOrUpdateMemberRecord user member =
   withStore' $ \db -> deleteOrUpdateMemberRecordIO db user member
 
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupMember -> IO ()
