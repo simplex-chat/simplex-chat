@@ -2073,39 +2073,63 @@ processChatCommand' vr = \case
       splitMember mId ms = case break ((== mId) . groupMemberId') ms of
         (_, []) -> Nothing
         (ms1, bm : ms2) -> Just (bm, ms1 <> ms2)
-  APIRemoveMembers groupId memberIds -> withUser $ \user -> do
-    g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
-    let maxMemRole = maximum $ map (\GroupMember {memberRole} -> memberRole) members
-    assertUserGroupRole gInfo $ max GRAdmin maxMemRole
-    -- TODO
-    -- split members into invited and not
-    -- for invited members:
-    -- - deleteMembersConnections
-    -- - batch db: deleteGroupMember
-    -- for other members:
-    -- - batch send XGrpMemDel
-    -- - batch create chat items
-    -- - deleteMembersConnections' with waitDelivery = True
-    -- - batch db: deleteOrUpdateMemberRecord
-    forM_ memberIds $ deleteMember user g
-    pure $ CRUserDeletedMembers user gInfo [m {memberStatus = GSMemRemoved}]
+  APIRemoveMembers groupId memberIds -> withUser $ \user ->
+    withGroupLock "removeMembers" groupId . procCmd $ do
+      g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
+      let maxMemRole = maximum $ map (\GroupMember {memberRole} -> memberRole) members
+      assertUserGroupRole gInfo $ max GRAdmin maxMemRole
+      let (invited, other) = selectMembers members
+      when (length invited + length other /= length memberIds) $ throwChatError CEGroupMemberNotFound
+      (errs1, deleted1) <- deleteInvited user invited
+      (errs2, deleted2, acis) <- deleteOther user g other
+      let errs = errs1 <> errs2
+      unless (null acis) $ toView $ CRNewChatItems user acis
+      unless (null errs) $ toView $ CRChatErrors (Just user) errs
+      pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2) -- same order is not guaranteed
     where
-      deleteMember user (Group gInfo members) memberId =
-        case find ((== memberId) . groupMemberId') members of
-          Nothing -> throwChatError CEGroupMemberNotFound
-          Just m@GroupMember {memberId = mId, memberStatus = mStatus, memberProfile} ->
-            withGroupLock "removeMember" groupId . procCmd $ do
-              case mStatus of
-                GSMemInvited -> do
-                  deleteMemberConnection user m
-                  withFastStore' $ \db -> deleteGroupMember db user m
-                _ -> do
-                  msg <- sendGroupMessage user gInfo members $ XGrpMemDel mId
-                  ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
-                  toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
-                  deleteMemberConnection' user m True
-                  -- undeleted "member connected" chat item will prevent deletion of member record
-                  deleteOrUpdateMemberRecord user m
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember])
+      selectMembers = foldl' addMember ([], [])
+        where
+          addMember (invited, other) m@GroupMember {groupMemberId, memberStatus}
+            | groupMemberId `elem` memberIds =
+                if memberStatus == GSMemInvited then (m : invited, other) else (invited, m : other)
+            | otherwise = (invited, other)
+      deleteInvited :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
+      deleteInvited user memsToDelete = do
+        deleteMembersConnections user memsToDelete
+        lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
+        where
+          delMember db m = do
+            deleteGroupMember db user m
+            pure m {memberStatus = GSMemRemoved}
+      deleteOther :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
+      deleteOther user (Group gInfo members) memsToDelete = case L.nonEmpty memsToDelete of
+        Nothing -> pure ([], [], [])
+        Just memsToDel -> do
+          let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId) memsToDel
+          (msgs_, _gsr) <- sendGroupMessages user gInfo members events
+          let itemsData = sndItemsData (L.toList memsToDel) (L.toList msgs_)
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData Nothing False
+          when (length cis_ /= length memsToDel) $ logError "sendGroupContentMessages: memsToDel and cis_ length mismatch"
+          deleteMembersConnections' user memsToDelete True
+          (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
+          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo)) $ rights cis_
+          pure (errs, deleted, acis)
+          where
+            sndItemsData ::
+              [GroupMember] ->
+              [Either ChatError SndMessage] ->
+              [Either ChatError (NewSndChatItemData c)]
+            sndItemsData =
+              zipWith $ \GroupMember {groupMemberId, memberProfile} -> \case
+                Right msg ->
+                  let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                      ts = ciContentTexts content
+                   in Right $ NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
+                Left e -> Left e -- step over original error
+            delMember db m = do
+              deleteOrUpdateMemberRecordIO db user m
+              pure m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
@@ -3100,7 +3124,7 @@ processChatCommand' vr = \case
           (msgs_, gsr) <- sendGroupMessages user gInfo ms chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
-          when (length itemsData /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
+          when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
           let r@(_, cis) = partitionEithers cis_
           processSendErrs user r
