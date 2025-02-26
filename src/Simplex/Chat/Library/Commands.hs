@@ -2076,10 +2076,9 @@ processChatCommand' vr = \case
   APIRemoveMembers groupId memberIds -> withUser $ \user ->
     withGroupLock "removeMembers" groupId . procCmd $ do
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
-      let maxMemRole = maximum $ map (\GroupMember {memberRole} -> memberRole) members
-      assertUserGroupRole gInfo $ max GRAdmin maxMemRole
-      let (invited, other) = selectMembers members
+      let (invited, other, maxRole) = selectMembers members
       when (length invited + length other /= length memberIds) $ throwChatError CEGroupMemberNotFound
+      assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvited user invited
       (errs2, deleted2, acis) <- deleteOther user g other
       let errs = errs1 <> errs2
@@ -2087,13 +2086,14 @@ processChatCommand' vr = \case
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
       pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2) -- same order is not guaranteed
     where
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember])
-      selectMembers = foldl' addMember ([], [])
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole)
+      selectMembers = foldl' addMember ([], [], GRObserver)
         where
-          addMember (invited, other) m@GroupMember {groupMemberId, memberStatus}
+          addMember (invited, other, maxRole) m@GroupMember {groupMemberId, memberStatus, memberRole}
             | groupMemberId `elem` memberIds =
-                if memberStatus == GSMemInvited then (m : invited, other) else (invited, m : other)
-            | otherwise = (invited, other)
+                let role' = max maxRole memberRole
+                 in if memberStatus == GSMemInvited then (m : invited, other, role') else (invited, m : other, role')
+            | otherwise = (invited, other, maxRole)
       deleteInvited :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
       deleteInvited user memsToDelete = do
         deleteMembersConnections user memsToDelete
