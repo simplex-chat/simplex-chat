@@ -367,7 +367,7 @@ data ChatCommand
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup {groupId :: GroupId, enableNtfs :: MsgFilter}
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
-  | APIBlockMemberForAll GroupId GroupMemberId Bool
+  | APIBlockMembersForAll GroupId (NonEmpty GroupMemberId) Bool
   | APIRemoveMembers GroupId (NonEmpty GroupMemberId)
   | APILeaveGroup GroupId
   | APIListMembers GroupId
@@ -760,7 +760,7 @@ data ChatResponse
   | CRMemberRole {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRMemberRoleUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRMemberBlockedForAll {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, member :: GroupMember, blocked :: Bool}
-  | CRMemberBlockedForAllUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember, blocked :: Bool}
+  | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
   | CRConnectedToGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember, memberContact :: Maybe Contact}
   | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}

@@ -2047,70 +2047,91 @@ processChatCommand' vr = \case
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent)
                 toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
-  APIBlockMemberForAll groupId memberId blocked -> withUser $ \user -> do
-    Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
-    when (memberId == groupMemberId' membership) $ throwChatError $ CECommandError "can't block/unblock self"
-    case splitMember memberId members of
-      Nothing -> throwChatError $ CEException "expected to find a single blocked member"
-      Just (bm, remainingMembers) -> do
-        let GroupMember {memberId = bmMemberId, memberRole = bmRole, memberProfile = bmp} = bm
-        -- TODO GRModerator when most users migrate
-        assertUserGroupRole gInfo $ max GRAdmin bmRole
-        when (blocked == blockedByAdmin bm) $ throwChatError $ CECommandError $ if blocked then "already blocked" else "already unblocked"
-        withGroupLock "blockForAll" groupId . procCmd $ do
-          let mrs = if blocked then MRSBlocked else MRSUnrestricted
-              event = XGrpMemRestrict bmMemberId MemberRestrictions {restriction = mrs}
-          msg <- sendGroupMessage' user gInfo remainingMembers event
-          let ciContent = CISndGroupEvent $ SGEMemberBlocked memberId (fromLocalProfile bmp) blocked
-          ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
-          toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
-          bm' <- withFastStore $ \db -> do
-            liftIO $ updateGroupMemberBlocked db user groupId memberId mrs
-            getGroupMember db vr user groupId memberId
-          toggleNtf user bm' (not blocked)
-          pure CRMemberBlockedForAllUser {user, groupInfo = gInfo, member = bm', blocked}
+  APIBlockMembersForAll groupId memberIds blockFlag -> withUser $ \user ->
+    withGroupLock "blockForAll" groupId . procCmd $ do
+      g@(Group {groupInfo}) <- withFastStore $ \db -> getGroup db vr user groupId
+      let (blockMems, remainingMems, maxRole, anyAdmin, selfSelected) = selectMembers g
+      when (length blockMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
+      when (length memberIds > 1 && anyAdmin) $ throwChatError $ CECommandError "can't block/unblock multiple members when admins selected"
+      when selfSelected $ throwChatError $ CECommandError "can't block/unblock self"
+      assertUserGroupRole groupInfo $ max GRModerator maxRole
+      blockMembers user groupInfo blockMems remainingMems
     where
-      splitMember mId ms = case break ((== mId) . groupMemberId') ms of
-        (_, []) -> Nothing
-        (ms1, bm : ms2) -> Just (bm, ms1 <> ms2)
+      selectMembers :: Group -> ([GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
+      selectMembers (Group GroupInfo {membership} members) = foldr' addMember ([], [], GRObserver, False, False) members
+        where
+          addMember m@GroupMember {groupMemberId, memberRole} (block, remaining, maxRole, anyAdmin, selfSelected)
+            | groupMemberId `elem` memberIds =
+                let maxRole' = max maxRole memberRole
+                    anyAdmin' = anyAdmin || memberRole >= GRAdmin
+                    selfSelected' = selfSelected || groupMemberId == groupMemberId' membership
+                 in (m : block, remaining, maxRole', anyAdmin', selfSelected')
+            | otherwise = (block, m : remaining, maxRole, anyAdmin, selfSelected)
+      blockMembers :: User -> GroupInfo -> [GroupMember] -> [GroupMember] -> CM ChatResponse
+      blockMembers user gInfo blockMems remainingMems = case L.nonEmpty blockMems of
+        Nothing -> throwChatError $ CECommandError "no members to block/unblock"
+        Just blockMems' -> do
+          let mrs = if blockFlag then MRSBlocked else MRSUnrestricted
+              events = L.map (\GroupMember {memberId} -> XGrpMemRestrict memberId MemberRestrictions {restriction = mrs}) blockMems'
+          (msgs_, _gsr) <- sendGroupMessages user gInfo remainingMems events
+          let itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData Nothing False
+          when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
+          let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo)) $ rights cis_
+          unless (null acis) $ toView $ CRNewChatItems user acis
+          (errs, blocked) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updateGroupMemberBlocked db user gInfo mrs) blockMems)
+          unless (null errs) $ toView $ CRChatErrors (Just user) errs
+          forM_ blocked $ \m -> toggleNtf user m (not blockFlag)
+          pure CRMembersBlockedForAllUser {user, groupInfo = gInfo, members = blocked, blocked = blockFlag}
+        where
+          sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
+          sndItemData GroupMember {groupMemberId, memberProfile} msg =
+            let content = CISndGroupEvent $ SGEMemberBlocked groupMemberId (fromLocalProfile memberProfile) blockFlag
+                ts = ciContentTexts content
+              in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
   APIRemoveMembers groupId memberIds -> withUser $ \user ->
     withGroupLock "removeMembers" groupId . procCmd $ do
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
-      let (invited, other, maxRole) = selectMembers members
-      when (length invited + length other /= length memberIds) $ throwChatError CEGroupMemberNotFound
+      let (invitedMems, currentMems, maxRole, anyAdmin) = selectMembers members
+      when (length invitedMems + length currentMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
+      when (length memberIds > 1 && anyAdmin) $ throwChatError $ CECommandError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
-      (errs1, deleted1) <- deleteInvited user invited
-      (errs2, deleted2, acis) <- deleteOther user g other
+      (errs1, deleted1) <- deleteInvitedMems user invitedMems
+      (errs2, deleted2, acis) <- deleteCurrentMems user g currentMems
       unless (null acis) $ toView $ CRNewChatItems user acis
       let errs = errs1 <> errs2
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
       pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2) -- same order is not guaranteed
     where
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole)
-      selectMembers = foldr' addMember ([], [], GRObserver)
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole, Bool)
+      selectMembers = foldr' addMember ([], [], GRObserver, False)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, other, maxRole)
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, maxRole, anyAdmin)
             | groupMemberId `elem` memberIds =
-                let role' = max maxRole memberRole
-                 in if memberStatus == GSMemInvited then (m : invited, other, role') else (invited, m : other, role')
-            | otherwise = (invited, other, maxRole)
-      deleteInvited :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
-      deleteInvited user memsToDelete = do
+                let maxRole' = max maxRole memberRole
+                    anyAdmin' = anyAdmin || memberRole >= GRAdmin
+                 in
+                  if memberStatus == GSMemInvited
+                    then (m : invited, current, maxRole', anyAdmin')
+                    else (invited, m : current, maxRole', anyAdmin')
+            | otherwise = (invited, current, maxRole, anyAdmin)
+      deleteInvitedMems :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
+      deleteInvitedMems user memsToDelete = do
         deleteMembersConnections user memsToDelete
         lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
         where
           delMember db m = do
             deleteGroupMember db user m
             pure m {memberStatus = GSMemRemoved}
-      deleteOther :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
-      deleteOther user (Group gInfo members) memsToDelete = case L.nonEmpty memsToDelete of
+      deleteCurrentMems :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
+      deleteCurrentMems user (Group gInfo members) memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [])
-        Just memsToDel -> do
-          let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId) memsToDel
+        Just memsToDelete' -> do
+          let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo members events
           let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData Nothing False
-          when (length cis_ /= length memsToDelete) $ logError "sendGroupContentMessages: memsToDelete and cis_ length mismatch"
+          when (length cis_ /= length memsToDelete) $ logError "deleteCurrentMems: memsToDelete and cis_ length mismatch"
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo)) $ rights cis_
@@ -2147,7 +2168,7 @@ processChatCommand' vr = \case
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIJoinGroup groupId enableNtfs
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMemberRole gId gMemberId memRole
-  BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMemberForAll gId gMemberId blocked
+  BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
   RemoveMembers gName gMemberNames -> withUser $ \user -> do
     (gId, gMemberIds) <- withStore $ \db -> do
       gId <- getGroupIdByName db user gName
@@ -3824,7 +3845,7 @@ chatCommandP =
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal <*> pure MFAll), -- needs to be changed to support in UI
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
-      "/_block #" *> (APIBlockMemberForAll <$> A.decimal <* A.space <*> A.decimal <* A.space <* "blocked=" <*> onOffP),
+      "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* A.space <* "blocked=" <*> onOffP),
       "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),

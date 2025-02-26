@@ -173,7 +173,7 @@ chatGroupTests = do
     it "messages are fully deleted" testBlockForAllFullDelete
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
     it "member was blocked before joining group" testBlockForAllBeforeJoining
-    it "can't repeat block, unblock" testBlockForAllCantRepeat
+    it "repeat block, unblock" testBlockForAllRepeat
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -5942,18 +5942,12 @@ testBlockForAllBeforeJoining =
       cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
 
-testBlockForAllCantRepeat :: HasCallStack => TestParams -> IO ()
-testBlockForAllCantRepeat =
+testBlockForAllRepeat :: HasCallStack => TestParams -> IO ()
+testBlockForAllRepeat =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
       -- disableFullDeletion3 "team" alice bob cath
-
-      alice ##> "/unblock for all #team bob"
-      alice <## "bad chat command: already unblocked"
-
-      cath ##> "/unblock for all #team bob"
-      cath <## "bad chat command: already unblocked"
 
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
@@ -5964,10 +5958,10 @@ testBlockForAllCantRepeat =
       bob <// 50000
 
       alice ##> "/block for all #team bob"
-      alice <## "bad chat command: already blocked"
+      alice <## "#team: you blocked bob"
 
       cath ##> "/block for all #team bob"
-      cath <## "bad chat command: already blocked"
+      cath <## "#team: you blocked bob"
 
       bob #> "#team 2"
       alice <# "#team bob> 2 [blocked by admin] <muted>"
@@ -5979,10 +5973,10 @@ testBlockForAllCantRepeat =
       bob <// 50000
 
       alice ##> "/unblock for all #team bob"
-      alice <## "bad chat command: already unblocked"
+      alice <## "#team: you unblocked bob"
 
       cath ##> "/unblock for all #team bob"
-      cath <## "bad chat command: already unblocked"
+      cath <## "#team: you unblocked bob"
 
       bob #> "#team 3"
       [alice, cath] *<# "#team bob> 3"

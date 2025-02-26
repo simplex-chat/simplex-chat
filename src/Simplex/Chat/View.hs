@@ -305,7 +305,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRMemberRole u g by m r r' -> ttyUser u $ viewMemberRoleChanged g by m r r'
   CRMemberRoleUser u g m r r' -> ttyUser u $ viewMemberRoleUserChanged g m r r'
   CRMemberBlockedForAll u g by m blocked -> ttyUser u $ viewMemberBlockedForAll g by m blocked
-  CRMemberBlockedForAllUser u g m blocked -> ttyUser u $ viewMemberBlockedForAllUser g m blocked
+  CRMembersBlockedForAllUser u g members blocked -> ttyUser u $ viewMembersBlockedForAllUser g members blocked
   CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
@@ -1123,9 +1123,10 @@ viewMemberBlockedForAll :: GroupInfo -> GroupMember -> GroupMember -> Bool -> [S
 viewMemberBlockedForAll g by m blocked =
   [ttyGroup' g <> ": " <> ttyMember by <> " " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m]
 
-viewMemberBlockedForAllUser :: GroupInfo -> GroupMember -> Bool -> [StyledString]
-viewMemberBlockedForAllUser g m blocked =
-  [ttyGroup' g <> ": you " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m]
+viewMembersBlockedForAllUser :: GroupInfo -> [GroupMember] -> Bool -> [StyledString]
+viewMembersBlockedForAllUser g members blocked = case members of
+  [m] -> [ttyGroup' g <> ": you " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m]
+  mems' -> [ttyGroup' g <> ": you " <> (if blocked then "blocked" else "unblocked") <> " " <> sShow (length mems') <> " members"]
 
 showRole :: GroupMemberRole -> StyledString
 showRole = plain . strEncode
