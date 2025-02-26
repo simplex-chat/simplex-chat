@@ -2320,4 +2320,13 @@
     <string name="enable_sending_member_reports">Cho phép báo cáo tin nhắn tới các kiểm duyệt viên.</string>
     <string name="disable_sending_member_reports">Cấm báo cáo tin nhắn tới các kiểm duyệt viên.</string>
     <string name="member_reports_are_prohibited">Báo cáo tin nhắn bị cấm trong nhóm này.</string>
+    <string name="v6_3_mentions_descr">Nhận thông báo khi được nhắn đến.</string>
+    <string name="v6_3_reports_descr">Giúp các quản trị viên quản lý các nhóm của họ.</string>
+    <string name="v6_3_mentions">Nhắc đến các thành viên 👋</string>
+    <string name="v6_3_organize_chat_lists">Sắp xếp các cuộc trò chuyện thành danh sách</string>
+    <string name="v6_3_faster_deletion_of_groups">Xóa nhóm nhanh hơn.</string>
+    <string name="v6_3_faster_sending_messages">Gửi tin nhắn nhanh hơn.</string>
+    <string name="v6_3_organize_chat_lists_descr">Không bỏ lỡ tin nhắn quan trọng nào.</string>
+    <string name="v6_3_better_privacy_and_security">Bảo mật và riêng tư hơn</string>
+    <string name="v6_3_better_groups_performance">Nhóm hoạt động hiệu quả hơn</string>
 </resources>
