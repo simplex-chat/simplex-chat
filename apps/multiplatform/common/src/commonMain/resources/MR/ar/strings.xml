@@ -2346,4 +2346,6 @@
     <string name="v6_3_better_groups_performance">أداء مجموعات أفضل</string>
     <string name="v6_3_better_privacy_and_security">خصوصية وأمان أفضل</string>
     <string name="v6_3_faster_sending_messages">إرسال أسرع للرسائل.</string>
+    <string name="group_member_status_rejected">رُفض</string>
+    <string name="group_preview_rejected">رُفض</string>
 </resources>
