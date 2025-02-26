@@ -2108,7 +2108,7 @@ processChatCommand' vr = \case
         Just memsToDel -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId) memsToDel
           (msgs_, _gsr) <- sendGroupMessages user gInfo members events
-          let itemsData = sndItemsData memsToDelete (L.toList msgs_)
+          let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData Nothing False
           when (length cis_ /= length memsToDelete) $ logError "sendGroupContentMessages: memsToDelete and cis_ length mismatch"
           deleteMembersConnections' user memsToDelete True
@@ -2116,17 +2116,11 @@ processChatCommand' vr = \case
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo)) $ rights cis_
           pure (errs, deleted, acis)
           where
-            sndItemsData ::
-              [GroupMember] ->
-              [Either ChatError SndMessage] ->
-              [Either ChatError (NewSndChatItemData c)]
-            sndItemsData =
-              zipWith $ \GroupMember {groupMemberId, memberProfile} -> \case
-                Right msg ->
-                  let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                      ts = ciContentTexts content
-                   in Right $ NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
-                Left e -> Left e -- step over original error
+            sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
+            sndItemData GroupMember {groupMemberId, memberProfile} msg =
+              let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                  ts = ciContentTexts content
+                in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
             delMember db m = do
               deleteOrUpdateMemberRecordIO db user m
               pure m {memberStatus = GSMemRemoved}
