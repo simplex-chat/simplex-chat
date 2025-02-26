@@ -2108,9 +2108,9 @@ processChatCommand' vr = \case
         Just memsToDel -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId) memsToDel
           (msgs_, _gsr) <- sendGroupMessages user gInfo members events
-          let itemsData = sndItemsData (L.toList memsToDel) (L.toList msgs_)
+          let itemsData = sndItemsData memsToDelete (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData Nothing False
-          when (length cis_ /= length memsToDel) $ logError "sendGroupContentMessages: memsToDel and cis_ length mismatch"
+          when (length cis_ /= length memsToDelete) $ logError "sendGroupContentMessages: memsToDelete and cis_ length mismatch"
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo)) $ rights cis_
