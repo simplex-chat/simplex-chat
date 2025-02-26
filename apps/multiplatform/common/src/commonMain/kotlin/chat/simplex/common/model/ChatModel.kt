@@ -65,7 +65,7 @@ object ChatModel {
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
-  val openAroundChatItemId: MutableState<Long?> = mutableStateOf(null)
+  val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
   val reportsChatsContext = ChatsContext(MsgContentTag.Report)
   // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions

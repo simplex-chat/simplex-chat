@@ -141,7 +141,7 @@ suspend fun processLoadedChat(
 
         if (openAroundItemId != null) {
           unreadAfterNewestLoaded.value = navInfo.afterUnread
-          chatModel.openAroundChatItemId.value = openAroundItemId
+          chatModel.openAroundItemId.value = openAroundItemId
           chatModel.chatId.value = chat.id
         } else {
           // no need to set it, count will be wrong

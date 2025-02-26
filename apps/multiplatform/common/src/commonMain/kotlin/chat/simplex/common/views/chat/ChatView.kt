@@ -1194,20 +1194,20 @@ fun BoxScope.ChatItemsList(
     with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
   )
   val resetListState = remember { mutableStateOf(false) }
-  remember(chatModel.openAroundChatItemId.value) {
-    if (chatModel.openAroundChatItemId.value != null) {
+  remember(chatModel.openAroundItemId.value) {
+    if (chatModel.openAroundItemId.value != null) {
       closeSearch()
       resetListState.value = !resetListState.value
     }
   }
   val highlightedItems = remember { mutableStateOf(setOf<Long>()) }
   val listState = rememberUpdatedState(rememberSaveable(chatInfo.id, searchValueIsEmpty.value, resetListState.value, saver = LazyListState.Saver) {
-    val openAroundItemId = chatModel.openAroundChatItemId.value
+    val openAroundItemId = chatModel.openAroundItemId.value
     val index = mergedItems.value.indexInParentItems[openAroundItemId] ?: mergedItems.value.items.indexOfLast { it.hasUnread() }
     val reportsState = reportsListState
     if (openAroundItemId != null) {
       highlightedItems.value += openAroundItemId
-      chatModel.openAroundChatItemId.value = null
+      chatModel.openAroundItemId.value = null
     }
     if (reportsState != null) {
       reportsListState = null
