@@ -1260,7 +1260,7 @@ getGroupChatItemIDs db User {userId} GroupInfo {groupId} contentFilter range cou
           (orParams ts itemId)
           " ORDER BY item_ts DESC, chat_item_id DESC "
       where
-        orCond c1 c2 = " (" <> c <> " AND " <> c1 <> ") OR (" <> c <> " AND " <> c2 <> ") "
+        orCond c1 c2 = " ((" <> c <> " AND " <> c1 <> ") OR (" <> c <> " AND " <> c2 <> ")) "
         orParams ts itemId = (p :. (Only ts) :. p :. (ts, itemId))
     rangeQuery :: ToRow p => Query -> p -> Query -> IO [ChatItemId]
     rangeQuery c p ob
