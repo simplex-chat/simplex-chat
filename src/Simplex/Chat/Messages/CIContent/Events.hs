@@ -35,7 +35,7 @@ data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
   | SGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAllUser
   | SGEUserRole {role :: GroupMemberRole}
-  | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
+  | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMembers
   | SGEUserLeft -- CRLeftMemberUser
   | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
   deriving (Show)
