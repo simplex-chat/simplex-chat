@@ -918,9 +918,9 @@
         <target>Megosztás engedélyezése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
-        <target>Az elküldött üzenetek végleges törlése engedélyezve van. (24 óra)</target>
+        <target state="translated">Lehetővé teszi az elküldött üzenetek végleges törlését. (24 óra)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
@@ -928,19 +928,19 @@
         <target>Lehetővé teszi az üzenetek jelentését a moderátorok felé.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve" approved="no">
         <source>Allow to send SimpleX links.</source>
-        <target>A SimpleX-hivatkozások küldése engedélyezve van.</target>
+        <target state="translated">Lehetővé teszi a SimpleX-hivatkozások küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send files and media." xml:space="preserve">
+      <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
         <source>Allow to send files and media.</source>
-        <target>A fájlok- és a médiatartalmak küldése engedélyezve van.</target>
+        <target state="translated">Lehetővé teszi a fájlok- és a médiatartalmak küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send voice messages." xml:space="preserve">
+      <trans-unit id="Allow to send voice messages." xml:space="preserve" approved="no">
         <source>Allow to send voice messages.</source>
-        <target>A hangüzenetek küldése engedélyezve van.</target>
+        <target state="translated">Lehetővé teszi a hangüzenetek küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
