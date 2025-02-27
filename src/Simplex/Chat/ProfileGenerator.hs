@@ -2,8 +2,6 @@
 
 module Simplex.Chat.ProfileGenerator where
 
-import qualified Data.Attoparsec.Text as A
-import Data.Either (isRight)
 import Data.Text (Text)
 import Simplex.Chat.Types (Profile (..))
 import System.Random (randomRIO)
@@ -24,15 +22,6 @@ generateRandomProfile = do
           if noun == adjective
             then pickNoun adjective (n - 1)
             else pure noun
-
--- This function does not check for exact match with this disctionary,
--- it only checks for the WordWord style.
-isRandomName :: Text -> Bool
-isRandomName = isRight . A.parseOnly randomNameP
-  where
-    randomNameP = A.satisfy upper >> A.takeWhile1 lower >> A.satisfy upper >> A.takeWhile1 lower >> A.endOfInput
-    upper c = c >= 'A' && c <= 'Z'
-    lower c = c >= 'a' && c <= 'z'
 
 adjectives :: [Text]
 adjectives =

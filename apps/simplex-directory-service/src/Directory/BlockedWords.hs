@@ -11,16 +11,16 @@ import qualified Data.Text.Normalize as TN
 
 containsBlockedWords :: Map Char [Char] -> [String] -> Text -> Bool
 containsBlockedWords spelling blockedWords s =
-    let normalizedWords = concatMap words $ normalizeText spelling s
-        -- Fully normalize the entire string (no spaces or punctuation)
-        fullNorm = normalizeText spelling $ T.filter (not . isSpace) s
-        -- Check if any individual word is a swear word
-        wordCheck = any (`elem` blockedWords) normalizedWords
-        -- Check if the full string, when normalized, matches a swear word exactly
-        fullCheck = any (\bw -> T.length s <= length bw * 2 && any (bw ==) fullNorm) blockedWords
-        -- Check if the string is a single word (no spaces)
-        isSingleWord = not $ T.any isSpace s
-     in wordCheck || (fullCheck && not isSingleWord)
+  let normalizedWords = concatMap words $ normalizeText spelling s
+      -- Fully normalize the entire string (no spaces or punctuation)
+      fullNorm = normalizeText spelling $ T.filter (not . isSpace) s
+      -- Check if any individual word is a swear word
+      wordCheck = any (`elem` blockedWords) normalizedWords
+      -- Check if the full string, when normalized, matches a swear word exactly
+      fullCheck = any (\bw -> T.length s <= length bw * 2 && any (bw ==) fullNorm) blockedWords
+      -- Check if the string is a single word (no spaces)
+      isSingleWord = not $ T.any isSpace s
+   in wordCheck || (fullCheck && not isSingleWord)
 
 normalizeText :: Map Char [Char] -> Text -> [String]
 normalizeText spelling =

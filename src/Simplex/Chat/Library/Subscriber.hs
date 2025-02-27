@@ -47,7 +47,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
-import Simplex.Chat.ProfileGenerator (generateRandomProfile, isRandomName)
+import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
@@ -1296,7 +1296,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       _ -> pure ()
       where
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName, image} xContactId_ reqPQSup = do
+        profileContactRequest invId chatVRange p@Profile {displayName} xContactId_ reqPQSup = do
           withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORGroup gInfo -> toView $ CRBusinessRequestAlreadyAccepted user gInfo
@@ -1321,20 +1321,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user cReq incognitoProfile reqPQSup
                         toView $ CRAcceptingContactRequest user ct
-                      Just GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
+                      Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                        cfg <- asks config
-                        case rejectionReason cfg of
-                          Nothing
+                        acceptMember_ <- asks $ acceptMember . chatHooks . config
+                        maybe (pure $ Right gLinkMemRole) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
+                          Right useRole
                             | v < groupFastLinkJoinVersion ->
                                 messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                             | otherwise -> do
                                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                                    useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
+                                    -- useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
                                 mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
                                 createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                                 toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                          Just rjctReason
+                          Left rjctReason
                             | v < groupJoinRejectVersion ->
                                 messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
                             | otherwise -> do
@@ -1342,17 +1342,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CRReceivedContactRequest user cReq
           where
-            rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
-              | T.length displayName > profileNameLimit = Just GRRLongName
-              | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
-              | otherwise = Nothing
-            userMemberRole linkRole = \case
-              Just AOAll -> GRObserver
-              Just AONameOnly | noImage -> GRObserver
-              Just AOIncognito | noImage && isRandomName displayName -> GRObserver
-              _ -> linkRole
-              where
-                noImage = maybe True (\(ImageData i) -> i == "") image
+            -- rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
+            --   | T.length displayName > profileNameLimit = Just GRRLongName
+            --   | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
+            --   | otherwise = Nothing
+            -- userMemberRole linkRole = \case
+            --   Just AOAll -> GRObserver
+            --   Just AONameOnly | noImage -> GRObserver
+            --   Just AOIncognito | noImage && isRandomName displayName -> GRObserver
+            --   _ -> linkRole
+            --   where
+            --     noImage = maybe True (\(ImageData i) -> i == "") image
 
     memberCanSend :: GroupMember -> CM () -> CM ()
     memberCanSend GroupMember {memberRole} a

@@ -29,6 +29,7 @@ data DirectoryOpts = DirectoryOpts
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
     acceptAsObserver :: Maybe AcceptAsObserver,
+    captchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
     runCLI :: Bool,
@@ -99,6 +100,13 @@ directoryOpts appDir defaultDbName = do
             <> metavar "ACCEPT_AS_OBSERVER"
             <> help "Whether to accept all or some of the joining members without posting rights ('all', 'no-image', 'incognito')"
         )
+  captchaGenerator <-
+    optional $
+      strOption
+        ( long "captcha-generator"
+            <> metavar "CAPTCHA_GENERATOR"
+            <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
+        )
   directoryLog <-
     Just
       <$> strOption
@@ -129,6 +137,7 @@ directoryOpts appDir defaultDbName = do
         nameSpellingFile,
         profileNameLimit,
         acceptAsObserver,
+        captchaGenerator,
         directoryLog,
         serviceName = T.pack serviceName,
         runCLI,

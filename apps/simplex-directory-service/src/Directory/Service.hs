@@ -11,7 +11,7 @@ module Directory.Service
   ( welcomeGetOpts,
     directoryService,
     directoryServiceCLI,
-    directoryChatConfig
+    acceptMemberHook
   )
 where
 
@@ -43,6 +43,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
@@ -70,13 +71,15 @@ data GroupRolesStatus
   deriving (Eq)
 
 data ServiceState = ServiceState
-  { searchRequests :: TMap ContactId SearchRequest
+  { searchRequests :: TMap ContactId SearchRequest,
+    blockedWords :: TVar [String]
   }
 
 newServiceState :: IO ServiceState
 newServiceState = do
   searchRequests <- TM.emptyIO
-  pure ServiceState {searchRequests}
+  blockedWords <- newTVarIO []
+  pure ServiceState {searchRequests, blockedWords}
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -103,9 +106,9 @@ directoryServiceCLI st opts = do
   env <- newServiceState
   eventQ <- newTQueueIO
   let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
-  cfg <- directoryChatConfig opts
+      chatHooks = defaultChatHooks {eventHook = Just eventHook, acceptMember = Just acceptMemberHook}
   race_
-    (simplexChatCLI' cfg {chatHooks = defaultChatHooks {eventHook}} (mkChatOpts opts) Nothing)
+    (simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing)
     (processEvents eventQ env)
   where
     processEvents eventQ env = forever $ do
@@ -121,23 +124,27 @@ directoryService st opts@DirectoryOpts {testing} user cc = do
     (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     directoryServiceEvent st opts env user cc resp
 
-directoryChatConfig :: DirectoryOpts -> IO ChatConfig
-directoryChatConfig DirectoryOpts {blockedWordsFile, nameSpellingFile, blockedExtensionRules, profileNameLimit, acceptAsObserver} = do
-  blockedWords <- mapM (fmap lines . readFile) blockedWordsFile
-  spelling <- maybe (pure M.empty) (fmap (M.fromList . read) . readFile) nameSpellingFile
-  extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules
-  let !bws = nubOrd . concatMap (wordVariants extensionRules) <$> blockedWords
-      !allowedProfileName = not .: containsBlockedWords spelling <$> bws
-  putStrLn $ "Blocked words: " <> show (maybe 0 length bws) <> ", spelling rules: " <> show (M.size spelling)
-  pure terminalChatConfig {allowedProfileName, profileNameLimit, acceptAsObserver}
+acceptMemberHook :: GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason GroupMemberRole)
+acceptMemberHook _ GroupLinkInfo {memberRole} _ = pure $ Right memberRole
+
+-- directoryChatConfig :: DirectoryOpts -> IO ChatConfig
+-- directoryChatConfig DirectoryOpts {blockedWordsFile, nameSpellingFile, blockedExtensionRules, profileNameLimit, acceptAsObserver} = do
+  -- blockedWords <- mapM (fmap lines . readFile) blockedWordsFile
+  -- spelling <- maybe (pure M.empty) (fmap (M.fromList . read) . readFile) nameSpellingFile
+  -- extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules
+  -- let !bws = nubOrd . concatMap (wordVariants extensionRules) <$> blockedWords
+  --     allowedProfileName name = not .: containsBlockedWords spelling <$> bws
+  -- putStrLn $ "Blocked words: " <> show (maybe 0 length bws) <> ", spelling rules: " <> show (M.size spelling)
+  -- pure terminalChatConfig {allowedProfileName, profileNameLimit, acceptAsObserver}
 
 directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
-directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests} user@User {userId} cc event =
+directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests, blockedWords} user@User {userId} cc event =
   forM_ (crDirectoryEvent event) $ \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
     DEGroupUpdated {contactId, fromGroup, toGroup} -> deGroupUpdated contactId fromGroup toGroup
+    DEMemberPendingApproval g m -> deMemberPendingApproval g m
     DEContactRoleChanged g ctId role -> deContactRoleChanged g ctId role
     DEServiceRoleChanged g role -> deServiceRoleChanged g role
     DEContactRemovedFromGroup ctId g -> deContactRemovedFromGroup ctId g
@@ -163,7 +170,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
     notifyOwner GroupReg {dbContactId} = sendMessage' cc dbContactId
     ctId `isOwner` GroupReg {dbContactId} = ctId == dbContactId
     withGroupReg GroupInfo {groupId, localDisplayName} err action = do
-      atomically (getGroupReg st groupId) >>= \case
+      getGroupReg st groupId >>= \case
         Just gr -> action gr
         Nothing -> logError $ "Error: " <> err <> ", group: " <> localDisplayName <> ", can't find group registration ID " <> tshow groupId
     groupInfoText GroupProfile {displayName = n, fullName = fn, description = d} =
@@ -373,6 +380,9 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
             Just (Just msg) -> notifyOwner gr msg
             Just Nothing -> sendToApprove toGroup gr gaId
 
+    deMemberPendingApproval :: GroupInfo -> GroupMember -> IO ()
+    deMemberPendingApproval _g _m = pure ()
+
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     sendToApprove GroupInfo {groupProfile = p@GroupProfile {displayName, image = image'}} GroupReg {dbGroupId, dbContactId} gaId = do
       ct_ <- getContact cc dbContactId
@@ -518,8 +528,13 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
                 _ -> processInvitation ct g
             _ -> sendReply $ "Error: the group ID " <> tshow ugrId <> " (" <> displayName <> ") is not pending confirmation."
       DCListUserGroups ->
-        atomically (getUserGroupRegs st $ contactId' ct) >>= \grs -> do
+        getUserGroupRegs st (contactId' ct) >>= \grs -> do
           sendReply $ tshow (length grs) <> " registered group(s)"
+          -- debug how it can be that user has 0 registered groups
+          when (length grs == 0) $ do
+            total <- length <$> readTVarIO (groupRegs st)
+            withSuperUsers $ \ctId -> sendMessage' cc ctId $
+              "0 registered groups for " <> localDisplayName' ct <> " (" <> tshow (contactId' ct) <> ") out of " <> tshow total <> " registrations"
           void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId} ->
             sendGroupInfo ct gr userGroupRegId Nothing
       DCDeleteGroup ugrId gName ->
@@ -541,7 +556,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
         knownCt = knownContact ct
         isAdmin = knownCt `elem` adminUsers || knownCt `elem` superUsers
         withUserGroupReg ugrId gName action =
-          atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
+          getUserGroupReg st (contactId' ct) ugrId >>= \case
             Nothing -> sendReply $ "Group ID " <> tshow ugrId <> " not found"
             Just gr@GroupReg {dbGroupId} -> do
               getGroup cc dbGroupId >>= \case
@@ -552,7 +567,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
         sendReply = mkSendReply ct ciId
         withFoundListedGroups s_ action =
           getGroups_ s_ >>= \case
-            Just groups -> atomically (filterListedGroups st groups) >>= action
+            Just groups -> filterListedGroups st groups >>= action
             Nothing -> sendReply "Error: getGroups. Please notify the developers."
         sendSearchResults s = \case
           [] -> sendReply "No groups found"
@@ -765,7 +780,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
         Nothing -> sendReply $ "Group ID " <> tshow gId <> " not found (getGroup)"
         Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
           | displayName == gName ->
-              atomically (getGroupReg st gId) >>= \case
+              getGroupReg st gId >>= \case
                 Nothing -> sendReply $ "Registration for group ID " <> tshow gId <> " not found (getGroupReg)"
                 Just gr -> action g gr
           | otherwise ->

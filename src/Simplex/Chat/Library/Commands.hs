@@ -277,7 +277,9 @@ execChatCommand rh s = do
         | otherwise -> pure $ CRChatCmdError u $ ChatErrorRemoteHost (RHId rhId) $ RHELocalCommand
       _ -> do
         cc@ChatController {config = ChatConfig {chatHooks}} <- ask
-        liftIO (preCmdHook chatHooks cc cmd) >>= either pure (execChatCommand_ u)
+        case preCmdHook chatHooks of
+          Just hook -> liftIO (hook cc cmd) >>= either pure (execChatCommand_ u)
+          Nothing -> execChatCommand_ u cmd
 
 execChatCommand' :: ChatCommand -> CM' ChatResponse
 execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)

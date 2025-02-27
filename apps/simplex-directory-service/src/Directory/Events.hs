@@ -46,6 +46,7 @@ data DirectoryEvent
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
+  | DEMemberPendingApproval GroupInfo GroupMember
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
   | DEServiceRoleChanged GroupInfo GroupMemberRole
   | DEContactRemovedFromGroup ContactId GroupInfo
@@ -65,6 +66,9 @@ crDirectoryEvent = \case
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CRUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
   CRGroupUpdated {fromGroup, toGroup, member_} -> (\contactId -> DEGroupUpdated {contactId, fromGroup, toGroup}) <$> (memberContactId =<< member_)
+  CRJoinedGroupMember {groupInfo, member}
+    | memberStatus member == GSMemPendingApproval -> Just $ DEMemberPendingApproval groupInfo member
+    | otherwise -> Nothing
   CRMemberRole {groupInfo, member, toRole}
     | groupMemberId' member == groupMemberId' (membership groupInfo) -> Just $ DEServiceRoleChanged groupInfo toRole
     | otherwise -> (\ctId -> DEContactRoleChanged groupInfo ctId toRole) <$> memberContactId member
