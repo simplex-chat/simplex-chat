@@ -37,7 +37,7 @@ struct ChatView: View {
     @State private var requestedTopScroll = false
     @State private var loadingBottomItems = false
     @State private var requestedBottomScroll = false
-    @State private var searchMode = false
+    @State private var showSearch = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
@@ -54,10 +54,7 @@ struct ChatView: View {
     @State private var allowLoadMoreItems: Bool = false
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var animatedScrollingInProgress: Bool = false
-    @State private var updateMergedItemsTask: Task<Void, Never>? = nil
     @State private var floatingButtonModel: FloatingButtonModel = FloatingButtonModel()
-
-    private let useItemsUpdateTask = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
@@ -131,7 +128,7 @@ struct ChatView: View {
         }
         .safeAreaInset(edge: .top) {
             VStack(spacing: .zero) {
-                if searchMode { searchToolbar() }
+                if showSearch { searchToolbar() }
                 Divider()
             }
             .background(ToolbarMaterial.material(toolbarMaterial))
@@ -232,13 +229,43 @@ struct ChatView: View {
                 scrollView.listState.onUpdateListener = onChatItemsUpdated
                 initChatView()
                 theme = buildTheme()
-                if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
+                closeSearch()
+                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+                scrollView.updateItems(mergedItems.boxedValue.items)
+
+                if let openAround = chatModel.openAroundItemId, let index = mergedItems.boxedValue.indexInParentItems[openAround] {
+                    scrollView.scrollToItem(index)
+                } else if let unreadIndex = mergedItems.boxedValue.items.lastIndex(where: { $0.hasUnread() }) {
                     scrollView.scrollToItem(unreadIndex)
                 } else {
                     scrollView.scrollToBottom()
                 }
+                if chatModel.openAroundItemId != nil {
+                    chatModel.openAroundItemId = nil
+                }
             } else {
                 dismiss()
+            }
+        }
+        .onChange(of: chatModel.openAroundItemId) { openAround in
+            if let openAround {
+                closeSearch()
+                mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
+                scrollView.updateItems(mergedItems.boxedValue.items)
+                chatModel.openAroundItemId = nil
+
+                if let index = mergedItems.boxedValue.indexInParentItems[openAround] {
+                    scrollView.scrollToItem(index)
+                }
+
+                // this may already being loading because of changed chat id (see .onChange(of: chat.id)
+                if !loadingBottomItems {
+                    loadLastItems($loadingMoreItems, loadingBottomItems: $loadingBottomItems, chat)
+                    allowLoadMoreItems = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        allowLoadMoreItems = true
+                    }
+                }
             }
         }
         .onDisappear {
@@ -429,9 +456,13 @@ struct ChatView: View {
                     index = mergedItems.boxedValue.indexInParentItems[itemId]
                 }
                 if let index {
-                    await MainActor.run { animatedScrollingInProgress = true }
-                    await scrollView.scrollToItemAnimated(min(ItemsModel.shared.reversedChatItems.count - 1, index))
-                    await MainActor.run { animatedScrollingInProgress = false }
+                    closeKeyboardAndRun {
+                        Task {
+                            await MainActor.run { animatedScrollingInProgress = true }
+                            await scrollView.scrollToItemAnimated(min(ItemsModel.shared.reversedChatItems.count - 1, index))
+                            await MainActor.run { animatedScrollingInProgress = false }
+                        }
+                    }
                 }
             } catch {
                 logger.error("Error scrolling to item: \(error)")
@@ -460,9 +491,7 @@ struct ChatView: View {
             .cornerRadius(10.0)
 
             Button ("Cancel") {
-                searchText = ""
-                searchMode = false
-                searchFocussed = false
+                closeSearch()
                 Task { await loadChat(chat: chat) }
             }
         }
@@ -517,7 +546,9 @@ struct ChatView: View {
                     showChatInfoSheet: $showChatInfoSheet,
                     revealedItems: $revealedItems,
                     selectedChatItems: $selectedChatItems,
-                    forwardedChatItems: $forwardedChatItems
+                    forwardedChatItems: $forwardedChatItems,
+                    searchIsNotBlank: searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    closeKeyboardAndRun: closeKeyboardAndRun
                 )
                 // crashes on Cell size calculation without this line
                 .environmentObject(ChatModel.shared)
@@ -535,25 +566,10 @@ struct ChatView: View {
                 }
             }
             .onChange(of: im.reversedChatItems) { items in
-                updateMergedItemsTask?.cancel()
-                if useItemsUpdateTask {
-                    updateMergedItemsTask = Task {
-                        let items = MergedItems.create(items, revealedItems, im.chatState)
-                        if Task.isCancelled {
-                            return
-                        }
-                        await MainActor.run {
-                            mergedItems.boxedValue = items
-                            scrollView.updateItems(mergedItems.boxedValue.items)
-                        }
-                    }
-                } else {
-                    mergedItems.boxedValue = MergedItems.create(items, revealedItems, im.chatState)
-                    scrollView.updateItems(mergedItems.boxedValue.items)
-                }
+                mergedItems.boxedValue = MergedItems.create(items, revealedItems, im.chatState)
+                scrollView.updateItems(mergedItems.boxedValue.items)
             }
             .onChange(of: revealedItems) { revealed in
-                updateMergedItemsTask?.cancel()
                 mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealed, im.chatState)
                 scrollView.updateItems(mergedItems.boxedValue.items)
             }
@@ -567,6 +583,7 @@ struct ChatView: View {
             .padding(.vertical, -100)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { s in
+                guard showSearch else { return }
                 Task {
                     await loadChat(chat: chat, search: s)
                     mergedItems.boxedValue = MergedItems.create(im.reversedChatItems, revealedItems, im.chatState)
@@ -880,9 +897,27 @@ struct ChatView: View {
     }
 
     private func focusSearch() {
-        searchMode = true
+        showSearch = true
         searchFocussed = true
         searchText = ""
+    }
+
+    private func closeSearch() {
+        showSearch = false
+        searchText = ""
+        searchFocussed = false
+    }
+
+    private func closeKeyboardAndRun(_ action: @escaping () -> Void) {
+        var delay: TimeInterval = 0
+        if keyboardVisible || showSearch {
+            delay = 0.5
+            closeSearch()
+            hideKeyboard()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            action()
+        }
     }
 
     private func addMembersButton() -> some View {
@@ -1079,6 +1114,7 @@ struct ChatView: View {
             pagination,
             im.chatState,
             searchText,
+            nil,
             { visibleItemIndexesNonReversed(scrollView.listState, mergedItems.boxedValue) }
         )
         return true
@@ -1139,6 +1175,9 @@ struct ChatView: View {
 
         @Binding var selectedChatItems: Set<Int64>?
         @Binding var forwardedChatItems: [ChatItem]
+
+        var searchIsNotBlank: Bool
+        var closeKeyboardAndRun: (@escaping () -> Void) -> Void
 
         @State private var allowMenu: Bool = true
         @State private var markedRead = false
@@ -1459,18 +1498,26 @@ struct ChatView: View {
         @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             VStack(alignment: alignment.horizontal, spacing: 3) {
-                ChatItemView(
-                    chat: chat,
-                    chatItem: ci,
-                    scrollToItemId: scrollToItemId,
-                    maxWidth: maxWidth,
-                    allowMenu: $allowMenu
-                )
-                .environment(\.revealed, revealed)
-                .environment(\.showTimestamp, itemSeparation.timestamp)
-                .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
-                .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
-                .accessibilityLabel("")
+                HStack {
+                    if ci.chatDir.sent {
+                        goToItemButton(true)
+                    }
+                    ChatItemView(
+                        chat: chat,
+                        chatItem: ci,
+                        scrollToItemId: scrollToItemId,
+                        maxWidth: maxWidth,
+                        allowMenu: $allowMenu
+                    )
+                    .environment(\.revealed, revealed)
+                    .environment(\.showTimestamp, itemSeparation.timestamp)
+                    .modifier(ChatItemClipped(ci, tailVisible: itemSeparation.largeGap && (ci.meta.itemDeleted == nil || revealed)))
+                    .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
+                    .accessibilityLabel("")
+                    if !ci.chatDir.sent {
+                        goToItemButton(false)
+                    }
+                }
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions(ci)
                         .padding(.bottom, 4)
@@ -2130,6 +2177,37 @@ struct ChatView: View {
                     profileMenuItem(Text("you"), m.currentUser?.profile.image, radius: profileRadius)
                 }
                 .disabled(true)
+            }
+        }
+
+        func goToItemInnerButton(_ alignStart: Bool, _ image: String, _ onClick: @escaping () -> Void) -> some View {
+            Button {
+                onClick()
+            } label: {
+                Image(systemName: image)
+                    .resizable()
+                    .frame(width: 15, height: 15)
+                    .padding([alignStart ? .trailing : .leading], 11)
+                    .tint(theme.colors.secondary.opacity(0.4))
+            }
+        }
+
+        @ViewBuilder
+        func goToItemButton(_ alignStart: Bool) -> some View {
+            let chatTypeApiIdMsgId = chatItem.meta.itemForwarded?.chatTypeApiIdMsgId
+            if searchIsNotBlank {
+                goToItemInnerButton(alignStart, "magnifyingglass") {
+                    closeKeyboardAndRun {
+                        ItemsModel.shared.loadOpenChatNoWait(chat.id, chatItem.id)
+                    }
+                }
+            } else if let chatTypeApiIdMsgId {
+                goToItemInnerButton(alignStart, "arrow.right") {
+                    closeKeyboardAndRun {
+                        let (chatType, apiId, msgId) = chatTypeApiIdMsgId
+                        ItemsModel.shared.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
+                    }
+                }
             }
         }
 

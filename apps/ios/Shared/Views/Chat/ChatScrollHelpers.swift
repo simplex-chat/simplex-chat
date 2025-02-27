@@ -46,7 +46,7 @@ func preloadIfNeeded(
     loadItems: @escaping (Bool, ChatPagination) async -> Bool
 ) {
     let state = PreloadState.shared
-    guard !listState.isScrolling,
+    guard !listState.isScrolling && !listState.isAnimatedScrolling,
           state.prevFirstVisible != listState.firstVisibleItemIndex || state.prevItemsCount != mergedItems.boxedValue.indexInParentItems.count,
           !state.preloading,
           listState.totalItemsCount > 0
