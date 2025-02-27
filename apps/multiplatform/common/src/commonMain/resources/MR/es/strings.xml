@@ -2359,4 +2359,6 @@
     <string name="v6_3_better_privacy_and_security">Mejor privacidad y seguridad</string>
     <string name="v6_3_reports">Envia informes privados</string>
     <string name="v6_3_set_message_expiration_in_chats">Establece la expiración de mensajes en chats.</string>
+    <string name="group_preview_rejected">rechazado</string>
+    <string name="group_member_status_rejected">rechazado</string>
 </resources>
