@@ -75,7 +75,7 @@ fun ChatItemView(
   highlighted: State<Boolean>,
   range: State<IntRange?>,
   selectedChatItems: MutableState<Set<Long>?>,
-  searchMode: State<Boolean>,
+  searchIsNotBlank: State<Boolean>,
   fillMaxWidth: Boolean = true,
   selectChatItem: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -260,7 +260,7 @@ fun ChatItemView(
     @Composable
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
-      if (searchMode.value) {
+      if (searchIsNotBlank.value) {
         GoToItemInnerButton(alignStart, MR.images.ic_search, parentActivated) {
           withBGApi {
             openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id)
@@ -1401,7 +1401,7 @@ fun PreviewChatItemView(
     highlighted = remember { mutableStateOf(false) },
     range = remember { mutableStateOf(0..1) },
     selectedChatItems = remember { mutableStateOf(setOf()) },
-    searchMode = remember { mutableStateOf(false) },
+    searchIsNotBlank = remember { mutableStateOf(false) },
     selectChatItem = {},
     deleteMessage = { _, _ -> },
     deleteMessages = { _ -> },
@@ -1449,7 +1449,7 @@ fun PreviewChatItemViewDeletedContent() {
       highlighted = remember { mutableStateOf(false) },
       range = remember { mutableStateOf(0..1) },
       selectedChatItems = remember { mutableStateOf(setOf()) },
-      searchMode = remember { mutableStateOf(false) },
+      searchIsNotBlank = remember { mutableStateOf(false) },
       selectChatItem = {},
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
