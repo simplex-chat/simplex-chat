@@ -174,6 +174,7 @@ chatGroupTests = do
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "repeat block, unblock" testBlockForAllRepeat
+    it "block multiple members" testBlockForAllMultipleMembers
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -5976,6 +5977,82 @@ testBlockForAllRepeat =
       [alice, cath] *<# "#team bob> 3"
 
       bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
+
+testBlockForAllMultipleMembers :: HasCallStack => TestParams -> IO ()
+testBlockForAllMultipleMembers =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+
+      connectUsers alice dan
+      addMember "team" alice dan GRMember
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: you joined the group"
+            dan
+              <### [ "#team: member bob (Bob) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected",
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+
+      -- lower roles to for batch block to be allowed (can't batch block if admins are selected)
+      alice ##> "/mr team bob member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of bob to member",
+          bob <## "#team: alice changed your role from admin to member",
+          cath <## "#team: alice changed the role of bob from admin to member",
+          dan <## "#team: alice changed the role of bob from admin to member"
+        ]
+      alice ##> "/mr team cath member"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of cath to member",
+          bob <## "#team: alice changed the role of cath from admin to member",
+          cath <## "#team: alice changed your role from admin to member",
+          dan <## "#team: alice changed the role of cath from admin to member"
+        ]
+
+      bob #> "#team 1"
+      [alice, cath, dan] *<# "#team bob> 1"
+
+      cath #> "#team 2"
+      [alice, bob, dan] *<# "#team cath> 2"
+
+      alice ##> "/_block #1 2,3 blocked=on"
+      alice <## "#team: you blocked 2 members"
+      dan <## "#team: alice blocked bob"
+      dan <## "#team: alice blocked cath"
+      bob <// 50000
+      cath <// 50000
+
+      -- bob and cath don't know they are blocked and receive each other's messages
+      bob #> "#team 3"
+      [alice, dan] *<# "#team bob> 3 [blocked by admin] <muted>"
+      cath <# "#team bob> 3"
+
+      cath #> "#team 4"
+      [alice, dan] *<# "#team cath> 4 [blocked by admin] <muted>"
+      bob <# "#team cath> 4"
+
+      alice ##> "/_block #1 2,3 blocked=off"
+      alice <## "#team: you unblocked 2 members"
+      dan <## "#team: alice unblocked bob"
+      dan <## "#team: alice unblocked cath"
+      bob <// 50000
+      cath <// 50000
+
+      bob #> "#team 5"
+      [alice, cath, dan] *<# "#team bob> 5"
+
+      cath #> "#team 6"
+      [alice, bob, dan] *<# "#team cath> 6"
 
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
