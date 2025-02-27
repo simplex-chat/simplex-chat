@@ -316,6 +316,7 @@ CREATE TABLE user_contact_links(
   group_link_id BLOB,
   group_link_member_role TEXT NULL,
   business_address INTEGER DEFAULT 0,
+  group_link_auto_accept TEXT NULL,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
