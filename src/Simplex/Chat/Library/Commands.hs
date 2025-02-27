@@ -1127,7 +1127,7 @@ processChatCommand' vr = \case
       (user@User {userId}, cReq) <- withFastStore $ \db -> getContactRequest' db connReqId
       (ct, conn@Connection {connId}, sqSecured) <- acceptContactRequest user cReq incognito
       ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
-      let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
+      let contactUsed = (\(_, gLinkInfo_) -> isNothing gLinkInfo_) ucl
       ct' <- withStore' $ \db -> do
         deleteContactRequestRec db user cReq
         updateContactAccepted db user ct contactUsed
@@ -2023,6 +2023,10 @@ processChatCommand' vr = \case
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` (toView . CRChatError (Just user))
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
+  APIAcceptMember groupId gmId memRole -> withUser $ \user -> do
+    -- Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
+    -- pure $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected} -- GSMemApproved?
+    ok user
   APIMemberRole groupId memberId memRole -> withUser $ \user -> do
     Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     if memberId == groupMemberId' membership

@@ -18,6 +18,7 @@ module Simplex.Chat.Store.Profiles
   ( AutoAccept (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
+    GroupLinkInfo (..),
     createUserRecord,
     createUserRecordAt,
     getUsersInfo,
@@ -77,7 +78,10 @@ where
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as J
+import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
@@ -100,15 +104,15 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..), FromField (..), ToField (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON)
+import Simplex.Messaging.Parsers (blobFieldDecoder, defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -453,6 +457,13 @@ data UserContactLink = UserContactLink
   }
   deriving (Show)
 
+data GroupLinkInfo = GroupLinkInfo
+  { groupId :: GroupId,
+    acceptance :: GroupAcceptance,
+    memberRole :: GroupMemberRole
+  }
+  deriving (Show)
+
 data AutoAccept = AutoAccept
   { businessAddress :: Bool, -- possibly, it can be wrapped together with acceptIncognito, or AutoAccept made sum type
     acceptIncognito :: IncognitoEnabled,
@@ -481,18 +492,23 @@ getUserAddress db User {userId} =
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupId, GroupMemberRole)
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupLinkInfo)
 getUserContactLinkById db userId userContactLinkId =
-  ExceptT . firstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) SEUserContactLinkNotFound $
+  ExceptT . firstRow (\(ucl :. gli) -> (toUserContactLink ucl, toGroupLinkInfo gli)) SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role, group_link_auto_accept
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
+  where
+    toGroupLinkInfo :: (Maybe GroupId, Maybe GroupAcceptance, Maybe GroupMemberRole) -> Maybe GroupLinkInfo
+    toGroupLinkInfo (groupId_, acceptance_, mRole_) =
+      (\groupId -> GroupLinkInfo {groupId, acceptance = fromMaybe GAAuto acceptance_, memberRole = fromMaybe GRMember mRole_})
+        <$> groupId_
 
 getUserContactLinkByConnReq :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe UserContactLink)
 getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =

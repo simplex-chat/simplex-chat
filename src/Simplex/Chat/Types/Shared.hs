@@ -48,3 +48,26 @@ instance FromJSON GroupMemberRole where
 instance ToJSON GroupMemberRole where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+data GroupAcceptance = GAAuto | GAManual deriving (Eq, Show)
+
+instance FromField GroupAcceptance where fromField = blobFieldDecoder strDecode
+
+instance ToField GroupAcceptance where toField = toField . strEncode
+
+instance StrEncoding GroupAcceptance where
+  strEncode = \case
+    GAAuto -> "auto"
+    GAManual -> "manual"
+  strDecode = \case
+    "auto" -> Right GAAuto
+    "manual" -> Right GAManual
+    r -> Left $ "bad GroupAcceptance " <> B.unpack r
+  strP = strDecode <$?> A.takeByteString
+
+instance FromJSON GroupAcceptance where
+  parseJSON = strParseJSON "GroupAcceptance"
+
+instance ToJSON GroupAcceptance where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding

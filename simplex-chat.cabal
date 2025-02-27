@@ -95,6 +95,7 @@ library
           Simplex.Chat.Options.Postgres
           Simplex.Chat.Store.Postgres.Migrations
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
+          -- Simplex.Chat.Store.Postgres.Migrations.M20250227_member_acceptance
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -224,6 +225,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250126_mentions
           Simplex.Chat.Store.SQLite.Migrations.M20250129_delete_unused_contacts
           Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20250227_member_acceptance
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

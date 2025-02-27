@@ -331,6 +331,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
+  XGrpLinkAcpt :: MemberId -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
@@ -821,6 +822,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpInv_ :: CMEventTag 'Json
   XGrpAcpt_ :: CMEventTag 'Json
   XGrpLinkInv_ :: CMEventTag 'Json
+  XGrpLinkAcpt_ :: CMEventTag 'Json
   XGrpLinkReject_ :: CMEventTag 'Json
   XGrpLinkMem_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
@@ -873,6 +875,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpInv_ -> "x.grp.inv"
     XGrpAcpt_ -> "x.grp.acpt"
     XGrpLinkInv_ -> "x.grp.link.inv"
+    XGrpLinkAcpt_ -> "x.grp.link.acpt"
     XGrpLinkReject_ -> "x.grp.link.reject"
     XGrpLinkMem_ -> "x.grp.link.mem"
     XGrpMemNew_ -> "x.grp.mem.new"
@@ -926,6 +929,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.inv" -> XGrpInv_
         "x.grp.acpt" -> XGrpAcpt_
         "x.grp.link.inv" -> XGrpLinkInv_
+        "x.grp.link.acpt" -> XGrpLinkAcpt_
         "x.grp.link.reject" -> XGrpLinkReject_
         "x.grp.link.mem" -> XGrpLinkMem_
         "x.grp.mem.new" -> XGrpMemNew_
@@ -975,6 +979,7 @@ toCMEventTag msg = case msg of
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
   XGrpLinkInv _ -> XGrpLinkInv_
+  XGrpLinkAcpt _ -> XGrpLinkAcpt_
   XGrpLinkReject _ -> XGrpLinkReject_
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpMemNew _ -> XGrpMemNew_
@@ -1077,6 +1082,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
+      XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "memberId"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
@@ -1140,6 +1146,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
+      XGrpLinkAcpt memId -> o ["memberId" .= memId]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]

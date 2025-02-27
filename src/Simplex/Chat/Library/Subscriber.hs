@@ -592,9 +592,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 withStore' $ \db -> resetContactConnInitiated db user conn'
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
+                let (UserContactLink {autoAccept}, gli_) = ucl
                 when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
-                forM_ groupId_ $ \groupId -> do
+                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do -- TODO
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                   subMode <- chatReadVar subscriptionMode
                   groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
@@ -658,7 +658,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CRContactSndReady user ct
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                let (UserContactLink {autoAccept}, _, _) = ucl
+                let (UserContactLink {autoAccept}, _) = ucl
                 when (connChatVersion >= batchSend2Version) $ sendAutoReply ct autoAccept
         QCONT ->
           void $ continueSending connEntity conn
@@ -782,6 +782,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ chatHasNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
+            -- TODO [knocking] here it will communicate whether user is approved as member as status of membership
             toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
             let cd = CDGroupRcv gInfo m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
@@ -793,6 +794,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               expectHistory = groupFeatureAllowed SGFHistory gInfo && m `supportsVersion` groupHistoryIncludeWelcomeVersion
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
+            -- TODO [knocking] here it will communicate whether member needs to be approved as member status
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
@@ -1300,7 +1302,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             CORGroup gInfo -> toView $ CRBusinessRequestAlreadyAccepted user gInfo
             CORRequest cReq -> do
               ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-              let (UserContactLink {connReqContact, autoAccept}, groupId_, gLinkMemRole) = ucl
+              let (UserContactLink {connReqContact, autoAccept}, gLinkInfo_) = ucl
                   isSimplexTeam = sameConnReqContact connReqContact adminContactReq
                   v = maxVersion chatVRange
               case autoAccept of
@@ -1313,13 +1315,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         else do
                           gInfo <- acceptBusinessJoinRequestAsync user cReq
                           toView $ CRAcceptingBusinessRequest user gInfo
-                  | otherwise -> case groupId_ of
+                  | otherwise -> case gLinkInfo_ of
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user cReq incognitoProfile reqPQSup
                         toView $ CRAcceptingContactRequest user ct
-                      Just groupId -> do
+                      Just GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                         cfg <- asks config
                         case rejectionReason cfg of

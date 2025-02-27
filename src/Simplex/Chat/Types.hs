@@ -668,6 +668,7 @@ data GroupLinkInvitation = GroupLinkInvitation
     fromMemberName :: ContactName,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
+    acceptance :: Maybe GroupAcceptance,
     business :: Maybe BusinessChatInfo,
     groupSize :: Maybe Int
   }
@@ -1001,6 +1002,7 @@ data GroupMemberStatus
   | GSMemIntroInvited -- member is sent to or received from intro invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
   | GSMemAnnounced -- host announced (x.grp.mem.new) a member (Invitee and PostMember) to the group - at this point this member can send messages and invite other members (if they have sufficient permissions)
+  | GSMemPendingApproval -- member is connected to host but pending host approval before connecting to other members ("knocking")
   | GSMemConnected -- member created the group connection with the inviting member
   | GSMemComplete -- host confirmed (x.grp.mem.all) that a member (User, Invitee and PostMember) created group connections with all previous members
   | GSMemCreator -- user member that created the group (only GCUserMember)
@@ -1029,6 +1031,7 @@ memberActive m = case memberStatus m of
   GSMemIntroInvited -> False
   GSMemAccepted -> False
   GSMemAnnounced -> False
+  GSMemPendingApproval -> True -- TODO [knocking] ?
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
@@ -1049,6 +1052,7 @@ memberCurrent' = \case
   GSMemIntroInvited -> True
   GSMemAccepted -> True
   GSMemAnnounced -> True
+  GSMemPendingApproval -> True
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
@@ -1065,6 +1069,7 @@ memberRemoved m = case memberStatus m of
   GSMemIntroInvited -> False
   GSMemAccepted -> False
   GSMemAnnounced -> False
+  GSMemPendingApproval -> False
   GSMemConnected -> False
   GSMemComplete -> False
   GSMemCreator -> False
@@ -1081,6 +1086,7 @@ instance TextEncoding GroupMemberStatus where
     "intro-inv" -> Just GSMemIntroInvited
     "accepted" -> Just GSMemAccepted
     "announced" -> Just GSMemAnnounced
+    "pending" -> Just GSMemPendingApproval
     "connected" -> Just GSMemConnected
     "complete" -> Just GSMemComplete
     "creator" -> Just GSMemCreator
@@ -1096,6 +1102,7 @@ instance TextEncoding GroupMemberStatus where
     GSMemIntroInvited -> "intro-inv"
     GSMemAccepted -> "accepted"
     GSMemAnnounced -> "announced"
+    GSMemPendingApproval -> "pending"
     GSMemConnected -> "connected"
     GSMemComplete -> "complete"
     GSMemCreator -> "creator"

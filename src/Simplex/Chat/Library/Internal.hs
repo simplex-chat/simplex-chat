@@ -841,6 +841,7 @@ acceptGroupJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId gLinkMemRole,
                 groupProfile,
+                acceptance = Nothing, -- TODO [knocking]
                 business = businessChat,
                 groupSize = Just currentMemCount
               }
@@ -900,6 +901,7 @@ acceptBusinessJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId GRMember,
                 groupProfile = businessGroupProfile userProfile groupPreferences,
+                acceptance = Nothing, -- TODO [knocking]
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
                 -- but it will be different when inviting somebody else.
