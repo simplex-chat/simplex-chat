@@ -1304,7 +1304,7 @@
     <string name="share_text_deleted_at">Gelöscht um: %s</string>
     <string name="info_row_disappears_at">Verschwindet um</string>
     <string name="share_text_disappears_at">Verschwindet um: %s</string>
-    <string name="edit_history">Nachrichtenverlauf bearbeiten</string>
+    <string name="edit_history">Nachrichtenverlauf</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind nicht schwerwiegende Fehler aufgetreten:</string>
