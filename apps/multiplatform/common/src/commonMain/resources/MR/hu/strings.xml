@@ -77,11 +77,11 @@
     <string name="connect_plan_already_joining_the_group">A csatlakozás folyamatban van a csoporthoz!</string>
     <string name="auto_accept_contact">Automatikus elfogadás</string>
     <string name="notifications_mode_service_desc">A háttérszolgáltatás mindig fut – az értesítések megjelennek, amint az üzenetek elérhetővé válnak.</string>
-    <string name="allow_to_delete_messages">Az elküldött üzenetek végleges törlése engedélyezve van. (24 óra)</string>
+    <string name="allow_to_delete_messages">Lehetővé teszi az elküldött üzenetek végleges törlését. (24 óra)</string>
     <string name="both_you_and_your_contact_can_send_voice">Mindkét fél küldhet hangüzeneteket.</string>
     <string name="alert_title_msg_bad_id">Téves üzenet ID</string>
     <string name="allow_your_contacts_adding_message_reactions">A reakciók hozzáadása az üzenetekhez engedélyezve van a partnerei számára.</string>
-    <string name="allow_to_send_voice">A hangüzenetek küldése engedélyezve van.</string>
+    <string name="allow_to_send_voice">Lehetővé teszi a hangüzenetek küldését.</string>
     <string name="allow_message_reactions_only_if">A reakciók hozzáadása az üzenetekhez csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
     <string name="back">Vissza</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is meg lesznek jelenítve amíg az alkalmazás fut.]]></string>
@@ -107,7 +107,7 @@
     <string name="block_member_button">Letiltás</string>
     <string name="v5_2_more_things">Néhány további dolog</string>
     <string name="authentication_cancelled">Hitelesítés visszavonva</string>
-    <string name="allow_to_send_files">A fájlok- és a médiatartalmak küldése engedélyezve van.</string>
+    <string name="allow_to_send_files">Lehetővé teszi a fájlok- és a médiatartalmak küldését.</string>
     <string name="users_delete_all_chats_deleted">Az összes csevegés és üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="icon_descr_audio_call">hanghívás</string>
     <string name="bold_text">félkövér</string>
@@ -151,7 +151,7 @@
     <string name="allow_your_contacts_to_call">A hívások kezdeményezése engedélyezve van a partnerei számára.</string>
     <string name="settings_section_title_icon">ALKALMAZÁSIKON</string>
     <string name="v4_3_improved_server_configuration_desc">Kiszolgáló hozzáadása QR-kód beolvasásával.</string>
-    <string name="allow_to_send_disappearing">Az eltűnő üzenetek küldése engedélyezve van.</string>
+    <string name="allow_to_send_disappearing">Lehetővé teszi az eltűnő üzenetek küldését.</string>
     <string name="allow_disappearing_messages_only_if">Az eltűnő üzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
     <string name="icon_descr_audio_off">Hang kikapcsolva</string>
     <string name="allow_direct_messages">A közvetlen üzenetek küldése a tagok között engedélyezve van.</string>
@@ -1692,7 +1692,7 @@
     <string name="simplex_links_are_prohibited_in_group">A SimpleX-hivatkozások küldése le van tiltva.</string>
     <string name="prohibit_sending_simplex_links">A SimpleX-hivatkozások küldése le van tiltva</string>
     <string name="files_and_media_not_allowed">A fájlok- és médiatartalmak nincsenek engedélyezve</string>
-    <string name="allow_to_send_simplex_links">A SimpleX-hivatkozások küldése engedélyezve van.</string>
+    <string name="allow_to_send_simplex_links">Lehetővé teszi a SimpleX-hivatkozások küldését.</string>
     <string name="feature_enabled_for">Számukra engedélyezve</string>
     <string name="saved_description">mentett</string>
     <string name="saved_from_description">elmentve innen: %s</string>
