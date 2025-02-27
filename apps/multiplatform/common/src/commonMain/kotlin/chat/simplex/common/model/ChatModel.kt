@@ -3112,7 +3112,7 @@ sealed class CIForwardedFrom {
         is Group -> chatName
       }
 
-  val chatTypeIdMsgId: Triple<ChatType, Long, Long?>?
+  val chatTypeApiIdMsgId: Triple<ChatType, Long, Long?>?
     get() = when (this) {
       Unknown -> null
       is Contact -> if (contactId != null) Triple(ChatType.Direct, contactId, chatItemId) else null

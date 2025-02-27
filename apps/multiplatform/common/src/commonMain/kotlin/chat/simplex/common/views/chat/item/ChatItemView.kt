@@ -259,18 +259,17 @@ fun ChatItemView(
 
     @Composable
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
-      val chatTypeIdMsgId = cItem.meta.itemForwarded?.chatTypeIdMsgId
+      val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
       if (searchMode.value) {
         GoToItemInnerButton(alignStart, MR.images.ic_search, parentActivated) {
-
           withBGApi {
             openChat(rhId, cInfo.chatType, cInfo.apiId, null, cItem.id)
             closeReportsIfNeeded()
           }
         }
-      } else if (chatTypeIdMsgId != null) {
+      } else if (chatTypeApiIdMsgId != null) {
         GoToItemInnerButton(alignStart, MR.images.ic_arrow_forward, parentActivated) {
-          val (chatType, apiId, msgId) = chatTypeIdMsgId
+          val (chatType, apiId, msgId) = chatTypeApiIdMsgId
           withBGApi {
             openChat(rhId, chatType, apiId, null, msgId)
             closeReportsIfNeeded()
