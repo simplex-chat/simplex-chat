@@ -2048,11 +2048,10 @@ processChatCommand' vr = \case
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
                  in
-                  if memberRole == newRole
-                    then (invited, current, m : unchanged, maxRole', anyAdmin')
-                    else if memberStatus == GSMemInvited
-                      then (m : invited, current, unchanged, maxRole', anyAdmin')
-                      else (invited, m : current, unchanged, maxRole', anyAdmin')
+                  if
+                    | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin')
+                    | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin')
+                    | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin')
             | otherwise = (invited, current, unchanged, maxRole, anyAdmin)
       changeRoleInvitedMems :: User -> GroupInfo -> [GroupMember] -> CM ([ChatError], [GroupMember])
       changeRoleInvitedMems user gInfo memsToChange = do
