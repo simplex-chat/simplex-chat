@@ -265,7 +265,7 @@ testGroupShared alice bob cath checkMessages = do
   -- test observer role
   alice ##> "/mr team bob observer"
   concurrentlyN_
-    [ alice <## "#team: you changed the role of bob from admin to observer",
+    [ alice <## "#team: you changed the role of bob to observer",
       bob <## "#team: alice changed your role from admin to observer",
       cath <## "#team: alice changed the role of bob from admin to observer"
     ]
@@ -280,7 +280,7 @@ testGroupShared alice bob cath checkMessages = do
     ]
   alice ##> "/mr team bob admin"
   concurrentlyN_
-    [ alice <## "#team: you changed the role of bob from observer to admin",
+    [ alice <## "#team: you changed the role of bob to admin",
       bob <## "#team: alice changed your role from observer to admin",
       cath <## "#team: alice changed the role of bob from observer to admin"
     ]
@@ -1460,7 +1460,7 @@ testUpdateMemberRole =
       alice <## "to add members use /a team <name> or /create link #team"
       addMember "team" alice bob GRAdmin
       alice ##> "/mr team bob member"
-      alice <## "#team: you changed the role of bob from admin to member"
+      alice <## "#team: you changed the role of bob to member"
       bob <## "#team: alice invites you to join the group as member"
       bob <## "use /j team to accept"
       bob ##> "/j team"
@@ -1472,7 +1472,7 @@ testUpdateMemberRole =
       bob <## "#team: you have insufficient permissions for this action, the required role is admin"
       alice ##> "/mr team bob admin"
       concurrently_
-        (alice <## "#team: you changed the role of bob from member to admin")
+        (alice <## "#team: you changed the role of bob to admin")
         (bob <## "#team: alice changed your role from member to admin")
       bob ##> "/a team cath owner"
       bob <## "#team: you have insufficient permissions for this action, the required role is owner"
@@ -1488,13 +1488,7 @@ testUpdateMemberRole =
             alice <## "#team: new member cath is connected"
         ]
       alice ##> "/mr team alice admin"
-      concurrentlyN_
-        [ alice <## "#team: you changed your role from owner to admin",
-          bob <## "#team: alice changed the role from owner to admin",
-          cath <## "#team: alice changed the role from owner to admin"
-        ]
-      alice ##> "/d #team"
-      alice <## "#team: you have insufficient permissions for this action, the required role is owner"
+      alice <## "bad chat command: can't change role for self"
 
 testGroupDescription :: HasCallStack => TestParams -> IO ()
 testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> do
@@ -1579,7 +1573,7 @@ testGroupModerate =
       -- disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of cath from admin to member",
+        [ alice <## "#team: you changed the role of cath to member",
           bob <## "#team: alice changed the role of cath from admin to member",
           cath <## "#team: alice changed your role from admin to member"
         ]
@@ -1662,7 +1656,7 @@ testGroupModerateFullDelete =
       -- disableFullDeletion3 "team" alice bob cath
       alice ##> "/mr team cath member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of cath from admin to member",
+        [ alice <## "#team: you changed the role of cath to member",
           bob <## "#team: alice changed the role of cath from admin to member",
           cath <## "#team: alice changed your role from admin to member"
         ]
@@ -2691,7 +2685,7 @@ testGroupLinkMemberRole =
       bob <## "#team: you don't have permission to send messages"
 
       alice ##> "/mr #team bob member"
-      alice <## "#team: you changed the role of bob from observer to member"
+      alice <## "#team: you changed the role of bob to member"
       bob <## "#team: alice changed your role from observer to member"
 
       bob #> "#team hey now"
@@ -2721,7 +2715,7 @@ testGroupLinkMemberRole =
       cath <## "#team: you don't have permission to send messages"
 
       alice ##> "/mr #team cath admin"
-      alice <## "#team: you changed the role of cath from observer to admin"
+      alice <## "#team: you changed the role of cath to admin"
       cath <## "#team: alice changed your role from observer to admin"
       bob <## "#team: alice changed the role of cath from observer to admin"
 
@@ -2730,7 +2724,7 @@ testGroupLinkMemberRole =
       bob <# "#team cath> hey"
 
       cath ##> "/mr #team bob admin"
-      cath <## "#team: you changed the role of bob from member to admin"
+      cath <## "#team: you changed the role of bob to admin"
       bob <## "#team: cath changed your role from member to admin"
       alice <## "#team: cath changed the role of bob from member to admin"
 
@@ -4132,14 +4126,14 @@ testGroupMsgForwardReport =
 
       alice ##> "/mr team bob moderator"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of bob from admin to moderator",
+        [ alice <## "#team: you changed the role of bob to moderator",
           bob <## "#team: alice changed your role from admin to moderator",
           cath <## "#team: alice changed the role of bob from admin to moderator"
         ]
 
       alice ##> "/mr team cath member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of cath from admin to member",
+        [ alice <## "#team: you changed the role of cath to member",
           bob <## "#team: alice changed the role of cath from admin to member",
           cath <## "#team: alice changed your role from admin to member"
         ]
@@ -4157,7 +4151,7 @@ testGroupMsgForwardReport =
 
       alice ##> "/mr team bob member"
       concurrentlyN_
-        [ alice <## "#team: you changed the role of bob from moderator to member",
+        [ alice <## "#team: you changed the role of bob to member",
           bob <## "#team: alice changed your role from moderator to member",
           cath <## "#team: alice changed the role of bob from moderator to member"
         ]
@@ -4315,7 +4309,7 @@ testGroupMsgForwardChangeRole =
       setupGroupForwarding3 "team" alice bob cath
 
       cath ##> "/mr #team bob member"
-      cath <## "#team: you changed the role of bob from admin to member"
+      cath <## "#team: you changed the role of bob to member"
       alice <## "#team: cath changed the role of bob from admin to member"
       bob <## "#team: cath changed your role from admin to member" -- TODO show as forwarded
 
@@ -6061,13 +6055,13 @@ testGroupMemberReports =
       -- disableFullDeletion3 "jokes" alice bob cath
       alice ##> "/mr jokes bob moderator"
       concurrentlyN_
-        [ alice <## "#jokes: you changed the role of bob from admin to moderator",
+        [ alice <## "#jokes: you changed the role of bob to moderator",
           bob <## "#jokes: alice changed your role from admin to moderator",
           cath <## "#jokes: alice changed the role of bob from admin to moderator"
         ]
       alice ##> "/mr jokes cath member"
       concurrentlyN_
-        [ alice <## "#jokes: you changed the role of cath from admin to member",
+        [ alice <## "#jokes: you changed the role of cath to member",
           bob <## "#jokes: alice changed the role of cath from admin to member",
           cath <## "#jokes: alice changed your role from admin to member"
         ]

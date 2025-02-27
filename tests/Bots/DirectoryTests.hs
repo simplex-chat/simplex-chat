@@ -122,7 +122,7 @@ testDirectoryService ps =
         bob <# "SimpleX-Directory> You must grant directory service admin role to register the group"
         bob ##> "/mr PSA SimpleX-Directory admin"
         -- putStrLn "*** discover service joins group and creates the link for profile"
-        bob <## "#PSA: you changed the role of SimpleX-Directory from member to admin"
+        bob <## "#PSA: you changed the role of SimpleX-Directory to admin"
         bob <# "SimpleX-Directory> Joining the group PSA…"
         bob <## "#PSA: SimpleX-Directory joined the group"
         bob <# "SimpleX-Directory> Joined the group PSA, creating the link…"
@@ -579,7 +579,7 @@ testDelistedRoleChanges ps =
         groupFoundN 3 cath "privacy"
         -- de-listed if service role changed
         bob ##> "/mr privacy SimpleX-Directory member"
-        bob <## "#privacy: you changed the role of SimpleX-Directory from admin to member"
+        bob <## "#privacy: you changed the role of SimpleX-Directory to member"
         cath <## "#privacy: bob changed the role of SimpleX-Directory from admin to member"
         bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to member."
         bob <## ""
@@ -588,7 +588,7 @@ testDelistedRoleChanges ps =
         groupNotFound cath "privacy"
         -- re-listed if service role changed back without profile changes
         cath ##> "/mr privacy SimpleX-Directory admin"
-        cath <## "#privacy: you changed the role of SimpleX-Directory from member to admin"
+        cath <## "#privacy: you changed the role of SimpleX-Directory to admin"
         bob <## "#privacy: cath changed the role of SimpleX-Directory from member to admin"
         bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
@@ -597,7 +597,7 @@ testDelistedRoleChanges ps =
         groupFoundN 3 cath "privacy"
         -- de-listed if owner role changed
         cath ##> "/mr privacy bob admin"
-        cath <## "#privacy: you changed the role of bob from owner to admin"
+        cath <## "#privacy: you changed the role of bob to admin"
         bob <## "#privacy: cath changed your role from owner to admin"
         bob <# "SimpleX-Directory> Your role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
@@ -606,7 +606,7 @@ testDelistedRoleChanges ps =
         groupNotFound cath "privacy"
         -- re-listed if owner role changed back without profile changes
         cath ##> "/mr privacy bob owner"
-        cath <## "#privacy: you changed the role of bob from admin to owner"
+        cath <## "#privacy: you changed the role of bob to owner"
         bob <## "#privacy: cath changed your role from admin to owner"
         bob <# "SimpleX-Directory> Your role in the group ID 1 (privacy) is changed to owner."
         bob <## ""
@@ -627,7 +627,7 @@ testNotDelistedMemberRoleChanged ps =
         cath <## "use @SimpleX-Directory <message> to send messages"
         groupFoundN 3 cath "privacy"
         bob ##> "/mr privacy cath member"
-        bob <## "#privacy: you changed the role of cath from owner to member"
+        bob <## "#privacy: you changed the role of cath to member"
         cath <## "#privacy: bob changed your role from owner to member"
         groupFoundN 3 cath "privacy"
 
@@ -641,11 +641,11 @@ testNotSentApprovalBadRoles ps =
         submitGroup bob "privacy" "Privacy"
         welcomeWithLink <- groupAccepted bob "privacy"
         bob ##> "/mr privacy SimpleX-Directory member"
-        bob <## "#privacy: you changed the role of SimpleX-Directory from admin to member"
+        bob <## "#privacy: you changed the role of SimpleX-Directory to member"
         updateProfileWithLink bob "privacy" welcomeWithLink 1
         bob <# "SimpleX-Directory> You must grant directory service admin role to register the group"
         bob ##> "/mr privacy SimpleX-Directory admin"
-        bob <## "#privacy: you changed the role of SimpleX-Directory from member to admin"
+        bob <## "#privacy: you changed the role of SimpleX-Directory to admin"
         bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
         bob <## "The group is submitted for approval."
@@ -666,14 +666,14 @@ testNotApprovedBadRoles ps =
         updateProfileWithLink bob "privacy" welcomeWithLink 1
         notifySuperUser superUser bob "privacy" "Privacy" welcomeWithLink 1
         bob ##> "/mr privacy SimpleX-Directory member"
-        bob <## "#privacy: you changed the role of SimpleX-Directory from admin to member"
+        bob <## "#privacy: you changed the role of SimpleX-Directory to member"
         let approve = "/approve 1:privacy 1"
         superUser #> ("@SimpleX-Directory " <> approve)
         superUser <# ("SimpleX-Directory> > " <> approve)
         superUser <## "      Group is not approved: SimpleX-Directory is not an admin."
         groupNotFound cath "privacy"
         bob ##> "/mr privacy SimpleX-Directory admin"
-        bob <## "#privacy: you changed the role of SimpleX-Directory from member to admin"
+        bob <## "#privacy: you changed the role of SimpleX-Directory to admin"
         bob <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
         bob <## "The group is submitted for approval."
@@ -940,7 +940,7 @@ testListUserGroups ps =
         -- with de-listed group
         groupFound cath "anonymity"
         cath ##> "/mr anonymity SimpleX-Directory member"
-        cath <## "#anonymity: you changed the role of SimpleX-Directory from admin to member"
+        cath <## "#anonymity: you changed the role of SimpleX-Directory to member"
         cath <# "SimpleX-Directory> SimpleX-Directory role in the group ID 1 (anonymity) is changed to member."
         cath <## ""
         cath <## "The group is no longer listed in the directory."
