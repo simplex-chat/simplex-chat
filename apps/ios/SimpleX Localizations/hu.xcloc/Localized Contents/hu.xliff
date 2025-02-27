@@ -605,9 +605,9 @@
         <target>Az üzemeltetőkről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accent" xml:space="preserve">
+      <trans-unit id="Accent" xml:space="preserve" approved="no">
         <source>Accent</source>
-        <target>Kiemelés</target>
+        <target state="translated">Kiemelőszín</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -728,19 +728,19 @@
         <target>Hozzáadott üzenetkiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional accent" xml:space="preserve">
+      <trans-unit id="Additional accent" xml:space="preserve" approved="no">
         <source>Additional accent</source>
-        <target>További kiemelés</target>
+        <target state="translated">További kiemelőszín</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional accent 2" xml:space="preserve">
+      <trans-unit id="Additional accent 2" xml:space="preserve" approved="no">
         <source>Additional accent 2</source>
-        <target>További kiemelés 2</target>
+        <target state="translated">További kiemelőszín 2</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional secondary" xml:space="preserve">
+      <trans-unit id="Additional secondary" xml:space="preserve" approved="no">
         <source>Additional secondary</source>
-        <target>További másodlagos</target>
+        <target state="translated">További másodlagos szín</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Address" xml:space="preserve">
@@ -920,27 +920,27 @@
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
-        <target state="translated">Lehetővé teszi az elküldött üzenetek végleges törlését. (24 óra)</target>
+        <target state="translated">Az elküldött üzenetek végleges törlése engedélyezve van. (24 óra)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve">
+      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve" approved="no">
         <source>Allow to report messsages to moderators.</source>
-        <target>Lehetővé teszi az üzenetek jelentését a moderátorok felé.</target>
+        <target state="translated">Az üzenetek jelentése a moderátorok felé engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve" approved="no">
         <source>Allow to send SimpleX links.</source>
-        <target state="translated">Lehetővé teszi a SimpleX-hivatkozások küldését.</target>
+        <target state="translated">A SimpleX-hivatkozások küldése engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
         <source>Allow to send files and media.</source>
-        <target state="translated">Lehetővé teszi a fájlok- és a médiatartalmak küldését.</target>
+        <target state="translated">A fájlok- és a médiatartalmak küldése engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send voice messages." xml:space="preserve" approved="no">
         <source>Allow to send voice messages.</source>
-        <target state="translated">Lehetővé teszi a hangüzenetek küldését.</target>
+        <target state="translated">A hangüzenetek küldése engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow voice messages only if your contact allows them." xml:space="preserve" approved="no">
@@ -6759,9 +6759,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Keresés vagy SimpleX-hivatkozás beillesztése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Secondary" xml:space="preserve">
+      <trans-unit id="Secondary" xml:space="preserve" approved="no">
         <source>Secondary</source>
-        <target>Másodlagos</target>
+        <target state="translated">Másodlagos szín</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve">
