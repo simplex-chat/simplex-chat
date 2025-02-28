@@ -3071,6 +3071,7 @@ processChatCommand' vr = \case
         Just dmId -> do
           when (dmId == groupMemberId' membership) $ throwChatError $ CECommandError "cannot send to self"
           dm <- withFastStore $ \db -> getGroupMemberById db vr user dmId
+          unless (memberStatus dm == GSMemPendingApproval) $ throwChatError $ CECommandError "cannot send directly to member not pending approval"
           pure [dm]
       sendGroupContentMessages_ user gInfo ms live itemTTL cmrs
     sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse

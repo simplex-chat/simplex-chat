@@ -6406,9 +6406,15 @@ testGroupDirectMessages =
     bob #> "#team 2"
     [alice, cath] *<# "#team bob> 2"
 
+    void $ withCCTransaction alice $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 2"
+
     alice ##> "/_send #1 @2 text 3"
     alice <# "#team 3"
     bob <# "#team alice> 3"
+
+    void $ withCCTransaction bob $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 1"
 
     bob ##> "/_send #1 @1 text 4"
     bob <# "#team 4"

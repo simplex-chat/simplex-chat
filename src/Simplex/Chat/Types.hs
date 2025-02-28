@@ -1086,7 +1086,7 @@ instance TextEncoding GroupMemberStatus where
     "intro-inv" -> Just GSMemIntroInvited
     "accepted" -> Just GSMemAccepted
     "announced" -> Just GSMemAnnounced
-    "pending" -> Just GSMemPendingApproval
+    "pending_approval" -> Just GSMemPendingApproval
     "connected" -> Just GSMemConnected
     "complete" -> Just GSMemComplete
     "creator" -> Just GSMemCreator
@@ -1102,7 +1102,7 @@ instance TextEncoding GroupMemberStatus where
     GSMemIntroInvited -> "intro-inv"
     GSMemAccepted -> "accepted"
     GSMemAnnounced -> "announced"
-    GSMemPendingApproval -> "pending"
+    GSMemPendingApproval -> "pending_approval"
     GSMemConnected -> "connected"
     GSMemComplete -> "complete"
     GSMemCreator -> "creator"
