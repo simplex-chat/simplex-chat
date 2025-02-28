@@ -1471,6 +1471,7 @@
 
   <!-- DatabaseErrorView.kt -->
   <string name="wrong_passphrase">Wrong database passphrase</string>
+  <string name="error_reading_passphrase">Error reading database passphrase</string>
   <string name="encrypted_database">Encrypted database</string>
   <string name="database_error">Database error</string>
   <string name="keychain_error">Keychain error</string>
@@ -1492,7 +1493,9 @@
   <string name="restore_database_alert_desc">Please enter the previous password after restoring database backup. This action can not be undone.</string>
   <string name="restore_database_alert_confirm">Restore</string>
   <string name="database_restore_error">Restore database error</string>
-  <string name="restore_passphrase_not_found_desc">Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please, contact developers.</string>
+  <string name="restore_passphrase_not_found_desc">Passphrase not found in Keystore, please enter it manually. This may have happened if you restored the app\'s data using a backup tool. If it\'s not the case, please contact developers.</string>
+  <string name="restore_passphrase_can_not_be_read_desc">Passphrase in Keystore can\'t be read. This may have happened after system update incompatible with the app. If it\'s not the case, please contact developers.</string>
+  <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Passphrase in Keystore can\'t be read, please enter it manually. This may have happened after system update incompatible with the app. If it\'s not the case, please contact developers.</string>
   <string name="database_upgrade">Database upgrade</string>
   <string name="database_downgrade">Database downgrade</string>
   <string name="incompatible_database_version">Incompatible database version</string>
