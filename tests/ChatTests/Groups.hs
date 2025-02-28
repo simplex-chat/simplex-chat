@@ -27,7 +27,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -87,7 +87,7 @@ chatGroupTests = do
     xit'' "shared batch body is reused" testSharedBatchBody
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
-  fdescribe "group links" $ do
+  describe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "invitees were previously connected as contacts" testGroupLinkInviteesWereConnected
     it "all members were previously connected as contacts" testGroupLinkAllMembersWereConnected
@@ -98,7 +98,10 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-    it "reject member joining via group link - blocked name" testGroupLinkRejectBlockedName
+  describe "group links - join rejection" $ do
+    it "reject member joining via group link - blocked name" testGLinkRejectBlockedName
+  fdescribe "group links - manual acceptance" $ do
+    it "manually accept member joining via group link" testGLinkManualAcceptMember
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -184,7 +187,7 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
-  fdescribe "group direct messages" $ do
+  describe "group direct messages" $ do
     it "should send group direct messages" testGroupDirectMessages
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
@@ -2874,8 +2877,8 @@ testGroupLinkExistingContactMerged =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
-testGroupLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
-testGroupLinkRejectBlockedName =
+testGLinkRejectBlockedName :: HasCallStack => TestParams -> IO ()
+testGLinkRejectBlockedName =
   testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
@@ -2902,6 +2905,67 @@ testGroupLinkRejectBlockedName =
       bob <## "use #team <message> to send messages"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
+
+testGLinkManualAcceptMember :: HasCallStack => TestParams -> IO ()
+testGLinkManualAcceptMember =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath connected and pending approval, use /_accept member #1 3 <role> to accept member",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group, pending approval"
+        ]
+
+      -- pending approval member doesn't see messages sent in group
+      alice #> "#team hi group"
+      bob <# "#team alice> hi group"
+
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+
+      -- pending approval member and host can send messages to each other
+      alice ##> "/_send #1 @3 text send me proofs"
+      alice <# "#team send me proofs"
+      cath <# "#team alice> send me proofs"
+
+      cath ##> "/_send #1 @1 text proofs"
+      cath <# "#team proofs"
+      alice <# "#team cath> proofs"
+
+      -- accept member
+      alice ##> "/_accept member #1 3 member"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hi group [>>]",
+                   StartsWith "duplicate group message", -- TODO [knocking] <- bug - remove
+                   WithTime "#team bob> hey [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      alice #> "#team welcome cath"
+      [bob, cath] *<# "#team alice> welcome cath"
+
+      bob #> "#team hi cath"
+      [alice, cath] *<# "#team bob> hi cath"
+
+      cath #> "#team hi group"
+      [alice, bob] *<# "#team cath> hi group"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAManual, GRObserver))}}
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =

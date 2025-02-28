@@ -1238,10 +1238,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     --     where
     --       noImage = maybe True (\(ImageData i) -> i == "") image
 
+    -- TODO [knocking] review
     memberCanSend :: GroupMember -> CM () -> CM ()
-    memberCanSend GroupMember {memberRole} a
-      | memberRole <= GRObserver = messageError "member is not allowed to send messages"
-      | otherwise = a
+    memberCanSend GroupMember {memberRole, memberStatus} a
+      | memberRole > GRObserver || memberStatus == GSMemPendingApproval = a
+      | otherwise = messageError "member is not allowed to send messages"
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -2071,12 +2072,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
     xGrpLinkAcpt :: GroupInfo -> GroupMember -> GroupMemberRole -> CM ()
-    xGrpLinkAcpt GroupInfo {membership} m role = do
-      withStore' $ \db -> do
-        void $ updateGroupMemberAccepted db user membership role
+    xGrpLinkAcpt gInfo@GroupInfo {membership} m role = do
+      membership' <- withStore' $ \db -> do
         updateGroupMemberStatus db userId m GSMemConnected
+        updateGroupMemberAccepted db user membership role
       let m' = m {memberStatus = GSMemConnected}
-          connectedIncognito = memberIncognito membership
+      toView $ CRUserJoinedGroup user gInfo {membership = membership'} m'
+      let connectedIncognito = memberIncognito membership
       probeMatchingMemberContact m' connectedIncognito
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember

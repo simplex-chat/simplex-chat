@@ -2033,7 +2033,7 @@ processChatCommand' vr = \case
         let msg = XGrpLinkAcpt role
         void $ sendDirectMemberMessage mConn msg groupId
         m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role
-        introduceToGroup vr user gInfo m
+        introduceToGroup vr user gInfo m'
         pure $ CRJoinedGroupMember user gInfo m'
       _ -> throwChatError CEGroupMemberNotActive
   APIMemberRole groupId memberId memRole -> withUser $ \user -> do
@@ -3089,7 +3089,11 @@ processChatCommand' vr = \case
       sendGroupContentMessages_ user gInfo ms numFileInvs live itemTTL cmrs
     sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
     sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} ms numFileInvs live itemTTL cmrs = do
-      assertUserGroupRole gInfo GRAuthor
+      -- TODO [knocking] pass GroupSndScope?
+      let allowedRole = case ms of
+            [m] | memberCategory m == GCHostMember -> GRObserver
+            _ -> GRAuthor
+      assertUserGroupRole gInfo allowedRole
       assertGroupContentAllowed
       processComposedMessages
       where
