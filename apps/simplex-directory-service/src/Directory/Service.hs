@@ -124,8 +124,8 @@ directoryService st opts@DirectoryOpts {testing} user cc = do
     (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     directoryServiceEvent st opts env user cc resp
 
-acceptMemberHook :: GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason GroupMemberRole)
-acceptMemberHook _ GroupLinkInfo {memberRole} _ = pure $ Right memberRole
+acceptMemberHook :: GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
+acceptMemberHook _ GroupLinkInfo {acceptance, memberRole} _ = pure $ Right (acceptance, memberRole)
 
 -- directoryChatConfig :: DirectoryOpts -> IO ChatConfig
 -- directoryChatConfig DirectoryOpts {blockedWordsFile, nameSpellingFile, blockedExtensionRules, profileNameLimit, acceptAsObserver} = do

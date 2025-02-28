@@ -1322,11 +1322,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user cReq incognitoProfile reqPQSup
                         toView $ CRAcceptingContactRequest user ct
-                      Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+                      Just gli@GroupLinkInfo {groupId, acceptance = gAcceptance, memberRole = gLinkMemRole} -> do
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                         acceptMember_ <- asks $ acceptMember . chatHooks . config
-                        maybe (pure $ Right gLinkMemRole) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
-                          Right useRole
+                        maybe (pure $ Right (gAcceptance, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
+                          Right (acceptance, useRole)
                             | v < groupFastLinkJoinVersion ->
                                 messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                             | otherwise -> do
