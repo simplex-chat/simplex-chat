@@ -51,6 +51,7 @@ instance ToJSON GroupMemberRole where
 
 data GroupAcceptance = GAAuto | GAManual deriving (Eq, Show)
 
+-- TODO [knocking] encoding doesn't match field type
 instance FromField GroupAcceptance where fromField = blobFieldDecoder strDecode
 
 instance ToField GroupAcceptance where toField = toField . strEncode

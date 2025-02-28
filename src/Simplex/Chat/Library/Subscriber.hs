@@ -594,13 +594,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 let (UserContactLink {autoAccept}, gli_) = ucl
                 when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
-                -- -- TODO [knocking] legacy branch - do nothing?
-                -- forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
-                --   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                --   subMode <- chatReadVar subscriptionMode
-                --   groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
-                --   gVar <- asks random
-                --   withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
+                -- TODO REMOVE LEGACY vvv
+                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
+                  groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+                  subMode <- chatReadVar subscriptionMode
+                  groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
+                  gVar <- asks random
+                  withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
+            -- TODO REMOVE LEGACY ^^^
             Just (gInfo, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m $ Just ct
@@ -704,6 +705,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       liftIO $ setConnConnReqInv db user connId cReq
                       getHostConnId db user groupId
                     sendXGrpMemInv hostConnId Nothing XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
+              -- TODO REMOVE LEGACY vvv
               -- [async agent commands] group link auto-accept continuation on receiving INV
               CFCreateConnGrpInv -> do
                 ct <- withStore $ \db -> getContactViaMember db vr user m
@@ -729,6 +731,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     (_msg, _) <- sendDirectContactMessage user ct $ XGrpInv groupInv
                     -- we could link chat item with sent group invitation message (_msg)
                     createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+              -- TODO REMOVE LEGACY ^^^
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _pqSupport _ connInfo -> do
@@ -766,7 +769,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
           -- sent when connecting via group link
           XInfo _ ->
-            -- TODO [group rejection] Keep rejected member record and connection for ability to start dialogue.
+            -- TODO Keep rejected member to allow them to appeal against rejection.
             when (memberStatus m == GSMemRejected) $ do
               deleteMemberConnection' user m True
               withStore' $ \db -> deleteGroupMember db user m
@@ -774,17 +777,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
       CON _pqEnc -> unless (memberStatus m == GSMemRejected) $ do
-        withStore' $ \db -> do
-          updateGroupMemberStatus db userId m GSMemConnected
-          unless (memberActive membership) $
-            updateGroupMemberStatus db userId membership GSMemConnected
-        -- possible improvement: check for each pending message, requires keeping track of connection state
-        unless (connDisabled conn) $ sendPendingGroupMessages user m conn
+        status' <- case memberStatus m of
+          GSMemPendingApproval -> pure GSMemPendingApproval
+          _ -> do
+            withStore' $ \db -> do
+              updateGroupMemberStatus db userId m GSMemConnected
+              unless (memberActive membership) $
+                updateGroupMemberStatus db userId membership GSMemConnected
+            -- possible improvement: check for each pending message, requires keeping track of connection state
+            unless (connDisabled conn) $ sendPendingGroupMessages user m conn
+            pure GSMemConnected
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ chatHasNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
-            -- TODO [knocking] here it will communicate whether user is approved as member as status of membership
-            toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
+            toView $ CRUserJoinedGroup user gInfo {membership = membership {memberStatus = status'}} m {memberStatus = status'}
             let cd = CDGroupRcv gInfo m
             createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = PQEncOff}) Nothing
             createGroupFeatureItems user cd CIRcvGroupFeature gInfo
@@ -795,16 +801,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               expectHistory = groupFeatureAllowed SGFHistory gInfo && m `supportsVersion` groupHistoryIncludeWelcomeVersion
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
-            -- TODO [knocking] here it will communicate whether member needs to be approved as member status
-            toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
+            toView $ CRJoinedGroupMember user gInfo m {memberStatus = status'}
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
-            members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-            void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
-            sendIntroductions members
-            when (groupFeatureAllowed SGFHistory gInfo) sendHistory
             when (connChatVersion < batchSend2Version) sendGroupAutoReply
+            unless (status' == GSMemPendingApproval) introduceToGroup
             where
+              introduceToGroup = do
+                members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+                void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
+                sendIntroductions members
+                when (groupFeatureAllowed SGFHistory gInfo) sendHistory
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                     profileToSend = profileToSendOnAccept user profileMode True
@@ -1331,7 +1338,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                             | otherwise -> do
                                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                                mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
+                                mem <- acceptGroupJoinRequestAsync user gInfo cReq acceptance useRole profileMode
                                 createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                                 toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
                           Left rjctReason
@@ -1341,19 +1348,19 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
                                 toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CRReceivedContactRequest user cReq
-          -- TODO [knocking] move logic to bot
-          -- where
-          --   rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
-          --     | T.length displayName > profileNameLimit = Just GRRLongName
-          --     | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
-          --     | otherwise = Nothing
-          --   userMemberRole linkRole = \case
-          --     Just AOAll -> GRObserver
-          --     Just AONameOnly | noImage -> GRObserver
-          --     Just AOIncognito | noImage && isRandomName displayName -> GRObserver
-          --     _ -> linkRole
-          --     where
-          --       noImage = maybe True (\(ImageData i) -> i == "") image
+    -- TODO [knocking] move logic to bot
+    -- where
+    --   rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
+    --     | T.length displayName > profileNameLimit = Just GRRLongName
+    --     | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
+    --     | otherwise = Nothing
+    --   userMemberRole linkRole = \case
+    --     Just AOAll -> GRObserver
+    --     Just AONameOnly | noImage -> GRObserver
+    --     Just AOIncognito | noImage && isRandomName displayName -> GRObserver
+    --     _ -> linkRole
+    --     where
+    --       noImage = maybe True (\(ImageData i) -> i == "") image
 
     memberCanSend :: GroupMember -> CM () -> CM ()
     memberCanSend GroupMember {memberRole} a
@@ -2176,15 +2183,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xInfoMember gInfo m p' brokerTs = void $ processMemberProfileUpdate gInfo m p' True (Just brokerTs)
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> CM ()
-    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
+    xGrpLinkMem gInfo@GroupInfo {membership, businessChat} m@GroupMember {groupMemberId, memberCategory, memberStatus} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if (viaGroupLink || isJust businessChat) && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
           m' <- processMemberProfileUpdate gInfo m p' False Nothing
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
-          let connectedIncognito = memberIncognito membership
-          probeMatchingMemberContact m' connectedIncognito
+          unless (memberStatus == GSMemPendingApproval) $ do
+            let connectedIncognito = memberIncognito membership
+            probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
+
+    -- TODO [knocking]
+    -- xGrpLinkAcpt
+    -- set statuses to GSMemConnected
+    -- probeMatchingMemberContact
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems itemTs_

@@ -1019,6 +1019,11 @@ instance ToJSON GroupMemberStatus where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+acceptanceToStatus :: GroupAcceptance -> GroupMemberStatus
+acceptanceToStatus = \case
+  GAAuto -> GSMemAccepted
+  GAManual -> GSMemPendingApproval
+
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
   GSMemRejected -> False
@@ -1027,7 +1032,7 @@ memberActive m = case memberStatus m of
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
-  GSMemPendingApproval -> True -- TODO [knocking] False?
+  GSMemPendingApproval -> True
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -1048,7 +1053,7 @@ memberCurrent' = \case
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
-  GSMemPendingApproval -> False -- TODO [knocking] True?
+  GSMemPendingApproval -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
   GSMemAccepted -> True

@@ -1080,8 +1080,12 @@ viewUserJoinedGroup g =
     Nothing -> [ttyGroup' g <> ": you joined the group"]
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> [StyledString]
-viewJoinedGroupMember g m =
-  [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+viewJoinedGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, memberStatus} = case memberStatus of
+  GSMemPendingApproval ->
+    [ (ttyGroup' g <> ": " <> ttyMember m <> " connected and pending approval, ")
+      <> ("use " <> highlight ("/_accept member #" <> show groupId <> " " <> show groupMemberId <> " <role>") <> " to accept member")
+    ]
+  _ -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =

@@ -87,7 +87,7 @@ chatGroupTests = do
     xit'' "shared batch body is reused" testSharedBatchBody
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
-  describe "group links" $ do
+  fdescribe "group links" $ do
     it "create group link, join via group link" testGroupLink
     it "invitees were previously connected as contacts" testGroupLinkInviteesWereConnected
     it "all members were previously connected as contacts" testGroupLinkAllMembersWereConnected

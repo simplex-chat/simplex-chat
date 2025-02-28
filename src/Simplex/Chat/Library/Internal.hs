@@ -820,17 +820,19 @@ acceptContactRequestAsync user cReq@UserContactRequest {agentInvitationId = Agen
     setCommandConnId db user cmdId connId
     pure ct
 
-acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
+acceptGroupJoinRequestAsync :: User -> GroupInfo -> UserContactRequest -> GroupAcceptance -> GroupMemberRole -> Maybe IncognitoProfile -> CM GroupMember
 acceptGroupJoinRequestAsync
   user
   gInfo@GroupInfo {groupProfile, membership, businessChat}
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange}
+  gAcceptance
   gLinkMemRole
   incognitoProfile = do
     gVar <- asks random
+    let initialStatus = acceptanceToStatus gAcceptance
     (groupMemberId, memberId) <- withStore $ \db -> do
       liftIO $ deleteContactRequestRec db user ucr
-      createJoiningMember db gVar user gInfo ucr gLinkMemRole GSMemAccepted
+      createJoiningMember db gVar user gInfo ucr gLinkMemRole initialStatus
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -841,7 +843,7 @@ acceptGroupJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId gLinkMemRole,
                 groupProfile,
-                acceptance = Nothing, -- TODO [knocking]
+                acceptance = Just gAcceptance,
                 business = businessChat,
                 groupSize = Just currentMemCount
               }
@@ -901,7 +903,7 @@ acceptBusinessJoinRequestAsync
                 fromMemberName = displayName,
                 invitedMember = MemberIdRole memberId GRMember,
                 groupProfile = businessGroupProfile userProfile groupPreferences,
-                acceptance = Nothing, -- TODO [knocking]
+                acceptance = Just GAAuto,
                 -- This refers to the "title member" that defines the group name and profile.
                 -- This coincides with fromMember to be current user when accepting the connecting user,
                 -- but it will be different when inviting somebody else.
