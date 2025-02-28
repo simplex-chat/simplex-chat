@@ -2319,9 +2319,9 @@ updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
       unless (null mentions) $ deleteMentions
       if null mentions'
         then pure ci
-        -- This is a fallback for the error that should not happen in practice.
+        else -- This is a fallback for the error that should not happen in practice.
         -- In theory, it may happen in item mentions in database are different from item record.
-        else createMentions `E.catch` \e -> if constraintError e then deleteMentions >> createMentions else E.throwIO e
+          createMentions `E.catch` \e -> if constraintError e then deleteMentions >> createMentions else E.throwIO e
   where
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
     createMentions = createGroupCIMentions db g ci mentions'
@@ -3138,8 +3138,9 @@ getGroupSndStatusCounts db itemId =
     |]
     (Only itemId)
 
+-- TODO [knocking] check idx_chat_items_groups_history in query plans
 getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
-getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
+getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} GroupMember {groupMemberId} count = do
   ciIds <- getLastItemIds_
   reverse <$> mapM (runExceptT . getGroupCIWithReactions db user g) ciIds
   where
@@ -3148,6 +3149,7 @@ getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
       map fromOnly
         <$> DB.query
           db
+          -- `i.group_member_id != ?` check is to exclude messages received from pending approval member
           [sql|
             SELECT i.chat_item_id
             FROM chat_items i
@@ -3156,7 +3158,8 @@ getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} m count = do
               AND i.user_id = ? AND i.group_id = ?
               AND i.include_in_history = 1
               AND i.item_deleted = 0
+              AND (i.group_member_id != ? OR i.group_member_id IS NULL)
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
-          (groupMemberId' m, userId, groupId, count)
+          (groupMemberId, userId, groupId, groupMemberId, count)

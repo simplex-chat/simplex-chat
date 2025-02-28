@@ -100,7 +100,7 @@ chatGroupTests = do
     it "existing contact merged" testGroupLinkExistingContactMerged
   describe "group links - join rejection" $ do
     it "reject member joining via group link - blocked name" testGLinkRejectBlockedName
-  fdescribe "group links - manual acceptance" $ do
+  describe "group links - manual acceptance" $ do
     it "manually accept member joining via group link" testGLinkManualAcceptMember
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
@@ -2947,7 +2947,6 @@ testGLinkManualAcceptMember =
           cath
             <### [ "#team: you joined the group",
                    WithTime "#team alice> hi group [>>]",
-                   StartsWith "duplicate group message", -- TODO [knocking] <- bug - remove
                    WithTime "#team bob> hey [>>]",
                    "#team: member bob (Bob) is connected"
                  ],
