@@ -29,6 +29,7 @@ struct ChatView: View {
     @State private var composeState = ComposeState()
     @State private var selectedRange = NSRange()
     @State private var keyboardVisible = false
+    @State private var keyboardHiddenDate = Date.now
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
@@ -98,6 +99,7 @@ struct ChatView: View {
                         chat: chat,
                         composeState: $composeState,
                         keyboardVisible: $keyboardVisible,
+                        keyboardHiddenDate: $keyboardHiddenDate,
                         selectedRange: $selectedRange
                     )
                     .disabled(!cInfo.sendMsgEnabled)
@@ -547,7 +549,7 @@ struct ChatView: View {
                     revealedItems: $revealedItems,
                     selectedChatItems: $selectedChatItems,
                     forwardedChatItems: $forwardedChatItems,
-                    searchIsNotBlank: searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    searchText: $searchText,
                     closeKeyboardAndRun: closeKeyboardAndRun
                 )
                 // crashes on Cell size calculation without this line
@@ -910,7 +912,7 @@ struct ChatView: View {
 
     private func closeKeyboardAndRun(_ action: @escaping () -> Void) {
         var delay: TimeInterval = 0
-        if keyboardVisible || showSearch {
+        if keyboardVisible || keyboardHiddenDate.timeIntervalSinceNow >= -1 || showSearch {
             delay = 0.5
             closeSearch()
             hideKeyboard()
@@ -1177,7 +1179,7 @@ struct ChatView: View {
         @Binding var selectedChatItems: Set<Int64>?
         @Binding var forwardedChatItems: [ChatItem]
 
-        var searchIsNotBlank: Bool
+        @Binding var searchText: String
         var closeKeyboardAndRun: (@escaping () -> Void) -> Void
 
         @State private var allowMenu: Bool = true
@@ -1299,7 +1301,11 @@ struct ChatView: View {
             .actionSheet(item: $actionSheet) { $0.actionSheet }
             // skip updating struct on touch if no need to show GoTo button
             .if(touchInProgress || searchIsNotBlank || (chatItem.meta.itemForwarded != nil && chatItem.meta.itemForwarded != .unknown)) {
-                $0.onLongPressGesture(minimumDuration: .infinity, perform: {}, onPressingChanged: { pressing in
+                // long press listener steals taps from top-level listener, so repeating it's logic here as well
+                $0.onTapGesture {
+                    hideKeyboard()
+                }
+                .onLongPressGesture(minimumDuration: .infinity, perform: {}, onPressingChanged: { pressing in
                     touchInProgress = pressing
                 })
             }
@@ -1336,6 +1342,11 @@ struct ChatView: View {
             }
         }
 
+        private var searchIsNotBlank: Bool {
+            get {
+                searchText.count > 0 && !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
+        }
 
         @available(iOS 16.0, *)
         struct MemberLayout: Layout {
@@ -2193,8 +2204,8 @@ struct ChatView: View {
             } label: {
                 Image(systemName: image)
                     .resizable()
-                    .frame(width: 15, height: 15)
-                    .padding([alignStart ? .trailing : .leading], 11)
+                    .frame(width: 13, height: 13)
+                    .padding([alignStart ? .trailing : .leading], 10)
                     .tint(theme.colors.secondary.opacity(touchInProgress ? 1.0 : 0.4))
             }
         }
