@@ -998,11 +998,11 @@ data GroupMemberStatus
   | GSMemGroupDeleted -- user member of the deleted group
   | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   | GSMemInvited -- member is sent to or received invitation to join the group
+  | GSMemPendingApproval -- member is connected to host but pending host approval before connecting to other members ("knocking")
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
   | GSMemAccepted -- member accepted invitation (only User and Invitee)
   | GSMemAnnounced -- host announced (x.grp.mem.new) a member (Invitee and PostMember) to the group - at this point this member can send messages and invite other members (if they have sufficient permissions)
-  | GSMemPendingApproval -- member is connected to host but pending host approval before connecting to other members ("knocking")
   | GSMemConnected -- member created the group connection with the inviting member
   | GSMemComplete -- host confirmed (x.grp.mem.all) that a member (User, Invitee and PostMember) created group connections with all previous members
   | GSMemCreator -- user member that created the group (only GCUserMember)
@@ -1027,11 +1027,11 @@ memberActive m = case memberStatus m of
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False -- TODO [knocking] True?
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
   GSMemAnnounced -> False
-  GSMemPendingApproval -> True -- TODO [knocking] False?
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
@@ -1048,11 +1048,11 @@ memberCurrent' = \case
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False -- TODO [knocking] True?
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
   GSMemAccepted -> True
   GSMemAnnounced -> True
-  GSMemPendingApproval -> True -- TODO [knocking] False
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
@@ -1065,11 +1065,11 @@ memberRemoved m = case memberStatus m of
   GSMemGroupDeleted -> True
   GSMemUnknown -> False
   GSMemInvited -> False
+  GSMemPendingApproval -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
   GSMemAnnounced -> False
-  GSMemPendingApproval -> False
   GSMemConnected -> False
   GSMemComplete -> False
   GSMemCreator -> False
@@ -1082,11 +1082,11 @@ instance TextEncoding GroupMemberStatus where
     "deleted" -> Just GSMemGroupDeleted
     "unknown" -> Just GSMemUnknown
     "invited" -> Just GSMemInvited
+    "pending_approval" -> Just GSMemPendingApproval
     "introduced" -> Just GSMemIntroduced
     "intro-inv" -> Just GSMemIntroInvited
     "accepted" -> Just GSMemAccepted
     "announced" -> Just GSMemAnnounced
-    "pending_approval" -> Just GSMemPendingApproval
     "connected" -> Just GSMemConnected
     "complete" -> Just GSMemComplete
     "creator" -> Just GSMemCreator
@@ -1098,11 +1098,11 @@ instance TextEncoding GroupMemberStatus where
     GSMemGroupDeleted -> "deleted"
     GSMemUnknown -> "unknown"
     GSMemInvited -> "invited"
+    GSMemPendingApproval -> "pending_approval"
     GSMemIntroduced -> "introduced"
     GSMemIntroInvited -> "intro-inv"
     GSMemAccepted -> "accepted"
     GSMemAnnounced -> "announced"
-    GSMemPendingApproval -> "pending_approval"
     GSMemConnected -> "connected"
     GSMemComplete -> "complete"
     GSMemCreator -> "creator"
