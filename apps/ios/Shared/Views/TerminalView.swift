@@ -20,6 +20,7 @@ struct TerminalView: View {
     @State var composeState: ComposeState = ComposeState()
     @State var selectedRange = NSRange()
     @State private var keyboardVisible = false
+    @State private var keyboardHiddenDate = Date.now
     @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false
@@ -101,7 +102,8 @@ struct TerminalView: View {
                     sendMessage: { _ in consoleSendMessage() },
                     showVoiceMessageButton: false,
                     onMediaAdded: { _ in },
-                    keyboardVisible: $keyboardVisible
+                    keyboardVisible: $keyboardVisible,
+                    keyboardHiddenDate: $keyboardHiddenDate
                 )
                 .padding(.horizontal, 12)
             }

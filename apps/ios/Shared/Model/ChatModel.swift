@@ -97,6 +97,22 @@ class ItemsModel: ObservableObject {
             }
         }
     }
+
+    func loadOpenChatNoWait(_ chatId: ChatId, _ openAroundItemId: ChatItem.ID? = nil) {
+        navigationTimeoutTask?.cancel()
+        loadChatTask?.cancel()
+        loadChatTask = Task {
+            //            try? await Task.sleep(nanoseconds: 1000_000000)
+            await loadChat(chatId: chatId, openAroundItemId: openAroundItemId, clearItems: openAroundItemId == nil)
+            if !Task.isCancelled {
+                await MainActor.run {
+                    if openAroundItemId == nil {
+                        ChatModel.shared.chatId = chatId
+                    }
+                }
+            }
+        }
+    }
 }
 
 class ChatTagsModel: ObservableObject {
@@ -259,6 +275,7 @@ final class ChatModel: ObservableObject {
     @Published var deletedChats: Set<String> = []
     // current chat
     @Published var chatId: String?
+    @Published var openAroundItemId: ChatItem.ID? = nil
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
