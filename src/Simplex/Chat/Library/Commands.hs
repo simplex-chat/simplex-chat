@@ -3091,7 +3091,7 @@ processChatCommand' vr = \case
     sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} ms numFileInvs live itemTTL cmrs = do
       -- TODO [knocking] pass GroupSndScope?
       let allowedRole = case ms of
-            [m] | memberCategory m == GCHostMember -> GRObserver
+            [m] | memberCategory m == GCHostMember && memberStatus membership == GSMemPendingApproval -> GRObserver
             _ -> GRAuthor
       assertUserGroupRole gInfo allowedRole
       assertGroupContentAllowed
