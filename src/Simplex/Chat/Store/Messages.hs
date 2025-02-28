@@ -3138,7 +3138,8 @@ getGroupSndStatusCounts db itemId =
     |]
     (Only itemId)
 
--- TODO [knocking] check idx_chat_items_groups_history in query plans
+-- TODO [knocking] Better filter than `i.group_member_id != ? ... OR ... i.group_member_id IS NULL`?
+-- TODO            Plan would be better if we could base it on single check.
 getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> GroupMember -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
 getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} GroupMember {groupMemberId} count = do
   ciIds <- getLastItemIds_
@@ -3154,12 +3155,20 @@ getGroupHistoryItems db user@User {userId} g@GroupInfo {groupId} GroupMember {gr
             SELECT i.chat_item_id
             FROM chat_items i
             LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
-            WHERE s.group_snd_item_status_id IS NULL
-              AND i.user_id = ? AND i.group_id = ?
-              AND i.include_in_history = 1
-              AND i.item_deleted = 0
-              AND (i.group_member_id != ? OR i.group_member_id IS NULL)
+            WHERE
+              ( s.group_snd_item_status_id IS NULL
+                AND i.user_id = ? AND i.group_id = ?
+                AND i.include_in_history = 1
+                AND i.item_deleted = 0
+                AND i.group_member_id != ?
+              ) OR
+              ( s.group_snd_item_status_id IS NULL
+                AND i.user_id = ? AND i.group_id = ?
+                AND i.include_in_history = 1
+                AND i.item_deleted = 0
+                AND i.group_member_id IS NULL
+              )
             ORDER BY i.item_ts DESC, i.chat_item_id DESC
             LIMIT ?
           |]
-          (groupMemberId, userId, groupId, groupMemberId, count)
+          (groupMemberId, userId, groupId, groupMemberId, userId, groupId, count)
