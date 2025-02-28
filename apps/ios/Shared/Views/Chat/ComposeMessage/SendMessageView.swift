@@ -32,6 +32,7 @@ struct SendMessageView: View {
     @State private var holdingVMR = false
     @Namespace var namespace
     @Binding var keyboardVisible: Bool
+    @Binding var keyboardHiddenDate: Date
     var sendButtonColor = Color.accentColor
     @State private var teHeight: CGFloat = NativeTextEditor.minHeight
     @State private var teFont: Font = .body
@@ -61,6 +62,7 @@ struct SendMessageView: View {
                     disableEditing: $composeState.inProgress,
                     height: $teHeight,
                     focused: $keyboardVisible,
+                    lastUnfocusedDate: $keyboardHiddenDate,
                     placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
                     selectedRange: $selectedRange,
                     onImagesAdded: onMediaAdded
@@ -441,7 +443,8 @@ struct SendMessageView_Previews: PreviewProvider {
                     selectedRange: $selectedRange,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: Binding.constant(true)
+                    keyboardVisible: Binding.constant(true),
+                    keyboardHiddenDate: Binding.constant(Date.now)
                 )
             }
             VStack {
@@ -452,7 +455,8 @@ struct SendMessageView_Previews: PreviewProvider {
                     selectedRange: $selectedRangeEditing,
                     sendMessage: { _ in },
                     onMediaAdded: { _ in },
-                    keyboardVisible: Binding.constant(true)
+                    keyboardVisible: Binding.constant(true),
+                    keyboardHiddenDate: Binding.constant(Date.now)
                 )
             }
         }

@@ -2506,7 +2506,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     xGrpMemRestrict :: GroupInfo -> GroupMember -> MemberId -> MemberRestrictions -> RcvMessage -> UTCTime -> CM ()
     xGrpMemRestrict
-      gInfo@GroupInfo {groupId, membership = GroupMember {memberId = membershipMemId}}
+      gInfo@GroupInfo {membership = GroupMember {memberId = membershipMemId}}
       m@GroupMember {memberRole = senderRole}
       memId
       MemberRestrictions {restriction}
@@ -2517,10 +2517,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             messageError "x.grp.mem.restrict: admin blocks you"
         | otherwise =
             withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-              Right bm@GroupMember {groupMemberId = bmId, memberRole, memberProfile = bmp}
+              Right bm@GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp}
+                | blockedByAdmin == mrsBlocked restriction -> pure ()
                 | senderRole < GRModerator || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
                 | otherwise -> do
-                    bm' <- setMemberBlocked bmId
+                    bm' <- setMemberBlocked bm
                     toggleNtf user bm' (not blocked)
                     let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
                     ci <- saveRcvChatItemNoParse user (CDGroupRcv gInfo m) msg brokerTs ciContent
@@ -2528,14 +2529,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     toView CRMemberBlockedForAll {user, groupInfo = gInfo, byMember = m, member = bm, blocked}
               Left (SEGroupMemberNotFoundByMemberId _) -> do
                 bm <- createUnknownMember gInfo memId
-                bm' <- setMemberBlocked $ groupMemberId' bm
+                bm' <- setMemberBlocked bm
                 toView $ CRUnknownMemberBlocked user gInfo m bm'
               Left e -> throwError $ ChatErrorStore e
         where
-          setMemberBlocked bmId =
-            withStore $ \db -> do
-              liftIO $ updateGroupMemberBlocked db user groupId bmId restriction
-              getGroupMember db vr user groupId bmId
+          setMemberBlocked bm = withStore' $ \db -> updateGroupMemberBlocked db user gInfo restriction bm
           blocked = mrsBlocked restriction
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> CM ()

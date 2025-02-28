@@ -213,13 +213,17 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withBGApi {
-        val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
-        if (updatedMember != null) {
+        val updatedMembers = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, listOf(mem.groupMemberId))
+        if (updatedMembers != null) {
           withChats {
-            upsertGroupMember(rhId, groupInfo, updatedMember)
+            updatedMembers.forEach { updatedMember ->
+              upsertGroupMember(rhId, groupInfo, updatedMember)
+            }
           }
           withReportsChatsIfOpen {
-            upsertGroupMember(rhId, groupInfo, updatedMember)
+            updatedMembers.forEach { updatedMember ->
+              upsertGroupMember(rhId, groupInfo, updatedMember)
+            }
           }
         }
       }

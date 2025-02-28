@@ -65,6 +65,7 @@ object ChatModel {
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
   val reportsChatsContext = ChatsContext(MsgContentTag.Report)
   // declaration of chatsContext should be before any other variable that is taken from ChatsContext class and used in the model, otherwise, strange crash with NullPointerException for "this" parameter in random functions
@@ -3110,6 +3111,13 @@ sealed class CIForwardedFrom {
         is Contact -> chatName
         is Group -> chatName
       }
+
+  val chatTypeApiIdMsgId: Triple<ChatType, Long, Long?>?
+    get() = when (this) {
+      Unknown -> null
+      is Contact -> if (contactId != null) Triple(ChatType.Direct, contactId, chatItemId) else null
+      is Group -> if (groupId != null) Triple(ChatType.Group, groupId, chatItemId) else null
+    }
 
   fun text(chatType: ChatType): String =
     if (chatType == ChatType.Local) {

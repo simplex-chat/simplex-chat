@@ -3261,6 +3261,20 @@ public enum CIForwardedFrom: Decodable, Hashable {
         }
     }
 
+    public var chatTypeApiIdMsgId: (ChatType, Int64, ChatItem.ID?)? {
+        switch self {
+        case .unknown: nil
+        case let .contact(_, _, contactId, msgId):
+            if let contactId {
+                (ChatType.direct, contactId, msgId)
+            } else { nil }
+        case let .group(_, _, groupId, msgId):
+            if let groupId {
+                (ChatType.group, groupId, msgId)
+            } else { nil }
+        }
+    }
+
     public func text(_ chatType: ChatType) -> LocalizedStringKey {
         chatType == .local
         ? (chatName == "" ? "saved" : "saved from \(chatName)")

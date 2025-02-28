@@ -28,13 +28,15 @@ suspend fun apiLoadMessages(
   contentTag: MsgContentTag?,
   pagination: ChatPagination,
   search: String = "",
+  openAroundItemId: Long? = null,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
   val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
-  if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last)
+  /** When [openAroundItemId] is provided, chatId can be different too */
+  if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last && openAroundItemId == null)
     || !isActive) return@coroutineScope
-  processLoadedChat(chat, navInfo, contentTag, pagination, visibleItemIndexesNonReversed)
+  processLoadedChat(chat, navInfo, contentTag, pagination, openAroundItemId, visibleItemIndexesNonReversed)
 }
 
 suspend fun processLoadedChat(
@@ -42,6 +44,7 @@ suspend fun processLoadedChat(
   navInfo: NavigationInfo,
   contentTag: MsgContentTag?,
   pagination: ChatPagination,
+  openAroundItemId: Long?,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) {
   val chatState = chatModel.chatStateForContent(contentTag)
@@ -67,7 +70,7 @@ suspend fun processLoadedChat(
       withChats(contentTag) {
         chatItemStatuses.clear()
         chatItems.replaceAll(chat.chatItems)
-        chatModel.chatId.value = chat.chatInfo.id
+        chatModel.chatId.value = chat.id
         splits.value = newSplits
         if (chat.chatItems.isNotEmpty()) {
           unreadAfterItemId.value = chat.chatItems.last().id
@@ -119,10 +122,15 @@ suspend fun processLoadedChat(
       }
     }
     is ChatPagination.Around -> {
-      newItems.addAll(oldItems)
-      val newSplits = removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed)
+      val newSplits = if (openAroundItemId == null) {
+        newItems.addAll(oldItems)
+        removeDuplicatesAndUpperSplits(newItems, chat, splits, visibleItemIndexesNonReversed)
+      } else {
+        emptyList()
+      }
       // currently, items will always be added on top, which is index 0
       newItems.addAll(0, chat.chatItems)
+
       withChats(contentTag) {
         chatItems.replaceAll(newItems)
         splits.value = listOf(chat.chatItems.last().id) + newSplits
@@ -130,8 +138,15 @@ suspend fun processLoadedChat(
         totalAfter.value = navInfo.afterTotal
         unreadTotal.value = chat.chatStats.unreadCount
         unreadAfter.value = navInfo.afterUnread
-        // no need to set it, count will be wrong
-        // unreadAfterNewestLoaded.value = navInfo.afterUnread
+
+        if (openAroundItemId != null) {
+          unreadAfterNewestLoaded.value = navInfo.afterUnread
+          chatModel.openAroundItemId.value = openAroundItemId
+          chatModel.chatId.value = chat.id
+        } else {
+          // no need to set it, count will be wrong
+          // unreadAfterNewestLoaded.value = navInfo.afterUnread
+        }
       }
     }
     is ChatPagination.Last -> {

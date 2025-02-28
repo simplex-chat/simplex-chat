@@ -325,6 +325,7 @@ struct ComposeView: View {
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
+    @Binding var keyboardHiddenDate: Date
     @Binding var selectedRange: NSRange
 
     @State var linkUrl: URL? = nil
@@ -434,6 +435,7 @@ struct ComposeView: View {
                         timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
                         onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                         keyboardVisible: $keyboardVisible,
+                        keyboardHiddenDate: $keyboardHiddenDate,
                         sendButtonColor: chat.chatInfo.incognito
                             ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
                             : theme.colors.primary
@@ -1280,6 +1282,7 @@ struct ComposeView_Previews: PreviewProvider {
                 chat: chat,
                 composeState: $composeState,
                 keyboardVisible: Binding.constant(true),
+                keyboardHiddenDate: Binding.constant(Date.now),
                 selectedRange: $selectedRange
             )
             .environmentObject(ChatModel())
@@ -1287,6 +1290,7 @@ struct ComposeView_Previews: PreviewProvider {
                 chat: chat,
                 composeState: $composeState,
                 keyboardVisible: Binding.constant(true),
+                keyboardHiddenDate: Binding.constant(Date.now),
                 selectedRange: $selectedRange
             )
             .environmentObject(ChatModel())
