@@ -681,12 +681,14 @@ struct GroupChatInfoView: View {
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
-                        let updatedMember = try await apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
+                        let updatedMembers = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
                         await MainActor.run {
-                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                            updatedMembers.forEach { updatedMember in
+                                _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                            }
                         }
                     } catch let error {
-                        logger.error("apiRemoveMember error: \(responseError(error))")
+                        logger.error("apiRemoveMembers error: \(responseError(error))")
                         let a = getErrorAlert(error, "Error removing member")
                         alert = .error(title: a.title, error: a.message)
                     }
