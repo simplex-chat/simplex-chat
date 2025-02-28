@@ -30,11 +30,10 @@ internal class Cryptor: CryptorInterface {
       }
       return null
     }
-    val cipher: Cipher
-    val spec: GCMParameterSpec
+
     try {
-      cipher = Cipher.getInstance(TRANSFORMATION)
-      spec = GCMParameterSpec(128, iv)
+      val cipher: Cipher = Cipher.getInstance(TRANSFORMATION)
+      val spec = GCMParameterSpec(128, iv)
       cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
       return String(cipher.doFinal(data))
     } catch (e: Throwable) {
