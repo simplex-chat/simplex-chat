@@ -142,12 +142,16 @@ fun GroupMemberInfoView(
         }) {
           withBGApi {
             kotlin.runCatching {
-              val mem = chatModel.controller.apiMemberRole(rhId, groupInfo.groupId, member.groupMemberId, it)
+              val members = chatModel.controller.apiMembersRole(rhId, groupInfo.groupId, listOf(member.groupMemberId), it)
               withChats {
-                upsertGroupMember(rhId, groupInfo, mem)
+                members.forEach { member ->
+                  upsertGroupMember(rhId, groupInfo, member)
+                }
               }
               withReportsChatsIfOpen {
-                upsertGroupMember(rhId, groupInfo, mem)
+                members.forEach { member ->
+                  upsertGroupMember(rhId, groupInfo, member)
+                }
               }
             }.onFailure {
               newRole.value = prevValue
@@ -257,13 +261,17 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withBGApi {
-        val removedMember = chatModel.controller.apiRemoveMember(rhId, member.groupId, member.groupMemberId)
-        if (removedMember != null) {
+        val removedMembers = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId))
+        if (removedMembers != null) {
           withChats {
-            upsertGroupMember(rhId, groupInfo, removedMember)
+            removedMembers.forEach { removedMember ->
+              upsertGroupMember(rhId, groupInfo, removedMember)
+            }
           }
           withReportsChatsIfOpen {
-            upsertGroupMember(rhId, groupInfo, removedMember)
+            removedMembers.forEach { removedMember ->
+              upsertGroupMember(rhId, groupInfo, removedMember)
+            }
           }
         }
         close?.invoke()
@@ -804,12 +812,16 @@ fun unblockForAllAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
 
 fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocked: Boolean) {
   withBGApi {
-    val updatedMember = ChatController.apiBlockMemberForAll(rhId, gInfo.groupId, member.groupMemberId, blocked)
+    val updatedMembers = ChatController.apiBlockMembersForAll(rhId, gInfo.groupId, listOf(member.groupMemberId), blocked)
     withChats {
-      upsertGroupMember(rhId, gInfo, updatedMember)
+      updatedMembers.forEach { updatedMember ->
+        upsertGroupMember(rhId, gInfo, updatedMember)
+      }
     }
     withReportsChatsIfOpen {
-      upsertGroupMember(rhId, gInfo, updatedMember)
+      updatedMembers.forEach { updatedMember ->
+        upsertGroupMember(rhId, gInfo, updatedMember)
+      }
     }
   }
 }
