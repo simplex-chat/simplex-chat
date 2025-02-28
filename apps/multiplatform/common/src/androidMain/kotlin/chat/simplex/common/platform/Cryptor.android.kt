@@ -36,6 +36,7 @@ internal class Cryptor: CryptorInterface {
       cipher = Cipher.getInstance(TRANSFORMATION)
       spec = GCMParameterSpec(128, iv)
       cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+      return String(cipher.doFinal(data))
     } catch (e: Throwable) {
       Log.e(TAG, "cipher.init: ${e.stackTraceToString()}")
       val randomPassphrase = appPreferences.initialRandomDBPassphrase.get()
@@ -55,7 +56,6 @@ internal class Cryptor: CryptorInterface {
       }
       return null
     }
-    return runCatching { String(cipher.doFinal(data)) }.onFailure { Log.e(TAG, "doFinal: ${it.stackTraceToString()}") }.getOrNull()
   }
 
   override fun encryptText(text: String, alias: String): Pair<ByteArray, ByteArray> {
