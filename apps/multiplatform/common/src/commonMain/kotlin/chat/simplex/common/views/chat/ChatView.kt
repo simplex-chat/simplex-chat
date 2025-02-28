@@ -1187,11 +1187,12 @@ fun BoxScope.ChatItemsList(
   val reportsCount = reportsCount(chatInfo.id)
   val topPaddingToContent = topPaddingToContent(chatView = contentTag == null, contentTag == null && reportsCount > 0)
   val topPaddingToContentPx = rememberUpdatedState(with(LocalDensity.current) { topPaddingToContent.roundToPx() })
+  val numberOfBottomAppBars = numberOfBottomAppBars()
   /** determines height based on window info and static height of two AppBars. It's needed because in the first graphic frame height of
    * [composeViewHeight] is unknown, but we need to set scroll position for unread messages already so it will be correct before the first frame appears
    * */
   val maxHeightForList = rememberUpdatedState(
-    with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * 2).roundToPx() }
+    with(LocalDensity.current) { LocalWindowHeight().roundToPx() - topPaddingToContentPx.value - (AppBarHeight * fontSizeSqrtMultiplier * numberOfBottomAppBars).roundToPx() }
   )
   val resetListState = remember { mutableStateOf(false) }
   remember(chatModel.openAroundItemId.value) {
@@ -1907,6 +1908,17 @@ fun topPaddingToContent(chatView: Boolean, additionalTopBar: Boolean = false): D
     WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + reportsPadding
   } else {
     AppBarHeight * fontSizeSqrtMultiplier + WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + reportsPadding
+  }
+}
+
+@Composable
+private fun numberOfBottomAppBars(): Int {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val chatBottomBar = remember { appPrefs.chatBottomBar.state }
+  return if (oneHandUI.value && chatBottomBar.value) {
+    2
+  } else {
+    1
   }
 }
 
