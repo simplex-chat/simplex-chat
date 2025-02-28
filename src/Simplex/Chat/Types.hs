@@ -1027,7 +1027,7 @@ memberActive m = case memberStatus m of
   GSMemGroupDeleted -> False
   GSMemUnknown -> False
   GSMemInvited -> False
-  GSMemPendingApproval -> False -- TODO [knocking] True?
+  GSMemPendingApproval -> True -- TODO [knocking] False?
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
   GSMemAccepted -> False
@@ -1056,6 +1056,9 @@ memberCurrent' = \case
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
+
+canSendTo :: GroupMember -> Bool
+canSendTo m@GroupMember {memberStatus} = memberCurrent m || memberStatus == GSMemPendingApproval
 
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of

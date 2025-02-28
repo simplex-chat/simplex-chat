@@ -582,7 +582,8 @@ processChatCommand' vr = \case
           mc = MCReport reportText reportReason
           cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty}
       when (null ms') $ throwChatError $ CECommandError "no moderators support receiving reports"
-      sendGroupContentMessages_ user gInfo ms' False Nothing [composedMessageReq cm]
+      let numFileInvs = length $ filter memberCurrent ms'
+      sendGroupContentMessages_ user gInfo ms' numFileInvs False Nothing [composedMessageReq cm]
     where
       compatibleModerator GroupMember {activeConn, memberChatVRange} =
         maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= contentReportsVersion
@@ -3069,16 +3070,18 @@ processChatCommand' vr = \case
     sendGroupContentMessages :: User -> GroupInfo -> Maybe GroupMemberId -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
     sendGroupContentMessages user gInfo@GroupInfo {membership} directMemberId live itemTTL cmrs = do
       assertMultiSendable live cmrs
-      ms <- case directMemberId of
-        Nothing -> withFastStore' $ \db -> getGroupMembers db vr user gInfo
+      (ms, numFileInvs) <- case directMemberId of
+        Nothing -> do
+          ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
+          pure (ms, length $ filter memberCurrent ms)
         Just dmId -> do
           when (dmId == groupMemberId' membership) $ throwChatError $ CECommandError "cannot send to self"
           dm <- withFastStore $ \db -> getGroupMemberById db vr user dmId
           unless (memberStatus dm == GSMemPendingApproval) $ throwChatError $ CECommandError "cannot send directly to member not pending approval"
-          pure [dm]
-      sendGroupContentMessages_ user gInfo ms live itemTTL cmrs
-    sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
-    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} ms live itemTTL cmrs = do
+          pure ([dm], 1)
+      sendGroupContentMessages_ user gInfo ms numFileInvs live itemTTL cmrs
+    sendGroupContentMessages_ :: User -> GroupInfo -> [GroupMember] -> Int -> Bool -> Maybe Int -> NonEmpty ComposedMessageReq -> CM ChatResponse
+    sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} ms numFileInvs live itemTTL cmrs = do
       assertUserGroupRole gInfo GRAuthor
       assertGroupContentAllowed
       processComposedMessages
@@ -3096,7 +3099,7 @@ processChatCommand' vr = \case
                 Nothing
         processComposedMessages :: CM ChatResponse
         processComposedMessages = do
-          (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length $ filter memberCurrent ms)
+          (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers numFileInvs
           timed_ <- sndGroupCITimed live gInfo itemTTL
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, gsr) <- sendGroupMessages user gInfo ms chatMsgEvents
