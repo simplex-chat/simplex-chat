@@ -2023,6 +2023,7 @@ processChatCommand' vr = \case
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` (toView . CRChatError (Just user))
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
+  -- TODO [knocking] APIAcceptMember
   APIAcceptMember groupId gmId memRole -> withUser $ \user -> do
     -- Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     -- pure $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected} -- GSMemApproved?

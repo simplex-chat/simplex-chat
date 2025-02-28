@@ -594,7 +594,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 let (UserContactLink {autoAccept}, gli_) = ucl
                 when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
-                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do -- TODO
+                -- TODO [knocking] legacy branch - do nothing?
+                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                   subMode <- chatReadVar subscriptionMode
                   groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
@@ -1330,7 +1331,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                             | otherwise -> do
                                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                                    -- useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
                                 mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
                                 createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                                 toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
@@ -1338,21 +1338,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             | v < groupJoinRejectVersion ->
                                 messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
                             | otherwise -> do
+                                -- TODO [knocking] reject via agent api without creating reply queue; revert rejection changes:
+                                -- TODO            protocol (XGrpLinkReject), status (GSMemRejected), processing on CON, INFO
                                 mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
                                 toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CRReceivedContactRequest user cReq
-          where
-            -- rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
-            --   | T.length displayName > profileNameLimit = Just GRRLongName
-            --   | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
-            --   | otherwise = Nothing
-            -- userMemberRole linkRole = \case
-            --   Just AOAll -> GRObserver
-            --   Just AONameOnly | noImage -> GRObserver
-            --   Just AOIncognito | noImage && isRandomName displayName -> GRObserver
-            --   _ -> linkRole
-            --   where
-            --     noImage = maybe True (\(ImageData i) -> i == "") image
+          -- TODO [knocking] move logic to bot
+          -- where
+          --   rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
+          --     | T.length displayName > profileNameLimit = Just GRRLongName
+          --     | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
+          --     | otherwise = Nothing
+          --   userMemberRole linkRole = \case
+          --     Just AOAll -> GRObserver
+          --     Just AONameOnly | noImage -> GRObserver
+          --     Just AOIncognito | noImage && isRandomName displayName -> GRObserver
+          --     _ -> linkRole
+          --     where
+          --       noImage = maybe True (\(ImageData i) -> i == "") image
 
     memberCanSend :: GroupMember -> CM () -> CM ()
     memberCanSend GroupMember {memberRole} a

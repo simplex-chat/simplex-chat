@@ -1031,7 +1031,7 @@ memberActive m = case memberStatus m of
   GSMemIntroInvited -> False
   GSMemAccepted -> False
   GSMemAnnounced -> False
-  GSMemPendingApproval -> True -- TODO [knocking] ?
+  GSMemPendingApproval -> True -- TODO [knocking] False?
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
@@ -1052,7 +1052,7 @@ memberCurrent' = \case
   GSMemIntroInvited -> True
   GSMemAccepted -> True
   GSMemAnnounced -> True
-  GSMemPendingApproval -> True
+  GSMemPendingApproval -> True -- TODO [knocking] False
   GSMemConnected -> True
   GSMemComplete -> True
   GSMemCreator -> True
