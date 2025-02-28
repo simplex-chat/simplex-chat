@@ -78,6 +78,7 @@ module Simplex.Chat.Store.Groups
     createMemberConnectionAsync,
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
+    updateGroupMemberAccepted,
     createNewGroupMember,
     checkGroupMemberHasItems,
     deleteGroupMember,
@@ -1201,6 +1202,19 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
       WHERE user_id = ? AND group_member_id = ?
     |]
     (memStatus, currentTs, userId, groupMemberId)
+
+updateGroupMemberAccepted :: DB.Connection -> User -> GroupMember -> GroupMemberRole -> IO GroupMember
+updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} role = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_status = ?, member_role = ?, updated_at = ?
+      WHERE user_id = ? AND group_member_id = ?
+    |]
+    (GSMemConnected, role, currentTs, userId, groupMemberId)
+  pure m {memberStatus = GSMemConnected, memberRole = role, updatedAt = currentTs}
 
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember

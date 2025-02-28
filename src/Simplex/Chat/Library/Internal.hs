@@ -38,7 +38,7 @@ import Data.Functor (($>))
 import Data.Functor.Identity
 import Data.Int (Int64)
 import Data.List (find, mapAccumL, partition)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty (..), (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -78,7 +78,7 @@ import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (getFastNetworkConfig, ipAddressProtected, withLockMap)
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..))
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), ServerCfg (..))
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -929,6 +929,132 @@ profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> 
     getIncognitoProfile = \case
       NewIncognito p -> p
       ExistingIncognito lp -> fromLocalProfile lp
+
+introduceToGroup :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceToGroup _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
+introduceToGroup vr user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} = do
+  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+  void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
+  sendIntroductions members
+  when (groupFeatureAllowed SGFHistory gInfo) sendHistory
+  where
+    sendIntroductions members = do
+      intros <- withStore' $ \db -> createIntroductions db (maxVersion vr) members m
+      shuffledIntros <- liftIO $ shuffleIntros intros
+      if m `supportsVersion` batchSendVersion
+        then do
+          let events = map (memberIntro . reMember) shuffledIntros
+          forM_ (L.nonEmpty events) $ \events' ->
+            sendGroupMemberMessages user conn events' groupId
+        else forM_ shuffledIntros $ \intro ->
+          processIntro intro `catchChatError` (toView . CRChatError (Just user))
+    memberIntro :: GroupMember -> ChatMsgEvent 'Json
+    memberIntro reMember =
+      let mInfo = memberInfo reMember
+          mRestrictions = memberRestrictions reMember
+      in XGrpMemIntro mInfo mRestrictions
+    shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
+    shuffleIntros intros = do
+      let (admins, others) = partition isAdmin intros
+          (admPics, admNoPics) = partition hasPicture admins
+          (othPics, othNoPics) = partition hasPicture others
+      mconcat <$> mapM shuffle [admPics, admNoPics, othPics, othNoPics]
+      where
+        isAdmin GroupMemberIntro {reMember = GroupMember {memberRole}} = memberRole >= GRAdmin
+        hasPicture GroupMemberIntro {reMember = GroupMember {memberProfile = LocalProfile {image}}} = isJust image
+    processIntro intro@GroupMemberIntro {introId} = do
+      void $ sendDirectMemberMessage conn (memberIntro $ reMember intro) groupId
+      withStore' $ \db -> updateIntroStatus db introId GMIntroSent
+    sendHistory =
+      when (m `supportsVersion` batchSendVersion) $ do
+        (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
+        (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
+        let errors = map ChatErrorStore errs <> errs'
+        unless (null errors) $ toView $ CRChatErrors (Just user) errors
+        let events' = maybe (concat events) (\x -> concat events <> [x]) descrEvent_
+        forM_ (L.nonEmpty events') $ \events'' ->
+          sendGroupMemberMessages user conn events'' groupId
+    descrEvent_ :: Maybe (ChatMsgEvent 'Json)
+    descrEvent_
+      | m `supportsVersion` groupHistoryIncludeWelcomeVersion = do
+          let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
+          fmap (\descr -> XMsgNew $ MCSimple $ extMsgContent (MCText descr) Nothing) description
+      | otherwise = Nothing
+    itemForwardEvents :: CChatItem 'CTGroup -> CM [ChatMsgEvent 'Json]
+    itemForwardEvents cci = case cci of
+      (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file})
+        | not (blockedByAdmin sender) -> do
+            fInvDescr_ <- join <$> forM file getRcvFileInvDescr
+            processContentItem sender ci mc fInvDescr_
+      (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
+        fInvDescr_ <- join <$> forM file getSndFileInvDescr
+        processContentItem membership ci mc fInvDescr_
+      _ -> pure []
+      where
+        getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText))
+        getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
+          expired <- fileExpired
+          if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
+            then pure Nothing
+            else do
+              rfd <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+              pure $ invCompleteDescr ciFile rfd
+        getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe (FileInvitation, RcvFileDescrText))
+        getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
+          expired <- fileExpired
+          if fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled || expired
+            then pure Nothing
+            else do
+              -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
+              -- would be best if snd file had a single rcv description for all members saved in files table
+              rfd <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+              pure $ invCompleteDescr ciFile rfd
+        fileExpired :: CM Bool
+        fileExpired = do
+          ttl <- asks $ rcvFilesTTL . agentConfig . config
+          cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
+          pure $ chatItemTs cci < cutoffTs
+        invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText)
+        invCompleteDescr CIFile {fileName, fileSize} RcvFileDescr {fileDescrText, fileDescrComplete}
+          | fileDescrComplete =
+              let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+                  fInv = xftpFileInvitation fileName fileSize fInvDescr
+              in Just (fInv, fileDescrText)
+          | otherwise = Nothing
+        processContentItem :: GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> CM [ChatMsgEvent 'Json]
+        processContentItem sender ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
+          if isNothing fInvDescr_ && not (msgContentHasText mc)
+            then pure []
+            else do
+              let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
+                  quotedItemId_ = quoteItemId =<< quotedItem
+                  fInv_ = fst <$> fInvDescr_
+                  (mc', _, mentions') = updatedMentionNames mc formattedText mentions
+                  mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
+              (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
+              let senderVRange = memberChatVRange' sender
+                  xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
+              fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
+                (Just fileDescrText, Just msgId) -> do
+                  partSize <- asks $ xftpDescrPartSize . config
+                  let parts = splitFileDescr partSize fileDescrText
+                  pure . L.toList $ L.map (XMsgFileDescr msgId) parts
+                _ -> pure []
+              let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
+                  GroupMember {memberId} = sender
+                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+              pure msgForwardEvents
+
+splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
+splitFileDescr partSize rfdText = splitParts 1 rfdText
+  where
+    splitParts partNo remText =
+      let (part, rest) = T.splitAt partSize remText
+          complete = T.null rest
+          fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
+       in if complete
+            then fileDescr :| []
+            else fileDescr <| splitParts (partNo + 1) rest
 
 deleteGroupLink' :: User -> GroupInfo -> CM ()
 deleteGroupLink' user gInfo = do

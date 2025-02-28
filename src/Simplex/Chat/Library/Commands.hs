@@ -2024,11 +2024,18 @@ processChatCommand' vr = \case
           updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` (toView . CRChatError (Just user))
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
-  -- TODO [knocking] APIAcceptMember
-  APIAcceptMember groupId gmId memRole -> withUser $ \user -> do
-    -- Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
-    -- pure $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected} -- GSMemApproved?
-    ok user
+  APIAcceptMember groupId gmId role -> withUser $ \user -> do
+    (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
+    assertUserGroupRole gInfo GRAdmin
+    when (memberStatus m /= GSMemPendingApproval) $ throwChatError $ CECommandError "member is not pending approval"
+    case memberConn m of
+      Just mConn -> do
+        let msg = XGrpLinkAcpt role
+        void $ sendDirectMemberMessage mConn msg groupId
+        m' <- withFastStore' $ \db -> updateGroupMemberAccepted db user m role
+        introduceToGroup vr user gInfo m
+        pure $ CRJoinedGroupMember user gInfo m'
+      _ -> throwChatError CEGroupMemberNotActive
   APIMemberRole groupId memberId memRole -> withUser $ \user -> do
     Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     if memberId == groupMemberId' membership
