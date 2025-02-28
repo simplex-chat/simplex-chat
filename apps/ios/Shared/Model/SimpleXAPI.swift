@@ -338,7 +338,7 @@ func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
     await loadChat(chatId: chat.chatInfo.id, search: search, clearItems: clearItems)
 }
 
-func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) async {
+func loadChat(chatId: ChatId, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
     let m = ChatModel.shared
     let im = ItemsModel.shared
     m.chatItemStatuses = [:]
@@ -348,7 +348,7 @@ func loadChat(chatId: ChatId, search: String = "", clearItems: Bool = true) asyn
             ItemsModel.shared.chatItemsChangesListener.cleared()
         }
     }
-    await apiLoadMessages(chatId, search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage), im.chatState, search, { 0...0 })
+    await apiLoadMessages(chatId, openAroundItemId != nil ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)  : (search == "" ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)), im.chatState, search, openAroundItemId, { 0...0 })
 }
 
 func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -> ChatItemInfo {
