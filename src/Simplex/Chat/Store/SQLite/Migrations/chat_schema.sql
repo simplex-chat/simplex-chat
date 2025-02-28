@@ -316,7 +316,7 @@ CREATE TABLE user_contact_links(
   group_link_id BLOB,
   group_link_member_role TEXT NULL,
   business_address INTEGER DEFAULT 0,
-  group_link_auto_accept TEXT NULL,
+  group_link_auto_accept TEXT,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -983,14 +983,6 @@ CREATE INDEX idx_chat_items_groups_msg_content_tag_deleted ON chat_items(
   item_deleted,
   item_sent
 );
-CREATE INDEX idx_chat_items_groups_history ON chat_items(
-  user_id,
-  group_id,
-  include_in_history,
-  item_deleted,
-  item_ts,
-  chat_item_id
-);
 CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_snd_item_statuses(
   chat_item_id,
   group_member_id
@@ -1018,4 +1010,13 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_chat_items_groups_history ON chat_items(
+  user_id,
+  group_id,
+  include_in_history,
+  item_deleted,
+  group_member_id,
+  item_ts,
+  chat_item_id
 );
