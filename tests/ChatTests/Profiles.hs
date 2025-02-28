@@ -773,7 +773,7 @@ testBusinessUpdateProfiles = withTestOutput $ testChat4 businessProfile alicePro
     biz <# "#alisa alisa_1> hello again"
     -- customer can invite members too, if business allows
     biz ##> "/mr alisa alisa_1 admin"
-    biz <## "#alisa: you changed the role of alisa_1 from member to admin"
+    biz <## "#alisa: you changed the role of alisa_1 to admin"
     alice <## "#biz: biz_1 changed your role from member to admin"
     connectUsers alice bob
     alice ##> "/a #biz bob"

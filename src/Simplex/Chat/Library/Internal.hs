@@ -1251,11 +1251,14 @@ deleteMemberConnection' user GroupMember {activeConn} waitDelivery = do
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
 deleteOrUpdateMemberRecord :: User -> GroupMember -> CM ()
-deleteOrUpdateMemberRecord user@User {userId} member =
-  withStore' $ \db ->
-    checkGroupMemberHasItems db user member >>= \case
-      Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
-      Nothing -> deleteGroupMember db user member
+deleteOrUpdateMemberRecord user member =
+  withStore' $ \db -> deleteOrUpdateMemberRecordIO db user member
+
+deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupMember -> IO ()
+deleteOrUpdateMemberRecordIO db user@User {userId} member =
+  checkGroupMemberHasItems db user member >>= \case
+    Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
+    Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
 sendDirectContactMessages user ct events = do

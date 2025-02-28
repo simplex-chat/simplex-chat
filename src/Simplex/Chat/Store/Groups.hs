@@ -2062,8 +2062,8 @@ updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {sh
     |]
     (BI showMessages, currentTs, userId, gId, gMemberId)
 
-updateGroupMemberBlocked :: DB.Connection -> User -> GroupId -> GroupMemberId -> MemberRestrictionStatus -> IO ()
-updateGroupMemberBlocked db User {userId} gId gMemberId memberBlocked = do
+updateGroupMemberBlocked :: DB.Connection -> User -> GroupInfo -> MemberRestrictionStatus -> GroupMember -> IO GroupMember
+updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs m@GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -2072,7 +2072,8 @@ updateGroupMemberBlocked db User {userId} gId gMemberId memberBlocked = do
       SET member_restriction = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
     |]
-    (memberBlocked, currentTs, userId, gId, gMemberId)
+    (mrs, currentTs, userId, groupId, groupMemberId)
+  pure m {blockedByAdmin = mrsBlocked mrs}
 
 getXGrpMemIntroContDirect :: DB.Connection -> User -> Contact -> IO (Maybe (Int64, XGrpMemIntroCont))
 getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
