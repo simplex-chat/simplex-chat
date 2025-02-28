@@ -1172,6 +1172,7 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var msgWidth: CGFloat = 0
+        @State private var touchInProgress: Bool = false
 
         @Binding var selectedChatItems: Set<Int64>?
         @Binding var forwardedChatItems: [ChatItem]
@@ -1296,6 +1297,12 @@ struct ChatView: View {
                 markedRead = false
             }
             .actionSheet(item: $actionSheet) { $0.actionSheet }
+            // skip updating struct on touch if no need to show GoTo button
+            .if(touchInProgress || searchIsNotBlank || (chatItem.meta.itemForwarded != nil && chatItem.meta.itemForwarded != .unknown)) {
+                $0.onLongPressGesture(minimumDuration: .infinity, perform: {}, onPressingChanged: { pressing in
+                    touchInProgress = pressing
+                })
+            }
         }
 
         private func unreadItemIds(_ range: ClosedRange<Int>) -> ([ChatItem.ID], Int) {
@@ -2180,7 +2187,7 @@ struct ChatView: View {
             }
         }
 
-        func goToItemInnerButton(_ alignStart: Bool, _ image: String, _ onClick: @escaping () -> Void) -> some View {
+        func goToItemInnerButton(_ alignStart: Bool, _ image: String, touchInProgress: Bool, _ onClick: @escaping () -> Void) -> some View {
             Button {
                 onClick()
             } label: {
@@ -2188,7 +2195,7 @@ struct ChatView: View {
                     .resizable()
                     .frame(width: 15, height: 15)
                     .padding([alignStart ? .trailing : .leading], 11)
-                    .tint(theme.colors.secondary.opacity(0.4))
+                    .tint(theme.colors.secondary.opacity(touchInProgress ? 1.0 : 0.4))
             }
         }
 
@@ -2196,13 +2203,13 @@ struct ChatView: View {
         func goToItemButton(_ alignStart: Bool) -> some View {
             let chatTypeApiIdMsgId = chatItem.meta.itemForwarded?.chatTypeApiIdMsgId
             if searchIsNotBlank {
-                goToItemInnerButton(alignStart, "magnifyingglass") {
+                goToItemInnerButton(alignStart, "magnifyingglass", touchInProgress: touchInProgress) {
                     closeKeyboardAndRun {
                         ItemsModel.shared.loadOpenChatNoWait(chat.id, chatItem.id)
                     }
                 }
             } else if let chatTypeApiIdMsgId {
-                goToItemInnerButton(alignStart, "arrow.right") {
+                goToItemInnerButton(alignStart, "arrow.right", touchInProgress: touchInProgress) {
                     closeKeyboardAndRun {
                         let (chatType, apiId, msgId) = chatTypeApiIdMsgId
                         ItemsModel.shared.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
