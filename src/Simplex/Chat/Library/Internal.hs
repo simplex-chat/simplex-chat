@@ -1490,7 +1490,10 @@ sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> No
 sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
   let idsEvts = L.map (GroupId groupId,) events
   sndMsgs_ <- lift $ createSndMessages idsEvts
-  recipientMembers <- liftIO $ shuffleMembers (filter canSendTo members)
+  -- TODO [knocking] Possibly we need to pass GroupSndScope through all functions to here to avoid ad-hoc filtering.
+  recipientMembers <- case members of
+    [m] | memberStatus m == GSMemPendingApproval -> pure [m]
+    _ -> liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
       (toSendSeparate, toSendBatched, toPending, forwarded, _, dups) =
         foldr' addMember ([], [], [], [], S.empty, 0 :: Int) recipientMembers

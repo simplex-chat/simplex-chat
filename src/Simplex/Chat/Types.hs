@@ -1062,9 +1062,6 @@ memberCurrent' = \case
   GSMemComplete -> True
   GSMemCreator -> True
 
-canSendTo :: GroupMember -> Bool
-canSendTo m@GroupMember {memberStatus} = memberCurrent m || memberStatus == GSMemPendingApproval
-
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of
   GSMemRejected -> True
