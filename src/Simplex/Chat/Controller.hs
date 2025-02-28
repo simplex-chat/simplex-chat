@@ -308,7 +308,7 @@ data ChatCommand
   | APIGetChat ChatRef (Maybe MsgContentTag) ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
-  | APISendMessages {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
+  | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
   | APISetChatTags ChatRef (Maybe (NonEmpty ChatTagId))
   | APIDeleteChatTag ChatTagId
@@ -901,6 +901,17 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
+
+-- (Maybe GroupMemberId) can later be changed to GroupSndScope = GSSAll | GSSAdmins | GSSMember GroupMemberId
+data SendRef
+  = SRDirect ContactId
+  | SRGroup GroupId (Maybe GroupMemberId)
+  deriving (Eq, Show)
+
+sendToChatRef :: SendRef -> ChatRef
+sendToChatRef = \case
+  SRDirect cId -> ChatRef CTDirect cId
+  SRGroup gId _ -> ChatRef CTGroup gId
 
 data ChatPagination
   = CPLast Int

@@ -70,7 +70,7 @@ sendComposedMessage cc = sendComposedMessage' cc . contactId'
 sendComposedMessage' :: ChatController -> ContactId -> Maybe ChatItemId -> MsgContent -> IO ()
 sendComposedMessage' cc ctId quotedItemId msgContent = do
   let cm = ComposedMessage {fileSource = Nothing, quotedItemId, msgContent, mentions = M.empty}
-  sendChatCmd cc (APISendMessages (ChatRef CTDirect ctId) False Nothing [cm]) >>= \case
+  sendChatCmd cc (APISendMessages (SRDirect ctId) False Nothing [cm]) >>= \case
     CRNewChatItems {} -> printLog cc CLLInfo $ "sent message to contact ID " <> show ctId
     r -> putStrLn $ "unexpected send message response: " <> show r
 

@@ -184,6 +184,8 @@ chatGroupTests = do
     it "should send updated mentions in history" testGroupHistoryWithMentions
     describe "uniqueMsgMentions" testUniqueMsgMentions
     describe "updatedMentionNames" testUpdatedMentionNames
+  describe "group direct messages" $ do
+    it "should send group direct messages" testGroupDirectMessages
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -6392,3 +6394,28 @@ testUpdatedMentionNames = do
     mentionedMember name_ = CIMention {memberId = MemberId "abcd", memberRef = ciMentionMember <$> name_}
       where
         ciMentionMember name = CIMentionMember {groupMemberId = 1, displayName = name, localAlias = Nothing, memberRole = GRMember}
+
+testGroupDirectMessages :: HasCallStack => TestParams -> IO ()
+testGroupDirectMessages =
+  testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3 "team" alice bob cath
+
+    alice #> "#team 1"
+    [bob, cath] *<# "#team alice> 1"
+
+    bob #> "#team 2"
+    [alice, cath] *<# "#team bob> 2"
+
+    void $ withCCTransaction alice $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 2"
+
+    alice ##> "/_send #1 @2 text 3"
+    alice <# "#team 3"
+    bob <# "#team alice> 3"
+
+    void $ withCCTransaction bob $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_status='pending_approval' WHERE group_member_id = 1"
+
+    bob ##> "/_send #1 @1 text 4"
+    bob <# "#team 4"
+    alice <# "#team bob> 4"
