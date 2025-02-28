@@ -594,13 +594,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 let (UserContactLink {autoAccept}, gli_) = ucl
                 when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
-                -- TODO [knocking] legacy branch - do nothing?
-                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
-                  groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                  subMode <- chatReadVar subscriptionMode
-                  groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
-                  gVar <- asks random
-                  withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
+                -- -- TODO [knocking] legacy branch - do nothing?
+                -- forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
+                --   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+                --   subMode <- chatReadVar subscriptionMode
+                --   groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
+                --   gVar <- asks random
+                --   withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
             Just (gInfo, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m $ Just ct
@@ -1338,8 +1338,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             | v < groupJoinRejectVersion ->
                                 messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
                             | otherwise -> do
-                                -- TODO [knocking] reject via agent api without creating reply queue; revert rejection changes:
-                                -- TODO            protocol (XGrpLinkReject), status (GSMemRejected), processing on CON, INFO
                                 mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
                                 toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CRReceivedContactRequest user cReq
