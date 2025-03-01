@@ -1,32 +1,46 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Directory.BlockedWords where
 
+import Control.Concurrent.STM
 import Data.Char (isMark, isPunctuation, isSpace)
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
+import Data.Set (Set)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Normalize as TN
 
-containsBlockedWords :: Map Char [Char] -> [String] -> Text -> Bool
-containsBlockedWords spelling blockedWords s =
-  let normalizedWords = concatMap words $ normalizeText spelling s
-      -- Fully normalize the entire string (no spaces or punctuation)
-      fullNorm = normalizeText spelling $ T.filter (not . isSpace) s
-      -- Check if any individual word is a swear word
-      wordCheck = any (`elem` blockedWords) normalizedWords
-      -- Check if the full string, when normalized, matches a swear word exactly
-      fullCheck = any (\bw -> T.length s <= length bw * 2 && any (bw ==) fullNorm) blockedWords
-      -- Check if the string is a single word (no spaces)
-      isSingleWord = not $ T.any isSpace s
-   in wordCheck || (fullCheck && not isSingleWord)
+data BlockedWordsConfig = BlockedWordsConfig
+  { blockedWords :: Set Text,
+    blockedFragments :: Set Text,
+    extensionRules :: [(String, [String])],
+    spelling :: Map Char [Char]
+  }
 
-normalizeText :: Map Char [Char] -> Text -> [String]
-normalizeText spelling =
-  filter (not . null)
-    . map (filter (\c -> not (isPunctuation c) && not (isMark c)))
-    . allSubstitutions spelling
+hasBlockedFragments :: BlockedWordsConfig -> Text -> Bool
+hasBlockedFragments BlockedWordsConfig {spelling, blockedFragments} s =
+  not $ any (\w -> any (`T.isInfixOf` w) blockedFragments) ws
+  where
+    ws = S.fromList $ filter (not . T.null) $ normalizeText spelling s
+
+hasBlockedWords :: BlockedWordsConfig -> Text -> Bool
+hasBlockedWords BlockedWordsConfig {spelling, blockedWords} s =
+  not $ ws1 `S.disjoint` blockedWords && (length ws <= 1 || ws2 `S.disjoint` blockedWords)
+  where
+    ws = T.words s
+    ws1 = normalizeWords ws
+    ws2 = normalizeWords $ T.splitOn "  " s
+    normalizeWords = S.fromList . filter (not . T.null) . concatMap (normalizeText spelling)
+
+normalizeText :: Map Char [Char] -> Text -> [Text]
+normalizeText spelling' =
+  map (T.pack . filter (\c -> not $ isSpace c || isPunctuation c || isMark c))
+    . allSubstitutions spelling'
     . removeTriples
     . T.unpack
     . T.toLower
@@ -44,12 +58,12 @@ removeTriples xs = go xs '\0' False
 
 -- Generate all possible strings by substituting each character
 allSubstitutions :: Map Char [Char] -> String -> [String]
-allSubstitutions spelling = sequence . map substs
+allSubstitutions spelling' = sequence . map substs
   where
-    substs c = fromMaybe [c] $ M.lookup c spelling
+    substs c = fromMaybe [c] $ M.lookup c spelling'
 
-wordVariants :: [(String, [String])] -> String -> [String]
-wordVariants [] s = [s]
+wordVariants :: [(String, [String])] -> String -> [Text]
+wordVariants [] s = [T.pack s]
 wordVariants (sub : subs) s = concatMap (wordVariants subs) (replace sub)
   where
     replace (pat, tos) = go s

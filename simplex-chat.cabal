@@ -425,6 +425,7 @@ executable simplex-directory-service
     , composition ==1.0.*
     , containers ==0.6.*
     , directory ==1.3.*
+    , mtl >=2.3.1 && <3.0
     , optparse-applicative >=0.15 && <0.17
     , simple-logger ==0.1.*
     , simplex-chat

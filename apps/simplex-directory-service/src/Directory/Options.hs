@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (AcceptAsObserver (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
@@ -25,10 +25,10 @@ data DirectoryOpts = DirectoryOpts
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
     blockedWordsFile :: Maybe FilePath,
+    blockedFragmentsFile :: Maybe FilePath,
     blockedExtensionRules :: Maybe FilePath,
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
-    acceptAsObserver :: Maybe AcceptAsObserver,
     captchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
@@ -68,7 +68,14 @@ directoryOpts appDir defaultDbName = do
       strOption
         ( long "blocked-words-file"
             <> metavar "BLOCKED_WORDS_FILE"
-            <> help "File with the basic forms of words not allowed in profiles and groups"
+            <> help "File with the basic forms of words not allowed in profiles"
+        )
+  blockedFragmentsFile <-
+    optional $
+      strOption
+        ( long "blocked-fragments-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of word fragments not allowed in profiles"
         )
   blockedExtensionRules <-
     optional $
@@ -92,14 +99,6 @@ directoryOpts appDir defaultDbName = do
           <> help "Max length of profile name that will be allowed to connect and to join groups"
           <> value maxBound
       )
-  acceptAsObserver <-
-    optional $
-      option
-        parseAcceptAsObserver
-        ( long "accept-as-observer"
-            <> metavar "ACCEPT_AS_OBSERVER"
-            <> help "Whether to accept all or some of the joining members without posting rights ('all', 'no-image', 'incognito')"
-        )
   captchaGenerator <-
     optional $
       strOption
@@ -133,10 +132,10 @@ directoryOpts appDir defaultDbName = do
         superUsers,
         ownersGroup,
         blockedWordsFile,
+        blockedFragmentsFile,
         blockedExtensionRules,
         nameSpellingFile,
         profileNameLimit,
-        acceptAsObserver,
         captchaGenerator,
         directoryLog,
         serviceName = T.pack serviceName,
@@ -175,11 +174,14 @@ mkChatOpts DirectoryOpts {coreOptions} =
       maintenance = False
     }
 
+data AcceptAsObserver
+  = AOAll -- all members
+  | AONoImage -- members without image
+
 parseAcceptAsObserver :: ReadM AcceptAsObserver
 parseAcceptAsObserver = eitherReader $ decodeAAO . encodeUtf8 . T.pack
   where
     decodeAAO = \case
       "all" -> Right AOAll
-      "name-only" -> Right AONameOnly
-      "incognito" -> Right AOIncognito
+      "no-image" -> Right AONoImage
       _ -> Left "bad AcceptAsObserver"

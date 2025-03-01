@@ -19,7 +19,8 @@ module Simplex.Chat.Controller where
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
-import Control.Exception
+import Control.Exception (Exception, SomeException)
+import qualified Control.Exception as E
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -93,7 +94,6 @@ import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitatio
 import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
-import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 #if !defined(dbPostgres)
 import Database.SQLite.Simple (SQLError)
@@ -157,11 +157,6 @@ data ChatConfig = ChatConfig
     deviceNameForRemote :: Text,
     chatHooks :: ChatHooks
   }
-
-data AcceptAsObserver
-  = AOAll -- all members
-  | AONameOnly -- members without image
-  | AOIncognito -- members with incognito-style names and without image
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
@@ -1553,7 +1548,7 @@ withStoreBatch actions = do
   liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
 
 -- TODO [postgres] postgres specific error handling
-handleDBErrors :: [E.Handler IO (Either ChatError a)]
+handleDBErrors :: [E.Handler (Either ChatError a)]
 handleDBErrors =
 #if !defined(dbPostgres)
   ( E.Handler $ \(e :: SQLError) ->

@@ -19,7 +19,7 @@ module Directory.Events
   )
 where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isSpace)
@@ -113,6 +113,7 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
   DCSetRole_ :: DirectoryCmdTag 'DRUser
+  DCSetFilter_ :: DirectoryCmdTag 'DRUser
   DCApproveGroup_ :: DirectoryCmdTag 'DRAdmin
   DCRejectGroup_ :: DirectoryCmdTag 'DRAdmin
   DCSuspendGroup_ :: DirectoryCmdTag 'DRAdmin
@@ -122,6 +123,8 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCShowGroupLink_ :: DirectoryCmdTag 'DRAdmin
   DCSendToGroupOwner_ :: DirectoryCmdTag 'DRAdmin
   DCInviteOwnerToGroup_ :: DirectoryCmdTag 'DRAdmin
+  -- DCAddBlockedWord_ :: DirectoryCmdTag 'DRAdmin
+  -- DCRemoveBlockedWord_ :: DirectoryCmdTag 'DRAdmin
   DCExecuteCommand_ :: DirectoryCmdTag 'DRSuperUser
 
 deriving instance Show (DirectoryCmdTag r)
@@ -138,7 +141,8 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
-  DCSetRole :: GroupId -> GroupName -> GroupMemberRole -> DirectoryCmd 'DRUser
+  DCSetRole :: UserGroupRegId -> Maybe GroupName -> GroupMemberRole -> DirectoryCmd 'DRUser
+  DCSetFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
@@ -148,6 +152,8 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCShowGroupLink :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSendToGroupOwner :: GroupId -> GroupName -> Text -> DirectoryCmd 'DRAdmin
   DCInviteOwnerToGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
+  -- DCAddBlockedWord :: Text -> DirectoryCmd 'DRAdmin
+  -- DCRemoveBlockedWord :: Text -> DirectoryCmd 'DRAdmin
   DCExecuteCommand :: String -> DirectoryCmd 'DRSuperUser
   DCUnknownCommand :: DirectoryCmd 'DRUser
   DCCommandError :: DirectoryCmdTag r -> DirectoryCmd r
@@ -180,6 +186,7 @@ directoryCmdP =
         "ls" -> u DCListUserGroups_
         "delete" -> u DCDeleteGroup_
         "role" -> u DCSetRole_
+        "filter" -> u DCSetFilter_
         "approve" -> au DCApproveGroup_
         "reject" -> au DCRejectGroup_
         "suspend" -> au DCSuspendGroup_
@@ -189,6 +196,8 @@ directoryCmdP =
         "link" -> au DCShowGroupLink_
         "owner" -> au DCSendToGroupOwner_
         "invite" -> au DCInviteOwnerToGroup_
+        -- "block_word" -> au DCAddBlockedWord_
+        -- "unblock_word" -> au DCRemoveBlockedWord_
         "exec" -> su DCExecuteCommand_
         "x" -> su DCExecuteCommand_
         _ -> fail "bad command tag"
@@ -207,9 +216,33 @@ directoryCmdP =
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
       DCSetRole_ -> do
-        (groupId, displayName) <- gc (,)
-        memberRole <- A.space *> ("member" $> GRMember <|> "observer" $> GRObserver)
-        pure $ DCSetRole groupId displayName memberRole
+        (groupId, displayName_) <- gc_ (,)
+        memberRole <- spacesP *> ("member" $> GRMember <|> "observer" $> GRObserver)
+        pure $ DCSetRole groupId displayName_ memberRole
+      DCSetFilter_ -> do
+        (groupId, displayName_) <- gc_ (,)
+        acceptance_ <- optional $ acceptancePresetsP <|> acceptanceFiltersP
+        pure $ DCSetFilter groupId displayName_ acceptance_
+        where
+          acceptancePresetsP =
+            spacesP
+              *> A.choice
+                [ "no" $> noJoinFilter,
+                  "basic" $> basicJoinFilter,
+                  ("moderate" <|> "mod") $> moderateJoinFilter,
+                  "strong" $> strongJoinFilter
+                ]
+          acceptanceFiltersP = do
+            filterNames <- filterP "name"
+            useCaptcha <- filterP "captcha"
+            makeObserver <- filterP "observer"
+            pure DirectoryMemberAcceptance {filterNames, useCaptcha, makeObserver}
+          filterP :: Text -> Parser (Maybe ProfileCondition)
+          filterP s = Just <$> (spacesP *> A.string s *> conditionP) <|> pure Nothing
+          conditionP =
+            "=all" $> PCAll
+              <|> ("=noimage" <|> "=no_image" <|> "=no-image") $> PCNoImage
+              <|> pure PCAll
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
@@ -225,9 +258,14 @@ directoryCmdP =
         msg <- A.space *> A.takeText
         pure $ DCSendToGroupOwner groupId displayName msg
       DCInviteOwnerToGroup_ -> gc DCInviteOwnerToGroup
-      DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
+      -- DCAddBlockedWord_ -> DCAddBlockedWord <$> wordP
+      -- DCRemoveBlockedWord_ -> DCRemoveBlockedWord <$> wordP
+      DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (spacesP *> A.takeText)
       where
-        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameTextP
+        gc f = f <$> (spacesP *> A.decimal) <*> (A.char ':' *> displayNameTextP)
+        gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
+        wordP = spacesP *> A.takeTill (== ' ')
+        spacesP = A.takeWhile1 (== ' ')
 
 viewName :: Text -> Text
 viewName n = if T.any (== ' ') n then "'" <> n <> "'" else n
@@ -245,6 +283,7 @@ directoryCmdTag = \case
   DCDeleteGroup {} -> "delete"
   DCApproveGroup {} -> "approve"
   DCSetRole {} -> "role"
+  DCSetFilter {} -> "filter"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"
@@ -253,6 +292,8 @@ directoryCmdTag = \case
   DCShowGroupLink {} -> "link"
   DCSendToGroupOwner {} -> "owner"
   DCInviteOwnerToGroup {} -> "invite"
+  -- DCAddBlockedWord _ -> "block_word"
+  -- DCRemoveBlockedWord _ -> "unblock_word"
   DCExecuteCommand _ -> "exec"
   DCUnknownCommand -> "unknown"
   DCCommandError _ -> "error"

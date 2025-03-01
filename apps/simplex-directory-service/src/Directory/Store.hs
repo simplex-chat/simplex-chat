@@ -11,7 +11,9 @@ module Directory.Store
     GroupRegStatus (..),
     UserGroupRegId,
     GroupApprovalId,
-    DirectoryGroupData,
+    DirectoryGroupData (..),
+    DirectoryMemberAcceptance (..),
+    ProfileCondition (..),
     restoreDirectoryStore,
     addGroupReg,
     delGroupReg,
@@ -25,12 +27,16 @@ module Directory.Store
     pendingApproval,
     fromCustomData,
     toCustomData,
+    noJoinFilter,
+    basicJoinFilter,
+    moderateJoinFilter,
+    strongJoinFilter
   )
 where
 
 import Control.Concurrent.STM
 import Control.Monad
-import Data.Aeson ((.=), (.:), (.:?))
+import Data.Aeson ((.=), (.:))
 import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
@@ -47,7 +53,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (ifM)
 import System.Directory (doesFileExist, renameFile)
 import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
@@ -76,11 +82,49 @@ data GroupRegData = GroupRegData
   }
 
 data DirectoryGroupData = DirectoryGroupData
-  { nameProfanityFilter :: Bool,
-    memberAcceptance :: Maybe DirectoryMemberAcceptance
+  { memberAcceptance :: DirectoryMemberAcceptance
   }
 
-data DirectoryMemberAcceptance = DMAMemberWithImage | DMACaptcha
+-- these filters are applied in the order of fields, depending on ProfileCondition:
+-- Nothing - do not apply
+-- Just
+--   PCAll - apply to all profiles
+--   PCNoImage - apply to profiles without images
+data DirectoryMemberAcceptance = DirectoryMemberAcceptance
+  { filterNames :: Maybe ProfileCondition, -- reject long names and names with profanity
+    useCaptcha :: Maybe ProfileCondition, -- run captcha challenge with joining members
+    makeObserver :: Maybe ProfileCondition -- the role assigned in the end, after captcha challenge
+  }
+  deriving (Show)
+
+data ProfileCondition = PCAll | PCNoImage deriving (Show)
+
+noJoinFilter :: DirectoryMemberAcceptance
+noJoinFilter = DirectoryMemberAcceptance Nothing Nothing Nothing
+
+basicJoinFilter :: DirectoryMemberAcceptance
+basicJoinFilter =
+  DirectoryMemberAcceptance
+    { filterNames = Just PCNoImage,
+      useCaptcha = Nothing,
+      makeObserver = Nothing
+    }
+
+moderateJoinFilter :: DirectoryMemberAcceptance
+moderateJoinFilter =
+  DirectoryMemberAcceptance
+    { filterNames = Just PCAll,
+      useCaptcha = Just PCNoImage,
+      makeObserver = Nothing
+    }
+
+strongJoinFilter :: DirectoryMemberAcceptance
+strongJoinFilter =
+  DirectoryMemberAcceptance
+    { filterNames = Just PCAll,
+      useCaptcha = Just PCAll,
+      makeObserver = Nothing
+    }
 
 type UserGroupRegId = Int64
 
@@ -121,21 +165,20 @@ grDirectoryStatus = \case
   GRSSuspendedBadRoles -> DSReserved
   _ -> DSRegistered
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)
+
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MA") ''DirectoryMemberAcceptance)
 
 $(JQ.deriveJSON defaultJSON ''DirectoryGroupData)
 
 fromCustomData :: Maybe CustomData -> DirectoryGroupData
-fromCustomData = \case
-  Just (CustomData o) ->
-    let nameProfanityFilter = fromMaybe False $ JT.parseMaybe (.: "nameProfanityFilter") o
-        memberAcceptance = fromMaybe Nothing $ JT.parseMaybe (.:? "memberAcceptance") o
-     in DirectoryGroupData {nameProfanityFilter, memberAcceptance}
-  Nothing -> DirectoryGroupData False Nothing
+fromCustomData cd_ =
+  let memberAcceptance = fromMaybe noJoinFilter $ cd_ >>= \(CustomData o) -> JT.parseMaybe (.: "memberAcceptance") o
+   in DirectoryGroupData {memberAcceptance}
 
 toCustomData :: DirectoryGroupData -> CustomData
-toCustomData DirectoryGroupData {nameProfanityFilter = on, memberAcceptance = ma} =
-  CustomData $ JM.fromList ["nameProfanityFilter" .= on, "memberAcceptance" .= ma]
+toCustomData DirectoryGroupData {memberAcceptance} =
+  CustomData $ JM.fromList ["memberAcceptance" .= memberAcceptance]
 
 addGroupReg :: DirectoryStore -> Contact -> GroupInfo -> GroupRegStatus -> IO UserGroupRegId
 addGroupReg st ct GroupInfo {groupId} grStatus = do

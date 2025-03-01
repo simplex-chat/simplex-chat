@@ -1224,19 +1224,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                                 mem <- acceptGroupJoinSendRejectAsync user gInfo cReq rjctReason
                                 toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
                 _ -> toView $ CRReceivedContactRequest user cReq
-    -- TODO [knocking] move logic to bot
-    -- where
-    --   rejectionReason ChatConfig {profileNameLimit, allowedProfileName}
-    --     | T.length displayName > profileNameLimit = Just GRRLongName
-    --     | maybe False (\f -> not $ f displayName) allowedProfileName = Just GRRBlockedName
-    --     | otherwise = Nothing
-    --   userMemberRole linkRole = \case
-    --     Just AOAll -> GRObserver
-    --     Just AONameOnly | noImage -> GRObserver
-    --     Just AOIncognito | noImage && isRandomName displayName -> GRObserver
-    --     _ -> linkRole
-    --     where
-    --       noImage = maybe True (\(ImageData i) -> i == "") image
 
     -- TODO [knocking] review
     memberCanSend :: GroupMember -> CM () -> CM ()

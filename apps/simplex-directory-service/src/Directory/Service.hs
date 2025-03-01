@@ -6,11 +6,13 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Directory.Service
   ( welcomeGetOpts,
     directoryService,
     directoryServiceCLI,
+    newServiceState,
     acceptMemberHook
   )
 where
@@ -18,9 +20,11 @@ where
 import Control.Concurrent (forkIO)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad
-import Data.Composition ((.:))
+import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Containers.ListUtils (nubOrd)
 import Data.List (find, intercalate)
 import qualified Data.Map.Strict as M
@@ -29,6 +33,7 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.BlockedWords
@@ -43,6 +48,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
+import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -50,6 +56,8 @@ import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
@@ -72,14 +80,14 @@ data GroupRolesStatus
 
 data ServiceState = ServiceState
   { searchRequests :: TMap ContactId SearchRequest,
-    blockedWords :: TVar [String]
+    blockedWordsCfg :: BlockedWordsConfig
   }
 
-newServiceState :: IO ServiceState
-newServiceState = do
+newServiceState :: DirectoryOpts -> IO ServiceState
+newServiceState opts = do
   searchRequests <- TM.emptyIO
-  blockedWords <- newTVarIO []
-  pure ServiceState {searchRequests, blockedWords}
+  blockedWordsCfg <- readBlockedWordsConfig opts
+  pure ServiceState {searchRequests, blockedWordsCfg}
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -103,10 +111,10 @@ welcomeGetOpts = do
 
 directoryServiceCLI :: DirectoryStore -> DirectoryOpts -> IO ()
 directoryServiceCLI st opts = do
-  env <- newServiceState
+  env <- newServiceState opts
   eventQ <- newTQueueIO
   let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
-      chatHooks = defaultChatHooks {eventHook = Just eventHook, acceptMember = Just acceptMemberHook}
+      chatHooks = defaultChatHooks {eventHook = Just eventHook, acceptMember = Just $ acceptMemberHook opts env}
   race_
     (simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing)
     (processEvents eventQ env)
@@ -116,29 +124,48 @@ directoryServiceCLI st opts = do
       u_ <- readTVarIO (currentUser cc)
       forM_ u_ $ \user -> directoryServiceEvent st opts env user cc resp
 
-directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st opts@DirectoryOpts {testing} user cc = do
+directoryService :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> IO ()
+directoryService st opts@DirectoryOpts {testing} env user cc = do
   initializeBotAddress' (not testing) cc
-  env <- newServiceState
   race_ (forever $ void getLine) . forever $ do
     (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     directoryServiceEvent st opts env user cc resp
 
-acceptMemberHook :: GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
-acceptMemberHook _ GroupLinkInfo {acceptance, memberRole} _ = pure $ Right (acceptance, memberRole)
+acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
+acceptMemberHook DirectoryOpts {profileNameLimit} ServiceState {blockedWordsCfg} GroupInfo {customData} GroupLinkInfo {acceptance, memberRole} p = runExceptT $ do
+  let DirectoryGroupData {memberAcceptance = ma} = fromCustomData customData
+  case filterNames ma of
+    Just c | p `satisfies` c -> checkName p
+    _ -> pure ()
+  pure $ case useCaptcha ma of
+    Just c | p `satisfies` c -> (GAManual, GRMember)
+    _ -> case makeObserver ma of
+      Just c' | p `satisfies` c' -> (GAAuto, GRObserver)
+      _ -> (GAAuto, GRMember)
+  where
+    satisfies :: Profile -> ProfileCondition -> Bool
+    satisfies Profile {image} = \case
+      PCAll -> True
+      PCNoImage -> maybe True (\(ImageData i) -> i == "") image
+    checkName :: Profile -> ExceptT GroupRejectionReason IO ()
+    checkName Profile {displayName}
+      | T.length displayName > profileNameLimit = throwError GRRLongName
+      | otherwise = do
+          when (hasBlockedFragments blockedWordsCfg displayName) $ throwError GRRBlockedName
+          when (hasBlockedWords blockedWordsCfg displayName) $ throwError GRRBlockedName
 
--- directoryChatConfig :: DirectoryOpts -> IO ChatConfig
--- directoryChatConfig DirectoryOpts {blockedWordsFile, nameSpellingFile, blockedExtensionRules, profileNameLimit, acceptAsObserver} = do
-  -- blockedWords <- mapM (fmap lines . readFile) blockedWordsFile
-  -- spelling <- maybe (pure M.empty) (fmap (M.fromList . read) . readFile) nameSpellingFile
-  -- extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules
-  -- let !bws = nubOrd . concatMap (wordVariants extensionRules) <$> blockedWords
-  --     allowedProfileName name = not .: containsBlockedWords spelling <$> bws
-  -- putStrLn $ "Blocked words: " <> show (maybe 0 length bws) <> ", spelling rules: " <> show (M.size spelling)
-  -- pure terminalChatConfig {allowedProfileName, profileNameLimit, acceptAsObserver}
+readBlockedWordsConfig :: DirectoryOpts -> IO BlockedWordsConfig
+readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, nameSpellingFile, blockedExtensionRules} = do
+  extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules  
+  spelling <- maybe (pure M.empty) (fmap (M.fromList . read) . readFile) nameSpellingFile
+  blockedFragments <- S.fromList <$> maybe (pure []) (fmap T.lines . T.readFile) blockedFragmentsFile
+  bws <- maybe (pure []) (fmap lines . readFile) blockedWordsFile
+  let blockedWords = S.fromList $ concatMap (wordVariants extensionRules) bws
+  putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
+  pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
 directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
-directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests, blockedWords} user@User {userId} cc event =
+directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests, blockedWordsCfg} user@User {userId} cc event =
   forM_ (crDirectoryEvent event) $ \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
@@ -385,7 +412,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     sendToApprove GroupInfo {groupProfile = p@GroupProfile {displayName, image = image'}} GroupReg {dbGroupId, dbContactId} gaId = do
-      ct_ <- getContact cc dbContactId
+      ct_ <- getContact' cc user dbContactId
       gr_ <- getGroupAndSummary cc dbGroupId
       let membersStr = maybe "" (\(_, s) -> "_" <> tshow (currentMembers s) <> " members_\n") gr_
           text =
@@ -541,8 +568,8 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
         withUserGroupReg ugrId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} gr -> do
           delGroupReg st gr
           sendReply $ "Your group " <> displayName <> " is deleted from the directory"
-      DCSetRole gId gName mRole ->
-        (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $
+      DCSetRole gId gName_ mRole ->
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $
           \GroupInfo {groupId, groupProfile = GroupProfile {displayName}} _gr -> do
             gLink_ <- setGroupLinkRole cc groupId mRole
             sendReply $ case gLink_ of
@@ -550,19 +577,21 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
               Just gLink ->
                 ("The initial member role for the group " <> displayName <> " is set to *" <> strEncodeTxt mRole <> "*\n\n")
                   <> ("*Please note*: it applies only to members joining via this link: " <> strEncodeTxt (simplexChatContact gLink))
+      DCSetFilter gId gName_ acceptance_ -> pure ()
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       where
         knownCt = knownContact ct
         isAdmin = knownCt `elem` adminUsers || knownCt `elem` superUsers
-        withUserGroupReg ugrId gName action =
+        withUserGroupReg ugrId = withUserGroupReg_ ugrId . Just
+        withUserGroupReg_ ugrId gName_ action =
           getUserGroupReg st (contactId' ct) ugrId >>= \case
             Nothing -> sendReply $ "Group ID " <> tshow ugrId <> " not found"
             Just gr@GroupReg {dbGroupId} -> do
               getGroup cc dbGroupId >>= \case
                 Nothing -> sendReply $ "Group ID " <> tshow ugrId <> " not found"
                 Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
-                  | displayName == gName -> action g gr
+                  | maybe True (displayName ==) gName_ -> action g gr
                   | otherwise -> sendReply $ "Group ID " <> tshow ugrId <> " has the display name " <> displayName
         sendReply = mkSendReply ct ciId
         withFoundListedGroups s_ action =
@@ -714,6 +743,8 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
                     sendReply $ "you" <> invited
                   Left err -> sendReply err
             Nothing -> sendReply "owners' group is not specified"
+          -- DCAddBlockedWord _word -> pure ()
+          -- DCRemoveBlockedWord _word -> pure ()
           DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       | otherwise = sendReply "You are not allowed to use this command"
       where
@@ -728,7 +759,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
                 else pure groups
             sendReply $ tshow (length grs) <> " registered group(s)" <> (if length grs > count then ", showing the last " <> tshow count else "")
             void . forkIO $ forM_ (reverse $ take count grs) $ \gr@GroupReg {dbGroupId, dbContactId} -> do
-              ct_ <- getContact cc dbContactId
+              ct_ <- getContact' cc user dbContactId
               let ownerStr = "Owner: " <> maybe "getContact error" localDisplayName' ct_
               sendGroupInfo ct gr dbGroupId $ Just ownerStr
         inviteToOwnersGroup :: KnownGroup -> GroupReg -> (Either Text () -> IO a) -> IO a
@@ -750,7 +781,7 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
               putStrLn $ T.unpack err
               cont $ Left err
         groupOwnerInfo groupRef dbContactId = do
-          owner_ <- getContact cc dbContactId
+          owner_ <- getContact' cc user dbContactId
           let ownerInfo = "the owner of the group " <> groupRef
               ownerName ct' = "@" <> viewName (localDisplayName' ct') <> ", "
           pure $ maybe "" ownerName owner_ <> ownerInfo
@@ -775,11 +806,14 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
     mkSendReply ct ciId = sendComposedMessage cc ct (Just ciId) . MCText
 
     withGroupAndReg :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()
-    withGroupAndReg sendReply gId gName action =
+    withGroupAndReg sendReply gId = withGroupAndReg_ sendReply gId . Just
+
+    withGroupAndReg_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()
+    withGroupAndReg_ sendReply gId gName_ action =
       getGroup cc gId >>= \case
         Nothing -> sendReply $ "Group ID " <> tshow gId <> " not found (getGroup)"
         Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
-          | displayName == gName ->
+          | maybe False (displayName ==) gName_ ->
               getGroupReg st gId >>= \case
                 Nothing -> sendReply $ "Registration for group ID " <> tshow gId <> " not found (getGroupReg)"
                 Just gr -> action g gr
@@ -800,13 +834,9 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
           let text = T.unlines $ [tshow useGroupId <> ". Error: getGroup. Please notify the developers."] <> maybeToList ownerStr_ <> [statusStr]
           sendComposedMessage cc ct Nothing $ MCText text
 
-getContact :: ChatController -> ContactId -> IO (Maybe Contact)
-getContact cc ctId = resp <$> sendChatCmd cc (APIGetChat (ChatRef CTDirect ctId) Nothing (CPLast 0) Nothing)
-  where
-    resp :: ChatResponse -> Maybe Contact
-    resp = \case
-      CRApiChat _ (AChat SCTDirect Chat {chatInfo = DirectChat ct}) _ -> Just ct
-      _ -> Nothing
+getContact' :: ChatController -> User -> ContactId -> IO (Maybe Contact)
+getContact' cc@ChatController {config = ChatConfig {chatVRange = vr}} user ctId = do
+  withDB cc $ \db -> getContact db vr user ctId
 
 getGroup :: ChatController -> GroupId -> IO (Maybe GroupInfo)
 getGroup cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
@@ -815,6 +845,13 @@ getGroup cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
     resp = \case
       CRGroupInfo {groupInfo} -> Just groupInfo
       _ -> Nothing
+
+withDB :: ChatController -> (DB.Connection -> ExceptT StoreError IO a) -> IO (Maybe a)
+withDB ChatController {chatStore} action = do
+  r_ :: Either ChatError a <- withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  case r_ of
+    Right r -> pure $ Just r
+    Left e -> Nothing <$ logError ("Database error: " <> tshow e)
 
 getGroupAndSummary :: ChatController -> GroupId -> IO (Maybe (GroupInfo, GroupSummary))
 getGroupAndSummary cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
