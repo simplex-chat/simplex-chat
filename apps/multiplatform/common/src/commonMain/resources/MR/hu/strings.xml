@@ -171,7 +171,7 @@
     <string name="callstate_connected">kapcsolódva</string>
     <string name="la_change_app_passcode">Jelkód módosítása</string>
     <string name="rcv_group_event_changed_member_role">a következőre módosította %s szerepkörét: „%s”</string>
-    <string name="switch_receiving_address">A fogadási cím módosítása</string>
+    <string name="switch_receiving_address">Fogadási cím módosítása</string>
     <string name="change_verb">Módosítás</string>
     <string name="confirm_passcode">Jelkód megerősítése</string>
     <string name="confirm_password">Jelszó megerősítése</string>
