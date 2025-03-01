@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -24,8 +25,6 @@ import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
-import Control.Monad.IO.Class
-import Data.Containers.ListUtils (nubOrd)
 import Data.List (find, intercalate)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
@@ -34,7 +33,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Data.Time.Clock (diffUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.BlockedWords
 import Directory.Events
@@ -49,7 +48,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Direct (getContact)
-import Simplex.Chat.Store.Profiles (GroupLinkInfo (..))
+import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
@@ -63,6 +62,8 @@ import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, ($>>=), (<$$>))
 import System.Directory (getAppUserDataDirectory)
+import System.Process (readProcess)
+import System.Random (randomRIO)
 
 data GroupProfileUpdate = GPNoServiceLink | GPServiceLinkAdded | GPServiceLinkRemoved | GPHasServiceLink | GPServiceLinkError
 
@@ -80,14 +81,31 @@ data GroupRolesStatus
 
 data ServiceState = ServiceState
   { searchRequests :: TMap ContactId SearchRequest,
-    blockedWordsCfg :: BlockedWordsConfig
+    blockedWordsCfg :: BlockedWordsConfig,
+    pendingCaptchas :: TMap GroupMemberId PendingCaptcha
   }
+
+data PendingCaptcha = PendingCaptcha
+  { captchaText :: Text,
+    sentAt :: UTCTime,
+    attempts :: Int
+  }
+
+captchaLength :: Int
+captchaLength = 7
+
+maxCaptchaAttempts :: Int
+maxCaptchaAttempts = 5
+
+captchaTTL :: NominalDiffTime
+captchaTTL = 600 -- 10 minutes
 
 newServiceState :: DirectoryOpts -> IO ServiceState
 newServiceState opts = do
   searchRequests <- TM.emptyIO
   blockedWordsCfg <- readBlockedWordsConfig opts
-  pure ServiceState {searchRequests, blockedWordsCfg}
+  pendingCaptchas <- TM.emptyIO
+  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas}
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -132,27 +150,35 @@ directoryService st opts@DirectoryOpts {testing} env user cc = do
     directoryServiceEvent st opts env user cc resp
 
 acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
-acceptMemberHook DirectoryOpts {profileNameLimit} ServiceState {blockedWordsCfg} GroupInfo {customData} GroupLinkInfo {acceptance, memberRole} p = runExceptT $ do
-  let DirectoryGroupData {memberAcceptance = ma} = fromCustomData customData
-  case filterNames ma of
-    Just c | p `satisfies` c -> checkName p
-    _ -> pure ()
-  pure $ case useCaptcha ma of
-    Just c | p `satisfies` c -> (GAManual, GRMember)
-    _ -> case makeObserver ma of
-      Just c' | p `satisfies` c' -> (GAAuto, GRObserver)
-      _ -> (GAAuto, GRMember)
-  where
-    satisfies :: Profile -> ProfileCondition -> Bool
-    satisfies Profile {image} = \case
-      PCAll -> True
-      PCNoImage -> maybe True (\(ImageData i) -> i == "") image
-    checkName :: Profile -> ExceptT GroupRejectionReason IO ()
-    checkName Profile {displayName}
-      | T.length displayName > profileNameLimit = throwError GRRLongName
-      | otherwise = do
-          when (hasBlockedFragments blockedWordsCfg displayName) $ throwError GRRBlockedName
-          when (hasBlockedWords blockedWordsCfg displayName) $ throwError GRRBlockedName
+acceptMemberHook
+  DirectoryOpts {profileNameLimit}
+  ServiceState {blockedWordsCfg}
+  g
+  GroupLinkInfo {memberRole}
+  Profile {displayName, image = img} = runExceptT $ do
+    let a = groupMemberAcceptance g
+    when (useMemberFilter img $ filterNames a) checkName
+    pure $
+      if
+        | useMemberFilter img (useCaptcha a) -> (GAManual, GRMember)
+        | useMemberFilter img (makeObserver a) -> (GAAuto, GRObserver)
+        | otherwise -> (GAAuto, memberRole)
+    where
+      checkName :: ExceptT GroupRejectionReason IO ()
+      checkName
+        | T.length displayName > profileNameLimit = throwError GRRLongName
+        | otherwise = do
+            when (hasBlockedFragments blockedWordsCfg displayName) $ throwError GRRBlockedName
+            when (hasBlockedWords blockedWordsCfg displayName) $ throwError GRRBlockedName
+
+groupMemberAcceptance :: GroupInfo -> DirectoryMemberAcceptance
+groupMemberAcceptance GroupInfo {customData} = memberAcceptance $ fromCustomData customData
+
+useMemberFilter :: Maybe ImageData -> Maybe ProfileCondition -> Bool
+useMemberFilter img_ = \case
+  Just PCAll -> True
+  Just PCNoImage -> maybe True (\(ImageData i) -> i == "") img_
+  Nothing -> False
 
 readBlockedWordsConfig :: DirectoryOpts -> IO BlockedWordsConfig
 readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, nameSpellingFile, blockedExtensionRules} = do
@@ -165,13 +191,14 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
 directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
-directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests, blockedWordsCfg} user@User {userId} cc event =
+directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc event =
   forM_ (crDirectoryEvent event) $ \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
     DEGroupUpdated {contactId, fromGroup, toGroup} -> deGroupUpdated contactId fromGroup toGroup
-    DEMemberPendingApproval g m -> deMemberPendingApproval g m
+    DEPendingMember g m -> dePendingMember g m
+    DEPendingMemberMsg g m t -> dePendingMemberMsg g m t
     DEContactRoleChanged g ctId role -> deContactRoleChanged g ctId role
     DEServiceRoleChanged g role -> deServiceRoleChanged g role
     DEContactRemovedFromGroup ctId g -> deContactRemovedFromGroup ctId g
@@ -407,8 +434,76 @@ directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, own
             Just (Just msg) -> notifyOwner gr msg
             Just Nothing -> sendToApprove toGroup gr gaId
 
-    deMemberPendingApproval :: GroupInfo -> GroupMember -> IO ()
-    deMemberPendingApproval _g _m = pure ()
+    dePendingMember :: GroupInfo -> GroupMember -> IO ()
+    dePendingMember g m
+      | memberRequiresCaptcha a m = sendMemberCaptcha g m captchaNotice 0
+      | otherwise = approvePendingMember a g m
+      where
+        a = groupMemberAcceptance g
+        captchaNotice = "This image is generated in SimpleX Directory service, without any 3rd party APIs.\nEnter the text in the image to join group."
+
+    sendMemberCaptcha :: GroupInfo -> GroupMember -> Text -> Int -> IO ()
+    sendMemberCaptcha GroupInfo {groupId} m noticeText prevAttempts = do
+      s <- getCaptchaStr captchaLength ""
+      img <- getCaptcha s
+      sentAt <- getCurrentTime
+      let captcha = PendingCaptcha {captchaText = T.pack s, sentAt, attempts = prevAttempts + 1}
+      atomically $ TM.insert gmId captcha $ pendingCaptchas env
+      sendCaptcha $ ImageData img
+      where
+        getCaptchaStr 0 s = pure s
+        getCaptchaStr n s = do
+          i <- randomRIO (0, length chars - 1)
+          let c = chars !! i
+          getCaptchaStr (n - 1) (c : s)
+        chars = "23456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+        getCaptcha t = T.pack <$> readProcess (captchaGenerator opts) [t] ""
+        sendCaptcha img = sendComposedMessages cc (SRGroup groupId $ Just gmId) [MCText noticeText, MCImage "" img]
+        gmId = groupMemberId' m
+
+    approvePendingMember :: DirectoryMemberAcceptance -> GroupInfo -> GroupMember -> IO ()
+    approvePendingMember a g@GroupInfo {groupId} m@GroupMember {memberProfile = LocalProfile {displayName, image}} = do
+      gli_ <- join <$> withDB' cc (\db -> getGroupLinkInfo db userId groupId)
+      let role = if useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
+          gmId = groupMemberId' m
+      sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
+        CRJoinedGroupMember {} -> do
+          atomically $ TM.delete gmId $ pendingCaptchas env
+          logInfo $ "Member " <> viewName displayName <> " accepted, group " <> tshow groupId <> ":" <> viewGroupName g
+        r -> logError $ "unexpected accept member response: " <> tshow r
+
+    dePendingMemberMsg :: GroupInfo -> GroupMember -> Text -> IO ()
+    dePendingMemberMsg g@GroupInfo {groupId} m@GroupMember {memberProfile = LocalProfile {displayName}} msgText
+      | memberRequiresCaptcha a m = do
+          ts <- getCurrentTime
+          atomically (TM.lookup (groupMemberId' m) $ pendingCaptchas env) >>= \case
+            Just PendingCaptcha {captchaText, sentAt, attempts}
+              | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m captchaExpired $ attempts - 1
+              | captchaText == msgText -> approvePendingMember a g m
+              | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
+              | otherwise -> sendMemberCaptcha g m (wrongCaptcha attempts) attempts
+            Nothing -> sendMemberCaptcha g m noCaptcha 0
+      | otherwise = approvePendingMember a g m
+      where
+        a = groupMemberAcceptance g
+        rejectPendingMember rjctNotice = do
+          let gmId = groupMemberId' m
+          sendComposedMessages cc (SRGroup groupId $ Just gmId) [MCText rjctNotice]
+          sendChatCmd cc (APIRemoveMembers groupId [gmId]) >>= \case
+            CRUserDeletedMembers _ _ (_ : _) -> do
+              atomically $ TM.delete gmId $ pendingCaptchas env
+              logInfo $ "Member " <> viewName displayName <> " rejected, group " <> tshow groupId <> ":" <> viewGroupName g
+            r -> logError $ "unexpected remove member response: " <> tshow r
+        captchaExpired = "Captcha expired, please try again."
+        wrongCaptcha attempts
+          | attempts == maxCaptchaAttempts - 1 = "Incorrect text, please try again - this is your last attempt."
+          | otherwise = "Incorrect text, please try again."
+        noCaptcha = "Unexpected message, please try again."
+        tooManyAttempts = "Too many failed attempts, you can't join group."
+
+    memberRequiresCaptcha :: DirectoryMemberAcceptance -> GroupMember -> Bool
+    memberRequiresCaptcha a GroupMember {memberProfile = LocalProfile {image}} = do
+      useMemberFilter image $ useCaptcha a
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     sendToApprove GroupInfo {groupProfile = p@GroupProfile {displayName, image = image'}} GroupReg {dbGroupId, dbContactId} gaId = do
@@ -845,6 +940,9 @@ getGroup cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
     resp = \case
       CRGroupInfo {groupInfo} -> Just groupInfo
       _ -> Nothing
+
+withDB' :: ChatController -> (DB.Connection -> IO a) -> IO (Maybe a)
+withDB' cc a = withDB cc $ ExceptT . fmap Right . a
 
 withDB :: ChatController -> (DB.Connection -> ExceptT StoreError IO a) -> IO (Maybe a)
 withDB ChatController {chatStore} action = do

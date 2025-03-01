@@ -3,7 +3,6 @@
 
 module Directory.BlockedWords where
 
-import Control.Concurrent.STM
 import Data.Char (isMark, isPunctuation, isSpace)
 import Data.List (isPrefixOf)
 import Data.Maybe (fromMaybe)

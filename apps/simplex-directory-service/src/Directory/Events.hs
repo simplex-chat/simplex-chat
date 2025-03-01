@@ -46,7 +46,8 @@ data DirectoryEvent
   | DEGroupInvitation {contact :: Contact, groupInfo :: GroupInfo, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
-  | DEMemberPendingApproval GroupInfo GroupMember
+  | DEPendingMember GroupInfo GroupMember
+  | DEPendingMemberMsg GroupInfo GroupMember Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
   | DEServiceRoleChanged GroupInfo GroupMemberRole
   | DEContactRemovedFromGroup ContactId GroupInfo
@@ -66,9 +67,12 @@ crDirectoryEvent = \case
   CRReceivedGroupInvitation {contact, groupInfo, fromMemberRole, memberRole} -> Just $ DEGroupInvitation {contact, groupInfo, fromMemberRole, memberRole}
   CRUserJoinedGroup {groupInfo, hostMember} -> (\contactId -> DEServiceJoinedGroup {contactId, groupInfo, hostMember}) <$> memberContactId hostMember
   CRGroupUpdated {fromGroup, toGroup, member_} -> (\contactId -> DEGroupUpdated {contactId, fromGroup, toGroup}) <$> (memberContactId =<< member_)
-  CRJoinedGroupMember {groupInfo, member}
-    | memberStatus member == GSMemPendingApproval -> Just $ DEMemberPendingApproval groupInfo member
+  CRJoinedGroupMember {groupInfo, member = m}
+    | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
+  CRNewChatItems {chatItems = AChatItem _ _ (GroupChat g) ci : _} -> case ci of
+    ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m t
+    _ -> Nothing
   CRMemberRole {groupInfo, member, toRole}
     | groupMemberId' member == groupMemberId' (membership groupInfo) -> Just $ DEServiceRoleChanged groupInfo toRole
     | otherwise -> (\ctId -> DEContactRoleChanged groupInfo ctId toRole) <$> memberContactId member
@@ -93,6 +97,8 @@ crDirectoryEvent = \case
     _ -> Just $ DELogChatResponse $ "chat error: " <> tshow chatError
   CRChatErrors {chatErrors} -> Just $ DELogChatResponse $ "chat errors: " <> T.intercalate ", " (map tshow chatErrors)
   _ -> Nothing
+  where
+    pending m = memberStatus m == GSMemPendingApproval
 
 data DirectoryRole = DRUser | DRAdmin | DRSuperUser
 
@@ -264,7 +270,7 @@ directoryCmdP =
       where
         gc f = f <$> (spacesP *> A.decimal) <*> (A.char ':' *> displayNameTextP)
         gc_ f = f <$> (spacesP *> A.decimal) <*> optional (A.char ':' *> displayNameTextP)
-        wordP = spacesP *> A.takeTill (== ' ')
+        -- wordP = spacesP *> A.takeTill (== ' ')
         spacesP = A.takeWhile1 (== ' ')
 
 viewName :: Text -> Text

@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Bot where
 
@@ -11,6 +12,8 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -68,10 +71,16 @@ sendComposedMessage :: ChatController -> Contact -> Maybe ChatItemId -> MsgConte
 sendComposedMessage cc = sendComposedMessage' cc . contactId'
 
 sendComposedMessage' :: ChatController -> ContactId -> Maybe ChatItemId -> MsgContent -> IO ()
-sendComposedMessage' cc ctId quotedItemId msgContent = do
-  let cm = ComposedMessage {fileSource = Nothing, quotedItemId, msgContent, mentions = M.empty}
-  sendChatCmd cc (APISendMessages (SRDirect ctId) False Nothing [cm]) >>= \case
-    CRNewChatItems {} -> printLog cc CLLInfo $ "sent message to contact ID " <> show ctId
+sendComposedMessage' cc ctId qiId mc = sendComposedMessages_ cc (SRDirect ctId) [(qiId, mc)]
+
+sendComposedMessages :: ChatController -> SendRef -> NonEmpty MsgContent -> IO ()
+sendComposedMessages cc sendRef = sendComposedMessages_ cc sendRef . L.map (Nothing,)
+
+sendComposedMessages_ :: ChatController -> SendRef -> NonEmpty (Maybe ChatItemId, MsgContent) -> IO ()
+sendComposedMessages_ cc sendRef qmcs = do
+  let cms = L.map (\(qiId, mc) -> ComposedMessage {fileSource = Nothing, quotedItemId = qiId, msgContent = mc, mentions = M.empty}) qmcs
+  sendChatCmd cc (APISendMessages sendRef False Nothing cms) >>= \case
+    CRNewChatItems {} -> printLog cc CLLInfo $ "sent " <> show (length cms) <> " messages to " <> show sendRef
     r -> putStrLn $ "unexpected send message response: " <> show r
 
 deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()

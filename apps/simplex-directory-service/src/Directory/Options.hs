@@ -13,7 +13,6 @@ module Directory.Options
 where
 
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
@@ -29,7 +28,7 @@ data DirectoryOpts = DirectoryOpts
     blockedExtensionRules :: Maybe FilePath,
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
-    captchaGenerator :: Maybe FilePath,
+    captchaGenerator :: FilePath,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
     runCLI :: Bool,
@@ -100,12 +99,11 @@ directoryOpts appDir defaultDbName = do
           <> value maxBound
       )
   captchaGenerator <-
-    optional $
-      strOption
-        ( long "captcha-generator"
-            <> metavar "CAPTCHA_GENERATOR"
-            <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
-        )
+    strOption
+      ( long "captcha-generator"
+          <> metavar "CAPTCHA_GENERATOR"
+          <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
+      )
   directoryLog <-
     Just
       <$> strOption
@@ -173,15 +171,3 @@ mkChatOpts DirectoryOpts {coreOptions} =
       markRead = False,
       maintenance = False
     }
-
-data AcceptAsObserver
-  = AOAll -- all members
-  | AONoImage -- members without image
-
-parseAcceptAsObserver :: ReadM AcceptAsObserver
-parseAcceptAsObserver = eitherReader $ decodeAAO . encodeUtf8 . T.pack
-  where
-    decodeAAO = \case
-      "all" -> Right AOAll
-      "no-image" -> Right AONoImage
-      _ -> Left "bad AcceptAsObserver"
