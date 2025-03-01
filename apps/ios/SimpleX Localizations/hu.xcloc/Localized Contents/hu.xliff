@@ -1499,9 +1499,9 @@
         <target>Jelkód módosítása</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change receiving address" xml:space="preserve">
+      <trans-unit id="Change receiving address" xml:space="preserve" approved="no">
         <source>Change receiving address</source>
-        <target>A fogadási cím módosítása</target>
+        <target state="translated">Fogadási cím módosítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change receiving address?" xml:space="preserve">
