@@ -457,7 +457,6 @@ data UserContactLink = UserContactLink
 
 data GroupLinkInfo = GroupLinkInfo
   { groupId :: GroupId,
-    acceptance :: GroupAcceptance,
     memberRole :: GroupMemberRole
   }
   deriving (Show)
@@ -498,14 +497,14 @@ getUserContactLinkById db userId userContactLinkId =
 groupLinkInfoQuery :: Query
 groupLinkInfoQuery =
   [sql|
-    SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_auto_accept, group_link_member_role
+    SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
     FROM user_contact_links
     WHERE user_id = ?
   |]
 
-toGroupLinkInfo :: (Maybe GroupId, Maybe GroupAcceptance, Maybe GroupMemberRole) -> Maybe GroupLinkInfo
-toGroupLinkInfo (groupId_, acceptance_, mRole_) =
-  (\groupId -> GroupLinkInfo {groupId, acceptance = fromMaybe GAAuto acceptance_, memberRole = fromMaybe GRMember mRole_})
+toGroupLinkInfo :: (Maybe GroupId, Maybe GroupMemberRole) -> Maybe GroupLinkInfo
+toGroupLinkInfo (groupId_, mRole_) =
+  (\groupId -> GroupLinkInfo {groupId, memberRole = fromMaybe GRMember mRole_})
     <$> groupId_
 
 getGroupLinkInfo :: DB.Connection -> UserId -> GroupId -> IO (Maybe GroupLinkInfo)

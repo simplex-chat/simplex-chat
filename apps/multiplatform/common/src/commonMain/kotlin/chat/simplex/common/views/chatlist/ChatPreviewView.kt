@@ -52,9 +52,9 @@ fun ChatPreviewView(
   val cInfo = chat.chatInfo
 
   @Composable
-  fun inactiveIcon() {
+  fun inactiveIcon(icon: ImageResource = MR.images.ic_cancel_filled) {
     Icon(
-      painterResource(MR.images.ic_cancel_filled),
+      painterResource(icon),
       stringResource(MR.strings.icon_descr_group_inactive),
       Modifier.size(18.sp.toDp()).background(MaterialTheme.colors.background, CircleShape),
       tint = MaterialTheme.colors.secondary
@@ -70,6 +70,7 @@ fun ChatPreviewView(
         }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
+          GroupMemberStatus.MemPendingApproval -> inactiveIcon(MR.images.ic_help_filled)
           GroupMemberStatus.MemRejected -> inactiveIcon()
           GroupMemberStatus.MemLeft -> inactiveIcon()
           GroupMemberStatus.MemRemoved -> inactiveIcon()

@@ -581,7 +581,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let (UserContactLink {autoAccept}, gli_) = ucl
                 when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
                 -- TODO REMOVE LEGACY vvv
-                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole, acceptance = _acceptance} -> do
+                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                   subMode <- chatReadVar subscriptionMode
                   groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
@@ -1205,10 +1205,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user cReq incognitoProfile reqPQSup
                         toView $ CRAcceptingContactRequest user ct
-                      Just gli@GroupLinkInfo {groupId, acceptance = gAcceptance, memberRole = gLinkMemRole} -> do
+                      Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                         acceptMember_ <- asks $ acceptMember . chatHooks . config
-                        maybe (pure $ Right (gAcceptance, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
+                        maybe (pure $ Right (GAAuto, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
                           Right (acceptance, useRole)
                             | v < groupFastLinkJoinVersion ->
                                 messageError "processUserContactRequest: chat version range incompatible for accepting group join request"

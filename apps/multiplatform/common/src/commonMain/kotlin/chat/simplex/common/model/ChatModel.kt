@@ -1917,6 +1917,7 @@ data class GroupMember (
     GroupMemberStatus.MemGroupDeleted -> false
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemPendingApproval -> true
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
     GroupMemberStatus.MemAccepted -> false
@@ -1933,6 +1934,7 @@ data class GroupMember (
     GroupMemberStatus.MemGroupDeleted -> false
     GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemPendingApproval -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
     GroupMemberStatus.MemAccepted -> true
@@ -2037,6 +2039,7 @@ enum class GroupMemberStatus {
   @SerialName("deleted") MemGroupDeleted,
   @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
+  @SerialName("pending_approval") MemPendingApproval,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
   @SerialName("accepted") MemAccepted,
@@ -2052,6 +2055,7 @@ enum class GroupMemberStatus {
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
     MemAccepted -> generalGetString(MR.strings.group_member_status_accepted)
@@ -2068,6 +2072,7 @@ enum class GroupMemberStatus {
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
     MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
+    MemPendingApproval -> generalGetString(MR.strings.group_member_status_pending_approval_short)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
     MemAccepted -> generalGetString(MR.strings.group_member_status_connecting)

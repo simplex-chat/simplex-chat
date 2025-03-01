@@ -1632,6 +1632,8 @@
   <string name="group_member_status_group_deleted">group deleted</string>
   <string name="group_member_status_unknown">unknown status</string>
   <string name="group_member_status_invited">invited</string>
+  <string name="group_member_status_pending_approval">pending approval</string>
+  <string name="group_member_status_pending_approval_short">pending</string>
   <string name="group_member_status_introduced">connecting (introduced)</string>
   <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
   <string name="group_member_status_accepted">connecting (accepted)</string>

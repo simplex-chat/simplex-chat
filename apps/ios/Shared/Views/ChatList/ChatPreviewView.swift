@@ -143,6 +143,7 @@ struct ChatPreviewView: View {
             }
         case let .group(groupInfo):
             switch (groupInfo.membership.memberStatus) {
+            case .memPendingApproval: inactiveIcon("questionmark.circle.fill")
             case .memRejected: inactiveIcon()
             case .memLeft: inactiveIcon()
             case .memRemoved: inactiveIcon()
@@ -154,8 +155,8 @@ struct ChatPreviewView: View {
         }
     }
 
-    @ViewBuilder private func inactiveIcon() -> some View {
-        Image(systemName: "multiply.circle.fill")
+    private func inactiveIcon(_ icon: String = "multiply.circle.fill") -> some View {
+        Image(systemName: icon)
             .foregroundColor(.secondary.opacity(0.65))
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
     }
