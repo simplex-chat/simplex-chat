@@ -1758,7 +1758,7 @@
 \nError del servidor de destino: %2$s</string>
     <string name="snd_error_proxy">Servidor de reenvío: %1$s
 \nError: %2$s</string>
-    <string name="snd_error_expired">Problema en la red - el mensaje ha expirado tras muchos intentos de envío.</string>
+    <string name="snd_error_expired">Problema en la red - el mensaje ha caducado tras muchos intentos de envío.</string>
     <string name="srv_error_version">La versión del servidor es incompatible con la configuración de la red.</string>
     <string name="network_smp_proxy_mode_private_routing">Enrutamiento privado</string>
     <string name="network_smp_proxy_mode_unknown">Servidores desconocidos</string>
@@ -1951,7 +1951,7 @@
     <string name="downloaded_files">Archivos descargados</string>
     <string name="download_errors">Errores de descarga</string>
     <string name="duplicates_label">duplicados</string>
-    <string name="expired_label">expirados</string>
+    <string name="expired_label">caducados</string>
     <string name="open_server_settings_button">Abrir configuración del servidor</string>
     <string name="other_label">otros</string>
     <string name="other_errors">otros errores</string>
@@ -2357,8 +2357,8 @@
     <string name="v6_3_reports_descr">Ayuda a los admins moderar sus grupos.</string>
     <string name="v6_3_better_groups_performance">Mejor rendimiento de los grupos</string>
     <string name="v6_3_better_privacy_and_security">Mejor privacidad y seguridad</string>
-    <string name="v6_3_reports">Envia informes privados</string>
-    <string name="v6_3_set_message_expiration_in_chats">Establece la expiración de mensajes en chats.</string>
+    <string name="v6_3_reports">Envía informes privados</string>
+    <string name="v6_3_set_message_expiration_in_chats">Establece vencimiento de los mensajes en chats.</string>
     <string name="group_preview_rejected">rechazado</string>
     <string name="group_member_status_rejected">rechazado</string>
 </resources>
