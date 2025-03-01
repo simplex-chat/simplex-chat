@@ -1412,4 +1412,14 @@
     <string name="your_ice_servers">Vaši ICE serveri</string>
     <string name="use_random_passphrase">Koristiti nasumičnu pristupnu frazu</string>
     <string name="auth_disable_simplex_lock">Onemogućiti SimpleX Zaključavanje</string>
+    <string name="servers_info_reconnect_server_title">Ponovo povezati server?</string>
+    <string name="no_received_app_files">Nema primljenih niti poslanih datoteka</string>
+    <string name="integrity_msg_bad_hash">neispravan hash poruke</string>
+    <string name="alert_title_msg_bad_id">Neispravan ID poruke</string>
+    <string name="servers_info_reconnect_servers_title">Ponovo povezati servere?</string>
+    <string name="notification_preview_mode_message_desc">Prikazati kontakt i poruku</string>
+    <string name="show_developer_options">Prikazati opcije za programere</string>
+    <string name="alert_title_msg_bad_hash">Neispravan hash poruke</string>
+    <string name="servers_info_reconnect_server_message">Ponovo povezati server kako biste prisilili dostavu poruke. To koristi dodatni saobraćaj.</string>
+    <string name="integrity_msg_bad_id">neispravan ID poruke</string>
 </resources>
