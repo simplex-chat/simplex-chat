@@ -448,11 +448,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     sendMemberCaptcha :: GroupInfo -> GroupMember -> Text -> Int -> IO ()
     sendMemberCaptcha GroupInfo {groupId} m noticeText prevAttempts = do
       s <- getCaptchaStr captchaLength ""
-      img <- getCaptcha s
+      mc <- getCaptcha s
       sentAt <- getCurrentTime
       let captcha = PendingCaptcha {captchaText = T.pack s, sentAt, attempts = prevAttempts + 1}
       atomically $ TM.insert gmId captcha $ pendingCaptchas env
-      sendCaptcha $ ImageData img
+      sendCaptcha mc
       where
         getCaptchaStr 0 s = pure s
         getCaptchaStr n s = do
@@ -460,9 +460,16 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let c = chars !! i
           getCaptchaStr (n - 1) (c : s)
         chars = "23456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-        getCaptcha t = firstLine <$> readProcess (captchaGenerator opts) [t] ""
-        firstLine = maybe "" L.head . L.nonEmpty . T.lines . T.pack
-        sendCaptcha img= sendComposedMessages cc (SRGroup groupId $ Just gmId) [MCText noticeText, MCImage "" img]
+        getCaptcha s = case captchaGenerator opts of
+          Nothing -> pure textMsg
+          Just script -> content <$> readProcess script [s] ""
+          where
+            textMsg = MCText $ T.pack s 
+            content r = case T.lines $ T.pack r of
+              [] -> textMsg
+              "" : _ -> textMsg
+              img : _ -> MCImage "" $ ImageData img
+        sendCaptcha mc = sendComposedMessages cc (SRGroup groupId $ Just gmId) [MCText noticeText, mc]
         gmId = groupMemberId' m
 
     approvePendingMember :: DirectoryMemberAcceptance -> GroupInfo -> GroupMember -> IO ()

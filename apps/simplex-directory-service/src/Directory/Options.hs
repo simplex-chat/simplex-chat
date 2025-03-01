@@ -28,7 +28,7 @@ data DirectoryOpts = DirectoryOpts
     blockedExtensionRules :: Maybe FilePath,
     nameSpellingFile :: Maybe FilePath,
     profileNameLimit :: Int,
-    captchaGenerator :: FilePath,
+    captchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
     serviceName :: T.Text,
     runCLI :: Bool,
@@ -99,11 +99,12 @@ directoryOpts appDir defaultDbName = do
           <> value maxBound
       )
   captchaGenerator <-
-    strOption
-      ( long "captcha-generator"
-          <> metavar "CAPTCHA_GENERATOR"
-          <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
-      )
+    optional $
+      strOption
+        ( long "captcha-generator"
+            <> metavar "CAPTCHA_GENERATOR"
+            <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
+        )
   directoryLog <-
     Just
       <$> strOption

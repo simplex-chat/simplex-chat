@@ -86,11 +86,11 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
       adminUsers = [],
       superUsers,
       ownersGroup,
+      blockedFragmentsFile = Nothing,
       blockedWordsFile = Nothing,
       blockedExtensionRules = Nothing,
       nameSpellingFile = Nothing,
       profileNameLimit = maxBound,
-      acceptAsObserver = Nothing,
       captchaGenerator = Nothing,
       directoryLog = Just $ ps </> "directory_service.log",
       serviceName = "SimpleX-Directory",
@@ -1115,7 +1115,9 @@ runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    bot st = simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts
+    bot st = do
+      env <- newServiceState opts
+      simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts env
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
