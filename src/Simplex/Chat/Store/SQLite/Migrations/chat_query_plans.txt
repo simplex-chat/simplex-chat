@@ -2965,15 +2965,6 @@ Plan:
 SEARCH user_contact_links USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 
 Query: 
-        SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
-        FROM user_contact_links
-        WHERE user_id = ?
-          AND user_contact_link_id = ?
-      
-Plan:
-SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
@@ -4632,6 +4623,14 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
+    SELECT conn_req_contact, auto_accept, business_address, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+    FROM user_contact_links
+    WHERE user_id = ?
+   AND user_contact_link_id = ?
+Plan:
+SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path
