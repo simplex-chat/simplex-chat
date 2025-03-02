@@ -2323,4 +2323,6 @@
     <string name="v6_3_better_groups_performance">Millor rendiment dels grups</string>
     <string name="v6_3_faster_deletion_of_groups">Supressió més ràpida de grups.</string>
     <string name="v6_3_reports_descr">Ajudar els administradors a moderar els seus grups.</string>
+    <string name="group_preview_rejected">rebutjat</string>
+    <string name="group_member_status_rejected">rebutjat</string>
 </resources>
