@@ -118,8 +118,8 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCConfirmDuplicateGroup_ :: DirectoryCmdTag 'DRUser
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
-  DCSetRole_ :: DirectoryCmdTag 'DRUser
-  DCSetFilter_ :: DirectoryCmdTag 'DRUser
+  DCMemberRole_ :: DirectoryCmdTag 'DRUser
+  DCGroupFilter_ :: DirectoryCmdTag 'DRUser
   DCApproveGroup_ :: DirectoryCmdTag 'DRAdmin
   DCRejectGroup_ :: DirectoryCmdTag 'DRAdmin
   DCSuspendGroup_ :: DirectoryCmdTag 'DRAdmin
@@ -147,8 +147,8 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
-  DCSetRole :: UserGroupRegId -> Maybe GroupName -> GroupMemberRole -> DirectoryCmd 'DRUser
-  DCSetFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
+  DCMemberRole :: UserGroupRegId -> Maybe GroupName -> Maybe GroupMemberRole -> DirectoryCmd 'DRUser
+  DCGroupFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
@@ -191,8 +191,8 @@ directoryCmdP =
         "list" -> u DCListUserGroups_
         "ls" -> u DCListUserGroups_
         "delete" -> u DCDeleteGroup_
-        "role" -> u DCSetRole_
-        "filter" -> u DCSetFilter_
+        "role" -> u DCMemberRole_
+        "filter" -> u DCGroupFilter_
         "approve" -> au DCApproveGroup_
         "reject" -> au DCRejectGroup_
         "suspend" -> au DCSuspendGroup_
@@ -221,14 +221,16 @@ directoryCmdP =
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup
-      DCSetRole_ -> do
+      DCMemberRole_ -> do
         (groupId, displayName_) <- gc_ (,)
-        memberRole <- spacesP *> ("member" $> GRMember <|> "observer" $> GRObserver)
-        pure $ DCSetRole groupId displayName_ memberRole
-      DCSetFilter_ -> do
+        memberRole_ <- optional $ spacesP *> ("member" $> GRMember <|> "observer" $> GRObserver)
+        pure $ DCMemberRole groupId displayName_ memberRole_
+      DCGroupFilter_ -> do
         (groupId, displayName_) <- gc_ (,)
-        acceptance_ <- optional $ acceptancePresetsP <|> acceptanceFiltersP
-        pure $ DCSetFilter groupId displayName_ acceptance_
+        acceptance_ <-
+          (A.takeWhile (== ' ') >> A.endOfInput) $> Nothing
+            <|> Just <$> (acceptancePresetsP <|> acceptanceFiltersP)
+        pure $ DCGroupFilter groupId displayName_ acceptance_
         where
           acceptancePresetsP =
             spacesP
@@ -239,10 +241,10 @@ directoryCmdP =
                   "strong" $> strongJoinFilter
                 ]
           acceptanceFiltersP = do
-            filterNames <- filterP "name"
-            useCaptcha <- filterP "captcha"
+            rejectNames <- filterP "name"
+            passCaptcha <- filterP "captcha"
             makeObserver <- filterP "observer"
-            pure DirectoryMemberAcceptance {filterNames, useCaptcha, makeObserver}
+            pure DirectoryMemberAcceptance {rejectNames, passCaptcha, makeObserver}
           filterP :: Text -> Parser (Maybe ProfileCondition)
           filterP s = Just <$> (spacesP *> A.string s *> conditionP) <|> pure Nothing
           conditionP =
@@ -288,8 +290,8 @@ directoryCmdTag = \case
   DCListUserGroups -> "list" 
   DCDeleteGroup {} -> "delete"
   DCApproveGroup {} -> "approve"
-  DCSetRole {} -> "role"
-  DCSetFilter {} -> "filter"
+  DCMemberRole {} -> "role"
+  DCGroupFilter {} -> "filter"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"

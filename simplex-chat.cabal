@@ -474,6 +474,7 @@ test-suite simplex-chat-test
       ViewTests
       Broadcast.Bot
       Broadcast.Options
+      Directory.BlockedWords
       Directory.Events
       Directory.Options
       Directory.Search

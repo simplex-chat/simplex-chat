@@ -53,7 +53,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (ifM)
 import System.Directory (doesFileExist, renameFile)
 import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
@@ -91,13 +91,13 @@ data DirectoryGroupData = DirectoryGroupData
 --   PCAll - apply to all profiles
 --   PCNoImage - apply to profiles without images
 data DirectoryMemberAcceptance = DirectoryMemberAcceptance
-  { filterNames :: Maybe ProfileCondition, -- reject long names and names with profanity
-    useCaptcha :: Maybe ProfileCondition, -- run captcha challenge with joining members
+  { rejectNames :: Maybe ProfileCondition, -- reject long names and names with profanity
+    passCaptcha :: Maybe ProfileCondition, -- run captcha challenge with joining members
     makeObserver :: Maybe ProfileCondition -- the role assigned in the end, after captcha challenge
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
-data ProfileCondition = PCAll | PCNoImage deriving (Show)
+data ProfileCondition = PCAll | PCNoImage deriving (Eq, Show)
 
 noJoinFilter :: DirectoryMemberAcceptance
 noJoinFilter = DirectoryMemberAcceptance Nothing Nothing Nothing
@@ -105,24 +105,24 @@ noJoinFilter = DirectoryMemberAcceptance Nothing Nothing Nothing
 basicJoinFilter :: DirectoryMemberAcceptance
 basicJoinFilter =
   DirectoryMemberAcceptance
-    { filterNames = Just PCNoImage,
-      useCaptcha = Nothing,
+    { rejectNames = Just PCNoImage,
+      passCaptcha = Nothing,
       makeObserver = Nothing
     }
 
 moderateJoinFilter :: DirectoryMemberAcceptance
 moderateJoinFilter =
   DirectoryMemberAcceptance
-    { filterNames = Just PCAll,
-      useCaptcha = Just PCNoImage,
+    { rejectNames = Just PCAll,
+      passCaptcha = Just PCNoImage,
       makeObserver = Nothing
     }
 
 strongJoinFilter :: DirectoryMemberAcceptance
 strongJoinFilter =
   DirectoryMemberAcceptance
-    { filterNames = Just PCAll,
-      useCaptcha = Just PCAll,
+    { rejectNames = Just PCAll,
+      passCaptcha = Just PCAll,
       makeObserver = Nothing
     }
 
@@ -167,7 +167,7 @@ grDirectoryStatus = \case
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)
 
-$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MA") ''DirectoryMemberAcceptance)
+$(JQ.deriveJSON defaultJSON ''DirectoryMemberAcceptance)
 
 $(JQ.deriveJSON defaultJSON ''DirectoryGroupData)
 

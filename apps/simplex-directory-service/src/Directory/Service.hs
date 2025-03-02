@@ -25,8 +25,10 @@ import qualified Control.Exception as E
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
+import Data.Int (Int64)
 import Data.List (find, intercalate)
-import qualified Data.List.NonEmpty as L
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Set (Set)
@@ -49,6 +51,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Direct (getContact)
+import Simplex.Chat.Store.Groups (getGroupInfo, getGroupLink, getGroupSummary, setGroupCustomData)
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -158,10 +161,10 @@ acceptMemberHook
   GroupLinkInfo {memberRole}
   Profile {displayName, image = img} = runExceptT $ do
     let a = groupMemberAcceptance g
-    when (useMemberFilter img $ filterNames a) checkName
+    when (useMemberFilter img $ rejectNames a) checkName
     pure $
       if
-        | useMemberFilter img (useCaptcha a) -> (GAManual, GRMember)
+        | useMemberFilter img (passCaptcha a) -> (GAManual, GRMember)
         | useMemberFilter img (makeObserver a) -> (GAAuto, GRObserver)
         | otherwise -> (GAAuto, memberRole)
     -- TODO [captcha] uncomment for testing
@@ -514,14 +517,14 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     memberRequiresCaptcha :: DirectoryMemberAcceptance -> GroupMember -> Bool
     memberRequiresCaptcha a GroupMember {memberProfile = LocalProfile {image}} =
-      useMemberFilter image $ useCaptcha a
+      useMemberFilter image $ passCaptcha a
       -- TODO [captcha] uncomment for testing
       -- True
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
     sendToApprove GroupInfo {groupProfile = p@GroupProfile {displayName, image = image'}} GroupReg {dbGroupId, dbContactId} gaId = do
       ct_ <- getContact' cc user dbContactId
-      gr_ <- getGroupAndSummary cc dbGroupId
+      gr_ <- getGroupAndSummary cc user dbGroupId
       let membersStr = maybe "" (\(_, s) -> "_" <> tshow (currentMembers s) <> " members_\n") gr_
           text =
             maybe ("The group ID " <> tshow dbGroupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow dbGroupId <> ": ") ct_
@@ -676,16 +679,54 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         withUserGroupReg ugrId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} gr -> do
           delGroupReg st gr
           sendReply $ "Your group " <> displayName <> " is deleted from the directory"
-      DCSetRole gId gName_ mRole ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $
-          \GroupInfo {groupId, groupProfile = GroupProfile {displayName}} _gr -> do
-            gLink_ <- setGroupLinkRole cc groupId mRole
-            sendReply $ case gLink_ of
-              Nothing -> "Error: the initial member role for the group " <> displayName <> " was NOT upgated"
-              Just gLink ->
-                ("The initial member role for the group " <> displayName <> " is set to *" <> strEncodeTxt mRole <> "*\n\n")
-                  <> ("*Please note*: it applies only to members joining via this link: " <> strEncodeTxt (simplexChatContact gLink))
-      DCSetFilter gId gName_ acceptance_ -> pure ()
+      DCMemberRole gId gName_ mRole_ ->
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr -> do
+          let GroupInfo {groupProfile = GroupProfile {displayName = n}} = g
+          case mRole_ of
+            Nothing ->
+              getGroupLinkRole cc user g >>= \case
+                Just (_, gLink, mRole) -> do
+                  let anotherRole = case mRole of GRObserver -> GRMember; _ -> GRObserver
+                  sendReply $
+                    initialRole n mRole
+                      <> ("Send */role " <> tshow gId <> " " <> strEncodeTxt anotherRole <> "* to change it.\n\n")
+                      <> onlyViaLink gLink
+                Nothing -> sendReply $ "Error: failed reading the initial member role for the group " <> n
+            Just mRole -> do
+              setGroupLinkRole cc g mRole >>= \case
+                Just gLink -> sendReply $ initialRole n mRole <> "\n" <> onlyViaLink gLink
+                Nothing -> sendReply $ "Error: the initial member role for the group " <> n <> " was NOT upgated."
+        where
+          initialRole n mRole = "The initial member role for the group " <> n <> " is set to *" <> strEncodeTxt mRole <> "*\n"
+          onlyViaLink gLink = "*Please note*: it applies only to members joining via this link: " <> strEncodeTxt (simplexChatContact gLink)
+      DCGroupFilter gId gName_ acceptance_ ->
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr -> do
+          let GroupInfo {groupProfile = GroupProfile {displayName = n}} = g
+              a = groupMemberAcceptance g
+          case acceptance_ of
+            Just a' | a /= a' -> do
+              let d = toCustomData $ DirectoryGroupData a'
+              withDB' cc (\db -> setGroupCustomData db user g $ Just d) >>= \case
+                Just () -> sendSettigns n a' " set to"
+                Nothing -> sendReply $ "Error changing spam filter settings for group " <> n
+            _ -> sendSettigns n a ""
+        where
+          sendSettigns n a setTo =
+            sendReply $
+              T.unlines
+                [ "Spam filter settings for group " <> n <> setTo <> ":",
+                  "- reject long/inappropriate names: " <> showCondition (rejectNames a),
+                  "- pass captcha to join: " <> showCondition (passCaptcha a),
+                  -- "- make observer: " <> showCondition (makeObserver a) <> (if isJust (makeObserver a) then "" else " (use default set with /role command)"),
+                  "",
+                  "Use */filter " <> tshow gId <> " <level>* to change spam filter level: no (disable), basic, moderate, strong.",
+                  -- "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]] [observer[=noimage]]* for advanced filter configuration."
+                  "Or use */filter " <> tshow gId <> " [name[=noimage]] [captcha[=noimage]]* for advanced filter configuration."
+                ]
+          showCondition = \case
+            Nothing -> "_disabled_"
+            Just PCAll -> "_enabled_"
+            Just PCNoImage -> "_enabled for profiles without image_"
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       where
@@ -696,7 +737,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           getUserGroupReg st (contactId' ct) ugrId >>= \case
             Nothing -> sendReply $ "Group ID " <> tshow ugrId <> " not found"
             Just gr@GroupReg {dbGroupId} -> do
-              getGroup cc dbGroupId >>= \case
+              getGroup cc user dbGroupId >>= \case
                 Nothing -> sendReply $ "Group ID " <> tshow ugrId <> " not found"
                 Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
                   | maybe True (displayName ==) gName_ -> action g gr
@@ -712,18 +753,18 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             let gs' = takeTop searchResults gs
                 moreGroups = length gs - length gs'
                 more = if moreGroups > 0 then ", sending top " <> tshow (length gs') else ""
-            sendReply $ "Found " <> tshow (length gs) <> " group(s)" <> more <> "."
+                reply = "Found " <> tshow (length gs) <> " group(s)" <> more <> "."
             updateSearchRequest (STSearch s) $ groupIds gs'
-            sendFoundGroups gs' moreGroups
+            sendFoundGroups reply gs' moreGroups
         sendAllGroups takeFirst sortName searchType = \case
           [] -> sendReply "No groups listed"
           gs -> do
             let gs' = takeFirst searchResults gs
                 moreGroups = length gs - length gs'
                 more = if moreGroups > 0 then ", sending " <> sortName <> " " <> tshow (length gs') else ""
-            sendReply $ tshow (length gs) <> " group(s) listed" <> more <> "."
+                reply = tshow (length gs) <> " group(s) listed" <> more <> "."
             updateSearchRequest searchType $ groupIds gs'
-            sendFoundGroups gs' moreGroups
+            sendFoundGroups reply gs' moreGroups
         sendNextSearchResults takeFirst SearchRequest {searchType, sentGroups} = \case
           [] -> do
             sendReply "Sorry, no more groups"
@@ -732,27 +773,25 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             let gs' = takeFirst searchResults $ filterNotSent sentGroups gs
                 sentGroups' = sentGroups <> groupIds gs'
                 moreGroups = length gs - S.size sentGroups'
-            sendReply $ "Sending " <> tshow (length gs') <> " more group(s)."
+                reply = "Sending " <> tshow (length gs') <> " more group(s)."
             updateSearchRequest searchType sentGroups'
-            sendFoundGroups gs' moreGroups
+            sendFoundGroups reply gs' moreGroups
         updateSearchRequest :: SearchType -> Set GroupId -> IO ()
         updateSearchRequest searchType sentGroups = do
           searchTime <- getCurrentTime
           let search = SearchRequest {searchType, searchTime, sentGroups}
           atomically $ TM.insert (contactId' ct) search searchRequests
-        sendFoundGroups gs moreGroups =
-          void . forkIO $ do
-            forM_ gs $
-              \(GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
-                let membersStr = "_" <> tshow currentMembers <> " members_"
-                    showId = if isAdmin then tshow groupId <> ". " else ""
-                    text = showId <> groupInfoText p <> "\n" <> membersStr
-                    msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
-                sendComposedMessage cc ct Nothing msg
-            when (moreGroups > 0) $
-              sendComposedMessage cc ct Nothing $
-                MCText $
-                  "Send */next* or just *.* for " <> tshow moreGroups <> " more result(s)."
+        sendFoundGroups reply gs moreGroups =
+          void . forkIO $ sendComposedMessages_ cc (SRDirect $ contactId' ct) msgs
+          where
+            msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
+            replyMsg = (Just ciId, MCText reply)
+            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) =
+              let membersStr = "_" <> tshow currentMembers <> " members_"
+                  showId = if isAdmin then tshow groupId <> ". " else ""
+                  text = showId <> groupInfoText p <> "\n" <> membersStr
+               in (Nothing, maybe (MCText text) (\image -> MCImage {text, image}) image_)
+            moreMsg = (Nothing, MCText $ "Send */next* or just *.* for " <> tshow moreGroups <> " more result(s).")
 
     deAdminCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRAdmin -> IO ()
     deAdminCommand ct ciId cmd
@@ -918,7 +957,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
 
     withGroupAndReg_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()
     withGroupAndReg_ sendReply gId gName_ action =
-      getGroup cc gId >>= \case
+      getGroup cc user gId >>= \case
         Nothing -> sendReply $ "Group ID " <> tshow gId <> " not found (getGroup)"
         Just g@GroupInfo {groupProfile = GroupProfile {displayName}}
           | maybe False (displayName ==) gName_ ->
@@ -932,7 +971,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     sendGroupInfo ct gr@GroupReg {dbGroupId} useGroupId ownerStr_ = do
       grStatus <- readTVarIO $ groupRegStatus gr
       let statusStr = "Status: " <> groupRegStatusText grStatus
-      getGroupAndSummary cc dbGroupId >>= \case
+      getGroupAndSummary cc user dbGroupId >>= \case
         Just (GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
           let membersStr = "_" <> tshow currentMembers <> " members_"
               text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] <> maybeToList ownerStr_ <> [membersStr, statusStr]
@@ -943,16 +982,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           sendComposedMessage cc ct Nothing $ MCText text
 
 getContact' :: ChatController -> User -> ContactId -> IO (Maybe Contact)
-getContact' cc@ChatController {config = ChatConfig {chatVRange = vr}} user ctId = do
-  withDB cc $ \db -> getContact db vr user ctId
+getContact' cc user ctId = withDB cc $ \db -> getContact db (vr cc) user ctId
 
-getGroup :: ChatController -> GroupId -> IO (Maybe GroupInfo)
-getGroup cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
-  where
-    resp :: ChatResponse -> Maybe GroupInfo
-    resp = \case
-      CRGroupInfo {groupInfo} -> Just groupInfo
-      _ -> Nothing
+getGroup :: ChatController -> User -> GroupId -> IO (Maybe GroupInfo)
+getGroup cc user gId = withDB cc $ \db -> getGroupInfo db (vr cc) user gId
 
 withDB' :: ChatController -> (DB.Connection -> IO a) -> IO (Maybe a)
 withDB' cc a = withDB cc $ ExceptT . fmap Right . a
@@ -964,15 +997,20 @@ withDB ChatController {chatStore} action = do
     Right r -> pure $ Just r
     Left e -> Nothing <$ logError ("Database error: " <> tshow e)
 
-getGroupAndSummary :: ChatController -> GroupId -> IO (Maybe (GroupInfo, GroupSummary))
-getGroupAndSummary cc gId = resp <$> sendChatCmd cc (APIGroupInfo gId)
-  where
-    resp = \case
-      CRGroupInfo {groupInfo, groupSummary} -> Just (groupInfo, groupSummary)
-      _ -> Nothing
+getGroupAndSummary :: ChatController -> User -> GroupId -> IO (Maybe (GroupInfo, GroupSummary))
+getGroupAndSummary cc user gId =
+  withDB cc $ \db -> (,) <$> getGroupInfo db (vr cc) user gId <*> liftIO (getGroupSummary db user gId)
 
-setGroupLinkRole :: ChatController -> GroupId -> GroupMemberRole -> IO (Maybe ConnReqContact)
-setGroupLinkRole cc gId mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole gId mRole)
+vr :: ChatController -> VersionRangeChat
+vr ChatController {config = ChatConfig {chatVRange}} = chatVRange
+{-# INLINE vr #-}
+
+getGroupLinkRole :: ChatController -> User -> GroupInfo -> IO (Maybe (Int64, ConnReqContact, GroupMemberRole))
+getGroupLinkRole cc user gInfo =
+  withDB cc $ \db -> getGroupLink db user gInfo
+
+setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe ConnReqContact)
+setGroupLinkRole cc GroupInfo {groupId} mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole groupId mRole)
   where
     resp = \case
       CRGroupLink _ _ gLink _ -> Just gLink
