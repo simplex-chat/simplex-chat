@@ -131,7 +131,7 @@ You may participate in a public group and receive content from a public channel 
   - to retain a copy of your messages according to the Group settings (e.g., the Group may allow irreversible message deletion from the recipient devices for a limited period of time, or it may only allow to edit and mark messages as deleted on recipient devices). Deleting message from the recipient devices or marking message as deleted revokes the license to share the message.
 - to Group owners: to share your messages with the new Group members as history of the Group. Currently, the Group history shared with the new members is limited to 100 messages.
 
-Group owners may use group relays or automated bots (Group Relays) to re-broadcast member messages to all members, for efficiency. The Group Relays may be operated by the group owners, by preset operators or by 3rd parties. The Group Relays have access to and will retain messages in line with Group settings, for technical functioning of the Group. Neither you nor group owners grant any content license to Group Relay operators.
+Group owners may use chat relays or automated bots (Chat Relays) to re-broadcast member messages to all members, for efficiency. The Chat Relays may be operated by the group owners, by preset operators or by 3rd parties. The Chat Relays have access to and will retain messages in line with Group settings, for technical functioning of the Group. Neither you nor group owners grant any content license to Chat Relay operators.
 
 #### User Support
 
@@ -141,9 +141,9 @@ The app includes support contact operated by SimpleX Chat Ltd. If you contact su
 
 Preset server operators will not share the information on their servers with each other, other than aggregate usage statistics. 
 
-Preset server operators will not provide general access to their servers or the data on their servers to each other.
+Preset server operators must not provide general access to their servers or the data on their servers to each other.
 
-Preset server operators will provide non-administrative access to control port of preset servers to SimpleX Chat Ltd, for the purposes of removing identified illegal content. This control port access only allows deleting known links and files, and access to aggregate statistics, but does NOT allow enumerating any information on the servers.
+Preset server operators will provide non-administrative access to control port of preset servers to SimpleX Chat Ltd, for the purposes of removing illegal content identified in publicly accessible resources (contact and group addresses, and downloadable files). This control port access only allows deleting known links and files, and accessing aggregate server-wide statistics, but does NOT allow enumerating any information on the servers or accessing statistics related to specific users.
 
 ### Information Preset Server Operators May Share
 
@@ -205,8 +205,7 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 **3rd party client applications**. You may use a 3rd party application (App) to access preset operators' Infrastructure or systems, provided that this App:
 - is compatible with the protocol specifications not older than 1 year,
 - provides user-to-user messaging only or enables automated chat bots sending messages requested by users (in case of bots, it must be made clear to the users that these are automated bots),
-- uses the same limits and rules as Software,
-- implements the same client-side restrictions as Software,
+- implements the same limits, rules and restrictions as Software,
 - requires that the users accept the same Conditions of use of preset operators' Infrastructure as in Software prior to providing access to this Infrastructure,
 - displays the notice that it is the App for using SimpleX network,
 - provides its source code under open-source license accessible to the users via the App interface. In case the App uses the source code of Software, the App's source code must be provided under AGPLv3 license, and in case it is developed without using Software code its source code must be provided under any widely recognized free open-source license,
@@ -244,4 +243,4 @@ You accept the Conditions of Use of Software and Infrastructure ("Conditions") b
 
 **Ending these conditions**. You may end these Conditions with SimpleX Chat Ltd and preset server operators at any time by deleting the Applications from your devices and discontinuing use of the Infrastructure of SimpleX Chat Ltd and preset server operators. The provisions related to Licenses, Disclaimers, Limitation of Liability, Resolving dispute, Availability, Changes to the conditions, Enforcing the conditions, and Ending these conditions will survive termination of your relationship with SimpleX Chat Ltd and/or preset server operators.
 
-Updated February 19, 2025
+Updated March 3, 2025
