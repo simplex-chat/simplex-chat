@@ -797,6 +797,9 @@
 "Better groups" = "Betere groepen";
 
 /* No comment provided by engineer. */
+"Better groups performance" = "Betere prestaties van groepen";
+
+/* No comment provided by engineer. */
 "Better message dates." = "Betere datums voor berichten.";
 
 /* No comment provided by engineer. */
@@ -807,6 +810,9 @@
 
 /* No comment provided by engineer. */
 "Better notifications" = "Betere meldingen";
+
+/* No comment provided by engineer. */
+"Better privacy and security" = "Betere privacy en veiligheid";
 
 /* No comment provided by engineer. */
 "Better security ✅" = "Betere beveiliging ✅";
@@ -1893,6 +1899,9 @@
 "Don't enable" = "Niet inschakelen";
 
 /* No comment provided by engineer. */
+"Don't miss important messages." = "‐Mis geen belangrijke berichten.";
+
+/* No comment provided by engineer. */
 "Don't show again" = "Niet meer weergeven";
 
 /* No comment provided by engineer. */
@@ -2404,7 +2413,13 @@
 "Fast and no wait until the sender is online!" = "Snel en niet wachten tot de afzender online is!";
 
 /* No comment provided by engineer. */
+"Faster deletion of groups." = "Sneller verwijderen van groepen.";
+
+/* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Snellere deelname en betrouwbaardere berichten.";
+
+/* No comment provided by engineer. */
+"Faster sending messages." = "Sneller verzenden van berichten.";
 
 /* swipe action */
 "Favorite" = "Favoriet";
@@ -2587,6 +2602,9 @@
 "Further reduced battery usage" = "Verder verminderd batterij verbruik";
 
 /* No comment provided by engineer. */
+"Get notified when mentioned." = "Ontvang een melding als u vermeld wordt.";
+
+/* No comment provided by engineer. */
 "GIFs and stickers" = "GIF's en stickers";
 
 /* message preview */
@@ -2663,6 +2681,9 @@
 
 /* No comment provided by engineer. */
 "Help" = "Help";
+
+/* No comment provided by engineer. */
+"Help admins moderating their groups." = "Help beheerders bij het modereren van hun groepen.";
 
 /* No comment provided by engineer. */
 "Hidden" = "Verborgen";
@@ -3199,6 +3220,9 @@
 "Members can send voice messages." = "Groepsleden kunnen spraak berichten verzenden.";
 
 /* No comment provided by engineer. */
+"Mention members 👋" = "Vermeld leden 👋";
+
+/* No comment provided by engineer. */
 "Menus" = "Menu's";
 
 /* No comment provided by engineer. */
@@ -3513,6 +3537,9 @@
 /* servers error */
 "No media & file servers." = "Geen media- en bestandsservers.";
 
+/* No comment provided by engineer. */
+"No message" = "Geen bericht";
+
 /* servers error */
 "No message servers." = "Geen berichtenservers.";
 
@@ -3744,6 +3771,9 @@
 "Or to share privately" = "Of om privé te delen";
 
 /* No comment provided by engineer. */
+"Organize chats into lists" = "Organiseer chats in lijsten";
+
+/* No comment provided by engineer. */
 "other" = "overig";
 
 /* No comment provided by engineer. */
@@ -3913,6 +3943,9 @@
 
 /* No comment provided by engineer. */
 "Private filenames" = "Privé bestandsnamen";
+
+/* No comment provided by engineer. */
+"Private media file names." = "Namen van persoonlijke mediabestanden.";
 
 /* No comment provided by engineer. */
 "Private message routing" = "Routering van privéberichten";
@@ -4517,6 +4550,9 @@
 "Send notifications" = "Meldingen verzenden";
 
 /* No comment provided by engineer. */
+"Send private reports" = "Verstuur rapporten privé";
+
+/* No comment provided by engineer. */
 "Send questions and ideas" = "Stuur vragen en ideeën";
 
 /* No comment provided by engineer. */
@@ -4662,6 +4698,9 @@
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Stel het in in plaats van systeemverificatie.";
+
+/* No comment provided by engineer. */
+"Set message expiration in chats." = "Stel de berichtvervaldatum in chats in.";
 
 /* profile update event chat item */
 "set new contact address" = "nieuw contactadres instellen";
@@ -5168,6 +5207,9 @@
 
 /* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "Deze link is gebruikt met een ander mobiel apparaat. Maak een nieuwe link op de desktop.";
+
+/* No comment provided by engineer. */
+"This message was deleted or not received yet." = "Dit bericht is verwijderd of nog niet ontvangen.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Deze instelling is van toepassing op berichten in je huidige chatprofiel **%@**.";
