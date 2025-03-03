@@ -112,9 +112,6 @@ defaultChatConfig =
             ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
           },
-      allowedProfileName = Nothing,
-      profileNameLimit = maxBound,
-      acceptAsObserver = Nothing,
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
       xftpDescrPartSize = 14000,

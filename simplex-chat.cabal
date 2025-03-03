@@ -407,7 +407,6 @@ executable simplex-directory-service
   default-extensions:
       StrictData
   other-modules:
-      Directory.BlockedWords
       Directory.Events
       Directory.Options
       Directory.Search
@@ -428,7 +427,6 @@ executable simplex-directory-service
     , simplexmq >=6.3
     , stm ==2.5.*
     , time ==1.12.*
-    , unicode-transforms ==0.4.*
   default-language: Haskell2010
   if flag(client_postgres)
     cpp-options: -DdbPostgres
@@ -519,7 +517,6 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
   default-language: Haskell2010
   if flag(client_postgres)

@@ -137,9 +137,6 @@ data ChatConfig = ChatConfig
     chatVRange :: VersionRangeChat,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
-    allowedProfileName :: Maybe (ContactName -> Bool),
-    profileNameLimit :: Int,
-    acceptAsObserver :: Maybe AcceptAsObserver,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
@@ -160,11 +157,6 @@ data ChatConfig = ChatConfig
     deviceNameForRemote :: Text,
     chatHooks :: ChatHooks
   }
-
-data AcceptAsObserver
-  = AOAll -- all members
-  | AONameOnly -- members without image
-  | AOIncognito -- members with incognito-style names and without image
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
@@ -489,7 +481,7 @@ data ChatCommand
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | MemberRole GroupName ContactName GroupMemberRole
   | BlockForAll GroupName ContactName Bool
-  | RemoveMembers GroupName (NonEmpty ContactName)
+  | RemoveMember GroupName ContactName
   | LeaveGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName

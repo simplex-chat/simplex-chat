@@ -1,4 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
@@ -11,7 +10,6 @@ module Directory.Service
   ( welcomeGetOpts,
     directoryService,
     directoryServiceCLI,
-    directoryChatConfig
   )
 where
 
@@ -20,10 +18,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
-import Data.Composition ((.:))
-import Data.Containers.ListUtils (nubOrd)
 import Data.List (find, intercalate)
-import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, maybeToList)
 import Data.Set (Set)
 import qualified Data.Set as S
@@ -31,7 +26,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import Directory.BlockedWords
 import Directory.Events
 import Directory.Options
 import Directory.Search
@@ -103,9 +97,8 @@ directoryServiceCLI st opts = do
   env <- newServiceState
   eventQ <- newTQueueIO
   let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
-  cfg <- directoryChatConfig opts
   race_
-    (simplexChatCLI' cfg {chatHooks = defaultChatHooks {eventHook}} (mkChatOpts opts) Nothing)
+    (simplexChatCLI' terminalChatConfig {chatHooks = defaultChatHooks {eventHook}} (mkChatOpts opts) Nothing)
     (processEvents eventQ env)
   where
     processEvents eventQ env = forever $ do
@@ -120,16 +113,6 @@ directoryService st opts@DirectoryOpts {testing} user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     directoryServiceEvent st opts env user cc resp
-
-directoryChatConfig :: DirectoryOpts -> IO ChatConfig
-directoryChatConfig DirectoryOpts {blockedWordsFile, nameSpellingFile, blockedExtensionRules, profileNameLimit, acceptAsObserver} = do
-  blockedWords <- mapM (fmap lines . readFile) blockedWordsFile
-  spelling <- maybe (pure M.empty) (fmap (M.fromList . read) . readFile) nameSpellingFile
-  extensionRules <- maybe (pure []) (fmap read . readFile) blockedExtensionRules
-  let !bws = nubOrd . concatMap (wordVariants extensionRules) <$> blockedWords
-      !allowedProfileName = not .: containsBlockedWords spelling <$> bws
-  putStrLn $ "Blocked words: " <> show (maybe 0 length bws) <> ", spelling rules: " <> show (M.size spelling)
-  pure terminalChatConfig {allowedProfileName, profileNameLimit, acceptAsObserver}
 
 directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> ChatResponse -> IO ()
 directoryServiceEvent st DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} ServiceState {searchRequests} user@User {userId} cc event =

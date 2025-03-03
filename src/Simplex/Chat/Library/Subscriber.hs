@@ -48,7 +48,7 @@ import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
-import Simplex.Chat.ProfileGenerator (generateRandomProfile, isRandomName)
+import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
@@ -1290,9 +1290,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       _ -> pure ()
       where
         profileContactRequest :: InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> CM ()
-        profileContactRequest invId chatVRange p@Profile {displayName, image} xContactId_ reqPQSup = do
-          cfg <- asks config
-          withAllowedName cfg $ withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
+        profileContactRequest invId chatVRange p xContactId_ reqPQSup = do
+          withStore (\db -> createOrUpdateContactRequest db vr user userContactLinkId invId chatVRange p xContactId_ reqPQSup) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORGroup gInfo -> toView $ CRBusinessRequestAlreadyAccepted user gInfo
             CORRequest cReq -> do
@@ -1321,23 +1320,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                         if v >= groupFastLinkJoinVersion
                           then do
-                            let useRole = userMemberRole gLinkMemRole $ acceptAsObserver cfg
-                            mem <- acceptGroupJoinRequestAsync user gInfo cReq useRole profileMode
+                            mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
                             createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                             toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
                           else messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
                 _ -> toView $ CRReceivedContactRequest user cReq
-          where
-            withAllowedName ChatConfig {profileNameLimit, allowedProfileName} action
-              | T.length displayName <= profileNameLimit && maybe True ($ displayName) allowedProfileName = action
-              | otherwise = liftIO $ putStrLn $ "Joining of " <> T.unpack displayName <> " is blocked" -- TODO send response, maybe event to UI?
-            userMemberRole linkRole = \case
-              Just AOAll -> GRObserver
-              Just AONameOnly | noImage -> GRObserver
-              Just AOIncognito | noImage && isRandomName displayName -> GRObserver
-              _ -> linkRole
-              where
-                noImage = maybe True (\(ImageData i) -> i == "") image
 
     memberCanSend :: GroupMember -> CM () -> CM ()
     memberCanSend GroupMember {memberRole} a

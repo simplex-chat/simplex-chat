@@ -2116,16 +2116,7 @@ processChatCommand' vr = \case
     processChatCommand $ APIJoinGroup groupId enableNtfs
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMemberRole gId gMemberId memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMemberForAll gId gMemberId blocked
-  RemoveMembers gName gMemberNames -> withUser $ \user -> do
-    (gId, gMemberIds) <- withStore $ \db -> do
-      gId <- getGroupIdByName db user gName
-      gMemberIds <- forM gMemberNames $ getGroupMemberIdByName db user gId
-      pure (gId, gMemberIds)
-    rs <- forM (L.zip (L.fromList [1..]) gMemberIds) $ \(i, memId) -> do
-      r <- processChatCommand (APIRemoveMember gId memId)
-      when (i < length gMemberIds) $ toView r
-      pure r
-    pure $ L.last rs 
+  RemoveMember gName gMemberName -> withMemberName gName gMemberName APIRemoveMember
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APILeaveGroup groupId
@@ -3882,7 +3873,7 @@ chatCommandP =
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
       "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
-      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (L.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',')),
+      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayNameP),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayNameP),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayNameP <*> chatDeleteMode),
