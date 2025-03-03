@@ -94,6 +94,7 @@ fun ModalData.ChooseServerOperators(
                   UsageConditionsView(
                     currUserServers = remember { mutableStateOf(emptyList()) },
                     userServers = remember { mutableStateOf(emptyList()) },
+                    updated = false,
                     close = close,
                     rhId = null,
                   )

@@ -647,7 +647,8 @@ struct WhatsNewView: View {
                 case .showConditions:
                     UsageConditionsView(
                         currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([])
+                        userServers: Binding.constant([]),
+                        updated: true
                     )
                     .modifier(ThemedBackground(grouped: true))
                 }
