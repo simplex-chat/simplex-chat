@@ -2141,7 +2141,6 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public var memberActive: Bool {
         switch memberStatus {
-        case .memRejected: return false
         case .memRemoved: return false
         case .memLeft: return false
         case .memGroupDeleted: return false
@@ -2159,7 +2158,6 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public var memberCurrent: Bool {
         switch memberStatus {
-        case .memRejected: return false
         case .memRemoved: return false
         case .memLeft: return false
         case .memGroupDeleted: return false
@@ -2290,7 +2288,6 @@ public enum GroupMemberCategory: String, Decodable, Hashable {
 }
 
 public enum GroupMemberStatus: String, Decodable, Hashable {
-    case memRejected = "rejected"
     case memRemoved = "removed"
     case memLeft = "left"
     case memGroupDeleted = "deleted"
@@ -2306,7 +2303,6 @@ public enum GroupMemberStatus: String, Decodable, Hashable {
 
     public var text: LocalizedStringKey {
         switch self {
-        case .memRejected: return "rejected"
         case .memRemoved: return "removed"
         case .memLeft: return "left"
         case .memGroupDeleted: return "group deleted"
@@ -2324,7 +2320,6 @@ public enum GroupMemberStatus: String, Decodable, Hashable {
 
     public var shortText: LocalizedStringKey {
         switch self {
-        case .memRejected: return "rejected"
         case .memRemoved: return "removed"
         case .memLeft: return "left"
         case .memGroupDeleted: return "group deleted"

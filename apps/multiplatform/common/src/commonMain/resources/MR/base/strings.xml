@@ -418,7 +418,6 @@
   <string name="member_contact_send_direct_message">send direct message</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_preview_join_as">join as %s</string>
-  <string name="group_preview_rejected">rejected</string>
   <string name="group_connection_pending">connecting…</string>
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
@@ -1623,7 +1622,6 @@
   <string name="group_member_role_owner">owner</string>
 
   <!-- GroupMemberStatus -->
-  <string name="group_member_status_rejected">rejected</string>
   <string name="group_member_status_removed">removed</string>
   <string name="group_member_status_left">left</string>
   <string name="group_member_status_group_deleted">group deleted</string>
