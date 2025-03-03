@@ -1208,7 +1208,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       Just gli@GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
                         gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                         acceptMember_ <- asks $ acceptMember . chatHooks . config
-                        maybe (pure $ Right (GAAuto, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
+                        maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
                           Right (acceptance, useRole)
                             | v < groupFastLinkJoinVersion ->
                                 messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
