@@ -102,6 +102,7 @@ chatGroupTests = do
     it "reject member joining via group link - blocked name" testGLinkRejectBlockedName
   describe "group links - manual acceptance" $ do
     it "manually accept member joining via group link" testGLinkManualAcceptMember
+    it "delete pending member" testGLinkDeletePendingMember
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -2958,6 +2959,31 @@ testGLinkManualAcceptMember =
 
       cath #> "#team hi group"
       [alice, bob] *<# "#team cath> hi group"
+  where
+    cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAManual, GRObserver))}}
+
+testGLinkDeletePendingMember :: HasCallStack => TestParams -> IO ()
+testGLinkDeletePendingMember =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath connected and pending approval, use /_accept member #1 3 <role> to accept member",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group, pending approval"
+        ]
+
+      alice ##> "/rm team cath"
+      alice <## "#team: you removed cath from the group"
+      cath <## "#team: alice removed you from the group"
+      cath <## "use /d #team to delete the group"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAManual, GRObserver))}}
 

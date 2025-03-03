@@ -633,6 +633,7 @@ processChatCommand' vr = \case
                     then do
                       ciMentions <- withFastStore $ \db -> getCIMentions db user gInfo ft_ mentions
                       let mentions' = M.map (\CIMention {memberId} -> MsgMention {memberId}) ciMentions
+                      -- TODO [knocking] send separately to pending approval member
                       SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc mentions' (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
@@ -687,6 +688,7 @@ processChatCommand' vr = \case
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
               events = L.nonEmpty $ map (`XMsgDel` Nothing) msgIds
+          -- TODO [knocking] validate: only current members or only single pending approval member
           mapM_ (sendGroupMessages user gInfo ms) events
           delGroupChatItems user gInfo items False
     CTLocal -> do
@@ -764,6 +766,7 @@ processChatCommand' vr = \case
             let GroupMember {memberId = itemMemberId} = chatItemMember g ci
             rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
+            -- TODO [knocking] send separately to pending approval member
             SndMessage {msgId} <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
@@ -1084,6 +1087,7 @@ processChatCommand' vr = \case
         cancelFilesInProgress user filesInfo
         deleteFilesLocally filesInfo
         let doSendDel = memberActive membership && isOwner
+        -- TODO [knocking] send to pending approval members (move `memberCurrent` filter from sendGroupMessages_ to call sites)
         when doSendDel . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
@@ -2040,10 +2044,11 @@ processChatCommand' vr = \case
     withGroupLock "memberRole" groupId . procCmd $ do
       g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
       when (selfSelected gInfo) $ throwChatError $ CECommandError "can't change role for self"
-      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin) = selectMembers members
+      let (invitedMems, currentMems, unchangedMems, maxRole, anyAdmin, anyPending) = selectMembers members
       when (length invitedMems + length currentMems + length unchangedMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && (anyAdmin || newRole >= GRAdmin)) $
         throwChatError $ CECommandError "can't change role of multiple members when admins selected, or new role is admin"
+      when anyPending $ throwChatError $ CECommandError "can't change role of members pending approval"
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
       (errs1, changed1) <- changeRoleInvitedMems user gInfo invitedMems
       (errs2, changed2, acis) <- changeRoleCurrentMems user g currentMems
@@ -2053,19 +2058,20 @@ processChatCommand' vr = \case
       pure $ CRMembersRoleUser {user, groupInfo = gInfo, members = changed1 <> changed2, toRole = newRole} -- same order is not guaranteed
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
-      selectMembers = foldr' addMember ([], [], [], GRObserver, False)
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
+      selectMembers = foldr' addMember ([], [], [], GRObserver, False, False)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin)
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, unchanged, maxRole, anyAdmin, anyPending)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
+                    anyPending' = anyPending || memberStatus == GSMemPendingApproval
                  in
                   if
-                    | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin')
-                    | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin')
-                    | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin')
-            | otherwise = (invited, current, unchanged, maxRole, anyAdmin)
+                    | memberRole == newRole -> (invited, current, m : unchanged, maxRole', anyAdmin', anyPending')
+                    | memberStatus == GSMemInvited -> (m : invited, current, unchanged, maxRole', anyAdmin', anyPending')
+                    | otherwise -> (invited, m : current, unchanged, maxRole', anyAdmin', anyPending')
+            | otherwise = (invited, current, unchanged, maxRole, anyAdmin, anyPending)
       changeRoleInvitedMems :: User -> GroupInfo -> [GroupMember] -> CM ([ChatError], [GroupMember])
       changeRoleInvitedMems user gInfo memsToChange = do
         -- not batched, as we need to send different invitations to different connections anyway
@@ -2105,22 +2111,24 @@ processChatCommand' vr = \case
     withGroupLock "blockForAll" groupId . procCmd $ do
       Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
       when (selfSelected gInfo) $ throwChatError $ CECommandError "can't block/unblock self"
-      let (blockMems, remainingMems, maxRole, anyAdmin) = selectMembers members
+      let (blockMems, remainingMems, maxRole, anyAdmin, anyPending) = selectMembers members
       when (length blockMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && anyAdmin) $ throwChatError $ CECommandError "can't block/unblock multiple members when admins selected"
+      when anyPending $ throwChatError $ CECommandError "can't block/unblock members pending approval"
       assertUserGroupRole gInfo $ max GRModerator maxRole
       blockMembers user gInfo blockMems remainingMems
     where
       selfSelected GroupInfo {membership} = elem (groupMemberId' membership) memberIds
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole, Bool)
-      selectMembers = foldr' addMember ([], [], GRObserver, False)
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole, Bool, Bool)
+      selectMembers = foldr' addMember ([], [], GRObserver, False, False)
         where
-          addMember m@GroupMember {groupMemberId, memberRole} (block, remaining, maxRole, anyAdmin)
+          addMember m@GroupMember {groupMemberId, memberRole, memberStatus} (block, remaining, maxRole, anyAdmin, anyPending)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
-                 in (m : block, remaining, maxRole', anyAdmin')
-            | otherwise = (block, m : remaining, maxRole, anyAdmin)
+                    anyPending' = anyPending || memberStatus == GSMemPendingApproval
+                 in (m : block, remaining, maxRole', anyAdmin', anyPending')
+            | otherwise = (block, m : remaining, maxRole, anyAdmin, anyPending)
       blockMembers :: User -> GroupInfo -> [GroupMember] -> [GroupMember] -> CM ChatResponse
       blockMembers user gInfo blockMems remainingMems = case L.nonEmpty blockMems of
         Nothing -> throwChatError $ CECommandError "no members to block/unblock"
@@ -2146,30 +2154,34 @@ processChatCommand' vr = \case
              in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
   APIRemoveMembers groupId memberIds -> withUser $ \user ->
     withGroupLock "removeMembers" groupId . procCmd $ do
-      g@(Group gInfo members) <- withFastStore $ \db -> getGroup db vr user groupId
-      let (invitedMems, currentMems, maxRole, anyAdmin) = selectMembers members
-      when (length invitedMems + length currentMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
+      Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
+      let (invitedMems, pendingMems, currentMems, maxRole, anyAdmin) = selectMembers members
+      when (length invitedMems + length pendingMems + length currentMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && anyAdmin) $ throwChatError $ CECommandError "can't remove multiple members when admins selected"
       assertUserGroupRole gInfo $ max GRAdmin maxRole
       (errs1, deleted1) <- deleteInvitedMems user invitedMems
-      (errs2, deleted2, acis) <- deleteCurrentMems user g currentMems
+      (errs2, deleted2, acis2) <- deleteMemsSend user gInfo members currentMems
+      rs <- forM pendingMems $ \m -> deleteMemsSend user gInfo [m] [m]
+      let (errs3, deleted3, acis3) = concatTuples rs
+          acis = acis2 <> acis3
+          errs = errs1 <> errs2 <> errs3
       unless (null acis) $ toView $ CRNewChatItems user acis
-      let errs = errs1 <> errs2
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
-      pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2) -- same order is not guaranteed
+      pure $ CRUserDeletedMembers user gInfo (deleted1 <> deleted2 <> deleted3) -- same order is not guaranteed
     where
-      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], GroupMemberRole, Bool)
-      selectMembers = foldr' addMember ([], [], GRObserver, False)
+      selectMembers :: [GroupMember] -> ([GroupMember], [GroupMember], [GroupMember], GroupMemberRole, Bool)
+      selectMembers = foldr' addMember ([], [], [], GRObserver, False)
         where
-          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, current, maxRole, anyAdmin)
+          addMember m@GroupMember {groupMemberId, memberStatus, memberRole} (invited, pending, current, maxRole, anyAdmin)
             | groupMemberId `elem` memberIds =
                 let maxRole' = max maxRole memberRole
                     anyAdmin' = anyAdmin || memberRole >= GRAdmin
                  in
-                  if memberStatus == GSMemInvited
-                    then (m : invited, current, maxRole', anyAdmin')
-                    else (invited, m : current, maxRole', anyAdmin')
-            | otherwise = (invited, current, maxRole, anyAdmin)
+                  case memberStatus of
+                    GSMemInvited -> (m : invited, pending, current, maxRole', anyAdmin')
+                    GSMemPendingApproval -> (invited, m : pending, current, maxRole', anyAdmin')
+                    _ -> (invited, pending, m : current, maxRole', anyAdmin')
+            | otherwise = (invited, pending, current, maxRole, anyAdmin)
       deleteInvitedMems :: User -> [GroupMember] -> CM ([ChatError], [GroupMember])
       deleteInvitedMems user memsToDelete = do
         deleteMembersConnections user memsToDelete
@@ -2178,12 +2190,12 @@ processChatCommand' vr = \case
           delMember db m = do
             deleteGroupMember db user m
             pure m {memberStatus = GSMemRemoved}
-      deleteCurrentMems :: User -> Group -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
-      deleteCurrentMems user (Group gInfo members) memsToDelete = case L.nonEmpty memsToDelete of
+      deleteMemsSend :: User -> GroupInfo -> [GroupMember] -> [GroupMember] -> CM ([ChatError], [GroupMember], [AChatItem])
+      deleteMemsSend user gInfo sendToMems memsToDelete = case L.nonEmpty memsToDelete of
         Nothing -> pure ([], [], [])
         Just memsToDelete' -> do
           let events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId) memsToDelete'
-          (msgs_, _gsr) <- sendGroupMessages user gInfo members events
+          (msgs_, _gsr) <- sendGroupMessages user gInfo sendToMems events
           let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) Nothing itemsData Nothing False
           when (length cis_ /= length memsToDelete) $ logError "deleteCurrentMems: memsToDelete and cis_ length mismatch"
@@ -2200,11 +2212,15 @@ processChatCommand' vr = \case
             delMember db m = do
               deleteOrUpdateMemberRecordIO db user m
               pure m {memberStatus = GSMemRemoved}
+      concatTuples :: [([a], [b], [c])] -> ([a], [b], [c])
+      concatTuples xs = (concat as, concat bs, concat cs)
+        where (as, bs, cs) = unzip3 xs
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
     withGroupLock "leaveGroup" groupId . procCmd $ do
       cancelFilesInProgress user filesInfo
+      -- TODO [knocking] send to pending approval members (move `memberCurrent` filter from sendGroupMessages_ to call sites)
       msg <- sendGroupMessage' user gInfo members XGrpLeave
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
@@ -2417,6 +2433,7 @@ processChatCommand' vr = \case
                   void . sendDirectContactMessage user contact $ XFileCancel sharedMsgId
                 Just (ChatRef CTGroup groupId) -> do
                   (Group gInfo ms, sharedMsgId) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
+                  -- TODO [knocking] send separately to pending approval member
                   void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
                 Just _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
               ci <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
@@ -2809,6 +2826,7 @@ processChatCommand' vr = \case
             GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} <-
               withStore $ \db -> getGroupMemberByMemberId db vr user g businessId
             let p'' = p' {displayName, fullName, image} :: GroupProfile
+            -- TODO [knocking] send to pending approval members (move `memberCurrent` filter from sendGroupMessages_ to call sites)
             void $ sendGroupMessage user g' oldMs (XGrpInfo p'')
           let ps' = fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           sendGroupMessage user g' newMs $ XGrpPrefs ps'
@@ -2837,6 +2855,8 @@ processChatCommand' vr = \case
       assertUserGroupRole gInfo GRAdmin -- TODO GRModerator when most users migrate
       let msgMemIds = itemsMsgMemIds gInfo items
           events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
+      -- TODO [knocking] validate: only current members or only single pending approval member,
+      -- TODO            or prohibit pending approval members (only moderation and reports use this)
       mapM_ (sendGroupMessages user gInfo ms) events
       delGroupChatItems user gInfo items True
       where
@@ -3182,9 +3202,9 @@ processChatCommand' vr = \case
     sendGroupContentMessages_ user gInfo@GroupInfo {groupId, membership} notInHistory_ ms numFileInvs live itemTTL cmrs = do
       -- TODO [knocking] pass GroupSndScope?
       let allowedRole = case ms of
-            [m] | memberCategory m == GCHostMember && memberStatus membership == GSMemPendingApproval -> GRObserver
-            _ -> GRAuthor
-      assertUserGroupRole gInfo allowedRole
+            [m] | memberCategory m == GCHostMember && memberStatus membership == GSMemPendingApproval -> Nothing
+            _ -> Just GRAuthor
+      forM_ allowedRole $ assertUserGroupRole gInfo
       assertGroupContentAllowed
       processComposedMessages
       where
