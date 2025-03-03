@@ -47,7 +47,7 @@ data DirectoryEvent
   | DEServiceJoinedGroup {contactId :: ContactId, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | DEGroupUpdated {contactId :: ContactId, fromGroup :: GroupInfo, toGroup :: GroupInfo}
   | DEPendingMember GroupInfo GroupMember
-  | DEPendingMemberMsg GroupInfo GroupMember Text
+  | DEPendingMemberMsg GroupInfo GroupMember ChatItemId Text
   | DEContactRoleChanged GroupInfo ContactId GroupMemberRole -- contactId here is the contact whose role changed
   | DEServiceRoleChanged GroupInfo GroupMemberRole
   | DEContactRemovedFromGroup ContactId GroupInfo
@@ -71,7 +71,7 @@ crDirectoryEvent = \case
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
   CRNewChatItems {chatItems = AChatItem _ _ (GroupChat g) ci : _} -> case ci of
-    ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m t
+    ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m (chatItemId' ci) t
     _ -> Nothing
   CRMemberRole {groupInfo, member, toRole}
     | groupMemberId' member == groupMemberId' (membership groupInfo) -> Just $ DEServiceRoleChanged groupInfo toRole
