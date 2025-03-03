@@ -7575,6 +7575,10 @@ To connect, please ask your contact to create another connection link and check 
         <source>Update settings?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Updated conditions" xml:space="preserve">
+        <source>Updated conditions</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
         <source>Updating settings will re-connect the client to all servers.</source>
         <target>設定を更新すると、全サーバにクライントの再接続が行われます。</target>
@@ -9042,6 +9046,14 @@ Repeat connection request?</source>
         <target>P2P</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="pending" xml:space="preserve">
+        <source>pending</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="pending approval" xml:space="preserve">
+        <source>pending approval</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
         <source>quantum resistant e2e encryption</source>
         <note>chat item text</note>
@@ -9054,6 +9066,10 @@ Repeat connection request?</source>
       <trans-unit id="received confirmation…" xml:space="preserve">
         <source>received confirmation…</source>
         <target>確認を受け取りました…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="rejected" xml:space="preserve">
+        <source>rejected</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">

@@ -1245,6 +1245,7 @@
       </trans-unit>
       <trans-unit id="Better groups performance" xml:space="preserve">
         <source>Better groups performance</source>
+        <target>Betere prestaties van groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve">
@@ -1269,6 +1270,7 @@
       </trans-unit>
       <trans-unit id="Better privacy and security" xml:space="preserve">
         <source>Better privacy and security</source>
+        <target>Betere privacy en veiligheid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better security ✅" xml:space="preserve">
@@ -2865,6 +2867,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Don't miss important messages." xml:space="preserve">
         <source>Don't miss important messages.</source>
+        <target>‐Mis geen belangrijke berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't show again" xml:space="preserve">
@@ -3625,6 +3628,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Faster deletion of groups." xml:space="preserve">
         <source>Faster deletion of groups.</source>
+        <target>Sneller verwijderen van groepen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
@@ -3634,6 +3638,7 @@ Dit is uw eigen eenmalige link!</target>
       </trans-unit>
       <trans-unit id="Faster sending messages." xml:space="preserve">
         <source>Faster sending messages.</source>
+        <target>Sneller verzenden van berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
@@ -3941,6 +3946,7 @@ Fout: %2$@</target>
       </trans-unit>
       <trans-unit id="Get notified when mentioned." xml:space="preserve">
         <source>Get notified when mentioned.</source>
+        <target>Ontvang een melding als u vermeld wordt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Good afternoon!" xml:space="preserve">
@@ -4060,6 +4066,7 @@ Fout: %2$@</target>
       </trans-unit>
       <trans-unit id="Help admins moderating their groups." xml:space="preserve">
         <source>Help admins moderating their groups.</source>
+        <target>Help beheerders bij het modereren van hun groepen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Hidden" xml:space="preserve">
@@ -4846,6 +4853,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Mention members 👋" xml:space="preserve">
         <source>Mention members 👋</source>
+        <target>Vermeld leden 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
@@ -5315,6 +5323,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="No message" xml:space="preserve">
         <source>No message</source>
+        <target>Geen bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No message servers." xml:space="preserve">
@@ -5677,6 +5686,7 @@ Vereist het inschakelen van VPN.</target>
       </trans-unit>
       <trans-unit id="Organize chats into lists" xml:space="preserve">
         <source>Organize chats into lists</source>
+        <target>Organiseer chats in lijsten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Other" xml:space="preserve">
@@ -5947,6 +5957,7 @@ Fout: %@</target>
       </trans-unit>
       <trans-unit id="Private media file names." xml:space="preserve">
         <source>Private media file names.</source>
+        <target>Namen van persoonlijke mediabestanden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private message routing" xml:space="preserve">
@@ -6875,6 +6886,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Send private reports" xml:space="preserve">
         <source>Send private reports</source>
+        <target>Verstuur rapporten privé</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send questions and ideas" xml:space="preserve">
@@ -7119,6 +7131,7 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
       </trans-unit>
       <trans-unit id="Set message expiration in chats." xml:space="preserve">
         <source>Set message expiration in chats.</source>
+        <target>Stel de berichtvervaldatum in chats in.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set passcode" xml:space="preserve">
@@ -7929,6 +7942,7 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       </trans-unit>
       <trans-unit id="This message was deleted or not received yet." xml:space="preserve">
         <source>This message was deleted or not received yet.</source>
+        <target>Dit bericht is verwijderd of nog niet ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -8243,6 +8257,10 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       <trans-unit id="Update settings?" xml:space="preserve">
         <source>Update settings?</source>
         <target>Instellingen actualiseren?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Updated conditions" xml:space="preserve">
+        <source>Updated conditions</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -9822,6 +9840,14 @@ Verbindingsverzoek herhalen?</target>
         <target>peer-to-peer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="pending" xml:space="preserve">
+        <source>pending</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="pending approval" xml:space="preserve">
+        <source>pending approval</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
         <source>quantum resistant e2e encryption</source>
         <target>quantum bestendige e2e-codering</target>
@@ -9835,6 +9861,10 @@ Verbindingsverzoek herhalen?</target>
       <trans-unit id="received confirmation…" xml:space="preserve">
         <source>received confirmation…</source>
         <target>bevestiging ontvangen…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="rejected" xml:space="preserve">
+        <source>rejected</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">

@@ -797,6 +797,9 @@
 "Better groups" = "Grupos mejorados";
 
 /* No comment provided by engineer. */
+"Better groups performance" = "Mejor rendimiento de los grupos";
+
+/* No comment provided by engineer. */
 "Better message dates." = "Sistema de fechas mejorado.";
 
 /* No comment provided by engineer. */
@@ -807,6 +810,9 @@
 
 /* No comment provided by engineer. */
 "Better notifications" = "Notificaciones mejoradas";
+
+/* No comment provided by engineer. */
+"Better privacy and security" = "Mejor privacidad y seguridad";
 
 /* No comment provided by engineer. */
 "Better security ✅" = "Seguridad mejorada ✅";
@@ -1893,6 +1899,9 @@
 "Don't enable" = "No activar";
 
 /* No comment provided by engineer. */
+"Don't miss important messages." = "No pierdas los mensajes importantes.";
+
+/* No comment provided by engineer. */
 "Don't show again" = "No volver a mostrar";
 
 /* No comment provided by engineer. */
@@ -2404,7 +2413,13 @@
 "Fast and no wait until the sender is online!" = "¡Rápido y sin necesidad de esperar a que el remitente esté en línea!";
 
 /* No comment provided by engineer. */
+"Faster deletion of groups." = "Eliminación más rápida de grupos.";
+
+/* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Mensajería más segura y conexión más rápida.";
+
+/* No comment provided by engineer. */
+"Faster sending messages." = "Envío más rápido de mensajes.";
 
 /* swipe action */
 "Favorite" = "Favoritos";
@@ -2587,6 +2602,9 @@
 "Further reduced battery usage" = "Reducción consumo de batería";
 
 /* No comment provided by engineer. */
+"Get notified when mentioned." = "Las menciones ahora notifican.";
+
+/* No comment provided by engineer. */
 "GIFs and stickers" = "GIFs y stickers";
 
 /* message preview */
@@ -2663,6 +2681,9 @@
 
 /* No comment provided by engineer. */
 "Help" = "Ayuda";
+
+/* No comment provided by engineer. */
+"Help admins moderating their groups." = "Ayuda a los admins moderar sus grupos.";
 
 /* No comment provided by engineer. */
 "Hidden" = "Oculto";
@@ -3199,6 +3220,9 @@
 "Members can send voice messages." = "Los miembros del grupo pueden enviar mensajes de voz.";
 
 /* No comment provided by engineer. */
+"Mention members 👋" = "Mencionar miembros 👋";
+
+/* No comment provided by engineer. */
 "Menus" = "Menus";
 
 /* No comment provided by engineer. */
@@ -3513,6 +3537,9 @@
 /* servers error */
 "No media & file servers." = "Sin servidores para archivos y multimedia.";
 
+/* No comment provided by engineer. */
+"No message" = "Ningún mensaje";
+
 /* servers error */
 "No message servers." = "Sin servidores para mensajes.";
 
@@ -3744,6 +3771,9 @@
 "Or to share privately" = "O para compartir en privado";
 
 /* No comment provided by engineer. */
+"Organize chats into lists" = "Organiza los chats en listas";
+
+/* No comment provided by engineer. */
 "other" = "otros";
 
 /* No comment provided by engineer. */
@@ -3913,6 +3943,9 @@
 
 /* No comment provided by engineer. */
 "Private filenames" = "Nombres de archivos privados";
+
+/* No comment provided by engineer. */
+"Private media file names." = "Nombres privados de archivos de media.";
 
 /* No comment provided by engineer. */
 "Private message routing" = "Enrutamiento privado de mensajes";
@@ -4517,6 +4550,9 @@
 "Send notifications" = "Enviar notificaciones";
 
 /* No comment provided by engineer. */
+"Send private reports" = "Envía informes privados";
+
+/* No comment provided by engineer. */
 "Send questions and ideas" = "Consultas y sugerencias";
 
 /* No comment provided by engineer. */
@@ -4662,6 +4698,9 @@
 
 /* No comment provided by engineer. */
 "Set it instead of system authentication." = "Úsalo en lugar de la autenticación del sistema.";
+
+/* No comment provided by engineer. */
+"Set message expiration in chats." = "Establece vencimiento de los mensajes en chats.";
 
 /* profile update event chat item */
 "set new contact address" = "nueva dirección de contacto";
@@ -5168,6 +5207,9 @@
 
 /* No comment provided by engineer. */
 "This link was used with another mobile device, please create a new link on the desktop." = "Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.";
+
+/* No comment provided by engineer. */
+"This message was deleted or not received yet." = "El mensaje ha sido borrado o aún no se ha recibido.";
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Esta configuración se aplica a los mensajes del perfil actual **%@**.";

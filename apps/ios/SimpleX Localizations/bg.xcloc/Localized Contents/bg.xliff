@@ -7798,6 +7798,10 @@ To connect, please ask your contact to create another connection link and check 
         <source>Update settings?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Updated conditions" xml:space="preserve">
+        <source>Updated conditions</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
         <source>Updating settings will re-connect the client to all servers.</source>
         <target>Актуализирането на настройките ще свърже отново клиента към всички сървъри.</target>
@@ -9317,6 +9321,14 @@ Repeat connection request?</source>
         <target>peer-to-peer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="pending" xml:space="preserve">
+        <source>pending</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="pending approval" xml:space="preserve">
+        <source>pending approval</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="quantum resistant e2e encryption" xml:space="preserve">
         <source>quantum resistant e2e encryption</source>
         <target>квантово устойчиво e2e криптиране</target>
@@ -9330,6 +9342,10 @@ Repeat connection request?</source>
       <trans-unit id="received confirmation…" xml:space="preserve">
         <source>received confirmation…</source>
         <target>получено потвърждение…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="rejected" xml:space="preserve">
+        <source>rejected</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">
