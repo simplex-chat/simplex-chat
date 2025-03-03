@@ -795,7 +795,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deAdminCommand ct ciId cmd
       | knownCt `elem` adminUsers || knownCt `elem` superUsers = case cmd of
           DCApproveGroup {groupId, displayName = n, groupApprovalId} ->
-            withGroupAndReg sendReply groupId n $ \g gr ->
+            withGroupAndReg sendReply groupId n $ \g gr@GroupReg {userGroupRegId = ugrId} ->
               readTVarIO (groupRegStatus gr) >>= \case
                 GRSPendingApproval gaId
                   | gaId == groupApprovalId -> do
@@ -807,7 +807,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                             Just GRSOk -> do
                               setGroupStatus st gr GRSActive
                               let approved = "The group " <> userGroupReference' gr n <> " is approved"
-                              notifyOwner gr $ approved <> " and listed in directory!\nPlease note: if you change the group profile it will be hidden from directory until it is re-approved."
+                              notifyOwner gr $
+                                (approved <> " and listed in directory!\n")
+                                  <> "Please note: if you change the group profile it will be hidden from directory until it is re-approved.\n\n"
+                                  <> ("Use */filter " <> tshow ugrId <> "* to configure anti-spam filter and */role " <> tshow ugrId <> "* to set default member role.")
                               invited <-
                                 forM ownersGroup $ \og@KnownGroup {localDisplayName = ogName} -> do
                                   inviteToOwnersGroup og gr $ \case

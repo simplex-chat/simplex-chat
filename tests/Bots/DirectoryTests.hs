@@ -183,6 +183,8 @@ testDirectoryService ps =
         superUser <## "      Group approved!"
         bob <# "SimpleX-Directory> The group ID 1 (PSA) is approved and listed in directory!"
         bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+        bob <## ""
+        bob <## "Use /filter 1 to configure anti-spam filter and /role 1 to set default member role."
         search bob "privacy" welcomeWithLink'
         search bob "security" welcomeWithLink'
         cath `connectVia` dsLink
@@ -1046,6 +1048,8 @@ reapproveGroup count superUser bob = do
   superUser <## "      Group approved!"
   bob <# "SimpleX-Directory> The group ID 1 (privacy) is approved and listed in directory!"
   bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+  bob <## ""
+  bob <## "Use /filter 1 to configure anti-spam filter and /role 1 to set default member role."
 
 addCathAsOwner :: HasCallStack => TestCC -> TestCC -> IO ()
 addCathAsOwner bob cath = do
@@ -1190,6 +1194,8 @@ approveRegistrationId su u n gId ugId = do
   su <## "      Group approved!"
   u <# ("SimpleX-Directory> The group ID " <> show ugId <> " (" <> n <> ") is approved and listed in directory!")
   u <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+  u <## ""
+  u <## ("Use /filter " <> show ugId <> " to configure anti-spam filter and /role " <> show ugId <> " to set default member role.")
 
 connectVia :: TestCC -> String -> IO ()
 u `connectVia` dsLink = do
