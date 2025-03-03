@@ -20,11 +20,11 @@ private enum NetworkAlert: Identifiable {
 }
 
 private enum NetworkAndServersSheet: Identifiable {
-    case showConditions
+    case showConditions(updated: Bool)
 
     var id: String {
         switch self {
-        case .showConditions: return "showConditions"
+        case let .showConditions(updated): return "showConditions \(updated)"
         }
     }
 }
@@ -169,11 +169,11 @@ struct NetworkAndServers: View {
         }
         .sheet(item: $sheetItem) { item in
             switch item {
-            case .showConditions:
+            case let .showConditions(updated):
                 UsageConditionsView(
                     currUserServers: $ss.servers.currUserServers,
                     userServers: $ss.servers.userServers,
-                    updated: false
+                    updated: updated
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
@@ -219,7 +219,8 @@ struct NetworkAndServers: View {
 
     private func conditionsButton(_ conditionsAction: UsageConditionsAction) -> some View {
         Button {
-            sheetItem = .showConditions
+            let updated = if case .review = conditionsAction { true } else { false }
+            sheetItem = .showConditions(updated: updated)
         } label: {
             switch conditionsAction {
             case .review:
