@@ -129,7 +129,7 @@
                             
                                 <li><a href="/docs/guide/secret-groups.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Titkos csoportok</a></li>
                             
-                                <li><a href="/docs/guide/chat-profiles.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Csevegő profilok</a></li>
+                                <li><a href="/docs/guide/chat-profiles.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Csevegési profilok</a></li>
                             
                                 <li><a href="/docs/guide/managing-data.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Adatkezelés</a></li>
                             
@@ -181,9 +181,9 @@
                             
                                 <li><a href="/docs/business.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX üzleti célra</a></li>
                             
-                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX jegyzék szolgáltatás</a></li>
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX jegyzékszolgáltatás</a></li>
                             
-                                <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Hozzáférés a csevegő adatbázishoz</a></li>
+                                <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Hozzáférés a csevegési adatbázishoz</a></li>
                             
                                 <li><a href="/docs/server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SMP-kiszolgáló üzemeltetése</a></li>
                             
@@ -578,13 +578,13 @@ window.addEventListener('scroll',changeHeaderBg);
 </head><body><section class="hidden xl:block h-screen pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="container m-auto h-full flex items-center justify-between px-5">
         <div class="flex flex-col items-start justify-center w-full h-full">
-            <h1 class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact">Kapott egy egyszer használatos hivatkozást a SimpleX Chat-en való kapcsolódáshoz</h1>
-            <h2 class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact">Szkennelje be a QR-kódot a SimpleX Chat alkalmazással telefonján vagy táblagépén.</h2>
+            <h1 class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact">Kapott egy egyszer használható meghívót a SimpleX Chaten való beszélgetéshez</h1>
+            <h2 class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact">Olvassa be a QR-kódot a SimpleX Chat alkalmazással a telefonjával vagy táblagépével.</h2>
             <p class="text-grey-black dark:text-white text-base mb-[16px]">
-                A hivatkozásban szereplő nyilvános kulcsokat és az üzenetek várakoztatási címét NEM küldi el a hálózaton keresztül az oldal megtekintésekor — ezeket a hivatkozás URL-jének hash-töredéke tartalmazza.
+                A hivatkozásban szereplő nyilvános kulcsokat és az üzenetek várakoztatási címét NEM küldi el a hálózaton keresztül, amikor megtekinti ezt az oldalt — azokat, a hivatkozás webcímének hasítóérték-töredéke tartalmazza.
             </p>
             <p class="text-grey-black dark:text-white text-base">Még nem töltötte le a SimpleX Chatet?</p>
-            <p class="text-grey-black dark:text-white text-base mb-[24px]">Az alkalmazás letöltéséhez használja az alábbi linkeket.</p>
+            <p class="text-grey-black dark:text-white text-base mb-[24px]">Az alkalmazás letöltéséhez használja az alábbi hivatkozásokat.</p>
 
             <div class="flex items-center justify-center gap-4 flex-wrap">
                 <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
@@ -618,7 +618,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <section class="block xl:hidden pt-[106px] pb-[90px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="container m-auto h-full px-5">
         <div class="flex flex-col items-center">
-            <h1 class="text-[28px] font-bold text-center max-w-[602px] mb-[40px] primary-header-contact">Kapott egy egyszer használatos hivatkozást a SimpleX Chat-en való kapcsolódáshoz</h1>
+            <h1 class="text-[28px] font-bold text-center max-w-[602px] mb-[40px] primary-header-contact">Kapott egy egyszer használható meghívót a SimpleX Chaten való beszélgetéshez</h1>
             <p class="text-[20px] leading-[28px] text-grey-black dark:text-white font-medium mb-[30px]">A kapcsolat létrehozásához:</p>
 
             <div class="flex flex-col justify-center items-center p-4 w-full max-w-[468px] min-h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
@@ -667,7 +667,7 @@ window.addEventListener('scroll',changeHeaderBg);
             <div class="hidden md:block xl:hidden for-tablet">
                 <div class="contact-tab">
                     <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
-                        <h2 class="text-xl font-bold">A QR-kód beolvasása a SimpleX Chat alkalmazással</h2>
+                        <h2 class="text-xl font-bold">Olvassa be a QR-kódot a SimpleX Chat alkalmazással</h2>
                         <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"></path>
                         </svg> 
@@ -676,7 +676,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
                     <div class="contact-tab-content flex flex-col gap-10">
                         <p class="text-base mb-5">
-                            A hivatkozásban szereplő nyilvános kulcsokat és az üzenetek várakoztatási címét NEM küldjük el a hálózaton keresztül, amikor ezt az oldalt megtekinti —<br> ezek a hivatkozás URL-jének hash-töredékében szerepelnek.
+                            A hivatkozásban szereplő nyilvános kulcsokat és az üzenetek várakoztatási címét NEM küldjük el a hálózaton keresztül, amikor ezt az oldalt megtekinti —<br> ezek a hivatkozás webcímének hasítóérték-töredékében szerepelnek.
                         </p>
                         <canvas class="self-center conn_req_uri_qrcode"></canvas>
                     </div>
@@ -687,7 +687,7 @@ window.addEventListener('scroll',changeHeaderBg);
             <div class="hidden xl:block">
                 <div class="contact-tab">
                     <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
-                        <h2 class="text-xl font-bold">A SimpleX chat telepítése terminálba</h2>
+                        <h2 class="text-xl font-bold">A SimpleX chat telepítése a terminálhoz</h2>
                         <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"></path>
                         </svg> 
@@ -701,16 +701,16 @@ window.addEventListener('scroll',changeHeaderBg);
                             <!-- <img class="content_copy" src="/img/new/content-copy.svg" /> -->
                         </p>
                         
-                        <p class="flex text-base font-medium mb-[76px]">Lásd SimpleX Chat &nbsp;
+                        <p class="flex text-base font-medium mb-[76px]">Az utasításokat megtekintheti a SimpleX Chat &nbsp;
                             <a href="" class="flex gap-1 no-underline">
-                                <span class="text-primary-light dark:text-primary-dark underline underline-offset-4 text-base font-medium">GitHub tároló</span>
+                                <span class="text-primary-light dark:text-primary-dark underline underline-offset-4 text-base font-medium">GitHub tárolójában</span>
                                 <svg class="fill-primary-light dark:fill-primary-dark" width="24" height="24" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M20.2907 0.926758C9.24635 0.926758 0.290527 10.1075 0.290527 21.4331C0.290527 30.4933 6.02118 38.18 13.9679 40.8915C14.9674 41.0813 15.3344 40.4467 15.3344 39.905C15.3344 39.4161 15.3158 37.8007 15.3072 36.0872C9.74314 37.3277 8.56906 33.6677 8.56906 33.6677C7.65927 31.2975 6.3484 30.6672 6.3484 30.6672C4.53379 29.3945 6.48519 29.4206 6.48519 29.4206C8.49355 29.5653 9.55105 31.5338 9.55105 31.5338C11.3349 34.6688 14.2298 33.7624 15.3711 33.2385C15.5506 31.9131 16.069 31.0085 16.6409 30.4964C12.1986 29.9779 7.52878 28.2195 7.52878 20.3621C7.52878 18.1232 8.31007 16.294 9.58947 14.8579C9.38181 14.3414 8.69723 12.2557 9.78322 9.43111C9.78322 9.43111 11.4627 8.87998 15.2847 11.5331C16.8801 11.0787 18.591 10.8509 20.2907 10.8431C21.9904 10.8509 23.7027 11.0787 25.301 11.5331C29.1183 8.87998 30.7955 9.43111 30.7955 9.43111C31.8842 12.2557 31.1992 14.3414 30.9916 14.8579C32.274 16.294 33.05 18.1232 33.05 20.3621C33.05 28.2382 28.3712 29.9724 23.9176
                                         30.4801C24.635 31.1165 25.2742 32.3644 25.2742 34.2776C25.2742 37.0214 25.251 39.2296 25.251 39.905C25.251 40.4507 25.611 41.0902 26.6248 40.8888C34.5672 38.1742 40.2905 30.4903 40.2905 21.4331C40.2905 10.1075 31.336 0.926758 20.2907 0.926758Z"></path>
                                 </svg>
                             </a>
                             &nbsp;
-                            az utasításokat, hogyan töltse le vagy fordítsa le a forráskódból.</p>
+                            és választ kaphat arra, hogy hogyan töltse le vagy fordítsa le a forráskódból.</p>
                     </div>
                 </div>
     
@@ -718,7 +718,7 @@ window.addEventListener('scroll',changeHeaderBg);
     
                 <div class="contact-tab">
                     <div class="flex items-center justify-between my-[40px] contact-tab-btn cursor-pointer">
-                        <h2 class="text-xl font-bold">Ha már telepítette a SimpleX Chat-et a terminálba</h2>
+                        <h2 class="text-xl font-bold">Ha már telepítette a SimpleX Chatet a terminálhoz</h2>
                         <svg class="fill-grey-black dark:fill-white" width="10" height="5" viewBox="0 0 10 5" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M8.40813 4.79332C8.69689 5.06889 9.16507 5.06889 9.45384 4.79332C9.7426 4.51775 9.7426 4.07097 9.45384 3.7954L5.69327 0.206676C5.65717 0.17223 5.61827 0.142089 5.57727 0.116255C5.29026 -0.064587 4.90023 -0.0344467 4.64756 0.206676L0.886983 3.7954C0.598219 4.07097 0.598219 4.51775 0.886983 4.79332C1.17575 5.06889 1.64393 5.06889 1.93269 4.79332L5.17041 1.70356L8.40813 4.79332Z"></path>
                         </svg> 
@@ -726,7 +726,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     
                     <div class="contact-tab-content">
                         <p class="text-base font-medium mb-[46px]">Ha már telepítette a&nbsp;
-                            <a href="" class="text-base font-medium">SimpleX Chat-et a terminálba</a>&nbsp;
+                            <a href="" class="text-base font-medium">SimpleX Chat a terminálhoz</a>&nbsp;
                             v1.0.0+, másolja be az alábbi parancsot, és használja a csevegésben:
                         </p>
                         <p class="bg-white flex items-center justify-between rounded p-3 shadow-[inset_0px_2px_2px_rgba(0,0,0,0.15)] mb-[36px]">
@@ -747,7 +747,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <section id="join-simplex" class="bg-primary-bg-light dark:bg-primary-bg-dark lg:h-[855px] py-[90px] px-5">
     <div class="container flex flex-col items-center">
         <h2 class="text-[38px] leading-[36px] md:leading-[55px] text-grey-black dark:text-white text-center font-bold mb-5"><span class="text-active-blue">Csatlakozás</span> SimpleX</h2>
-        <p class="text-black dark:text-white text-base text-center mb-14">Meghívjuk önt, hogy csatlakozzon a beszélgetéshez</p>
+        <p class="text-black dark:text-white text-base text-center mb-14">Meghívjuk Önt, hogy csatlakozzon a beszélgetéshez</p>
 
         <div class="flex flex-col items-center gap-5 self-stretch mb-12">
             <a href="https://www.reddit.com/r/SimpleXChat/" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border bg-[#D9ECFF]">Csatlakozzon a REDDIT közösséghez</a>
@@ -758,7 +758,7 @@ window.addEventListener('scroll',changeHeaderBg);
         <p class="text-grey-black dark:text-white text-base text-center mb-7">Regisztráljon az oldalra, hogy megkapja frissítéseinket</p>
 
         <form class="flex items-center w-full max-w-[540px] mb-20" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=ad6037a2fe" method="post" target="_blank" novalidate="">
-            <input name="EMAIL" type="text" class="h-[44px] ltr:rounded-l-[34px] rtl:rounded-r-[34px] bg-transparent border border-primary-light focus:outline-none text-primary-light dark:text-primary-dark text-base w-full max-w-[400px] px-5 placeholder:text-grey-black placeholder:dark:text-white placeholder:text-base placeholder:font-normal placeholder:tracking-[0.01em]" placeholder="Adja meg az e-mail címét">
+            <input name="EMAIL" type="text" class="h-[44px] ltr:rounded-l-[34px] rtl:rounded-r-[34px] bg-transparent border border-primary-light focus:outline-none text-primary-light dark:text-primary-dark text-base w-full max-w-[400px] px-5 placeholder:text-grey-black placeholder:dark:text-white placeholder:text-base placeholder:font-normal placeholder:tracking-[0.01em]" placeholder="Adja meg az e-mail-címét">
             <span aria-hidden="true" class="hidden">
                 <input type="text" name="b_ddd892b258ae36e5438e6d4e1_ad6037a2fe" tabindex="-1" value="">
             </span>
@@ -767,7 +767,7 @@ window.addEventListener('scroll',changeHeaderBg);
 
         <hr class="block mb-7 mx-5 dark:opacity-[0.2] w-full">
 
-        <p class="text-grey-black dark:text-white text-center mb-7">SimpleX Desktop alkalmazás <a href="/downloads">letöltése</a></p>
+        <p class="text-grey-black dark:text-white text-center mb-7">A SimpleX számítógép-alkalmazásának <a href="/downloads">letöltése</a></p>
         <div class="flex items-center justify-center gap-4 flex-wrap">
             <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
             <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg"></a>
@@ -812,7 +812,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
                             target="_blank"
                             class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
-                            SimpleX Chat-protokoll
+                            A SimpleX Chat-protokoll
                             <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
                         </a>
                         <a href="/privacy"
