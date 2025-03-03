@@ -145,7 +145,13 @@ fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<Animate
             Log.d(TAG, "UsageConditionsView setConditionsNotified error: ${e.message}")
           }
         }
-        UsageConditionsView(userServers = mutableStateOf(emptyList()), currUserServers = mutableStateOf(emptyList()), close = close, rhId = rhId)
+        UsageConditionsView(
+          userServers = mutableStateOf(emptyList()),
+          currUserServers = mutableStateOf(emptyList()),
+          updated = true,
+          close = close,
+          rhId = rhId
+        )
       }
     }
   }

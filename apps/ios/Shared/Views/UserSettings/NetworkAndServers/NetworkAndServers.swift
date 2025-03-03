@@ -20,11 +20,11 @@ private enum NetworkAlert: Identifiable {
 }
 
 private enum NetworkAndServersSheet: Identifiable {
-    case showConditions
+    case showConditions(updated: Bool)
 
     var id: String {
         switch self {
-        case .showConditions: return "showConditions"
+        case let .showConditions(updated): return "showConditions \(updated)"
         }
     }
 }
@@ -169,10 +169,11 @@ struct NetworkAndServers: View {
         }
         .sheet(item: $sheetItem) { item in
             switch item {
-            case .showConditions:
+            case let .showConditions(updated):
                 UsageConditionsView(
                     currUserServers: $ss.servers.currUserServers,
-                    userServers: $ss.servers.userServers
+                    userServers: $ss.servers.userServers,
+                    updated: updated
                 )
                 .modifier(ThemedBackground(grouped: true))
             }
@@ -218,7 +219,8 @@ struct NetworkAndServers: View {
 
     private func conditionsButton(_ conditionsAction: UsageConditionsAction) -> some View {
         Button {
-            sheetItem = .showConditions
+            let updated = if case .review = conditionsAction { true } else { false }
+            sheetItem = .showConditions(updated: updated)
         } label: {
             switch conditionsAction {
             case .review:
@@ -235,13 +237,18 @@ struct UsageConditionsView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var currUserServers: [UserOperatorServers]
     @Binding var userServers: [UserOperatorServers]
+    var updated: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("Conditions of use").font(.largeTitle).bold()
-                Spacer()
-                conditionsLinkButton()
+                if updated {
+                    Text("Updated conditions").font(.largeTitle).bold()
+                } else {
+                    Text("Conditions of use").font(.largeTitle).bold()
+                    Spacer()
+                    conditionsLinkButton()
+                }
             }
             .padding(.top)
             .padding(.top)
@@ -265,6 +272,12 @@ struct UsageConditionsView: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal, 32)
+                        if updated {
+                            conditionsDiffButton(.footnote)
+                        }
+                    } else if updated {
+                        conditionsDiffButton()
+                            .padding(.top)
                     }
                 }
                 .padding(.bottom)
@@ -309,6 +322,19 @@ struct UsageConditionsView: View {
                         message: responseError(error)
                     )
                 }
+            }
+        }
+    }
+
+    @ViewBuilder private func conditionsDiffButton(_ font: Font? = nil) -> some View {
+        let commit = ChatModel.shared.conditions.currentConditions.conditionsCommit
+        if let commitUrl = URL(string: "https://github.com/simplex-chat/simplex-chat/commit/\(commit)") {
+            Link(destination: commitUrl) {
+                HStack {
+                    Text("Open changes")
+                    Image(systemName: "arrow.up.right.circle")
+                }
+                .font(font)
             }
         }
     }

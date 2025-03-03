@@ -1859,6 +1859,7 @@
   <string name="view_conditions">View conditions</string>
   <string name="accept_conditions">Accept conditions</string>
   <string name="operator_conditions_of_use">Conditions of use</string>
+  <string name="operator_updated_conditions">Updated conditions</string>
   <string name="operator_in_order_to_use_accept_conditions"><![CDATA[To use the servers of <b>%s</b>, accept conditions of use.]]></string>
   <string name="operator_use_for_messages">Use for messages</string>
   <string name="operator_use_for_messages_receiving">To receive</string>

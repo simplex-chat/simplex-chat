@@ -163,7 +163,8 @@ struct ChooseServerOperators: View {
                 case .showConditions:
                     UsageConditionsView(
                         currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([])
+                        userServers: Binding.constant([]),
+                        updated: false
                     )
                     .modifier(ThemedBackground(grouped: true))
                 }
